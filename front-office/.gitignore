@@ -1,5 +1,8 @@
 node_modules/
 dist/
 coverage/
+playwright-report/
+storybook-static/
+test-results/
 *.local
 .DS_Store

@@ -7,7 +7,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [
     vue(),
-    VitePWA({
+    ...(process.env.STORYBOOK === 'true' ? [] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
@@ -30,7 +30,7 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })]),
   ],
   resolve: {
     alias: {
@@ -39,6 +39,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    exclude: ['**/node_modules/**', 'tests/e2e/**', 'scripts/visual.spec.mjs'],
     server: {
       deps: {
         inline: ['vuetify'],
