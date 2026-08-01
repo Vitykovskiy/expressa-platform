@@ -5,7 +5,7 @@ type: moc
 area: architecture
 status: current
 tags: [expressa, architecture, api]
-updated: 2026-07-26
+updated: 2026-08-01
 source_mode: normative
 sources: [Expressa_MVP_Техническое_задание.md]
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003, TR-API-001, TR-DATA-001, TR-FO-001, TR-BO-001]
@@ -16,7 +16,8 @@ related: ["[[System-context]]", "[[Repository-boundaries]]", "[[Cross-repository
 # Карта архитектуры
 
 - [[System-context|Контекст системы]]
-- [[Repository-boundaries|Границы репозиториев]]
+- [[Repository-boundaries|Границы приложений]]
 - [[Cross-repository-contracts|Межрепозиторные контракты]]
 - [[Backend-architecture|Архитектура backend]]
 - [[Client-architecture|Архитектура клиентов]]
+- [[ADR/ADR-001-Root-repository-structure|ADR-001. Корневая структура репозитория]]
