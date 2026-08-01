@@ -1,6 +1,9 @@
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
+import MenuPage from '../pages/MenuPage.vue'
 import App from './App.vue'
 import { vuetify } from './plugins'
 
@@ -19,13 +22,21 @@ class ResizeObserverMock {
 globalThis.ResizeObserver = ResizeObserverMock
 
 describe('App', () => {
-  it('показывает заголовок клиентского приложения', () => {
+  it('показывает содержимое текущего маршрута', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: MenuPage }],
+    })
+
+    await router.push('/')
+    await router.isReady()
+
     const wrapper = mount(App, {
       global: {
-        plugins: [vuetify],
+        plugins: [vuetify, createPinia(), router],
       },
     })
 
-    expect(wrapper.get('h1').text()).toBe('Expressa')
+    expect(wrapper.get('h1').text()).toBe('Меню')
   })
 })

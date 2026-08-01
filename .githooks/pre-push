@@ -1,0 +1,83 @@
+#!/bin/sh
+
+set -eu
+
+repository_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  printf '%s\n' 'pre-push: unable to locate Git repository.' >&2
+  exit 1
+}
+cd "$repository_root"
+
+zero_sha=0000000000000000000000000000000000000000
+changed_paths=$(mktemp "${TMPDIR:-/tmp}/expressa-pre-push.XXXXXX") || {
+  printf '%s\n' 'pre-push: unable to create temporary file.' >&2
+  exit 1
+}
+trap 'rm -f "$changed_paths"' EXIT HUP INT TERM
+
+run_all=0
+has_push_ref=0
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_ref" ] || continue
+  has_push_ref=1
+
+  if [ "$local_sha" = "$zero_sha" ]; then
+    continue
+  fi
+
+  if [ "$remote_sha" = "$zero_sha" ]; then
+    if ! git ls-tree -r --name-only "$local_sha" >>"$changed_paths"; then
+      run_all=1
+    fi
+    continue
+  fi
+
+  if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" \
+    || ! git diff --name-only "$remote_sha" "$local_sha" >>"$changed_paths"; then
+    run_all=1
+  fi
+done
+
+if [ "$has_push_ref" -eq 0 ] || [ "$run_all" -eq 1 ]; then
+  run_all=1
+  printf '%s\n' 'pre-push: push range is unclear; checking all applications.' >&2
+fi
+
+run_application() {
+  application=$1
+
+  if [ ! -f "$application/package.json" ]; then
+    printf 'pre-push: %s has no package.json.\n' "$application" >&2
+    exit 1
+  fi
+
+  printf 'pre-push: checking %s.\n' "$application" >&2
+  (
+    cd "$application"
+    npm run lint
+    npm run typecheck
+    case "$application" in
+      backend) npm test -- --runInBand ;;
+      front-office|back-office) npm test -- --run ;;
+    esac
+    npm run build
+  )
+}
+
+if [ "$run_all" -eq 1 ]; then
+  run_application backend
+  run_application front-office
+  run_application back-office
+  exit 0
+fi
+
+if grep -q '^backend/' "$changed_paths"; then
+  run_application backend
+fi
+if grep -q '^front-office/' "$changed_paths"; then
+  run_application front-office
+fi
+if grep -q '^back-office/' "$changed_paths"; then
+  run_application back-office
+fi

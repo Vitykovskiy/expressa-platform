@@ -1,0 +1,74 @@
+name: Front-office CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'front-office/**'
+      - 'backend/openapi/openapi.json'
+      - '.github/workflows/front-office-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'front-office/**'
+      - 'backend/openapi/openapi.json'
+      - '.github/workflows/front-office-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: front-office-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Verify front-office
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front-office
+    env:
+      VITE_APP_ENV: development
+      VITE_API_BASE_URL: https://api.development.example
+    steps:
+      - name: Checkout
+        # actions/checkout v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        # actions/setup-node v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: front-office/.nvmrc
+          cache: npm
+          cache-dependency-path: front-office/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test -- --run
+
+      - name: Verify OpenAPI contract
+        run: npm run contract:check
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit high-severity dependencies
+        run: npm audit --audit-level=high
+
+      - name: Validate Docker image build
+        run: >-
+          docker build
+          --build-arg VITE_APP_ENV="$VITE_APP_ENV"
+          --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL"
+          --tag expressa-front-office:ci
+          .

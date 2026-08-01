@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.nvmrc
+docs
+contracts
+README.md
+*.md
+**/*.spec.*
+npm-debug.log*

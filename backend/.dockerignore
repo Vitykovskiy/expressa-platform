@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+.npmrc
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+compose.local.yml
+docs
+migrations
+openapi
+test
+*.log

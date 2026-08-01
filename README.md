@@ -75,3 +75,11 @@ expressa/
 - [Бэклог разработки](docs/10-overview/Backlog.md)
 - [Порядок эпиков](docs/10-overview/Epic-roadmap.md)
 - [ADR-001: корневая структура репозитория](docs/20-architecture/ADR/ADR-001-Root-repository-structure.md)
+
+## Git hooks
+
+После клонирования включите версионируемые Git hooks:
+
+```sh
+./scripts/install-git-hooks.sh
+```

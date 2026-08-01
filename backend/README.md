@@ -21,7 +21,9 @@ npm test -- --runInBand
 npm run build
 ```
 
-`src/main.ts` запускает NestJS на порту из `PORT` или `3000`.
+Перед запуском backend проверяет обязательные `NODE_ENV`, `PORT` и `DATABASE_URL`.
+Допустимые delivery-значения `NODE_ENV`: `local`, `development`, `staging`, `production`.
+Пример локального окружения: [.env.example](.env.example).
 
 ## Документация
 

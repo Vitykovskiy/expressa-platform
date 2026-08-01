@@ -1,0 +1,60 @@
+#!/bin/sh
+
+set -eu
+
+repository_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  printf '%s\n' 'pre-commit: unable to locate Git repository.' >&2
+  exit 1
+}
+cd "$repository_root"
+
+if ! git diff --cached --check; then
+  printf '%s\n' 'pre-commit: staged diff contains whitespace errors.' >&2
+  exit 1
+fi
+
+has_sensitive_filename=0
+while IFS= read -r staged_file; do
+  case "$staged_file" in
+    *.pem|*.key|*.p12|*.pfx|*/id_rsa|id_rsa|*/id_dsa|id_dsa|*/id_ecdsa|id_ecdsa|*/id_ed25519|id_ed25519|*/credentials|credentials|*/credentials.json|credentials.json|*/secrets.*|secrets.*|*.secret|*.secrets)
+      has_sensitive_filename=1
+      ;;
+    */.env|.env|*/.env.*|.env.*)
+      case "$staged_file" in
+        *.env.example|*.env.sample|*.env.template) ;;
+        *) has_sensitive_filename=1 ;;
+      esac
+      ;;
+  esac
+done <<EOF
+$(git diff --cached --name-only --diff-filter=ACMR)
+EOF
+
+if [ "$has_sensitive_filename" -eq 1 ]; then
+  printf '%s\n' 'pre-commit: staged file name appears to contain secret material.' >&2
+  exit 1
+fi
+
+has_sensitive_content=0
+while IFS= read -r staged_file; do
+  case "$staged_file" in
+    *.md|*.mdx|*.txt|*.example|*.sample|*.template|*.spec.ts|*.test.ts|*/test/*|scripts/test-git-hooks.sh)
+      continue
+      ;;
+  esac
+
+  if git diff --cached --no-ext-diff --unified=0 -- "$staged_file" \
+    | grep -Ev '^\+\+\+' \
+    | grep -Ei '(BEGIN([[:space:]][A-Z]+)*[[:space:]]PRIVATE[[:space:]]KEY|AKIA[0-9A-Z]{16}|github_pat_[A-Za-z0-9_=-]{16,}|gh[pousr]_[A-Za-z0-9_=-]{16,}|glpat-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|authorization[[:space:]]*:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._=-]{16,}|(api[_-]?key|password|passwd|secret|token|database[_-]?url)[[:space:]]*[:=][[:space:]]*[^[:space:]#]{12,})' \
+    | grep -Eiv '(\$\{[^}]+\}|process\.env|import\.meta\.env|<[^>]+>|example|sample|template|placeholder|changeme|your[_-]?(api|token|secret|password|key)|postgres(ql)?://[^[:space:]#]*(localhost|127\.0\.0\.1|::1))' >/dev/null; then
+    has_sensitive_content=1
+    break
+  fi
+done <<EOF
+$(git diff --cached --name-only --diff-filter=ACMR)
+EOF
+
+if [ "$has_sensitive_content" -eq 1 ]; then
+  printf '%s\n' 'pre-commit: staged content appears to contain secret material.' >&2
+  exit 1
+fi

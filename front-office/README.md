@@ -16,6 +16,7 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run build
+npm run contract:check
 ```
 
 Текущая база знаний: [docs/INDEX.md](docs/INDEX.md).
