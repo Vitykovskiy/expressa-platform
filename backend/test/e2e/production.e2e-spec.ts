@@ -4,6 +4,9 @@ import { resolve } from 'node:path';
 
 const productionPort = 3101;
 const databaseUrl = process.env.DATABASE_URL;
+const coldProductionStartupTimeoutMs = 30_000;
+const livenessWaitTimeoutMs = 25_000;
+const livenessPollIntervalMs = 100;
 
 function startProductionServer(): ChildProcess {
   return spawn('npm', ['run', 'start:prod'], {
@@ -19,7 +22,11 @@ function startProductionServer(): ChildProcess {
 }
 
 async function waitForLiveness(): Promise<Response> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  for (
+    let elapsedMs = 0;
+    elapsedMs < livenessWaitTimeoutMs;
+    elapsedMs += livenessPollIntervalMs
+  ) {
     try {
       const response = await fetch(
         `http://127.0.0.1:${productionPort}/health/live`,
@@ -32,7 +39,9 @@ async function waitForLiveness(): Promise<Response> {
       // Server is still starting.
     }
 
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 100));
+    await new Promise((resolveDelay) =>
+      setTimeout(resolveDelay, livenessPollIntervalMs),
+    );
   }
 
   throw new Error('Production server did not become live');
@@ -66,5 +75,5 @@ describe('production startup', () => {
         server.kill('SIGTERM');
       }
     }
-  });
+  }, coldProductionStartupTimeoutMs);
 });
