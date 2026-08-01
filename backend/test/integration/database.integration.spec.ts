@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
+const externalProcessTimeoutMs = 30_000;
 
 function runScript(script: 'migrate' | 'seed'): void {
   execFileSync('npm', ['run', script], {
@@ -33,16 +34,21 @@ describe('PostgreSQL foundation', () => {
     await pool?.end();
   });
 
-  it('повторно применяет миграции и пустой seed', async () => {
-    runScript('migrate');
-    runScript('migrate');
-    runScript('seed');
-    runScript('seed');
+  it(
+    'повторно применяет миграции и пустой seed',
+    async () => {
+      runScript('migrate');
+      runScript('migrate');
+      runScript('seed');
+      runScript('seed');
 
-    const result = await pool.query<{ name: string }>(
-      'SELECT name FROM schema_migrations ORDER BY name',
-    );
+      const result = await pool.query<{ name: string }>(
+        'SELECT name FROM schema_migrations ORDER BY name',
+      );
 
-    expect(result.rows).toEqual([{ name: '0001_foundation.sql' }]);
-  });
+      expect(result.rows).toEqual([{ name: '0001_foundation.sql' }]);
+    },
+    // Four cold Node processes may exceed Jest's default timeout in CI.
+    externalProcessTimeoutMs,
+  );
 });
