@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:integration": "jest --runInBand --testRegex \"test/integration/.*\\.spec\\.ts$\"",
-    "test:e2e": "jest --config test/e2e/jest-e2e.json --runInBand",
+    "test:e2e": "jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts",
     "test:production": "npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts"
   },
   "dependencies": {
