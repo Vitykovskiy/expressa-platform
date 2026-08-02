@@ -125,7 +125,7 @@ networks:
     external: true
   data:
     name: "expressa-${DEPLOY_ENV:?DEPLOY_ENV is required}-data"
-    internal: true
+    external: true
 
 volumes:
   postgres-data:

@@ -191,15 +191,19 @@ set_phase() {
   printf 'expressa-deploy: phase=%s status=start\n' "$current_phase" >&2
 }
 on_exit() {
-  local status="$1"
+  local status="$1" failure_phase
   if [[ "$status" == 0 ]]; then
     printf 'expressa-deploy: phase=%s status=complete\n' "$current_phase" >&2
   else
-    printf 'expressa-deploy: phase=%s status=failed\n' "$current_phase" >&2
-    rollback_changed
+    failure_phase="${failed_phase:-$current_phase}"
+    rollback_changed || true
+    printf 'expressa-deploy: phase=%s status=failed\n' "$failure_phase" >&2
   fi
   trap - EXIT
   exit "$status"
+}
+on_error() {
+  [[ -n "${failed_phase:-}" ]] || failed_phase="$current_phase"
 }
 on_signal() { exit "$2"; }
 
@@ -227,7 +231,9 @@ mkdir -p "$backup_directory"
 chmod 700 "$state_directory" "$backup_directory"
 rollback_required=0; changed_postgres=0; changed_backend=0; changed_front=0; changed_back=0
 current_phase=preflight
+failed_phase=''
 trap 'on_exit "$?"' EXIT
+trap 'on_error' ERR
 trap 'on_signal TERM 143' TERM
 trap 'on_signal INT 130' INT
 trap 'on_signal HUP 129' HUP

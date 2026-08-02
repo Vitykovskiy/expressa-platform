@@ -16,8 +16,9 @@ assert_registry_credentials_absent() {
   ! grep -E 'ghcr_username=x|ghcr_token=x|docker_config=x|docker login|ghcr\.io' "$root/docker.log" || fail 'registry credentials or GHCR reached Docker command log'
 }
 assert_phase_failure() {
-  local output="$1" phase="$2"
-  grep -Fqx "expressa-deploy: phase=$phase status=failed" <<< "$output" || fail "missing failed phase marker: $phase"
+  local output="$1" phase="$2" failed_markers
+  failed_markers="$(grep -E '^expressa-deploy: phase=[a-z]+ status=failed$' <<< "$output" || true)"
+  [[ "$failed_markers" == "expressa-deploy: phase=$phase status=failed" ]] || fail "unexpected failed phase marker: $failed_markers"
   ! grep -Eqi 'leaked|database_url|postgresql://|password=' <<< "$output" || fail "deployment leaked diagnostics for phase: $phase"
 }
 
@@ -398,6 +399,8 @@ if command -v docker >/dev/null 2>&1; then for environment in development stagin
   grep -F 'postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777' <<< "$rendered_compose" >/dev/null || fail 'postgres is not digest-pinned'
   grep -F "name: expressa-$environment-edge" <<< "$rendered_compose" >/dev/null || fail 'edge network name is incorrect'
   grep -F "name: expressa-$environment-data" <<< "$rendered_compose" >/dev/null || fail 'data network name is incorrect'
+  grep -A 2 -F "name: expressa-$environment-data" <<< "$rendered_compose" | grep -Fqx '    external: true' || fail 'precreated data network is not external to Compose'
+  ! grep -A 2 -F "name: expressa-$environment-data" <<< "$rendered_compose" | grep -Fq 'internal:' || fail 'Compose config owns data network internal mode'
   grep -F -- "- $environment-backend" <<< "$rendered_compose" >/dev/null || fail 'backend network alias is incorrect'
   grep -F -- "- $environment-front" <<< "$rendered_compose" >/dev/null || fail 'front network alias is incorrect'
   grep -F -- "- $environment-back" <<< "$rendered_compose" >/dev/null || fail 'back network alias is incorrect'
