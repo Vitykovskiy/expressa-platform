@@ -1,0 +1,36 @@
+:root {
+  --fo-brand: #6f4e37;
+  --fo-brand-dark: #4e342e;
+  --fo-accent: #d97706;
+  --fo-surface: #fffdf9;
+  --fo-surface-muted: #f5eee7;
+  --fo-text: #241a15;
+  --fo-muted: #70635b;
+  --fo-danger: #b42318;
+  --fo-success: #137a4c;
+  --fo-border: #d8cbc0;
+  --fo-focus: #1d4ed8;
+  --fo-font: Inter, ui-sans-serif, system-ui, sans-serif;
+  --fo-radius-sm: 0.5rem;
+  --fo-radius-md: 0.75rem;
+  --fo-radius-lg: 1rem;
+  --fo-shadow-sm: 0 0.125rem 0.5rem rgb(36 26 21 / 12%);
+  --fo-shadow-md: 0 0.5rem 1.5rem rgb(36 26 21 / 16%);
+  --fo-space-1: 0.25rem;
+  --fo-space-2: 0.5rem;
+  --fo-space-3: 0.75rem;
+  --fo-space-4: 1rem;
+  --fo-space-5: 1.5rem;
+  --fo-space-6: 2rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 0.1875rem solid var(--fo-focus);
+  outline-offset: 0.125rem;
+}

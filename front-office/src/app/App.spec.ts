@@ -1,11 +1,11 @@
-import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
-import { describe, expect, it } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
+import { describe, expect, it } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
-import MenuPage from '../pages/MenuPage.vue'
-import App from './App.vue'
-import { vuetify } from './plugins'
+import MenuPage from "../pages/MenuPage.vue";
+import App from "./App.vue";
+import { vuetify } from "./plugins";
 
 class ResizeObserverMock {
   constructor(private readonly callback: ResizeObserverCallback) {}
@@ -13,30 +13,30 @@ class ResizeObserverMock {
   disconnect(): void {}
 
   observe(): void {
-    void this.callback
+    void this.callback;
   }
 
   unobserve(): void {}
 }
 
-globalThis.ResizeObserver = ResizeObserverMock
+globalThis.ResizeObserver = ResizeObserverMock;
 
-describe('App', () => {
-  it('показывает содержимое текущего маршрута', async () => {
+describe("App", () => {
+  it("показывает содержимое текущего маршрута", async () => {
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/', component: MenuPage }],
-    })
+      routes: [{ path: "/", component: MenuPage }],
+    });
 
-    await router.push('/')
-    await router.isReady()
+    await router.push("/");
+    await router.isReady();
 
     const wrapper = mount(App, {
       global: {
         plugins: [vuetify, createPinia(), router],
       },
-    })
+    });
 
-    expect(wrapper.get('h1').text()).toBe('Меню')
-  })
-})
+    expect(wrapper.get("h1").text()).toBe("Меню");
+  });
+});

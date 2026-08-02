@@ -1,21 +1,28 @@
-import eslint from '@eslint/js'
-import pluginVue from 'eslint-plugin-vue'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import eslint from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
+import pluginVue from "eslint-plugin-vue";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ['coverage', 'dist', 'node_modules'] },
+  { ignores: ["coverage", "dist", "node_modules"] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  ...pluginVue.configs["flat/recommended"],
   {
-    files: ['**/*.{ts,vue}'],
+    rules: {
+      "vue/block-order": ["error", { order: ["template", "script", "style"] }],
+    },
+  },
+  {
+    files: ["**/*.{ts,vue}"],
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
-        extraFileExtensions: ['.vue'],
+        extraFileExtensions: [".vue"],
         parser: tseslint.parser,
       },
     },
   },
-)
+  eslintConfigPrettier,
+);

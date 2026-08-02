@@ -1,27 +1,27 @@
-import { createPinia } from 'pinia'
-import type { App } from 'vue'
-import { createVuetify } from 'vuetify'
+import type { App } from "vue";
+import { createPinia } from "pinia";
+import { createVuetify } from "vuetify";
 
-import { router } from './router'
+import { router } from "./router";
 
 const vuetify = createVuetify({
   theme: {
-    defaultTheme: 'expressa',
+    defaultTheme: "expressa",
     themes: {
       expressa: {
         colors: {
-          primary: '#6f4e37',
+          primary: "#6f4e37",
         },
         dark: false,
       },
     },
   },
-})
+});
 
 export function installPlugins(app: App): void {
-  app.use(createPinia())
-  app.use(vuetify)
-  app.use(router)
+  app.use(createPinia());
+  app.use(vuetify);
+  app.use(router);
 }
 
-export { vuetify }
+export { vuetify };

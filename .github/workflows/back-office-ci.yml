@@ -59,6 +59,17 @@ jobs:
       - name: Build Storybook
         run: npm run storybook:build
 
+      - name: Verify Storybook preview
+        run: test -f node_modules/.storybook-static/index.html
+
+      - name: Upload Storybook preview
+        # actions/upload-artifact v4.6.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: back-office-storybook
+          path: back-office/node_modules/.storybook-static
+          include-hidden-files: true
+
       - name: Test Storybook interactions
         run: npm run test:storybook
 
@@ -67,6 +78,13 @@ jobs:
 
       - name: Test Storybook visual regression
         run: npm run test:visual
+
+      - name: Upload visual baselines
+        # actions/upload-artifact v4.6.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: back-office-visual-baselines
+          path: back-office/tests/e2e/visual.e2e.ts-snapshots
 
       - name: Run end-to-end tests
         run: npm run test:e2e

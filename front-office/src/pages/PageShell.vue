@@ -1,12 +1,9 @@
-<script setup lang="ts">
-defineProps({
-  description: { type: String, required: true },
-  title: { type: String, required: true },
-})
-</script>
-
 <template>
-  <section class="page-shell">
+  <!-- prettier-ignore -->
+  <section
+    v-bind="attrs"
+    class="page-shell"
+  >
     <h1 class="page-shell-title">
       {{ title }}
     </h1>
@@ -16,9 +13,23 @@ defineProps({
   </section>
 </template>
 
+<script setup lang="ts">
+import { useAttrs } from "vue";
+
+defineOptions({ inheritAttrs: false });
+
+defineProps<{
+  description: string;
+  title: string;
+}>();
+
+const attrs = useAttrs();
+</script>
+
 <style scoped>
 .page-shell {
   max-width: 48rem;
+  overflow-wrap: anywhere;
 }
 
 .page-shell-title {
@@ -26,6 +37,6 @@ defineProps({
 }
 
 .page-shell-description {
-  margin: 1rem 0 0;
+  margin: 0;
 }
 </style>

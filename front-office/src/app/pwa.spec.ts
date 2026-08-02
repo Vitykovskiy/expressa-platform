@@ -1,34 +1,33 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { registerSW } = vi.hoisted(() => ({ registerSW: vi.fn() }))
+const { registerSW } = vi.hoisted(() => ({ registerSW: vi.fn() }));
 
-vi.mock('virtual:pwa-register', () => ({ registerSW }))
+vi.mock("virtual:pwa-register", () => ({ registerSW }));
 
-import { registerPwa } from './pwa'
+import { registerPwa } from "./pwa";
 
-describe('registerPwa', () => {
+describe("registerPwa", () => {
   beforeEach(() => {
-    registerSW.mockClear()
-  })
+    registerSW.mockClear();
+  });
 
   afterEach(() => {
-    vi.unstubAllEnvs()
-  })
+    vi.unstubAllEnvs();
+  });
 
-  it('регистрирует service worker в production', () => {
-    vi.stubEnv('PROD', true)
+  it("регистрирует service worker в production", () => {
+    vi.stubEnv("PROD", true);
 
-    registerPwa()
+    registerPwa();
 
-    expect(registerSW).toHaveBeenCalledWith({ immediate: true })
-  })
+    expect(registerSW).toHaveBeenCalledWith({ immediate: true });
+  });
 
-  it('не регистрирует service worker вне production', () => {
-    vi.stubEnv('PROD', false)
+  it("не регистрирует service worker вне production", () => {
+    vi.stubEnv("PROD", false);
 
-    registerPwa()
+    registerPwa();
 
-    expect(registerSW).not.toHaveBeenCalled()
-  })
-
-})
+    expect(registerSW).not.toHaveBeenCalled();
+  });
+});

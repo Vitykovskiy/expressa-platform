@@ -1,17 +1,19 @@
-import { createApp } from 'vue'
-import 'vuetify/styles'
+import { createApp } from "vue";
+import "vuetify/styles";
 
-import App from './app/App.vue'
-import { installPlugins } from './app/plugins'
-import { registerPwa } from './app/pwa'
-import { apiClientKey, createApiClient } from './shared/api/client'
-import { validateEnvironment } from './shared/config/environment'
+import "./shared/ui/tokens.css";
 
-const environment = validateEnvironment(import.meta.env)
+import App from "./app/App.vue";
+import { installPlugins } from "./app/plugins";
+import { registerPwa } from "./app/pwa";
+import { apiClientKey, createApiClient } from "./shared/api/client";
+import { validateEnvironment } from "./shared/config/environment";
 
-const app = createApp(App)
+const environment = validateEnvironment(import.meta.env);
 
-installPlugins(app)
-app.provide(apiClientKey, createApiClient(environment.apiBaseUrl))
-app.mount('#app')
-registerPwa()
+const app = createApp(App);
+
+installPlugins(app);
+app.provide(apiClientKey, createApiClient(environment.apiBaseUrl));
+app.mount("#app");
+registerPwa();

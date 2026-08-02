@@ -1,9 +1,9 @@
-import { registerSW } from 'virtual:pwa-register'
+import { registerSW } from "virtual:pwa-register";
 
 export function registerPwa(): void {
   if (!import.meta.env.PROD) {
-    return
+    return;
   }
 
-  registerSW({ immediate: true })
+  registerSW({ immediate: true });
 }

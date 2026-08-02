@@ -22,6 +22,10 @@ updated: 2026-08-01
 Pinia после появления реализации. Архитектурная структура и автономность
 клиента определены в [[../20-architecture/Client-architecture|Архитектуре
 клиентов]] и [[../20-architecture/Repository-boundaries|Границах приложений]].
+Для всего UI-кода обязательны [[../40-quality/Definition-of-done|UI DoD]],
+[[../40-quality/Vue-code-style|стиль Vue-кода]],
+[[../40-quality/UI-accessibility|доступность]] и
+[[../40-quality/Validation-strategy|стратегия проверки]].
 
 ## Простота и ответственность
 
