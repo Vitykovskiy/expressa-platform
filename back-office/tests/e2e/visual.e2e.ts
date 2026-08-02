@@ -126,8 +126,14 @@ test("очередь заказов фильтруется по Tab и Enter", a
   );
 
   const stage = page.getByRole("combobox", { name: "Стадия" });
+  await expect(page.getByRole("button", { name: /Заказ №1048/ })).toBeHidden();
   await focusWithTab(page, stage);
-  await page.keyboard.press("r");
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /Заказ №1048/ })).toBeVisible();
+
+  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Enter");
 
   await expect(page.getByRole("button", { name: /Заказ №1046/ })).toBeVisible();
