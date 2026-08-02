@@ -17,7 +17,7 @@ compose_file="$script_directory/compose.yml"
 [[ -f "$compose_file" ]] || fail 'compose.yml is missing'
 
 if [[ "${DEPLOY_LOCK_HELD:-}" != 1 ]]; then
-  exec flock --exclusive --nonblock --conflict-exit-code 75 "$lock_file" env DEPLOY_LOCK_HELD=1 "$0" "$@"
+  exec flock --exclusive --nonblock --conflict-exit-code 75 "$lock_file" env DEPLOY_LOCK_HELD=1 bash -- "$0" "$@"
 fi
 
 set -a
