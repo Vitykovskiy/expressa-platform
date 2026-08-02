@@ -66,9 +66,9 @@ jobs:
               exit 1
             }
             case "$name:$image" in
-              BACKEND_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-backend@sha256:[a-f0-9][a-f0-9]*) ;;
-              FRONT_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-front-office@sha256:[a-f0-9][a-f0-9]*) ;;
-              BACK_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-back-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              BACKEND_IMAGE:ghcr.io/vitykovskiy/expressa-backend@sha256:[a-f0-9][a-f0-9]*) ;;
+              FRONT_IMAGE:ghcr.io/vitykovskiy/expressa-front-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              BACK_IMAGE:ghcr.io/vitykovskiy/expressa-back-office@sha256:[a-f0-9][a-f0-9]*) ;;
               *)
                 printf '%s\n' 'staging manifest image is not an allowed immutable package digest' >&2
                 exit 1

@@ -27,7 +27,7 @@ validate_environment() {
 validate_identifier() { [[ "$1" =~ ^[A-Za-z0-9_]{1,63}$ ]] || fail "$2 must contain only letters, digits, or underscores"; }
 validate_app_image() {
   local value="$1" package="$2" name="$3"
-  [[ "$value" =~ ^ghcr\.io/vitykovskiy/expressa-platform/$package@sha256:[a-f0-9]{64}$ ]] || fail "$name must use canonical package $package and a sha256 digest"
+  [[ "$value" =~ ^ghcr\.io/vitykovskiy/$package@sha256:[a-f0-9]{64}$ ]] || fail "$name must use canonical package $package and a sha256 digest"
 }
 
 parse_runtime() {

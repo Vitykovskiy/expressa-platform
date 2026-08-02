@@ -178,9 +178,9 @@ validate_deployment_compose() {
   DEPLOY_ENV="$environment" COMPOSE_PROJECT_NAME="expressa-$environment" \
     POSTGRES_DB=expressa POSTGRES_USER=expressa POSTGRES_PASSWORD=validation-password \
     DATABASE_URL='postgresql://expressa:validation-password@postgres:5432/expressa' \
-    BACKEND_IMAGE='ghcr.io/vitykovskiy/expressa-platform/expressa-backend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
-    FRONT_IMAGE='ghcr.io/vitykovskiy/expressa-platform/expressa-front-office@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
-    BACK_IMAGE='ghcr.io/vitykovskiy/expressa-platform/expressa-back-office@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' \
+    BACKEND_IMAGE='ghcr.io/vitykovskiy/expressa-backend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
+    FRONT_IMAGE='ghcr.io/vitykovskiy/expressa-front-office@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
+    BACK_IMAGE='ghcr.io/vitykovskiy/expressa-back-office@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' \
     "$docker_bin" compose --project-name "expressa-$environment" --file "$infra_directory/compose.yml" config -q
 }
 

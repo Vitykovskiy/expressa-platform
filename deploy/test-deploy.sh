@@ -45,7 +45,7 @@ exit 0
 EOF
 printf '%s\n' "$fake_docker_source" > "$fake_docker"; printf '%s\n' "$fake_flock_source" > "$fake_flock"; chmod 700 "$fake_docker" "$fake_flock"
 
-digest() { printf 'ghcr.io/vitykovskiy/expressa-platform/%s@sha256:%064d' "$1" "$2"; }
+digest() { printf 'ghcr.io/vitykovskiy/%s@sha256:%064d' "$1" "$2"; }
 write_runtime() {
   local root="$1"
   mkdir -p "$root/development"
@@ -68,6 +68,15 @@ run_deploy "$initial_root" deploy front FRONT_IMAGE="$(digest expressa-front-off
 initial_status="$?"
 set -e
 [[ "$initial_status" != 0 ]] || fail 'partial first deploy was accepted'
+
+legacy_root="$temporary_directory/legacy-image"
+legacy_image="ghcr.io/vitykovskiy/expressa-platform/expressa-backend@sha256:$(printf '%064d' 1)"
+set +e
+run_deploy "$legacy_root" deploy all BACKEND_IMAGE="$legacy_image" FRONT_IMAGE="$(digest expressa-front-office 1)" BACK_IMAGE="$(digest expressa-back-office 1)"
+legacy_status="$?"
+set -e
+[[ "$legacy_status" != 0 ]] || fail 'legacy GHCR namespace was accepted'
+
 run_deploy "$initial_root" deploy all DEPLOY_COMPOSE_FILE=/tmp/untrusted.yml BACKEND_IMAGE="$(digest expressa-backend 1)" FRONT_IMAGE="$(digest expressa-front-office 1)" BACK_IMAGE="$(digest expressa-back-office 1)"
 assert_file_contains "$initial_root/development/state/current" "BACKEND_IMAGE=$(digest expressa-backend 1)"
 assert_file_contains "$initial_root/development/state/current" "FRONT_IMAGE=$(digest expressa-front-office 1)"

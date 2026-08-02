@@ -236,8 +236,9 @@ for host, (backend, fallback) in routes.items():
     if not re.search(expected, content):
         raise SystemExit(f'UI route ordering is invalid for {host}')
 PY
+! grep -Fq 'ghcr.io/vitykovskiy/expressa-platform/' "$bootstrap_script" || fail 'legacy GHCR namespace remains'
 ! grep -Fq 'ghcr.io/vitykovskiy/expressa/' "$bootstrap_script" || fail 'legacy GHCR namespace remains'
-grep -Fq 'ghcr.io/vitykovskiy/expressa-platform/expressa-backend@sha256:' "$bootstrap_script" || fail 'backend validation lacks current namespace'
+grep -Fq 'ghcr.io/vitykovskiy/expressa-backend@sha256:' "$bootstrap_script" || fail 'backend validation lacks canonical namespace'
 
 repair_root="$temporary_directory/repair-data-network"
 prepare_live_root "$repair_root"

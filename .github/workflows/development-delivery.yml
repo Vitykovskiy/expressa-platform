@@ -98,15 +98,15 @@ jobs:
             printf '%s\n' 'deployment SSH credentials are required' >&2
             exit 1
           }
-          [[ "$BACKEND_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-backend@sha256:[a-f0-9]{64}$ ]] || {
+          [[ "$BACKEND_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-backend@sha256:[a-f0-9]{64}$ ]] || {
             printf '%s\n' 'backend image must be the canonical immutable package digest' >&2
             exit 1
           }
-          [[ "$FRONT_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-front-office@sha256:[a-f0-9]{64}$ ]] || {
+          [[ "$FRONT_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-front-office@sha256:[a-f0-9]{64}$ ]] || {
             printf '%s\n' 'front-office image must be the canonical immutable package digest' >&2
             exit 1
           }
-          [[ "$BACK_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-back-office@sha256:[a-f0-9]{64}$ ]] || {
+          [[ "$BACK_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-back-office@sha256:[a-f0-9]{64}$ ]] || {
             printf '%s\n' 'back-office image must be the canonical immutable package digest' >&2
             exit 1
           }

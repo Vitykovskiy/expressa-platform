@@ -47,13 +47,13 @@ jobs:
           COMPONENT: ${{ inputs.component }}
           CONTEXT: ${{ inputs.context }}
           IMAGE: ${{ inputs.image }}
-          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          repository="${REPOSITORY:-}"
-          repository="${repository,,}"
+          repository_owner="${REPOSITORY_OWNER:-}"
+          repository_owner="${repository_owner,,}"
           case "$COMPONENT:$CONTEXT:$IMAGE" in
             backend:backend:expressa-backend)
               ;;
@@ -66,15 +66,15 @@ jobs:
               exit 1
               ;;
           esac
-          [[ "$repository" =~ ^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$ ]] || {
-            printf '%s\n' 'GitHub repository cannot form a lowercase GHCR image name' >&2
+          [[ "$repository_owner" == 'vitykovskiy' ]] || {
+            printf '%s\n' 'GitHub repository owner cannot form an allowed GHCR image name' >&2
             exit 1
           }
           [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]] || {
             printf '%s\n' 'GitHub SHA must be a 40-character lowercase hexadecimal commit ID' >&2
             exit 1
           }
-          image_repository="ghcr.io/$repository/$IMAGE"
+          image_repository="ghcr.io/$repository_owner/$IMAGE"
           package_version="$(node -p "require('./$CONTEXT/package.json').version")"
           [[ "$package_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
             printf '%s\n' 'package.json version must match X.Y.Z' >&2
