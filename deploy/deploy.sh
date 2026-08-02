@@ -11,7 +11,7 @@ case "$environment" in development|staging) ;; *) usage ;; esac
 script_directory="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 deploy_root="${DEPLOY_ROOT:-/srv/expressa}/$environment"
 runtime_file="$deploy_root/runtime.env"
-lock_file="$deploy_root/.deploy.lock"
+lock_file="$deploy_root/state/.deploy.lock"
 compose_file="$script_directory/compose.yml"
 [[ -f "$runtime_file" && ! -L "$runtime_file" ]] || fail 'runtime.env is missing'
 [[ -f "$compose_file" ]] || fail 'compose.yml is missing'
