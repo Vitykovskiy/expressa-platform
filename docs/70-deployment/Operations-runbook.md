@@ -10,9 +10,9 @@
 
 ## Поставка
 
-`development-delivery.yml` автоматически публикует write-once SHA-образы через временный SSH-tunnel и развёртывает набор digest-ссылок. `staging-deploy.yml` принимает только tagged staging manifest из [deploy/staging.env](../../deploy/staging.env). Локальный registry не открыт сети; CI использует пять environment-scoped SSH secrets, перечисленных в [[CI-CD]].
+`development-delivery.yml` автоматически публикует write-once SHA-образы через временный SSH-tunnel и развёртывает набор digest-ссылок. `staging-deploy.yml` принимает только tagged staging manifest из [deploy/staging.env](../../deploy/staging.env). Локальный registry не открыт сети; CI использует environment-scoped SSH secrets, перечисленные в [[CI-CD]].
 
-`deploy.sh --environment development|staging deploy all|backend|front|back` берёт блокировку, проверяет `runtime.env`, сохраняет базу перед backend-миграцией, ждёт health-check и обновляет `state/current`/`state/previous`. При неуспехе текущей поставки он восстанавливает изменённые сервисы.
+В GitHub environments `development` и `staging` оператор задаёт secret `BOOTSTRAP_ADMIN_PHONE` в строгом формате `+7XXXXXXXXXX`. `deploy.sh --environment development|staging deploy all|backend|front|back` проверяет его до любых изменений, затем при backend-поставке берёт блокировку, проверяет `runtime.env`, сохраняет базу, запускает миграции и idempotent seed администратора, после чего запускает backend, ждёт health-check и обновляет `state/current`/`state/previous`. Значение живёт только до завершения seed и не сохраняется в runtime, state, backup или логах. При неуспехе текущей поставки он восстанавливает изменённые сервисы.
 
 ## Откат
 

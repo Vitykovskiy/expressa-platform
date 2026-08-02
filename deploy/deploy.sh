@@ -28,6 +28,10 @@ validate_app_image() {
   [[ "$value" =~ ^127\.0\.0\.1:5000/expressa/$package@sha256:[a-f0-9]{64}$ ]] || fail "$name must use local registry package $package and a sha256 digest"
 }
 
+validate_bootstrap_admin_phone() {
+  [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
+}
+
 parse_runtime() {
   local line key value
   validate_runtime_file
@@ -146,6 +150,13 @@ backup_database() {
 }
 
 run_migrations() { compose_quiet run --rm --no-deps backend dist/scripts/migrate.js || fail 'migration failed'; }
+run_seed() {
+  if ! BOOTSTRAP_ADMIN_PHONE="$bootstrap_admin_phone" compose_quiet run --rm --no-deps backend dist/scripts/seed.js; then
+    unset bootstrap_admin_phone
+    fail 'seed failed'
+  fi
+  unset bootstrap_admin_phone
+}
 smoke_backend() { compose_quiet exec -T backend /nodejs/bin/node -e "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; }
 smoke_web() { compose_quiet exec -T "$1" wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health; }
 ensure_edge_network() { "$docker_bin" network inspect "expressa-${environment}-edge" >/dev/null 2>&1 || "$docker_bin" network create "expressa-${environment}-edge" >/dev/null; }
@@ -197,6 +208,7 @@ set_phase() {
 }
 on_exit() {
   local status="$1" failure_phase
+  unset BOOTSTRAP_ADMIN_PHONE bootstrap_admin_phone
   if [[ "$status" == 0 ]]; then
     printf 'expressa-deploy: phase=%s status=complete\n' "$current_phase" >&2
   else
@@ -217,6 +229,9 @@ environment="$2"; operation="$3"; target="$4"
 case "$operation" in deploy|rollback) ;; *) usage ;; esac
 case "$target" in all|backend|front|back) ;; *) usage ;; esac
 validate_environment
+if [[ "$operation" == deploy && ( "$target" == all || "$target" == backend ) ]]; then
+  validate_bootstrap_admin_phone
+fi
 
 readonly compose_project="expressa-$environment"
 readonly deploy_root="${DEPLOY_ROOT:-/srv/expressa}/$environment"
@@ -231,6 +246,10 @@ if [[ "${DEPLOY_LOCK_HELD:-}" != 1 ]]; then
   exec flock --no-fork --exclusive --nonblock --conflict-exit-code 75 "$deployment_lock_file" env DEPLOY_LOCK_HELD=1 "$0" "$@"
 fi
 deployment_lock_is_held || fail 'deployment lock is not held'
+if [[ "$operation" == deploy && ( "$target" == all || "$target" == backend ) ]]; then
+  bootstrap_admin_phone="$BOOTSTRAP_ADMIN_PHONE"
+  unset BOOTSTRAP_ADMIN_PHONE
+fi
 unset DATABASE_URL POSTGRES_IMAGE POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD GHCR_USERNAME GHCR_TOKEN DOCKER_CONFIG
 mkdir -p "$backup_directory"
 chmod 700 "$state_directory" "$backup_directory"
@@ -297,6 +316,7 @@ if [[ "$operation" == deploy && ( "$target" == all || "$target" == backend ) ]];
   set_phase smoke; wait_for_health postgres
   set_phase backup; backup_database
   set_phase migrate; run_migrations
+  set_phase seed; run_seed
   changed_backend=1; set_phase compose; compose_quiet up -d --no-deps backend
   set_phase smoke; wait_for_health backend; smoke_backend
 fi

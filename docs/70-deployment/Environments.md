@@ -24,6 +24,6 @@ Shared Caddy подключён к edge-сетям, Nginx перенаправл
 
 ## Runtime и образы
 
-Секрет базы хранится отдельно в `/srv/expressa/development/runtime.env` и `/srv/expressa/staging/runtime.env`; значение и доступы не документируются. Состояния `state/current` и `state/previous` содержат только immutable digest-ссылки.
+Секрет базы хранится отдельно в `/srv/expressa/development/runtime.env` и `/srv/expressa/staging/runtime.env`; значение и доступы не документируются. `BOOTSTRAP_ADMIN_PHONE` хранится только как одноимённый environment secret GitHub для каждого deploy-job, передаётся для seed и не записывается на VPS. Состояния `state/current` и `state/previous` содержат только immutable digest-ссылки.
 
 Docker Distribution постоянно хранит registry-data в `/srv/expressa/registry/data`, доступен только на loopback `127.0.0.1:5000` и запрещает удаление. CI достигает его исключительно через SSH-tunnel. Версии и выпуск — в [[Release-and-version-compatibility]].

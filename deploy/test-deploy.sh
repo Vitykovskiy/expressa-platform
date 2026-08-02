@@ -15,6 +15,17 @@ assert_registry_credentials_absent() {
   local root="$1"
   ! grep -E 'ghcr_username=x|ghcr_token=x|docker_config=x|docker login|ghcr\.io' "$root/docker.log" || fail 'registry credentials or GHCR reached Docker command log'
 }
+assert_bootstrap_secret_absent() {
+  local root="$1"
+  ! grep -R -F -- '+79991234567' "$root" >/dev/null 2>&1 || fail 'bootstrap administrator phone leaked to persistent deployment data'
+  ! grep -R -F -- 'BOOTSTRAP_ADMIN_PHONE=' "$root/development/state" "$root/development/backups" >/dev/null 2>&1 || fail 'bootstrap administrator phone leaked to deployment state or backup'
+}
+assert_seed_after_migration() {
+  local root="$1" migration_line seed_line
+  migration_line="$(grep -n -m 1 -F 'run --rm --no-deps backend dist/scripts/migrate.js' "$root/docker.log" | cut -d: -f1)"
+  seed_line="$(grep -n -m 1 -F 'run --rm --no-deps backend dist/scripts/seed.js' "$root/docker.log" | cut -d: -f1)"
+  [[ -n "$migration_line" && -n "$seed_line" && "$migration_line" -lt "$seed_line" ]] || fail 'seed did not run immediately after migrations'
+}
 assert_phase_failure() {
   local output="$1" phase="$2" failed_markers
   failed_markers="$(grep -E '^expressa-deploy: phase=[a-z]+ status=failed$' <<< "$output" || true)"
@@ -44,7 +55,7 @@ readonly deploy_script="$infrastructure_directory/deploy/deploy.sh"
 read -r -d '' fake_docker_source <<'EOF' || true
 #!/usr/bin/env bash
 set -Eeuo pipefail
-printf '%s|backend=%s|front=%s|back=%s|ghcr_username=%s|ghcr_token=%s|docker_config=%s\n' "$*" "${BACKEND_IMAGE:-}" "${FRONT_IMAGE:-}" "${BACK_IMAGE:-}" "${GHCR_USERNAME+x}" "${GHCR_TOKEN+x}" "${DOCKER_CONFIG+x}" >> "$FAKE_LOG"
+printf '%s|backend=%s|front=%s|back=%s|ghcr_username=%s|ghcr_token=%s|docker_config=%s|bootstrap_admin_phone=%s\n' "$*" "${BACKEND_IMAGE:-}" "${FRONT_IMAGE:-}" "${BACK_IMAGE:-}" "${GHCR_USERNAME+x}" "${GHCR_TOKEN+x}" "${DOCKER_CONFIG+x}" "${BOOTSTRAP_ADMIN_PHONE+x}" >> "$FAKE_LOG"
 if [[ "$1" == compose && "${EXPECTED_COMPOSE_FILE:-}" != '' && " $* " != *" --file $EXPECTED_COMPOSE_FILE "* ]]; then exit 29; fi
 if [[ "${FAIL_SERVICE:-}" != '' && "$*" == *" up "* && "$*" == *" ${FAIL_SERVICE}"* ]]; then
   if [[ -z "${FAIL_ONCE_FILE:-}" || ! -e "$FAIL_ONCE_FILE" ]]; then [[ -z "${FAIL_ONCE_FILE:-}" ]] || : > "$FAIL_ONCE_FILE"; exit 23; fi
@@ -65,7 +76,12 @@ if [[ "${FAIL_PULL:-}" == 1 && "$*" == *" pull "* ]]; then printf '%s\n' 'TOKEN=
 if [[ "$1" == compose && "$*" == *" run "* && "$*" == *"migrate.js"* ]]; then
   [[ "$*" == *" run --rm --no-deps backend dist/scripts/migrate.js"* && "$*" != *"backend /nodejs/bin/node dist/scripts/migrate.js"* ]] || exit 31
 fi
+if [[ "$1" == compose && "$*" == *" run "* && "$*" == *"seed.js"* ]]; then
+  [[ "$*" == *" run --rm --no-deps backend dist/scripts/seed.js"* && "$*" != *"backend /nodejs/bin/node dist/scripts/seed.js"* ]] || exit 32
+  [[ -n "${BOOTSTRAP_ADMIN_PHONE:-}" ]] || exit 33
+fi
 if [[ "${FAIL_MIGRATION:-}" == 1 && "$*" == *" run "* && "$*" == *"migrate.js"* ]]; then printf '%s\n' 'POSTGRES_PASSWORD=leaked-migration-password' >&2; exit 27; fi
+if [[ "${FAIL_SEED:-}" == 1 && "$*" == *" run "* && "$*" == *"seed.js"* ]]; then printf '%s\n' 'seed leaked bootstrap administrator data' >&2; exit 34; fi
 if [[ "${FAIL_SMOKE_BACKEND:-}" == 1 && "$*" == *" exec "* && "$*" == *" backend /nodejs/bin/node "* ]]; then exit 28; fi
 if [[ "${FAIL_SMOKE_WEB:-}" == 1 && "$*" == *" exec "* && "$*" == *" wget "* ]]; then printf '%s\n' 'generic wget error SECRET=leaked-web-secret' >&2; exit 29; fi
 if [[ "${FAIL_HEALTH:-}" == 1 && "$1" == inspect ]]; then printf '%s\n' 'DATABASE_URL=postgresql://leaked:password@example/db' >&2; exit 30; fi
@@ -103,15 +119,23 @@ write_runtime() {
   chmod 640 "$root/development/runtime.env"
 }
 run_deploy() {
-  local state_root="$1" operation="$2" target="$3"
+  local state_root="$1" operation="$2" target="$3" deployment_status BOOTSTRAP_ADMIN_PHONE="${BOOTSTRAP_ADMIN_PHONE-+79991234567}"
   shift 3
   [[ "${SKIP_RUNTIME_WRITE:-}" == 1 ]] || write_runtime "$state_root"
+  export BOOTSTRAP_ADMIN_PHONE
   env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" FAKE_SERVICE_STATE="$state_root/services" FAKE_VOLUME_STATE="$state_root/volume" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target"
+  deployment_status="$?"
+  unset BOOTSTRAP_ADMIN_PHONE
+  return "$deployment_status"
 }
 run_deploy_as_unprivileged_user() {
-  local state_root="$1" operation="$2" target="$3"
+  local state_root="$1" operation="$2" target="$3" deployment_status BOOTSTRAP_ADMIN_PHONE="${BOOTSTRAP_ADMIN_PHONE-+79991234567}"
   shift 3
+  export BOOTSTRAP_ADMIN_PHONE
   setpriv --reuid 65534 --regid 65534 --clear-groups env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/development/state/docker.log" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" "$@" bash "$deploy_script" --environment development "$operation" "$target"
+  deployment_status="$?"
+  unset BOOTSTRAP_ADMIN_PHONE
+  return "$deployment_status"
 }
 wait_for_file() {
   local file="$1" retries=50
@@ -119,12 +143,14 @@ wait_for_file() {
   fail "timed out waiting for: $file"
 }
 start_deploy() {
-  local state_root="$1" operation="$2" target="$3" deployment_pid_file deployment_process_group harness_process_group retries=50
+  local state_root="$1" operation="$2" target="$3" deployment_pid_file deployment_process_group harness_process_group retries=50 BOOTSTRAP_ADMIN_PHONE="${BOOTSTRAP_ADMIN_PHONE-+79991234567}"
   shift 3
   [[ "${SKIP_RUNTIME_WRITE:-}" == 1 ]] || write_runtime "$state_root"
   deployment_pid_file="$(mktemp "$temporary_directory/.deployment.XXXXXX")"
   # shellcheck disable=SC2016
+  export BOOTSTRAP_ADMIN_PHONE
   setsid sh -c 'printf "%s\n" "$$" > "$1"; shift; exec env --default-signal=HUP,INT,TERM "$@"' deploy-harness "$deployment_pid_file" DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" FAKE_SERVICE_STATE="$state_root/services" FAKE_VOLUME_STATE="$state_root/volume" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target" &
+  unset BOOTSTRAP_ADMIN_PHONE
   while (( retries > 0 )) && [[ ! -s "$deployment_pid_file" ]]; do sleep 0.01; ((retries -= 1)); done
   [[ -s "$deployment_pid_file" ]] || fail 'deployment process did not start'
   read -r deployment_pid < "$deployment_pid_file"
@@ -208,6 +234,21 @@ assert_file_contains "$initial_root/development/state/current" "BACK_IMAGE=$(dig
 [[ "$(wc -l < "$initial_root/development/state/current" | tr -d ' ')" == 4 ]] || fail 'state does not contain exactly three app digests'
 grep -F "pull backend front back|backend=$(digest backend 1)" "$initial_root/docker.log" >/dev/null || fail 'initial images were not pulled by canonical local digest'
 assert_registry_credentials_absent "$initial_root"
+assert_seed_after_migration "$initial_root"
+assert_bootstrap_secret_absent "$initial_root"
+
+for bootstrap_phone in '' '+7999123456' '+799912345678' '79991234567'; do
+  bootstrap_failure_root="$temporary_directory/bootstrap-${bootstrap_phone:+invalid}-$RANDOM"
+  set +e
+  bootstrap_failure_output="$(BOOTSTRAP_ADMIN_PHONE="$bootstrap_phone" run_deploy "$bootstrap_failure_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+  bootstrap_failure_status="$?"
+  set -e
+  [[ "$bootstrap_failure_status" != 0 ]] || fail 'missing or invalid bootstrap administrator phone was accepted'
+  ! grep -Eq '^expressa-deploy: phase=' <<< "$bootstrap_failure_output" || fail 'invalid bootstrap administrator phone reached a deployment phase'
+  ! grep -Eqi 'leaked|postgresql://|password=' <<< "$bootstrap_failure_output" || fail 'bootstrap administrator phone validation leaked diagnostics'
+  grep -Fqx 'deploy: BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX' <<< "$bootstrap_failure_output" || fail 'bootstrap administrator phone failure did not report safe error'
+  [[ ! -e "$bootstrap_failure_root/development/state/.deploy.lock" && ! -e "$bootstrap_failure_root/docker.log" ]] || fail 'invalid bootstrap administrator phone reached remote mutation'
+done
 
 partial_root="$temporary_directory/partial"
 run_deploy "$partial_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"
@@ -257,6 +298,17 @@ assert_phase_failure "$phase_migrate_output" migrate
 grep -Fqx 'deploy: migration failed' <<< "$phase_migrate_output" || fail 'migration failure did not report safe error'
 assert_first_deploy_rollback "$phase_migrate_root"
 [[ "$(find "$phase_migrate_root/development/backups" -name 'postgres-*.sql.gz' -type f | wc -l | tr -d ' ')" == 1 ]] || fail 'migration rollback removed database backup'
+
+phase_seed_root="$temporary_directory/phase-seed"
+set +e
+phase_seed_output="$(FAIL_SEED=1 run_deploy "$phase_seed_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_seed_status="$?"
+set -e
+[[ "$phase_seed_status" != 0 ]] || fail 'seed failure was accepted'
+assert_phase_failure "$phase_seed_output" seed
+grep -Fqx 'deploy: seed failed' <<< "$phase_seed_output" || fail 'seed failure did not report safe error'
+assert_first_deploy_rollback "$phase_seed_root"
+assert_bootstrap_secret_absent "$phase_seed_root"
 
 phase_backend_smoke_root="$temporary_directory/phase-backend-smoke"
 set +e

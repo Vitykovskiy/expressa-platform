@@ -15,8 +15,10 @@
 
 ## Сборка и registry
 
-`development-delivery.yml` на `main` запускает три вызова `delivery-component.yml`. Каждый создаёт SSH-tunnel к Docker Distribution, слушающему только `127.0.0.1:5000` на VPS, и публикует образ как `127.0.0.1:5000/expressa/<компонент>@sha256:…`. Пять environment-scoped SSH secrets: `EXPRESSA_VPS_HOST`, `EXPRESSA_VPS_PORT`, `EXPRESSA_VPS_DEPLOY_USER`, `EXPRESSA_VPS_DEPLOY_SSH_KEY`, `EXPRESSA_VPS_KNOWN_HOSTS`.
+`development-delivery.yml` на `main` запускает три вызова `delivery-component.yml`. Каждый создаёт SSH-tunnel к Docker Distribution, слушающему только `127.0.0.1:5000` на VPS, и публикует образ как `127.0.0.1:5000/expressa/<компонент>@sha256:…`. Deploy-job использует environment-scoped SSH secrets `EXPRESSA_VPS_HOST`, `EXPRESSA_VPS_PORT`, `EXPRESSA_VPS_DEPLOY_USER`, `EXPRESSA_VPS_DEPLOY_SSH_KEY`, `EXPRESSA_VPS_KNOWN_HOSTS` и `BOOTSTRAP_ADMIN_PHONE`.
 
 Тег `sha-<полный SHA>` write-once: если он уже существует, workflow использует его проверенный canonical digest; иначе строит и сверяет опубликованный digest. Компонентный тег выпуска создаёт alias `vX.Y.Z` того же SHA-digest без пересборки. Проверки приложений остаются в `backend-ci.yml`, `front-office-ci.yml` и `back-office-ci.yml`.
 
 `staging-deploy.yml` принимает тег `staging-vX.Y.Z` и ровно три ссылки из [staging manifest](../../deploy/staging.env). Он не использует изменяемые теги. Production workflow отсутствует.
+
+`BOOTSTRAP_ADMIN_PHONE` обязателен только в deploy-job `development` и `staging`, имеет формат `+7XXXXXXXXXX` и передаётся по SSH stdin для idempotent seed сразу после миграций. Он не попадает в runtime-файл, deployment state, backup или диагностику workflow.
