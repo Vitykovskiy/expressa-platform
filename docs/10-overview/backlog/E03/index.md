@@ -1,13 +1,14 @@
 # E03 — Storybook back-office
 
-Статус: verification.
+Статус: complete.
 
 В `back-office` перенесены runtime UI, design tokens, fixtures и истории
 готового Admin Storybook. Каталог содержит 66 stories; точное соответствие
 исходному `index.json` проверяется при каждой сборке. Локально все stories
 завершились в Chromium, а полный визуальный прогон не выявил содержательных
-отличий от исходного статического Storybook. Финальный статус подтверждается CI
-текущего commit в [PR #1](https://github.com/Vitykovskiy/expressa-platform/pull/1).
+отличий от исходного статического Storybook. Финальный статус подтверждён commit
+`ba74584`, [Back-office CI 30770892305](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30770892305)
+и его Docker job в [PR #1](https://github.com/Vitykovskiy/expressa-platform/pull/1).
 
 | Карточка | Статус | Доказательство |
 | --- | --- | --- |
