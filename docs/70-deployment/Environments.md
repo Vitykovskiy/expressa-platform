@@ -2,28 +2,28 @@
 
 | Среда | Назначение | Текущее состояние |
 | --- | --- | --- |
-| `local` | Разработка одного приложения с его локальной конфигурацией. | доступна по файлам приложений |
-| `development` | Общий совместимый стенд команды; оба клиента обращаются к backend через same-origin `/api/v1`. | топология и runtime подготовлены; образов и контейнеров приложений нет |
-| `staging` | Демонстрация и приёмка согласованного набора выпусков. | топология и runtime подготовлены; манифест, тег, образы и контейнеры приложений отсутствуют |
-| `production` | Рабочая среда кофейни после MVP. | не реализована и не разворачивается |
+| `local` | Разработка одного приложения. | доступна по файлам приложений |
+| `development` | Совместимый стенд команды. | развёрнут и проверен |
+| `staging` | Демонстрация и приёмка зафиксированного набора выпусков. | развёрнут и проверен |
+| `production` | Рабочая среда кофейни после MVP. | не реализована |
 
-Отдельной среды поставки `test` нет: тесты выполняются в CI и в локальном окружении.
+Отдельной среды поставки `test` нет: тесты выполняются в CI и локально.
 
-## Изоляция на VPS
+## Топология VPS
 
-Санитизированный контролируемый аудит VPS подтверждает, что bootstrap успешно применён дважды, а последующая read-only приёмка подтвердила топологию и runtime-файлы. Один VPS содержит независимые Docker-сети `expressa-development-edge`/`expressa-development-data` и `expressa-staging-edge`/`expressa-staging-data`. Сеть `data` каждой среды внутренняя; PostgreSQL не публикует порт на хост. Shared Caddy подключён только к обеим `edge`-сетям и направляет HTTPS-трафик в контейнеры. Nginx принимает HTTP и перенаправляет его на HTTPS. Аудит не выявил образов или контейнеров приложений.
+Один VPS содержит независимые сети `expressa-development-edge`/`expressa-development-data` и `expressa-staging-edge`/`expressa-staging-data`. Bootstrap владеет созданием обеих сетей; Compose подключает их как external, а Docker задаёт data-сетям `Internal=true`. Поэтому PostgreSQL и межсредовой трафик не получают хостовые порты.
+
+Shared Caddy подключён к edge-сетям, Nginx перенаправляет HTTP на HTTPS. UI-домены проксируют `/api/v1` в backend той же среды; API-домены проксируют backend целиком.
 
 | Среда | Front-office | Back-office | API |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | development | `https://dev.expressa.vitykovskiy.ru` | `https://admin.dev.expressa.vitykovskiy.ru` | `https://api.dev.expressa.vitykovskiy.ru` |
 | staging | `https://staging.expressa.vitykovskiy.ru` | `https://admin.staging.expressa.vitykovskiy.ru` | `https://api.staging.expressa.vitykovskiy.ru` |
 
-Маршруты `/api/v1` на UI-доменах проксируются в backend той же среды. API-домены проксируют backend целиком. Caddy-блок создан [[Operations-runbook|bootstrap VPS]], но без контейнеров приложений эти адреса не являются доказательством доступности приложения.
+Клиенты собраны с `VITE_API_BASE_URL=/`; browser-проверки после поставки подтвердили same-origin `/api/v1` и health backend на обоих стендах.
 
-## Конфигурация запуска
+## Runtime и образы
 
-На VPS секрет базы лежит только в `/srv/expressa/development/runtime.env` или `/srv/expressa/staging/runtime.env`. В каждом файле ровно `POSTGRES_PASSWORD`; владелец `root`, группа deploy-пользователя, режим `0640`. Скрипт поставки проверяет эти инварианты до запуска Compose. Значения, доступы SSH и параметры GitHub Secrets в документации не хранятся.
+Секрет базы хранится отдельно в `/srv/expressa/development/runtime.env` и `/srv/expressa/staging/runtime.env`; значение и доступы не документируются. Состояния `state/current` и `state/previous` содержат только immutable digest-ссылки.
 
-Образы и состояние развёртывания разделены каталогами `/srv/expressa/{development,staging}`. `deploy.sh` создаёт digest-состояния `state/current` и `state/previous` с режимом `0600` и локальные архивы базы в `backups/`.
-
-Правила образов и выпуска — в [[Release-and-version-compatibility]].
+Docker Distribution постоянно хранит registry-data в `/srv/expressa/registry/data`, доступен только на loopback `127.0.0.1:5000` и запрещает удаление. CI достигает его исключительно через SSH-tunnel. Версии и выпуск — в [[Release-and-version-compatibility]].

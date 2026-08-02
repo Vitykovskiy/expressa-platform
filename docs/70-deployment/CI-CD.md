@@ -1,32 +1,22 @@
 # CI/CD
 
-`Vitykovskiy/expressa-platform` — единственный удалённый репозиторий проекта. Проверки и поставка определены в `.github/workflows/`; этот документ описывает их фактический контракт и не заменяет журналы GitHub Actions.
+`Vitykovskiy/expressa-platform` поставляет три приложения в `development` и `staging` через локальный Docker Distribution на VPS. Контракт workflow находится в `.github/workflows/`; этот документ фиксирует его и подтверждённые запуски.
 
-## Текущее доказательство
+## Подтверждённые поставки
 
-| Проверка | Запуск | Состояние |
+| Контур | Доказательство | Результат |
 | --- | --- | --- |
-| Backend CI | [30727498998](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727498998) | успешно |
-| Front-office CI | [30727498999](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727498999) | успешно |
-| Back-office CI | [30727499014](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727499014) | успешно |
-| Development delivery | [30727499044](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727499044) | неуспешно: GitHub Actions не авторизован для записи образов в GHCR |
-| Development delivery | [30727857548](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727857548) | неуспешно: GitHub Actions не авторизован для записи образов в GHCR |
+| Development | [30735364048](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735364048), [30735790708](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735790708) | три образа собраны и набор развёрнут по digest |
+| Компонентные выпуски | [backend 30735636515](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735636515), [front-office 30735636307](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735636307), [back-office 30735636319](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735636319) | release aliases созданы без пересборки |
+| Staging | [30735801548](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735801548) | набор из `deploy/staging.env` развёрнут по digest |
+| Ручной откат development | [30736219164](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30736219164) | откат компонента выполнен; последующее восстановление подтверждено job [91465546760](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30735790708/job/91465546760) |
 
-Запуски `main` только пытались собрать и опубликовать образы: авторизация остановила их до публикации GHCR-пакетов. Образов и контейнеров приложений нет, успешной поставки в `development` нет. Нет staging-манифеста и тега `staging-vX.Y.Z`.
+После поставок browser-проверки подтвердили same-origin `/api/v1` на UI-доменах, а `/health/live` и `/health/ready` backend доступны на обоих стендах.
 
-## Проверки приложений
+## Сборка и registry
 
-- `backend-ci.yml`: `npm ci`, lint, typecheck, модульные и интеграционные тесты PostgreSQL, проверка OpenAPI, production build и Docker build.
-- `front-office-ci.yml` и `back-office-ci.yml`: `npm ci`, lint, typecheck, тесты, Storybook interaction и accessibility, визуальная регрессия, Storybook build, application build и Docker build.
+`development-delivery.yml` на `main` запускает три вызова `delivery-component.yml`. Каждый создаёт SSH-tunnel к Docker Distribution, слушающему только `127.0.0.1:5000` на VPS, и публикует образ как `127.0.0.1:5000/expressa/<компонент>@sha256:…`. Пять environment-scoped SSH secrets: `EXPRESSA_VPS_HOST`, `EXPRESSA_VPS_PORT`, `EXPRESSA_VPS_DEPLOY_USER`, `EXPRESSA_VPS_DEPLOY_SSH_KEY`, `EXPRESSA_VPS_KNOWN_HOSTS`.
 
-Ошибка обязательного шага завершает соответствующий workflow с ошибкой.
+Тег `sha-<полный SHA>` write-once: если он уже существует, workflow использует его проверенный canonical digest; иначе строит и сверяет опубликованный digest. Компонентный тег выпуска создаёт alias `vX.Y.Z` того же SHA-digest без пересборки. Проверки приложений остаются в `backend-ci.yml`, `front-office-ci.yml` и `back-office-ci.yml`.
 
-## Поставка
-
-`development-delivery.yml` на `main` предназначен для сборки трёх образов и передачи в VPS неизменяемых digest-ссылок. `delivery-component.yml` разрешает только пары component/context/image: `backend`/`expressa-backend`, `front-office`/`expressa-front-office`, `back-office`/`expressa-back-office`.
-
-Имена пакетов двухуровневые и фиксированы: `ghcr.io/vitykovskiy/expressa-backend`, `ghcr.io/vitykovskiy/expressa-front-office`, `ghcr.io/vitykovskiy/expressa-back-office`. При успешной публикации коммит `main` получает тег `sha-<полный SHA>`; развёртывание принимает только `@sha256:…`.
-
-Компонентный тег `backend-vX.Y.Z`, `front-office-vX.Y.Z` или `back-office-vX.Y.Z` не пересобирает образ: workflow проверяет версию и changelog, затем создаёт тег `vX.Y.Z` для уже опубликованного digest. `staging-deploy.yml` принимает только тег `staging-vX.Y.Z`, заголовок changelog и `deploy/staging.env` с тремя digest-ссылками. Манифест и staging-тег пока отсутствуют.
-
-Поставка в `production` не реализована и не запускается. Порядок сред — в [[Environments]], операционный порядок — в [[Operations-runbook]], выпуск — в [[Release-and-version-compatibility]].
+`staging-deploy.yml` принимает тег `staging-vX.Y.Z` и ровно три ссылки из [staging manifest](../../deploy/staging.env). Он не использует изменяемые теги. Production workflow отсутствует.

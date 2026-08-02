@@ -17,12 +17,12 @@
 | [[delivery/BL-0011\|BL-0011]] | complete | Backend Dockerfile непривилегирован, имеет health-check; Docker build прошёл CI. |
 | [[delivery/BL-0012\|BL-0012]] | complete | Front-office Dockerfile непривилегирован, имеет health-check; Docker build прошёл CI. |
 | [[delivery/BL-0013\|BL-0013]] | complete | Back-office Dockerfile непривилегирован, имеет health-check; Docker build прошёл CI. |
-| [[delivery/BL-0014\|BL-0014]] | in progress | Bootstrap и изоляция VPS приняты read-only аудитом; контейнеры приложений отсутствуют. |
-| [[delivery/BL-0015\|BL-0015]] | in progress | Backend CI успешен; development deploy и tagged staging не доказаны. |
-| [[delivery/BL-0016\|BL-0016]] | in progress | Front-office CI успешен; development E2E и tagged staging не доказаны. |
-| [[delivery/BL-0017\|BL-0017]] | in progress | Back-office CI успешен; development E2E и tagged staging не доказаны. |
-| [[delivery/BL-0018\|BL-0018]] | blocked | Два development delivery запуска остановились на GHCR package authorization; приложения не развёрнуты. |
-| [[delivery/BL-0019\|BL-0019]] | blocked | Нет опубликованных release digest, staging-манифеста и staging-тега. |
+| [[delivery/BL-0014\|BL-0014]] | complete | Local/development/staging/production определены; development и staging развернуты, production отсутствует по плану. |
+| [[delivery/BL-0015\|BL-0015]] | complete | Backend CI, development delivery и tagged staging подтверждены успешными runs. |
+| [[delivery/BL-0016\|BL-0016]] | complete | Front-office CI, same-origin browser-check и tagged staging подтверждены runs. |
+| [[delivery/BL-0017\|BL-0017]] | complete | Back-office CI, same-origin browser-check и tagged staging подтверждены runs. |
+| [[delivery/BL-0018\|BL-0018]] | complete | `main` автоматически развернул development; набор проверен по health и browser-check. |
+| [[delivery/BL-0019\|BL-0019]] | in progress | Компонентные и staging-теги с immutable manifest доказаны; production promotion отсутствует. |
 
 ## Карточки
 

@@ -1,21 +1,21 @@
 # Операционный порядок VPS
 
-Этот runbook описывает подготовленные артефакты E01. Санитизированный контролируемый аудит VPS подтверждает два успешных применения bootstrap и последующую read-only приёмку топологии/runtime без записи в систему. Сейчас поставка блокируется авторизацией GitHub Actions в GHCR; образов и контейнеров приложений нет.
+Этот runbook описывает действующую поставку `development` и `staging`. Секреты, host, IP, логины и ключи не записываются в репозиторий или документацию.
 
-## Подготовка
+## Инфраструктура
 
-Администратор запускает `sudo ./deploy/bootstrap-vps.sh` из проверенного checkout. Скрипт создаёт deploy-пользователя и каталоги `/srv/expressa`, копирует `compose.yml` и `deploy.sh`, создаёт отдельные edge/data сети обеих сред, создаёт закрытые `runtime.env`, добавляет Caddy-маршруты и HTTP→HTTPS redirect Nginx. Перед изменением Caddy и Nginx сохраняются копии в `/var/backups/expressa-infra/<UTC-время>/`; при ошибке скрипт восстанавливает `Caddyfile`, конфигурационный файл Nginx, прежнее состояние ссылки в `sites-enabled` и сетевые подключения, добавленные текущим запуском.
+`sudo ./deploy/bootstrap-vps.sh` создаёт deploy-пользователя, каталоги `/srv/expressa`, runtime-файлы, bootstrap-owned Docker-сети, локальный registry и маршруты Caddy/Nginx. Registry хранит данные в `/srv/expressa/registry/data`, слушает только `127.0.0.1:5000`, имеет отключённое удаление и проверяется bootstrap до завершения.
 
-Bootstrap проверяет Caddy и Nginx до reload. Не изменяйте managed-блок Caddy вручную: его источником истины является `deploy/bootstrap-vps.sh`.
+Перед изменением маршрутов bootstrap сохраняет Caddyfile, конфигурационный файл Nginx и состояние ссылки в `sites-enabled`. При ошибке он восстанавливает их и отключает сетевые подключения Caddy, добавленные текущим запуском.
 
-## Поставка и откат
+## Поставка
 
-Поставка запускается workflow с GitHub environment `development` или `staging`. Временный SSH-ключ, known hosts и GHCR-токен существуют только на время job; на VPS GHCR вход выполняется во временный Docker config. Образы разрешены только по canonical digest и публикуемых портов сервисов нет.
+`development-delivery.yml` автоматически публикует write-once SHA-образы через временный SSH-tunnel и развёртывает набор digest-ссылок. `staging-deploy.yml` принимает только tagged staging manifest из [deploy/staging.env](../../deploy/staging.env). Локальный registry не открыт сети; CI использует пять environment-scoped SSH secrets, перечисленных в [[CI-CD]].
 
-`deploy.sh --environment development|staging deploy all|backend|front|back` берёт блокировку среды, проверяет свободное место и `runtime.env`, создаёт backup базы перед миграцией backend, ожидает health-check и обновляет `state/current` и `state/previous`. При неуспехе текущей поставки скрипт восстанавливает затронутые контейнеры. Ручной откат использует `rollback` с теми же вариантами цели.
+`deploy.sh --environment development|staging deploy all|backend|front|back` берёт блокировку, проверяет `runtime.env`, сохраняет базу перед backend-миграцией, ждёт health-check и обновляет `state/current`/`state/previous`. При неуспехе текущей поставки он восстанавливает изменённые сервисы.
 
-После первой успешной поставки оператор проверяет три HTTPS-домена среды, `/health/live`, `/health/ready` и наличие `state/current`. До этого любые проверки URL должны считаться неуспешными.
+## Откат
 
-## Границы
+`development-rollback.yml` запускается вручную только для `backend`, `front` или `back` и возвращает выбранный сервис к digest из `state/previous`. Workflow разделяет concurrency group с development delivery. Выполненный запуск и последующее восстановление приведены в [[CI-CD]].
 
-Production отсутствует. Не используйте `latest`, не публикуйте порты PostgreSQL или приложений на хост, не переносите секреты в Git, документацию или state-файлы. Полный restore drill и регулярный backup не входят в этот runbook до реализации E12.
+Production отсутствует. Регулярный backup, restore drill и наблюдаемые alerts остаются работой E12.

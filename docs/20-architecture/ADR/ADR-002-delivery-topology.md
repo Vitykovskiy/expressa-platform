@@ -1,6 +1,6 @@
 ---
 title: Топология поставки E01
-description: Изолированные development и staging на одном VPS с неизменяемыми GHCR-образами.
+description: Изолированные development и staging на одном VPS с локальным Docker Distribution.
 type: adr
 area: architecture
 status: accepted
@@ -16,21 +16,17 @@ related: ["[[../Repository-boundaries]]", "[[../../70-deployment/Environments]]"
 
 ## Контекст
 
-Три приложения нужно совместно проверять без локального backend у каждого клиента, при этом один VPS уже обслуживает shared Caddy и Nginx. Development и staging не должны смешивать базу, контейнеры или маршруты. Удалённый GitHub-репозиторий проекта — `Vitykovskiy/expressa-platform`; рабочая структура монорепозитория остаётся определённой ADR-001.
+Клиентам нужен совместимый backend без локального запуска, а development и staging не должны делить базу, контейнеры или маршруты. Поставка должна обходиться без внешнего registry и не раскрывать registry в сети.
 
 ## Решение
 
-На одном VPS используются две независимые Compose-проекции: `expressa-development` и `expressa-staging`. У каждой есть внешняя edge-сеть и внутренняя data-сеть, собственный PostgreSQL volume, runtime-секрет и состояние поставки. Shared Caddy подключается к edge-сетям и обслуживает по три HTTPS-домена на среду; Nginx перенаправляет HTTP на HTTPS. Санитизированный контролируемый аудит подтверждает два применения bootstrap и последующую read-only приёмку этой топологии; образов и контейнеров приложений на VPS нет.
+Один VPS несёт две Compose-проекции с отдельными edge/data-сетями и runtime-файлами. Bootstrap создаёт сети, включая внутренние data-сети; Compose использует их как external. Shared Caddy подключён к edge-сетям и обслуживает по три HTTPS-домена на среду.
 
-Поставка принимает только immutable digest-ссылки трёх фиксированных GHCR-пакетов. При успешной авторизации коммиты `main` создают `sha-<полный SHA>` образы для development. Компонентные SemVer-теги создают aliases существующих SHA-digest, а staging получает фиксированный манифест из трёх digest по тегу `staging-vX.Y.Z`.
+На VPS запущен Docker Distribution, доступный только через `127.0.0.1:5000`; данные размещены в `/srv/expressa/registry/data`, удаление отключено. GitHub Actions подключается к registry временным SSH-tunnel. SHA-образы write-once, а компонентные release aliases ссылаются на существующий digest без пересборки. Staging читает точный набор digest-ссылок из `deploy/staging.env`.
 
 ## Последствия
 
-- Одна среда не может обращаться к PostgreSQL другой среды через Docker-сеть.
-- Клиенты используют backend своей среды через same-origin `/api/v1`, без CORS-конфигурации между UI и API-доменом.
-- Откат контейнеров опирается на предыдущее immutable state; миграции не получают автоматического отката.
-- Production не является частью этой топологии и требует отдельного ADR и реализации.
-
-## Статус реализации
-
-Bootstrap применён, Compose и GitHub workflows подготовлены. Реальные application deployment и staging release отсутствуют из-за неразрешённой GHCR-авторизации GitHub Actions; это не меняет принятое архитектурное решение.
+- Данные и контейнеры development/staging изолированы сетями и именами Compose.
+- Registry не имеет внешней публикации; в GitHub environments хранятся только пять SSH-параметров доступа.
+- Откат development выполняется вручную по `state/previous`; изменения схемы базы автоматически не откатываются.
+- Production не является частью решения.
