@@ -31,12 +31,9 @@ on:
       EXPRESSA_VPS_KNOWN_HOSTS:
         required: true
     outputs:
-      image_reference:
-        description: Immutable private-registry image reference.
-        value: ${{ jobs.build.outputs.image_reference }}
-      digest:
-        description: Immutable OCI image digest.
-        value: ${{ jobs.build.outputs.digest }}
+      image_reference_base64:
+        description: Base64-encoded immutable private-registry image reference.
+        value: ${{ jobs.build.outputs.image_reference_base64 }}
 
 permissions:
   contents: read
@@ -52,8 +49,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ inputs.deployment_environment }}
     outputs:
-      image_reference: ${{ steps.image.outputs.image_reference }}
-      digest: ${{ steps.image.outputs.digest }}
+      image_reference_base64: ${{ steps.image.outputs.image_reference_base64 }}
     steps:
       - name: Checkout
         # actions/checkout v5.1.0
@@ -325,7 +321,5 @@ jobs:
             exit 1
           fi
 
-          {
-            printf 'digest=%s\n' "$digest"
-            printf 'image_reference=%s@%s\n' "$remote_repository" "$digest"
-          } >> "$GITHUB_OUTPUT"
+          image_reference="$remote_repository@$digest"
+          printf 'image_reference_base64=%s\n' "$(printf '%s' "$image_reference" | base64 --wrap=0)" >> "$GITHUB_OUTPUT"

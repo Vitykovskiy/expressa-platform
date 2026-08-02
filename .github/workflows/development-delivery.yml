@@ -71,9 +71,9 @@ jobs:
     environment: development
     permissions: {}
     env:
-      BACKEND_IMAGE: ${{ needs.backend.outputs.image_reference }}
-      FRONT_IMAGE: ${{ needs.front_office.outputs.image_reference }}
-      BACK_IMAGE: ${{ needs.back_office.outputs.image_reference }}
+      BACKEND_IMAGE_BASE64: ${{ needs.backend.outputs.image_reference_base64 }}
+      FRONT_IMAGE_BASE64: ${{ needs.front_office.outputs.image_reference_base64 }}
+      BACK_IMAGE_BASE64: ${{ needs.back_office.outputs.image_reference_base64 }}
       DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
       DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
       DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
@@ -87,7 +87,7 @@ jobs:
 
           temporary_directory="$(mktemp -d)"
           cleanup() {
-            unset BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS
+            unset BACKEND_IMAGE_BASE64 FRONT_IMAGE_BASE64 BACK_IMAGE_BASE64 BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS
             rm -rf "$temporary_directory"
           }
           trap cleanup EXIT HUP INT TERM
@@ -115,6 +115,23 @@ jobs:
             printf '%s\n' 'deployment SSH credentials are required' >&2
             exit 1
           }
+          decode_image_reference() {
+            local component="$1"
+            local encoded_image="$2"
+
+            [[ -n "$encoded_image" ]] || {
+              printf '%s image output is required\n' "$component" >&2
+              exit 1
+            }
+            [[ "$encoded_image" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] || {
+              printf '%s image output must be Base64\n' "$component" >&2
+              exit 1
+            }
+            printf '%s' "$encoded_image" | base64 --decode
+          }
+          BACKEND_IMAGE="$(decode_image_reference backend "$BACKEND_IMAGE_BASE64")"
+          FRONT_IMAGE="$(decode_image_reference front-office "$FRONT_IMAGE_BASE64")"
+          BACK_IMAGE="$(decode_image_reference back-office "$BACK_IMAGE_BASE64")"
           [[ "$BACKEND_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/backend@sha256:[a-f0-9]{64}$ ]] || {
             printf '%s\n' 'backend image must be an immutable loopback registry digest' >&2
             exit 1
