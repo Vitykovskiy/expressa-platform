@@ -13,7 +13,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: development-deployment
@@ -27,6 +26,13 @@ jobs:
       component: backend
       context: backend
       image: expressa-backend
+      deployment_environment: development
+    secrets:
+      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
 
   front_office:
     name: Build front-office development image
@@ -35,6 +41,13 @@ jobs:
       component: front-office
       context: front-office
       image: expressa-front-office
+      deployment_environment: development
+    secrets:
+      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
 
   back_office:
     name: Build back-office development image
@@ -43,14 +56,20 @@ jobs:
       component: back-office
       context: back-office
       image: expressa-back-office
+      deployment_environment: development
+    secrets:
+      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
 
   deploy:
     name: Deploy immutable development set
     needs: [backend, front_office, back_office]
     runs-on: ubuntu-24.04
     environment: development
-    permissions:
-      packages: read
+    permissions: {}
     env:
       BACKEND_IMAGE: ${{ needs.backend.outputs.image_reference }}
       FRONT_IMAGE: ${{ needs.front_office.outputs.image_reference }}
@@ -60,8 +79,6 @@ jobs:
       DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
       DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
       DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-      GHCR_USERNAME: ${{ github.actor }}
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Deploy immutable image set by SSH
         shell: bash
@@ -70,7 +87,7 @@ jobs:
 
           temporary_directory="$(mktemp -d)"
           cleanup() {
-            unset BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS GHCR_USERNAME GHCR_TOKEN
+            unset BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS
             rm -rf "$temporary_directory"
           }
           trap cleanup EXIT HUP INT TERM
@@ -98,16 +115,16 @@ jobs:
             printf '%s\n' 'deployment SSH credentials are required' >&2
             exit 1
           }
-          [[ "$BACKEND_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-backend@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'backend image must be the canonical immutable package digest' >&2
+          [[ "$BACKEND_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/backend@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'backend image must be an immutable loopback registry digest' >&2
             exit 1
           }
-          [[ "$FRONT_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-front-office@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'front-office image must be the canonical immutable package digest' >&2
+          [[ "$FRONT_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/front-office@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'front-office image must be an immutable loopback registry digest' >&2
             exit 1
           }
-          [[ "$BACK_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-back-office@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'back-office image must be the canonical immutable package digest' >&2
+          [[ "$BACK_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/back-office@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'back-office image must be an immutable loopback registry digest' >&2
             exit 1
           }
 
@@ -136,8 +153,6 @@ jobs:
           chmod 600 "$private_key" "$known_hosts" "$ssh_config"
 
           {
-            printf 'export GHCR_USERNAME=%q\n' "$GHCR_USERNAME"
-            printf 'export GHCR_TOKEN=%q\n' "$GHCR_TOKEN"
             printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
             printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
             printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"

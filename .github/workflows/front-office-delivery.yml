@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   deliver:
@@ -15,3 +14,10 @@ jobs:
       component: front-office
       context: front-office
       image: expressa-front-office
+      deployment_environment: development
+    secrets:
+      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}

@@ -9,7 +9,6 @@ infrastructure_directory="$(CDPATH='' cd -- "$script_directory/.." && pwd -P)"
 readonly infrastructure_directory
 readonly compose_file="$infrastructure_directory/compose.yml"
 readonly docker_bin="${DEPLOY_DOCKER_BIN:-docker}"
-readonly flock_bin="${DEPLOY_FLOCK_BIN:-flock}"
 readonly minimum_free_kb="${DEPLOY_MIN_FREE_KB:-1048576}"
 
 usage() { printf '%s\n' 'Usage: deploy.sh --environment development|staging deploy|rollback all|backend|front|back' >&2; exit 64; }
@@ -21,13 +20,12 @@ validate_environment() {
   case "$environment" in development|staging) ;; *) fail 'only development and staging are supported' ;; esac
   [[ "$minimum_free_kb" =~ ^[0-9]+$ ]] || fail 'DEPLOY_MIN_FREE_KB must be an integer'
   validate_path_command "$docker_bin"
-  validate_path_command "$flock_bin"
 }
 
 validate_identifier() { [[ "$1" =~ ^[A-Za-z0-9_]{1,63}$ ]] || fail "$2 must contain only letters, digits, or underscores"; }
 validate_app_image() {
   local value="$1" package="$2" name="$3"
-  [[ "$value" =~ ^ghcr\.io/vitykovskiy/$package@sha256:[a-f0-9]{64}$ ]] || fail "$name must use canonical package $package and a sha256 digest"
+  [[ "$value" =~ ^127\.0\.0\.1:5000/expressa/$package@sha256:[a-f0-9]{64}$ ]] || fail "$name must use local registry package $package and a sha256 digest"
 }
 
 parse_runtime() {
@@ -68,15 +66,6 @@ validate_runtime() {
   DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 }
 
-capture_registry_credentials() {
-  : "${GHCR_USERNAME:?GHCR_USERNAME is required}"
-  : "${GHCR_TOKEN:?GHCR_TOKEN is required}"
-  [[ "$GHCR_USERNAME" =~ ^[A-Za-z0-9-]{1,39}$ ]] || fail 'GHCR_USERNAME is invalid'
-  [[ "$GHCR_TOKEN" != *$'\n'* && "$GHCR_TOKEN" != *$'\r'* ]] || fail 'GHCR_TOKEN is invalid'
-  registry_username="$GHCR_USERNAME"; registry_token="$GHCR_TOKEN"
-  export -n registry_username registry_token
-}
-
 state_mode() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
 
 load_state() {
@@ -101,9 +90,9 @@ load_state() {
     [[ "|$state_keys|" == *"|$key|"* ]] || fail "invalid state file: $file"
   done
   current_backend="$state_backend"; current_front="$state_front"; current_back="$state_back"
-  validate_app_image "$current_backend" expressa-backend BACKEND_IMAGE
-  validate_app_image "$current_front" expressa-front-office FRONT_IMAGE
-  validate_app_image "$current_back" expressa-back-office BACK_IMAGE
+  validate_app_image "$current_backend" backend BACKEND_IMAGE
+  validate_app_image "$current_front" front-office FRONT_IMAGE
+  validate_app_image "$current_back" back-office BACK_IMAGE
   unset state_keys state_deploy_env state_backend state_front state_back
 }
 
@@ -160,24 +149,18 @@ smoke_backend() { compose exec -T backend /nodejs/bin/node -e "fetch('http://127
 smoke_web() { compose exec -T "$1" wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health; }
 ensure_edge_network() { "$docker_bin" network inspect "expressa-${environment}-edge" >/dev/null 2>&1 || "$docker_bin" network create "expressa-${environment}-edge" >/dev/null; }
 
-registry_login() {
-  local token="$registry_token"
-  unset registry_token
-  registry_config="$(mktemp -d "$state_directory/.docker-config.XXXXXX")"
-  chmod 700 "$registry_config"
-  if ! printf '%s' "$token" | "$docker_bin" --config "$registry_config" login ghcr.io --username "$registry_username" --password-stdin >/dev/null; then
-    unset token registry_username
-    fail 'registry login failed'
-  fi
-  unset token registry_username
+pull_images() { compose pull "$@"; }
+
+deployment_lock_is_held() {
+  local descriptor descriptor_info
+  [[ "${DEPLOY_LOCK_HELD:-}" == 1 ]] || return 1
+  for descriptor in "/proc/$$/fd"/[0-9]*; do
+    [[ "$(readlink -f "$descriptor")" == "$deployment_lock_file" ]] || continue
+    descriptor_info="/proc/$$/fdinfo/${descriptor##*/}"
+    grep -Eq "^lock:.*FLOCK[[:space:]]+ADVISORY[[:space:]]+WRITE[[:space:]]+$$([[:space:]]|$)" "$descriptor_info" && return 0
+  done
+  return 1
 }
-registry_logout() {
-  unset DOCKER_CONFIG
-  [[ -z "${registry_config:-}" ]] || "$docker_bin" --config "$registry_config" logout ghcr.io >/dev/null 2>&1 || true
-  [[ -z "${registry_config:-}" ]] || rm -rf "$registry_config"
-  unset registry_config
-}
-pull_images() { registry_login; export DOCKER_CONFIG="$registry_config"; compose pull "$@"; registry_logout; }
 
 restore_changed_service() {
   local service="$1" changed="$2" current="$3"
@@ -201,7 +184,7 @@ rollback_service() {
   compose up -d --no-deps "$service"; wait_for_health "$service"
   case "$service" in backend) smoke_backend ;; front|back) smoke_web "$service" ;; esac
 }
-on_exit() { local status="$1"; [[ "$status" == 0 ]] || rollback_changed; registry_logout; trap - EXIT; exit "$status"; }
+on_exit() { local status="$1"; [[ "$status" == 0 ]] || rollback_changed; trap - EXIT; exit "$status"; }
 on_signal() { exit "$2"; }
 
 [[ "$#" == 4 && "$1" == --environment ]] || usage
@@ -217,19 +200,19 @@ readonly state_directory="$deploy_root/state"
 readonly backup_directory="$deploy_root/backups"
 readonly current_state="$state_directory/current"
 readonly previous_state="$state_directory/previous"
-capture_registry_credentials
-unset DATABASE_URL POSTGRES_IMAGE GHCR_USERNAME GHCR_TOKEN POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
+readonly deployment_lock_file="$deploy_root/.deploy.lock"
+if [[ "${DEPLOY_LOCK_HELD:-}" != 1 ]]; then
+  exec flock --no-fork --exclusive --nonblock --conflict-exit-code 75 "$deployment_lock_file" env DEPLOY_LOCK_HELD=1 "$0" "$@"
+fi
+deployment_lock_is_held || fail 'deployment lock is not held'
+unset DATABASE_URL POSTGRES_IMAGE POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD GHCR_USERNAME GHCR_TOKEN DOCKER_CONFIG
 mkdir -p "$state_directory" "$backup_directory"
 chmod 700 "$state_directory" "$backup_directory"
-exec 9>"$state_directory/deploy.lock"
-"$flock_bin" -n 9 || fail "another $environment deployment is running"
 rollback_required=0; changed_postgres=0; changed_backend=0; changed_front=0; changed_back=0
 trap 'on_exit "$?"' EXIT
 trap 'on_signal TERM 143' TERM
 trap 'on_signal INT 130' INT
 trap 'on_signal HUP 129' HUP
-unset DOCKER_CONFIG
-
 available_kb="$(df -Pk "$deploy_root" | awk 'NR == 2 { print $4 }')"
 [[ "$available_kb" =~ ^[0-9]+$ && "$available_kb" -ge "$minimum_free_kb" ]] || fail 'insufficient free disk space'
 parse_runtime; validate_runtime
@@ -242,19 +225,19 @@ if [[ "$operation" == deploy ]]; then
     all)
       : "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"; : "${FRONT_IMAGE:?FRONT_IMAGE is required}"; : "${BACK_IMAGE:?BACK_IMAGE is required}"
       desired_backend="$BACKEND_IMAGE"; desired_front="$FRONT_IMAGE"; desired_back="$BACK_IMAGE"
-      validate_app_image "$desired_backend" expressa-backend BACKEND_IMAGE; validate_app_image "$desired_front" expressa-front-office FRONT_IMAGE; validate_app_image "$desired_back" expressa-back-office BACK_IMAGE
+      validate_app_image "$desired_backend" backend BACKEND_IMAGE; validate_app_image "$desired_front" front-office FRONT_IMAGE; validate_app_image "$desired_back" back-office BACK_IMAGE
       next_backend="$desired_backend"; next_front="$desired_front"; next_back="$desired_back"
       ;;
     backend)
-      : "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"; desired_backend="$BACKEND_IMAGE"; validate_app_image "$desired_backend" expressa-backend BACKEND_IMAGE
+      : "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"; desired_backend="$BACKEND_IMAGE"; validate_app_image "$desired_backend" backend BACKEND_IMAGE
       desired_front="$current_front"; desired_back="$current_back"; next_backend="$desired_backend"; next_front="$current_front"; next_back="$current_back"
       ;;
     front)
-      : "${FRONT_IMAGE:?FRONT_IMAGE is required}"; desired_front="$FRONT_IMAGE"; validate_app_image "$desired_front" expressa-front-office FRONT_IMAGE
+      : "${FRONT_IMAGE:?FRONT_IMAGE is required}"; desired_front="$FRONT_IMAGE"; validate_app_image "$desired_front" front-office FRONT_IMAGE
       desired_backend="$current_backend"; desired_back="$current_back"; next_backend="$current_backend"; next_front="$desired_front"; next_back="$current_back"
       ;;
     back)
-      : "${BACK_IMAGE:?BACK_IMAGE is required}"; desired_back="$BACK_IMAGE"; validate_app_image "$desired_back" expressa-back-office BACK_IMAGE
+      : "${BACK_IMAGE:?BACK_IMAGE is required}"; desired_back="$BACK_IMAGE"; validate_app_image "$desired_back" back-office BACK_IMAGE
       desired_backend="$current_backend"; desired_front="$current_front"; next_backend="$current_backend"; next_front="$current_front"; next_back="$desired_back"
       ;;
   esac

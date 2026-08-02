@@ -28,6 +28,72 @@ cat > "$fake_bin/docker" <<'EOF'
 set -Eeuo pipefail
 [[ -z "${FAKE_DOCKER_LOG:-}" ]] || printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
 case " $* " in
+  ' pull '*) ;;
+  ' image inspect '*) printf '%s\n' amd64/linux ;;
+  ' container inspect '*)
+    name="${!#}"
+    state="$FAKE_REGISTRY_STATE_DIR/$name"
+    [[ -f "$state" ]] || exit 1
+    if [[ "$*" != *' --format '* ]]; then exit 0; fi
+    template="$4"
+    image="$(cat "$state")"
+    case "$template" in
+      '{{.Config.Image}}') printf '%s\n' "$image" ;;
+      '{{index .Config.Labels "io.expressa.managed"}}') printf '%s\n' registry ;;
+      '{{.State.Running}}')
+        if [[ -f "$state.stopped" ]]; then printf '%s\n' false; else printf '%s\n' true; fi
+        ;;
+      '{{.HostConfig.RestartPolicy.Name}}') printf '%s\n' unless-stopped ;;
+      '{{.HostConfig.PidsLimit}}') printf '%s\n' 128 ;;
+      '{{.HostConfig.Memory}}') printf '%s\n' 536870912 ;;
+      '{{.HostConfig.MemoryReservation}}') printf '%s\n' 268435456 ;;
+      '{{.HostConfig.NanoCpus}}') printf '%s\n' 1000000000 ;;
+      '{{.HostConfig.LogConfig.Type}}') printf '%s\n' local ;;
+      '{{index .HostConfig.LogConfig.Config "max-size"}}') printf '%s\n' 10m ;;
+      '{{index .HostConfig.LogConfig.Config "max-file"}}') printf '%s\n' 3 ;;
+      '{{json .HostConfig.PortBindings}}')
+        if [[ -f "$state.public" ]]; then
+          printf '%s\n' '{"5000/tcp":[{"HostIp":"0.0.0.0","HostPort":"5000"}]}'
+        else
+          printf '%s\n' '{"5000/tcp":[{"HostIp":"127.0.0.1","HostPort":"5000"}]}'
+        fi
+        ;;
+      '{{json .Mounts}}') printf '[{"Type":"bind","Source":"%s","Destination":"/var/lib/registry","RW":true}]\n' "$FAKE_REGISTRY_DATA_DIRECTORY" ;;
+      '{{json .Config.Env}}')
+        if [[ -f "$state.bad-env" ]]; then
+          printf '%s\n' '["REGISTRY_STORAGE_DELETE_ENABLED=false","REGISTRY_STORAGE_DELETE_ENABLED=true","REGISTRY_HTTP_ADDR=0.0.0.0:5000","REGISTRY_HTTP_ADDR=0.0.0.0:5000"]'
+        else
+          printf '%s\n' '["REGISTRY_STORAGE_DELETE_ENABLED=false","REGISTRY_HTTP_ADDR=0.0.0.0:5000"]'
+        fi
+        ;;
+      *) exit 88 ;;
+    esac
+    ;;
+  ' stop '*) touch "$FAKE_REGISTRY_STATE_DIR/$2.stopped" ;;
+  ' restart '*) rm -f -- "$FAKE_REGISTRY_STATE_DIR/$2.stopped" "$FAKE_REGISTRY_STATE_DIR/$2.unready" ;;
+  ' rename '*)
+    mv -- "$FAKE_REGISTRY_STATE_DIR/$2" "$FAKE_REGISTRY_STATE_DIR/$3"
+    [[ ! -f "$FAKE_REGISTRY_STATE_DIR/$2.public" ]] || mv -- "$FAKE_REGISTRY_STATE_DIR/$2.public" "$FAKE_REGISTRY_STATE_DIR/$3.public"
+    [[ ! -f "$FAKE_REGISTRY_STATE_DIR/$2.bad-env" ]] || mv -- "$FAKE_REGISTRY_STATE_DIR/$2.bad-env" "$FAKE_REGISTRY_STATE_DIR/$3.bad-env"
+    [[ ! -f "$FAKE_REGISTRY_STATE_DIR/$2.stopped" ]] || mv -- "$FAKE_REGISTRY_STATE_DIR/$2.stopped" "$FAKE_REGISTRY_STATE_DIR/$3.stopped"
+    [[ ! -f "$FAKE_REGISTRY_STATE_DIR/$2.unready" ]] || mv -- "$FAKE_REGISTRY_STATE_DIR/$2.unready" "$FAKE_REGISTRY_STATE_DIR/$3.unready"
+    ;;
+  ' rm '*)
+    name="${!#}"
+    rm -f -- "$FAKE_REGISTRY_STATE_DIR/$name" "$FAKE_REGISTRY_STATE_DIR/$name.public" "$FAKE_REGISTRY_STATE_DIR/$name.bad-env" "$FAKE_REGISTRY_STATE_DIR/$name.stopped" "$FAKE_REGISTRY_STATE_DIR/$name.unready"
+    ;;
+  ' start '*) rm -f -- "$FAKE_REGISTRY_STATE_DIR/$2.stopped" ;;
+  ' run '*)
+    [[ "${FAIL_REGISTRY_RUN:-}" != 1 ]] || exit 32
+    name=''
+    for (( index = 1; index <= $#; index++ )); do
+      [[ "${!index}" == --name ]] || continue
+      next_index=$((index + 1)); name="${!next_index}"; break
+    done
+    [[ -n "$name" ]] || exit 89
+    printf '%s\n' "${!#}" > "$FAKE_REGISTRY_STATE_DIR/$name"
+    printf '%s\n' fake-registry
+    ;;
   *' config --services '*) printf '%s\n' caddy ;;
   *' ps -q caddy '*) printf '%s\n' fake-caddy ;;
   *' caddy reload '*) [[ "${FAIL_CADDY_RELOAD:-}" != 1 ]] || exit 31 ;;
@@ -55,6 +121,13 @@ case " $* " in
   ' network disconnect '*) rm -f -- "$FAKE_NETWORK_STATE_DIR/$3.caddy" ;;
 esac
 EOF
+cat > "$fake_bin/curl" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+[[ "${!#}" == http://127.0.0.1:5000/v2/ ]] || exit 90
+[[ ! -f "$FAKE_REGISTRY_STATE_DIR/expressa-registry.stopped" ]]
+[[ ! -f "$FAKE_REGISTRY_STATE_DIR/expressa-registry.unready" ]]
+EOF
 cat > "$fake_bin/nginx" <<'EOF'
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -74,7 +147,8 @@ set -Eeuo pipefail
 arguments=()
 while (( "$#" )); do
   case "$1" in
-    --owner|--group) shift 2 ;;
+    --owner) shift 2 ;;
+    --group) arguments+=(--group=12345); shift 2 ;;
     *) arguments+=("$1"); shift ;;
   esac
 done
@@ -103,7 +177,7 @@ if [[ -x /usr/bin/flock ]]; then
 fi
 [[ "$#" == 1 && "$1" =~ ^[0-9]+$ ]] || exit 64
 EOF
-chmod 700 "$fake_bin/docker" "$fake_bin/nginx" "$fake_bin/install" "$fake_bin/chown" "$fake_bin/openssl" "$fake_bin/flock"
+chmod 700 "$fake_bin/docker" "$fake_bin/nginx" "$fake_bin/curl" "$fake_bin/install" "$fake_bin/chown" "$fake_bin/openssl" "$fake_bin/flock"
 chmod 700 "$fake_bin/id"
 
 run_dry() {
@@ -112,13 +186,13 @@ run_dry() {
 
 run_live() {
   local root="$1"
-  mkdir -p -- "$root/network-state"
-  PATH="$fake_bin:$PATH" BOOTSTRAP_ROOT="$root" BOOTSTRAP_BACKUP_ROOT=/backups BOOTSTRAP_DOCKER_BIN="$fake_bin/docker" BOOTSTRAP_NGINX_BIN="$fake_bin/nginx" EXPRESSA_DEPLOY_USER=expressa-deploy FAKE_DOCKER_LOG="$root/docker.log" FAKE_NGINX_LOG="$root/nginx.log" FAKE_NETWORK_STATE_DIR="$root/network-state" bash "$bootstrap_script"
+  mkdir -p -- "$root/network-state" "$root/registry-state"
+  PATH="$fake_bin:$PATH" BOOTSTRAP_ROOT="$root" BOOTSTRAP_BACKUP_ROOT=/backups BOOTSTRAP_DOCKER_BIN="$fake_bin/docker" BOOTSTRAP_NGINX_BIN="$fake_bin/nginx" BOOTSTRAP_CURL_BIN="$fake_bin/curl" EXPRESSA_DEPLOY_USER=expressa-deploy FAKE_DOCKER_LOG="$root/docker.log" FAKE_NGINX_LOG="$root/nginx.log" FAKE_NETWORK_STATE_DIR="$root/network-state" FAKE_REGISTRY_STATE_DIR="$root/registry-state" FAKE_REGISTRY_DATA_DIRECTORY="$root/srv/expressa/registry/data" bash "$bootstrap_script"
 }
 
 prepare_live_root() {
   local root="$1"
-  mkdir -p -- "$root/home/codex_macbook/infra/shared-caddy" "$root/etc/nginx/sites-available" "$root/etc/nginx/sites-enabled" "$root/run/lock" "$root/network-state"
+  mkdir -p -- "$root/home/codex_macbook/infra/shared-caddy" "$root/etc/nginx/sites-available" "$root/etc/nginx/sites-enabled" "$root/run/lock" "$root/network-state" "$root/registry-state"
   printf '%s\n' 'example.org { respond "ok" }' > "$root/home/codex_macbook/infra/shared-caddy/Caddyfile"
   printf '%s\n' 'services: { caddy: { image: caddy:2 } }' > "$root/home/codex_macbook/infra/shared-caddy/docker-compose.yml"
 }
@@ -182,6 +256,17 @@ fi
 [[ -f "$live_root/srv/expressa/development/runtime.env" && -f "$live_root/srv/expressa/staging/runtime.env" ]] || fail 'runtime environment files were not created'
 [[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development/runtime.env")" == '0:12345:640' ]] || fail 'development runtime environment file has unsafe permissions'
 [[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/staging/runtime.env")" == '0:12345:640' ]] || fail 'staging runtime environment file has unsafe permissions'
+[[ -d "$live_root/srv/expressa/registry/data" ]] || fail 'registry data directory was not created'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/registry/data")" == '0:12345:750' ]] || fail 'registry data directory has unsafe permissions'
+[[ "$(cat "$live_root/registry-state/expressa-registry")" == 'registry@sha256:7518da9b12dd746278282a729dee2e65eabdeb449db4d0b28d46ef6e90308f58' ]] || fail 'registry image is not pinned'
+grep -Fq -- 'run --detach --name expressa-registry' "$live_root/docker.log" || fail 'registry container was not created'
+grep -Fq -- '--publish 127.0.0.1:5000:5000' "$live_root/docker.log" || fail 'registry is not loopback-bound'
+if grep -Eq -- '--publish (0\.0\.0\.0|5000:5000)' "$live_root/docker.log"; then
+  fail 'registry exposed a public port'
+fi
+if grep -F -- 'run --detach --name expressa-registry' "$live_root/docker.log" | grep -Fq -- '--network'; then
+  fail 'registry joined a Docker network'
+fi
 [[ "$(wc -l < "$live_root/srv/expressa/development/runtime.env")" == 1 ]] || fail 'development runtime file is not one line'
 grep -Eq '^POSTGRES_PASSWORD=[A-Za-z0-9_-]{64}$' "$live_root/srv/expressa/development/runtime.env" || fail 'development runtime password is not URL-safe'
 [[ "$(wc -l < "$live_root/srv/expressa/staging/runtime.env")" == 1 ]] || fail 'staging runtime file is not one line'
@@ -197,6 +282,7 @@ fi
 run_live "$live_root" > "$live_root/idempotent-output.log" 2>&1
 [[ "$development_checksum" == "$(cksum "$live_root/srv/expressa/development/runtime.env")" ]] || fail 'development password rotated on repeat bootstrap'
 [[ "$staging_checksum" == "$(cksum "$live_root/srv/expressa/staging/runtime.env")" ]] || fail 'staging password rotated on repeat bootstrap'
+[[ "$(grep -Fc 'run --detach --name expressa-registry' "$live_root/docker.log")" == 1 ]] || fail 'registry was recreated on an idempotent bootstrap'
 assert_file_contains "$live_root/etc/nginx/sites-available/expressa-redirect" "return 308 https://\$host\$request_uri;"
 [[ -L "$live_root/etc/nginx/sites-enabled/expressa-redirect" ]] || fail 'successful bootstrap did not enable nginx redirect'
 [[ "$(readlink -- "$live_root/etc/nginx/sites-enabled/expressa-redirect")" == '../sites-available/expressa-redirect' ]] || fail 'successful bootstrap used an unexpected nginx redirect target'
@@ -238,9 +324,71 @@ for host, (backend, fallback) in routes.items():
     if not re.search(expected, content):
         raise SystemExit(f'UI route ordering is invalid for {host}')
 PY
-! grep -Fq 'ghcr.io/vitykovskiy/expressa-platform/' "$bootstrap_script" || fail 'legacy GHCR namespace remains'
-! grep -Fq 'ghcr.io/vitykovskiy/expressa/' "$bootstrap_script" || fail 'legacy GHCR namespace remains'
-grep -Fq 'ghcr.io/vitykovskiy/expressa-backend@sha256:' "$bootstrap_script" || fail 'backend validation lacks canonical namespace'
+! grep -Fqi 'ghcr' "$bootstrap_script" || fail 'GHCR reference remains'
+for image in \
+  '127.0.0.1:5000/expressa/backend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
+  '127.0.0.1:5000/expressa/front-office@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
+  '127.0.0.1:5000/expressa/back-office@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'; do
+  sed -n '/validate_deployment_compose() {/,/^}/p' "$bootstrap_script" | grep -Fq "$image" || fail "missing loopback validation image: $image"
+done
+
+registry_stopped_root="$temporary_directory/registry-stopped"
+prepare_live_root "$registry_stopped_root"
+run_live "$registry_stopped_root" > "$registry_stopped_root/output.log" 2>&1
+: > "$registry_stopped_root/registry-state/expressa-registry.stopped"
+run_live "$registry_stopped_root" > "$registry_stopped_root/restart-output.log" 2>&1
+[[ ! -f "$registry_stopped_root/registry-state/expressa-registry.stopped" ]] || fail 'stopped registry was not started'
+[[ "$(grep -Fc 'start expressa-registry' "$registry_stopped_root/docker.log")" == 1 ]] || fail 'stopped registry was not started once'
+run_live "$registry_stopped_root" > "$registry_stopped_root/idempotent-output.log" 2>&1
+[[ "$(grep -Fc 'run --detach --name expressa-registry' "$registry_stopped_root/docker.log")" == 1 ]] || fail 'stopped registry was recreated'
+[[ "$(grep -Fc 'start expressa-registry' "$registry_stopped_root/docker.log")" == 1 ]] || fail 'ready registry was started again'
+
+registry_unready_root="$temporary_directory/registry-unready"
+prepare_live_root "$registry_unready_root"
+run_live "$registry_unready_root" > "$registry_unready_root/output.log" 2>&1
+: > "$registry_unready_root/registry-state/expressa-registry.unready"
+run_live "$registry_unready_root" > "$registry_unready_root/restart-output.log" 2>&1
+[[ ! -f "$registry_unready_root/registry-state/expressa-registry.unready" ]] || fail 'unready registry was not restarted'
+[[ "$(grep -Fc 'restart expressa-registry' "$registry_unready_root/docker.log")" == 1 ]] || fail 'unready registry was not restarted once'
+run_live "$registry_unready_root" > "$registry_unready_root/idempotent-output.log" 2>&1
+[[ "$(grep -Fc 'run --detach --name expressa-registry' "$registry_unready_root/docker.log")" == 1 ]] || fail 'unready registry was recreated'
+[[ "$(grep -Fc 'restart expressa-registry' "$registry_unready_root/docker.log")" == 1 ]] || fail 'ready registry was restarted again'
+
+registry_reconcile_root="$temporary_directory/registry-reconcile"
+prepare_live_root "$registry_reconcile_root"
+run_live "$registry_reconcile_root" > "$registry_reconcile_root/output.log" 2>&1
+printf '%s\n' 'registry@sha256:wrong' > "$registry_reconcile_root/registry-state/expressa-registry"
+run_live "$registry_reconcile_root" > "$registry_reconcile_root/reconcile-output.log" 2>&1
+[[ "$(cat "$registry_reconcile_root/registry-state/expressa-registry")" == 'registry@sha256:7518da9b12dd746278282a729dee2e65eabdeb449db4d0b28d46ef6e90308f58' ]] || fail 'registry image mismatch was not reconciled'
+grep -Fq -- 'stop expressa-registry' "$registry_reconcile_root/docker.log" || fail 'registry mismatch was not stopped'
+grep -Fq -- 'rename expressa-registry expressa-registry-rollback' "$registry_reconcile_root/docker.log" || fail 'registry mismatch was not staged for rollback'
+
+registry_public_root="$temporary_directory/registry-public"
+prepare_live_root "$registry_public_root"
+run_live "$registry_public_root" > "$registry_public_root/output.log" 2>&1
+: > "$registry_public_root/registry-state/expressa-registry.public"
+run_live "$registry_public_root" > "$registry_public_root/public-output.log" 2>&1
+[[ ! -f "$registry_public_root/registry-state/expressa-registry.public" ]] || fail 'public registry binding was accepted'
+
+registry_environment_root="$temporary_directory/registry-environment"
+prepare_live_root "$registry_environment_root"
+run_live "$registry_environment_root" > "$registry_environment_root/output.log" 2>&1
+: > "$registry_environment_root/registry-state/expressa-registry.bad-env"
+run_live "$registry_environment_root" > "$registry_environment_root/environment-output.log" 2>&1
+[[ ! -f "$registry_environment_root/registry-state/expressa-registry.bad-env" ]] || fail 'duplicate or conflicting registry environment was accepted'
+grep -Fq -- 'stop expressa-registry' "$registry_environment_root/docker.log" || fail 'invalid registry environment was not reconciled'
+
+registry_rollback_root="$temporary_directory/registry-rollback"
+prepare_live_root "$registry_rollback_root"
+run_live "$registry_rollback_root" > "$registry_rollback_root/output.log" 2>&1
+printf '%s\n' 'registry@sha256:wrong' > "$registry_rollback_root/registry-state/expressa-registry"
+set +e
+FAIL_REGISTRY_RUN=1 run_live "$registry_rollback_root" > "$registry_rollback_root/rollback-output.log" 2>&1
+registry_rollback_status="$?"
+set -e
+[[ "$registry_rollback_status" != 0 ]] || fail 'failed registry replacement was accepted'
+[[ "$(cat "$registry_rollback_root/registry-state/expressa-registry")" == 'registry@sha256:wrong' ]] || fail 'failed registry replacement was not rolled back'
+[[ ! -f "$registry_rollback_root/registry-state/expressa-registry-rollback" ]] || fail 'failed registry replacement left rollback container'
 
 repair_root="$temporary_directory/repair-data-network"
 prepare_live_root "$repair_root"

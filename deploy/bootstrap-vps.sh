@@ -6,6 +6,7 @@ repository_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 readonly repository_root
 readonly docker_bin="${BOOTSTRAP_DOCKER_BIN:-docker}"
 readonly nginx_bin="${BOOTSTRAP_NGINX_BIN:-nginx}"
+readonly curl_bin="${BOOTSTRAP_CURL_BIN:-curl}"
 readonly root_prefix="${BOOTSTRAP_ROOT:-}"
 readonly backup_root="${BOOTSTRAP_BACKUP_ROOT:-/var/backups/expressa-infra}"
 dry_run=0
@@ -14,6 +15,10 @@ backup_directory=''
 configuration_changed=0
 temporary_routes=''
 attached_networks=()
+readonly registry_image='registry@sha256:7518da9b12dd746278282a729dee2e65eabdeb449db4d0b28d46ef6e90308f58'
+readonly registry_container='expressa-registry'
+readonly registry_minimum_free_kib=5242880
+readonly registry_ready_retries=30
 
 fail() { printf 'bootstrap-vps: %s\n' "$1" >&2; exit 1; }
 usage() { printf 'Usage: %s [--dry-run] [--deploy-user USER]\n' "$0" >&2; exit 64; }
@@ -30,6 +35,124 @@ run() {
 
 caddy_compose() {
   "$docker_bin" compose --project-name shared_caddy --project-directory "$caddy_directory" --file "$caddy_compose_file" "$@"
+}
+
+registry_inspect() {
+  "$docker_bin" container inspect --format "$1" "$registry_container"
+}
+
+registry_is_managed() {
+  [[ "$(registry_inspect '{{index .Config.Labels "io.expressa.managed"}}')" == registry ]]
+}
+
+registry_is_running() {
+  [[ "$(registry_inspect '{{.State.Running}}')" == true ]]
+}
+
+registry_is_ready() {
+  "$curl_bin" --fail --silent --show-error --max-time 2 http://127.0.0.1:5000/v2/ >/dev/null
+}
+
+wait_for_registry_ready() {
+  local retries="$registry_ready_retries"
+
+  while (( retries > 0 )); do
+    registry_is_ready && return 0
+    ((retries -= 1)) || true
+    (( retries == 0 )) || sleep 1
+  done
+  return 1
+}
+
+registry_matches_expected() {
+  local ports mounts environment
+
+  [[ "$(registry_inspect '{{.Config.Image}}')" == "$registry_image" ]] || return 1
+  registry_is_managed || return 1
+  [[ "$(registry_inspect '{{.HostConfig.RestartPolicy.Name}}')" == unless-stopped ]] || return 1
+  [[ "$(registry_inspect '{{.HostConfig.PidsLimit}}')" == 128 ]] || return 1
+  [[ "$(registry_inspect '{{.HostConfig.Memory}}')" == 536870912 ]] || return 1
+  [[ "$(registry_inspect '{{.HostConfig.MemoryReservation}}')" == 268435456 ]] || return 1
+  [[ "$(registry_inspect '{{.HostConfig.NanoCpus}}')" == 1000000000 ]] || return 1
+  [[ "$(registry_inspect '{{.HostConfig.LogConfig.Type}}')" == local ]] || return 1
+  [[ "$(registry_inspect '{{index .HostConfig.LogConfig.Config "max-size"}}')" == 10m ]] || return 1
+  [[ "$(registry_inspect '{{index .HostConfig.LogConfig.Config "max-file"}}')" == 3 ]] || return 1
+  ports="$(registry_inspect '{{json .HostConfig.PortBindings}}')"
+  mounts="$(registry_inspect '{{json .Mounts}}')"
+  environment="$(registry_inspect '{{json .Config.Env}}')"
+  python3 - "$registry_data_directory" "$ports" "$mounts" "$environment" <<'PY'
+import json
+import sys
+
+data_directory, ports, mounts, environment = sys.argv[1:]
+expected_port = {'5000/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '5000'}]}
+expected_mount = {'Type': 'bind', 'Source': data_directory, 'Destination': '/var/lib/registry', 'RW': True}
+if json.loads(ports) != expected_port:
+    raise SystemExit(1)
+if expected_mount not in json.loads(mounts):
+    raise SystemExit(1)
+for name, expected in (
+    ('REGISTRY_STORAGE_DELETE_ENABLED', 'REGISTRY_STORAGE_DELETE_ENABLED=false'),
+    ('REGISTRY_HTTP_ADDR', 'REGISTRY_HTTP_ADDR=0.0.0.0:5000'),
+):
+    values = [value for value in json.loads(environment) if value.startswith(f'{name}=')]
+    if values != [expected]:
+        raise SystemExit(1)
+PY
+}
+
+run_registry() {
+  "$docker_bin" run --detach --name "$registry_container" \
+    --label io.expressa.managed=registry \
+    --restart unless-stopped --pids-limit 128 --memory 512m --memory-reservation 256m --cpus 1 \
+    --log-driver local --log-opt max-size=10m --log-opt max-file=3 \
+    --publish 127.0.0.1:5000:5000 \
+    --mount "type=bind,src=$registry_data_directory,dst=/var/lib/registry" \
+    --env REGISTRY_STORAGE_DELETE_ENABLED=false --env REGISTRY_HTTP_ADDR=0.0.0.0:5000 \
+    "$registry_image" >/dev/null
+}
+
+ensure_registry() {
+  local available_kib rollback_container
+
+  available_kib="$(df -Pk "$expressa_root" | awk 'NR == 2 { print $4 }')"
+  [[ "$available_kib" =~ ^[0-9]+$ && "$available_kib" -ge "$registry_minimum_free_kib" ]] || fail 'insufficient free disk space for registry'
+  install --directory --owner root --group "$deploy_group" --mode 0750 "$registry_data_directory"
+  "$docker_bin" pull "$registry_image" >/dev/null
+  [[ "$("$docker_bin" image inspect --format '{{.Architecture}}/{{.Os}}' "$registry_image")" == amd64/linux ]] || fail 'registry image architecture is not linux/amd64'
+
+  if ! "$docker_bin" container inspect "$registry_container" >/dev/null 2>&1; then
+    run_registry
+    wait_for_registry_ready || fail 'registry did not become ready'
+    return 0
+  fi
+  registry_is_managed || fail 'registry container is not managed by expressa'
+  if registry_matches_expected; then
+    if ! registry_is_running; then
+      "$docker_bin" start "$registry_container" >/dev/null
+    elif ! registry_is_ready; then
+      "$docker_bin" restart "$registry_container" >/dev/null
+    else
+      return 0
+    fi
+    wait_for_registry_ready || fail 'registry did not become ready'
+    return 0
+  fi
+
+  rollback_container="${registry_container}-rollback"
+  if "$docker_bin" container inspect "$rollback_container" >/dev/null 2>&1; then
+    fail 'registry rollback container already exists'
+  fi
+  "$docker_bin" stop "$registry_container" >/dev/null
+  "$docker_bin" rename "$registry_container" "$rollback_container"
+  if run_registry && wait_for_registry_ready; then
+    "$docker_bin" rm "$rollback_container" >/dev/null
+    return 0
+  fi
+  "$docker_bin" rm --force "$registry_container" >/dev/null 2>&1 || true
+  "$docker_bin" rename "$rollback_container" "$registry_container"
+  "$docker_bin" start "$registry_container" >/dev/null
+  fail 'registry reconciliation failed and was rolled back'
 }
 
 rollback_configuration() {
@@ -192,9 +315,9 @@ validate_deployment_compose() {
   DEPLOY_ENV="$environment" COMPOSE_PROJECT_NAME="expressa-$environment" \
     POSTGRES_DB=expressa POSTGRES_USER=expressa POSTGRES_PASSWORD=validation-password \
     DATABASE_URL='postgresql://expressa:validation-password@postgres:5432/expressa' \
-    BACKEND_IMAGE='ghcr.io/vitykovskiy/expressa-backend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
-    FRONT_IMAGE='ghcr.io/vitykovskiy/expressa-front-office@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
-    BACK_IMAGE='ghcr.io/vitykovskiy/expressa-back-office@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' \
+    BACKEND_IMAGE='127.0.0.1:5000/expressa/backend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
+    FRONT_IMAGE='127.0.0.1:5000/expressa/front-office@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
+    BACK_IMAGE='127.0.0.1:5000/expressa/back-office@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' \
     "$docker_bin" compose --project-name "expressa-$environment" --file "$infra_directory/compose.yml" config -q
 }
 
@@ -318,6 +441,7 @@ command -v usermod >/dev/null || fail 'usermod is required'
 expressa_root="$(root_path /srv/expressa)"
 readonly expressa_root
 readonly infra_directory="$expressa_root/infra"
+readonly registry_data_directory="$expressa_root/registry/data"
 caddy_directory="$(root_path /home/codex_macbook/infra/shared-caddy)"
 readonly caddy_directory
 readonly caddy_file="$caddy_directory/Caddyfile"
@@ -382,6 +506,7 @@ for environment in development staging; do
 done
 
 ensure_runtime_environment_files
+ensure_registry
 
 for environment in development staging; do
   validate_deployment_compose "$environment"

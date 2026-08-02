@@ -17,9 +17,6 @@ jobs:
     name: Deploy approved release set to staging
     runs-on: ubuntu-24.04
     environment: staging
-    permissions:
-      contents: read
-      packages: read
     steps:
       - name: Checkout release tag
         # actions/checkout v5.1.0
@@ -66,9 +63,9 @@ jobs:
               exit 1
             }
             case "$name:$image" in
-              BACKEND_IMAGE:ghcr.io/vitykovskiy/expressa-backend@sha256:[a-f0-9][a-f0-9]*) ;;
-              FRONT_IMAGE:ghcr.io/vitykovskiy/expressa-front-office@sha256:[a-f0-9][a-f0-9]*) ;;
-              BACK_IMAGE:ghcr.io/vitykovskiy/expressa-back-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              BACKEND_IMAGE:127.0.0.1:5000/expressa/backend@sha256:[a-f0-9][a-f0-9]*) ;;
+              FRONT_IMAGE:127.0.0.1:5000/expressa/front-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              BACK_IMAGE:127.0.0.1:5000/expressa/back-office@sha256:[a-f0-9][a-f0-9]*) ;;
               *)
                 printf '%s\n' 'staging manifest image is not an allowed immutable package digest' >&2
                 exit 1
@@ -98,7 +95,6 @@ jobs:
           DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
           DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -158,8 +154,6 @@ jobs:
           chmod 600 "$private_key" "$known_hosts" "$ssh_config"
 
           {
-            printf 'export GHCR_USERNAME=%q\n' "$GITHUB_ACTOR"
-            printf 'export GHCR_TOKEN=%q\n' "$GITHUB_TOKEN"
             printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
             printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
             printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"
