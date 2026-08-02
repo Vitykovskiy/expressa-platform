@@ -30,15 +30,26 @@ function validateApplicationEnvironment(value: string): asserts value is Applica
 }
 
 function validateApiBaseUrl(value: string): void {
+  if (value === '/') {
+    return
+  }
+
   try {
     const url = new URL(value)
 
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    if (
+      (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+      url.pathname !== '/' ||
+      url.search !== '' ||
+      url.hash !== '' ||
+      url.username !== '' ||
+      url.password !== ''
+    ) {
       throw new Error()
     }
   } catch {
     throw new Error(
-      'Неверная конфигурация: VITE_API_BASE_URL должна быть абсолютным HTTP(S) URL.',
+      'Неверная конфигурация: VITE_API_BASE_URL должна быть / или абсолютным HTTP(S) URL.',
     )
   }
 }

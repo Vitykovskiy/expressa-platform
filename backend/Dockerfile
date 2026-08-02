@@ -28,6 +28,8 @@ ENV PORT=3000
 
 COPY --chown=nonroot:nonroot --from=production-dependencies /app/node_modules ./node_modules
 COPY --chown=nonroot:nonroot --from=build /app/dist/src ./dist/src
+COPY --chown=nonroot:nonroot --from=build /app/dist/scripts ./dist/scripts
+COPY --chown=nonroot:nonroot migrations ./migrations
 
 USER nonroot
 

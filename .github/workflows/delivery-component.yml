@@ -1,0 +1,168 @@
+name: Delivery component
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        description: Component name.
+        required: true
+        type: string
+      context:
+        description: Docker build context.
+        required: true
+        type: string
+      image:
+        description: GHCR image name.
+        required: true
+        type: string
+    outputs:
+      image_reference:
+        description: Immutable GHCR image reference.
+        value: ${{ jobs.build.outputs.image_reference }}
+      digest:
+        description: Immutable OCI image digest.
+        value: ${{ jobs.build.outputs.digest }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build or release image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_reference: ${{ steps.image.outputs.image_reference }}
+      digest: ${{ steps.image.outputs.digest }}
+    steps:
+      - name: Checkout
+        # actions/checkout v5.1.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Build main image or alias release digest
+        id: image
+        env:
+          COMPONENT: ${{ inputs.component }}
+          CONTEXT: ${{ inputs.context }}
+          IMAGE: ${{ inputs.image }}
+          REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repository="${REPOSITORY:-}"
+          repository="${repository,,}"
+          case "$COMPONENT:$CONTEXT:$IMAGE" in
+            backend:backend:expressa-backend)
+              ;;
+            front-office:front-office:expressa-front-office)
+              ;;
+            back-office:back-office:expressa-back-office)
+              ;;
+            *)
+              printf '%s\n' 'component, context, and image are not an allowed combination' >&2
+              exit 1
+              ;;
+          esac
+          [[ "$repository" =~ ^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$ ]] || {
+            printf '%s\n' 'GitHub repository cannot form a lowercase GHCR image name' >&2
+            exit 1
+          }
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]] || {
+            printf '%s\n' 'GitHub SHA must be a 40-character lowercase hexadecimal commit ID' >&2
+            exit 1
+          }
+          image_repository="ghcr.io/$repository/$IMAGE"
+          package_version="$(node -p "require('./$CONTEXT/package.json').version")"
+          [[ "$package_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            printf '%s\n' 'package.json version must match X.Y.Z' >&2
+            exit 1
+          }
+
+          docker_config_directory="$(mktemp -d)"
+          # shellcheck disable=SC2329
+          cleanup() {
+            docker --config "$docker_config_directory" logout ghcr.io >/dev/null 2>&1 || true
+            rm -rf "$docker_config_directory"
+          }
+          trap cleanup EXIT HUP INT TERM
+          printf '%s' "$GITHUB_TOKEN" | docker --config "$docker_config_directory" login ghcr.io --username "$GITHUB_ACTOR" --password-stdin >/dev/null
+
+          sha_tag="sha-$GITHUB_SHA"
+          sha_reference="$image_repository:$sha_tag"
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            build_arguments=()
+            case "$COMPONENT" in
+              front-office|back-office)
+                build_arguments+=(--build-arg VITE_APP_ENV=development --build-arg VITE_API_BASE_URL=/)
+                ;;
+            esac
+            docker buildx build --push --metadata-file metadata.json \
+              --tag "$sha_reference" \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --label "org.opencontainers.image.created=$created" \
+              --label "org.opencontainers.image.version=$package_version" \
+              "${build_arguments[@]}" \
+              "$CONTEXT"
+            digest="$(node -e "const metadata = require('./metadata.json'); const digest = metadata['containerimage.digest']; if (!/^sha256:[a-f0-9]{64}$/.test(digest || '')) process.exit(1); process.stdout.write(digest)")"
+          elif [[ "$GITHUB_REF_TYPE" == 'tag' ]]; then
+            tag="$GITHUB_REF_NAME"
+            tag_prefix="$COMPONENT-v"
+            [[ "$tag" == "$tag_prefix"* ]] || {
+              printf '%s\n' 'release tag component does not match delivery component' >&2
+              exit 1
+            }
+            normalized_tag="v${tag#"$tag_prefix"}"
+            [[ "$normalized_tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+              printf '%s\n' 'release tag must match component-vX.Y.Z' >&2
+              exit 1
+            }
+            version="${normalized_tag#v}"
+            [[ "$package_version" == "$version" ]] || {
+              printf '%s\n' 'package.json version does not match Git tag' >&2
+              exit 1
+            }
+            [[ -f CHANGELOG.md ]] || {
+              printf '%s\n' 'root CHANGELOG.md is required for a release' >&2
+              exit 1
+            }
+            grep -Eq "^##[[:space:]]+\\[?${COMPONENT}[[:space:]]+v?${version}\\]?([[:space:]]|$| - )" CHANGELOG.md || {
+              printf '%s\n' 'CHANGELOG.md does not contain the component release version' >&2
+              exit 1
+            }
+            release_reference="$image_repository:$normalized_tag"
+            if existing_tag_output="$(docker buildx imagetools inspect "$release_reference" 2>&1)"; then
+              printf '%s\n' 'release image tag already exists' >&2
+              exit 1
+            elif ! grep -Eqi 'not found|manifest unknown|name unknown' <<< "$existing_tag_output"; then
+              printf '%s\n' 'cannot verify whether release image tag exists' >&2
+              exit 1
+            fi
+            source_digest="$(docker buildx imagetools inspect "$sha_reference" --format '{{.Manifest.Digest}}')"
+            [[ "$source_digest" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+              printf '%s\n' 'published SHA image did not resolve to a sha256 digest' >&2
+              exit 1
+            }
+            docker buildx imagetools create \
+              --prefer-index=false \
+              --tag "$release_reference" \
+              "$image_repository@$source_digest"
+            target_digest="$(docker buildx imagetools inspect "$release_reference" --format '{{.Manifest.Digest}}')"
+            [[ "$target_digest" == "$source_digest" ]] || {
+              printf '%s\n' 'release image tag does not resolve to the source digest' >&2
+              exit 1
+            }
+            digest="$target_digest"
+          else
+            printf '%s\n' 'delivery workflow accepts only main commits and version tags' >&2
+            exit 1
+          fi
+
+          {
+            printf 'digest=%s\n' "$digest"
+            printf 'image_reference=%s@%s\n' "$image_repository" "$digest"
+          } >> "$GITHUB_OUTPUT"

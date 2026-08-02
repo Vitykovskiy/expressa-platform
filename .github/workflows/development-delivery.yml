@@ -1,0 +1,150 @@
+name: Development delivery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'front-office/**'
+      - 'back-office/**'
+      - 'deploy/**'
+      - '.github/workflows/development-delivery.yml'
+      - '.github/workflows/delivery-component.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: development-deployment
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Build backend development image
+    uses: ./.github/workflows/delivery-component.yml
+    with:
+      component: backend
+      context: backend
+      image: expressa-backend
+
+  front_office:
+    name: Build front-office development image
+    uses: ./.github/workflows/delivery-component.yml
+    with:
+      component: front-office
+      context: front-office
+      image: expressa-front-office
+
+  back_office:
+    name: Build back-office development image
+    uses: ./.github/workflows/delivery-component.yml
+    with:
+      component: back-office
+      context: back-office
+      image: expressa-back-office
+
+  deploy:
+    name: Deploy immutable development set
+    needs: [backend, front_office, back_office]
+    runs-on: ubuntu-24.04
+    environment: development
+    permissions:
+      packages: read
+    env:
+      BACKEND_IMAGE: ${{ needs.backend.outputs.image_reference }}
+      FRONT_IMAGE: ${{ needs.front_office.outputs.image_reference }}
+      BACK_IMAGE: ${{ needs.back_office.outputs.image_reference }}
+      DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+      GHCR_USERNAME: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Deploy immutable image set by SSH
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          temporary_directory="$(mktemp -d)"
+          cleanup() {
+            unset BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS GHCR_USERNAME GHCR_TOKEN
+            rm -rf "$temporary_directory"
+          }
+          trap cleanup EXIT HUP INT TERM
+
+          if (( ${#DEPLOY_HOST} > 253 )); then
+            printf '%s\n' 'deployment DNS host must not exceed 253 characters' >&2
+            exit 1
+          elif [[ "$DEPLOY_HOST" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]]; then
+            :
+          elif node -e "process.exit(require('node:net').isIP(process.env.DEPLOY_HOST) ? 0 : 1)"; then
+            :
+          else
+            printf '%s\n' 'deployment host must be a single DNS name, IPv4 address, or IPv6 address' >&2
+            exit 1
+          fi
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || {
+            printf '%s\n' 'deployment user must be a POSIX username' >&2
+            exit 1
+          }
+          if ! [[ "$DEPLOY_PORT" =~ ^[1-9][0-9]{0,4}$ ]] || ! (( 10#$DEPLOY_PORT <= 65535 )); then
+            printf '%s\n' 'deployment port must be between 1 and 65535' >&2
+            exit 1
+          fi
+          [[ -n "$DEPLOY_SSH_PRIVATE_KEY" && -n "$DEPLOY_SSH_KNOWN_HOSTS" ]] || {
+            printf '%s\n' 'deployment SSH credentials are required' >&2
+            exit 1
+          }
+          [[ "$BACKEND_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-backend@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'backend image must be the canonical immutable package digest' >&2
+            exit 1
+          }
+          [[ "$FRONT_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-front-office@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'front-office image must be the canonical immutable package digest' >&2
+            exit 1
+          }
+          [[ "$BACK_IMAGE" =~ ^ghcr\.io/vitykovskiy/expressa-platform/expressa-back-office@sha256:[a-f0-9]{64}$ ]] || {
+            printf '%s\n' 'back-office image must be the canonical immutable package digest' >&2
+            exit 1
+          }
+
+          private_key="$temporary_directory/id_ed25519"
+          known_hosts="$temporary_directory/known_hosts"
+          ssh_config="$temporary_directory/config"
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$private_key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$known_hosts"
+          {
+            printf '%s\n' 'Host delivery-target'
+            printf '  HostName %s\n' "$DEPLOY_HOST"
+            printf '  User %s\n' "$DEPLOY_USER"
+            printf '  Port %s\n' "$DEPLOY_PORT"
+            printf '  IdentityFile %s\n' "$private_key"
+            printf '%s\n' '  IdentitiesOnly yes'
+            printf '%s\n' '  BatchMode yes'
+            printf '%s\n' '  StrictHostKeyChecking yes'
+            printf '%s\n' '  PasswordAuthentication no'
+            printf '%s\n' '  KbdInteractiveAuthentication no'
+            printf '%s\n' '  PreferredAuthentications publickey'
+            printf '%s\n' '  ForwardAgent no'
+            printf '%s\n' '  PermitLocalCommand no'
+            printf '%s\n' '  RequestTTY no'
+            printf '  UserKnownHostsFile %s\n' "$known_hosts"
+          } > "$ssh_config"
+          chmod 600 "$private_key" "$known_hosts" "$ssh_config"
+
+          {
+            printf 'export GHCR_USERNAME=%q\n' "$GHCR_USERNAME"
+            printf 'export GHCR_TOKEN=%q\n' "$GHCR_TOKEN"
+            printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
+            printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
+            printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"
+            printf '%s\n' 'export DEPLOY_ROOT=/srv/expressa'
+            printf '%s\n' 'cd -- /srv/expressa/infra'
+            printf '%s\n' 'exec ./deploy/deploy.sh --environment development deploy all'
+          } | ssh -F "$ssh_config" -T delivery-target 'bash -se' 2> "$temporary_directory/ssh.stderr" || {
+            printf '%s\n' 'remote development deployment failed' >&2
+            exit 1
+          }

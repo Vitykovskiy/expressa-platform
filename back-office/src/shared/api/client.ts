@@ -92,7 +92,15 @@ export class ApiClient {
   }
 
   private createUrl(path: string): string {
-    return new URL(path.replace(/^\/+/, ''), `${this.baseUrl}/`).toString()
+    const normalizedPath = path.replace(/^\/+/, '')
+
+    if (this.baseUrl.startsWith('/')) {
+      const url = new URL(normalizedPath, `http://same-origin.invalid${this.baseUrl}/`)
+
+      return `${url.pathname}${url.search}${url.hash}`
+    }
+
+    return new URL(normalizedPath, `${this.baseUrl}/`).toString()
   }
 
   private async readPayload(response: Response): Promise<unknown> {
@@ -137,6 +145,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export const apiClientKey: InjectionKey<ApiClient> = Symbol('apiClient')
 
 export function createApiClient(apiBaseUrl: string, fetcher?: typeof fetch): ApiClient {
+  if (apiBaseUrl === '/') {
+    return new ApiClient({ baseUrl: '/api/v1', fetcher })
+  }
+
+  if (apiBaseUrl.startsWith('/')) {
+    throw new Error('Базовый URL API для текущего origin должен быть равен /.')
+  }
+
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, '')
 
   return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v1`, fetcher })

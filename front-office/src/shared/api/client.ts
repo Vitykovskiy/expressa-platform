@@ -92,7 +92,15 @@ export class ApiClient {
   }
 
   private createUrl(path: string): string {
-    return new URL(path.replace(/^\/+/, ''), `${this.baseUrl}/`).toString()
+    const normalizedPath = path.replace(/^\/+/, '')
+
+    if (this.baseUrl === '/') {
+      const url = new URL(normalizedPath, sameOriginApiBaseUrl)
+
+      return `${url.pathname}${url.search}${url.hash}`
+    }
+
+    return new URL(normalizedPath, `${this.baseUrl}/`).toString()
   }
 
   private async readPayload(response: Response): Promise<unknown> {
@@ -137,8 +145,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export const apiClientKey: InjectionKey<ApiClient> = Symbol('apiClient')
 
 export function createApiClient(apiBaseUrl: string, fetcher?: typeof fetch): ApiClient {
+  if (apiBaseUrl.startsWith('//')) {
+    throw new Error('Неверная конфигурация: VITE_API_BASE_URL не может быть protocol-relative URL.')
+  }
+
+  if (apiBaseUrl === '/') {
+    return new ApiClient({ baseUrl: '/', fetcher })
+  }
+
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, '')
 
   return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v1`, fetcher })
 }
 import type { InjectionKey } from 'vue'
+
+const sameOriginApiBaseUrl = 'https://same-origin.invalid/api/v1/'

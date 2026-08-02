@@ -1,0 +1,17 @@
+name: Back-office delivery
+
+on:
+  push:
+    tags: ['back-office-v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deliver:
+    uses: ./.github/workflows/delivery-component.yml
+    with:
+      component: back-office
+      context: back-office
+      image: expressa-back-office

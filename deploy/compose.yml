@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: "postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB is required}"
+      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - data
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+          pids: 256
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  backend:
+    image: "${BACKEND_IMAGE:?BACKEND_IMAGE must be a digest reference}"
+    environment:
+      NODE_ENV: "${DEPLOY_ENV:?DEPLOY_ENV is required}"
+      PORT: '3000'
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      edge:
+        aliases:
+          - "${DEPLOY_ENV:?DEPLOY_ENV is required}-backend"
+      data: {}
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+          pids: 256
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test: ['CMD', '/nodejs/bin/node', '-e', "fetch('http://127.0.0.1:3000/health/live').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  front:
+    image: "${FRONT_IMAGE:?FRONT_IMAGE must be a digest reference}"
+    networks:
+      edge:
+        aliases:
+          - "${DEPLOY_ENV:?DEPLOY_ENV is required}-front"
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+          pids: 128
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+
+  back:
+    image: "${BACK_IMAGE:?BACK_IMAGE must be a digest reference}"
+    networks:
+      edge:
+        aliases:
+          - "${DEPLOY_ENV:?DEPLOY_ENV is required}-back"
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+          pids: 128
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+
+networks:
+  edge:
+    name: "expressa-${DEPLOY_ENV:?DEPLOY_ENV is required}-edge"
+    external: true
+  data:
+    name: "expressa-${DEPLOY_ENV:?DEPLOY_ENV is required}-data"
+    internal: true
+
+volumes:
+  postgres-data:
+    name: "${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}_postgres-data"

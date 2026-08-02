@@ -1,0 +1,172 @@
+name: Staging deployment
+
+on:
+  push:
+    tags: ['staging-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy approved release set to staging
+    runs-on: ubuntu-24.04
+    environment: staging
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout release tag
+        # actions/checkout v5.1.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Verify staging release manifest
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          [[ "$REF_TYPE" == tag ]] || {
+            printf '%s\n' 'staging deployment must run from a tag' >&2
+            exit 1
+          }
+          [[ "$REF_NAME" =~ ^staging-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            printf '%s\n' 'staging tag must match staging-vX.Y.Z' >&2
+            exit 1
+          }
+          version="${REF_NAME#staging-v}"
+          [[ -f CHANGELOG.md ]] || {
+            printf '%s\n' 'root CHANGELOG.md is required for a staging release' >&2
+            exit 1
+          }
+          grep -Eq "^##[[:space:]]+staging[[:space:]]+v${version}[[:space:]]*$" CHANGELOG.md || {
+            printf '%s\n' 'CHANGELOG.md does not contain the exact staging release heading' >&2
+            exit 1
+          }
+          [[ -f deploy/staging.env ]] || {
+            printf '%s\n' 'deploy/staging.env is required for a staging release' >&2
+            exit 1
+          }
+
+          declare -A images=()
+          while IFS='=' read -r name image || [[ -n "${name:-}" ]]; do
+            [[ "$name" =~ ^(BACKEND_IMAGE|FRONT_IMAGE|BACK_IMAGE)$ ]] || {
+              printf '%s\n' 'staging manifest contains an unsupported image name' >&2
+              exit 1
+            }
+            [[ -z "${images[$name]+present}" ]] || {
+              printf '%s\n' 'staging manifest contains a duplicate image name' >&2
+              exit 1
+            }
+            case "$name:$image" in
+              BACKEND_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-backend@sha256:[a-f0-9][a-f0-9]*) ;;
+              FRONT_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-front-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              BACK_IMAGE:ghcr.io/vitykovskiy/expressa-platform/expressa-back-office@sha256:[a-f0-9][a-f0-9]*) ;;
+              *)
+                printf '%s\n' 'staging manifest image is not an allowed immutable package digest' >&2
+                exit 1
+                ;;
+            esac
+            [[ "$image" =~ @sha256:[a-f0-9]{64}$ ]] || {
+              printf '%s\n' 'staging manifest image digest must be sha256' >&2
+              exit 1
+            }
+            images["$name"]="$image"
+          done < deploy/staging.env
+
+          [[ "${#images[@]}" == 3 && -n "${images[BACKEND_IMAGE]:-}" && -n "${images[FRONT_IMAGE]:-}" && -n "${images[BACK_IMAGE]:-}" ]] || {
+            printf '%s\n' 'staging manifest must contain exactly backend, front-office, and back-office digests' >&2
+            exit 1
+          }
+          {
+            printf 'BACKEND_IMAGE=%s\n' "${images[BACKEND_IMAGE]}"
+            printf 'FRONT_IMAGE=%s\n' "${images[FRONT_IMAGE]}"
+            printf 'BACK_IMAGE=%s\n' "${images[BACK_IMAGE]}"
+          } >> "$GITHUB_ENV"
+
+      - name: Deploy immutable release set by SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          temporary_directory="$(mktemp -d)"
+          # shellcheck disable=SC2329
+          cleanup() {
+            rm -rf "$temporary_directory"
+          }
+          trap cleanup EXIT HUP INT TERM
+
+          if (( ${#DEPLOY_HOST} > 253 )); then
+            printf '%s\n' 'deployment DNS host must not exceed 253 characters' >&2
+            exit 1
+          elif [[ "$DEPLOY_HOST" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]]; then
+            :
+          elif node -e "process.exit(require('node:net').isIP(process.env.DEPLOY_HOST) ? 0 : 1)"; then
+            :
+          else
+            printf '%s\n' 'deployment host must be a single DNS name, IPv4 address, or IPv6 address' >&2
+            exit 1
+          fi
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || {
+            printf '%s\n' 'deployment user must be a POSIX username' >&2
+            exit 1
+          }
+          if ! [[ "$DEPLOY_PORT" =~ ^[1-9][0-9]{0,4}$ ]] || ! (( 10#$DEPLOY_PORT <= 65535 )); then
+            printf '%s\n' 'deployment port must be between 1 and 65535' >&2
+            exit 1
+          fi
+          [[ -n "$DEPLOY_SSH_PRIVATE_KEY" && -n "$DEPLOY_SSH_KNOWN_HOSTS" ]] || {
+            printf '%s\n' 'deployment SSH credentials are required' >&2
+            exit 1
+          }
+          private_key="$temporary_directory/id_ed25519"
+          known_hosts="$temporary_directory/known_hosts"
+          ssh_config="$temporary_directory/config"
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$private_key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$known_hosts"
+          {
+            printf '%s\n' 'Host delivery-target'
+            printf '  HostName %s\n' "$DEPLOY_HOST"
+            printf '  User %s\n' "$DEPLOY_USER"
+            printf '  Port %s\n' "$DEPLOY_PORT"
+            printf '  IdentityFile %s\n' "$private_key"
+            printf '%s\n' '  IdentitiesOnly yes'
+            printf '%s\n' '  BatchMode yes'
+            printf '%s\n' '  PasswordAuthentication no'
+            printf '%s\n' '  KbdInteractiveAuthentication no'
+            printf '%s\n' '  PreferredAuthentications publickey'
+            printf '%s\n' '  ForwardAgent no'
+            printf '%s\n' '  PermitLocalCommand no'
+            printf '%s\n' '  RequestTTY no'
+            printf '%s\n' '  StrictHostKeyChecking yes'
+            printf '  UserKnownHostsFile %s\n' "$known_hosts"
+          } > "$ssh_config"
+          chmod 600 "$private_key" "$known_hosts" "$ssh_config"
+
+          {
+            printf 'export GHCR_USERNAME=%q\n' "$GITHUB_ACTOR"
+            printf 'export GHCR_TOKEN=%q\n' "$GITHUB_TOKEN"
+            printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
+            printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
+            printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"
+            printf '%s\n' 'export DEPLOY_ROOT=/srv/expressa'
+            printf '%s\n' 'cd -- /srv/expressa/infra'
+            printf '%s\n' './deploy/deploy.sh --environment staging deploy all'
+          } | ssh -F "$ssh_config" -T delivery-target 'bash -se' 2> "$temporary_directory/ssh.stderr" || {
+            printf '%s\n' 'remote staging deployment failed' >&2
+            exit 1
+          }

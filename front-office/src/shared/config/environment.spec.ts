@@ -3,11 +3,20 @@ import { describe, expect, it } from 'vitest'
 import { validateEnvironment } from './environment'
 
 describe('validateEnvironment', () => {
-  it('принимает поддерживаемое окружение и абсолютный HTTP URL API', () => {
+  it('принимает поддерживаемое окружение и абсолютный HTTP URL origin API', () => {
     expect(() =>
       validateEnvironment({
         VITE_APP_ENV: 'local',
         VITE_API_BASE_URL: 'http://localhost:3000',
+      }),
+    ).not.toThrow()
+  })
+
+  it('принимает / для API на текущем origin', () => {
+    expect(() =>
+      validateEnvironment({
+        VITE_APP_ENV: 'development',
+        VITE_API_BASE_URL: '/',
       }),
     ).not.toThrow()
   })
@@ -32,7 +41,7 @@ describe('validateEnvironment', () => {
     )
   })
 
-  it('отклоняет отсутствующий или некорректный адрес API', () => {
+  it('отклоняет пустой или некорректный адрес API', () => {
     expect(() =>
       validateEnvironment({
         VITE_APP_ENV: 'local',
@@ -43,8 +52,34 @@ describe('validateEnvironment', () => {
     expect(() =>
       validateEnvironment({
         VITE_APP_ENV: 'local',
+        VITE_API_BASE_URL: '   ',
+      }),
+    ).toThrow('Неверная конфигурация: VITE_API_BASE_URL обязательна.')
+
+    expect(() =>
+      validateEnvironment({
+        VITE_APP_ENV: 'local',
         VITE_API_BASE_URL: 'ftp://example.test',
       }),
-    ).toThrow('Неверная конфигурация: VITE_API_BASE_URL должна быть абсолютным HTTP(S) URL.')
+    ).toThrow('Неверная конфигурация: VITE_API_BASE_URL должна быть / или абсолютным HTTP(S) URL origin.')
+  })
+
+  it('отклоняет адрес API вне origin', () => {
+    for (const apiBaseUrl of [
+      'https://api.example.test/service',
+      'https://api.example.test/?version=1',
+      'https://api.example.test/#fragment',
+      'https://user:password@api.example.test/',
+      '//api.example.test',
+    ]) {
+      expect(() =>
+        validateEnvironment({
+          VITE_APP_ENV: 'local',
+          VITE_API_BASE_URL: apiBaseUrl,
+        }),
+      ).toThrow(
+        'Неверная конфигурация: VITE_API_BASE_URL должна быть / или абсолютным HTTP(S) URL origin.',
+      )
+    }
   })
 })

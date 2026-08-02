@@ -38,7 +38,7 @@ describe('ApiClient', () => {
     } satisfies Partial<ApiError>)
   })
 
-  it('добавляет /api/v1 к проверенному базовому URL без двойных слешей', async () => {
+  it('сохраняет абсолютный origin и добавляет /api/v1 без двойных слешей', async () => {
     let requestedUrl = ''
     const response = new Response(JSON.stringify('ok'))
 
@@ -47,11 +47,51 @@ describe('ApiClient', () => {
       return response
     }
 
-    const client = createApiClient('https://api.example.test/service/', fetcher)
+    const client = createApiClient('https://api.example.test/', fetcher)
 
     await client.request('/queue', isString)
 
-    expect(requestedUrl).toBe('https://api.example.test/service/api/v1/queue')
+    expect(requestedUrl).toBe('https://api.example.test/api/v1/queue')
+  })
+
+  it('создаёт same-origin URL с /api/v1 без двойных слешей', async () => {
+    let requestedUrl = ''
+    const response = new Response(JSON.stringify('ok'))
+
+    const fetcher = async (url: string | URL | Request): Promise<Response> => {
+      requestedUrl = url.toString()
+      return response
+    }
+
+    const client = createApiClient('/', fetcher)
+
+    await client.request('/queue', isString)
+
+    expect(requestedUrl).toBe('/api/v1/queue')
+  })
+
+  it('кодирует путь и параметры same-origin URL по правилам URL', async () => {
+    let requestedUrl = ''
+    const response = new Response(JSON.stringify('ok'))
+
+    const fetcher = async (url: string | URL | Request): Promise<Response> => {
+      requestedUrl = url.toString()
+      return response
+    }
+
+    const client = createApiClient('/', fetcher)
+
+    await client.request('/заказы с чаем?поиск=зелёный чай', isString)
+
+    expect(requestedUrl).toBe(
+      '/api/v1/%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D1%8B%20%D1%81%20%D1%87%D0%B0%D0%B5%D0%BC?%D0%BF%D0%BE%D0%B8%D1%81%D0%BA=%D0%B7%D0%B5%D0%BB%D1%91%D0%BD%D1%8B%D0%B9%20%D1%87%D0%B0%D0%B9',
+    )
+  })
+
+  it('отклоняет protocol-relative адрес вместо same-origin URL', () => {
+    expect(() => createApiClient('//evil.example.test')).toThrow(
+      'Базовый URL API для текущего origin должен быть равен /.',
+    )
   })
 })
 

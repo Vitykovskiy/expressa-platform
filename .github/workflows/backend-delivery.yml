@@ -1,0 +1,17 @@
+name: Backend delivery
+
+on:
+  push:
+    tags: ['backend-v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deliver:
+    uses: ./.github/workflows/delivery-component.yml
+    with:
+      component: backend
+      context: backend
+      image: expressa-backend
