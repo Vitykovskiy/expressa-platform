@@ -169,14 +169,46 @@ jobs:
           } > "$ssh_config"
           chmod 600 "$private_key" "$known_hosts" "$ssh_config"
 
+          remote_stdout="$temporary_directory/ssh.stdout"
+          remote_stderr="$temporary_directory/ssh.stderr"
+          # shellcheck disable=SC2016
+          remote_command='
+            set -Eeuo pipefail
+            report_failure() {
+              printf "expressa-deploy: preflight code=%s\n" "$1" >&2
+              exit 1
+            }
+
+            source /dev/stdin
+            [[ "${DEPLOY_ROOT:-}" == /srv/expressa && "${DEPLOY_ENV:-}" == development && "${DEPLOY_SCRIPT:-}" == deploy/deploy.sh ]] || report_failure input
+            [[ -d /srv/expressa/infra && ! -L /srv/expressa/infra ]] || report_failure path
+            [[ -f /srv/expressa/infra/deploy/deploy.sh && -x /srv/expressa/infra/deploy/deploy.sh && ! -L /srv/expressa/infra/deploy/deploy.sh ]] || report_failure script
+            [[ -f /srv/expressa/development/runtime.env && ! -L /srv/expressa/development/runtime.env ]] || report_failure runtime
+            [[ -d /srv/expressa/development/state && ! -L /srv/expressa/development/state && -w /srv/expressa/development/state ]] || report_failure state
+            command -v docker >/dev/null && docker compose version >/dev/null 2>&1 || report_failure docker
+            cd -- /srv/expressa/infra
+            exec ./deploy/deploy.sh --environment development deploy all
+          '
+          emit_remote_diagnostics() {
+            local line marker_pattern preflight_pattern
+            marker_pattern='^expressa-deploy: phase=(preflight|pull|backup|migrate|compose|smoke|state) status=(start|failed|complete)$'
+            preflight_pattern='^expressa-deploy: preflight code=(input|path|script|runtime|state|docker)$'
+            while IFS= read -r line; do
+              if [[ "$line" =~ $marker_pattern || "$line" =~ $preflight_pattern ]]; then
+                printf '%s\n' "$line" >&2
+              fi
+            done < <(cat "$remote_stdout" "$remote_stderr")
+          }
+
           {
             printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
             printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
             printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"
             printf '%s\n' 'export DEPLOY_ROOT=/srv/expressa'
-            printf '%s\n' 'cd -- /srv/expressa/infra'
-            printf '%s\n' 'exec ./deploy/deploy.sh --environment development deploy all'
-          } | ssh -F "$ssh_config" -T delivery-target 'bash -se' 2> "$temporary_directory/ssh.stderr" || {
+            printf '%s\n' 'export DEPLOY_ENV=development'
+            printf '%s\n' 'export DEPLOY_SCRIPT=deploy/deploy.sh'
+          } | ssh -F "$ssh_config" -T delivery-target "$remote_command" > "$remote_stdout" 2> "$remote_stderr" || {
+            emit_remote_diagnostics
             printf '%s\n' 'remote development deployment failed' >&2
             exit 1
           }

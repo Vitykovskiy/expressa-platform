@@ -15,6 +15,11 @@ assert_registry_credentials_absent() {
   local root="$1"
   ! grep -E 'ghcr_username=x|ghcr_token=x|docker_config=x|docker login|ghcr\.io' "$root/docker.log" || fail 'registry credentials or GHCR reached Docker command log'
 }
+assert_phase_failure() {
+  local output="$1" phase="$2"
+  grep -Fqx "expressa-deploy: phase=$phase status=failed" <<< "$output" || fail "missing failed phase marker: $phase"
+  ! grep -Eqi 'leaked|database_url|postgresql://|password=' <<< "$output" || fail "deployment leaked diagnostics for phase: $phase"
+}
 
 fake_docker="$temporary_directory/docker"
 infrastructure_directory="$temporary_directory/infra"
@@ -42,6 +47,12 @@ if [[ "${WAIT_SERVICE:-}" != '' && "$*" == *" up "* && "$*" == *" ${WAIT_SERVICE
   : > "${WAIT_READY_FILE:?WAIT_READY_FILE is required when waiting}"
   while [[ ! -e "${WAIT_RELEASE_FILE:?WAIT_RELEASE_FILE is required when waiting}" ]]; do sleep 0.1; done
 fi
+if [[ "${FAIL_COMPOSE:-}" == 1 && "$*" == *" config -q"* ]]; then printf '%s\n' 'DATABASE_URL=postgresql://leaked:password@example/db' >&2; exit 25; fi
+if [[ "${FAIL_PULL:-}" == 1 && "$*" == *" pull "* ]]; then printf '%s\n' 'TOKEN=leaked-pull-token' >&2; exit 26; fi
+if [[ "${FAIL_MIGRATION:-}" == 1 && "$*" == *" run "* && "$*" == *"migrate.js"* ]]; then printf '%s\n' 'POSTGRES_PASSWORD=leaked-migration-password' >&2; exit 27; fi
+if [[ "${FAIL_SMOKE_BACKEND:-}" == 1 && "$*" == *" exec "* && "$*" == *" backend /nodejs/bin/node "* ]]; then exit 28; fi
+if [[ "${FAIL_SMOKE_WEB:-}" == 1 && "$*" == *" exec "* && "$*" == *" wget "* ]]; then printf '%s\n' 'generic wget error SECRET=leaked-web-secret' >&2; exit 29; fi
+if [[ "${FAIL_HEALTH:-}" == 1 && "$1" == inspect ]]; then printf '%s\n' 'DATABASE_URL=postgresql://leaked:password@example/db' >&2; exit 30; fi
 if [[ "$1" == inspect ]]; then printf 'healthy\n'; exit 0; fi
 if [[ "$1" == network || "$1" == --config ]]; then exit 0; fi
 if [[ "$1" == compose ]]; then
@@ -186,6 +197,70 @@ backup_failure_status="$?"
 set -e
 [[ "$backup_failure_status" != 0 ]] || fail 'pg_dump failure was accepted'
 [[ ! -e "$backup_failure_root/development/state/current" ]] || fail 'failed first backup wrote deployment state'
+
+phase_pull_root="$temporary_directory/phase-pull"
+set +e
+phase_pull_output="$(FAIL_PULL=1 run_deploy "$phase_pull_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_pull_status="$?"
+set -e
+[[ "$phase_pull_status" != 0 ]] || fail 'pull failure was accepted'
+assert_phase_failure "$phase_pull_output" pull
+
+phase_compose_root="$temporary_directory/phase-compose"
+set +e
+phase_compose_output="$(FAIL_COMPOSE=1 run_deploy "$phase_compose_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_compose_status="$?"
+set -e
+[[ "$phase_compose_status" != 0 ]] || fail 'compose failure was accepted'
+assert_phase_failure "$phase_compose_output" compose
+
+phase_migrate_root="$temporary_directory/phase-migrate"
+set +e
+phase_migrate_output="$(FAIL_MIGRATION=1 run_deploy "$phase_migrate_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_migrate_status="$?"
+set -e
+[[ "$phase_migrate_status" != 0 ]] || fail 'migration failure was accepted'
+assert_phase_failure "$phase_migrate_output" migrate
+
+phase_backend_smoke_root="$temporary_directory/phase-backend-smoke"
+set +e
+phase_backend_smoke_output="$(FAIL_SMOKE_BACKEND=1 run_deploy "$phase_backend_smoke_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_backend_smoke_status="$?"
+set -e
+[[ "$phase_backend_smoke_status" != 0 ]] || fail 'silent backend smoke failure was accepted'
+assert_phase_failure "$phase_backend_smoke_output" smoke
+
+phase_web_smoke_root="$temporary_directory/phase-web-smoke"
+set +e
+phase_web_smoke_output="$(FAIL_SMOKE_WEB=1 run_deploy "$phase_web_smoke_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)" 2>&1)"
+phase_web_smoke_status="$?"
+set -e
+[[ "$phase_web_smoke_status" != 0 ]] || fail 'wget smoke failure was accepted'
+assert_phase_failure "$phase_web_smoke_output" smoke
+
+phase_rollback_root="$temporary_directory/phase-rollback"
+run_deploy "$phase_rollback_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"
+run_deploy "$phase_rollback_root" deploy all BACKEND_IMAGE="$(digest backend 2)" FRONT_IMAGE="$(digest front-office 2)" BACK_IMAGE="$(digest back-office 2)"
+set +e
+phase_rollback_health_output="$(FAIL_HEALTH=1 run_deploy "$phase_rollback_root" rollback backend 2>&1)"
+phase_rollback_health_status="$?"
+set -e
+[[ "$phase_rollback_health_status" != 0 ]] || fail 'rollback health failure was accepted'
+assert_phase_failure "$phase_rollback_health_output" smoke
+
+set +e
+phase_rollback_backend_output="$(FAIL_SMOKE_BACKEND=1 run_deploy "$phase_rollback_root" rollback backend 2>&1)"
+phase_rollback_backend_status="$?"
+set -e
+[[ "$phase_rollback_backend_status" != 0 ]] || fail 'rollback backend smoke failure was accepted'
+assert_phase_failure "$phase_rollback_backend_output" smoke
+
+set +e
+phase_rollback_web_output="$(FAIL_SMOKE_WEB=1 run_deploy "$phase_rollback_root" rollback front 2>&1)"
+phase_rollback_web_status="$?"
+set -e
+[[ "$phase_rollback_web_status" != 0 ]] || fail 'rollback web smoke failure was accepted'
+assert_phase_failure "$phase_rollback_web_output" smoke
 
 failure_root="$temporary_directory/failure"
 run_deploy "$failure_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"

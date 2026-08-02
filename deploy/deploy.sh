@@ -118,13 +118,14 @@ write_previous_state() {
 }
 
 compose() { "$docker_bin" compose --project-name "$compose_project" --file "$compose_file" "$@"; }
+compose_quiet() { compose "$@" >/dev/null 2>&1; }
 
 wait_for_health() {
   local service="$1" container status retries=30
-  container="$(compose ps -q "$service")"
+  container="$(compose ps -q "$service" 2>/dev/null)"
   [[ -n "$container" ]] || fail "$service container was not created"
   while (( retries > 0 )); do
-    status="$("$docker_bin" inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container")"
+    status="$("$docker_bin" inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null)"
     [[ "$status" == healthy ]] && return 0
     [[ "$status" != unhealthy && "$status" != none ]] || fail "$service did not become healthy"
     ((retries -= 1)) || true
@@ -137,19 +138,19 @@ backup_database() {
   local temporary backup
   temporary="$(mktemp "$backup_directory/.postgres.XXXXXX")"
   backup="$backup_directory/postgres-$(date -u +%Y%m%dT%H%M%S)-$(basename "$temporary").sql.gz"
-  if ! compose exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" | gzip -c > "$temporary"; then
+  if ! compose exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" 2>/dev/null | gzip -c 2>/dev/null > "$temporary"; then
     rm -f "$temporary"; fail 'pg_dump failed'
   fi
   [[ -s "$temporary" ]] || { rm -f "$temporary"; fail 'pg_dump produced an empty backup'; }
   mv -f "$temporary" "$backup"
 }
 
-run_migrations() { compose run --rm --no-deps backend /nodejs/bin/node dist/scripts/migrate.js; }
-smoke_backend() { compose exec -T backend /nodejs/bin/node -e "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; }
-smoke_web() { compose exec -T "$1" wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health; }
+run_migrations() { compose_quiet run --rm --no-deps backend /nodejs/bin/node dist/scripts/migrate.js; }
+smoke_backend() { compose_quiet exec -T backend /nodejs/bin/node -e "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; }
+smoke_web() { compose_quiet exec -T "$1" wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health; }
 ensure_edge_network() { "$docker_bin" network inspect "expressa-${environment}-edge" >/dev/null 2>&1 || "$docker_bin" network create "expressa-${environment}-edge" >/dev/null; }
 
-pull_images() { compose pull "$@"; }
+pull_images() { compose_quiet pull "$@"; }
 
 deployment_lock_is_held() {
   local descriptor descriptor_info
@@ -165,7 +166,7 @@ deployment_lock_is_held() {
 restore_changed_service() {
   local service="$1" changed="$2" current="$3"
   [[ "$changed" == 1 ]] || return 0
-  if [[ -n "$current" ]]; then compose up -d --no-deps "$service" || true; else compose rm -sf "$service" || true; fi
+  if [[ -n "$current" ]]; then compose_quiet up -d --no-deps "$service" || true; else compose_quiet rm -sf "$service" || true; fi
 }
 rollback_changed() {
   [[ "${rollback_required:-0}" == 1 ]] || return 0
@@ -181,10 +182,25 @@ mark_changed() { case "$1" in postgres) changed_postgres=1 ;; backend) changed_b
 rollback_service() {
   local service="$1"
   rollback_required=1; mark_changed "$service"
-  compose up -d --no-deps "$service"; wait_for_health "$service"
+  compose_quiet up -d --no-deps "$service"
+  set_phase smoke; wait_for_health "$service"
   case "$service" in backend) smoke_backend ;; front|back) smoke_web "$service" ;; esac
 }
-on_exit() { local status="$1"; [[ "$status" == 0 ]] || rollback_changed; trap - EXIT; exit "$status"; }
+set_phase() {
+  current_phase="$1"
+  printf 'expressa-deploy: phase=%s status=start\n' "$current_phase" >&2
+}
+on_exit() {
+  local status="$1"
+  if [[ "$status" == 0 ]]; then
+    printf 'expressa-deploy: phase=%s status=complete\n' "$current_phase" >&2
+  else
+    printf 'expressa-deploy: phase=%s status=failed\n' "$current_phase" >&2
+    rollback_changed
+  fi
+  trap - EXIT
+  exit "$status"
+}
 on_signal() { exit "$2"; }
 
 [[ "$#" == 4 && "$1" == --environment ]] || usage
@@ -210,10 +226,12 @@ unset DATABASE_URL POSTGRES_IMAGE POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD GH
 mkdir -p "$backup_directory"
 chmod 700 "$state_directory" "$backup_directory"
 rollback_required=0; changed_postgres=0; changed_backend=0; changed_front=0; changed_back=0
+current_phase=preflight
 trap 'on_exit "$?"' EXIT
 trap 'on_signal TERM 143' TERM
 trap 'on_signal INT 130' INT
 trap 'on_signal HUP 129' HUP
+set_phase preflight
 available_kb="$(df -Pk "$deploy_root" | awk 'NR == 2 { print $4 }')"
 [[ "$available_kb" =~ ^[0-9]+$ && "$available_kb" -ge "$minimum_free_kb" ]] || fail 'insufficient free disk space'
 parse_runtime; validate_runtime
@@ -254,7 +272,9 @@ fi
 
 export DEPLOY_ENV="$environment" COMPOSE_PROJECT_NAME="$compose_project" POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DATABASE_URL
 export BACKEND_IMAGE="$next_backend" FRONT_IMAGE="$next_front" BACK_IMAGE="$next_back"
-compose config -q; ensure_edge_network
+set_phase compose
+compose_quiet config -q; ensure_edge_network
+set_phase pull
 if [[ "$operation" == deploy ]]; then
   case "$target" in all) pull_images backend front back ;; backend) pull_images backend ;; front) pull_images front ;; back) pull_images back ;; esac
 else
@@ -262,15 +282,20 @@ else
 fi
 
 if [[ "$operation" == deploy && ( "$target" == all || "$target" == backend ) ]]; then
-  rollback_required=1; changed_postgres=1; compose up -d postgres; wait_for_health postgres
-  backup_database; run_migrations
-  changed_backend=1; compose up -d --no-deps backend; wait_for_health backend; smoke_backend
+  rollback_required=1; changed_postgres=1; set_phase compose; compose_quiet up -d postgres
+  set_phase smoke; wait_for_health postgres
+  set_phase backup; backup_database
+  set_phase migrate; run_migrations
+  changed_backend=1; set_phase compose; compose_quiet up -d --no-deps backend
+  set_phase smoke; wait_for_health backend; smoke_backend
 fi
-if [[ "$operation" == deploy && ( "$target" == all || "$target" == front ) ]]; then rollback_required=1; changed_front=1; compose up -d --no-deps front; wait_for_health front; smoke_web front; fi
-if [[ "$operation" == deploy && ( "$target" == all || "$target" == back ) ]]; then rollback_required=1; changed_back=1; compose up -d --no-deps back; wait_for_health back; smoke_web back; fi
+if [[ "$operation" == deploy && ( "$target" == all || "$target" == front ) ]]; then rollback_required=1; changed_front=1; set_phase compose; compose_quiet up -d --no-deps front; set_phase smoke; wait_for_health front; smoke_web front; fi
+if [[ "$operation" == deploy && ( "$target" == all || "$target" == back ) ]]; then rollback_required=1; changed_back=1; set_phase compose; compose_quiet up -d --no-deps back; set_phase smoke; wait_for_health back; smoke_web back; fi
 if [[ "$operation" == rollback ]]; then
+  set_phase compose
   case "$target" in all) rollback_service backend; rollback_service front; rollback_service back ;; backend) rollback_service backend ;; front) rollback_service front ;; back) rollback_service back ;; esac
 fi
+set_phase state
 [[ ! -f "$current_state" || "$operation" != deploy ]] || write_previous_state
 write_state "$current_state"
 rollback_required=0
