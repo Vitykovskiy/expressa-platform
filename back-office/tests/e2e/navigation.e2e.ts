@@ -85,9 +85,10 @@ test("Select и Toggle работают с клавиатуры при шири�
     exact: true,
   });
   await focusWithTab(page, select);
-  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option", { name: "Чай" })).toBeVisible();
-  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("End");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("status")).toHaveText("Выбрана категория: tea");
 
