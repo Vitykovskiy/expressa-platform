@@ -21,6 +21,18 @@ assert_phase_failure() {
   [[ "$failed_markers" == "expressa-deploy: phase=$phase status=failed" ]] || fail "unexpected failed phase marker: $failed_markers"
   ! grep -Eqi 'leaked|database_url|postgresql://|password=' <<< "$output" || fail "deployment leaked diagnostics for phase: $phase"
 }
+assert_active_services() {
+  local root="$1" expected="$2" actual=''
+  [[ ! -f "$root/services" ]] || actual="$(sort "$root/services")"
+  [[ "$actual" == "$expected" ]] || fail "unexpected active services: ${actual:-none}"
+}
+assert_first_deploy_rollback() {
+  local root="$1"
+  assert_active_services "$root" ''
+  [[ ! -e "$root/development/state/current" && ! -e "$root/development/state/previous" ]] || fail 'failed first deployment left deployment state'
+  [[ ! -f "$root/volume" || "$(< "$root/volume")" == postgres-data ]] || fail 'rollback modified postgres volume'
+  ! grep -Eq ' compose .* rm .* -v( |$)' "$root/docker.log" || fail 'rollback removed postgres volume'
+}
 
 fake_docker="$temporary_directory/docker"
 infrastructure_directory="$temporary_directory/infra"
@@ -50,6 +62,9 @@ if [[ "${WAIT_SERVICE:-}" != '' && "$*" == *" up "* && "$*" == *" ${WAIT_SERVICE
 fi
 if [[ "${FAIL_COMPOSE:-}" == 1 && "$*" == *" config -q"* ]]; then printf '%s\n' 'DATABASE_URL=postgresql://leaked:password@example/db' >&2; exit 25; fi
 if [[ "${FAIL_PULL:-}" == 1 && "$*" == *" pull "* ]]; then printf '%s\n' 'TOKEN=leaked-pull-token' >&2; exit 26; fi
+if [[ "$1" == compose && "$*" == *" run "* && "$*" == *"migrate.js"* ]]; then
+  [[ "$*" == *" run --rm --no-deps backend dist/scripts/migrate.js"* && "$*" != *"backend /nodejs/bin/node dist/scripts/migrate.js"* ]] || exit 31
+fi
 if [[ "${FAIL_MIGRATION:-}" == 1 && "$*" == *" run "* && "$*" == *"migrate.js"* ]]; then printf '%s\n' 'POSTGRES_PASSWORD=leaked-migration-password' >&2; exit 27; fi
 if [[ "${FAIL_SMOKE_BACKEND:-}" == 1 && "$*" == *" exec "* && "$*" == *" backend /nodejs/bin/node "* ]]; then exit 28; fi
 if [[ "${FAIL_SMOKE_WEB:-}" == 1 && "$*" == *" exec "* && "$*" == *" wget "* ]]; then printf '%s\n' 'generic wget error SECRET=leaked-web-secret' >&2; exit 29; fi
@@ -57,6 +72,21 @@ if [[ "${FAIL_HEALTH:-}" == 1 && "$1" == inspect ]]; then printf '%s\n' 'DATABAS
 if [[ "$1" == inspect ]]; then printf 'healthy\n'; exit 0; fi
 if [[ "$1" == network || "$1" == --config ]]; then exit 0; fi
 if [[ "$1" == compose ]]; then
+  case " $* " in
+    *" up "*)
+      service="${!#}"
+      [[ -n "${FAKE_SERVICE_STATE:-}" ]] && { mkdir -p "$(dirname "$FAKE_SERVICE_STATE")"; grep -Fqx "$service" "$FAKE_SERVICE_STATE" 2>/dev/null || printf '%s\n' "$service" >> "$FAKE_SERVICE_STATE"; }
+      [[ "$service" != postgres || -z "${FAKE_VOLUME_STATE:-}" ]] || printf '%s\n' postgres-data > "$FAKE_VOLUME_STATE"
+      ;;
+    *" rm "*)
+      service="${!#}"
+      if [[ -n "${FAKE_SERVICE_STATE:-}" && -f "$FAKE_SERVICE_STATE" ]]; then
+        grep -Fvx "$service" "$FAKE_SERVICE_STATE" > "$FAKE_SERVICE_STATE.next" || true
+        mv "$FAKE_SERVICE_STATE.next" "$FAKE_SERVICE_STATE"
+      fi
+      if [[ "$*" == *" -v "* && -n "${FAKE_VOLUME_STATE:-}" ]]; then : > "$FAKE_VOLUME_STATE"; fi
+      ;;
+  esac
   case " $* " in *" ps -q "*) printf 'fake-container\n' ;; *" exec "*" pg_dump "*) [[ "${FAIL_DUMP:-}" == 1 ]] && exit 24; printf 'CREATE TABLE test ();\n' ;; esac
 fi
 EOF
@@ -76,7 +106,7 @@ run_deploy() {
   local state_root="$1" operation="$2" target="$3"
   shift 3
   [[ "${SKIP_RUNTIME_WRITE:-}" == 1 ]] || write_runtime "$state_root"
-  env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target"
+  env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" FAKE_SERVICE_STATE="$state_root/services" FAKE_VOLUME_STATE="$state_root/volume" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target"
 }
 run_deploy_as_unprivileged_user() {
   local state_root="$1" operation="$2" target="$3"
@@ -94,7 +124,7 @@ start_deploy() {
   [[ "${SKIP_RUNTIME_WRITE:-}" == 1 ]] || write_runtime "$state_root"
   deployment_pid_file="$(mktemp "$temporary_directory/.deployment.XXXXXX")"
   # shellcheck disable=SC2016
-  setsid sh -c 'printf "%s\n" "$$" > "$1"; shift; exec env --default-signal=HUP,INT,TERM "$@"' deploy-harness "$deployment_pid_file" DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target" &
+  setsid sh -c 'printf "%s\n" "$$" > "$1"; shift; exec env --default-signal=HUP,INT,TERM "$@"' deploy-harness "$deployment_pid_file" DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" FAKE_SERVICE_STATE="$state_root/services" FAKE_VOLUME_STATE="$state_root/volume" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target" &
   while (( retries > 0 )) && [[ ! -s "$deployment_pid_file" ]]; do sleep 0.01; ((retries -= 1)); done
   [[ -s "$deployment_pid_file" ]] || fail 'deployment process did not start'
   read -r deployment_pid < "$deployment_pid_file"
@@ -206,6 +236,7 @@ phase_pull_status="$?"
 set -e
 [[ "$phase_pull_status" != 0 ]] || fail 'pull failure was accepted'
 assert_phase_failure "$phase_pull_output" pull
+assert_first_deploy_rollback "$phase_pull_root"
 
 phase_compose_root="$temporary_directory/phase-compose"
 set +e
@@ -214,6 +245,7 @@ phase_compose_status="$?"
 set -e
 [[ "$phase_compose_status" != 0 ]] || fail 'compose failure was accepted'
 assert_phase_failure "$phase_compose_output" compose
+assert_first_deploy_rollback "$phase_compose_root"
 
 phase_migrate_root="$temporary_directory/phase-migrate"
 set +e
@@ -222,6 +254,9 @@ phase_migrate_status="$?"
 set -e
 [[ "$phase_migrate_status" != 0 ]] || fail 'migration failure was accepted'
 assert_phase_failure "$phase_migrate_output" migrate
+grep -Fqx 'deploy: migration failed' <<< "$phase_migrate_output" || fail 'migration failure did not report safe error'
+assert_first_deploy_rollback "$phase_migrate_root"
+[[ "$(find "$phase_migrate_root/development/backups" -name 'postgres-*.sql.gz' -type f | wc -l | tr -d ' ')" == 1 ]] || fail 'migration rollback removed database backup'
 
 phase_backend_smoke_root="$temporary_directory/phase-backend-smoke"
 set +e
@@ -230,6 +265,7 @@ phase_backend_smoke_status="$?"
 set -e
 [[ "$phase_backend_smoke_status" != 0 ]] || fail 'silent backend smoke failure was accepted'
 assert_phase_failure "$phase_backend_smoke_output" smoke
+assert_first_deploy_rollback "$phase_backend_smoke_root"
 
 phase_web_smoke_root="$temporary_directory/phase-web-smoke"
 set +e
@@ -238,6 +274,15 @@ phase_web_smoke_status="$?"
 set -e
 [[ "$phase_web_smoke_status" != 0 ]] || fail 'wget smoke failure was accepted'
 assert_phase_failure "$phase_web_smoke_output" smoke
+assert_first_deploy_rollback "$phase_web_smoke_root"
+
+partial_first_deploy_root="$temporary_directory/partial-first-deploy"
+set +e
+FAIL_SERVICE=front run_deploy "$partial_first_deploy_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"
+partial_first_deploy_status="$?"
+set -e
+[[ "$partial_first_deploy_status" != 0 ]] || fail 'partial first deployment failure was accepted'
+assert_first_deploy_rollback "$partial_first_deploy_root"
 
 phase_rollback_root="$temporary_directory/phase-rollback"
 run_deploy "$phase_rollback_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"
@@ -271,6 +316,7 @@ failure_status="$?"
 set -e
 [[ "$failure_status" != 0 ]] || fail 'failed deployment was accepted'
 assert_file_contains "$failure_root/development/state/current" "FRONT_IMAGE=$(digest front-office 1)"
+assert_active_services "$failure_root" $'back\nbackend\nfront\npostgres'
 
 rollback_failure_root="$temporary_directory/rollback-failure"
 run_deploy "$rollback_failure_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"

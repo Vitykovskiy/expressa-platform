@@ -145,7 +145,7 @@ backup_database() {
   mv -f "$temporary" "$backup"
 }
 
-run_migrations() { compose_quiet run --rm --no-deps backend /nodejs/bin/node dist/scripts/migrate.js; }
+run_migrations() { compose_quiet run --rm --no-deps backend dist/scripts/migrate.js || fail 'migration failed'; }
 smoke_backend() { compose_quiet exec -T backend /nodejs/bin/node -e "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; }
 smoke_web() { compose_quiet exec -T "$1" wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health; }
 ensure_edge_network() { "$docker_bin" network inspect "expressa-${environment}-edge" >/dev/null 2>&1 || "$docker_bin" network create "expressa-${environment}-edge" >/dev/null; }
@@ -171,9 +171,14 @@ restore_changed_service() {
 rollback_changed() {
   [[ "${rollback_required:-0}" == 1 ]] || return 0
   rollback_required=0
-  if [[ -f "$current_state" ]]; then load_state "$current_state"; else current_backend=''; current_front=''; current_back=''; fi
+  if [[ -f "$current_state" ]]; then
+    load_state "$current_state"
+    current_postgres=postgres
+  else
+    current_postgres=''; current_backend=''; current_front=''; current_back=''
+  fi
   export BACKEND_IMAGE="${current_backend:-$desired_backend}" FRONT_IMAGE="${current_front:-$desired_front}" BACK_IMAGE="${current_back:-$desired_back}"
-  restore_changed_service postgres "$changed_postgres" 'postgres'
+  restore_changed_service postgres "$changed_postgres" "$current_postgres"
   restore_changed_service backend "$changed_backend" "$current_backend"
   restore_changed_service front "$changed_front" "$current_front"
   restore_changed_service back "$changed_back" "$current_back"
