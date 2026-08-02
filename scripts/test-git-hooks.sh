@@ -54,6 +54,15 @@ if git -C "$temporary_repository" commit -qm reject-fixture >/dev/null 2>&1; the
 fi
 
 git -C "$temporary_repository" reset -q
+printf '%s\n' 'api_key=123456789012' > "$temporary_repository/removed.config"
+git -C "$temporary_repository" add removed.config
+git -C "$temporary_repository" -c core.hooksPath=/dev/null commit -qm deletion-fixture
+git -C "$temporary_repository" rm -q removed.config
+if ! git -C "$temporary_repository" commit -qm allow-deletion >/dev/null 2>&1; then
+  printf '%s\n' 'test-git-hooks: deletion of secret-like content was rejected.' >&2
+  exit 1
+fi
+
 printf '%s\n' 'api_key=${API_KEY}' > "$temporary_repository/runtime.config"
 git -C "$temporary_repository" add runtime.config
 if ! git -C "$temporary_repository" commit -qm allow-fixture >/dev/null 2>&1; then

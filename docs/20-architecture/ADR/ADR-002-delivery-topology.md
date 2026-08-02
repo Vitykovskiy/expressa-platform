@@ -16,17 +16,17 @@ related: ["[[../Repository-boundaries]]", "[[../../70-deployment/Environments]]"
 
 ## Контекст
 
-Клиентам нужен совместимый backend без локального запуска, а development и staging не должны делить базу, контейнеры или маршруты. Поставка должна обходиться без внешнего registry и не раскрывать registry в сети.
+Development и staging должны быть изолированы на одном VPS, а поставка — обходиться без внешнего registry и не раскрывать registry в сети. Обе среды используют единый проверенный набор образов, но staging не должен пересобирать его.
 
 ## Решение
 
-Один VPS несёт две Compose-проекции с отдельными edge/data-сетями и runtime-файлами. Bootstrap создаёт сети, включая внутренние data-сети; Compose использует их как external. Shared Caddy подключён к edge-сетям и обслуживает по три HTTPS-домена на среду.
+Один VPS обслуживает development и staging. Локальный Docker Distribution доступен только на `127.0.0.1:5000`, а CI подключается к нему временным SSH-tunnel.
 
-На VPS запущен Docker Distribution, доступный только через `127.0.0.1:5000`; данные размещены в `/srv/expressa/registry/data`, удаление отключено. GitHub Actions подключается к registry временным SSH-tunnel. SHA-образы write-once, а компонентные release aliases ссылаются на существующий digest без пересборки. Staging читает точный набор digest-ссылок из `deploy/staging.env`.
+`main` проверяет три приложения, собирает единый набор immutable digest-образов и автоматически развёртывает development. Тег `staging-v*` развёртывает ровно три digest из [deploy/staging.env](../../../deploy/staging.env) без пересборки. Текущий checkout `deploy.sh` и `compose.yml` передаются SCP во временный каталог VPS и удаляются после запуска.
 
 ## Последствия
 
-- Данные и контейнеры development/staging изолированы сетями и именами Compose.
-- Registry не имеет внешней публикации; в GitHub environments хранятся только пять SSH-параметров доступа.
-- Откат development выполняется вручную по `state/previous`; изменения схемы базы автоматически не откатываются.
-- Production не является частью решения.
+- Development и staging изолированы на одном VPS.
+- Registry не имеет внешней публикации.
+- Staging использует те же digest-образы, что были проверены в `main`.
+- Production в этой топологии отсутствует.

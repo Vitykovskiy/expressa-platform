@@ -44,6 +44,7 @@ while IFS= read -r staged_file; do
   esac
 
   if git diff --cached --no-ext-diff --unified=0 -- "$staged_file" \
+    | grep '^+' \
     | grep -Ev '^\+\+\+' \
     | grep -Ei '(BEGIN([[:space:]][A-Z]+)*[[:space:]]PRIVATE[[:space:]]KEY|AKIA[0-9A-Z]{16}|github_pat_[A-Za-z0-9_=-]{16,}|gh[pousr]_[A-Za-z0-9_=-]{16,}|glpat-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|authorization[[:space:]]*:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._=-]{16,}|(api[_-]?key|password|passwd|secret|token|database[_-]?url)[[:space:]]*[:=][[:space:]]*[^[:space:]#]{12,})' \
     | grep -Eiv '(\$\{[^}]+\}|process\.env|import\.meta\.env|<[^>]+>|example|sample|template|placeholder|changeme|your[_-]?(api|token|secret|password|key)|postgres(ql)?://[^[:space:]#]*(localhost|127\.0\.0\.1|::1))' >/dev/null; then

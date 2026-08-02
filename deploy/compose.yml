@@ -36,7 +36,6 @@ services:
       NODE_ENV: "${DEPLOY_ENV:?DEPLOY_ENV is required}"
       PORT: '3000'
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
-      BOOTSTRAP_ADMIN_PHONE: "${BOOTSTRAP_ADMIN_PHONE:-}"
     depends_on:
       postgres:
         condition: service_healthy

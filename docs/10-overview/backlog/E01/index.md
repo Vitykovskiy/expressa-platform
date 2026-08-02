@@ -18,10 +18,10 @@
 | [[delivery/BL-0012\|BL-0012]] | complete | Front-office Dockerfile непривилегирован, имеет health-check; Docker build прошёл CI. |
 | [[delivery/BL-0013\|BL-0013]] | complete | Back-office Dockerfile непривилегирован, имеет health-check; Docker build прошёл CI. |
 | [[delivery/BL-0014\|BL-0014]] | complete | Local/development/staging/production определены; development и staging развернуты, production отсутствует по плану. |
-| [[delivery/BL-0015\|BL-0015]] | complete | Backend CI, development delivery и tagged staging подтверждены успешными runs. |
+| [[delivery/BL-0015\|BL-0015]] | in progress | Новый KISS delivery требует green CI; staging запускается тегом после проверок. |
 | [[delivery/BL-0016\|BL-0016]] | in progress | CI и tagged staging доказаны; автоматический same-origin check development/staging не доказан. |
 | [[delivery/BL-0017\|BL-0017]] | in progress | CI и tagged staging доказаны; автоматический same-origin check development/staging не доказан. |
-| [[delivery/BL-0018\|BL-0018]] | complete | `main` автоматически развернул development; набор проверен по health и browser-check. |
+| [[delivery/BL-0018\|BL-0018]] | in progress | Новый KISS delivery требует green CI и deployment evidence. |
 | [[delivery/BL-0019\|BL-0019]] | in progress | Основание: независимые теги и immutable staging; post-MVP promotion принадлежит E12. |
 
 ## Карточки

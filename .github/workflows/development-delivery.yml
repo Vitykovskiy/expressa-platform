@@ -3,13 +3,6 @@ name: Development delivery
 on:
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'front-office/**'
-      - 'back-office/**'
-      - 'deploy/**'
-      - '.github/workflows/development-delivery.yml'
-      - '.github/workflows/delivery-component.yml'
 
 permissions:
   contents: read
@@ -20,232 +13,55 @@ concurrency:
 
 jobs:
   backend:
-    name: Build backend development image
-    uses: ./.github/workflows/delivery-component.yml
-    with:
-      component: backend
-      context: backend
-      image: expressa-backend
-      deployment_environment: development
-    secrets:
-      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
-      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
-      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
-      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
-      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-
-  front_office:
-    name: Build front-office development image
-    uses: ./.github/workflows/delivery-component.yml
-    with:
-      component: front-office
-      context: front-office
-      image: expressa-front-office
-      deployment_environment: development
-    secrets:
-      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
-      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
-      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
-      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
-      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-
-  back_office:
-    name: Build back-office development image
-    uses: ./.github/workflows/delivery-component.yml
-    with:
-      component: back-office
-      context: back-office
-      image: expressa-back-office
-      deployment_environment: development
-    secrets:
-      EXPRESSA_VPS_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
-      EXPRESSA_VPS_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
-      EXPRESSA_VPS_DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
-      EXPRESSA_VPS_DEPLOY_SSH_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
-      EXPRESSA_VPS_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-
+    uses: ./.github/workflows/backend-ci.yml
+  front:
+    uses: ./.github/workflows/front-office-ci.yml
+  back:
+    uses: ./.github/workflows/back-office-ci.yml
   deploy:
-    name: Deploy immutable development set
-    needs: [backend, front_office, back_office]
+    needs: [backend, front, back]
     runs-on: ubuntu-24.04
     environment: development
-    permissions:
-      contents: read
     steps:
-      - name: Deploy immutable image set by SSH
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Build and push immutable images
         env:
-          BACKEND_IMAGE_BASE64: ${{ needs.backend.outputs.image_reference_base64 }}
-          FRONT_IMAGE_BASE64: ${{ needs.front_office.outputs.image_reference_base64 }}
-          BACK_IMAGE_BASE64: ${{ needs.back_office.outputs.image_reference_base64 }}
           DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
-          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
           DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
-          BOOTSTRAP_ADMIN_PHONE: ${{ secrets.BOOTSTRAP_ADMIN_PHONE }}
         shell: bash
         run: |
           set -Eeuo pipefail
-
           temporary_directory="$(mktemp -d)"
-          cleanup() {
-            unset BACKEND_IMAGE_BASE64 FRONT_IMAGE_BASE64 BACK_IMAGE_BASE64 BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE DEPLOY_SSH_PRIVATE_KEY DEPLOY_SSH_KNOWN_HOSTS BOOTSTRAP_ADMIN_PHONE
-            rm -rf "$temporary_directory"
-          }
-          trap cleanup EXIT HUP INT TERM
-
-          if (( ${#DEPLOY_HOST} > 253 )); then
-            printf '%s\n' 'deployment DNS host must not exceed 253 characters' >&2
-            exit 1
-          elif [[ "$DEPLOY_HOST" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]]; then
-            :
-          elif node -e "process.exit(require('node:net').isIP(process.env.DEPLOY_HOST) ? 0 : 1)"; then
-            :
-          else
-            printf '%s\n' 'deployment host must be a single DNS name, IPv4 address, or IPv6 address' >&2
-            exit 1
-          fi
-          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || {
-            printf '%s\n' 'deployment user must be a POSIX username' >&2
-            exit 1
-          }
-          if ! [[ "$DEPLOY_PORT" =~ ^[1-9][0-9]{0,4}$ ]] || ! (( 10#$DEPLOY_PORT <= 65535 )); then
-            printf '%s\n' 'deployment port must be between 1 and 65535' >&2
-            exit 1
-          fi
-          [[ -n "$DEPLOY_SSH_PRIVATE_KEY" && -n "$DEPLOY_SSH_KNOWN_HOSTS" ]] || {
-            printf '%s\n' 'deployment SSH credentials are required' >&2
-            exit 1
-          }
-          [[ "$BOOTSTRAP_ADMIN_PHONE" =~ ^\+7[0-9]{10}$ ]] || {
-            printf '%s\n' 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX' >&2
-            exit 1
-          }
-          decode_image_reference() {
-            local component="$1"
-            local encoded_image="$2"
-
-            [[ -n "$encoded_image" ]] || {
-              printf '%s image output is required\n' "$component" >&2
-              exit 1
-            }
-            [[ "$encoded_image" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] || {
-              printf '%s image output must be Base64\n' "$component" >&2
-              exit 1
-            }
-            printf '%s' "$encoded_image" | base64 --decode
-          }
-          BACKEND_IMAGE="$(decode_image_reference backend "$BACKEND_IMAGE_BASE64")"
-          FRONT_IMAGE="$(decode_image_reference front-office "$FRONT_IMAGE_BASE64")"
-          BACK_IMAGE="$(decode_image_reference back-office "$BACK_IMAGE_BASE64")"
-          [[ "$BACKEND_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/backend@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'backend image must be an immutable loopback registry digest' >&2
-            exit 1
-          }
-          [[ "$FRONT_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/front-office@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'front-office image must be an immutable loopback registry digest' >&2
-            exit 1
-          }
-          [[ "$BACK_IMAGE" =~ ^127\.0\.0\.1:5000/expressa/back-office@sha256:[a-f0-9]{64}$ ]] || {
-            printf '%s\n' 'back-office image must be an immutable loopback registry digest' >&2
-            exit 1
-          }
-
-          private_key="$temporary_directory/id_ed25519"
-          known_hosts="$temporary_directory/known_hosts"
-          ssh_config="$temporary_directory/config"
-          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$private_key"
-          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$known_hosts"
+          trap 'rm -rf -- "$temporary_directory"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
+          chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
+          ssh -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT" -N -L 5000:127.0.0.1:5000 "$DEPLOY_USER@$DEPLOY_HOST" &
+          tunnel_pid=$!
+          trap 'kill "$tunnel_pid" 2>/dev/null || true; rm -rf -- "$temporary_directory"' EXIT
+          for _ in {1..20}; do curl --silent --fail http://127.0.0.1:5000/v2/ >/dev/null && break; sleep 1; done
+          tag="sha-${GITHUB_SHA}"
+          docker build --tag "127.0.0.1:5000/expressa/backend:$tag" backend
+          docker build --build-arg VITE_APP_ENV=development --build-arg VITE_API_BASE_URL=/ --tag "127.0.0.1:5000/expressa/front-office:$tag" front-office
+          docker build --build-arg VITE_APP_ENV=development --build-arg VITE_API_BASE_URL=/ --tag "127.0.0.1:5000/expressa/back-office:$tag" back-office
+          docker push "127.0.0.1:5000/expressa/backend:$tag"
+          docker push "127.0.0.1:5000/expressa/front-office:$tag"
+          docker push "127.0.0.1:5000/expressa/back-office:$tag"
           {
-            printf '%s\n' 'Host delivery-target'
-            printf '  HostName %s\n' "$DEPLOY_HOST"
-            printf '  User %s\n' "$DEPLOY_USER"
-            printf '  Port %s\n' "$DEPLOY_PORT"
-            printf '  IdentityFile %s\n' "$private_key"
-            printf '%s\n' '  IdentitiesOnly yes'
-            printf '%s\n' '  BatchMode yes'
-            printf '%s\n' '  StrictHostKeyChecking yes'
-            printf '%s\n' '  PasswordAuthentication no'
-            printf '%s\n' '  KbdInteractiveAuthentication no'
-            printf '%s\n' '  PreferredAuthentications publickey'
-            printf '%s\n' '  ForwardAgent no'
-            printf '%s\n' '  PermitLocalCommand no'
-            printf '%s\n' '  RequestTTY no'
-            printf '  UserKnownHostsFile %s\n' "$known_hosts"
-          } > "$ssh_config"
-          chmod 600 "$private_key" "$known_hosts" "$ssh_config"
-
-          remote_stdout="$temporary_directory/ssh.stdout"
-          remote_stderr="$temporary_directory/ssh.stderr"
-          # shellcheck disable=SC2016
-          remote_command='
-            set -Eeuo pipefail
-            report_failure() {
-              printf "expressa-deploy: preflight code=%s\n" "$1" >&2
-              exit 1
-            }
-
-            source /dev/stdin
-            [[ "${DEPLOY_ROOT:-}" == /srv/expressa && "${DEPLOY_ENV:-}" == development && "${DEPLOY_SCRIPT:-}" == deploy/deploy.sh ]] || report_failure input
-            [[ -d /srv/expressa/infra && ! -L /srv/expressa/infra ]] || report_failure path
-            [[ -f /srv/expressa/infra/deploy/deploy.sh && -x /srv/expressa/infra/deploy/deploy.sh && ! -L /srv/expressa/infra/deploy/deploy.sh ]] || report_failure script
-            [[ -f /srv/expressa/development/runtime.env && ! -L /srv/expressa/development/runtime.env ]] || report_failure runtime
-            [[ -d /srv/expressa/development/state && ! -L /srv/expressa/development/state && -w /srv/expressa/development/state ]] || report_failure state
-            command -v docker >/dev/null && docker compose version >/dev/null 2>&1 || report_failure docker
-            cd -- /srv/expressa/infra
-            exec ./deploy/deploy.sh --environment development deploy all
-          '
-          emit_remote_diagnostics() {
-            local line marker_pattern preflight_pattern
-            marker_pattern='^expressa-deploy: phase=(preflight|pull|backup|migrate|seed|compose|smoke|state) status=(start|failed|complete)$'
-            preflight_pattern='^expressa-deploy: preflight code=(input|path|script|runtime|state|docker)$'
-            while IFS= read -r line; do
-              if [[ "$line" =~ $marker_pattern || "$line" =~ $preflight_pattern ]]; then
-                printf '%s\n' "$line" >&2
-              fi
-            done < <(cat "$remote_stdout" "$remote_stderr")
-          }
-
-          {
-            printf 'export BACKEND_IMAGE=%q\n' "$BACKEND_IMAGE"
-            printf 'export FRONT_IMAGE=%q\n' "$FRONT_IMAGE"
-            printf 'export BACK_IMAGE=%q\n' "$BACK_IMAGE"
-            printf 'export BOOTSTRAP_ADMIN_PHONE=%q\n' "$BOOTSTRAP_ADMIN_PHONE"
-            printf '%s\n' 'export DEPLOY_ROOT=/srv/expressa'
-            printf '%s\n' 'export DEPLOY_ENV=development'
-            printf '%s\n' 'export DEPLOY_SCRIPT=deploy/deploy.sh'
-          } | ssh -F "$ssh_config" -T delivery-target "$remote_command" > "$remote_stdout" 2> "$remote_stderr" || {
-            emit_remote_diagnostics
-            printf '%s\n' 'remote development deployment failed' >&2
-            exit 1
-          }
-
-      - name: Checkout same-origin browser checks
-        # actions/checkout v5.1.0
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Set up Node.js for browser checks
-        # actions/setup-node v5.0.0
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version-file: front-office/.nvmrc
-          cache: npm
-          cache-dependency-path: |
-            front-office/package-lock.json
-            back-office/package-lock.json
-
-      - name: Install browser check dependencies
-        run: |
-          npm ci --prefix front-office
-          npm ci --prefix back-office
-
-      - name: Install Chromium for same-origin checks
-        run: npx --prefix front-office playwright install --with-deps chromium
-
-      - name: Verify development same-origin browser paths
+            printf 'BACKEND_IMAGE=%s\n' "$(docker inspect --format '{{index .RepoDigests 0}}' "127.0.0.1:5000/expressa/backend:$tag")"
+            printf 'FRONT_IMAGE=%s\n' "$(docker inspect --format '{{index .RepoDigests 0}}' "127.0.0.1:5000/expressa/front-office:$tag")"
+            printf 'BACK_IMAGE=%s\n' "$(docker inspect --format '{{index .RepoDigests 0}}' "127.0.0.1:5000/expressa/back-office:$tag")"
+          } > "$temporary_directory/images.env"
+          cp "$temporary_directory/images.env" deploy/images.env
+      - name: Deploy current checkout
         env:
-          FRONT_OFFICE_BASE_URL: https://dev.expressa.vitykovskiy.ru
-          BACK_OFFICE_BASE_URL: https://admin.dev.expressa.vitykovskiy.ru
-        run: |
-          BASE_URL="$FRONT_OFFICE_BASE_URL" node front-office/scripts/same-origin-browser-check.mjs
-          BASE_URL="$BACK_OFFICE_BASE_URL" node back-office/scripts/same-origin-browser-check.mjs
+          DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+          DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+          BOOTSTRAP_ADMIN_PHONE: ${{ secrets.BOOTSTRAP_ADMIN_PHONE }}
+        run: deploy/run-remote.sh development deploy/images.env

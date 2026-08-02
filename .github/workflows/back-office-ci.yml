@@ -1,13 +1,8 @@
 name: Back-office CI
 
 on:
+  workflow_call:
   pull_request:
-    branches: [main]
-    paths:
-      - 'back-office/**'
-      - 'backend/openapi/**'
-      - '.github/workflows/back-office-ci.yml'
-  push:
     branches: [main]
     paths:
       - 'back-office/**'
