@@ -200,13 +200,14 @@ readonly state_directory="$deploy_root/state"
 readonly backup_directory="$deploy_root/backups"
 readonly current_state="$state_directory/current"
 readonly previous_state="$state_directory/previous"
-readonly deployment_lock_file="$deploy_root/.deploy.lock"
+readonly deployment_lock_file="$state_directory/.deploy.lock"
+[[ -d "$state_directory" ]] || fail "deployment state directory is missing: $state_directory"
 if [[ "${DEPLOY_LOCK_HELD:-}" != 1 ]]; then
   exec flock --no-fork --exclusive --nonblock --conflict-exit-code 75 "$deployment_lock_file" env DEPLOY_LOCK_HELD=1 "$0" "$@"
 fi
 deployment_lock_is_held || fail 'deployment lock is not held'
 unset DATABASE_URL POSTGRES_IMAGE POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD GHCR_USERNAME GHCR_TOKEN DOCKER_CONFIG
-mkdir -p "$state_directory" "$backup_directory"
+mkdir -p "$backup_directory"
 chmod 700 "$state_directory" "$backup_directory"
 rollback_required=0; changed_postgres=0; changed_backend=0; changed_front=0; changed_back=0
 trap 'on_exit "$?"' EXIT

@@ -220,12 +220,80 @@ jobs:
               exit 1
             }
           }
+          require_manifest_content_type() {
+            case "$1" in
+              application/vnd.oci.image.index.v1+json|application/vnd.oci.image.manifest.v1+json|application/vnd.docker.distribution.manifest.v2+json)
+                ;;
+              *)
+                printf '%s\n' 'registry did not return an allowed manifest content type' >&2
+                return 1
+                ;;
+            esac
+          }
+          validate_canonical_manifest() {
+            local repository="$1"
+            local digest="$2"
+            local canonical_digest
+            local canonical_content_type
+            registry_manifest "$repository" "$digest" || {
+              printf '%s\n' 'private registry did not expose canonical manifest digest' >&2
+              return 1
+            }
+            canonical_digest="$(manifest_digest)"
+            canonical_content_type="$(manifest_content_type)"
+            require_digest "$canonical_digest"
+            [[ "$canonical_digest" == "$digest" ]] || {
+              printf '%s\n' 'private registry canonical manifest digest does not match requested digest' >&2
+              return 1
+            }
+            require_manifest_content_type "$canonical_content_type"
+          }
+          run_canonical_manifest_adversarial_checks() (
+            local repository='expressa/check'
+            local tag='sha-test-tag'
+            local expected_digest='sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            local tag_digest
+            local adversarial_case
+            manifest_headers="$temporary_directory/adversarial.headers"
+            registry_manifest() {
+              local reference="$2"
+              if [[ "$reference" == "$tag" ]]; then
+                printf 'Docker-Content-Digest: %s\nContent-Type: application/vnd.oci.image.manifest.v1+json\n' "$expected_digest" > "$manifest_headers"
+                return 0
+              fi
+              case "$adversarial_case" in
+                canonical-http-500)
+                  return 2
+                  ;;
+                canonical-digest-mismatch)
+                  printf '%s\n' 'Docker-Content-Digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' > "$manifest_headers"
+                  printf '%s\n' 'Content-Type: application/vnd.oci.image.manifest.v1+json' >> "$manifest_headers"
+                  return 0
+                  ;;
+                canonical-content-type-invalid)
+                  printf 'Docker-Content-Digest: %s\nContent-Type: text/plain\n' "$expected_digest" > "$manifest_headers"
+                  return 0
+                  ;;
+              esac
+            }
+            for adversarial_case in canonical-http-500 canonical-digest-mismatch canonical-content-type-invalid; do
+              registry_manifest "$repository" "$tag"
+              tag_digest="$(manifest_digest)"
+              require_digest "$tag_digest"
+              if validate_canonical_manifest "$repository" "$tag_digest" >/dev/null 2>&1; then
+                printf 'canonical manifest validation accepted %s\n' "$adversarial_case" >&2
+                exit 1
+              fi
+            done
+          )
+          run_canonical_manifest_adversarial_checks
 
           sha_tag="sha-$GITHUB_SHA"
           if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
             if registry_manifest "expressa/$registry_package" "$sha_tag"; then
               digest="$(manifest_digest)"
               require_digest "$digest"
+              validate_canonical_manifest "expressa/$registry_package" "$digest"
             else
               manifest_status=$?
               [[ "$manifest_status" == 1 ]] || exit "$manifest_status"
@@ -257,6 +325,7 @@ jobs:
                 printf '%s\n' 'private registry SHA tag does not resolve to built digest' >&2
                 exit 1
               }
+              validate_canonical_manifest "expressa/$registry_package" "$digest"
             fi
           elif [[ "$GITHUB_REF_TYPE" == 'tag' ]]; then
             tag="$GITHUB_REF_NAME"
@@ -295,12 +364,9 @@ jobs:
               exit 1
             }
             source_digest="$(manifest_digest)"
-            source_content_type="$(manifest_content_type)"
             require_digest "$source_digest"
-            [[ -n "$source_content_type" ]] || {
-              printf '%s\n' 'private registry did not return source manifest content type' >&2
-              exit 1
-            }
+            validate_canonical_manifest "expressa/$registry_package" "$source_digest"
+            source_content_type="$(manifest_content_type)"
             curl --fail --silent --show-error --max-time 30 \
               --request PUT \
               --header "Content-Type: $source_content_type" \
@@ -316,6 +382,7 @@ jobs:
               printf '%s\n' 'release image tag does not resolve to the source digest' >&2
               exit 1
             }
+            validate_canonical_manifest "expressa/$registry_package" "$digest"
           else
             printf '%s\n' 'delivery workflow accepts only main commits and version tags' >&2
             exit 1

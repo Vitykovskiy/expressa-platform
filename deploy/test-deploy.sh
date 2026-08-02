@@ -21,7 +21,7 @@ infrastructure_directory="$temporary_directory/infra"
 mkdir -p "$infrastructure_directory/deploy"
 cp "$repository_root/deploy/compose.yml" "$infrastructure_directory/compose.yml"
 cp "$repository_root/deploy/deploy.sh" "$infrastructure_directory/deploy/deploy.sh"
-chmod 700 "$infrastructure_directory/deploy/deploy.sh"
+chmod 755 "$infrastructure_directory/deploy/deploy.sh"
 readonly deploy_script="$infrastructure_directory/deploy/deploy.sh"
 read -r -d '' fake_docker_source <<'EOF' || true
 #!/usr/bin/env bash
@@ -48,12 +48,12 @@ if [[ "$1" == compose ]]; then
   case " $* " in *" ps -q "*) printf 'fake-container\n' ;; *" exec "*" pg_dump "*) [[ "${FAIL_DUMP:-}" == 1 ]] && exit 24; printf 'CREATE TABLE test ();\n' ;; esac
 fi
 EOF
-printf '%s\n' "$fake_docker_source" > "$fake_docker"; chmod 700 "$fake_docker"
+printf '%s\n' "$fake_docker_source" > "$fake_docker"; chmod 755 "$fake_docker"
 
 digest() { printf '127.0.0.1:5000/expressa/%s@sha256:%064d' "$1" "$2"; }
 write_runtime() {
   local root="$1"
-  mkdir -p "$root/development"
+  mkdir -p "$root/development/state" "$root/development/backups"
   chmod 700 "$root/development"
   rm -f "$root/development/runtime.env" "$root/development/runtime.target"
   printf '%s\n' 'POSTGRES_PASSWORD=development-password' > "$root/development/runtime.env"
@@ -65,6 +65,11 @@ run_deploy() {
   shift 3
   [[ "${SKIP_RUNTIME_WRITE:-}" == 1 ]] || write_runtime "$state_root"
   env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/docker.log" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" GHCR_USERNAME=must-not-reach-docker GHCR_TOKEN=must-not-reach-docker DOCKER_CONFIG=/must-not-reach-docker "$@" bash "$deploy_script" --environment development "$operation" "$target"
+}
+run_deploy_as_unprivileged_user() {
+  local state_root="$1" operation="$2" target="$3"
+  shift 3
+  setpriv --reuid 65534 --regid 65534 --clear-groups env DEPLOY_ROOT="$state_root" DEPLOY_MIN_FREE_KB=0 DEPLOY_DOCKER_BIN="$fake_docker" FAKE_LOG="$state_root/development/state/docker.log" EXPECTED_COMPOSE_FILE="$infrastructure_directory/compose.yml" "$@" bash "$deploy_script" --environment development "$operation" "$target"
 }
 wait_for_file() {
   local file="$1" retries=50
@@ -97,7 +102,7 @@ assert_deployment_reaped() {
   ! kill -0 "$process" 2>/dev/null || fail 'deployment process was not reaped'
   [[ -z "$(pgrep -P "$process" || true)" ]] || fail 'deployment left a child process'
   for descriptor in /proc/[0-9]*/fd/[0-9]*; do
-    [[ "$(readlink -f "$descriptor" 2>/dev/null || true)" != "$root/development/.deploy.lock" ]] || fail 'deployment left a lock holder'
+    [[ "$(readlink -f "$descriptor" 2>/dev/null || true)" != "$root/development/state/.deploy.lock" ]] || fail 'deployment left a lock holder'
   done
 }
 assert_real_lock_released_after_normal_completion() {
@@ -267,6 +272,17 @@ run_deploy "$partial_root" deploy all BACKEND_IMAGE="$(digest backend 3)" FRONT_
 run_deploy "$partial_root" rollback front
 assert_file_contains "$partial_root/development/state/current" "FRONT_IMAGE=$(digest front-office 2)"
 assert_registry_credentials_absent "$partial_root"
+
+permission_lock_root="$temporary_directory/permission-lock"
+write_runtime "$permission_lock_root"
+chown root:65534 "$permission_lock_root/development/runtime.env"
+chown 65534:65534 "$permission_lock_root/development/state" "$permission_lock_root/development/backups"
+chmod 700 "$permission_lock_root/development/state" "$permission_lock_root/development/backups"
+chmod 555 "$permission_lock_root/development"
+chmod 755 "$temporary_directory" "$permission_lock_root"
+run_deploy_as_unprivileged_user "$permission_lock_root" deploy all BACKEND_IMAGE="$(digest backend 1)" FRONT_IMAGE="$(digest front-office 1)" BACK_IMAGE="$(digest back-office 1)"
+[[ -f "$permission_lock_root/development/state/.deploy.lock" ]] || fail 'deployment lock was not created in writable state directory'
+assert_file_contains "$permission_lock_root/development/state/current" "BACKEND_IMAGE=$(digest backend 1)"
 
 permission_root="$temporary_directory/permission-runtime"
 write_runtime "$permission_root"

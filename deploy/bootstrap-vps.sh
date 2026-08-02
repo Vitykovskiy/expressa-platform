@@ -490,7 +490,10 @@ if ! getent passwd "$deploy_user" >/dev/null; then
 fi
 load_runtime_passwords
 usermod --append --groups docker "$deploy_user"
-for directory in "$infra_directory" "$expressa_root/development/backups" "$expressa_root/staging/backups"; do
+for environment in development staging; do
+  install --directory --owner root --group "$deploy_group" --mode 0750 "$expressa_root/$environment"
+done
+for directory in "$infra_directory" "$expressa_root/development/state" "$expressa_root/development/backups" "$expressa_root/staging/state" "$expressa_root/staging/backups"; do
   install --directory --owner "$deploy_user" --group "$deploy_group" --mode 0750 "$directory"
 done
 install --directory --owner root --group "$deploy_group" --mode 0750 "$infra_directory/deploy"

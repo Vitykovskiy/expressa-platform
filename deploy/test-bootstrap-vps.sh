@@ -144,14 +144,30 @@ EOF
 cat > "$fake_bin/install" <<'EOF'
 #!/usr/bin/env bash
 set -Eeuo pipefail
+original_arguments="$*"
 arguments=()
 while (( "$#" )); do
   case "$1" in
-    --owner) shift 2 ;;
-    --group) arguments+=(--group=12345); shift 2 ;;
+    --owner)
+      case "$2" in
+        expressa-deploy) arguments+=(--owner=12345) ;;
+        root) arguments+=(--owner=root) ;;
+        *) exit 91 ;;
+      esac
+      shift 2
+      ;;
+    --group)
+      case "$2" in
+        expressa-deploy) arguments+=(--group=12345) ;;
+        root) arguments+=(--group=root) ;;
+        *) exit 92 ;;
+      esac
+      shift 2
+      ;;
     *) arguments+=("$1"); shift ;;
   esac
 done
+[[ -z "${FAKE_INSTALL_LOG:-}" ]] || printf '%s\n' "$original_arguments" >> "$FAKE_INSTALL_LOG"
 /usr/bin/install "${arguments[@]}"
 EOF
 cat > "$fake_bin/chown" <<'EOF'
@@ -187,7 +203,7 @@ run_dry() {
 run_live() {
   local root="$1"
   mkdir -p -- "$root/network-state" "$root/registry-state"
-  PATH="$fake_bin:$PATH" BOOTSTRAP_ROOT="$root" BOOTSTRAP_BACKUP_ROOT=/backups BOOTSTRAP_DOCKER_BIN="$fake_bin/docker" BOOTSTRAP_NGINX_BIN="$fake_bin/nginx" BOOTSTRAP_CURL_BIN="$fake_bin/curl" EXPRESSA_DEPLOY_USER=expressa-deploy FAKE_DOCKER_LOG="$root/docker.log" FAKE_NGINX_LOG="$root/nginx.log" FAKE_NETWORK_STATE_DIR="$root/network-state" FAKE_REGISTRY_STATE_DIR="$root/registry-state" FAKE_REGISTRY_DATA_DIRECTORY="$root/srv/expressa/registry/data" bash "$bootstrap_script"
+  PATH="$fake_bin:$PATH" BOOTSTRAP_ROOT="$root" BOOTSTRAP_BACKUP_ROOT=/backups BOOTSTRAP_DOCKER_BIN="$fake_bin/docker" BOOTSTRAP_NGINX_BIN="$fake_bin/nginx" BOOTSTRAP_CURL_BIN="$fake_bin/curl" EXPRESSA_DEPLOY_USER=expressa-deploy FAKE_DOCKER_LOG="$root/docker.log" FAKE_NGINX_LOG="$root/nginx.log" FAKE_INSTALL_LOG="$root/install.log" FAKE_NETWORK_STATE_DIR="$root/network-state" FAKE_REGISTRY_STATE_DIR="$root/registry-state" FAKE_REGISTRY_DATA_DIRECTORY="$root/srv/expressa/registry/data" bash "$bootstrap_script"
 }
 
 prepare_live_root() {
@@ -203,6 +219,21 @@ write_runtime_file() {
   printf 'POSTGRES_PASSWORD=%s\n' "$password" > "$root/srv/expressa/$environment/runtime.env"
   chmod 0640 -- "$root/srv/expressa/$environment/runtime.env"
   chown root:12345 -- "$root/srv/expressa/$environment/runtime.env"
+}
+
+assert_deploy_role_lock_access() {
+  local environment_root="$1" state_directory="$2"
+  # shellcheck disable=SC2016
+  setpriv --reuid 12345 --regid 12345 --clear-groups bash -c '
+    set -Eeuo pipefail
+    environment_root="$1"
+    state_directory="$2"
+    [[ -x "$environment_root" && ! -w "$environment_root" && -w "$state_directory" ]]
+    exec {lock_fd}> "$state_directory/.deploy.lock"
+    flock --nonblock "$lock_fd"
+    exec {lock_fd}>&-
+  ' bootstrap-deploy-role "$environment_root" "$state_directory"
+  setpriv --reuid 12345 --regid 12345 --clear-groups flock --nonblock "$state_directory/.deploy.lock" true
 }
 
 filesystem_state() {
@@ -253,9 +284,20 @@ if ! run_live "$live_root" > "$live_root/output.log" 2>&1; then
   cat -- "$live_root/output.log" >&2
   fail 'initial bootstrap failed'
 fi
+chmod 755 -- "$temporary_directory" "$live_root"
 [[ -f "$live_root/srv/expressa/development/runtime.env" && -f "$live_root/srv/expressa/staging/runtime.env" ]] || fail 'runtime environment files were not created'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development")" == '0:12345:750' ]] || fail 'development environment directory has unsafe permissions'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/staging")" == '0:12345:750' ]] || fail 'staging environment directory has unsafe permissions'
 [[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development/runtime.env")" == '0:12345:640' ]] || fail 'development runtime environment file has unsafe permissions'
 [[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/staging/runtime.env")" == '0:12345:640' ]] || fail 'staging runtime environment file has unsafe permissions'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development/state")" == '12345:12345:750' ]] || fail 'development state directory has unsafe permissions'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/staging/state")" == '12345:12345:750' ]] || fail 'staging state directory has unsafe permissions'
+grep -Fqx -- "--directory --owner root --group expressa-deploy --mode 0750 $live_root/srv/expressa/development" "$live_root/install.log" || fail 'development environment directory was not provisioned with root ownership'
+grep -Fqx -- "--directory --owner root --group expressa-deploy --mode 0750 $live_root/srv/expressa/staging" "$live_root/install.log" || fail 'staging environment directory was not provisioned with root ownership'
+grep -Fqx -- "--directory --owner expressa-deploy --group expressa-deploy --mode 0750 $live_root/srv/expressa/development/state" "$live_root/install.log" || fail 'development state directory was not provisioned with deploy-user ownership'
+grep -Fqx -- "--directory --owner expressa-deploy --group expressa-deploy --mode 0750 $live_root/srv/expressa/staging/state" "$live_root/install.log" || fail 'staging state directory was not provisioned with deploy-user ownership'
+assert_deploy_role_lock_access "$live_root/srv/expressa/development" "$live_root/srv/expressa/development/state"
+assert_deploy_role_lock_access "$live_root/srv/expressa/staging" "$live_root/srv/expressa/staging/state"
 [[ -d "$live_root/srv/expressa/registry/data" ]] || fail 'registry data directory was not created'
 [[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/registry/data")" == '0:12345:750' ]] || fail 'registry data directory has unsafe permissions'
 [[ "$(cat "$live_root/registry-state/expressa-registry")" == 'registry@sha256:7518da9b12dd746278282a729dee2e65eabdeb449db4d0b28d46ef6e90308f58' ]] || fail 'registry image is not pinned'
@@ -282,6 +324,10 @@ fi
 run_live "$live_root" > "$live_root/idempotent-output.log" 2>&1
 [[ "$development_checksum" == "$(cksum "$live_root/srv/expressa/development/runtime.env")" ]] || fail 'development password rotated on repeat bootstrap'
 [[ "$staging_checksum" == "$(cksum "$live_root/srv/expressa/staging/runtime.env")" ]] || fail 'staging password rotated on repeat bootstrap'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development")" == '0:12345:750' ]] || fail 'development environment directory changed on repeat bootstrap'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development/state")" == '12345:12345:750' ]] || fail 'development state directory changed on repeat bootstrap'
+[[ "$(stat --format '%u:%g:%a' "$live_root/srv/expressa/development/runtime.env")" == '0:12345:640' ]] || fail 'development runtime environment file changed on repeat bootstrap'
+assert_deploy_role_lock_access "$live_root/srv/expressa/development" "$live_root/srv/expressa/development/state"
 [[ "$(grep -Fc 'run --detach --name expressa-registry' "$live_root/docker.log")" == 1 ]] || fail 'registry was recreated on an idempotent bootstrap'
 assert_file_contains "$live_root/etc/nginx/sites-available/expressa-redirect" "return 308 https://\$host\$request_uri;"
 [[ -L "$live_root/etc/nginx/sites-enabled/expressa-redirect" ]] || fail 'successful bootstrap did not enable nginx redirect'
