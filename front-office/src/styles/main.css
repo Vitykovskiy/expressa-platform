@@ -1,0 +1,101 @@
+@import "./customer-tokens.css";
+
+:root {
+  font-family: var(--customer-font-family);
+  color: var(--customer-text);
+  background: var(--customer-background);
+}
+
+html,
+body,
+#storybook-root {
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--customer-background);
+}
+
+#storybook-root {
+  display: flex;
+  width: 100%;
+}
+
+.storybook-customer-root {
+  display: flex;
+  flex: 1;
+  min-height: inherit;
+}
+
+:disabled,
+[aria-busy="true"] {
+  transform: none;
+  transition: none;
+}
+
+@media (min-width: 480px) {
+  body {
+    padding: var(--customer-space-13) var(--customer-space-9);
+    background: var(--customer-background-raised);
+  }
+
+  #storybook-root {
+    max-width: var(--customer-content-width);
+    min-height: 0;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: var(--customer-radius-xl);
+    box-shadow: var(--customer-shadow-shell);
+  }
+}
+
+@media (min-width: 768px) {
+  #storybook-root {
+    max-width: var(--customer-content-width);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    padding: 0;
+    background: var(--customer-background);
+  }
+
+  #storybook-root {
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Override component transitions whose selectors otherwise win cascade. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  :disabled,
+  [aria-busy="true"] {
+    transform: none !important;
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  input:not(:disabled):is(
+      [type="button"],
+      [type="reset"],
+      [type="submit"]
+    ):active {
+    transform: none !important;
+  }
+}

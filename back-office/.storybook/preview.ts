@@ -1,25 +1,22 @@
 import type { Preview } from "@storybook/vue3-vite";
 import { setup } from "@storybook/vue3-vite";
-import { createPinia } from "pinia";
-import "vuetify/styles";
 
-import "../src/shared/ui/tokens.css";
-
-import { vuetify } from "../src/app/plugins";
-import { router } from "../src/app/router";
+import { vuetify } from "../src/plugins/vuetify";
+import "../src/styles/main.css";
 
 setup((app) => {
-  app.use(createPinia());
   app.use(vuetify);
-  app.use(router);
 });
 
 const preview: Preview = {
   parameters: {
-    a11y: {
-      test: "error",
+    a11y: { test: "error" },
+    controls: {
+      matchers: {
+        color: /(background|color)$/i,
+        date: /Date$/i,
+      },
     },
-    layout: "padded",
     viewport: {
       viewports: {
         phone320: {

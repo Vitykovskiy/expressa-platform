@@ -1,20 +1,24 @@
+import { setup } from "@storybook/vue3";
 import type { Preview } from "@storybook/vue3-vite";
-import { setup } from "@storybook/vue3-vite";
-import { vuetify } from "../src/app/plugins";
-import "../src/shared/ui/tokens.css";
-
+import { VApp, VMain } from "vuetify/components";
 import "vuetify/styles";
+import "../src/styles/main.css";
+import { vuetify } from "../src/plugins/vuetify";
 
 setup((app) => {
   app.use(vuetify);
 });
 
 const preview: Preview = {
+  decorators: [
+    () => ({
+      components: { VApp, VMain },
+      template:
+        '<div class="storybook-customer-root"><v-app style="flex: 0 1 auto"><v-main><story /></v-main></v-app></div>',
+    }),
+  ],
   parameters: {
-    a11y: {
-      test: "error",
-    },
-    layout: "padded",
+    a11y: { test: "error" },
     viewport: {
       viewports: {
         mobile320: {

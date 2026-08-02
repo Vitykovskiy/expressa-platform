@@ -13,8 +13,8 @@ export default defineConfig({
       manifest: {
         name: 'Expressa',
         short_name: 'Expressa',
-        theme_color: '#6f4e37',
-        background_color: '#ffffff',
+        theme_color: '#1847e8',
+        background_color: '#1847e8',
         display: 'standalone',
         icons: [
           {
@@ -39,7 +39,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    exclude: ['**/node_modules/**', 'tests/e2e/**', 'scripts/visual.spec.mjs'],
+    exclude: ['**/node_modules/**', 'tests/e2e/**', 'scripts/**/*.spec.mjs'],
     server: {
       deps: {
         inline: ['vuetify'],

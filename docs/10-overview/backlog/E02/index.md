@@ -1,13 +1,14 @@
 # E02 — Storybook front-office
 
-Статус: complete.
+Статус: verification.
 
-Статус подтверждён полным каталогом, локальными проверками, независимой
-приёмкой и [Front-office CI 30765030437](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30765030437)
-для commit `dbe02dd` в [PR #1](https://github.com/Vitykovskiy/expressa-platform/pull/1).
-Артефакт `front-office-storybook` содержит `index.html`; отдельный
-`front-office-visual-baselines` содержит два PNG с SHA-256, совпадающими с
-эталонами в Git.
+В `front-office` перенесены runtime UI, design tokens, fixtures и истории
+готового Customer Storybook. Каталог содержит 146 записей, включая 123 stories;
+точное соответствие исходному `index.json` проверяется при каждой сборке.
+Локально все stories завершились в Chromium, а полный визуальный прогон не
+выявил содержательных отличий от исходного статического Storybook. Финальный
+статус подтверждается CI текущего commit в
+[PR #1](https://github.com/Vitykovskiy/expressa-platform/pull/1).
 
 | Карточка | Статус | Доказательство |
 | --- | --- | --- |

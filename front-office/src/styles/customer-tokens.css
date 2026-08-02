@@ -1,0 +1,215 @@
+:root {
+  /* Color */
+  --customer-color-blue-700: #0f2880;
+  --customer-color-blue-600: #1340d0;
+  --customer-color-blue-500: #1847e8;
+  --customer-color-orange-500: #ff5500;
+  --customer-color-white: #ffffff;
+  --customer-color-black: #000000;
+  --customer-color-success: #00a854;
+  --customer-color-danger: #d4183d;
+  --customer-color-error: var(--customer-color-danger);
+  --customer-color-danger-light: #ff4466;
+  --customer-color-danger-pale: #ffb3c1;
+  --customer-color-warning: #cc8800;
+  --customer-color-warning-surface: #fff7e0;
+  --customer-color-info-surface: #e0eaff;
+  --customer-color-success-surface: #e0fff0;
+
+  --customer-color-white-70: rgb(255 255 255 / 70%);
+  --customer-color-white-65: rgb(255 255 255 / 65%);
+  --customer-color-white-60: rgb(255 255 255 / 60%);
+  --customer-color-white-50: rgb(255 255 255 / 50%);
+  --customer-color-white-45: rgb(255 255 255 / 45%);
+  --customer-color-white-35: rgb(255 255 255 / 35%);
+  --customer-color-white-30: rgb(255 255 255 / 30%);
+  --customer-color-white-25: rgb(255 255 255 / 25%);
+  --customer-color-white-22: rgb(255 255 255 / 22%);
+  --customer-color-white-18: rgb(255 255 255 / 18%);
+  --customer-color-white-15: rgb(255 255 255 / 15%);
+  --customer-color-white-13: rgb(255 255 255 / 13%);
+  --customer-color-white-12: rgb(255 255 255 / 12%);
+  --customer-color-white-10: rgb(255 255 255 / 10%);
+  --customer-color-white-9: rgb(255 255 255 / 9%);
+  --customer-color-white-8: rgb(255 255 255 / 8%);
+  --customer-color-white-82: rgb(255 255 255 / 82%);
+  --customer-color-white-85: rgb(255 255 255 / 85%);
+  --customer-color-blue-500-15: rgb(24 71 232 / 15%);
+  --customer-color-blue-500-10: rgb(24 71 232 / 10%);
+  --customer-color-blue-500-4: rgb(24 71 232 / 4%);
+  --customer-color-blue-700-60: rgb(15 40 128 / 60%);
+  --customer-color-blue-700-55: rgb(15 40 128 / 55%);
+  --customer-color-blue-700-50: rgb(15 40 128 / 50%);
+  --customer-color-blue-700-45: rgb(15 40 128 / 45%);
+  --customer-color-blue-700-8: rgb(15 40 128 / 8%);
+  --customer-color-danger-30: rgb(212 24 61 / 30%);
+  --customer-color-danger-15: rgb(212 24 61 / 15%);
+  --customer-color-danger-10: rgb(212 24 61 / 10%);
+  --customer-color-orange-500-65: rgb(255 85 0 / 65%);
+  --customer-color-black-35: rgb(0 0 0 / 35%);
+  --customer-color-black-18: rgb(0 0 0 / 18%);
+  --customer-color-black-15: rgb(0 0 0 / 15%);
+  --customer-color-black-14: rgb(0 0 0 / 14%);
+  --customer-color-black-12: rgb(0 0 0 / 12%);
+  --customer-color-black-10: rgb(0 0 0 / 10%);
+
+  --customer-color-brand: var(--customer-color-blue-500);
+  --customer-color-brand-raised: var(--customer-color-blue-600);
+  --customer-color-action-primary: var(--customer-color-orange-500);
+  --customer-color-surface: var(--customer-color-white);
+  --customer-color-surface-subtle: var(--customer-color-white-15);
+  --customer-color-text-on-brand: var(--customer-color-white);
+  --customer-color-text-on-surface: var(--customer-color-blue-700);
+  --customer-color-text-muted-on-brand: var(--customer-color-white-70);
+  --customer-color-text-muted-on-surface: var(--customer-color-blue-700-45);
+  --customer-color-border-on-brand: var(--customer-color-white-15);
+  --customer-color-focus: var(--customer-color-orange-500);
+
+  --customer-surface-control: var(--customer-color-white-18);
+  --customer-surface-muted: var(--customer-color-white-12);
+  --customer-surface-muted-on-brand: var(--customer-color-black-10);
+  --customer-surface-note: var(--customer-color-white-10);
+  --customer-surface-sidebar: var(--customer-color-black-12);
+  --customer-surface-info: var(--customer-color-blue-500-4);
+  --customer-border-subtle-on-brand: var(--customer-color-white-8);
+  --customer-border-subtle-on-surface: var(--customer-color-blue-700-8);
+  --customer-text-subtle-on-brand: var(--customer-color-white-65);
+  --customer-text-secondary-on-brand: var(--customer-color-white-50);
+  --customer-text-tertiary-on-brand: var(--customer-color-white-60);
+  --customer-text-faint-on-brand: var(--customer-color-white-45);
+  --customer-text-strong-on-brand: var(--customer-color-white-82);
+  --customer-text-danger: var(--customer-color-danger-light);
+  --customer-surface-danger: var(--customer-color-danger-15);
+
+  --customer-background: var(--customer-color-brand);
+  --customer-background-raised: var(--customer-color-brand-raised);
+  --customer-surface: var(--customer-color-surface);
+  --customer-text: var(--customer-color-text-on-brand);
+  --customer-text-on-surface: var(--customer-color-text-on-surface);
+  --customer-primary: var(--customer-color-action-primary);
+  --customer-success: var(--customer-color-success);
+  --customer-error: var(--customer-color-error);
+  --customer-danger: var(--customer-error);
+  --customer-danger-10: var(--customer-color-danger-10);
+  --customer-danger-pale: var(--customer-color-danger-pale);
+  --customer-border: var(--customer-color-border-on-brand);
+  --customer-focus-ring: var(--customer-color-orange-500-65);
+  --customer-state-disabled-opacity: 0.38;
+
+  /* Typography */
+  --customer-font-family: Nunito, Inter, system-ui, sans-serif;
+  --customer-font-size-2xs: 0.6875rem;
+  --customer-font-size-caption: 0.625rem;
+  --customer-font-size-xs: 0.75rem;
+  --customer-font-size-sm: 0.8125rem;
+  --customer-font-size-body: 0.875rem;
+  --customer-font-size-md: 0.9375rem;
+  --customer-font-size-lg: 1rem;
+  --customer-font-size-xl: 1.0625rem;
+  --customer-font-size-2xl: 1.125rem;
+  --customer-font-size-3xl: 1.25rem;
+  --customer-font-size-4xl: 1.375rem;
+  --customer-font-size-5xl: 1.5rem;
+  --customer-font-size-6xl: 1.625rem;
+  --customer-font-size-7xl: 2rem;
+  --customer-font-size-state: 1.875rem;
+  --customer-font-size-display: 2.25rem;
+  --customer-font-weight-regular: 400;
+  --customer-font-weight-semibold: 600;
+  --customer-font-weight-bold: 700;
+  --customer-font-weight-extrabold: 800;
+  --customer-font-weight-black: 900;
+  --customer-line-height-tight: 1.1;
+  --customer-line-height-none: 1;
+  --customer-line-height-compact: 1.2;
+  --customer-line-height-label: 1.25;
+  --customer-line-height-body: 1.55;
+  --customer-line-height-relaxed: 1.6;
+  --customer-letter-spacing-tight: -0.02em;
+  --customer-letter-spacing-slight: -0.01em;
+  --customer-letter-spacing-label: 0.04em;
+  --customer-letter-spacing-overline: 0.12em;
+  --customer-letter-spacing-otp: 0.22em;
+
+  /* Spacing */
+  --customer-spacing-xs: 0.25rem;
+  --customer-spacing-sm: 0.5rem;
+  --customer-spacing-md: 0.75rem;
+  --customer-spacing-lg: 1rem;
+  --customer-spacing-xl: 1.25rem;
+  --customer-spacing-2xl: 1.5rem;
+  --customer-spacing-3xl: 2rem;
+  --customer-spacing-4xl: 2.5rem;
+  --customer-space-1: 0.125rem;
+  --customer-space-2: 0.1875rem;
+  --customer-space-3: 0.25rem;
+  --customer-space-4: 0.375rem;
+  --customer-space-5: 0.5rem;
+  --customer-space-6: 0.625rem;
+  --customer-space-7: 0.75rem;
+  --customer-space-8: 0.875rem;
+  --customer-space-9: 1rem;
+  --customer-space-10: 1.125rem;
+  --customer-space-11: 1.25rem;
+  --customer-space-12: 1.375rem;
+  --customer-space-13: 1.5rem;
+  --customer-space-14: 1.625rem;
+  --customer-space-15: 1.75rem;
+  --customer-space-16: 2rem;
+  --customer-space-17: 2.5rem;
+  --customer-space-18: 4rem;
+  --customer-space-19: 4.5rem;
+  --customer-space-20: 4.75rem;
+  --customer-space-21: 5rem;
+
+  --customer-size-icon-sm: 1.125rem;
+  --customer-size-control-sm: 2.125rem;
+  --customer-size-control-md: 2.375rem;
+  --customer-size-control-lg: 2.625rem;
+  --customer-size-control-xl: 3.25rem;
+  --customer-size-field: 3.375rem;
+  --customer-size-state-icon: 4.75rem;
+  --customer-size-content-auth: 24rem;
+  --customer-size-content-detail: 46rem;
+  --customer-size-summary: 21.25rem;
+
+  /* Radius and elevation */
+  --customer-radius-xs: var(--customer-radius-sm);
+  --customer-radius-sm: 0.75rem;
+  --customer-radius-md: 0.875rem;
+  --customer-radius-lg: 1.25rem;
+  --customer-radius-xl: 1.5rem;
+  --customer-radius-pill: 999px;
+  --customer-radius-round: 50%;
+  --customer-radius: var(--customer-radius-lg);
+  --customer-shadow-card: 0 0.25rem 1rem var(--customer-color-black-12);
+  --customer-shadow-card-raised: 0 0.25rem 1.25rem
+    var(--customer-color-black-15);
+  --customer-shadow-floating: 0 0.5rem 2rem var(--customer-color-black-15);
+  --customer-shadow-surface: 0 0.25rem 1.5rem var(--customer-color-black-18);
+  --customer-shadow-state: 0 0.375rem 1.75rem var(--customer-color-black-14);
+  --customer-shadow-shell:
+    0 1.25rem 5rem var(--customer-color-black-35),
+    0 0 0 1px var(--customer-color-white-10);
+  --customer-elevation-sm: var(--customer-shadow-card);
+  --customer-elevation-medium: var(--customer-shadow-card-raised);
+  --customer-elevation-frame: var(--customer-shadow-shell);
+
+  /* Motion */
+  --customer-duration-fast: 150ms;
+  --customer-duration-base: 200ms;
+  --customer-easing-standard: ease;
+  --customer-transform-press: scale(0.97);
+  --customer-transition-transform: transform var(--customer-duration-fast)
+    var(--customer-easing-standard);
+  --customer-transition-surface:
+    transform var(--customer-duration-fast) var(--customer-easing-standard),
+    background var(--customer-duration-fast) var(--customer-easing-standard);
+
+  /* Layout */
+  --customer-content-width: 27.5rem;
+  --customer-breakpoint-sm: 480px;
+  --customer-breakpoint-md: 768px;
+  --customer-breakpoint-lg: 1024px;
+  --customer-breakpoint-xl: 1280px;
+}

@@ -1,7 +1,7 @@
 import { createApp } from "vue";
 import "vuetify/styles";
 
-import "./shared/ui/tokens.css";
+import "./styles/main.css";
 
 import App from "./app/App.vue";
 import { installPlugins } from "./app/plugins";

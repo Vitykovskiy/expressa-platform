@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'Expressa back-office',
         short_name: 'Expressa BO',
-        theme_color: '#6f4e37',
+        theme_color: '#1A1AFF',
         background_color: '#ffffff',
         display: 'standalone',
         icons: [

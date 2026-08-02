@@ -17,3 +17,5 @@ Front-office — автономный Vue-клиент для пользоват
 - Локальное состояние приложения и сессии принадлежит `src/app/`. Оно не содержит API-типов.
 - Интеграция API: [единый клиент](../src/shared/api/client.ts) запрашивает `/api/v1`, проверяет ответы во время выполнения и приводит ошибки к `code`, `message`, `details`, `requestId`. [Снимок OpenAPI](../contracts/openapi.json) сравнивается с backend-компактной копией через `npm run contract:check`.
 - UI: текущая тема Vuetify определена в [plugins.ts](../src/app/plugins.ts); [ErrorNotice](../src/shared/ui/ErrorNotice.vue) показывает ошибку экрана.
+- [Customer Storybook](storybook.md) демонстрирует перенесённые runtime UI,
+  дизайн-систему и эталонный каталог состояний.

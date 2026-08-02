@@ -1,15 +1,22 @@
 import type { StorybookConfig } from "@storybook/vue3-vite";
+import vuetify from "vite-plugin-vuetify";
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.stories.ts"],
-  addons: ["@storybook/addon-a11y", "@storybook/addon-vitest"],
-  framework: "@storybook/vue3-vite",
-  viteFinal: async (config) => ({
-    ...config,
-    plugins: config.plugins
+  stories: ["../src/stories/**/*.stories.ts"],
+  addons: ["@storybook/addon-a11y"],
+  framework: {
+    name: "@storybook/vue3-vite",
+    options: {},
+  },
+  async viteFinal(viteConfig) {
+    viteConfig.plugins = viteConfig.plugins
       ?.flat()
-      .filter((plugin) => !plugin.name.startsWith("vite-plugin-pwa")),
-  }),
+      .filter((plugin) => !plugin.name.startsWith("vite-plugin-pwa"));
+    viteConfig.plugins ??= [];
+    viteConfig.plugins.push(vuetify({ autoImport: true }));
+
+    return viteConfig;
+  },
 };
 
 export default config;

@@ -1,0 +1,149 @@
+import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
+import ProductDetailScreen from "../../customer/pages/menu/ProductDetailScreen.vue";
+import {
+  createCustomerDefaults,
+  createPopulatedCartItems,
+} from "./fixtures/customer.fixtures";
+
+const fixtures = createCustomerDefaults();
+const category = fixtures.categories[1]!;
+const product = category.products[0]!;
+
+const meta = {
+  title: "Customer/Screens/ProductDetail",
+  component: ProductDetailScreen,
+  args: {
+    category,
+    product,
+    onSubmit: fn(),
+  },
+  argTypes: {
+    category: { control: "object", description: "Категория товара." },
+    product: { control: "object", description: "Доменные данные товара." },
+    cartItem: {
+      control: "object",
+      description: "Позиция редактирования или undefined для add.",
+    },
+    onSubmit: {
+      action: "submit",
+      description: "Передаёт выбранную позицию корзины.",
+    },
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Назначение: детали товара и выбор параметров корзины. Используйте для add/edit; не используйте без product. Props: category, product, cartItem; emit/action: submit; slots отсутствуют. Состояния: add, edit, size, addons, quantity и long. Валидация количества и доступных option принадлежит screen. Controls доступны кнопками и responsive. Источник: src/customer/pages/menu/ProductDetailScreen.vue, src/stories/customer/ProductDetail.stories.ts.",
+      },
+    },
+  },
+  tags: ["autodocs"],
+} satisfies Meta<typeof ProductDetailScreen>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /M · 320 ₽/ }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Овсяное молоко/ }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Увеличить количество" }),
+    );
+    await userEvent.click(canvas.getByRole("button", { name: /Добавить/ }));
+    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      {
+        productId: "cappuccino",
+        productName: "Капучино",
+        type: "drink",
+        size: "M",
+        sizePrice: 320,
+        addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
+        quantity: 2,
+        lineTotalRub: 800,
+      },
+      undefined,
+    );
+  },
+};
+
+export const Edit: Story = {
+  args: {
+    cartItem: createPopulatedCartItems()[0],
+  },
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: /Изменить/ }),
+    );
+    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      {
+        productId: "cappuccino",
+        productName: "Капучино",
+        type: "drink",
+        size: "M",
+        sizePrice: 320,
+        addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
+        quantity: 2,
+        lineTotalRub: 800,
+      },
+      "1",
+    );
+  },
+};
+export const SizeChanged: Story = {
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", {
+      name: /L · 360 ₽/,
+    });
+    await userEvent.click(button);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+  },
+};
+export const AddonSelected: Story = {
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", {
+      name: /Овсяное молоко/,
+    });
+    await userEvent.click(button);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+  },
+};
+export const QuantityChanged: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Увеличить количество" }),
+    );
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("2");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Уменьшить количество" }),
+    );
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
+  },
+};
+export const MinimumQuantity: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Уменьшить количество" }),
+    );
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
+  },
+};
+export const Long: Story = {
+  args: {
+    product: {
+      ...product,
+      name: "Капучино с очень длинным названием для проверки переноса и доступности",
+      description:
+        "Очень длинное описание товара для проверки адаптивного переноса содержимого на узких экранах.",
+    },
+  },
+};

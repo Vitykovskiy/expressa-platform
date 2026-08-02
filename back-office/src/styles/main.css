@@ -1,0 +1,143 @@
+:root {
+  /* Values derive from the canonical Vuetify theme in src/styles/theme.ts. */
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  --expressa-color-background: rgb(var(--v-theme-background));
+  --expressa-color-surface: rgb(var(--v-theme-surface));
+  --expressa-color-surface-raised: rgb(var(--v-theme-surface-raised));
+  --expressa-color-text-primary: rgb(var(--v-theme-text-primary));
+  --expressa-color-text-secondary: rgb(var(--v-theme-text-secondary));
+  --expressa-color-text-muted: rgb(var(--v-theme-text-muted));
+  --expressa-color-text-on-accent: rgb(var(--v-theme-on-primary));
+  --expressa-color-accent: rgb(var(--v-theme-primary));
+  --expressa-color-border: rgb(var(--v-theme-border-default));
+  --expressa-color-border-strong: rgb(var(--v-theme-border-strong));
+  --expressa-color-status-success: rgb(var(--v-theme-status-success));
+  --expressa-color-status-success-surface: rgb(
+    var(--v-theme-status-success-surface)
+  );
+  --expressa-color-status-warning: rgb(var(--v-theme-status-warning));
+  --expressa-color-status-warning-surface: rgb(
+    var(--v-theme-status-warning-surface)
+  );
+  --expressa-color-status-error: rgb(var(--v-theme-status-error));
+  --expressa-color-status-error-surface: rgb(
+    var(--v-theme-status-error-surface)
+  );
+  --expressa-color-status-neutral: rgb(var(--v-theme-status-neutral));
+  --expressa-color-status-neutral-surface: rgb(
+    var(--v-theme-status-neutral-surface)
+  );
+  --expressa-color-status-info-surface: rgb(var(--v-theme-status-info-surface));
+  --expressa-color-control-hover-surface: var(--expressa-color-surface-raised);
+  --expressa-color-control-selected-surface: var(
+    --expressa-color-status-info-surface
+  );
+  --expressa-color-control-disabled-surface: var(
+    --expressa-color-surface-raised
+  );
+  --expressa-color-transparent: transparent;
+
+  --expressa-space-2xs: 2px;
+  --expressa-space-badge-block: 3px;
+  --expressa-space-xs: 4px;
+  --expressa-space-field-label: 6px;
+  --expressa-space-sm: 8px;
+  --expressa-space-control-block: 10px;
+  --expressa-space-control-inline: 12px;
+  --expressa-space-md: 16px;
+  --expressa-space-button-inline: 20px;
+  --expressa-space-lg: 24px;
+  --expressa-space-xl: 32px;
+  --expressa-space-row-block: 14px;
+  --expressa-space-tab-bar-clearance: 80px;
+  --expressa-space-empty-state-block: 48px;
+  --expressa-space-product-indent: 48px;
+
+  --expressa-radius-sm: 6px;
+  --expressa-radius-md: 10px;
+  --expressa-radius-lg: 16px;
+  --expressa-radius-pill: 999px;
+
+  --expressa-border-width-default: 1px;
+  --expressa-border-width-strong: 2px;
+  --expressa-border-width-none: 0;
+
+  --expressa-font-size-status: 11px;
+  --expressa-font-size-caption: 12px;
+  --expressa-font-size-action: 13px;
+  --expressa-font-size-body: 14px;
+  --expressa-font-size-body-strong: 15px;
+  --expressa-font-size-title: 18px;
+  --expressa-font-size-brand: 20px;
+  --expressa-font-size-heading: 22px;
+  --expressa-font-size-screen-title: 24px;
+  --expressa-font-weight-medium: 500;
+  --expressa-font-weight-semibold: 600;
+  --expressa-font-weight-regular: 400;
+  --expressa-font-weight-bold: 700;
+  --expressa-line-height-control: 1;
+  --expressa-line-height-tight: 1.2;
+  --expressa-line-height-heading: 1.25;
+  --expressa-line-height-title: 1.3;
+  --expressa-line-height-emphasis: 1.35;
+  --expressa-line-height-caption: 1.4;
+  --expressa-line-height-body: 1.5;
+  --expressa-letter-spacing-label: 0.04em;
+  --expressa-letter-spacing-section-title: 0.05em;
+  --expressa-letter-spacing-otp: 0.4em;
+
+  --expressa-size-visually-hidden: 1px;
+  --expressa-size-icon-clock: 14px;
+  --expressa-stroke-width-icon: 2;
+  --expressa-size-checkbox: 18px;
+  --expressa-size-status-min-height: 24px;
+  --expressa-size-option: 40px;
+  --expressa-size-control-min-height: 44px;
+  --expressa-size-top-bar-min-height: 52px;
+  --expressa-size-tab-bar-min-height: 60px;
+  --expressa-size-role-option-min-height: 64px;
+  --expressa-size-row-min: 72px;
+  --expressa-size-avatar: 36px;
+  --expressa-size-auth-card-max-width: 360px;
+  --expressa-size-loading-state-min-height: 160px;
+  --expressa-size-side-nav-width: 220px;
+  --expressa-size-menu-min-width: 192px;
+  --expressa-size-settings-content-max-width: 560px;
+  --expressa-size-users-content-max-width: 720px;
+
+  --expressa-shadow-card: none;
+  --expressa-shadow-menu: 0 8px 20px rgb(17 17 17 / 12%);
+
+  --expressa-state-disabled-opacity: 0.4;
+  --expressa-state-pressed-opacity: 0.85;
+  --expressa-motion-duration-control: 120ms;
+  --expressa-focus-color: var(--expressa-color-accent);
+  --expressa-focus-ring: var(--expressa-border-width-strong) solid
+    var(--expressa-focus-color);
+  --expressa-safe-area-top: env(safe-area-inset-top, 0px);
+  --expressa-safe-area-right: env(safe-area-inset-right, 0px);
+  --expressa-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --expressa-safe-area-left: env(safe-area-inset-left, 0px);
+
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-surface-raised);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#storybook-root {
+  min-height: 100%;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}

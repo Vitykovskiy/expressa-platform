@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 const storybookTarget = process.env.PLAYWRIGHT_TARGET === 'storybook'
 
 export default defineConfig({
+  workers: process.env.CI ? 2 : 4,
   testDir: './tests/e2e',
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,

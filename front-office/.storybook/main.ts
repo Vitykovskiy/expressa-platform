@@ -1,7 +1,19 @@
-import { defineMain } from "@storybook/vue3-vite/node";
+import type { StorybookConfig } from "@storybook/vue3-vite";
+import vuetify from "vite-plugin-vuetify";
 
-export default defineMain({
-  addons: ["@storybook/addon-a11y", "@storybook/addon-vitest"],
+const config: StorybookConfig = {
+  stories: [
+    "../src/foundation/**/*.stories.ts",
+    "../src/stories/**/*.stories.ts",
+  ],
+  addons: ["@storybook/addon-docs", "@storybook/addon-a11y"],
   framework: "@storybook/vue3-vite",
-  stories: ["../src/**/*.stories.ts"],
-});
+  async viteFinal(config) {
+    config.plugins ??= [];
+    config.plugins.push(vuetify({ autoImport: true }));
+
+    return config;
+  },
+};
+
+export default config;

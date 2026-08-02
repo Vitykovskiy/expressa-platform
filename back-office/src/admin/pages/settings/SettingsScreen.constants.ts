@@ -1,0 +1,1 @@
+export const SETTINGS_SNACKBAR_TIMEOUT = 4000;

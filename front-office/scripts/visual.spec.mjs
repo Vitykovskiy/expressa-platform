@@ -1,13 +1,23 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from "@playwright/test";
+import { openStory } from "./storybook-test-utils.mjs";
 
-test('PageShell visual baseline', async ({ page }) => {
-  await page.goto('/iframe.html?id=foundations-pageshell--standard')
+test("Customer menu visual baseline", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await openStory(page, "customer-screens-menuroot--default");
 
-  await expect(page.locator('#storybook-root')).toHaveScreenshot('page-shell.png')
-})
+  await expect(page.locator("#storybook-root")).toHaveScreenshot(
+    "customer-menu-root.png",
+  );
+});
 
-test('ErrorNotice visual baseline', async ({ page }) => {
-  await page.goto('/iframe.html?id=foundations-errornotice--request-error')
+test("Customer journey visual baseline", async ({ page }) => {
+  await page.setViewportSize({ height: 1024, width: 1024 });
+  await openStory(
+    page,
+    "customer-journeys-customershell--authenticated-navigation-stack",
+  );
 
-  await expect(page.locator('#storybook-root')).toHaveScreenshot('error-notice.png')
-})
+  await expect(page.locator("#storybook-root")).toHaveScreenshot(
+    "customer-authenticated-journey.png",
+  );
+});

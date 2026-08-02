@@ -7,6 +7,7 @@ import { registerPwa } from "./app/pwa";
 import { router } from "./app/router";
 import { apiClientKey, createApiClient } from "./shared/api/client";
 import { validateEnvironment } from "./shared/config/environment";
+import "./styles/main.css";
 
 const environment = validateEnvironment(import.meta.env);
 
