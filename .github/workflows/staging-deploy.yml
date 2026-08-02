@@ -196,3 +196,29 @@ jobs:
             printf '%s\n' 'remote staging deployment failed' >&2
             exit 1
           }
+
+      - name: Set up Node.js for browser checks
+        # actions/setup-node v5.0.0
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: front-office/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            front-office/package-lock.json
+            back-office/package-lock.json
+
+      - name: Install browser check dependencies
+        run: |
+          npm ci --prefix front-office
+          npm ci --prefix back-office
+
+      - name: Install Chromium for same-origin checks
+        run: npx --prefix front-office playwright install --with-deps chromium
+
+      - name: Verify staging same-origin browser paths
+        env:
+          FRONT_OFFICE_BASE_URL: https://staging.expressa.vitykovskiy.ru
+          BACK_OFFICE_BASE_URL: https://admin.staging.expressa.vitykovskiy.ru
+        run: |
+          BASE_URL="$FRONT_OFFICE_BASE_URL" node front-office/scripts/same-origin-browser-check.mjs
+          BASE_URL="$BACK_OFFICE_BASE_URL" node back-office/scripts/same-origin-browser-check.mjs

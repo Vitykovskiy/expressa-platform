@@ -55,6 +55,12 @@ function validateDatabaseUrl(value: string): void {
   }
 }
 
+function validatePhone(value: string, name: string): void {
+  if (!/^\+7\d{10}$/.test(value)) {
+    throw new Error(`Invalid environment variable: ${name}`);
+  }
+}
+
 export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   if (isTestProcess()) {
     return environment;
@@ -68,6 +74,10 @@ export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.Proc
 
   validatePort(requireEnvironmentVariable(environment, 'PORT'));
   validateDatabaseUrl(requireEnvironmentVariable(environment, 'DATABASE_URL'));
+  const bootstrapPhone = environment.BOOTSTRAP_ADMIN_PHONE;
+  if (bootstrapPhone !== undefined && bootstrapPhone.trim() !== '') {
+    validatePhone(bootstrapPhone, 'BOOTSTRAP_ADMIN_PHONE');
+  }
 
   return environment;
 }

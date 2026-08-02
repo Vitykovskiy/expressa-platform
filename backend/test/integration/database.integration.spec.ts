@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
+const bootstrapAdministratorPhone = '+79991234567';
 
 function runScript(script: 'migrate' | 'seed'): void {
   execFileSync('npm', ['run', script], {
@@ -14,6 +15,7 @@ function runScript(script: 'migrate' | 'seed'): void {
       NODE_ENV: 'local',
       PORT: '3000',
       DATABASE_URL: databaseUrl,
+      BOOTSTRAP_ADMIN_PHONE: bootstrapAdministratorPhone,
     },
     stdio: 'inherit',
   });
@@ -35,20 +37,29 @@ describe('PostgreSQL foundation', () => {
   });
 
   it(
-    'повторно применяет миграции и пустой seed',
+    'повторно применяет миграции и idempotent seed администратора',
     async () => {
       runScript('migrate');
       runScript('migrate');
       runScript('seed');
       runScript('seed');
 
-      const result = await pool.query<{ name: string }>(
+      const migrations = await pool.query<{ name: string }>(
         'SELECT name FROM schema_migrations ORDER BY name',
       );
+      const administrators = await pool.query<{ phone_e164: string; role: string }>(
+        'SELECT phone_e164, role FROM users WHERE phone_e164 = $1',
+        [bootstrapAdministratorPhone],
+      );
 
-      expect(result.rows).toEqual([{ name: '0001_foundation.sql' }]);
+      expect(migrations.rows).toEqual([
+        { name: '0001_foundation.sql' },
+        { name: '0002_e01_core_schema.sql' },
+      ]);
+      expect(administrators.rows).toEqual([
+        { phone_e164: bootstrapAdministratorPhone, role: 'administrator' },
+      ]);
     },
-    // Four cold Node processes may exceed Jest's default timeout in CI.
     externalProcessTimeoutMs,
   );
 });

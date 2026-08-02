@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 const stories = [
   'foundations-page-shell--default',
   'feedback-error-notice--request-rejected',
-  'compositions-role-navigation--barista',
+  'compositions-navigation--default',
 ]
 
 for (const story of stories) {

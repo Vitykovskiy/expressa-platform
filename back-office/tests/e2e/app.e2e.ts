@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
 
-test('анонимный сотрудник перенаправляется на вход', async ({ page }) => {
+test('очередь открывается как статическая оболочка', async ({ page }) => {
   await page.goto('/queue')
 
-  await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible()
+  await expect(page).toHaveURL(/\/queue$/)
+  await expect(page.getByRole('heading', { name: 'Очередь' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Меню' })).toBeVisible()
 })
 
 test('production-сборка содержит PWA-манифест и service worker', async ({ page }) => {

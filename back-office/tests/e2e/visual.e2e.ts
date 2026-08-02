@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const visualStories = [
   ['page-shell', 'foundations-page-shell--default'],
   ['error-notice', 'feedback-error-notice--request-rejected'],
-  ['barista-navigation', 'compositions-role-navigation--barista'],
+  ['navigation', 'compositions-navigation--default'],
 ] as const
 
 for (const [name, story] of visualStories) {

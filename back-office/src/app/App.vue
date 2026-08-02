@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { VApp, VContainer, VMain } from 'vuetify/components'
 
 import ErrorNotice from '../shared/ui/ErrorNotice.vue'
 
 import { useAppStore } from './app.store'
-import { navigationItemsForRole } from './navigation'
-import { useSessionStore } from './session.store'
+import { navigationItems } from './navigation'
 
 const appStore = useAppStore()
-const sessionStore = useSessionStore()
-const navigationItems = computed(() => navigationItemsForRole(sessionStore.role))
 </script>
 
 <template>
@@ -23,7 +19,6 @@ const navigationItems = computed(() => navigationItemsForRole(sessionStore.role)
             Expressa back-office
           </p>
           <nav
-            v-if="sessionStore.isAuthenticated"
             aria-label="Рабочие разделы"
             class="app-navigation"
           >

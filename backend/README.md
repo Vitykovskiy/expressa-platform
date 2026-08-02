@@ -25,6 +25,19 @@ npm run build
 Допустимые delivery-значения `NODE_ENV`: `local`, `development`, `staging`, `production`.
 Пример локального окружения: [.env.example](.env.example).
 
+## Bootstrap сотрудников
+
+`BOOTSTRAP_ADMIN_PHONE` принимает только номер формата `+7XXXXXXXXXX`.
+`npm run seed` идемпотентно создаёт или обновляет для него роль `administrator`.
+
+```bash
+npm run staff -- upsert --phone +79991234567 --role barista
+npm run staff -- upsert --phone +79991234567 --role administrator
+```
+
+Команда создаёт или обновляет сотрудника. Неверный, неизвестный либо
+дублированный аргумент завершается с кодом `2`.
+
 ## Документация
 
 Серверные ноты: [docs/README.md](docs/README.md). Навигация: [docs/INDEX.md](docs/INDEX.md).

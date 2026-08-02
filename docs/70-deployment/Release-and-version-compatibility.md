@@ -12,4 +12,7 @@ SHA-tag write-once: `main` создаёт его только при отсут�
 
 Staging использует [deploy/staging.env](../../deploy/staging.env) как источник точного набора backend, front-office и back-office. `staging-vX.Y.Z` проверяет changelog и три registry digest-ссылки, затем развёртывает именно этот набор. `latest` не используется.
 
-Совместимость клиентов закреплена `/api/v1`; UI обращаются к backend того же стенда через same-origin `/api/v1`. Production не реализован и требует отдельного решения.
+Совместимость клиентов закреплена `/api/v1`; UI обращаются к backend того же стенда
+через same-origin `/api/v1`. E01 поставляет immutable staging. После приёмки MVP
+ручное production promotion точных staging digest выполняет
+[[../10-overview/backlog/E12/delivery/BL-0161|BL-0161]].

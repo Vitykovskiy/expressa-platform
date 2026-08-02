@@ -44,7 +44,7 @@
 | [[../95-testing/Test-strategy#Безопасность|безопасность]]; [[../95-testing/Coverage-and-quality-gates#Покрытие и контрольные требования качества|качество]] | [[backlog/E12/backend/BL-0147|BL-0147]], [[backlog/E12/backend/BL-0148|BL-0148]], [[backlog/E12/front-office/BL-0149|BL-0149]], [[backlog/E12/back-office/BL-0150|BL-0150]], [[backlog/E12/quality/BL-0153|BL-0153]], [[backlog/E12/quality/BL-0154|BL-0154]], [[backlog/E12/quality/BL-0155|BL-0155]], [[backlog/E12/quality/BL-0156|BL-0156]] |
 | [[../95-testing/Release-verification#Проверка готовности и выпуска|Q-SMOKE]] | [[backlog/E01/backend/BL-0003|BL-0003]], [[backlog/E12/quality/BL-0151|BL-0151]] |
 | [[../95-testing/Release-verification#Проверка готовности и выпуска|Q-E2E]] | [[backlog/E12/quality/BL-0152|BL-0152]] |
-| [[../95-testing/Release-verification#Проверка готовности и выпуска|Q-RELEASE]] | [[backlog/E01/delivery/BL-0015|BL-0015]], [[backlog/E01/delivery/BL-0016|BL-0016]], [[backlog/E01/delivery/BL-0017|BL-0017]], [[backlog/E01/delivery/BL-0019|BL-0019]], [[backlog/E12/quality/BL-0156|BL-0156]], [[backlog/E12/delivery/BL-0160|BL-0160]], [[backlog/E12/delivery/BL-0161|BL-0161]] |
+| [[../95-testing/Release-verification#Проверка готовности и выпуска|Q-RELEASE]] | [[backlog/E12/quality/BL-0156|BL-0156]], [[backlog/E12/delivery/BL-0160|BL-0160]], [[backlog/E12/delivery/BL-0161|BL-0161]] |
 | [[../70-deployment/Backup-and-restore#Надёжность, резервное копирование и восстановление|резервное копирование]] | [[backlog/E12/delivery/BL-0157|BL-0157]], [[backlog/E12/delivery/BL-0158|BL-0158]] |
 
 ## [[../95-testing/Mandatory-scenarios|Обязательные сценарии]]

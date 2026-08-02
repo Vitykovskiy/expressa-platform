@@ -19,7 +19,7 @@ export default defineConfig({
     },
     {
       name: 'storybook-e2e',
-      testMatch: /role-navigation\.e2e\.ts/,
+      testMatch: /navigation\.e2e\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {

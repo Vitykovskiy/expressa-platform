@@ -1,13 +1,16 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { fork, spawn, type ChildProcess } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { createServer, type AddressInfo } from 'node:net';
 import { resolve } from 'node:path';
+import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
 const coldProductionStartupTimeoutMs = 30_000;
 const livenessWaitTimeoutMs = 25_000;
 const livenessPollIntervalMs = 100;
 const childOutputLimit = 4_000;
+const shutdownTimeoutMs = 5_000;
 
 function sanitizeOutput(output: string): string {
   return output
@@ -99,8 +102,62 @@ function startProductionServer(port: number): {
   };
 }
 
+function startGracefulShutdownFixture(): {
+  output: () => string;
+  server: ChildProcess;
+} {
+  const server = fork(
+    resolve(__dirname, 'fixtures/graceful-shutdown.fixture.ts'),
+    [],
+    {
+      cwd: resolve(__dirname, '../..'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '0',
+        DATABASE_URL: databaseUrl,
+      },
+      execArgv: ['-r', 'ts-node/register'],
+      silent: true,
+    },
+  );
+  if (server.stdout === null || server.stderr === null) {
+    throw new Error('Graceful shutdown fixture did not expose output streams');
+  }
+
+  const readStandardOutput = captureOutput(server.stdout);
+  const readStandardError = captureOutput(server.stderr);
+
+  return {
+    server,
+    output: () =>
+      `stdout:\n${readStandardOutput()}\nstderr:\n${readStandardError()}`,
+  };
+}
+
 function childFailure(message: string, output: () => string): Error {
   return new Error(`${message}\n${output()}`);
+}
+
+async function resolveBeforeTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  error: Error,
+): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolveTimeout, rejectTimeout) => {
+        timeout = setTimeout(() => rejectTimeout(error), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+    }
+  }
 }
 
 async function waitForLiveness(
@@ -158,6 +215,97 @@ async function stopProductionServer(
   return exit;
 }
 
+async function stopGracefulShutdownFixture(
+  server: ChildProcess,
+): Promise<[number | null, NodeJS.Signals | null]> {
+  if (server.exitCode !== null || server.signalCode !== null) {
+    return [server.exitCode, server.signalCode];
+  }
+
+  const exit = once(server, 'exit') as Promise<[
+    number | null,
+    NodeJS.Signals | null,
+  ]>;
+  server.kill('SIGTERM');
+  return resolveBeforeTimeout(
+    exit,
+    shutdownTimeoutMs,
+    new Error('Graceful shutdown fixture did not exit in time'),
+  );
+}
+
+async function waitForFixturePort(
+  server: ChildProcess,
+  output: () => string,
+): Promise<number> {
+  const message = once(server, 'message') as Promise<[
+    { port?: unknown; type?: unknown },
+  ]>;
+  const [result] = await resolveBeforeTimeout(
+    message,
+    livenessWaitTimeoutMs,
+    childFailure('Graceful shutdown fixture did not start', output),
+  );
+
+  if (result.type !== 'ready' || typeof result.port !== 'number') {
+    throw childFailure('Graceful shutdown fixture returned an invalid port', output);
+  }
+
+  return result.port;
+}
+
+async function waitForWriteStart(pool: Pool, runId: string): Promise<void> {
+  for (
+    let elapsedMs = 0;
+    elapsedMs < livenessWaitTimeoutMs;
+    elapsedMs += livenessPollIntervalMs
+  ) {
+    const result = await pool.query<{ active: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE query LIKE $1
+          AND state = 'active'
+      ) AS active`,
+      [`%graceful-shutdown-write:${runId}%`],
+    );
+
+    if (result.rows[0]?.active === true) {
+      return;
+    }
+
+    await new Promise((resolveDelay) =>
+      setTimeout(resolveDelay, livenessPollIntervalMs),
+    );
+  }
+
+  throw new Error('Graceful shutdown write did not start before SIGTERM');
+}
+
+async function waitForRejectedRequest(url: string): Promise<Response | undefined> {
+  for (
+    let elapsedMs = 0;
+    elapsedMs < shutdownTimeoutMs;
+    elapsedMs += livenessPollIntervalMs
+  ) {
+    try {
+      const response = await fetch(`${url}/health/live`);
+
+      if (!response.ok) {
+        return response;
+      }
+    } catch {
+      return undefined;
+    }
+
+    await new Promise((resolveDelay) =>
+      setTimeout(resolveDelay, livenessPollIntervalMs),
+    );
+  }
+
+  throw new Error('New request remained accepted during graceful shutdown');
+}
+
 describe('sanitizeOutput', () => {
   it('скрывает Authorization и userinfo URL полностью', () => {
     const output = [
@@ -207,6 +355,51 @@ describe('production startup', () => {
       if (server.exitCode === null && server.signalCode === null) {
         await stopProductionServer(server);
       }
+    }
+  }, coldProductionStartupTimeoutMs);
+
+  it('завершает начатую DB-запись до остановки SIGTERM и отвергает новые запросы', async () => {
+    if (databaseUrl === undefined) {
+      throw new Error('DATABASE_URL is required for production e2e tests');
+    }
+
+    const observer = new Pool({ connectionString: databaseUrl });
+    const { output, server } = startGracefulShutdownFixture();
+
+    try {
+      await observer.query(
+        `CREATE TABLE IF NOT EXISTS graceful_shutdown_e2e_writes (
+          run_id uuid PRIMARY KEY
+        )`,
+      );
+      const port = await waitForFixturePort(server, output);
+      const url = `http://127.0.0.1:${port}`;
+      const runId = randomUUID();
+      const write = fetch(`${url}/test/graceful-shutdown/write`, {
+        method: 'POST',
+        headers: { 'x-e2e-run-id': runId },
+      });
+
+      await waitForWriteStart(observer, runId);
+      const shutdown = stopGracefulShutdownFixture(server);
+      const rejection = await waitForRejectedRequest(url);
+
+      expect(rejection?.status ?? 503).toBe(503);
+      await expect(write).resolves.toMatchObject({ status: 201 });
+
+      const committed = await observer.query<{ run_id: string }>(
+        'SELECT run_id FROM graceful_shutdown_e2e_writes WHERE run_id = $1',
+        [runId],
+      );
+      expect(committed.rows).toHaveLength(1);
+      await expect(shutdown).resolves.toEqual([0, null]);
+      await expect(fetch(`${url}/health/live`)).rejects.toThrow();
+    } finally {
+      if (server.exitCode === null && server.signalCode === null) {
+        await stopGracefulShutdownFixture(server);
+      }
+      await observer.query('DROP TABLE IF EXISTS graceful_shutdown_e2e_writes');
+      await observer.end();
     }
   }, coldProductionStartupTimeoutMs);
 });

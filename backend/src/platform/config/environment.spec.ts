@@ -42,6 +42,7 @@ describe('validateEnvironment', () => {
     ['PORT', { ...validEnvironment, PORT: '65536' }],
     ['DATABASE_URL', { ...validEnvironment, DATABASE_URL: undefined }],
     ['DATABASE_URL', { ...validEnvironment, DATABASE_URL: 'not-a-url' }],
+    ['BOOTSTRAP_ADMIN_PHONE', { ...validEnvironment, BOOTSTRAP_ADMIN_PHONE: '79991234567' }],
   ])('отклоняет невалидную переменную %s', (variable, environment) => {
     expectValidationError(environment, variable);
   });
