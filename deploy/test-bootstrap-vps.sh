@@ -198,6 +198,8 @@ run_live "$live_root" > "$live_root/idempotent-output.log" 2>&1
 [[ "$development_checksum" == "$(cksum "$live_root/srv/expressa/development/runtime.env")" ]] || fail 'development password rotated on repeat bootstrap'
 [[ "$staging_checksum" == "$(cksum "$live_root/srv/expressa/staging/runtime.env")" ]] || fail 'staging password rotated on repeat bootstrap'
 assert_file_contains "$live_root/etc/nginx/sites-available/expressa-redirect" "return 308 https://\$host\$request_uri;"
+[[ -L "$live_root/etc/nginx/sites-enabled/expressa-redirect" ]] || fail 'successful bootstrap did not enable nginx redirect'
+[[ "$(readlink -- "$live_root/etc/nginx/sites-enabled/expressa-redirect")" == '../sites-available/expressa-redirect' ]] || fail 'successful bootstrap used an unexpected nginx redirect target'
 if grep -Fq 'validate_deployment_compose' "$live_root/etc/nginx/sites-available/expressa-redirect"; then
   fail 'nginx redirect contains shell source'
 fi
@@ -275,10 +277,29 @@ set -e
 [[ "$rollback_status" != 0 ]] || fail 'Caddy reload failure was accepted'
 assert_file_contains "$rollback_root/home/codex_macbook/infra/shared-caddy/Caddyfile" 'respond "original"'
 assert_file_contains "$rollback_root/etc/nginx/sites-available/expressa-redirect" 'original nginx redirect'
+[[ ! -e "$rollback_root/etc/nginx/sites-enabled/expressa-redirect" && ! -L "$rollback_root/etc/nginx/sites-enabled/expressa-redirect" ]] || fail 'rollback left a newly-created nginx enabled link'
 if grep -Fq -- 'network disconnect expressa-development-edge fake-caddy' "$rollback_root/docker.log"; then
   fail 'rollback detached pre-existing development network'
 fi
 grep -Fq -- 'network disconnect expressa-staging-edge fake-caddy' "$rollback_root/docker.log" || fail 'rollback did not detach current-run staging network'
+
+for nginx_link_case in correct different; do
+  nginx_link_root="$temporary_directory/nginx-link-$nginx_link_case"
+  prepare_live_root "$nginx_link_root"
+  if [[ "$nginx_link_case" == correct ]]; then
+    nginx_link_target='../sites-available/expressa-redirect'
+  else
+    nginx_link_target='../sites-available/other-redirect'
+  fi
+  ln -s -- "$nginx_link_target" "$nginx_link_root/etc/nginx/sites-enabled/expressa-redirect"
+  set +e
+  FAIL_CADDY_RELOAD=1 run_live "$nginx_link_root"
+  nginx_link_status="$?"
+  set -e
+  [[ "$nginx_link_status" != 0 ]] || fail "$nginx_link_case nginx link rollback was accepted"
+  [[ -L "$nginx_link_root/etc/nginx/sites-enabled/expressa-redirect" ]] || fail "$nginx_link_case nginx link was not restored"
+  [[ "$(readlink -- "$nginx_link_root/etc/nginx/sites-enabled/expressa-redirect")" == "$nginx_link_target" ]] || fail "$nginx_link_case nginx link target changed"
+done
 
 duplicate_root="$temporary_directory/duplicate"
 prepare_live_root "$duplicate_root"

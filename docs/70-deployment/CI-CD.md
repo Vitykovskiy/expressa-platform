@@ -1,54 +1,32 @@
 # CI/CD
 
-- **Q-CI-001.** CI backend выполняет `npm ci`, lint, typecheck, модульные и интеграционные тесты, OpenAPI check, production build и Docker build.
-- **Q-CI-002.** CI front-office выполняет `npm ci`, lint, typecheck, тесты, Storybook checks, application build и Docker build.
-- **Q-CI-003.** CI back-office выполняет `npm ci`, lint, typecheck, тесты, Storybook checks, application build и Docker build.
-- **Q-CI-FO-SB.** Каждый pull request front-office публикует Storybook preview и результат визуальной регрессии.
-- **Q-CI-BO-SB.** Каждый pull request back-office публикует Storybook preview и результат визуальной регрессии.
+`Vitykovskiy/expressa-platform` — единственный удалённый репозиторий проекта. Проверки и поставка определены в `.github/workflows/`; этот документ описывает их фактический контракт и не заменяет журналы GitHub Actions.
 
-## Pipeline backend
+## Текущее доказательство
 
-1. `npm ci`;
-2. lint;
-3. typecheck;
-4. модульные тесты;
-5. интеграционные тесты с PostgreSQL;
-6. генерация и проверка OpenAPI;
-7. production build;
-8. Docker build;
-9. развёртывание основной ветки в `development`;
-10. миграции `development`;
-11. API smoke в `development`;
-12. проверка совпадения версии, changelog и Git-тега при выпуске;
-13. развёртывание тегированного Docker-образа в `staging`;
-14. миграции `staging`;
-15. health-check и smoke в `staging`;
-16. ручное продвижение проверенного Docker-образа в `production` после приёмки MVP;
-17. миграции `production`;
-18. health-check и smoke в `production`.
+| Проверка | Запуск | Состояние |
+| --- | --- | --- |
+| Backend CI | [30727498998](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727498998) | успешно |
+| Front-office CI | [30727498999](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727498999) | успешно |
+| Back-office CI | [30727499014](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727499014) | успешно |
+| Development delivery | [30727499044](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727499044) | неуспешно: GitHub Actions не авторизован для записи образов в GHCR |
+| Development delivery | [30727857548](https://github.com/Vitykovskiy/expressa-platform/actions/runs/30727857548) | неуспешно: GitHub Actions не авторизован для записи образов в GHCR |
 
-Шаги 9–11 выполняются для основной ветки. Шаги 12–15 запускаются только для Git-тега версии. Шаги 16–18 отключены до завершения разработки и приёмки MVP.
+Запуски `main` только пытались собрать и опубликовать образы: авторизация остановила их до публикации GHCR-пакетов. Образов и контейнеров приложений нет, успешной поставки в `development` нет. Нет staging-манифеста и тега `staging-vX.Y.Z`.
 
-## Pipeline front-office и back-office
+## Проверки приложений
 
-1. `npm ci`;
-2. lint;
-3. typecheck;
-4. модульные тесты;
-5. Storybook interaction tests;
-6. автоматическая проверка доступности;
-7. визуальная регрессия;
-8. Storybook build;
-9. application build;
-10. Docker build;
-11. развёртывание основной ветки в `development`;
-12. E2E против backend в `development`;
-13. проверка совпадения версии, changelog и Git-тега при выпуске;
-14. развёртывание тегированного Docker-образа в `staging`;
-15. E2E и browser smoke в `staging`;
-16. ручное продвижение проверенного Docker-образа в `production` после приёмки MVP;
-17. browser smoke в `production`.
+- `backend-ci.yml`: `npm ci`, lint, typecheck, модульные и интеграционные тесты PostgreSQL, проверка OpenAPI, production build и Docker build.
+- `front-office-ci.yml` и `back-office-ci.yml`: `npm ci`, lint, typecheck, тесты, Storybook interaction и accessibility, визуальная регрессия, Storybook build, application build и Docker build.
 
-Шаги 11–12 выполняются для основной ветки. Шаги 13–15 запускаются только для Git-тега версии. Шаги 16–17 отключены до завершения разработки и приёмки MVP.
+Ошибка обязательного шага завершает соответствующий workflow с ошибкой.
 
-Правила выпуска: [[Release-and-version-compatibility]].
+## Поставка
+
+`development-delivery.yml` на `main` предназначен для сборки трёх образов и передачи в VPS неизменяемых digest-ссылок. `delivery-component.yml` разрешает только пары component/context/image: `backend`/`expressa-backend`, `front-office`/`expressa-front-office`, `back-office`/`expressa-back-office`.
+
+Имена пакетов двухуровневые и фиксированы: `ghcr.io/vitykovskiy/expressa-backend`, `ghcr.io/vitykovskiy/expressa-front-office`, `ghcr.io/vitykovskiy/expressa-back-office`. При успешной публикации коммит `main` получает тег `sha-<полный SHA>`; развёртывание принимает только `@sha256:…`.
+
+Компонентный тег `backend-vX.Y.Z`, `front-office-vX.Y.Z` или `back-office-vX.Y.Z` не пересобирает образ: workflow проверяет версию и changelog, затем создаёт тег `vX.Y.Z` для уже опубликованного digest. `staging-deploy.yml` принимает только тег `staging-vX.Y.Z`, заголовок changelog и `deploy/staging.env` с тремя digest-ссылками. Манифест и staging-тег пока отсутствуют.
+
+Поставка в `production` не реализована и не запускается. Порядок сред — в [[Environments]], операционный порядок — в [[Operations-runbook]], выпуск — в [[Release-and-version-compatibility]].

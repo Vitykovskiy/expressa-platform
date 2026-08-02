@@ -33,7 +33,7 @@ caddy_compose() {
 }
 
 rollback_configuration() {
-  local network
+  local network nginx_link_state nginx_link_target
   [[ "$configuration_changed" == 1 && -n "$backup_directory" ]] || return 0
   cp -- "$backup_directory/Caddyfile" "$caddy_file"
   if [[ -f "$backup_directory/expressa-redirect" ]]; then
@@ -41,6 +41,20 @@ rollback_configuration() {
   else
     rm -f -- "$nginx_redirect_file"
   fi
+  IFS= read -r nginx_link_state < "$backup_directory/nginx-enabled-link-state"
+  case "$nginx_link_state" in
+    absent)
+      rm -f -- "$nginx_enabled_file"
+      ;;
+    symlink)
+      IFS= read -r nginx_link_target < <(sed -n '2p' "$backup_directory/nginx-enabled-link-state")
+      rm -f -- "$nginx_enabled_file"
+      ln -s -- "$nginx_link_target" "$nginx_enabled_file"
+      ;;
+    other)
+      ;;
+    *) fail 'invalid nginx enabled-link backup state' ;;
+  esac
   for network in "${attached_networks[@]}"; do
     "$docker_bin" network disconnect "$network" "$caddy_container" >/dev/null 2>&1 || true
   done
@@ -379,6 +393,16 @@ cp -- "$caddy_file" "$backup_directory/Caddyfile"
 cp -- "$caddy_compose_file" "$backup_directory/docker-compose.yml"
 if [[ -f "$nginx_redirect_file" ]]; then
   cp -- "$nginx_redirect_file" "$backup_directory/expressa-redirect"
+fi
+if [[ -L "$nginx_enabled_file" ]]; then
+  {
+    printf '%s\n' symlink
+    readlink -- "$nginx_enabled_file"
+  } > "$backup_directory/nginx-enabled-link-state"
+elif [[ -e "$nginx_enabled_file" ]]; then
+  printf '%s\n' other > "$backup_directory/nginx-enabled-link-state"
+else
+  printf '%s\n' absent > "$backup_directory/nginx-enabled-link-state"
 fi
 configuration_changed=1
 temporary_routes="$(mktemp)"
