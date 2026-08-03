@@ -5,8 +5,9 @@
     stacked
     variant="text"
     @click="emit('select', props.product.id)"
-    ><span class="product-card__name">{{ props.product.name }}</span
-    ><span class="product-card__type">{{ props.typeLabel }}</span
+    ><span class="product-card__info"
+      ><span class="product-card__name">{{ props.product.name }}</span
+      ><span class="product-card__type">{{ props.typeLabel }}</span></span
     ><span class="product-card__prices"
       ><template v-if="props.product.sizes?.length"
         ><span
@@ -50,24 +51,38 @@ const emit = defineEmits<ProductCardEmits>();
 .product-card__type {
   display: block;
 }
+.product-card__info {
+  display: grid;
+  gap: var(--customer-space-2);
+  min-width: 0;
+}
 .product-card__name {
-  margin-bottom: var(--customer-space-2);
   font-size: var(--customer-font-size-xl);
   font-weight: var(--customer-font-weight-extrabold);
 }
 .product-card__type {
-  margin-bottom: var(--customer-space-7);
   color: var(--customer-color-text-muted-on-surface);
 }
 .product-card__prices {
   display: flex;
   flex-wrap: wrap;
   gap: var(--customer-space-4);
+  justify-content: flex-start;
+  width: 100%;
 }
 .product-card__price {
   padding: var(--customer-space-3) var(--customer-space-7);
   color: var(--customer-background);
   background: var(--customer-color-info-surface);
   border-radius: var(--customer-radius-pill);
+}
+.product-card :deep(.v-btn__content) {
+  display: grid;
+  justify-content: start;
+  row-gap: var(--customer-space-7);
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
 }
 </style>

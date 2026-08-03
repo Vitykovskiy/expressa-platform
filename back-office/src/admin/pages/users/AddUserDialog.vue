@@ -56,7 +56,7 @@
           >
         </div>
 
-        <div class="add-user-dialog-actions">
+        <div class="add-user-dialog-actions admin-dialog-actions">
           <AdminButton :disabled="!isValid" type="submit">
             Добавить пользователя
           </AdminButton>
@@ -241,11 +241,5 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .add-user-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
-}
-
-.add-user-dialog-actions > .admin-button {
-  width: 100%;
 }
 </style>

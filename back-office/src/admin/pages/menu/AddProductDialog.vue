@@ -71,7 +71,7 @@
           />
         </template>
       </v-card-text>
-      <v-card-actions class="add-dialog-actions">
+      <v-card-actions class="add-dialog-actions admin-dialog-actions">
         <AdminButton :disabled="!isValid" type="button" @click="confirm">
           Добавить товар
         </AdminButton>
@@ -248,11 +248,6 @@ watch(open, (value, previous) => {
   font-weight: var(--expressa-font-weight-semibold);
 }
 .add-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
   padding: var(--expressa-space-lg);
-}
-.add-dialog-actions .admin-button {
-  width: 100%;
 }
 </style>

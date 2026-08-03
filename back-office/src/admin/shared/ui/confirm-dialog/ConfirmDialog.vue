@@ -38,7 +38,7 @@
         </p>
       </v-card-text>
 
-      <v-card-actions class="confirm-dialog-actions">
+      <v-card-actions class="confirm-dialog-actions admin-dialog-actions">
         <AdminButton :variant="props.confirmVariant" @click="handleConfirm">
           {{ props.confirmLabel }}
         </AdminButton>
@@ -190,12 +190,6 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .confirm-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-
-.confirm-dialog-actions > .admin-button {
-  width: 100%;
 }
 </style>

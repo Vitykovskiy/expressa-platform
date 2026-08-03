@@ -12,6 +12,4 @@ export type AuthFormEmits = {
   updateName: [name: string];
   submitName: [];
   backToPhone: [];
-  retryOtp: [];
-  reset: [];
 };

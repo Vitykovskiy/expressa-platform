@@ -12,7 +12,8 @@
       </v-card-title>
 
       <v-card-text v-if="!isRoleChange" class="user-action-dialog-user">
-        {{ props.user.name }}
+        <strong>{{ props.user.name }}</strong>
+        <span v-if="props.user.phone">{{ props.user.phone }}</span>
       </v-card-text>
 
       <v-card-text
@@ -56,7 +57,7 @@
         </fieldset>
       </v-card-text>
 
-      <v-card-actions class="user-action-dialog-actions">
+      <v-card-actions class="user-action-dialog-actions admin-dialog-actions">
         <AdminButton
           :variant="presentation.confirmVariant"
           @click="confirmAction"
@@ -104,7 +105,7 @@ const presentation = computed<UserActionDialogPresentation>(() => {
 
   if (props.action === "block") {
     return {
-      title: "Заблокировать",
+      title: "Заблокировать пользователя?",
       confirmLabel: "Заблокировать",
       confirmVariant: "destructive",
       description:
@@ -113,7 +114,7 @@ const presentation = computed<UserActionDialogPresentation>(() => {
   }
 
   return {
-    title: "Разблокировать",
+    title: "Разблокировать пользователя?",
     confirmLabel: "Разблокировать",
     confirmVariant: "primary",
     description: "Пользователь снова получит доступ к системе.",
@@ -200,6 +201,8 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .user-action-dialog-user {
+  display: grid;
+  gap: var(--expressa-space-2xs);
   padding: 0 var(--expressa-space-lg) var(--expressa-space-sm);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
@@ -275,12 +278,6 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .user-action-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-
-.user-action-dialog-actions > .admin-button {
-  width: 100%;
 }
 </style>

@@ -27,6 +27,7 @@ body {
   display: flex;
   flex: 1;
   min-height: inherit;
+  min-width: 0;
 }
 
 :disabled,
@@ -54,6 +55,14 @@ body {
 @media (min-width: 768px) {
   #storybook-root {
     max-width: var(--customer-content-width);
+  }
+}
+
+@media (min-width: 480px) and (max-width: 1023px) {
+  #storybook-root {
+    max-width: none;
+    width: 100vw;
+    margin: 0;
   }
 }
 

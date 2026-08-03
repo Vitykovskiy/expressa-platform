@@ -31,6 +31,7 @@ defineSlots<{
 <style scoped lang="scss">
 .ui-btn {
   min-height: 44px;
+  border-radius: var(--customer-radius);
   font: inherit;
 }
 </style>

@@ -4,10 +4,13 @@
       <div
         class="state-icon"
         :class="`state-icon--${presentation.iconTone}`"
-        aria-hidden="true"
+        :aria-hidden="presentation.content !== 'loading'"
+        :aria-live="presentation.content === 'loading' ? 'polite' : undefined"
+        :role="presentation.content === 'loading' ? 'status' : undefined"
       >
         <v-progress-circular
           v-if="presentation.content === 'loading'"
+          aria-label="Обрабатываем запрос..."
           class="loading-spinner"
           indeterminate
           :size="30"
@@ -32,8 +35,6 @@
         v-if="presentation.content === 'form'"
         :state="state"
         @back-to-phone="emit('backToPhone')"
-        @reset="emit('reset')"
-        @retry-otp="emit('retryOtp')"
         @send-code="emit('sendCode')"
         @submit-name="emit('submitName')"
         @update-name="emit('updateName', $event)"
@@ -42,24 +43,8 @@
         @verify-otp="emit('verifyOtp', $event)"
       />
 
-      <div
-        v-else-if="presentation.content === 'loading'"
-        class="loading-state"
-        role="status"
-        aria-live="polite"
-      >
-        <v-progress-circular
-          aria-label="Загрузка подтверждения"
-          color="surface"
-          indeterminate
-          :size="20"
-          :width="3"
-        />
-        <span>Пожалуйста, подождите...</span>
-      </div>
-
       <ui-btn
-        v-else
+        v-else-if="presentation.content === 'success'"
         block
         class="auth-screen__continue-button"
         color="primary"
@@ -89,6 +74,10 @@ const isLoading = computed(() => presentation.value.content === "loading");
 </script>
 
 <style scoped lang="scss">
+.loading-spinner {
+  color: var(--customer-background);
+}
+
 .auth-screen {
   display: flex;
   flex: 1;
@@ -126,17 +115,9 @@ const isLoading = computed(() => presentation.value.content === "loading");
   color: var(--customer-success);
 }
 
-.state-icon--error {
-  color: var(--customer-danger);
-}
-
 .state-icon-icon {
   width: var(--customer-font-size-7xl);
   height: var(--customer-font-size-7xl);
-}
-
-.loading-spinner {
-  color: var(--customer-background);
 }
 
 .auth-heading {
@@ -167,18 +148,6 @@ const isLoading = computed(() => presentation.value.content === "loading");
 
 .state-icon--default {
   color: var(--customer-background);
-}
-
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: var(--customer-size-control-xl);
-  gap: var(--customer-space-7);
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-body);
-  font-weight: var(--customer-font-weight-bold);
 }
 
 @media (min-width: 1024px) {

@@ -141,14 +141,47 @@ function toggleOrder(orderId: string): void {
   list-style: none;
 }
 
+@media (min-width: 768px) {
+  .orders-history__header {
+    width: 100%;
+    padding-right: max(
+      var(--customer-space-16),
+      calc(
+        (100% - var(--customer-size-content-detail)) / 2 +
+          var(--customer-space-16)
+      )
+    );
+    padding-left: max(
+      var(--customer-space-16),
+      calc(
+        (100% - var(--customer-size-content-detail)) / 2 +
+          var(--customer-space-16)
+      )
+    );
+  }
+
+  .orders-history__list {
+    width: 100%;
+    max-width: var(--customer-size-content-detail);
+    margin: 0 auto;
+    padding: var(--customer-space-13) var(--customer-space-16)
+      var(--customer-space-15);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 1024px) {
+  .orders-history__list {
+    max-width: none;
+    margin: 0;
+  }
+
   .orders-history__header {
     padding: var(--customer-space-13) var(--customer-space-16)
       var(--customer-space-15);
   }
 
   .orders-history__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 0 var(--customer-space-16);
   }
 }

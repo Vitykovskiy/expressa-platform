@@ -6,6 +6,7 @@ export interface CartScreenProps {
 
 export type CartScreenEmits = {
   removeItem: [itemId: string];
+  updateQuantity: [itemId: string, nextQuantity: number];
   continueShopping: [];
   checkout: [];
 };

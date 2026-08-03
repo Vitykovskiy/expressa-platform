@@ -4,17 +4,18 @@
     class="auth-form"
     @submit.prevent="sendCode"
   >
+    <label class="auth-form__field-label" for="auth-phone">
+      Номер телефона
+    </label>
     <ui-text-field
+      id="auth-phone"
       autocomplete="tel"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
-      hint="Формат: +7 (___) ___-__-__"
       inputmode="tel"
-      label="Номер телефона"
       placeholder="+7 (___) ___-__-__"
-      persistent-hint
       variant="outlined"
       :disabled="isLoading"
       :model-value="props.state.phone"
@@ -61,6 +62,7 @@
       :model-value="otp"
       @update:model-value="updateOtp"
     />
+    <UiFieldMessage :message="props.state.errorMessage" tone="error" />
     <ui-btn
       block
       color="surface"
@@ -69,6 +71,14 @@
       type="submit"
     >
       Подтвердить
+    </ui-btn>
+    <ui-btn
+      class="auth-form__ghost-button"
+      :disabled="isLoading"
+      variant="text"
+      @click="resendCode"
+    >
+      Отправить код ещё раз
     </ui-btn>
     <ui-btn
       class="auth-form__ghost-button"
@@ -85,14 +95,15 @@
     class="auth-form"
     @submit.prevent="submitName"
   >
+    <label class="auth-form__field-label" for="auth-name">Ваше имя</label>
     <ui-text-field
+      id="auth-name"
       autocomplete="name"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
       hint="Имя появится в заказах и истории"
-      label="Ваше имя"
       placeholder="Ваше имя"
       persistent-hint
       variant="outlined"
@@ -114,37 +125,13 @@
       Продолжить
     </ui-btn>
   </form>
-
-  <div
-    v-else-if="props.state.step === 'error'"
-    class="auth-form"
-    role="alert"
-    aria-live="assertive"
-  >
-    <ui-btn
-      block
-      color="error"
-      :disabled="isLoading"
-      size="x-large"
-      @click="emit('retryOtp')"
-    >
-      Ввести код заново
-    </ui-btn>
-    <ui-btn
-      class="auth-form__ghost-button"
-      :disabled="isLoading"
-      variant="text"
-      @click="emit('reset')"
-    >
-      Изменить номер
-    </ui-btn>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, shallowRef, watch } from "vue";
 import { Phone, UserRound } from "lucide-vue-next";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
+import UiFieldMessage from "../../shared/ui/field-message/UiFieldMessage.vue";
 import UiTextField from "../../shared/ui/text-field/UiTextField.vue";
 import type { AuthFormEmits, AuthFormProps } from "./AuthForm.types";
 
@@ -161,7 +148,7 @@ const isLoading = computed(() => props.state.step === "loading");
 watch(
   () => props.state.step,
   (step) => {
-    if (step === "phone" || step === "error") otp.value = "";
+    if (step === "phone") otp.value = "";
   },
 );
 
@@ -180,6 +167,14 @@ function updateName(name: string) {
 
 function sendCode() {
   if (canSendCode.value && !isLoading.value) emit("sendCode");
+}
+
+function resendCode() {
+  if (isLoading.value) return;
+
+  otp.value = "";
+  emit("updateOtp", "");
+  emit("sendCode");
 }
 
 function verifyOtp() {
@@ -203,6 +198,14 @@ function submitName() {
   width: var(--customer-size-icon-sm);
   height: var(--customer-size-icon-sm);
   color: var(--customer-color-text-muted-on-brand);
+}
+
+.auth-form__field-label {
+  margin-bottom: calc(var(--customer-space-4) * -1);
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-bold);
+  letter-spacing: var(--customer-letter-spacing-overline);
 }
 
 .auth-form__ghost-button {

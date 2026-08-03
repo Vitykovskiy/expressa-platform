@@ -17,18 +17,46 @@
       <h2 class="order-card__customer">
         {{ props.order.customerName }}
       </h2>
-      <p class="order-card__items">
+      <p v-if="typeof props.order.items === 'string'" class="order-card__items">
         {{ props.order.items }}
       </p>
+      <ul v-else class="order-card__items">
+        <li
+          v-for="(item, itemIndex) in props.order.items"
+          :key="itemIndex"
+          class="order-card__item"
+        >
+          <div class="order-card__product-row">
+            <strong class="order-card__product-name">{{
+              item.productName
+            }}</strong>
+            <span class="order-card__quantity">× {{ item.quantity }}</span>
+          </div>
+          <p v-if="item.size" class="order-card__size">
+            Размер {{ item.size }}
+          </p>
+          <div v-if="item.addons.length" class="order-card__addons">
+            <span class="order-card__addons-title">Добавки</span>
+            <ul class="order-card__addons-list">
+              <li
+                v-for="(addon, addonIndex) in item.addons"
+                :key="addonIndex"
+                class="order-card__addon"
+              >
+                <span class="order-card__addon-name">+ {{ addon.name }}</span>
+                <span class="order-card__quantity">
+                  × {{ addon.quantity }}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ul>
     </div>
 
     <p class="order-card__total">{{ props.order.total }} ₽</p>
 
-    <div
-      v-if="orderActions.length"
-      class="order-card__actions"
-      :class="{ 'order-card__actions--single': orderActions.length === 1 }"
-    >
+    <div v-if="orderActions.length" class="order-card__actions">
       <AdminButton
         v-for="action in orderActions"
         :key="action.action"
@@ -117,30 +145,89 @@ const orderActions = computed(() => ORDER_CARD_ACTIONS[props.order.status]);
   overflow-wrap: anywhere;
 }
 
-.order-card__customer,
-.order-card__total {
+.order-card__customer {
   font-size: var(--expressa-font-size-body-strong);
   font-weight: var(--expressa-font-weight-semibold);
   line-height: var(--expressa-line-height-emphasis);
 }
 
 .order-card__items {
-  display: -webkit-box;
-  overflow: hidden;
+  display: grid;
+  gap: var(--expressa-space-xs);
+  padding: 0;
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
   line-height: var(--expressa-line-height-caption);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  list-style: none;
+}
+
+.order-card__item,
+.order-card__addons,
+.order-card__addons-list {
+  display: grid;
+  gap: var(--expressa-space-xs);
+}
+
+.order-card__item:not(:first-child) {
+  padding-top: var(--expressa-space-sm);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.order-card__product-row,
+.order-card__addon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--expressa-space-xs);
+}
+
+.order-card__product-name,
+.order-card__addon-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-card__product-name {
+  font-weight: var(--expressa-font-weight-semibold);
+}
+
+.order-card__quantity {
+  white-space: nowrap;
+}
+
+.order-card__size,
+.order-card__addons-title {
+  margin: 0;
+  color: var(--expressa-color-text-muted);
+}
+
+.order-card__addons {
+  padding: var(--expressa-space-sm);
+  background: var(--expressa-color-surface-raised);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-md);
+}
+
+.order-card__addons-list {
+  padding: 0;
+  list-style: none;
+}
+
+.order-card__total {
+  padding-top: var(--expressa-space-sm);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  font-size: var(--expressa-font-size-body-strong);
+  font-weight: var(--expressa-font-weight-bold);
+  line-height: var(--expressa-line-height-emphasis);
 }
 
 .order-card__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--expressa-space-sm);
-}
-
-.order-card__actions--single {
-  grid-template-columns: minmax(0, 1fr);
+  padding-top: var(--expressa-space-sm);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 </style>

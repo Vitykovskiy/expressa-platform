@@ -8,11 +8,23 @@ export type AuthResult = "ok" | "no_role" | "not_found";
 export type OrderStatus =
   "Created" | "Confirmed" | "Ready for pickup" | "Rejected" | "Closed";
 
+export interface OrderItemAddon {
+  name: string;
+  quantity: number;
+}
+
+export interface OrderItem {
+  productName: string;
+  quantity: number;
+  size?: string;
+  addons: readonly OrderItemAddon[];
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   customerName: string;
-  items: string;
+  items: string | readonly OrderItem[];
   total: number;
   status: OrderStatus;
   slotTime: string;

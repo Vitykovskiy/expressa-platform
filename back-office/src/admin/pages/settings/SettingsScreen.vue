@@ -48,14 +48,17 @@ function save(settings: SettingsScreenProps["settings"]) {
 .settings-screen__content {
   display: grid;
   width: min(100%, var(--expressa-size-settings-content-max-width));
+  min-width: 0;
   min-height: 100%;
+  align-content: start;
+  gap: var(--expressa-space-lg);
   margin: 0 auto;
+  padding: var(--expressa-space-md);
 }
 
 .settings-screen__title {
   display: none;
   margin: 0;
-  padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
   font-size: var(--expressa-font-size-screen-title);
   line-height: var(--expressa-line-height-heading);
 }

@@ -19,7 +19,7 @@
           variant="text"
           @click="selectCategory(category.id)"
         >
-          <span>
+          <span class="menu-root__content">
             <span class="menu-root__name">{{ category.name }}</span>
             <span class="menu-root__count"
               >{{ category.products.length }} позиций</span
@@ -60,12 +60,13 @@ function selectCategory(categoryId: string): void {
   flex: 1;
   flex-direction: column;
   width: 100%;
-  padding: var(--customer-space-13) var(--customer-space-9)
-    var(--customer-space-17);
+  min-height: 100%;
+  padding-bottom: var(--customer-space-17);
   color: var(--customer-text);
 }
 .menu-root__header {
-  padding-bottom: var(--customer-space-16);
+  padding: var(--customer-space-13) var(--customer-space-9)
+    var(--customer-space-16);
 }
 .menu-root__eyebrow {
   margin: 0 0 var(--customer-space-4);
@@ -85,7 +86,7 @@ function selectCategory(categoryId: string): void {
 }
 .menu-root__empty {
   margin: 0;
-  padding: var(--customer-spacing-xl);
+  padding: var(--customer-space-18) var(--customer-space-9);
   color: var(--customer-text-subtle-on-brand);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
@@ -95,14 +96,15 @@ function selectCategory(categoryId: string): void {
   display: grid;
   gap: var(--customer-space-7);
   margin: 0;
-  padding: 0;
+  padding: var(--customer-space-9);
   list-style: none;
 }
 .menu-root__card {
   display: flex;
   width: 100%;
+  height: auto;
+  min-height: 44px;
   align-items: center;
-  justify-content: space-between;
   padding: var(--customer-space-10) var(--customer-space-11);
   color: var(--customer-text-on-surface);
   text-align: left;
@@ -124,8 +126,13 @@ function selectCategory(categoryId: string): void {
 .menu-root__count {
   display: block;
 }
+.menu-root__content {
+  display: grid;
+  row-gap: var(--customer-space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .menu-root__name {
-  margin-bottom: var(--customer-space-2);
   font-size: var(--customer-font-size-3xl);
   font-weight: var(--customer-font-weight-extrabold);
   letter-spacing: var(--customer-letter-spacing-slight);
@@ -141,18 +148,45 @@ function selectCategory(categoryId: string): void {
   width: var(--customer-size-control-md);
   height: var(--customer-size-control-md);
   flex: 0 0 auto;
+  justify-self: end;
   place-items: center;
   color: var(--customer-text);
   background: var(--customer-background);
   border-radius: var(--customer-radius-round);
 }
-@media (min-width: 1024px) {
-  .menu-root {
-    padding: var(--customer-space-13) var(--customer-space-16)
-      var(--customer-space-17);
+.menu-root__card :deep(.v-btn__content) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--customer-size-control-md);
+  align-items: center;
+  column-gap: var(--customer-space-7);
+  justify-content: start;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
+}
+@media (min-width: 768px) {
+  .menu-root__header {
+    width: 100%;
+    max-width: var(--customer-size-content-detail);
+    margin: 0 auto;
+    padding-right: var(--customer-space-16);
+    padding-left: var(--customer-space-16);
   }
   .menu-root__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: var(--customer-size-content-detail);
+    margin: 0 auto;
+    padding-right: var(--customer-space-16);
+    padding-left: var(--customer-space-16);
+  }
+}
+@media (min-width: 1024px) {
+  .menu-root__header,
+  .menu-root__grid {
+    max-width: none;
+    margin: 0;
   }
 }
 @media (min-width: 1280px) {

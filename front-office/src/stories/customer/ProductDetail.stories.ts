@@ -48,10 +48,19 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /M · 320 ₽/ }));
-    await userEvent.click(
-      canvas.getByRole("button", { name: /Овсяное молоко/ }),
-    );
+    const smallSize = canvas.getByRole("button", { name: /S · 280 ₽/ });
+    const mediumSize = canvas.getByRole("button", { name: /M · 320 ₽/ });
+    const oatMilk = canvas.getByRole("button", { name: /Овсяное молоко/ });
+    const decreaseQuantity = canvas.getByRole("button", {
+      name: "Уменьшить количество",
+    });
+
+    await expect(smallSize).toHaveAttribute("aria-pressed", "true");
+    await expect(oatMilk).toHaveAttribute("aria-pressed", "false");
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
+
+    await userEvent.click(mediumSize);
+    await userEvent.click(oatMilk);
     await userEvent.click(
       canvas.getByRole("button", { name: "Увеличить количество" }),
     );
@@ -69,6 +78,17 @@ export const Default: Story = {
         lineTotalRub: 800,
       },
       undefined,
+    );
+
+    await userEvent.click(smallSize);
+    await userEvent.click(oatMilk);
+    await userEvent.click(decreaseQuantity);
+    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    await expect(smallSize).toHaveAttribute("aria-pressed", "true");
+    await expect(oatMilk).toHaveAttribute("aria-pressed", "false");
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      canvasElement.ownerDocument.body,
     );
   },
 };
@@ -104,6 +124,49 @@ export const SizeChanged: Story = {
     });
     await userEvent.click(button);
     await expect(button).toHaveAttribute("aria-pressed", "true");
+  },
+};
+export const SizeChangedVisual: Story = {
+  play: async (context) => {
+    await SizeChanged.play?.(context);
+
+    const { canvasElement } = context;
+    const canvas = within(canvasElement);
+    const document = canvasElement.ownerDocument;
+    const view = document.defaultView;
+    if (!view) throw new Error("Story canvas requires a window.");
+    const sizeButtons = canvas.getAllByRole("button", {
+      name: /^[SML] · \d+ ₽$/,
+    });
+    const largeSize = canvas.getByRole("button", { name: /L · 360 ₽/ });
+
+    await expect(sizeButtons[0]).toHaveTextContent("S · 280 ₽");
+    await expect(sizeButtons[1]).toHaveTextContent("M · 320 ₽");
+    await expect(sizeButtons[2]).toHaveTextContent("L · 360 ₽");
+    await expect(largeSize).toHaveAttribute("aria-pressed", "true");
+    await expect(canvas.getByText("360 ₽", { selector: "p" })).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: /Добавить · 360 ₽/ }),
+    ).toBeVisible();
+
+    (document.activeElement as HTMLElement | null)?.blur();
+    view.scrollTo(0, 0);
+    document.documentElement.scrollTo(0, 0);
+    document.body.scrollTo(0, 0);
+    document.querySelector<HTMLElement>("#storybook-root")?.scrollTo(0, 0);
+    document.querySelectorAll<HTMLElement>("*").forEach((element) => {
+      if (
+        element.scrollHeight > element.clientHeight ||
+        element.scrollWidth > element.clientWidth
+      ) {
+        element.scrollTo(0, 0);
+      }
+    });
+    await new Promise<void>((resolve) => {
+      view.requestAnimationFrame(() => {
+        view.requestAnimationFrame(() => resolve());
+      });
+    });
   },
 };
 export const AddonSelected: Story = {

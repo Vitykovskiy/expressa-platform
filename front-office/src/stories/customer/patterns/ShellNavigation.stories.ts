@@ -76,7 +76,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
-    const cart = within(canvasElement).getByRole("button", { name: "Корзина" });
+    const canvas = within(canvasElement);
+    const cart = canvas.getByRole("button", {
+      name: "Корзина, 2 товара",
+    });
+    const badges = canvasElement.querySelectorAll(".shell-navigation__badge");
+
+    await expect([...badges].every((badge) => badge.textContent === "2")).toBe(
+      true,
+    );
     await userEvent.click(cart);
     await expect(args.onNavigate).toHaveBeenCalledWith("cart");
   },

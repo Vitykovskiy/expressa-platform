@@ -49,6 +49,7 @@
         @remove-item="
           cartItems = cartItems.filter((item) => item.id !== $event)
         "
+        @update-quantity="updateCartItemQuantity"
       />
       <SlotPickerScreen
         v-else-if="currentScreen.id === 'slot'"
@@ -67,13 +68,12 @@
       <AuthScreen
         v-else-if="currentScreen.id === 'auth'"
         :state="auth"
-        @back-to-phone="updateAuth({ step: 'phone' })"
+        @back-to-phone="updateAuth({ errorMessage: '', step: 'phone' })"
         @continue="finishAuth"
-        @reset="resetAuthForm"
-        @retry-otp="updateAuth({ step: 'otp', errorMessage: '' })"
         @send-code="sendCode"
         @submit-name="submitName"
         @update-name="updateAuth({ name: $event })"
+        @update-otp="updateAuth({ errorMessage: '' })"
         @update-phone="updateAuth({ phone: $event })"
         @verify-otp="verifyOtp"
       />
@@ -267,7 +267,7 @@ function sendCode(): void {
 
 function verifyOtp(code: string): void {
   if (code !== CUSTOMER_JOURNEY_OTP) {
-    updateAuth({ step: "error", errorMessage: "Код неверный или истёк" });
+    updateAuth({ errorMessage: "Код неверный или истёк", step: "otp" });
     return;
   }
 
@@ -276,13 +276,13 @@ function verifyOtp(code: string): void {
   );
   updateAuth(
     knownPhone
-      ? { name: "Клиент", step: "success", verified: true }
-      : { step: "register" },
+      ? { errorMessage: "", name: "Клиент", step: "success", verified: true }
+      : { errorMessage: "", step: "register" },
   );
 }
 
 function submitName(): void {
-  updateAuth({ step: "success", verified: true });
+  updateAuth({ errorMessage: "", step: "success", verified: true });
 }
 
 function resetAuthForm(): void {
@@ -322,6 +322,21 @@ function submitCartItem(
     ];
   }
   navigate({ id: "cart" });
+}
+
+function updateCartItemQuantity(itemId: string, nextQuantity: number): void {
+  if (!Number.isInteger(nextQuantity) || nextQuantity < 1) return;
+
+  cartItems.value = cartItems.value.map((item) => {
+    if (item.id !== itemId) return item;
+
+    const unitPriceRub = item.lineTotalRub / item.quantity;
+    return {
+      ...item,
+      quantity: nextQuantity,
+      lineTotalRub: unitPriceRub * nextQuantity,
+    };
+  });
 }
 
 function confirmSlot(): void {

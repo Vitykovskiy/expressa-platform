@@ -146,7 +146,7 @@ export const Long: Story = {
       {
         ...firstOrder,
         id: "long-order",
-        createdAt: "Сегодня, понедельник, 9 марта, 10:32",
+        createdAt: "9 марта 2026, 10:32",
         items: [
           {
             productName: "Капучино с очень длинным названием сезонного напитка",

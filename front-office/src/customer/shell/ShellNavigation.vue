@@ -36,7 +36,7 @@
         <ui-icon-btn
           type="button"
           class="shell-navigation__cart-button"
-          aria-label="Корзина"
+          :aria-label="cartAriaLabel"
           @click="emit('navigate', 'cart')"
         >
           <ShoppingCart aria-hidden="true" />
@@ -69,6 +69,7 @@
               props.activeDestination === item.destination,
           }"
           type="button"
+          :aria-label="item.destination === 'cart' ? cartAriaLabel : undefined"
           @click="emit('navigate', item.destination)"
         >
           <component :is="item.icon" aria-hidden="true" />
@@ -151,6 +152,22 @@ const navigationItems = [
   { destination: "cart", label: "Корзина", icon: ShoppingCart },
 ] satisfies (ShellNavigationItem & { icon: Component })[];
 
+const cartItemLabel = computed(() => {
+  const lastTwoDigits = props.cartCount % 100;
+  const lastDigit = props.cartCount % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "товаров";
+  if (lastDigit === 1) return "товар";
+  if (lastDigit >= 2 && lastDigit <= 4) return "товара";
+
+  return "товаров";
+});
+const cartAriaLabel = computed(() =>
+  props.cartCount
+    ? `Корзина, ${props.cartCount} ${cartItemLabel.value}`
+    : "Корзина",
+);
+
 const accountControl = computed(() => {
   if (props.isAuthenticated) {
     return {
@@ -182,18 +199,18 @@ const accountControl = computed(() => {
 .shell-navigation__mobile-header {
   position: relative;
   z-index: 2;
-  display: flex;
+  display: grid;
   flex: 0 0 calc(var(--customer-space-17) + var(--customer-space-9));
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   height: calc(var(--customer-space-17) + var(--customer-space-9));
   align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--customer-space-9);
+  padding: 0 var(--customer-space-3);
   background: var(--customer-background);
 }
 
 .shell-navigation__header-actions {
   display: flex;
-  width: var(--customer-space-21);
+  justify-content: start;
   gap: var(--customer-space-3);
 }
 
@@ -300,10 +317,9 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__nav .ui-btn {
-    display: flex;
+    display: block;
+    width: 100%;
     min-height: var(--customer-size-control-xl);
-    align-items: center;
-    gap: var(--customer-space-7);
     padding: var(--customer-space-6) var(--customer-space-7);
     color: var(--customer-text-strong-on-brand);
     text-align: left;
@@ -319,8 +335,30 @@ const accountControl = computed(() => {
     background: var(--customer-surface);
   }
 
-  .shell-navigation__nav .shell-navigation__badge {
-    margin-left: auto;
+  .shell-navigation__nav .ui-btn :deep(.v-btn__content) {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .shell-navigation__nav:not(.shell-navigation__category-nav)
+    .ui-btn
+    :deep(.v-btn__content) {
+    display: grid;
+    grid-template-columns: var(--customer-size-icon-sm) minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--customer-space-7);
+    justify-content: start;
+  }
+
+  .shell-navigation__nav:not(.shell-navigation__category-nav)
+    .ui-btn
+    :deep(.shell-navigation__badge) {
+    grid-column: 3;
+  }
+
+  .shell-navigation__category-nav .ui-btn :deep(.v-btn__content) {
+    justify-content: start;
   }
 
   .shell-navigation__spacer {
@@ -328,9 +366,6 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__account {
-    display: flex;
-    align-items: center;
-    gap: var(--customer-space-5);
     width: 100%;
     margin-bottom: var(--customer-space-7);
     padding: var(--customer-space-7);
@@ -342,6 +377,16 @@ const accountControl = computed(() => {
     border-radius: var(--customer-radius-xs);
     font-size: var(--customer-font-size-xs);
     font-weight: var(--customer-font-weight-extrabold);
+  }
+
+  .shell-navigation__account :deep(.v-btn__content) {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: var(--customer-size-icon-sm) minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--customer-space-5);
+    justify-content: start;
   }
 
   .shell-navigation__account-action {

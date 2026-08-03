@@ -73,7 +73,9 @@
           />
         </template>
       </v-card-text>
-      <v-card-actions class="edit-dialog-actions">
+      <v-card-actions
+        class="edit-dialog-actions admin-dialog-actions admin-dialog-actions--with-destructive"
+      >
         <AdminButton :disabled="!isValid" type="button" @click="save">
           Сохранить изменения
         </AdminButton>
@@ -277,11 +279,6 @@ watch(
   font-weight: var(--expressa-font-weight-semibold);
 }
 .edit-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
   padding: var(--expressa-space-lg);
-}
-.edit-dialog-actions .admin-button {
-  width: 100%;
 }
 </style>

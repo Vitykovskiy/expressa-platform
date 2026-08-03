@@ -149,7 +149,7 @@ onBeforeUnmount(clearTransitionTimer);
 <style scoped lang="scss">
 .auth-screen {
   display: grid;
-  min-height: 100%;
+  min-height: 100dvh;
   padding: var(--expressa-space-lg);
   place-items: center;
   background: var(--expressa-color-surface-raised);

@@ -7,7 +7,7 @@ export type AuthScreenPresentation = Record<
   AuthStep,
   {
     icon: Component;
-    iconTone: "default" | "error" | "success";
+    iconTone: "default" | "success";
     content: AuthScreenContent;
     title: string;
     description: (state: AuthState) => string;
@@ -26,7 +26,5 @@ export type AuthScreenEmits = {
   updateName: [name: string];
   submitName: [];
   backToPhone: [];
-  retryOtp: [];
-  reset: [];
   continue: [];
 };

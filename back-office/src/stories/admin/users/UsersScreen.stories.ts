@@ -144,6 +144,15 @@ export const Flow: Story = {
   },
 };
 
+export const StableVisual: Story = {
+  args: {
+    onAddUser: fn<(data: AddUserData) => void>(),
+    onUpdateRole: fn<(event: UpdateUserRoleEvent) => void>(),
+    onToggleBlock: fn<(event: ToggleUserBlockEvent) => void>(),
+  },
+  render,
+};
+
 export const AddUser: Story = {
   args: {
     onAddUser: fn<(data: AddUserData) => void>(),

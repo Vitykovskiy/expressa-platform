@@ -1,12 +1,16 @@
 <template>
   <section class="cart-screen" aria-labelledby="cart-title">
     <header class="cart-screen__header">
-      <p class="cart-screen__eyebrow">{{ items.length }} позиций</p>
+      <p class="cart-screen__eyebrow">
+        {{ totalQuantity }} {{ cartItemLabel }}
+      </p>
       <h1 id="cart-title" class="cart-screen__title">Корзина</h1>
     </header>
 
     <div v-if="items.length === 0" class="cart-screen__empty" role="status">
-      <ShoppingCart class="cart-screen__empty-icon" aria-hidden="true" />
+      <div class="cart-screen__empty-icon" aria-hidden="true">
+        <ShoppingCart class="cart-screen__empty-icon-glyph" />
+      </div>
       <p class="cart-screen__empty-message">Пока ничего не добавлено</p>
       <ui-btn color="surface" size="large" @click="emit('continueShopping')">
         Перейти в меню
@@ -20,6 +24,10 @@
           :key="item.id"
           :item="item"
           @remove-item="emit('removeItem', $event)"
+          @update-quantity="
+            (itemId, nextQuantity) =>
+              emit('updateQuantity', itemId, nextQuantity)
+          "
         />
       </ul>
 
@@ -31,7 +39,8 @@
       <aside class="cart-screen__summary" aria-label="Сводка заказа">
         <p class="cart-screen__summary-label">Сводка заказа</p>
         <p class="cart-screen__summary-row">
-          <span>Позиций</span><strong>{{ totalQuantity }}</strong>
+          <span>{{ cartItemLabel }}</span
+          ><strong>{{ totalQuantity }}</strong>
         </p>
         <p class="cart-screen__total">
           <span>Итого</span><strong>{{ totalRub }} ₽</strong>
@@ -74,6 +83,16 @@ const emit = defineEmits<CartScreenEmits>();
 const totalQuantity = computed(() =>
   props.items.reduce((sum, item) => sum + item.quantity, 0),
 );
+const cartItemLabel = computed(() => {
+  const lastTwoDigits = totalQuantity.value % 100;
+  const lastDigit = totalQuantity.value % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "товаров";
+  if (lastDigit === 1) return "товар";
+  if (lastDigit >= 2 && lastDigit <= 4) return "товара";
+
+  return "товаров";
+});
 const totalRub = computed(() =>
   props.items.reduce((sum, item) => sum + item.lineTotalRub, 0),
 );
@@ -122,12 +141,17 @@ const totalRub = computed(() =>
 }
 .cart-screen__empty-icon {
   display: grid;
-  width: var(--customer-font-size-7xl);
-  height: var(--customer-font-size-7xl);
+  width: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
+  height: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
   padding: var(--customer-space-11);
   place-items: center;
   border-radius: var(--customer-radius-round);
   background: var(--customer-color-surface-subtle);
+}
+.cart-screen__empty-icon-glyph {
+  width: var(--customer-font-size-7xl);
+  height: var(--customer-font-size-7xl);
+  color: var(--customer-color-text-on-brand);
 }
 .cart-screen__empty-message {
   margin-top: 0;
@@ -140,7 +164,8 @@ const totalRub = computed(() =>
   flex: 1;
   flex-direction: column;
   gap: var(--customer-space-9);
-  padding: 0 var(--customer-space-9) var(--customer-space-13);
+  padding: var(--customer-space-11) var(--customer-space-9)
+    var(--customer-space-13);
 }
 .cart-screen__items {
   display: flex;
@@ -152,6 +177,7 @@ const totalRub = computed(() =>
 }
 .cart-screen__mobile-total {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   padding: var(--customer-space-9) var(--customer-space-11);
@@ -210,6 +236,9 @@ const totalRub = computed(() =>
 .cart-screen__mobile-checkout {
   position: sticky;
   bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--customer-space-9);
   padding: var(--customer-space-9);
   background: var(--customer-background);
   border-top: 1px solid var(--customer-border);

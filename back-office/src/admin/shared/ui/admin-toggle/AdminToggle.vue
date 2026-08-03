@@ -35,6 +35,10 @@ const toggleAttrs = computed(() => ({
 </script>
 
 <style scoped lang="scss">
+.admin-toggle {
+  min-height: var(--expressa-size-control-min-height);
+}
+
 .admin-toggle:has(input:focus-visible) {
   outline: var(--expressa-focus-ring);
   outline-offset: var(--expressa-space-2xs);

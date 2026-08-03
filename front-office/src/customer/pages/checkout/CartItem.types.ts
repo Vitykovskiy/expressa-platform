@@ -6,4 +6,5 @@ export interface CartItemProps {
 
 export interface CartItemEmits {
   removeItem: [itemId: string];
+  updateQuantity: [itemId: string, nextQuantity: number];
 }

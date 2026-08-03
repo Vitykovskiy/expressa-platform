@@ -215,6 +215,52 @@ export const AuthenticatedNavigationStack: Story = {
   },
 };
 
+export const AuthenticatedNavigationStackView: Story = {
+  args: {
+    initialScreen: "product",
+    navigationPreset: "group",
+    authenticated: true,
+    cartPopulated: true,
+  },
+};
+
+export const CartQuantityUpdate: Story = {
+  args: {
+    initialScreen: "cart",
+    navigationPreset: "none",
+    authenticated: true,
+    cartPopulated: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const cartItem = canvas.getByRole("listitem", {
+      name: "Позиция корзины: Капучино",
+    });
+    const total = canvas.getByLabelText("Итого заказа");
+
+    await expect(cartItem).toHaveTextContent("2");
+    await expect(cartItem).toHaveTextContent("800 ₽");
+    await expect(total).toHaveTextContent("800 ₽");
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Уменьшить количество Капучино" }),
+    );
+    await expect(cartItem).toHaveTextContent("1");
+    await expect(cartItem).toHaveTextContent("400 ₽");
+    await expect(total).toHaveTextContent("400 ₽");
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
+    );
+    await expect(cartItem).toHaveTextContent("3");
+    await expect(cartItem).toHaveTextContent("1200 ₽");
+    await expect(total).toHaveTextContent("1200 ₽");
+  },
+};
+
 export const ProtectedActionAuthResume: Story = {
   args: {
     initialScreen: "menu",

@@ -4,8 +4,10 @@ import type {
   AdminSection,
   UserRole,
 } from "../../../admin/shared/ui/Admin.types";
+import OrdersScreen from "../../../admin/pages/orders/OrdersScreen.vue";
 import AdminShell from "../../../admin/shell/AdminShell.vue";
 import TopBar from "../../../admin/shell/TopBar.vue";
+import { createOrderFixtures } from "../fixtures";
 
 const meta = {
   title: "Admin/Shell",
@@ -35,13 +37,23 @@ type Story = StoryObj<{
   activeSection: AdminSection;
   onNavigate: (section: AdminSection) => void;
   onLogout: () => void;
+  onTopBarAction: () => void;
 }>;
-function render(args: Story["args"]) {
+function renderAdministrator(args: Story["args"]) {
+  return {
+    components: { AdminShell, OrdersScreen },
+    setup: () => ({ args, orders: createOrderFixtures() }),
+    template:
+      '<AdminShell v-bind="args"><OrdersScreen :orders="orders" /></AdminShell>',
+  };
+}
+
+function renderBarista(args: Story["args"]) {
   return {
     components: { AdminShell, TopBar },
-    setup: () => ({ args, onTopBarAction: fn() }),
+    setup: () => ({ args }),
     template:
-      '<AdminShell v-bind="args"><TopBar title="Заказы" @action="onTopBarAction"><template #action>Обновить</template></TopBar><div style="min-height:1200px;padding:16px">Контент раздела</div></AdminShell>',
+      '<AdminShell v-bind="args"><TopBar title="Заказы" @action="args.onTopBarAction"><template #action>Обновить</template></TopBar><div style="min-height:1200px;padding:16px">Контент раздела</div></AdminShell>',
   };
 }
 export const Administrator: Story = {
@@ -50,8 +62,9 @@ export const Administrator: Story = {
     activeSection: "orders",
     onNavigate: fn(),
     onLogout: fn(),
+    onTopBarAction: fn(),
   },
-  render,
+  render: renderAdministrator,
   parameters: { viewport: { defaultViewport: "desktop" } },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -68,6 +81,12 @@ export const Administrator: Story = {
   },
 };
 
+export const AdministratorVisual: Story = {
+  args: Administrator.args,
+  render: renderAdministrator,
+  parameters: Administrator.parameters,
+};
+
 export const Barista: Story = {
   args: {
     role: "barista",
@@ -75,7 +94,7 @@ export const Barista: Story = {
     onNavigate: fn(),
     onLogout: fn(),
   },
-  render,
+  render: renderBarista,
   globals: { viewport: { value: "mobile1", isRotated: false } },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -89,5 +108,12 @@ export const Barista: Story = {
     const action = canvas.getByRole("button", { name: "Действие" });
     await expect(action).toBeVisible();
     await userEvent.click(action);
+    await expect(args.onTopBarAction).toHaveBeenCalledTimes(1);
   },
+};
+
+export const BaristaVisual: Story = {
+  args: Barista.args,
+  render: renderBarista,
+  globals: Barista.globals,
 };

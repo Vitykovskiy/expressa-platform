@@ -38,24 +38,23 @@ const sections = computed(() =>
 
 <style scoped lang="scss">
 .admin-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   height: 100dvh;
   overflow: hidden;
   background: var(--expressa-color-surface-raised);
 }
 
 .admin-shell-content {
-  height: 100%;
+  height: auto;
   min-height: 0;
-  padding-bottom: calc(
-    var(--expressa-size-tab-bar-min-height) + var(--expressa-safe-area-bottom)
-  );
+  padding-bottom: 0;
   overflow-y: auto;
 }
 
 @media (min-width: 768px) {
   .admin-shell-content {
     margin-left: var(--expressa-size-side-nav-width);
-    padding-bottom: 0;
   }
 }
 </style>

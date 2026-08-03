@@ -50,4 +50,7 @@ defineSlots<{
 .ui-text-field {
   width: 100%;
 }
+.ui-text-field :deep(.v-field) {
+  border-radius: var(--customer-radius);
+}
 </style>

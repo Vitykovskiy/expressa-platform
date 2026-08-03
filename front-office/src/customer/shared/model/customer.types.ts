@@ -79,8 +79,7 @@ export interface Order {
   items: OrderItem[];
 }
 
-export type AuthStep =
-  "phone" | "otp" | "loading" | "register" | "error" | "success";
+export type AuthStep = "phone" | "otp" | "loading" | "register" | "success";
 
 export interface AuthState {
   step: AuthStep;

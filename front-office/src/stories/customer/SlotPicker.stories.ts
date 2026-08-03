@@ -81,13 +81,25 @@ export const Loading: Story = {
   args: { selectedSlotId: slots[0]!.id, loading: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const confirm = canvas.getByRole("button", { name: "Подтверждаем..." });
+    const status = canvas.getByRole("status");
+    const confirm = canvas.getByRole("button", { name: "Подтвердить заказ" });
+    const selectedSlot = canvas.getByRole("button", { name: /10:00–10:15/ });
+
+    await expect(status).toHaveTextContent("Создаём заказ...");
+    await expect(canvas.queryByText("Подтверждаем...")).not.toBeInTheDocument();
     await expect(confirm).toBeDisabled();
+    await expect(selectedSlot).toHaveAttribute("aria-pressed", "true");
+    await expect(selectedSlot).toBeDisabled();
     await expect(
       canvas.getByRole("button", { name: /10:45–11:00/ }),
     ).toBeDisabled();
   },
 };
+
+export const LoadingVisual: Story = {
+  args: Loading.args,
+};
+
 export const Error: Story = {
   args: { errorMessage: "Не удалось создать заказ. Попробуйте ещё раз." },
 };

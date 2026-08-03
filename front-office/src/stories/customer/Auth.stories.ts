@@ -16,8 +16,6 @@ type AuthStoryArgs = {
   onUpdateName: (value: string) => void;
   onSubmitName: () => void;
   onBackToPhone: () => void;
-  onRetryOtp: () => void;
-  onReset: () => void;
   onContinue: () => void;
 };
 function state(args: AuthStoryArgs): AuthState {
@@ -45,15 +43,13 @@ const meta = {
     onUpdateName: fn(),
     onSubmitName: fn(),
     onBackToPhone: fn(),
-    onRetryOtp: fn(),
-    onReset: fn(),
     onContinue: fn(),
   },
   argTypes: {
     state: { control: false, table: { disable: true } },
     step: {
       control: "select",
-      options: ["phone", "otp", "loading", "register", "error", "success"],
+      options: ["phone", "otp", "loading", "register", "success"],
       description: "Текущее явное состояние auth flow.",
     },
     phone: {
@@ -72,8 +68,6 @@ const meta = {
     onUpdateName: { action: "updateName" },
     onSubmitName: { action: "submitName" },
     onBackToPhone: { action: "backToPhone" },
-    onRetryOtp: { action: "retryOtp" },
-    onReset: { action: "reset" },
     onContinue: { action: "continue" },
   },
   parameters: {
@@ -81,7 +75,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Назначение: экран подтверждения телефона Customer. Используйте как screen recipe auth flow; не используйте как переиспользуемое поле. Public props: step, phone, otp, name, errorMessage, verified; actions соответствуют emits AuthScreen; slots отсутствуют. Состояния: Phone, Otp, Loading, Register, Error, Success. Валидация источника: phone — не менее 10 цифр, OTP — 4–6 цифр, name — минимум 2 символа; loading подавляет действия. Accessibility: поля имеют aria-label, error использует alert, loading — status. Экран mobile-first и занимает доступную ширину. Render adapter строит AuthState только для AuthScreen; state не является public control. Источник: src/customer/pages/auth/AuthScreen.vue, src/stories/customer/Auth.stories.ts.",
+          "Назначение: экран подтверждения телефона Customer. Используйте как screen recipe auth flow; не используйте как переиспользуемое поле. Public props: step, phone, name, errorMessage, verified; actions соответствуют emits AuthScreen; slots отсутствуют. Состояния: Phone, Otp, Loading, Register, Success; ошибка OTP выводится внутри Otp. Повторная отправка очищает локальный OTP и вызывает sendCode; loading подавляет действия. Валидация источника: phone — не менее 10 цифр, OTP — 4–6 цифр, name — минимум 2 символа. Accessibility: поля телефона и имени имеют внешние связанные подписи; ошибка OTP использует alert, loading — один status с progressbar. Экран mobile-first и занимает доступную ширину. Render adapter строит AuthState только для AuthScreen; state не является public control. Источник: src/customer/pages/auth/AuthScreen.vue, src/stories/customer/Auth.stories.ts.",
       },
     },
   },
@@ -108,7 +102,7 @@ const meta = {
       return { args, screenState, updateName, updateOtp, updatePhone };
     },
     template:
-      '<AuthScreen :state="screenState" @update-phone="updatePhone" @send-code="args.onSendCode" @update-otp="updateOtp" @verify-otp="args.onVerifyOtp" @update-name="updateName" @submit-name="args.onSubmitName" @back-to-phone="args.onBackToPhone" @retry-otp="args.onRetryOtp" @reset="args.onReset" @continue="args.onContinue" />',
+      '<AuthScreen :state="screenState" @update-phone="updatePhone" @send-code="args.onSendCode" @update-otp="updateOtp" @verify-otp="args.onVerifyOtp" @update-name="updateName" @submit-name="args.onSubmitName" @back-to-phone="args.onBackToPhone" @continue="args.onContinue" />',
   }),
 } satisfies Meta<AuthStoryArgs & { state?: never }>;
 export default meta;
@@ -116,29 +110,49 @@ type Story = StoryObj<AuthStoryArgs>;
 export const Phone: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const phone = canvas.getByRole("textbox", { name: "Номер телефона" });
+
+    await expect(phone).toHaveAttribute("id", "auth-phone");
+    await expect(phone).toHaveAttribute("placeholder", "+7 (___) ___-__-__");
+    await userEvent.click(phone);
+    await expect(phone).toHaveFocus();
     await userEvent.click(
       canvas.getByRole("button", { name: "Отправить код" }),
     );
     await expect(args.onSendCode).toHaveBeenCalledTimes(1);
   },
 };
+
+export const PhoneVisual: Story = {
+  args: Phone.args,
+};
+
 export const Otp: Story = {
   args: { step: "otp", phone: "+7 (900) 123-45-67" },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.type(
-      canvas.getByRole("textbox", { name: "Код из сообщения" }),
-      "1234",
+    const otp = canvas.getByRole("textbox", { name: "Код из сообщения" });
+
+    await userEvent.type(otp, "1234");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Отправить код ещё раз" }),
     );
+    await expect(args.onUpdateOtp).toHaveBeenLastCalledWith("");
+    await expect(args.onSendCode).toHaveBeenCalledTimes(1);
+
+    await userEvent.type(otp, "5678");
     await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
-    await expect(args.onVerifyOtp).toHaveBeenCalledWith("1234");
+    await expect(args.onVerifyOtp).toHaveBeenCalledWith("5678");
   },
 };
 export const Loading: Story = {
   args: { step: "loading" },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("status")).toBeVisible();
+    const status = canvas.getByRole("status");
+    await expect(status).toHaveAccessibleName("Обрабатываем запрос...");
+    await expect(canvas.getAllByRole("progressbar")).toHaveLength(1);
+    await expect(canvas.getByRole("heading")).toBeVisible();
     await userEvent.tab();
     await expect(args.onUpdatePhone).not.toHaveBeenCalled();
     await expect(args.onSendCode).not.toHaveBeenCalled();
@@ -148,22 +162,45 @@ export const Loading: Story = {
     await expect(args.onSubmitName).not.toHaveBeenCalled();
   },
 };
+
+export const LoadingVisual: Story = {
+  args: Loading.args,
+};
+
 export const Register: Story = {
   args: { step: "register", name: "Анна" },
   play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: "Продолжить" }),
-    );
+    const canvas = within(canvasElement);
+    const name = canvas.getByRole("textbox", { name: "Ваше имя" });
+
+    await expect(name).toHaveAttribute("id", "auth-name");
+    await expect(
+      canvas.getByText("Ваше имя", { selector: "label" }),
+    ).toHaveAttribute("for", "auth-name");
+    await userEvent.click(canvas.getByRole("button", { name: "Продолжить" }));
     await expect(args.onSubmitName).toHaveBeenCalledTimes(1);
   },
 };
-export const Error: Story = {
+export const OtpError: Story = {
   args: {
-    step: "error",
+    step: "otp",
     phone: "+7 (900) 123-45-67",
     errorMessage: "Код неверный или истёк",
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole("alert")).toHaveTextContent(
+      "Код неверный или истёк",
+    );
+    await expect(canvas.getByText("Код неверный или истёк")).toBeVisible();
+  },
 };
+
+export const OtpErrorVisual: Story = {
+  args: OtpError.args,
+};
+
 export const Success: Story = {
   args: { step: "success", phone: "+7 (900) 123-45-67", name: "Клиент" },
 };

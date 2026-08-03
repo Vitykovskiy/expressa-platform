@@ -66,7 +66,6 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   min-height: 100dvh;
   overflow-x: clip;
   color: var(--customer-text);
-  background: var(--customer-background);
   font-family: var(--customer-font-family);
 }
 
@@ -76,6 +75,7 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   flex-direction: column;
   width: 100%;
   min-width: 0;
+  background: var(--customer-background);
 }
 
 .customer-shell__desktop-back {
@@ -89,9 +89,10 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   }
 
   .customer-shell__content {
+    flex: 1;
     width: auto;
-    max-width: calc(var(--customer-content-width) * 2.5);
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     padding: var(--customer-space-5) var(--customer-space-17);
   }
 

@@ -96,7 +96,7 @@ export type CustomerJourneyScreen =
   | { id: "auth"; returnTo?: CustomerJourneyScreen };
 
 export type CustomerJourneyAuthStep =
-  "phone" | "otp" | "loading" | "register" | "error" | "success";
+  "phone" | "otp" | "loading" | "register" | "success";
 
 export interface CustomerJourneyAuthState {
   step: CustomerJourneyAuthStep;

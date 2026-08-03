@@ -187,7 +187,8 @@ function confirmAction(role: UserRole | undefined) {
 }
 
 .users-screen__content {
-  width: min(100%, var(--expressa-size-users-content-max-width));
+  width: min(100%, 1120px);
+  min-width: 0;
   min-height: 100%;
   margin: 0 auto;
   padding: var(--expressa-space-xl) var(--expressa-space-lg);

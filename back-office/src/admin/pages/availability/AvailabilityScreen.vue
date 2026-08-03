@@ -1,24 +1,26 @@
 <template>
   <main class="availability-screen">
-    <div class="availability-screen__filters">
-      <h1 class="availability-screen__title">Доступность</h1>
-      <FilterTabs v-model="activeCategory" :items="categoryTabs" />
-    </div>
+    <div class="availability-screen__workspace">
+      <div class="availability-screen__filters">
+        <h1 class="availability-screen__title">Доступность</h1>
+        <FilterTabs v-model="activeCategory" :items="categoryTabs" />
+      </div>
 
-    <div class="availability-screen__content">
-      <EmptyState
-        v-if="groupedItems.length === 0"
-        title="Меню пусто"
-        description="Позиции появятся после добавления в меню"
-      />
-      <div v-else class="availability-screen__groups">
-        <AvailabilityGroup
-          v-for="group in groupedItems"
-          :key="group.category"
-          :category="group.category"
-          :items="group.items"
-          @availability-change="changeAvailability"
+      <div class="availability-screen__content">
+        <EmptyState
+          v-if="groupedItems.length === 0"
+          title="Меню пусто"
+          description="Позиции появятся после добавления в меню"
         />
+        <div v-else class="availability-screen__groups">
+          <AvailabilityGroup
+            v-for="group in groupedItems"
+            :key="group.category"
+            :category="group.category"
+            :items="group.items"
+            @availability-change="changeAvailability"
+          />
+        </div>
       </div>
     </div>
 
@@ -96,6 +98,16 @@ function changeAvailability(event: AvailabilityChangeEvent) {
   flex-direction: column;
   overflow: hidden;
   background: var(--expressa-color-surface-raised);
+}
+
+.availability-screen__workspace {
+  display: flex;
+  width: min(100%, 1120px);
+  min-width: 0;
+  min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+  margin: 0 auto;
 }
 
 .availability-screen__filters {

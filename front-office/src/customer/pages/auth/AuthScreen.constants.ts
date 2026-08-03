@@ -1,4 +1,4 @@
-import { Check, Phone, UserRound, X } from "lucide-vue-next";
+import { Check, Phone, UserRound } from "lucide-vue-next";
 import type { AuthScreenPresentation } from "./AuthScreen.types";
 
 export const AUTH_SCREEN_PRESENTATION = {
@@ -29,13 +29,6 @@ export const AUTH_SCREEN_PRESENTATION = {
     content: "loading",
     title: "Подождите...",
     description: () => "Обрабатываем запрос...",
-  },
-  error: {
-    icon: X,
-    iconTone: "error",
-    content: "form",
-    title: "Ошибка подтверждения",
-    description: (state) => state.errorMessage,
   },
   success: {
     icon: Check,

@@ -107,6 +107,22 @@ export const Default: Story = {
   },
 };
 
+export const DefaultVisual: Story = {
+  args: {
+    menuItems: [
+      {
+        id: "visual",
+        name: "Капучино",
+        category: "Кофе",
+        available: true,
+        price: 220,
+      },
+    ],
+    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+  },
+  render: (args) => screenRender(args),
+};
+
 export const CategoryFilter: Story = {
   args: {
     menuItems: [

@@ -101,14 +101,11 @@ function save() {
 <style scoped lang="scss">
 .settings-form {
   display: grid;
-  min-height: 100%;
-  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--expressa-space-lg);
 }
 
 .settings-form__content {
   min-width: 0;
-  padding: var(--expressa-space-md) var(--expressa-space-md)
-    var(--expressa-space-tab-bar-clearance);
 }
 
 .settings-form__section {
@@ -190,15 +187,5 @@ function save() {
 
 .settings-form__submit {
   width: 100%;
-}
-
-@media (min-width: 768px) {
-  .settings-form__content {
-    padding: var(--expressa-space-lg);
-  }
-
-  .settings-form__actions {
-    padding: var(--expressa-space-lg);
-  }
 }
 </style>

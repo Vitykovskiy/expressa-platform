@@ -14,7 +14,7 @@ const preview: Preview = {
     () => ({
       components: { VApp, VMain },
       template:
-        '<div class="storybook-customer-root"><v-app style="flex: 0 1 auto"><v-main><story /></v-main></v-app></div>',
+        '<div class="storybook-customer-root"><v-app style="flex: 1 1 100%; min-width: 0"><v-main style="display: flex; flex-direction: column; min-width: 0"><story /></v-main></v-app></div>',
     }),
   ],
   parameters: {

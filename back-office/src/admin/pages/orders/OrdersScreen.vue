@@ -1,31 +1,53 @@
 <template>
   <section class="orders-screen" aria-labelledby="orders-title">
-    <header class="orders-screen__header">
-      <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
-      <AdminButton variant="secondary" @click="handleRefresh">
-        Обновить
-      </AdminButton>
-    </header>
+    <div class="orders-screen__workspace">
+      <header class="orders-screen__header">
+        <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
+        <AdminButton
+          aria-label="Обновить заказы"
+          title="Обновить заказы"
+          variant="secondary"
+          @click="handleRefresh"
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="20"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="20"
+          >
+            <path d="M21 12a9 9 0 0 0-15.34-6.34L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M3 12a9 9 0 0 0 15.34 6.34L21 16" />
+            <path d="M21 21v-5h-5" />
+          </svg>
+        </AdminButton>
+      </header>
 
-    <FilterTabs
-      v-model="activeFilter"
-      class="orders-screen__filters"
-      :items="filterTabs"
-    />
-
-    <div class="orders-screen__content">
-      <EmptyState
-        v-if="filteredOrders.length === 0"
-        title="Заказов нет"
-        description="Активные заказы появятся здесь"
+      <FilterTabs
+        v-model="activeFilter"
+        class="orders-screen__filters"
+        :items="filterTabs"
       />
-      <div v-else class="orders-screen__grid">
-        <OrderCard
-          v-for="order in filteredOrders"
-          :key="order.id"
-          :order="order"
-          @action="handleCardAction(order, $event)"
+
+      <div class="orders-screen__content">
+        <EmptyState
+          v-if="filteredOrders.length === 0"
+          title="Заказов нет"
+          description="Активные заказы появятся здесь"
         />
+        <div v-else class="orders-screen__grid">
+          <OrderCard
+            v-for="order in filteredOrders"
+            :key="order.id"
+            :order="order"
+            @action="handleCardAction(order, $event)"
+          />
+        </div>
       </div>
     </div>
 
@@ -172,11 +194,18 @@ function handleCloseConfirm() {
 
 <style scoped lang="scss">
 .orders-screen {
+  min-width: 0;
+  min-height: 100%;
+  background: var(--expressa-color-surface);
+}
+
+.orders-screen__workspace {
   display: grid;
+  width: min(100%, 1120px);
   min-width: 0;
   min-height: 100%;
   grid-template-rows: auto auto minmax(0, 1fr);
-  background: var(--expressa-color-surface);
+  margin: 0 auto;
 }
 
 .orders-screen__header {
@@ -226,7 +255,9 @@ function handleCloseConfirm() {
   .orders-screen__content {
     padding: var(--expressa-space-lg);
   }
+}
 
+@media (min-width: 1024px) {
   .orders-screen__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

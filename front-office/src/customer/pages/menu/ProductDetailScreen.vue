@@ -26,7 +26,7 @@
               'product-detail__choice--selected':
                 selectedSize === size.sizeCode,
             }"
-            class="product-detail__choice"
+            class="product-detail__choice product-detail__choice--size"
             :aria-pressed="selectedSize === size.sizeCode"
             @click="selectedSize = size.sizeCode"
           >
@@ -47,7 +47,7 @@
                 addon.id,
               ),
             }"
-            class="product-detail__choice"
+            class="product-detail__choice product-detail__choice--addon"
             :aria-pressed="selectedAddonIds.includes(addon.id)"
             @click="toggleAddon(addon.id)"
           >
@@ -76,10 +76,10 @@
         </ui-icon-btn>
       </div>
       <ui-btn type="button" class="product-detail__submit" @click="submit">
-        <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />{{
-          actionLabel
-        }}
-        · {{ totalPrice }} ₽
+        <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
+        <span class="product-detail__submit-label"
+          >{{ actionLabel }} · {{ totalPrice }} ₽</span
+        >
       </ui-btn>
     </footer>
   </section>
@@ -163,9 +163,9 @@ function submit(): void {
   color: var(--customer-text);
 }
 .product-detail__header {
-  margin: var(--customer-space-7) var(--customer-space-9) 0;
   padding: var(--customer-space-15) var(--customer-space-11)
     var(--customer-space-13);
+  margin: var(--customer-space-7) var(--customer-space-9) 0;
   background: var(--customer-color-surface-subtle);
   border-radius: var(--customer-radius-xl);
 }
@@ -198,7 +198,7 @@ function submit(): void {
   flex: 1;
   flex-direction: column;
   gap: var(--customer-space-11);
-  padding: var(--customer-space-11) var(--customer-space-9);
+  padding: var(--customer-space-13) var(--customer-space-9);
 }
 .product-detail__description {
   margin: 0;
@@ -231,6 +231,13 @@ function submit(): void {
   font-weight: var(--customer-font-weight-extrabold);
   cursor: pointer;
   transition: var(--customer-transition-transform);
+}
+.product-detail__choice--size {
+  min-width: var(--customer-size-control-xl);
+  padding: var(--customer-space-8) var(--customer-space-9);
+}
+.product-detail__choice--addon {
+  padding: var(--customer-space-5) var(--customer-space-8);
 }
 .product-detail__choice:active {
   transform: var(--customer-transform-press);
@@ -288,23 +295,34 @@ function submit(): void {
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: var(--customer-space-5);
   min-height: var(--customer-size-control-xl);
   padding: var(--customer-space-5) var(--customer-space-9);
   color: var(--customer-text);
   background: var(--customer-primary);
   border: 0;
-  border-radius: var(--customer-radius-xs);
+  border-radius: var(--customer-radius);
   font: inherit;
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-black);
   cursor: pointer;
 }
+.product-detail__submit :deep(.v-btn__content) {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: center;
+  gap: var(--customer-space-5);
+  min-width: 0;
+  white-space: normal;
+}
+.product-detail__submit :deep(.v-btn__content svg) {
+  flex: 0 0 auto;
+}
 @media (min-width: 1024px) {
   .product-detail__header,
   .product-detail__content {
-    margin-right: var(--customer-space-16);
-    margin-left: var(--customer-space-16);
+    padding-right: var(--customer-space-16);
+    padding-left: var(--customer-space-16);
   }
   .product-detail__footer {
     margin: 0 var(--customer-space-16) var(--customer-space-9);

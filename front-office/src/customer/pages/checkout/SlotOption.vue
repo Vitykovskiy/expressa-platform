@@ -48,12 +48,11 @@ const isDisabled = computed(
 </script>
 
 <style scoped lang="scss">
-.slot-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.slot-option.v-btn {
+  height: auto;
+  min-height: var(--customer-size-control-xl);
   width: 100%;
-  padding: var(--customer-space-9) var(--customer-space-10);
+  padding: var(--customer-space-5) var(--customer-space-10);
   color: var(--customer-text);
   text-align: left;
   background: var(--customer-color-surface-subtle);
@@ -82,12 +81,32 @@ const isDisabled = computed(
   box-shadow: var(--customer-shadow-card);
 }
 
-.slot-option__main,
+.slot-option :deep(.v-btn__content) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--customer-space-5);
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.slot-option__main {
+  display: grid;
+  grid-template-columns: var(--customer-size-control-sm) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--customer-space-7);
+  min-width: 0;
+}
+
 .slot-option__selected,
 .slot-option__capacity {
   display: inline-flex;
+  justify-self: end;
   align-items: center;
-  gap: var(--customer-space-7);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .slot-option__clock {
@@ -110,17 +129,22 @@ const isDisabled = computed(
   display: block;
 }
 
+.slot-option__time {
+  min-width: 0;
+}
+
 .slot-option__range {
   font-size: var(--customer-font-size-md);
   font-weight: var(--customer-font-weight-extrabold);
+  white-space: nowrap;
 }
 
-.slot-option__date,
-.slot-option__capacity {
+.slot-option__date {
   margin-top: var(--customer-space-2);
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-semibold);
+  overflow-wrap: anywhere;
 }
 
 .slot-option--selected .slot-option__date {
@@ -130,6 +154,12 @@ const isDisabled = computed(
 .slot-option__selected,
 .slot-option__capacity {
   gap: var(--customer-space-4);
+}
+
+.slot-option__capacity {
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-semibold);
 }
 
 .slot-option__selected {

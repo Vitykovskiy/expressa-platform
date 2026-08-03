@@ -113,6 +113,15 @@ export const ChangeRole: UserActionDialogStory = {
   },
 };
 
+export const ChangeRoleVisual: UserActionDialogStory = {
+  args: {
+    action: "change_role",
+    onConfirm: fn<(role: UserRole | undefined) => void>(),
+    onCancel: fn(),
+  },
+  render: (args) => actionDialogRender(args),
+};
+
 export const BlockUser: UserActionDialogStory = {
   args: {
     action: "block",
@@ -127,9 +136,27 @@ export const BlockUser: UserActionDialogStory = {
     await waitFor(() =>
       expect(canvas.getByText(activeUser.name)).toBeVisible(),
     );
+    await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
+      "Заблокировать пользователя?",
+    );
+    await expect(canvas.getByText("+7 900 123-45-67")).toBeVisible();
+    await expect(
+      canvas.getByText(
+        "Пользователь потеряет доступ к системе. Его данные сохранятся.",
+      ),
+    ).toBeVisible();
     await user.click(canvas.getByRole("button", { name: "Заблокировать" }));
     await expect(args.onConfirm).toHaveBeenCalledWith(undefined);
   },
+};
+
+export const BlockUserVisual: UserActionDialogStory = {
+  args: {
+    action: "block",
+    onConfirm: fn<(role: UserRole | undefined) => void>(),
+    onCancel: fn(),
+  },
+  render: (args) => actionDialogRender(args),
 };
 
 export const UnblockUser: UserActionDialogStory = {
@@ -146,9 +173,25 @@ export const UnblockUser: UserActionDialogStory = {
     await waitFor(() =>
       expect(canvas.getByText(activeUser.name)).toBeVisible(),
     );
+    await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
+      "Разблокировать пользователя?",
+    );
+    await expect(canvas.getByText("+7 900 123-45-67")).toBeVisible();
+    await expect(
+      canvas.getByText("Пользователь снова получит доступ к системе."),
+    ).toBeVisible();
     await user.click(canvas.getByRole("button", { name: "Разблокировать" }));
     await expect(args.onConfirm).toHaveBeenCalledWith(undefined);
   },
+};
+
+export const UnblockUserVisual: UserActionDialogStory = {
+  args: {
+    action: "unblock",
+    onConfirm: fn<(role: UserRole | undefined) => void>(),
+    onCancel: fn(),
+  },
+  render: (args) => actionDialogRender(args),
 };
 
 export const AddUser: AddUserDialogStory = {
@@ -186,6 +229,14 @@ export const AddUser: AddUserDialogStory = {
       role: "administrator",
     });
   },
+};
+
+export const AddUserVisual: AddUserDialogStory = {
+  args: {
+    onAdd: fn<(data: AddUserData) => void>(),
+    onCancel: fn(),
+  },
+  render: (args) => addUserDialogRender(args),
 };
 
 export const CancelResetsAndReturnsFocus: AddUserDialogStory = {

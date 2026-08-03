@@ -148,7 +148,7 @@ function confirm(): void {
   display: flex;
   align-items: center;
   gap: var(--customer-space-7);
-  margin: 0 var(--customer-space-9) var(--customer-space-7);
+  margin: var(--customer-space-11) var(--customer-space-9) 0;
   padding: var(--customer-space-8) var(--customer-space-9);
   background: var(--customer-color-surface-subtle);
   border: 1px solid var(--customer-border);
@@ -173,7 +173,8 @@ function confirm(): void {
   flex-direction: column;
   gap: var(--customer-space-5);
   margin: 0;
-  padding: 0 var(--customer-space-9) var(--customer-space-9);
+  padding: var(--customer-space-11) var(--customer-space-9)
+    var(--customer-space-9);
   list-style: none;
 }
 
@@ -190,7 +191,7 @@ function confirm(): void {
   min-height: var(--customer-size-control-xl);
   color: var(--customer-text);
   background: var(--customer-primary);
-  border-radius: var(--customer-radius-xs);
+  border-radius: var(--customer-radius);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-black);
 }

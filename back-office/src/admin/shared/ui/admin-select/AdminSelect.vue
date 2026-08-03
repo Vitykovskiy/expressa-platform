@@ -32,10 +32,7 @@ defineSlots<{ default(): unknown }>();
 <style scoped lang="scss">
 .admin-select {
   width: 100%;
-  min-height: calc(
-    var(--expressa-space-lg) + var(--expressa-space-md) +
-      var(--expressa-space-xs)
-  );
+  min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);

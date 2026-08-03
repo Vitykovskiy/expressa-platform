@@ -9,23 +9,25 @@
       @click="emit('toggle')"
     >
       <span class="order-card__summary-content">
-        <span class="order-card__title">Заказ #{{ props.order.id }}</span>
-        <ui-badge class="order-card__status" :tone="statusTone">
-          {{ props.statusLabel }}
-        </ui-badge>
+        <span class="order-card__summary-heading">
+          <span class="order-card__title">Заказ #{{ props.order.id }}</span>
+          <ui-badge class="order-card__status" :tone="statusTone">
+            {{ props.statusLabel }}
+          </ui-badge>
+        </span>
         <small class="order-card__meta">
           {{ props.order.createdAt }} - {{ props.order.items.length }} поз.
         </small>
       </span>
-      <strong class="order-card__total">
-        {{ props.order.totalRub }} ₽
+      <span class="order-card__summary-action">
+        <strong class="order-card__total">{{ props.order.totalRub }} ₽</strong>
         <ChevronUp
           v-if="props.expanded"
           class="order-card__chevron"
           aria-hidden="true"
         />
         <ChevronDown v-else class="order-card__chevron" aria-hidden="true" />
-      </strong>
+      </span>
     </ui-btn>
     <div v-show="props.expanded" :id="detailsId" class="order-card__details">
       <p class="order-card__slot">
@@ -96,13 +98,23 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
 }
 
 .order-card__summary {
-  display: flex;
-  justify-content: space-between;
+  height: auto;
   width: 100%;
   padding: var(--customer-space-9) var(--customer-space-10);
   color: inherit;
   text-align: left;
   background: transparent;
+}
+
+.order-card__summary :deep(.v-btn__content) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--customer-space-7);
+  width: 100%;
+  min-width: 0;
+  justify-content: start;
+  white-space: normal;
 }
 
 .order-card__summary-content,
@@ -111,9 +123,33 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
   display: block;
 }
 
+.order-card__summary-content {
+  display: grid;
+  min-width: 0;
+  row-gap: var(--customer-space-5);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.order-card__summary-heading,
+.order-card__summary-action {
+  display: flex;
+  align-items: center;
+}
+
+.order-card__summary-heading {
+  flex-wrap: wrap;
+  gap: var(--customer-space-3) var(--customer-space-5);
+}
+
+.order-card__summary-action {
+  gap: var(--customer-space-3);
+  align-self: start;
+  justify-self: end;
+  white-space: nowrap;
+}
+
 .order-card__title {
-  display: inline-block;
-  margin-right: var(--customer-space-5);
   font-size: var(--customer-font-size-md);
   font-weight: var(--customer-font-weight-extrabold);
 }
@@ -123,7 +159,6 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
 }
 
 .order-card__meta {
-  margin-top: var(--customer-space-5);
   color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-semibold);
@@ -150,8 +185,6 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
   display: inline;
   width: var(--customer-space-9);
   height: var(--customer-space-9);
-  margin-left: var(--customer-space-3);
-  vertical-align: text-bottom;
 }
 
 .order-card__details {
@@ -183,8 +216,9 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
 }
 
 .order-card__item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: var(--customer-space-7);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
@@ -192,6 +226,7 @@ const statusTone = computed(() => ORDER_STATUS_TONES[props.order.status]);
 
 .order-card__item-copy {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .order-card__addon {

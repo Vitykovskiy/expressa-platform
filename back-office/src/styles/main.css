@@ -141,3 +141,46 @@ body,
 * {
   box-sizing: border-box;
 }
+
+.admin-dialog-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--expressa-space-sm);
+}
+
+.admin-dialog-actions > .admin-button {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .admin-dialog-actions {
+    grid-template-columns: repeat(2, max-content);
+    grid-template-areas: "cancel primary";
+    justify-content: end;
+  }
+
+  .admin-dialog-actions > .admin-button {
+    width: auto;
+  }
+
+  .admin-dialog-actions > .admin-button:first-child {
+    grid-area: primary;
+  }
+
+  .admin-dialog-actions > .admin-button:nth-child(2) {
+    grid-area: cancel;
+  }
+
+  .admin-dialog-actions--with-destructive {
+    grid-template-columns: max-content 1fr max-content max-content;
+    grid-template-areas: "delete . cancel primary";
+  }
+
+  .admin-dialog-actions--with-destructive > .admin-button:nth-child(2) {
+    grid-area: delete;
+  }
+
+  .admin-dialog-actions--with-destructive > .admin-button:nth-child(3) {
+    grid-area: cancel;
+  }
+}

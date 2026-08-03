@@ -60,6 +60,15 @@ export const Long: Story = {
     category: {
       ...createCustomerDefaults().categories[1]!,
       name: "Очень длинное название категории для проверки переноса на узком экране",
+      products: createCustomerDefaults().categories[1]!.products.map(
+        (product, index) =>
+          index === 0
+            ? {
+                ...product,
+                name: "Капучино с очень длинным названием для проверки переноса в карточке каталога",
+              }
+            : product,
+      ),
     },
   },
 };
