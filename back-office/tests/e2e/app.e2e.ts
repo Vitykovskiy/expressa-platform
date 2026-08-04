@@ -1,14 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-test("очередь открывается как статическая оболочка", async ({ page }) => {
+test("анонимный пользователь перенаправляется с защищённой очереди на вход", async ({
+  page,
+}) => {
   await page.goto("/queue");
 
-  await expect(page).toHaveURL(/\/queue$/);
-  await expect(page.getByRole("heading", { name: "Очередь" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Меню" })).toBeVisible();
-
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Очередь" })).toBeFocused();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByRole("heading", { name: "Вход в backoffice" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Очередь" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Меню" })).toHaveCount(0);
 });
 
 test("production-сборка содержит PWA-манифест и service worker", async ({

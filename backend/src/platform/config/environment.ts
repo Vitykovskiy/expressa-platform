@@ -1,15 +1,5 @@
-const deliveryEnvironments = [
-  'local',
-  'development',
-  'staging',
-  'production',
-] as const;
-
-type DeliveryEnvironment = (typeof deliveryEnvironments)[number];
-
-function isTestProcess(): boolean {
-  return process.env.JEST_WORKER_ID !== undefined;
-}
+import { deliveryEnvironments, developmentEnvironments, localEnvironment } from './environment.constants';
+import type { DeliveryEnvironment } from './environment.types';
 
 function requireEnvironmentVariable(
   environment: NodeJS.ProcessEnv,
@@ -62,10 +52,6 @@ function validatePhone(value: string, name: string): void {
 }
 
 export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  if (isTestProcess()) {
-    return environment;
-  }
-
   const nodeEnvironment = requireEnvironmentVariable(environment, 'NODE_ENV');
 
   if (!isDeliveryEnvironment(nodeEnvironment)) {
@@ -74,10 +60,60 @@ export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.Proc
 
   validatePort(requireEnvironmentVariable(environment, 'PORT'));
   validateDatabaseUrl(requireEnvironmentVariable(environment, 'DATABASE_URL'));
+  requireEnvironmentVariable(environment, 'AUTH_ACCESS_TOKEN_SECRET');
+  requireEnvironmentVariable(environment, 'AUTH_OTP_PEPPER');
+  getCorsOrigins(environment);
+  validateEnvironmentSpecificVariables(environment, nodeEnvironment);
   const bootstrapPhone = environment.BOOTSTRAP_ADMIN_PHONE;
   if (bootstrapPhone !== undefined && bootstrapPhone.trim() !== '') {
     validatePhone(bootstrapPhone, 'BOOTSTRAP_ADMIN_PHONE');
   }
 
   return environment;
+}
+
+export function getCorsOrigins(environment: { CORS_ORIGINS?: string | undefined }): string[] {
+  const value = requireEnvironmentVariable(environment, 'CORS_ORIGINS');
+  const origins = value.split(',');
+
+  if (origins.length === 0 || new Set(origins).size !== origins.length) {
+    throw new Error('Invalid environment variable: CORS_ORIGINS');
+  }
+
+  for (const origin of origins) {
+    if (!isExactOrigin(origin)) {
+      throw new Error('Invalid environment variable: CORS_ORIGINS');
+    }
+  }
+
+  return origins;
+}
+
+export function shouldUseSecureCookies(environment: string | undefined): boolean {
+  return environment !== localEnvironment;
+}
+
+function validateEnvironmentSpecificVariables(
+  environment: NodeJS.ProcessEnv,
+  nodeEnvironment: DeliveryEnvironment,
+): void {
+  if (developmentEnvironments.some((value) => value === nodeEnvironment)) {
+    const otp = requireEnvironmentVariable(environment, 'AUTH_DEVELOPMENT_OTP');
+    if (!/^\d{6}$/.test(otp)) {
+      throw new Error('Invalid environment variable: AUTH_DEVELOPMENT_OTP');
+    }
+    return;
+  }
+
+  requireEnvironmentVariable(environment, 'SMS_RU_API_ID');
+  requireEnvironmentVariable(environment, 'SMS_RU_SENDER');
+}
+
+function isExactOrigin(value: string): boolean {
+  try {
+    const origin = new URL(value);
+    return (origin.protocol === 'http:' || origin.protocol === 'https:') && origin.origin === value;
+  } catch {
+    return false;
+  }
 }

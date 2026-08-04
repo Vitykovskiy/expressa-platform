@@ -75,7 +75,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Назначение: экран подтверждения телефона Customer. Используйте как screen recipe auth flow; не используйте как переиспользуемое поле. Public props: step, phone, name, errorMessage, verified; actions соответствуют emits AuthScreen; slots отсутствуют. Состояния: Phone, Otp, Loading, Register, Success; ошибка OTP выводится внутри Otp. Повторная отправка очищает локальный OTP и вызывает sendCode; loading подавляет действия. Валидация источника: phone — не менее 10 цифр, OTP — 4–6 цифр, name — минимум 2 символа. Accessibility: поля телефона и имени имеют внешние связанные подписи; ошибка OTP использует alert, loading — один status с progressbar. Экран mobile-first и занимает доступную ширину. Render adapter строит AuthState только для AuthScreen; state не является public control. Источник: src/customer/pages/auth/AuthScreen.vue, src/stories/customer/Auth.stories.ts.",
+          "Назначение: экран подтверждения телефона Customer. Используйте как screen recipe auth flow; не используйте как переиспользуемое поле. Public props: step, phone, name, errorMessage, verified; actions соответствуют emits AuthScreen; slots отсутствуют. Состояния: Phone, Otp, Loading, Register, Success; ошибка OTP выводится внутри Otp. Повторная отправка очищает локальный OTP и вызывает sendCode; loading подавляет действия. Валидация источника: phone — не менее 10 цифр, OTP — ровно 6 цифр, name — минимум 2 символа. Accessibility: поля телефона и имени имеют внешние связанные подписи; ошибка OTP использует alert, loading — один status с progressbar. Экран mobile-first и занимает доступную ширину. Render adapter строит AuthState только для AuthScreen; state не является public control. Источник: src/customer/pages/auth/AuthScreen.vue, src/stories/customer/Auth.stories.ts.",
       },
     },
   },
@@ -140,9 +140,9 @@ export const Otp: Story = {
     await expect(args.onUpdateOtp).toHaveBeenLastCalledWith("");
     await expect(args.onSendCode).toHaveBeenCalledTimes(1);
 
-    await userEvent.type(otp, "5678");
+    await userEvent.type(otp, "567890");
     await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
-    await expect(args.onVerifyOtp).toHaveBeenCalledWith("5678");
+    await expect(args.onVerifyOtp).toHaveBeenCalledWith("567890");
   },
 };
 export const Loading: Story = {

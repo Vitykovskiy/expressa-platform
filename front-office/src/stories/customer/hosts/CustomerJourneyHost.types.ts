@@ -22,26 +22,15 @@ export interface CustomerJourneyProduct {
   addons?: CustomerJourneyAddon[];
 }
 
-export interface CustomerJourneyCategory {
+export type CustomerJourneyCategory = PublicMenuCategory;
+export type LegacyFixtureCategory = {
   id: string;
   name: string;
   image: string;
   products: CustomerJourneyProduct[];
-}
-
-export interface CustomerJourneyCartItem {
-  id: string;
-  productId: string;
-  productName: string;
-  type: CustomerJourneyProductType;
-  addons: CustomerJourneyAddon[];
-  quantity: number;
-  lineTotalRub: number;
-  size?: string;
-  sizePrice?: number;
-}
-
-export type CustomerJourneyCartItemDraft = Omit<CustomerJourneyCartItem, "id">;
+};
+export type CustomerJourneyCartItem = CartItem;
+export type CustomerJourneyCartItemDraft = ConfiguredCartItemDraft;
 
 export interface CustomerJourneyTimeSlot {
   id: string;
@@ -80,7 +69,7 @@ export interface CustomerJourneyOrder {
 }
 
 export interface CustomerJourneyData {
-  categories: CustomerJourneyCategory[];
+  categories: PublicMenuCategory[];
   slots: CustomerJourneyTimeSlot[];
   orders: CustomerJourneyOrder[];
   statusLabels: Record<CustomerJourneyOrderStatus, string>;
@@ -126,3 +115,8 @@ export type CustomerJourneyProtectedScreen = Extract<
 
 export type CustomerJourneyNavigationDestination =
   "auth" | "cart" | "menu" | "orders";
+import type {
+  CartItem,
+  ConfiguredCartItemDraft,
+} from "../../../customer/shared/model/customer.types";
+import type { PublicMenuCategory } from "../../../shared/api/public-menu.api";

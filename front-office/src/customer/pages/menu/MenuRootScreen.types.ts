@@ -1,7 +1,7 @@
-import type { Category } from "../../shared/model/customer.types";
+import type { PublicMenuCategory } from "../../../shared/api/public-menu.api";
 
 export interface MenuRootScreenProps {
-  categories: Category[];
+  categories: PublicMenuCategory[];
 }
 
 export type MenuRootScreenEmits = {

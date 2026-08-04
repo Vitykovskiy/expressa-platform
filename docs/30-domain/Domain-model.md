@@ -6,9 +6,9 @@
 
 | Сущность | Ключевые поля |
 |---|---|
-| `User` | `id`, `phone`, `role`, `created_at`, `updated_at` |
-| `OtpChallenge` | `id`, `phone`, `code_hash`, `expires_at`, `attempts`, `consumed_at` |
-| `Session` | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at` |
+| `User` | `id`, `phone_e164`, `role`, `created_at`, `updated_at` |
+| `OtpChallenge` | `id`, `phone_e164`, `code_hash`, `expires_at`, `attempts`, `consumed_at`, `sent_at` |
+| `Session` | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at`, `rotated_at` |
 | `Category` | `id`, `name`, `description`, `sort_order`, `is_active`, `archived_at` |
 | `Product` | `id`, `category_id`, `type`, `name`, `description`, `price_minor`, `sort_order`, `is_active`, `is_available`, `archived_at` |
 | `ProductVariant` | `id`, `product_id`, `size`, `price_minor`, `sort_order`, `is_available`, `archived_at` |
@@ -39,6 +39,12 @@
 ### 10.2. Целостность
 
 - номера телефонов уникальны после нормализации;
+- номер `User` и `OtpChallenge` хранится как российский E.164 `+7` и десять цифр;
+- роль `User` принимает значения `customer`, `barista` или `administrator`; новый пользователь после успешного OTP получает роль `customer`;
+- на номер существует не более одного неиспользованного `OtpChallenge`; его резервирование и проверка выполняются атомарно;
+- OTP состоит из шести цифр, действует 5 минут, допускает до 5 попыток, а новый запрос для номера доступен через 60 секунд;
+- `Session` принадлежит существующему `User`, хранит только хеш refresh token и действует 30 дней; ротация заменяет хеш без продления срока;
+- активная сессия не отозвана и не истекла; доступ к защищённому действию определяется её текущим пользователем и ролью;
 - порядок категории уникален среди активных категорий;
 - порядок товара уникален внутри категории;
 - тип товара принимает значения `DRINK` и `OTHER`;

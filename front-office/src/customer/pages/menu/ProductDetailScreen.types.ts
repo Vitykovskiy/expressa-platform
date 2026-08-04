@@ -1,17 +1,18 @@
 import type {
-  CartItem,
-  CartItemDraft,
-  Category,
-  Product,
+  PublicMenuCategory,
+  PublicMenuProduct,
+} from "../../../shared/api/public-menu.api";
+import type {
+  ConfiguredCartItemDraft,
+  DrinkCartItem,
+  OtherCartItem,
 } from "../../shared/model/customer.types";
 
-export type { CartItemDraft } from "../../shared/model/customer.types";
-
 export interface ProductDetailScreenProps {
-  category: Category;
-  product: Product;
-  cartItem?: CartItem;
+  category: PublicMenuCategory;
+  product: PublicMenuProduct;
+  cartItem?: DrinkCartItem | OtherCartItem;
 }
 export type ProductDetailScreenEmits = {
-  submit: [item: CartItemDraft, editId?: string];
+  submit: [item: ConfiguredCartItemDraft, editId?: string];
 };

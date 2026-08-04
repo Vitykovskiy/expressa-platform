@@ -1,10 +1,11 @@
-export interface NavigationItem {
-  label: string;
-  path: string;
-}
+import { navigationDefinitions } from "./navigation.constants";
+import type { BackOfficeRole, NavigationItem } from "./navigation.types";
 
-export const navigationItems: readonly NavigationItem[] = [
-  { label: "Очередь", path: "/queue" },
-  { label: "Доступность", path: "/availability" },
-  { label: "Меню", path: "/menu" },
-];
+export function createNavigationItems(
+  role: BackOfficeRole | null,
+): readonly NavigationItem[] {
+  if (role === null) return [];
+  const items: readonly NavigationItem[] = Object.values(navigationDefinitions);
+
+  return items.filter((item) => item.roles.includes(role));
+}

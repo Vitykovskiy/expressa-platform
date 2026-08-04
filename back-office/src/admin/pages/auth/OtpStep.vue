@@ -16,16 +16,20 @@
       inputmode="numeric"
       maxlength="6"
       name="otp"
-      placeholder="• • • •"
+      placeholder="• • • • • •"
       @keydown.enter.prevent="emit('submit')"
     />
     <p v-if="error" id="auth-otp-error" class="auth-step__error" role="alert">
       {{ error }}
     </p>
     <p v-else id="auth-otp-hint" class="auth-step__hint">
-      Для теста: <strong>1234</strong>
+      Код действует {{ props.expiresInSeconds }} сек. Повторная отправка
+      доступна через {{ props.retryAfterSeconds }} сек.
     </p>
     <AdminButton :disabled="!valid" type="submit"> Подтвердить </AdminButton>
+    <AdminButton variant="ghost" @click="emit('resend')">
+      Отправить код повторно
+    </AdminButton>
     <AdminButton variant="ghost" @click="emit('changePhone')">
       Изменить номер
     </AdminButton>

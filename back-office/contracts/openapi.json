@@ -1,6 +1,166 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/auth/otp/request": {
+      "post": {
+        "operationId": "AuthController_requestCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestOtpResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Запросить одноразовый код",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Подтвердить одноразовый код",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "expressa_refresh": []
+          }
+        ],
+        "summary": "Обновить access token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logoutSession",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "expressa_refresh": []
+          }
+        ],
+        "summary": "Завершить сессию",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "MeController_currentUser",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Получить текущего пользователя",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/public/menu": {
+      "get": {
+        "operationId": "PublicMenuController_getMenu",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMenuDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Получить публичное меню",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "operationId": "HealthController_getLiveness",
@@ -39,6 +199,309 @@
   "tags": [],
   "servers": [],
   "components": {
-    "schemas": {}
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "expressa_refresh": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "expressa_refresh"
+      }
+    },
+    "schemas": {
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+79991234567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "RequestOtpResponseDto": {
+        "type": "object",
+        "properties": {
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 300
+          },
+          "retryAfterSeconds": {
+            "type": "number",
+            "example": 60
+          }
+        },
+        "required": [
+          "expiresInSeconds",
+          "retryAfterSeconds"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+79991234567"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "AccessTokenDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 900
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresInSeconds"
+        ]
+      },
+      "CurrentUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phoneE164": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "barista",
+              "administrator"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "phoneE164",
+          "role"
+        ]
+      },
+      "PublicMenuVariantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "S",
+              "M",
+              "L"
+            ]
+          },
+          "priceMinor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "size",
+          "priceMinor",
+          "isAvailable"
+        ]
+      },
+      "PublicMenuOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceDeltaMinor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "priceDeltaMinor",
+          "isDefault",
+          "isAvailable"
+        ]
+      },
+      "PublicMenuModifierGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multiple"
+            ]
+          },
+          "minSelect": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxSelect": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuOptionDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "selectionType",
+          "minSelect",
+          "maxSelect",
+          "options"
+        ]
+      },
+      "PublicMenuProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DRINK",
+              "OTHER"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "priceMinor": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuVariantDto"
+            }
+          },
+          "modifierGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuModifierGroupDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "description",
+          "priceMinor",
+          "isAvailable",
+          "variants",
+          "modifierGroups"
+        ]
+      },
+      "PublicMenuCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuProductDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "products"
+        ]
+      },
+      "PublicMenuDto": {
+        "type": "object",
+        "properties": {
+          "acceptsNewOrders": {
+            "type": "boolean"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuCategoryDto"
+            }
+          }
+        },
+        "required": [
+          "acceptsNewOrders",
+          "categories"
+        ]
+      }
+    }
   }
 }

@@ -4,34 +4,38 @@
     class="product-card"
     stacked
     variant="text"
+    :disabled="!props.product.isAvailable"
     @click="emit('select', props.product.id)"
     ><span class="product-card__info"
       ><span class="product-card__name">{{ props.product.name }}</span
-      ><span class="product-card__type">{{ props.typeLabel }}</span></span
+      ><span class="product-card__type">{{ productKind }}</span></span
     ><span class="product-card__prices"
-      ><template v-if="props.product.sizes?.length"
+      ><template v-if="props.product.type === 'DRINK'"
         ><span
-          v-for="size in props.product.sizes"
-          :key="size.sizeCode"
+          v-for="variant in props.product.variants"
+          :key="variant.id"
           class="product-card__price"
-          >{{ size.sizeCode }} - {{ size.price }}
-          {{ PRODUCT_CARD_PRICE_SUFFIX }}</span
+          :class="{ 'product-card__price--unavailable': !variant.isAvailable }"
+          >{{ variant.size }} ·
+          {{ formatMinorAmount(variant.priceMinor) }}</span
         ></template
-      ><span
-        v-else-if="props.product.sizes === undefined"
-        class="product-card__price"
-        >{{ props.product.basePrice }} {{ PRODUCT_CARD_PRICE_SUFFIX }}</span
-      ></span
+      ><span v-else class="product-card__price">{{
+        formatMinorAmount(props.product.priceMinor)
+      }}</span></span
     ></ui-btn
   >
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
-import { PRODUCT_CARD_PRICE_SUFFIX } from "./ProductCard.constants";
+import { formatMinorAmount } from "../../shared/model/money";
 import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();
+const productKind = computed(() =>
+  props.product.type === "DRINK" ? "Напиток" : "Еда и другое",
+);
 </script>
 <style scoped lang="scss">
 .product-card {
@@ -75,6 +79,9 @@ const emit = defineEmits<ProductCardEmits>();
   color: var(--customer-background);
   background: var(--customer-color-info-surface);
   border-radius: var(--customer-radius-pill);
+}
+.product-card__price--unavailable {
+  opacity: 0.45;
 }
 .product-card :deep(.v-btn__content) {
   display: grid;

@@ -1,31 +1,33 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { fn } from "storybook/test";
 import ProductCard from "../../../customer/pages/menu/ProductCard.vue";
-import type { Product } from "../../../customer/shared/model/customer.types";
+import type { PublicMenuProduct } from "../../../shared/api/public-menu.api";
 
 type ProductCardStoryArgs = {
-  product: Product;
-  typeLabel: string;
+  product: PublicMenuProduct;
   onSelect: (id: string) => void;
 };
-const product: Product = {
+const product: PublicMenuProduct = {
   id: "cappuccino",
   name: "Капучино",
   description: "",
-  type: "drink",
-  image: "",
-  basePrice: 260,
+  type: "DRINK",
+  isAvailable: true,
+  modifierGroups: [],
+  priceMinor: null,
+  variants: [
+    { id: "cappuccino-m", size: "M", priceMinor: 26000, isAvailable: true },
+  ],
 };
 const meta = {
   title: "Components/Patterns/ProductCard",
   component: ProductCard,
-  args: { product, typeLabel: "Напиток", onSelect: fn() },
+  args: { product, onSelect: fn() },
   argTypes: {
     product: {
       control: "object",
       description: "Товар каталога без demo-логики компонента.",
     },
-    typeLabel: { control: "text", description: "Локализованный тип товара." },
     onSelect: {
       action: "select",
       description: "Выбор передаёт идентификатор товара.",
@@ -36,7 +38,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Карточка товара каталога. Контракт: product, typeLabel и select(id); экран каталога владеет загрузкой и переходом. Показывает размеры, отсутствие цены и длинное имя; не вычисляет корзину. Accessibility: вся карточка имеет понятное действие. Источник: src/customer/pages/menu/ProductCard.vue.",
+          "Карточка товара каталога. Контракт: product и select(id); экран каталога владеет загрузкой и переходом. Показывает варианты и цену; не вычисляет корзину. Источник: src/customer/pages/menu/ProductCard.vue.",
       },
     },
   },
@@ -44,8 +46,7 @@ const meta = {
   render: (args) => ({
     components: { ProductCard },
     setup: () => ({ args }),
-    template:
-      '<ProductCard :product="args.product" :type-label="args.typeLabel" @select="args.onSelect" />',
+    template: '<ProductCard :product="args.product" @select="args.onSelect" />',
   }),
 } satisfies Meta<ProductCardStoryArgs>;
 export default meta;
@@ -55,14 +56,18 @@ export const SizedPrices: Story = {
   args: {
     product: {
       ...product,
-      sizes: [
-        { sizeCode: "S", price: 220 },
-        { sizeCode: "M", price: 260 },
+      variants: [
+        { id: "cappuccino-s", size: "S", priceMinor: 22000, isAvailable: true },
+        { id: "cappuccino-m", size: "M", priceMinor: 26000, isAvailable: true },
       ],
     },
   },
 };
-export const NoPrice: Story = { args: { product: { ...product, sizes: [] } } };
+export const NoPrice: Story = {
+  args: {
+    product: { ...product, type: "OTHER", priceMinor: 26000, variants: [] },
+  },
+};
 export const Long: Story = {
   args: {
     product: {

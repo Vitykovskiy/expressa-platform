@@ -1,12 +1,17 @@
 import type {
   CustomerJourneyCartItem,
-  CustomerJourneyCategory,
   CustomerJourneyData,
   CustomerJourneyOrder,
   CustomerJourneyOrderStatus,
+  CustomerJourneyProduct,
+  LegacyFixtureCategory,
   CustomerJourneySeed,
   CustomerJourneyTimeSlot,
 } from "../hosts/CustomerJourneyHost.types";
+import type {
+  PublicMenuCategory,
+  PublicMenuProduct,
+} from "../../../shared/api/public-menu.api";
 
 const images = {
   espresso:
@@ -25,7 +30,7 @@ const images = {
     "https://images.unsplash.com/photo-1666819604634-98dd67634148?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYW5kd2ljaCUyMGZvb2QlMjBjYWZlJTIwbHVuY2h8ZW58MXx8fHwxNzczMDYyMTgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
 } as const;
 
-const categoryFixture: CustomerJourneyCategory[] = [
+const categoryFixture: LegacyFixtureCategory[] = [
   {
     id: "espresso",
     name: "Эспрессо",
@@ -305,12 +310,23 @@ const populatedCartFixture: CustomerJourneyCartItem[] = [
     id: "1",
     productId: "cappuccino",
     productName: "Капучино",
-    type: "drink",
+    type: "DRINK",
     size: "M",
     sizePrice: 320,
     addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
     quantity: 2,
     lineTotalRub: 800,
+    unitTotalMinor: 40000,
+    lineTotalMinor: 80000,
+    selectedVariant: { id: "cappuccino-m", size: "M", priceMinor: 32000 },
+    selectedModifierOptions: [
+      {
+        groupId: "cappuccino-addons",
+        id: "oat-milk",
+        name: "Овсяное молоко",
+        priceDeltaMinor: 8000,
+      },
+    ],
   },
 ];
 
@@ -338,11 +354,76 @@ export function createCustomerDefaults(): CustomerJourneyData {
   assertOrderTotals(orders);
 
   return {
-    categories: clone(categoryFixture),
+    categories: clone(categoryFixture).map(toPublicCategory),
     slots: clone(slotFixture),
     orders,
     statusLabels: clone(statusLabelFixture),
   };
+}
+
+function toPublicCategory(category: LegacyFixtureCategory): PublicMenuCategory {
+  return {
+    id: category.id,
+    name: category.name,
+    description: "",
+    products: category.products.map(toPublicProduct),
+  };
+}
+
+function toPublicProduct(product: CustomerJourneyProduct): PublicMenuProduct {
+  const modifierGroups = product.addons?.length
+    ? [
+        {
+          id: `${product.id}-addons`,
+          name: "Добавки",
+          selectionType: "multiple" as const,
+          minSelect: 0,
+          maxSelect: product.addons.length,
+          options: product.addons.map((addon) => ({
+            id: addon.id,
+            name: addon.name,
+            priceDeltaMinor: addon.priceRub * 100,
+            isDefault: false,
+            isAvailable: true,
+          })),
+        },
+      ]
+    : [];
+  if (product.type === "drink") {
+    const sizes = product.sizes?.length
+      ? product.sizes
+      : [{ sizeCode: "M", price: product.basePrice }];
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      type: "DRINK",
+      isAvailable: true,
+      modifierGroups,
+      priceMinor: null,
+      variants: sizes.map((size, index) => ({
+        id: `${product.id}-${size.sizeCode.toLowerCase()}-${index}`,
+        size: normalizeSize(size.sizeCode, index),
+        priceMinor: size.price * 100,
+        isAvailable: true,
+      })),
+    };
+  }
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    type: "OTHER",
+    isAvailable: true,
+    modifierGroups,
+    priceMinor: product.basePrice * 100,
+    variants: [],
+  };
+}
+
+function normalizeSize(size: string, index: number): "S" | "M" | "L" {
+  if (size === "S" || size === "M" || size === "L") return size;
+  return index === 0 ? "S" : "M";
 }
 export function createCustomerShellSeed(
   overrides: Partial<CustomerJourneySeed> = {},

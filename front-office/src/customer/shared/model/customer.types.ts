@@ -29,8 +29,7 @@ export interface Category {
   products: Product[];
 }
 
-export interface CartItem {
-  id: string;
+export interface LegacyCartItemDraft {
   productId: string;
   productName: string;
   type: ProductType;
@@ -41,7 +40,55 @@ export interface CartItem {
   sizePrice?: number;
 }
 
-export type CartItemDraft = Omit<CartItem, "id">;
+export type LegacyCartItem = LegacyCartItemDraft & { id: string };
+
+export type CartItemDraft = LegacyCartItemDraft;
+
+export type ConfiguredCartItemDraft = DrinkCartItemDraft | OtherCartItemDraft;
+
+export type CartItem = DrinkCartItem | OtherCartItem | LegacyCartItem;
+
+export type DrinkCartItemDraft = ConfiguredCartItemDraftBase & {
+  type: "DRINK";
+  selectedVariant: CartVariantSelection;
+  size: "S" | "M" | "L";
+  sizePrice: number;
+};
+
+export type OtherCartItemDraft = ConfiguredCartItemDraftBase & {
+  type: "OTHER";
+  selectedVariant?: never;
+  size?: never;
+  sizePrice?: never;
+};
+
+export type DrinkCartItem = DrinkCartItemDraft & { id: string };
+
+export type OtherCartItem = OtherCartItemDraft & { id: string };
+
+export type ConfiguredCartItemDraftBase = {
+  productId: string;
+  productName: string;
+  addons: Addon[];
+  quantity: number;
+  lineTotalRub: number;
+  unitTotalMinor: number;
+  lineTotalMinor: number;
+  selectedModifierOptions: CartSelectedModifierOption[];
+};
+
+export type CartVariantSelection = {
+  id: string;
+  size: "S" | "M" | "L";
+  priceMinor: number;
+};
+
+export type CartSelectedModifierOption = {
+  groupId: string;
+  id: string;
+  name: string;
+  priceDeltaMinor: number;
+};
 
 export interface TimeSlot {
   id: string;

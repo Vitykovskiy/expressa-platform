@@ -23,9 +23,15 @@ jobs:
       run:
         working-directory: backend
     env:
+      AUTH_ACCESS_TOKEN_SECRET: ci-local-access-token-secret
+      AUTH_DEVELOPMENT_OTP: '123456'
+      AUTH_OTP_PEPPER: ci-local-otp-pepper
+      CORS_ORIGINS: http://localhost:5173
       DATABASE_URL: postgresql://expressa:expressa@localhost:5432/expressa
       NODE_ENV: local
       PORT: '3000'
+      SMS_RU_API_ID: ci-test-sms-ru-api-id
+      SMS_RU_SENDER: ExpressaCI
     services:
       postgres:
         image: postgres:16-alpine

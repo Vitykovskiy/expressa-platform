@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
+import { createNavigationItems } from "../../../app/navigation";
+import type { NavigationItem } from "../../../app/navigation.types";
 import type {
   AdminSection,
   UserRole,
@@ -34,6 +36,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<{
   role: UserRole;
+  items: readonly NavigationItem[];
   activeSection: AdminSection;
   onNavigate: (section: AdminSection) => void;
   onLogout: () => void;
@@ -59,6 +62,7 @@ function renderBarista(args: Story["args"]) {
 export const Administrator: Story = {
   args: {
     role: "administrator",
+    items: createNavigationItems("administrator"),
     activeSection: "orders",
     onNavigate: fn(),
     onLogout: fn(),
@@ -90,6 +94,7 @@ export const AdministratorVisual: Story = {
 export const Barista: Story = {
   args: {
     role: "barista",
+    items: createNavigationItems("barista"),
     activeSection: "availability",
     onNavigate: fn(),
     onLogout: fn(),

@@ -1,98 +1,87 @@
 <template>
   <VApp>
     <VMain>
-      <!-- Vue lint requires one attribute per line; prettier-ignore preserves it. -->
-      <!-- prettier-ignore -->
       <VContainer
+        v-if="
+          sessionStore.status !== 'unknown' || route.path === routePaths.login
+        "
         class="app-content"
       >
-        <header class="app-header">
-          <p class="app-name">
-            Expressa back-office
-          </p>
-          <nav
-            aria-label="Рабочие разделы"
-            class="app-navigation"
-          >
-            <RouterLink
-              v-for="item in navigationItems"
-              :key="item.path"
-              :to="item.path"
-            >
-              {{ item.label }}
-            </RouterLink>
-          </nav>
-        </header>
         <ErrorNotice
           v-if="appStore.screenError !== null"
           :error="appStore.screenError"
           @close="appStore.clearScreenError"
         />
-        <RouterView />
+        <AdminShell
+          v-if="sessionStore.currentUser !== null"
+          :active-section="activeSection"
+          :items="navigationItems"
+          :role="sessionStore.currentUser.role"
+          @logout="logout"
+          @navigate="navigate"
+        >
+          <RouterView />
+        </AdminShell>
+        <RouterView v-else />
       </VContainer>
     </VMain>
   </VApp>
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router";
+import { computed } from "vue";
+import { RouterView, useRoute, useRouter } from "vue-router";
 import { VApp, VContainer, VMain } from "vuetify/components";
 
+import AdminShell from "../admin/shell/AdminShell.vue";
+import type { AdminSection } from "../admin/shared/ui/Admin.types";
+import { adminShellFallbackSection } from "../admin/shell/AdminShell.constants";
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
 
 import { useAppStore } from "./app.store";
-import { navigationItems } from "./navigation";
+import { createNavigationItems } from "./navigation";
+import { routePaths } from "./router.constants";
+import { useSessionStore } from "./session.store";
+import type { AppRoute } from "./App.types";
 
 const appStore = useAppStore();
+const route = useRoute();
+const router = useRouter();
+const sessionStore = useSessionStore();
+
+const navigationItems = computed(() =>
+  createNavigationItems(sessionStore.currentUser?.role ?? null),
+);
+const activeSection = computed<AdminSection>(() => {
+  const routeSection = (route.meta as AppRoute).section;
+
+  return (
+    routeSection ??
+    navigationItems.value[0]?.section ??
+    adminShellFallbackSection
+  );
+});
+
+async function navigate(section: AdminSection): Promise<void> {
+  const item = navigationItems.value.find(
+    (candidate) => candidate.section === section,
+  );
+
+  if (item !== undefined) await router.push(item.path);
+}
+
+async function logout(): Promise<void> {
+  await sessionStore.logout();
+
+  if (sessionStore.status === "anonymous")
+    await router.replace(routePaths.login);
+}
 </script>
 
 <style scoped>
 .app-content {
-  padding-block: var(--expressa-space-8);
-}
-
-.app-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--expressa-space-4);
-  margin-bottom: var(--expressa-space-8);
-}
-
-.app-name {
-  margin: 0;
-  font-weight: var(--expressa-font-weight-strong);
-  overflow-wrap: anywhere;
-}
-
-.app-navigation {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--expressa-space-2);
-}
-
-/* RouterLink renders its anchor internally; boundary is application navigation only. */
-.app-navigation :deep(a) {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--expressa-touch-target-min);
-  padding-inline: var(--expressa-space-2);
-  border-radius: var(--expressa-radius-control);
-  color: rgb(var(--v-theme-primary));
-  font-weight: var(--expressa-font-weight-strong);
-  overflow-wrap: anywhere;
-}
-
-/* RouterLink focus target is its internal anchor; boundary is application navigation only. */
-.app-navigation :deep(a:focus-visible) {
-  outline: var(--expressa-focus-outline);
-  outline-offset: var(--expressa-focus-offset);
-}
-
-@media (max-width: 479px) {
-  .app-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
+  height: 100dvh;
+  max-width: none;
+  padding: 0;
 }
 </style>

@@ -102,7 +102,7 @@ function startProductionServer(port: number): {
   };
 }
 
-function startGracefulShutdownFixture(): {
+function startGracefulShutdownFixture(port: number): {
   output: () => string;
   server: ChildProcess;
 } {
@@ -114,7 +114,7 @@ function startGracefulShutdownFixture(): {
       env: {
         ...process.env,
         NODE_ENV: 'production',
-        PORT: '0',
+        PORT: String(port),
         DATABASE_URL: databaseUrl,
       },
       execArgv: ['-r', 'ts-node/register'],
@@ -364,7 +364,8 @@ describe('production startup', () => {
     }
 
     const observer = new Pool({ connectionString: databaseUrl });
-    const { output, server } = startGracefulShutdownFixture();
+    const port = await getAvailablePort();
+    const { output, server } = startGracefulShutdownFixture(port);
 
     try {
       await observer.query(

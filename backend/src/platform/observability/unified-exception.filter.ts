@@ -6,25 +6,31 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-import type { IncomingMessage } from 'node:http';
 import { ObservabilityLogger } from './observability-logger.service';
 import { ObservabilityMetrics } from './observability-metrics.service';
 import { getRequestPath } from './request-path';
-
-type RequestWithId = IncomingMessage & { requestId?: string };
-
-const clientMessages: Record<number, string> = {
-  [HttpStatus.BAD_REQUEST]: 'Bad request',
-  [HttpStatus.UNAUTHORIZED]: 'Unauthorized',
-  [HttpStatus.FORBIDDEN]: 'Forbidden',
-  [HttpStatus.NOT_FOUND]: 'Not found',
-  [HttpStatus.CONFLICT]: 'Conflict',
-  [HttpStatus.TOO_MANY_REQUESTS]: 'Too many requests',
-  [HttpStatus.SERVICE_UNAVAILABLE]: 'Service unavailable',
-};
+import { clientMessages } from './unified-exception.filter.constants';
+import type {
+  RequestWithId,
+  StructuredErrorResponse,
+} from './unified-exception.filter.types';
 
 function getErrorCode(statusCode: number): string {
   return HttpStatus[statusCode]?.toString() ?? 'INTERNAL_SERVER_ERROR';
+}
+
+function isStructuredErrorResponse(
+  response: unknown,
+): response is StructuredErrorResponse {
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'code' in response &&
+    typeof response.code === 'string' &&
+    'message' in response &&
+    typeof response.message === 'string' &&
+    "details" in response
+  );
 }
 
 @Catch()
@@ -43,6 +49,22 @@ export class UnifiedExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : null;
+    const isServerError = statusCode >= HttpStatus.INTERNAL_SERVER_ERROR;
+    const errorResponse = isStructuredErrorResponse(exceptionResponse)
+      ? isServerError
+        ? {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Internal server error',
+            details: null,
+          }
+        : exceptionResponse
+      : {
+          code: getErrorCode(statusCode),
+          message: clientMessages[statusCode] ?? 'Internal server error',
+          details: null,
+        };
     const requestId = request.requestId ?? 'unknown';
 
     this.metrics.recordApiError();
@@ -58,9 +80,7 @@ export class UnifiedExceptionFilter implements ExceptionFilter {
     httpAdapter.reply(
       context.getResponse(),
       {
-        code: getErrorCode(statusCode),
-        message: clientMessages[statusCode] ?? 'Internal server error',
-        details: null,
+        ...errorResponse,
         requestId,
       },
       statusCode,

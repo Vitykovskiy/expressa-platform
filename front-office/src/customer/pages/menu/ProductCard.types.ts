@@ -1,7 +1,6 @@
-import type { Product } from "../../shared/model/customer.types";
+import type { PublicMenuProduct } from "../../../shared/api/public-menu.api";
 export interface ProductCardProps {
-  product: Product;
-  typeLabel: string;
+  product: PublicMenuProduct;
 }
 export interface ProductCardEmits {
   select: [productId: string];

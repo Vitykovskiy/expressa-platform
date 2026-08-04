@@ -15,12 +15,12 @@
     "migrate": "ts-node scripts/migrate.ts",
     "seed": "ts-node scripts/seed.ts",
     "staff": "ts-node scripts/staff.ts",
-    "openapi:generate": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa ts-node scripts/openapi.ts",
-    "openapi:check": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa ts-node scripts/openapi.ts --check",
+    "openapi:generate": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 ts-node scripts/openapi.ts",
+    "openapi:check": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 ts-node scripts/openapi.ts --check",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:integration": "jest --runInBand --testRegex \"test/integration/.*\\.spec\\.ts$\"",
-    "test:e2e": "jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts",
+    "test:e2e": "env NODE_ENV=local PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-e2e-access-token-secret AUTH_OTP_PEPPER=local-e2e-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts test/e2e/auth.e2e-spec.ts test/e2e/public-menu.e2e-spec.ts",
     "test:production": "npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts"
   },
   "dependencies": {

@@ -4,6 +4,24 @@
 - **Q-E2E.** Сквозной браузерный сценарий связывает создание меню, клиентский заказ, приготовление, оплату, выдачу и историю.
 - **Q-RELEASE.** Выпуск фиксирует Git-теги и совместимые версии трёх репозиториев, соответствующие записи `CHANGELOG.md`, результаты обязательных проверок и процедуру миграции.
 
+## E04 — телефонная авторизация и доступ
+
+Область проверки E04: local, CI и реальный Chromium-браузер. Для неё запускать
+backend CI-эквивалент, браузерные auth-сценарии обоих клиентов и Storybook,
+проверки доступности и визуальные проверки из клиентских CI.
+
+- Состав эпика: [[../10-overview/backlog/E04/index|E04]].
+- Backend: [CI](../../.github/workflows/backend-ci.yml), [auth E2E](../../backend/test/e2e/auth.e2e-spec.ts) и [PostgreSQL-интеграция](../../backend/test/integration/auth-repository.integration.spec.ts).
+- Front-office: [CI](../../.github/workflows/front-office-ci.yml) и [реальный auth E2E](../../front-office/tests/e2e/auth.e2e.spec.ts).
+- Back-office: [CI](../../.github/workflows/back-office-ci.yml) и [реальный auth и роли E2E](../../back-office/tests/e2e/auth.e2e.ts).
+
+## E05 — публичное меню и локальная корзина
+
+Область проверки E05: PostgreSQL read-model каталога, OpenAPI и реальный Chromium front-office. Проверка охватывает `DRINK`, товар без вариантов, обязательные добавки, локальную корзину и размеры `320`, `390`, `768`, `1280` px с проверкой до и после CSS-границ `480`, `768`, `1024` px.
+
+- Backend: [CatalogModule](../../backend/src/catalog/catalog.module.ts), [сценарий публичного меню](../../backend/src/catalog/application/get-public-menu.use-case.spec.ts) и [OpenAPI](../../backend/openapi/openapi.json).
+- Front-office: [публичное menu E2E](../../front-office/tests/e2e/menu.e2e.spec.ts) и [CI](../../.github/workflows/front-office-ci.yml).
+
 ## Definition of Ready
 
 Задача готова к разработке, когда содержит:

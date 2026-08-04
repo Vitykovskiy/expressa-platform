@@ -197,14 +197,14 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
   page,
 }) => {
   const storyId = "admin-shell--administrator";
-  const labels = ["Заказы", "Доступность", "Меню", "Пользователи", "Настройки"];
+  const labels = ["Очередь", "Доступность", "Меню"];
 
   for (const [width, expectedRows] of [
-    [320, [3, 2]],
-    [390, [3, 2]],
-    [479, [3, 2]],
-    [480, [5]],
-    [767, [5]],
+    [320, [2, 1]],
+    [390, [2, 1]],
+    [479, [2, 1]],
+    [480, [2, 1]],
+    [767, [2, 1]],
   ] as const) {
     await page.setViewportSize({ height: 900, width });
     await page.goto(storyPath(storyId));
@@ -238,7 +238,7 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
       );
 
       return {
-        activeButton: buttons.find((button) => button.label === "Заказы"),
+        activeButton: buttons.find((button) => button.label === "Очередь"),
         activeSurface: (() => {
           const reference = document.createElement("div");
           reference.style.background = getComputedStyle(

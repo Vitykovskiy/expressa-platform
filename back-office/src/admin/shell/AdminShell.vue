@@ -21,18 +21,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { ADMIN_SHELL_SECTIONS } from "./AdminShell.constants";
 import type { AdminShellEmits, AdminShellProps } from "./AdminShell.types";
 import SideNav from "./SideNav.vue";
 import TabBar from "./TabBar.vue";
 
 const props = defineProps<AdminShellProps>();
 const emit = defineEmits<AdminShellEmits>();
-
 const sections = computed(() =>
-  ADMIN_SHELL_SECTIONS.filter((section) =>
-    section.roles.includes(props.role),
-  ).map(({ id, label }) => ({ id, label })),
+  props.items.map(({ label, section }) => ({ id: section, label })),
 );
 </script>
 

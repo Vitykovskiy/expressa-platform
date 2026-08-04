@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ApiClient, ApiError, createApiClient } from "./client";
 
@@ -14,7 +14,7 @@ describe("ApiClient", () => {
             message: "Изменение не принято.",
             requestId: "request-42",
           }),
-          { status: 422 },
+          { status: 401 },
         ),
     });
 
@@ -25,6 +25,7 @@ describe("ApiClient", () => {
       details: { field: "acceptingOrders" },
       message: "Изменение не принято.",
       requestId: "request-42",
+      status: 401,
     } satisfies Partial<ApiError>);
   });
 
@@ -39,6 +40,79 @@ describe("ApiClient", () => {
       code: "API_CONTRACT_ERROR",
       message: "Сервер вернул ответ, не соответствующий контракту API.",
     } satisfies Partial<ApiError>);
+  });
+
+  it("принимает ожидаемый статус 202", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: async () =>
+        new Response(JSON.stringify("accepted"), { status: 202 }),
+    });
+
+    await expect(
+      client.request("/availability", isString, { expectedStatus: 202 }),
+    ).resolves.toBe("accepted");
+  });
+
+  it("преобразует несовпадение ожидаемого успешного статуса в ошибку контракта", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: async () => new Response(JSON.stringify("ok"), { status: 200 }),
+    });
+
+    await expect(
+      client.request("/availability", isString, { expectedStatus: [202] }),
+    ).rejects.toMatchObject({
+      code: "API_CONTRACT_ERROR",
+      details: "ok",
+      message: "Сервер вернул неожиданный статус ответа.",
+      status: 200,
+    } satisfies Partial<ApiError>);
+  });
+
+  it("сохраняет статус 503 для ошибки с некорректным телом", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: async () =>
+        new Response(JSON.stringify({ message: "Сбой." }), { status: 503 }),
+    });
+
+    await expect(
+      client.request("/availability", isString),
+    ).rejects.toMatchObject({
+      code: "API_CONTRACT_ERROR",
+      status: 503,
+    } satisfies Partial<ApiError>);
+  });
+
+  it("не разбирает JSON в ответе 204", async () => {
+    const response = new Response(null, { status: 204 });
+    const parseJson = vi.spyOn(response, "json");
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: async () => response,
+    });
+
+    await expect(
+      client.request("/availability", isUndefined, { expectedStatus: 204 }),
+    ).resolves.toBeUndefined();
+    expect(parseJson).not.toHaveBeenCalled();
+  });
+
+  it("вызывает fetch с глобальным receiver", async () => {
+    const receiverSensitiveFetcher = vi.fn(function (this: typeof globalThis) {
+      if (this !== globalThis) {
+        throw new TypeError("fetch должен вызываться с globalThis.");
+      }
+
+      return Promise.resolve(new Response(JSON.stringify("ok")));
+    }) as unknown as typeof fetch;
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: receiverSensitiveFetcher,
+    });
+
+    await expect(client.request("/queue", isString)).resolves.toBe("ok");
   });
 
   it("сохраняет абсолютный origin и добавляет /api/v1 без двойных слешей", async () => {
@@ -100,4 +174,8 @@ describe("ApiClient", () => {
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isUndefined(value: unknown): value is undefined {
+  return value === undefined;
 }

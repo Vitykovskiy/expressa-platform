@@ -25,6 +25,7 @@
         <Phone class="auth-form__field-icon" aria-hidden="true" />
       </template>
     </ui-text-field>
+    <UiFieldMessage :message="props.state.errorMessage" tone="error" />
     <ui-btn
       block
       color="surface"
@@ -133,6 +134,7 @@ import { Phone, UserRound } from "lucide-vue-next";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
 import UiFieldMessage from "../../shared/ui/field-message/UiFieldMessage.vue";
 import UiTextField from "../../shared/ui/text-field/UiTextField.vue";
+import { authFormLimits } from "./AuthForm.constants";
 import type { AuthFormEmits, AuthFormProps } from "./AuthForm.types";
 
 const props = defineProps<AuthFormProps>();
@@ -140,8 +142,12 @@ const emit = defineEmits<AuthFormEmits>();
 
 const otp = shallowRef("");
 const phoneDigits = computed(() => props.state.phone.replace(/\D/g, ""));
-const canSendCode = computed(() => phoneDigits.value.length >= 10);
-const canVerifyOtp = computed(() => otp.value.length >= 4);
+const canSendCode = computed(
+  () => phoneDigits.value.length >= authFormLimits.phoneDigits,
+);
+const canVerifyOtp = computed(
+  () => otp.value.length === authFormLimits.otpLength,
+);
 const canSubmitName = computed(() => props.state.name.trim().length >= 2);
 const isLoading = computed(() => props.state.step === "loading");
 
@@ -153,12 +159,30 @@ watch(
 );
 
 function updatePhone(phone: string) {
-  if (!isLoading.value) emit("updatePhone", phone);
+  if (!isLoading.value) emit("updatePhone", formatPhone(phone));
 }
 
 function updateOtp(value: string) {
   otp.value = value.replace(/\D/g, "");
   emit("updateOtp", otp.value);
+}
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  const localDigits = digits.startsWith("8") ? `7${digits.slice(1)}` : digits;
+  const number = localDigits.startsWith("7")
+    ? localDigits.slice(1)
+    : localDigits;
+
+  if (number.length === 0) return "";
+  if (number.length <= 3) return `+7 (${number}`;
+  if (number.length <= 6)
+    return `+7 (${number.slice(0, 3)}) ${number.slice(3)}`;
+  if (number.length <= 8) {
+    return `+7 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
+  }
+
+  return `+7 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6, 8)}-${number.slice(8, 10)}`;
 }
 
 function updateName(name: string) {

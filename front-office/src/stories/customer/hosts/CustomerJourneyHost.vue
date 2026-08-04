@@ -97,6 +97,10 @@ import MenuRootScreen from "../../../customer/pages/menu/MenuRootScreen.vue";
 import ProductDetailScreen from "../../../customer/pages/menu/ProductDetailScreen.vue";
 import OrdersHistoryScreen from "../../../customer/pages/orders/OrdersHistoryScreen.vue";
 import CustomerShell from "../../../customer/shell/CustomerShell.vue";
+import type {
+  DrinkCartItem,
+  OtherCartItem,
+} from "../../../customer/shared/model/customer.types";
 import {
   CUSTOMER_JOURNEY_AUTH_GATE_COPY,
   CUSTOMER_JOURNEY_KNOWN_PHONE_NUMBERS,
@@ -168,7 +172,11 @@ const product = computed(() => {
 const editedCartItem = computed(() => {
   const screen = currentScreen.value;
   return screen.id === "product" && screen.editId
-    ? cartItems.value.find((item) => item.id === screen.editId)
+    ? cartItems.value.find(
+        (item): item is DrinkCartItem | OtherCartItem =>
+          item.id === screen.editId &&
+          (item.type === "DRINK" || item.type === "OTHER"),
+      )
     : undefined;
 });
 const selectedSlot = computed(() =>
@@ -311,16 +319,11 @@ function submitCartItem(
   item: CustomerJourneyCartItemDraft,
   editId?: string,
 ): void {
-  if (editId) {
-    cartItems.value = cartItems.value.map((cartItem) =>
-      cartItem.id === editId ? { ...item, id: editId } : cartItem,
-    );
-  } else {
-    cartItems.value = [
-      ...cartItems.value,
-      { ...item, id: String(nextCartItemId.value++) },
-    ];
-  }
+  cartItems.value = editId
+    ? cartItems.value.map((cartItem) =>
+        cartItem.id === editId ? { ...item, id: editId } : cartItem,
+      )
+    : [...cartItems.value, { ...item, id: String(nextCartItemId.value++) }];
   navigate({ id: "cart" });
 }
 
@@ -368,3 +371,4 @@ function signOut(): void {
   min-width: 0;
 }
 </style>
+:cart-item="editedCartItem"

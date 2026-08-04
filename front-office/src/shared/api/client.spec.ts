@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ApiClient, ApiError, createApiClient } from "./client";
 
@@ -37,6 +37,88 @@ describe("ApiClient", () => {
       code: "API_CONTRACT_ERROR",
       message: "Сервер вернул ошибку, не соответствующую контракту API.",
     } satisfies Partial<ApiError>);
+  });
+
+  it("принимает ожидаемый 202", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetcher: async () => new Response(JSON.stringify("ok"), { status: 202 }),
+    });
+    await expect(
+      client.request("/otp", isString, { expectedStatus: 202 }),
+    ).resolves.toBe("ok");
+  });
+
+  it("отклоняет другой 2xx при expectedStatus", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetcher: async () => new Response(JSON.stringify("ok"), { status: 200 }),
+    });
+    await expect(
+      client.request("/otp", isString, { expectedStatus: 202 }),
+    ).rejects.toMatchObject({ code: "API_CONTRACT_ERROR", status: 200 });
+  });
+
+  it.each([401, 503])("сохраняет status %i для non-2xx", async (status) => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({
+            code: "ACCESS_DENIED",
+            details: null,
+            message: "Denied",
+            requestId: null,
+          }),
+          { status },
+        ),
+    });
+    await expect(client.request("/orders", isString)).rejects.toMatchObject({
+      status,
+    });
+  });
+
+  it("сохраняет null status для network error", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetcher: async () => {
+        throw new Error("offline");
+      },
+    });
+    await expect(client.request("/orders", isString)).rejects.toMatchObject({
+      code: "NETWORK_ERROR",
+      status: null,
+    });
+  });
+
+  it("возвращает undefined для 204 без JSON parsing", async () => {
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetcher: async () => new Response(null, { status: 204 }),
+    });
+    await expect(
+      client.request(
+        "/logout",
+        (value): value is undefined => value === undefined,
+        { expectedStatus: 204 },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it("вызывает fetch с глобальным receiver", async () => {
+    const receiverSensitiveFetcher = vi.fn(function (this: typeof globalThis) {
+      if (this !== globalThis) {
+        throw new TypeError("fetch должен вызываться с globalThis.");
+      }
+
+      return Promise.resolve(new Response(JSON.stringify("ok")));
+    }) as unknown as typeof fetch;
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test/api/v1",
+      fetcher: receiverSensitiveFetcher,
+    });
+
+    await expect(client.request("/orders", isString)).resolves.toBe("ok");
   });
 
   it("добавляет /api/v1 к проверенному базовому URL без двойных слешей", async () => {

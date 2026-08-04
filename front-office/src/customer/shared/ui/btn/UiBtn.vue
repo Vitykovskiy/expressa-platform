@@ -4,6 +4,7 @@
     class="ui-btn"
     :disabled="props.disabled"
     :loading="props.loading"
+    :to="props.to"
     :type="props.type"
     @click="emit('click', $event)"
   >

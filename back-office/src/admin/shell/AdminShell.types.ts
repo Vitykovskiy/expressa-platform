@@ -1,14 +1,13 @@
-import type { AdminSection, UserRole } from "../shared/ui/Admin.types";
-
-export interface AdminShellSection {
-  id: AdminSection;
-  label: string;
-  roles: UserRole[];
-}
+import type {
+  BackOfficeRole,
+  NavigationItem,
+} from "../../app/navigation.types";
+import type { AdminSection } from "../shared/ui/Admin.types";
 
 export interface AdminShellProps {
-  role: UserRole;
   activeSection: AdminSection;
+  items: readonly NavigationItem[];
+  role: BackOfficeRole;
 }
 
 export interface AdminShellEmits {

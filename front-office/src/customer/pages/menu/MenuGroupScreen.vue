@@ -16,11 +16,7 @@
       :aria-label="`Товары категории ${category.name}`"
     >
       <li v-for="product in category.products" :key="product.id">
-        <product-card
-          :product="product"
-          :type-label="productTypeLabels[product.type]"
-          @select="selectProduct"
-        />
+        <product-card :product="product" @select="selectProduct" />
       </li>
     </ul>
   </section>
@@ -30,7 +26,6 @@
 </template>
 
 <script setup lang="ts">
-import { productTypeLabels } from "./MenuGroupScreen.constants";
 import ProductCard from "./ProductCard.vue";
 import type {
   MenuGroupScreenEmits,

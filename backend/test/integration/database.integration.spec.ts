@@ -55,6 +55,8 @@ describe('PostgreSQL foundation', () => {
       expect(migrations.rows).toEqual([
         { name: '0001_foundation.sql' },
         { name: '0002_e01_core_schema.sql' },
+        { name: '0003_e04_auth.sql' },
+        { name: '0004_e05_catalog.sql' },
       ]);
       expect(administrators.rows).toEqual([
         { phone_e164: bootstrapAdministratorPhone, role: 'administrator' },

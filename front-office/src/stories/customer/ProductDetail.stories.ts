@@ -1,10 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import ProductDetailScreen from "../../customer/pages/menu/ProductDetailScreen.vue";
-import {
-  createCustomerDefaults,
-  createPopulatedCartItems,
-} from "./fixtures/customer.fixtures";
+import { createCustomerDefaults } from "./fixtures/customer.fixtures";
 
 const fixtures = createCustomerDefaults();
 const category = fixtures.categories[1]!;
@@ -21,10 +18,6 @@ const meta = {
   argTypes: {
     category: { control: "object", description: "Категория товара." },
     product: { control: "object", description: "Доменные данные товара." },
-    cartItem: {
-      control: "object",
-      description: "Позиция редактирования или undefined для add.",
-    },
     onSubmit: {
       action: "submit",
       description: "Передаёт выбранную позицию корзины.",
@@ -35,7 +28,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Назначение: детали товара и выбор параметров корзины. Используйте для add/edit; не используйте без product. Props: category, product, cartItem; emit/action: submit; slots отсутствуют. Состояния: add, edit, size, addons, quantity и long. Валидация количества и доступных option принадлежит screen. Controls доступны кнопками и responsive. Источник: src/customer/pages/menu/ProductDetailScreen.vue, src/stories/customer/ProductDetail.stories.ts.",
+          "Назначение: детали товара и выбор параметров корзины. Props: category, product; emit/action: submit. Конфигурация и валидация принадлежат screen.",
       },
     },
   },
@@ -66,19 +59,27 @@ export const Default: Story = {
     );
     await userEvent.click(canvas.getByRole("button", { name: /Добавить/ }));
     await expect(args.onSubmit).toHaveBeenCalledTimes(1);
-    await expect(args.onSubmit).toHaveBeenCalledWith(
-      {
-        productId: "cappuccino",
-        productName: "Капучино",
-        type: "drink",
-        size: "M",
-        sizePrice: 320,
-        addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
-        quantity: 2,
-        lineTotalRub: 800,
-      },
-      undefined,
-    );
+    await expect(args.onSubmit).toHaveBeenCalledWith({
+      productId: "cappuccino",
+      productName: "Капучино",
+      type: "DRINK",
+      size: "M",
+      sizePrice: 320,
+      addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
+      quantity: 2,
+      lineTotalRub: 800,
+      unitTotalMinor: 40000,
+      lineTotalMinor: 80000,
+      selectedVariant: { id: "cappuccino-m-1", size: "M", priceMinor: 32000 },
+      selectedModifierOptions: [
+        {
+          groupId: "cappuccino-addons",
+          id: "oat-milk",
+          name: "Овсяное молоко",
+          priceDeltaMinor: 8000,
+        },
+      ],
+    });
 
     await userEvent.click(smallSize);
     await userEvent.click(oatMilk);
@@ -95,23 +96,55 @@ export const Default: Story = {
 
 export const Edit: Story = {
   args: {
-    cartItem: createPopulatedCartItems()[0],
+    cartItem: {
+      id: "1",
+      productId: "cappuccino",
+      productName: "Капучино",
+      type: "DRINK",
+      size: "M",
+      sizePrice: 320,
+      selectedVariant: { id: "cappuccino-m-1", size: "M", priceMinor: 32000 },
+      addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
+      selectedModifierOptions: [
+        {
+          groupId: "cappuccino-addons",
+          id: "oat-milk",
+          name: "Овсяное молоко",
+          priceDeltaMinor: 8000,
+        },
+      ],
+      quantity: 2,
+      unitTotalMinor: 40000,
+      lineTotalMinor: 80000,
+      lineTotalRub: 800,
+    },
   },
   play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: /Изменить/ }),
-    );
+    const canvas = within(canvasElement);
+    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("2");
+    await userEvent.click(canvas.getByRole("button", { name: /Изменить/ }));
     await expect(args.onSubmit).toHaveBeenCalledTimes(1);
     await expect(args.onSubmit).toHaveBeenCalledWith(
       {
         productId: "cappuccino",
         productName: "Капучино",
-        type: "drink",
+        type: "DRINK",
         size: "M",
         sizePrice: 320,
         addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
         quantity: 2,
         lineTotalRub: 800,
+        unitTotalMinor: 40000,
+        lineTotalMinor: 80000,
+        selectedVariant: { id: "cappuccino-m-1", size: "M", priceMinor: 32000 },
+        selectedModifierOptions: [
+          {
+            groupId: "cappuccino-addons",
+            id: "oat-milk",
+            name: "Овсяное молоко",
+            priceDeltaMinor: 8000,
+          },
+        ],
       },
       "1",
     );

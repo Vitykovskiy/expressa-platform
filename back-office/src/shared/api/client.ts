@@ -1,33 +1,51 @@
-export interface ApiErrorData {
-  code: string;
-  details: unknown;
-  message: string;
-  requestId: string | null;
-}
+import {
+  apiContractErrorCode,
+  apiErrorContractErrorMessage,
+  apiResponseContractErrorMessage,
+  apiStatusContractErrorMessage,
+  invalidSameOriginApiBaseUrlMessage,
+  jsonContentTypeHeader,
+  jsonContentTypeValue,
+  networkErrorCode,
+  networkErrorMessage,
+  noContentStatus,
+  sameOriginApiBaseUrl,
+} from "./client.constants";
+import type {
+  ApiClientOptions,
+  ApiErrorData,
+  ApiRequestOptions,
+  ResponseValidator,
+} from "./client.types";
+export { apiClientKey } from "./client.constants";
+
+export type {
+  ApiClientOptions,
+  ApiErrorData,
+  ApiRequestOptions,
+  ResponseValidator,
+} from "./client.types";
 
 export class ApiError extends Error implements ApiErrorData {
   readonly code: string;
   readonly details: unknown;
   readonly requestId: string | null;
+  readonly status: number | null;
 
-  constructor({ code, details, message, requestId }: ApiErrorData) {
+  constructor({
+    code,
+    details,
+    message,
+    requestId,
+    status = null,
+  }: ApiErrorData) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.details = details;
     this.requestId = requestId;
+    this.status = status;
   }
-}
-
-export type ResponseValidator<T> = (value: unknown) => value is T;
-
-export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
-  body?: unknown;
-}
-
-export interface ApiClientOptions {
-  baseUrl: string;
-  fetcher?: typeof fetch;
 }
 
 export class ApiClient {
@@ -36,7 +54,7 @@ export class ApiClient {
 
   constructor({ baseUrl, fetcher = fetch }: ApiClientOptions) {
     this.baseUrl = baseUrl;
-    this.fetcher = fetcher;
+    this.fetcher = fetcher.bind(globalThis);
   }
 
   async request<T>(
@@ -44,19 +62,38 @@ export class ApiClient {
     validate: ResponseValidator<T>,
     options: ApiRequestOptions = {},
   ): Promise<T> {
-    const response = await this.fetchResponse(path, options);
-    const payload = await this.readPayload(response);
+    const { expectedStatus, ...requestOptions } = options;
+    const response = await this.fetchResponse(path, requestOptions);
+    const payload =
+      response.status === noContentStatus
+        ? undefined
+        : await this.readPayload(response);
 
     if (!response.ok) {
-      throw this.createApiError(payload, response.headers.get("x-request-id"));
+      throw this.createApiError(
+        payload,
+        response.headers.get("x-request-id"),
+        response.status,
+      );
+    }
+
+    if (!matchesExpectedStatus(response.status, expectedStatus)) {
+      throw new ApiError({
+        code: apiContractErrorCode,
+        details: payload,
+        message: apiStatusContractErrorMessage,
+        requestId: response.headers.get("x-request-id"),
+        status: response.status,
+      });
     }
 
     if (!validate(payload)) {
       throw new ApiError({
-        code: "API_CONTRACT_ERROR",
+        code: apiContractErrorCode,
         details: payload,
-        message: "Сервер вернул ответ, не соответствующий контракту API.",
+        message: apiResponseContractErrorMessage,
         requestId: response.headers.get("x-request-id"),
+        status: response.status,
       });
     }
 
@@ -74,10 +111,11 @@ export class ApiClient {
       );
     } catch (error) {
       throw new ApiError({
-        code: "NETWORK_ERROR",
+        code: networkErrorCode,
         details: error,
-        message: "Не удалось подключиться к серверу.",
+        message: networkErrorMessage,
         requestId: null,
+        status: null,
       });
     }
   }
@@ -95,7 +133,7 @@ export class ApiClient {
       ...options,
       body: JSON.stringify(body),
       headers: {
-        "content-type": "application/json",
+        [jsonContentTypeHeader]: jsonContentTypeValue,
         ...headers,
       },
     };
@@ -105,10 +143,7 @@ export class ApiClient {
     const normalizedPath = path.replace(/^\/+/, "");
 
     if (this.baseUrl.startsWith("/")) {
-      const url = new URL(
-        normalizedPath,
-        `http://same-origin.invalid${this.baseUrl}/`,
-      );
+      const url = new URL(normalizedPath, sameOriginApiBaseUrl);
 
       return `${url.pathname}${url.search}${url.hash}`;
     }
@@ -124,18 +159,36 @@ export class ApiClient {
     }
   }
 
-  private createApiError(payload: unknown, requestId: string | null): ApiError {
+  private createApiError(
+    payload: unknown,
+    requestId: string | null,
+    status: number,
+  ): ApiError {
     if (isApiErrorData(payload)) {
-      return new ApiError(payload);
+      return new ApiError({ ...payload, status });
     }
 
     return new ApiError({
-      code: "API_CONTRACT_ERROR",
+      code: apiContractErrorCode,
       details: payload,
-      message: "Сервер вернул ошибку, не соответствующую контракту API.",
+      message: apiErrorContractErrorMessage,
       requestId,
+      status,
     });
   }
+}
+
+function matchesExpectedStatus(
+  status: number,
+  expectedStatus: ApiRequestOptions["expectedStatus"],
+): boolean {
+  if (expectedStatus === undefined) {
+    return true;
+  }
+
+  return typeof expectedStatus === "number"
+    ? status === expectedStatus
+    : expectedStatus.includes(status);
 }
 
 function isApiErrorData(value: unknown): value is ApiErrorData {
@@ -155,8 +208,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export const apiClientKey: InjectionKey<ApiClient> = Symbol("apiClient");
-
 export function createApiClient(
   apiBaseUrl: string,
   fetcher?: typeof fetch,
@@ -166,11 +217,10 @@ export function createApiClient(
   }
 
   if (apiBaseUrl.startsWith("/")) {
-    throw new Error("Базовый URL API для текущего origin должен быть равен /.");
+    throw new Error(invalidSameOriginApiBaseUrlMessage);
   }
 
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, "");
 
   return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v1`, fetcher });
 }
-import type { InjectionKey } from "vue";

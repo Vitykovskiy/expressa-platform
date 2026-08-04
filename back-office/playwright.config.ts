@@ -1,43 +1,92 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from "@playwright/test";
+import {
+  authFrontendUrl,
+  authBackendCommand,
+  authBackendReadyUrl,
+  authServerEnvironment,
+  backOfficeAppUrl,
+  backOfficeAppWebServerCommand,
+  backOfficeAuthWebServerCommand,
+  backOfficeDesktopBrowserDeviceName,
+  backOfficePlaywrightProjectName,
+  backOfficePlaywrightSnapshotPathTemplate,
+  backOfficePlaywrightTestDirectory,
+  backOfficePlaywrightTestMatch,
+  backOfficePlaywrightTrace,
+  backOfficeStorybookUrl,
+  backOfficeStorybookWebServerCommand,
+  backOfficeWebServerTimeout,
+  playwrightTargets,
+} from "./playwright.config.constants";
+import type { PlaywrightTarget } from "./playwright.config.types";
 
-const storybookTarget = process.env.PLAYWRIGHT_TARGET === 'storybook'
+const target = process.env.PLAYWRIGHT_TARGET as PlaywrightTarget | undefined;
+const storybookTarget = target === playwrightTargets.storybook;
+const authTarget = target === playwrightTargets.auth;
 
 export default defineConfig({
   workers: process.env.CI ? 2 : 4,
-  testDir: './tests/e2e',
+  testDir: backOfficePlaywrightTestDirectory,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
+  snapshotPathTemplate: backOfficePlaywrightSnapshotPathTemplate,
   use: {
-    baseURL: storybookTarget ? 'http://127.0.0.1:6006' : 'http://127.0.0.1:4173',
-    trace: 'on-first-retry',
+    baseURL: storybookTarget
+      ? backOfficeStorybookUrl
+      : authTarget
+        ? authFrontendUrl
+        : backOfficeAppUrl,
+    trace: backOfficePlaywrightTrace,
   },
   projects: [
     {
-      name: 'app-e2e',
-      testMatch: /app\.e2e\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      name: backOfficePlaywrightProjectName.app,
+      testMatch: backOfficePlaywrightTestMatch.app,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
     {
-      name: 'storybook-e2e',
-      testMatch: /navigation\.e2e\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      name: backOfficePlaywrightProjectName.auth,
+      testMatch: backOfficePlaywrightTestMatch.auth,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
     {
-      name: 'storybook-a11y',
-      testMatch: /a11y\.e2e\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      name: backOfficePlaywrightProjectName.storybook,
+      testMatch: backOfficePlaywrightTestMatch.storybook,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
     {
-      name: 'storybook-visual',
-      testMatch: /visual\.e2e\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      name: backOfficePlaywrightProjectName.storybookA11y,
+      testMatch: backOfficePlaywrightTestMatch.storybookA11y,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
+    },
+    {
+      name: backOfficePlaywrightProjectName.storybookVisual,
+      testMatch: backOfficePlaywrightTestMatch.storybookVisual,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
   ],
-  webServer: {
-    command: storybookTarget ? 'npm run storybook -- --ci --host 127.0.0.1' : 'npm run preview',
-    url: storybookTarget ? 'http://127.0.0.1:6006' : 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
-})
+  webServer: authTarget
+    ? [
+        {
+          command: backOfficeAuthWebServerCommand,
+          url: authFrontendUrl,
+          reuseExistingServer: false,
+          timeout: backOfficeWebServerTimeout,
+        },
+        {
+          command: authBackendCommand,
+          env: authServerEnvironment,
+          url: authBackendReadyUrl,
+          reuseExistingServer: false,
+          timeout: backOfficeWebServerTimeout,
+        },
+      ]
+    : {
+        command: storybookTarget
+          ? backOfficeStorybookWebServerCommand
+          : backOfficeAppWebServerCommand,
+        url: storybookTarget ? backOfficeStorybookUrl : backOfficeAppUrl,
+        reuseExistingServer: !process.env.CI,
+        timeout: backOfficeWebServerTimeout,
+      },
+});

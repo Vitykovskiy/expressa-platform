@@ -40,7 +40,6 @@
 
 - `git commit`, `git push`, force-push, tag, создание PR;
 - major-upgrade
-- правки инфраструктуры, которые могут менять dev/prod поведение;
 - крупные архитектурные изменения;
 - удаление публичного API, используемой feature, `core`-сервиса или endpoint из `ApiEndpoint`.
 

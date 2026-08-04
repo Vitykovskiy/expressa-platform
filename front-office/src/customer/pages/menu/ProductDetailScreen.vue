@@ -7,7 +7,9 @@
       <h1 id="product-detail-title" class="product-detail__title">
         {{ product.name }}
       </h1>
-      <p class="product-detail__total" aria-live="polite">{{ totalPrice }} ₽</p>
+      <p class="product-detail__total" aria-live="polite">
+        {{ formatMinorAmount(totalMinor) }}
+      </p>
     </header>
 
     <div class="product-detail__content">
@@ -15,43 +17,52 @@
         {{ product.description }}
       </p>
 
-      <fieldset v-if="product.sizes?.length" class="product-detail__options">
+      <fieldset v-if="product.type === 'DRINK'" class="product-detail__options">
         <legend class="product-detail__options-title">Размер</legend>
         <div class="product-detail__choices">
           <ui-btn
-            v-for="size in product.sizes"
-            :key="size.sizeCode"
+            v-for="variant in product.variants"
+            :key="variant.id"
             type="button"
             :class="{
               'product-detail__choice--selected':
-                selectedSize === size.sizeCode,
+                configuration.selectedVariantId === variant.id,
             }"
             class="product-detail__choice product-detail__choice--size"
-            :aria-pressed="selectedSize === size.sizeCode"
-            @click="selectedSize = size.sizeCode"
+            :aria-pressed="configuration.selectedVariantId === variant.id"
+            :disabled="!variant.isAvailable"
+            @click="selectVariant(variant.id)"
           >
-            {{ size.sizeCode }} · {{ size.price }} ₽
+            {{ variant.size }} · {{ formatMinorAmount(variant.priceMinor) }}
           </ui-btn>
         </div>
       </fieldset>
 
-      <fieldset v-if="product.addons?.length" class="product-detail__options">
-        <legend class="product-detail__options-title">Добавки</legend>
+      <fieldset
+        v-for="group in product.modifierGroups"
+        :key="group.id"
+        class="product-detail__options"
+      >
+        <legend class="product-detail__options-title">{{ group.name }}</legend>
         <div class="product-detail__choices">
           <ui-btn
-            v-for="addon in product.addons"
-            :key="addon.id"
+            v-for="option in group.options"
+            :key="option.id"
             type="button"
             :class="{
-              'product-detail__choice--selected': selectedAddonIds.includes(
-                addon.id,
+              'product-detail__choice--selected': isOptionSelected(
+                group.id,
+                option.id,
               ),
             }"
             class="product-detail__choice product-detail__choice--addon"
-            :aria-pressed="selectedAddonIds.includes(addon.id)"
-            @click="toggleAddon(addon.id)"
+            :aria-pressed="isOptionSelected(group.id, option.id)"
+            :disabled="
+              isOptionDisabled(group.id, option.id, option.isAvailable)
+            "
+            @click="toggleOption(group.id, option.id)"
           >
-            {{ addon.name }} · {{ addon.priceRub }} ₽
+            {{ option.name }} · {{ formatMinorAmount(option.priceDeltaMinor) }}
           </ui-btn>
         </div>
       </fieldset>
@@ -62,23 +73,29 @@
         <ui-icon-btn
           type="button"
           aria-label="Уменьшить количество"
-          @click="decreaseQuantity"
+          :disabled="configuration.quantity === 1"
+          @click="setQuantity(configuration.quantity - 1)"
         >
           <Minus :size="16" :stroke-width="3" aria-hidden="true" />
         </ui-icon-btn>
-        <output aria-live="polite">{{ quantity }}</output>
+        <output aria-live="polite">{{ configuration.quantity }}</output>
         <ui-icon-btn
           type="button"
           aria-label="Увеличить количество"
-          @click="quantity += 1"
+          @click="setQuantity(configuration.quantity + 1)"
         >
           <Plus :size="16" :stroke-width="3" aria-hidden="true" />
         </ui-icon-btn>
       </div>
-      <ui-btn type="button" class="product-detail__submit" @click="submit">
+      <ui-btn
+        type="button"
+        class="product-detail__submit"
+        :disabled="!isValid"
+        @click="submit"
+      >
         <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
         <span class="product-detail__submit-label"
-          >{{ actionLabel }} · {{ totalPrice }} ₽</span
+          >{{ actionLabel }} · {{ formatMinorAmount(totalMinor) }}</span
         >
       </ui-btn>
     </footer>
@@ -86,11 +103,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Minus, Plus, ShoppingCart } from "lucide-vue-next";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
 import UiIconBtn from "../../shared/ui/icon-btn/UiIconBtn.vue";
-import type { Addon } from "../../shared/model/customer.types";
+import { formatMinorAmount } from "../../shared/model/money";
+import {
+  createProductConfiguration,
+  getProductConfigurationTotals,
+  isProductConfigurationValid,
+  selectProductConfigurationVariant,
+  setProductConfigurationQuantity,
+  toCartItemDraft,
+  toggleProductConfigurationOption,
+} from "./product-configuration";
 import type {
   ProductDetailScreenEmits,
   ProductDetailScreenProps,
@@ -100,56 +126,90 @@ const props = defineProps<ProductDetailScreenProps>();
 
 const emit = defineEmits<ProductDetailScreenEmits>();
 
-const selectedSize = ref(
-  props.cartItem?.size ?? props.product.sizes?.[0]?.sizeCode,
+const configuration = ref(createInitialConfiguration());
+const totals = computed(() =>
+  getProductConfigurationTotals(configuration.value),
 );
-const selectedAddonIds = ref(props.cartItem?.addons.map(({ id }) => id) ?? []);
-const quantity = ref(props.cartItem?.quantity ?? 1);
-
-const selectedAddons = computed<Addon[]>(
-  () =>
-    props.product.addons?.filter(({ id }) =>
-      selectedAddonIds.value.includes(id),
-    ) ?? [],
-);
-const basePrice = computed(
-  () =>
-    props.product.sizes?.find(({ sizeCode }) => sizeCode === selectedSize.value)
-      ?.price ?? props.product.basePrice,
-);
-const totalPrice = computed(
-  () =>
-    (basePrice.value +
-      selectedAddons.value.reduce((sum, addon) => sum + addon.priceRub, 0)) *
-    quantity.value,
+const totalMinor = computed(() => totals.value?.lineTotalMinor ?? 0);
+const isValid = computed(() =>
+  isProductConfigurationValid(configuration.value),
 );
 const actionLabel = computed(() => (props.cartItem ? "Изменить" : "Добавить"));
 
-function toggleAddon(addonId: string): void {
-  selectedAddonIds.value = selectedAddonIds.value.includes(addonId)
-    ? selectedAddonIds.value.filter((id) => id !== addonId)
-    : [...selectedAddonIds.value, addonId];
-}
+watch(
+  () => props.product,
+  (product) => {
+    configuration.value = createInitialConfiguration(product);
+  },
+);
 
-function decreaseQuantity(): void {
-  quantity.value = Math.max(1, quantity.value - 1);
+function selectVariant(variantId: string): void {
+  configuration.value = selectProductConfigurationVariant(
+    configuration.value,
+    variantId,
+  );
+}
+function setQuantity(quantity: number): void {
+  configuration.value = setProductConfigurationQuantity(
+    configuration.value,
+    quantity,
+  );
+}
+function toggleOption(groupId: string, optionId: string): void {
+  configuration.value = toggleProductConfigurationOption(
+    configuration.value,
+    groupId,
+    optionId,
+  );
+}
+function isOptionSelected(groupId: string, optionId: string): boolean {
+  return (
+    configuration.value.selectedModifierGroups
+      .find((group) => group.groupId === groupId)
+      ?.optionIds.includes(optionId) ?? false
+  );
+}
+function isOptionDisabled(
+  groupId: string,
+  optionId: string,
+  isAvailable: boolean,
+): boolean {
+  if (!isAvailable) return true;
+  const group = configuration.value.product.modifierGroups.find(
+    (candidate) => candidate.id === groupId,
+  );
+  const selected =
+    configuration.value.selectedModifierGroups.find(
+      (candidate) => candidate.groupId === groupId,
+    )?.optionIds ?? [];
+  if (group === undefined) return true;
+  return (
+    !selected.includes(optionId) &&
+    group.selectionType === "multiple" &&
+    selected.length >= group.maxSelect
+  );
 }
 
 function submit(): void {
-  emit(
-    "submit",
-    {
-      productId: props.product.id,
-      productName: props.product.name,
-      type: props.product.type,
-      size: selectedSize.value,
-      sizePrice: basePrice.value,
-      addons: selectedAddons.value,
-      quantity: quantity.value,
-      lineTotalRub: totalPrice.value,
-    },
-    props.cartItem?.id,
-  );
+  const item = toCartItemDraft(configuration.value);
+  if (item !== null) emit("submit", item, props.cartItem?.id);
+}
+function createInitialConfiguration(product = props.product) {
+  const initial = createProductConfiguration(product);
+  const cartItem = props.cartItem;
+  if (!cartItem || cartItem.productId !== product.id) return initial;
+  return {
+    ...initial,
+    quantity: cartItem.quantity,
+    selectedVariantId:
+      cartItem.type === "DRINK" ? cartItem.selectedVariant.id : null,
+    selectedModifierGroups: initial.selectedModifierGroups.map((group) => ({
+      ...group,
+      optionIds: cartItem.selectedModifierOptions
+        .filter((option) => option.groupId === group.groupId)
+        .map((option) => option.id),
+    })),
+  };
 }
 </script>
 

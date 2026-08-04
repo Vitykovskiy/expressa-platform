@@ -1,36 +1,50 @@
 import { createRouter, createWebHistory } from "vue-router";
-import type { RouteRecordRaw } from "vue-router";
 
-import AvailabilityPage from "../pages/AvailabilityPage.vue";
-import LoginPage from "../pages/LoginPage.vue";
-import MenuPage from "../pages/MenuPage.vue";
-import QueuePage from "../pages/QueuePage.vue";
+import { createNavigationItems } from "./navigation";
+import { backOfficeRoutes, routePaths } from "./router.constants";
+import { useSessionStore } from "./session.store";
+import type { BackOfficeRole } from "./navigation.types";
+import type { CreateBackOfficeRouterOptions } from "./router.types";
 
-declare module "vue-router" {
-  interface RouteMeta {
-    title: string;
-  }
-}
+export { backOfficeRoutes as routes } from "./router.constants";
 
-export const routes: readonly RouteRecordRaw[] = [
-  { path: "/", redirect: "/queue", meta: { title: "Expressa back-office" } },
-  { path: "/login", component: LoginPage, meta: { title: "Вход" } },
-  { path: "/queue", component: QueuePage, meta: { title: "Очередь" } },
-  {
-    path: "/availability",
-    component: AvailabilityPage,
-    meta: { title: "Доступность" },
-  },
-  { path: "/menu", component: MenuPage, meta: { title: "Меню" } },
-];
-
-export function createBackOfficeRouter() {
+export function createBackOfficeRouter(
+  options: CreateBackOfficeRouterOptions = {},
+) {
   const router = createRouter({
-    history: createWebHistory(),
-    routes: [...routes],
+    history: options.history ?? createWebHistory(),
+    routes: [...backOfficeRoutes],
+  });
+
+  router.beforeEach(async (to) => {
+    const sessionStore = useSessionStore();
+
+    if (sessionStore.status === "unknown") {
+      await sessionStore.restore();
+    }
+
+    const defaultPath = getDefaultPath(sessionStore.currentUser?.role ?? null);
+
+    if (sessionStore.status === "authenticated") {
+      if (to.path === routePaths.login) return defaultPath;
+      if (
+        to.meta.requiresStaff &&
+        !to.meta.allowedRoles?.includes(sessionStore.currentUser!.role)
+      ) {
+        return defaultPath;
+      }
+      return true;
+    }
+
+    if (to.meta.requiresStaff) return routePaths.login;
+    return true;
   });
 
   return router;
 }
 
 export const router = createBackOfficeRouter();
+
+function getDefaultPath(role: BackOfficeRole | null): string {
+  return createNavigationItems(role)[0]?.path ?? routePaths.login;
+}
