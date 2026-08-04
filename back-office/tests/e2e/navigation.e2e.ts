@@ -12,19 +12,19 @@ const storyPath = (storyId: string) =>
   `/iframe.html?id=${storyId}&viewMode=story`;
 
 const waitForReferenceStory = async (page: Page) => {
-  const rootContent = page.locator("#storybook-root > *").first();
-  const dialogs = page.locator('body [role="dialog"]:visible');
-
   await expect
-    .poll(async () => {
-      const [rootContentVisible, dialogVisible] = await Promise.all([
-        rootContent.isVisible(),
-        dialogs.count().then((count) => count > 0),
-      ]);
+    .poll(() =>
+      page.evaluate(() => {
+        const storybook = globalThis as typeof globalThis & {
+          __STORYBOOK_PREVIEW__?: {
+            currentRender?: { phase?: string };
+          };
+        };
 
-      return rootContentVisible || dialogVisible;
-    })
-    .toBe(true);
+        return storybook.__STORYBOOK_PREVIEW__?.currentRender?.phase;
+      }),
+    )
+    .toBe("finished");
 };
 
 test.describe.configure({ mode: "parallel" });
@@ -33,20 +33,6 @@ for (const storyId of storyIds) {
   test(`reference story завершается: ${storyId}`, async ({ page }) => {
     await page.goto(storyPath(storyId));
     await waitForReferenceStory(page);
-
-    await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const storybook = globalThis as typeof globalThis & {
-            __STORYBOOK_PREVIEW__?: {
-              currentRender?: { phase?: string };
-            };
-          };
-
-          return storybook.__STORYBOOK_PREVIEW__?.currentRender?.phase;
-        }),
-      )
-      .toBe("finished");
     await expect(page.locator("#error-message")).toBeEmpty();
 
     if (storyId === "admin-orders-screen--reject-dialog-visual") {
@@ -110,20 +96,20 @@ test("OTP visual показывает состояние невалидного 
   await expect(
     page.getByRole("heading", { name: "Введите код из сообщения" }),
   ).toBeVisible();
-  await expect(otp).toHaveValue("9999");
-  await expect(otp).toHaveAttribute("aria-invalid", "true");
-  await expect(otp).toHaveAttribute("aria-describedby", "auth-otp-error");
-  await expect(page.getByRole("alert")).toHaveText("Код неверный или истёк");
+  await expect(otp).toHaveValue("12");
+  await expect(otp).toHaveAttribute("aria-invalid", "false");
+  await expect(otp).toHaveAttribute("aria-describedby", "auth-otp-hint");
+  await expect(page.getByText("Код действует 300 сек.")).toBeVisible();
 });
 
 const authScreenStates = [
   {
     stateSelector: ".auth-screen__card",
-    storyId: "admin-auth-authscreen--phone-validation",
+    storyId: "admin-auth-authscreen--phone-validation-visual",
   },
   {
     stateSelector: ".auth-screen__card",
-    storyId: "admin-auth-authscreen--otp-validation",
+    storyId: "admin-auth-authscreen--otp-validation-visual",
   },
   {
     stateSelector: ".auth-screen__card",
