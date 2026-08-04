@@ -26,6 +26,15 @@ set -a
 source "$runtime_file"
 set +a
 [[ "${POSTGRES_PASSWORD:-}" ]] || fail 'POSTGRES_PASSWORD is required'
+[[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'AUTH_ACCESS_TOKEN_SECRET is required'
+[[ "${AUTH_OTP_PEPPER:-}" ]] || fail 'AUTH_OTP_PEPPER is required'
+[[ "${CORS_ORIGINS:-}" ]] || fail 'CORS_ORIGINS is required'
+if [[ "$environment" == development ]]; then
+  [[ "${AUTH_DEVELOPMENT_OTP:-}" =~ ^[0-9]{6}$ ]] || fail 'AUTH_DEVELOPMENT_OTP must contain six digits'
+else
+  [[ "${SMS_RU_API_ID:-}" ]] || fail 'SMS_RU_API_ID is required'
+  [[ "${SMS_RU_SENDER:-}" ]] || fail 'SMS_RU_SENDER is required'
+fi
 [[ "${BACKEND_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACKEND_IMAGE must be an immutable digest'
 [[ "${FRONT_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'FRONT_IMAGE must be an immutable digest'
 [[ "${BACK_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACK_IMAGE must be an immutable digest'

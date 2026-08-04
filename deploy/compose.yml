@@ -36,6 +36,12 @@ services:
       NODE_ENV: "${DEPLOY_ENV:?DEPLOY_ENV is required}"
       PORT: '3000'
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
+      AUTH_ACCESS_TOKEN_SECRET: "${AUTH_ACCESS_TOKEN_SECRET:?AUTH_ACCESS_TOKEN_SECRET is required}"
+      AUTH_OTP_PEPPER: "${AUTH_OTP_PEPPER:?AUTH_OTP_PEPPER is required}"
+      AUTH_DEVELOPMENT_OTP: "${AUTH_DEVELOPMENT_OTP:-}"
+      CORS_ORIGINS: "${CORS_ORIGINS:?CORS_ORIGINS is required}"
+      SMS_RU_API_ID: "${SMS_RU_API_ID:-}"
+      SMS_RU_SENDER: "${SMS_RU_SENDER:-}"
     depends_on:
       postgres:
         condition: service_healthy
