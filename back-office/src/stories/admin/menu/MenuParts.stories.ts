@@ -114,6 +114,10 @@ export const ExpandedDrinkSML: Story = {
     );
     await expect(args.onEdit).toHaveBeenCalledWith(products[0]);
     await userEvent.click(
+      canvas.getByRole("button", { name: "Переместить категорию Кофе вверх" }),
+    );
+    await expect(args.onMoveUp).toHaveBeenCalledWith(category);
+    await userEvent.click(
       canvas.getByRole("button", { name: "Переместить категорию Кофе вниз" }),
     );
     await expect(args.onMoveDown).toHaveBeenCalledWith(category);
@@ -136,11 +140,33 @@ export const LongContent: Story = {
       },
     ],
     expanded: true,
+    disabled: true,
   },
   play: async ({ canvasElement }) => {
     const categoryGroup = canvasElement.querySelector(".menu-category");
 
     if (!categoryGroup) throw new Error("Menu category is not rendered");
+    const categoryControls = [
+      "Переместить категорию Очень длинное название категории для узкого экрана и проверки переноса вверх",
+      "Переместить категорию Очень длинное название категории для узкого экрана и проверки переноса вниз",
+      "Редактировать категорию Очень длинное название категории для узкого экрана и проверки переноса",
+    ].map((name) => canvasElement.querySelector(`[aria-label="${name}"]`));
+    const controls = [
+      categoryGroup.querySelector(".menu-category__toggle"),
+      ...categoryControls,
+    ];
+
+    controls.forEach((control) => {
+      if (!control) throw new Error("Menu category control is not rendered");
+      const bounds = control.getBoundingClientRect();
+      const categoryBounds = categoryGroup.getBoundingClientRect();
+
+      expect(bounds.width).toBeGreaterThanOrEqual(44);
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+      expect(bounds.left).toBeGreaterThanOrEqual(categoryBounds.left);
+      expect(bounds.right).toBeLessThanOrEqual(categoryBounds.right);
+      expect(control).toBeDisabled();
+    });
     await expect(categoryGroup.scrollWidth).toBeLessThanOrEqual(
       categoryGroup.clientWidth,
     );

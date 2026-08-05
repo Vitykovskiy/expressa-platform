@@ -104,8 +104,10 @@ function itemKey(item: OrderPageItem): string {
 }
 .order-page__items li {
   display: grid;
+  min-width: 0;
   gap: var(--customer-space-3);
   padding: var(--customer-space-7);
+  color: var(--customer-text-on-surface);
   background: var(--customer-surface);
   border-radius: var(--customer-radius);
 }
@@ -115,8 +117,16 @@ function itemKey(item: OrderPageItem): string {
   gap: var(--customer-space-5);
   justify-content: space-between;
 }
+.order-page__item-heading > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.order-page__item-heading > span {
+  flex: 0 0 auto;
+}
 .order-page__configuration {
   color: var(--customer-text-secondary-on-surface);
+  overflow-wrap: anywhere;
 }
 .order-page__line-total {
   justify-self: end;

@@ -211,7 +211,8 @@ watch(() => [props.assignments, props.category?.id], resetDrafts, {
 .category-modifier-assignments__name {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 .category-modifier-assignments__error {
   margin: var(--expressa-space-sm) 0 0;
@@ -227,5 +228,11 @@ watch(() => [props.assignments, props.category?.id], resetDrafts, {
   flex-wrap: wrap;
   gap: var(--expressa-space-md);
   margin-top: var(--expressa-space-md);
+}
+@media (max-width: 40rem) {
+  .category-modifier-assignments__row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
 }
 </style>

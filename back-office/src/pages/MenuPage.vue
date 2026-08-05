@@ -35,7 +35,7 @@
             :disabled="isBusy"
             type="button"
             variant="secondary"
-            @click="selectedModifierGroup = null"
+            @click="openModifierGroupEditor(null)"
             >Новая группа добавок</AdminButton
           >
         </div>
@@ -77,7 +77,7 @@
               :disabled="isBusy"
               type="button"
               variant="ghost"
-              @click="selectedModifierGroup = group"
+              @click="openModifierGroupEditor(group)"
               >{{ group.name }}</AdminButton
             >
           </div>
@@ -94,14 +94,6 @@
               >{{ category.name }}</AdminButton
             >
           </div>
-          <ModifierGroupEditor
-            :disabled="catalogStore.status === 'loading'"
-            :field-errors="modifierFieldErrors"
-            :group="selectedModifierGroup"
-            @archive="archiveModifierGroup"
-            @cancel="selectedModifierGroup = null"
-            @save="saveModifierGroup"
-          />
           <CategoryModifierAssignments
             :assignments="catalogStore.categoryModifierGroupAssignments"
             :categories="orderedCategories"
@@ -148,6 +140,24 @@
       @delete="archiveProduct"
       @save="updateProduct"
     />
+    <AdminDialog
+      :model-value="modifierGroupEditorOpen"
+      max-width="800"
+      @update:model-value="updateModifierGroupEditorOpen"
+    >
+      <v-card class="menu-page__modifier-dialog">
+        <v-card-text class="menu-page__modifier-dialog-content">
+          <ModifierGroupEditor
+            :disabled="catalogStore.status === 'loading'"
+            :field-errors="modifierFieldErrors"
+            :group="selectedModifierGroup"
+            @archive="archiveModifierGroup"
+            @cancel="closeModifierGroupEditor"
+            @save="saveModifierGroup"
+          />
+        </v-card-text>
+      </v-card>
+    </AdminDialog>
   </PageShell>
 </template>
 
@@ -165,6 +175,7 @@ import EditProductDialog from "../admin/pages/menu/EditProductDialog.vue";
 import MenuCategoryGroup from "../admin/pages/menu/MenuCategoryGroup.vue";
 import ModifierGroupEditor from "../admin/pages/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "../admin/pages/menu/ModifierGroupEditor.types";
+import { useDialogFocusLifecycle } from "../admin/pages/menu/composables/useDialogFocusLifecycle";
 import { useCatalogStore } from "../admin/pages/menu/catalog.store";
 import type {
   Category,
@@ -172,6 +183,7 @@ import type {
   Product,
 } from "../admin/pages/menu/catalog.types";
 import AdminButton from "../admin/shared/ui/admin-button/AdminButton.vue";
+import AdminDialog from "../admin/shared/ui/admin-dialog/AdminDialog.vue";
 import PageShell from "./PageShell.vue";
 
 const sessionStore = useSessionStore();
@@ -180,12 +192,14 @@ const addCategoryOpen = shallowRef(false);
 const addProductOpen = shallowRef(false);
 const editCategoryOpen = shallowRef(false);
 const editProductOpen = shallowRef(false);
+const modifierGroupEditorOpen = shallowRef(false);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const selectedCategory = shallowRef<Category | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
 const selectedProduct = shallowRef<Product | null>(null);
 const hasConfirmedCatalog = shallowRef(catalogStore.status === "ready");
 const isBusy = computed(() => catalogStore.status === "loading");
+const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 
 const orderedCategories = computed(() =>
   [...catalogStore.categories].sort(bySortOrder),
@@ -205,6 +219,11 @@ watch(
     if (status === "ready") hasConfirmedCatalog.value = true;
   },
 );
+
+watch(modifierGroupEditorOpen, (isOpen, wasOpen) => {
+  if (isOpen && !wasOpen) captureReturnFocus();
+  if (!isOpen && wasOpen) restoreFocus();
+});
 
 function accessToken(): string | null {
   return sessionStore.accessToken;
@@ -257,6 +276,20 @@ function openCategoryEditor(category: Category): void {
 function openProductEditor(product: Product): void {
   selectedProduct.value = product;
   editProductOpen.value = true;
+}
+
+function openModifierGroupEditor(group: ModifierGroup | null): void {
+  selectedModifierGroup.value = group;
+  modifierGroupEditorOpen.value = true;
+}
+
+function closeModifierGroupEditor(): void {
+  selectedModifierGroup.value = null;
+  modifierGroupEditorOpen.value = false;
+}
+
+function updateModifierGroupEditorOpen(isOpen: boolean): void {
+  if (!isOpen) closeModifierGroupEditor();
 }
 
 async function createCategory(data: CategoryFormData): Promise<void> {
@@ -380,6 +413,7 @@ async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {
   const authorizationValue = accessToken();
   if (authorizationValue === null || catalogStore.status === "loading") return;
   await catalogStore.saveModifierGroup(authorizationValue, data);
+  if (catalogStore.lastCommandSucceeded) closeModifierGroupEditor();
 }
 
 async function saveAssignments(
@@ -408,7 +442,7 @@ async function archiveModifierGroup(groupId: string): Promise<void> {
   const authorizationValue = accessToken();
   if (authorizationValue === null || catalogStore.status === "loading") return;
   await catalogStore.archiveModifierGroup(authorizationValue, groupId);
-  if (catalogStore.lastCommandSucceeded) selectedModifierGroup.value = null;
+  if (catalogStore.lastCommandSucceeded) closeModifierGroupEditor();
 }
 
 function bySortOrder(
@@ -459,6 +493,14 @@ function byName(left: ModifierGroup, right: ModifierGroup): number {
 .menu-page__group-button {
   justify-content: flex-start;
   min-height: var(--expressa-size-control-min-height);
+}
+.menu-page__modifier-dialog {
+  max-block-size: calc(100dvh - var(--expressa-space-xl));
+  min-width: 0;
+  overflow-y: auto;
+}
+.menu-page__modifier-dialog-content {
+  min-width: 0;
 }
 @media (max-width: 767px) {
   .menu-page__editor-grid {

@@ -5,6 +5,7 @@
         class="menu-category__toggle"
         type="button"
         variant="ghost"
+        :disabled="props.disabled"
         :aria-expanded="props.expanded"
         @click="emit('toggle', props.category)"
       >
@@ -46,7 +47,7 @@
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
       >
-        Редактировать
+        <span class="menu-category__edit-label">Редактировать</span>
       </AdminButton>
     </header>
 
@@ -166,15 +167,29 @@ const countLabel = computed(() => {
 
 @media (max-width: 767px) {
   .menu-category__header {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(3, 44px);
   }
 
   .menu-category__toggle {
-    flex-basis: calc(100% - 88px);
+    width: 100%;
   }
 
-  .menu-category__edit {
-    width: 100%;
+  .menu-category__edit,
+  .menu-category__move {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .menu-category__edit-label {
+    display: none;
+  }
+
+  .menu-category__edit::after {
+    content: "✎";
+    font-size: var(--expressa-font-size-action);
   }
 }
 </style>

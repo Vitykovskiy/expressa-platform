@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { mount, type DOMWrapper, type VueWrapper } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const session = { accessToken: "access-token" };
 
@@ -25,6 +25,7 @@ const catalog = {
   modifierGroups: [],
   categoryModifierGroupAssignments: [],
 };
+const mountedWrappers: VueWrapper[] = [];
 
 describe("MenuPage", () => {
   beforeEach(() => {
@@ -50,6 +51,10 @@ describe("MenuPage", () => {
     });
   });
 
+  afterEach(() => {
+    for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount();
+  });
+
   it("рендерит готовый каталог до монтирования страницы", () => {
     const store = useCatalogStore();
     store.$patch({ ...catalog, status: "ready" });
@@ -58,6 +63,91 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     expect(wrapper.text()).toContain("Кофе");
+    expect(wrapper.find(".modifier-group-editor").exists()).toBe(false);
+  });
+
+  it("открывает редактор для новой и существующей группы", async () => {
+    const store = useCatalogStore();
+    store.$patch({
+      ...catalog,
+      modifierGroups: [modifierGroup()],
+      status: "ready",
+    });
+    vi.spyOn(store, "load").mockResolvedValue();
+    const wrapper = mountPage();
+
+    await clickButton(wrapper, "Новая группа добавок");
+    expect(
+      wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
+    ).toBeNull();
+
+    await clickButton(wrapper, "Отмена");
+    await clickButton(wrapper, "Молоко");
+    expect(
+      wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
+    ).toMatchObject({
+      id: "group-milk",
+    });
+  });
+
+  it("закрывает редактор по отмене и возвращает фокус кнопке открытия", async () => {
+    const store = useCatalogStore();
+    store.$patch({ ...catalog, status: "ready" });
+    vi.spyOn(store, "load").mockResolvedValue();
+    const wrapper = mountPage();
+    const trigger = buttonByText(wrapper, "Новая группа добавок");
+    const focus = vi.spyOn(trigger.element, "focus");
+
+    trigger.element.focus();
+    await trigger.trigger("click");
+    await clickButton(wrapper, "Отмена");
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find(".modifier-group-editor").exists()).toBe(false);
+    expect(focus).toHaveBeenCalled();
+  });
+
+  it("сохраняет группу и закрывает редактор только после успешного ответа", async () => {
+    const store = useCatalogStore();
+    store.$patch({ ...catalog, status: "ready" });
+    vi.spyOn(store, "load").mockResolvedValue();
+    const saveGroup = vi
+      .spyOn(store, "saveModifierGroup")
+      .mockImplementation(async () => {
+        store.lastCommandSucceeded = true;
+      });
+    const wrapper = mountPage();
+
+    await clickButton(wrapper, "Новая группа добавок");
+    await wrapper
+      .get('.modifier-group-editor input[type="text"]')
+      .setValue("Сиропы");
+    await clickButton(wrapper, "Сохранить группу");
+
+    expect(saveGroup).toHaveBeenCalledWith(
+      "access-token",
+      expect.objectContaining({ name: "Сиропы" }),
+    );
+    expect(wrapper.find(".modifier-group-editor").exists()).toBe(false);
+  });
+
+  it("оставляет редактор и черновик открытыми при серверной ошибке", async () => {
+    const store = useCatalogStore();
+    store.$patch({ ...catalog, status: "ready" });
+    vi.spyOn(store, "load").mockResolvedValue();
+    vi.spyOn(store, "saveModifierGroup").mockImplementation(async () => {
+      store.fieldErrors = { name: "Группа уже существует" };
+    });
+    const wrapper = mountPage();
+
+    await clickButton(wrapper, "Новая группа добавок");
+    const input = wrapper.get('.modifier-group-editor input[type="text"]');
+    await input.setValue("Сиропы");
+    await clickButton(wrapper, "Сохранить группу");
+
+    expect(wrapper.find(".modifier-group-editor").exists()).toBe(true);
+    expect((input.element as HTMLInputElement).value).toBe("Сиропы");
   });
 
   it("повторяет загрузку после ошибки по нажатию кнопки", async () => {
@@ -387,7 +477,7 @@ describe("MenuPage", () => {
     );
   });
 
-  it("архивирует группу добавок только после подтверждения", async () => {
+  it("архивирует группу добавок только после подтверждения и закрывает редактор", async () => {
     const store = useCatalogStore();
     store.$patch({
       modifierGroups: [
@@ -406,7 +496,9 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const archiveGroup = vi
       .spyOn(store, "archiveModifierGroup")
-      .mockResolvedValue();
+      .mockImplementation(async () => {
+        store.lastCommandSucceeded = true;
+      });
     const wrapper = mountPage();
 
     await clickButton(wrapper, "Молоко");
@@ -417,8 +509,10 @@ describe("MenuPage", () => {
       wrapper.find(".confirm-dialog").getComponent({ name: "AdminButton" }),
       "Архивировать",
     );
+    await wrapper.vm.$nextTick();
 
     expect(archiveGroup).toHaveBeenCalledWith("access-token", "group-milk");
+    expect(wrapper.find(".modifier-group-editor").exists()).toBe(false);
   });
 
   it("удаляет вариант после подтверждения и сохраняет группу без него", async () => {
@@ -527,9 +621,13 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await clickButton(wrapper, "Добавить товар");
+    await wrapper
+      .get('button[aria-label="Редактировать категорию Кофе"]')
+      .trigger("click");
     await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper.get(".menu-product-row").trigger("click");
-    await clickButton(wrapper, "Редактировать");
+    await wrapper
+      .get('button[aria-label="Редактировать товар Эспрессо"]')
+      .trigger("click");
     store.status = "loading";
     await wrapper.vm.$nextTick();
 
@@ -552,7 +650,8 @@ describe("MenuPage", () => {
 });
 
 function mountPage(): VueWrapper {
-  return mount(MenuPage, {
+  const wrapper = mount(MenuPage, {
+    attachTo: document.body,
     global: {
       stubs: {
         PageShell: { template: "<div><slot /></div>" },
@@ -560,12 +659,17 @@ function mountPage(): VueWrapper {
         VCardActions: { template: "<div><slot /></div>" },
         VCardText: { template: "<div><slot /></div>" },
         VCardTitle: { template: "<div><slot /></div>" },
-        VDialog: { template: "<div><slot /></div>" },
+        VDialog: {
+          props: ["modelValue"],
+          template: '<div v-if="modelValue"><slot /></div>',
+        },
         VSwitch: { template: "<div />" },
         VTextField: { template: "<div />" },
       },
     },
   });
+  mountedWrappers.push(wrapper);
+  return wrapper;
 }
 
 const productFormData: ProductFormData = {
@@ -597,6 +701,18 @@ function productWithSortOrder(id: string, sortOrder: number) {
     isActive: true,
     isAvailable: true,
     variants: [],
+  };
+}
+
+function modifierGroup() {
+  return {
+    id: "group-milk",
+    name: "Молоко",
+    selectionType: "single" as const,
+    minSelect: 0,
+    maxSelect: 1,
+    isActive: true,
+    options: [],
   };
 }
 

@@ -1,5 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fireEvent, fn, userEvent, within } from "storybook/test";
+import {
+  expect,
+  fireEvent,
+  fn,
+  userEvent,
+  waitFor,
+  within,
+} from "storybook/test";
+import { shallowRef } from "vue";
+import { VCard, VCardText, VDialog } from "vuetify/components";
 
 import type {
   Category,
@@ -9,6 +18,7 @@ import type {
 import type { ModifierGroupFormData } from "../../../admin/pages/menu/ModifierGroupEditor.types";
 import CategoryModifierAssignments from "../../../admin/pages/menu/CategoryModifierAssignments.vue";
 import ModifierGroupEditor from "../../../admin/pages/menu/ModifierGroupEditor.vue";
+import AdminButton from "../../../admin/shared/ui/admin-button/AdminButton.vue";
 
 const category: Category = {
   id: "coffee",
@@ -35,6 +45,11 @@ const group: ModifierGroup = {
       isAvailable: true,
     },
   ],
+};
+const longNameGroup: ModifierGroup = {
+  ...group,
+  id: "seasonal-syrups",
+  name: "Сезонные сиропы для горячих и холодных напитков",
 };
 const assignments: readonly CategoryModifierGroupAssignment[] = [
   { categoryId: "coffee", modifierGroupId: "milk", sortOrder: 0 },
@@ -81,23 +96,92 @@ type AssignmentStory = StoryObj<{
 export const ModifierDefaults: GroupStory = {
   args: { onSave: fn(), onCancel: fn() },
   render: (args) => ({
-    components: { ModifierGroupEditor },
-    setup: () => ({ args, group: orderedGroup }),
-    template: `<ModifierGroupEditor :group="group" @save="args.onSave" @cancel="args.onCancel" />`,
+    components: {
+      AdminButton,
+      ModifierGroupEditor,
+      VCard,
+      VCardText,
+      VDialog,
+    },
+    setup: () => {
+      const open = shallowRef(false);
+
+      function close() {
+        open.value = false;
+        args.onCancel();
+      }
+
+      function save(data: ModifierGroupFormData) {
+        args.onSave(data);
+        open.value = false;
+      }
+
+      return { close, group: orderedGroup, open, save };
+    },
+    template: `
+      <AdminButton type="button" @click="open = true">Открыть группу добавок</AdminButton>
+      <v-dialog v-model="open" max-width="800">
+        <v-card class="modifier-dialog-story">
+          <v-card-text class="modifier-dialog-story__content">
+            <ModifierGroupEditor :group="group" @save="save" @cancel="close" />
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    `,
   }),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const document = canvasElement.ownerDocument;
+    const body = within(document.body);
+    const opener = canvas.getByRole("button", {
+      name: "Открыть группу добавок",
+    });
+    const waitForOpenDialog = async () => {
+      await waitFor(() => {
+        const overlay = document.querySelector(".v-overlay--active");
+        expect(overlay).not.toBeNull();
+        expect(getComputedStyle(overlay!).opacity).toBe("1");
+        expect(
+          body.getByRole("button", { name: "Сохранить группу" }),
+        ).toBeVisible();
+      });
+    };
+    const waitForClosedDialog = async () => {
+      await waitFor(() => {
+        expect(document.querySelector(".v-overlay--active")).toBeNull();
+        expect(body.queryByRole("dialog")).not.toBeInTheDocument();
+      });
+      await waitFor(() => expect(opener).toHaveFocus());
+    };
+
+    opener.focus();
+    await userEvent.click(opener);
+    await waitForOpenDialog();
+    let dialog = within(body.getByRole("dialog"));
+    await fireEvent.click(dialog.getByRole("button", { name: "Отмена" }));
+    await expect(args.onCancel).toHaveBeenCalledTimes(1);
+    await waitForClosedDialog();
+
+    await userEvent.click(opener);
+    await waitForOpenDialog();
+    dialog = within(body.getByRole("dialog"));
     await expect(
-      canvas.getByRole("button", { name: "Переместить Обычное молоко вверх" }),
+      dialog.getByRole("button", {
+        name: "Переместить Обычное молоко вверх",
+      }),
     ).toBeDisabled();
     await expect(
-      canvas.getByRole("button", { name: "Переместить Кокосовое молоко вниз" }),
+      dialog.getByRole("button", {
+        name: "Переместить Кокосовое молоко вниз",
+      }),
     ).toBeDisabled();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Переместить Овсяное молоко вверх" }),
+    await fireEvent.click(
+      dialog.getByRole("button", {
+        name: "Переместить Овсяное молоко вверх",
+      }),
     );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Сохранить группу" }),
+    await fireEvent.click(
+      dialog.getByRole("button", { name: "Сохранить группу" }),
     );
     await expect(args.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -108,6 +192,16 @@ export const ModifierDefaults: GroupStory = {
         ],
       }),
     );
+    await waitForClosedDialog();
+
+    await userEvent.click(opener);
+    await waitForOpenDialog();
+    const openerRect = opener.getBoundingClientRect();
+    const hitTarget = document.elementFromPoint(
+      openerRect.left + openerRect.width / 2,
+      openerRect.top + openerRect.height / 2,
+    );
+    expect(opener.contains(hitTarget)).toBe(false);
   },
 };
 export const ModifierDefaultsInvalid: GroupStory = {
@@ -194,18 +288,43 @@ export const CategoryAssignment: AssignmentStory = {
   args: { onSave: fn(), onCancel: fn() },
   render: (args) => ({
     components: { CategoryModifierAssignments },
-    setup: () => ({ args, assignments, category, groups: [group] }),
+    setup: () => ({
+      args,
+      assignments: [
+        {
+          categoryId: category.id,
+          modifierGroupId: longNameGroup.id,
+          sortOrder: 0,
+        },
+      ],
+      category,
+      groups: [longNameGroup],
+    }),
     template: `<CategoryModifierAssignments :category="category" :categories="[category]" :groups="groups" :assignments="assignments" @save="args.onSave" @cancel="args.onCancel" />`,
   }),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const assignmentsRoot = canvas.getByRole("region", {
+      name: "Группы добавок категории",
+    });
+    const expectedAssignments = [
+      {
+        categoryId: category.id,
+        modifierGroupId: longNameGroup.id,
+        sortOrder: 0,
+      },
+    ];
+
     await expect(
-      canvas.getByRole("checkbox", { name: "Тип молока" }),
+      canvas.getByRole("checkbox", { name: longNameGroup.name }),
     ).toBeChecked();
+    await expect(assignmentsRoot.scrollWidth).toBeLessThanOrEqual(
+      assignmentsRoot.clientWidth,
+    );
     await userEvent.click(
       canvas.getByRole("button", { name: "Сохранить назначения" }),
     );
-    await expect(args.onSave).toHaveBeenCalledWith(assignments);
+    await expect(args.onSave).toHaveBeenCalledWith(expectedAssignments);
   },
 };
 export const CategoryAssignmentLoadingDisabledAndError: AssignmentStory = {
