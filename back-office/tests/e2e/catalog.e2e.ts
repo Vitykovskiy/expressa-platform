@@ -338,7 +338,8 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
 
 async function assignModifierGroup(page: CatalogPage): Promise<void> {
   await page
-    .locator(".menu-page__modifier-groups", { hasText: "Назначения категорий" })
+    .getByRole("heading", { name: "Назначения категорий", exact: true })
+    .locator("..")
     .getByRole("button", { name: catalogCategoryName, exact: true })
     .click();
   await page.getByLabel(catalogModifierGroupName).check();
