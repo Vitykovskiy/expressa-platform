@@ -10,6 +10,7 @@ export const storybookResponsiveScreenshotWidths = [390, 767, 768, 1280];
 export const storybookResponsiveTitles = [
   "Admin/Auth/AuthScreen",
   "Admin/Availability/AvailabilityScreen",
+  "Admin/Menu/Screen",
   "Admin/Orders/Screen",
   "Admin/Settings/SettingsScreen",
   "Admin/Shell",

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-05T13:19:45.133Z",
-  "screenshotCount": 205,
-  "storyCount": 89,
+  "generatedAt": "2026-08-05T22:16:12.875Z",
+  "screenshotCount": 230,
+  "storyCount": 94,
   "stories": [
     {
       "files": [
@@ -326,6 +326,66 @@
       "id": "admin-menu-parts--long-content",
       "responsive": false,
       "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
+        "admin-menu-screen--default.png",
+        "admin-menu-screen--default-390.png",
+        "admin-menu-screen--default-767.png",
+        "admin-menu-screen--default-768.png",
+        "admin-menu-screen--default-1280.png"
+      ],
+      "id": "admin-menu-screen--default",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
+    },
+    {
+      "files": [
+        "admin-menu-screen--empty.png",
+        "admin-menu-screen--empty-390.png",
+        "admin-menu-screen--empty-767.png",
+        "admin-menu-screen--empty-768.png",
+        "admin-menu-screen--empty-1280.png"
+      ],
+      "id": "admin-menu-screen--empty",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
+    },
+    {
+      "files": [
+        "admin-menu-screen--error.png",
+        "admin-menu-screen--error-390.png",
+        "admin-menu-screen--error-767.png",
+        "admin-menu-screen--error-768.png",
+        "admin-menu-screen--error-1280.png"
+      ],
+      "id": "admin-menu-screen--error",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
+    },
+    {
+      "files": [
+        "admin-menu-screen--expanded.png",
+        "admin-menu-screen--expanded-390.png",
+        "admin-menu-screen--expanded-767.png",
+        "admin-menu-screen--expanded-768.png",
+        "admin-menu-screen--expanded-1280.png"
+      ],
+      "id": "admin-menu-screen--expanded",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
+    },
+    {
+      "files": [
+        "admin-menu-screen--loading.png",
+        "admin-menu-screen--loading-390.png",
+        "admin-menu-screen--loading-767.png",
+        "admin-menu-screen--loading-768.png",
+        "admin-menu-screen--loading-1280.png"
+      ],
+      "id": "admin-menu-screen--loading",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
     },
     {
       "files": [

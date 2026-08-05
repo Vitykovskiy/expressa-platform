@@ -102,6 +102,7 @@ const countLabel = computed(() => {
 
 .menu-category__header {
   display: flex;
+  align-items: stretch;
   background: var(--expressa-color-surface-raised);
 }
 
@@ -119,6 +120,8 @@ const countLabel = computed(() => {
   min-width: 44px;
   min-height: 44px;
   padding: 0;
+  border-left: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 
 .menu-category__toggle {
@@ -156,6 +159,14 @@ const countLabel = computed(() => {
   color: var(--expressa-color-accent);
   font: inherit;
   font-size: var(--expressa-font-size-action);
+  border-left: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.menu-category__toggle:hover,
+.menu-category__edit:hover,
+.menu-category__move:hover:not(:disabled) {
+  background: var(--expressa-color-control-hover-surface);
 }
 
 .menu-category__empty {

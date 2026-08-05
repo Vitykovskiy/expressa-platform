@@ -71,16 +71,18 @@ function formatPriceMinor(priceMinor: number): string {
 <style scoped lang="scss">
 .menu-product-row {
   display: flex;
-  width: 100%;
+  width: auto;
   min-height: var(--expressa-size-control-min-height);
-  gap: var(--expressa-space-sm);
-  padding-left: var(--expressa-space-product-indent);
+  gap: var(--expressa-space-2xs);
+  margin: var(--expressa-space-sm) var(--expressa-space-md)
+    var(--expressa-space-sm) var(--expressa-space-product-indent);
+  overflow: hidden;
   color: var(--expressa-color-text-primary);
   text-align: left;
-  background: var(--expressa-color-surface);
-  border: var(--expressa-border-width-none);
-  border-top: var(--expressa-border-width-default) solid
+  background: var(--expressa-color-surface-raised);
+  border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
+  border-radius: var(--expressa-radius-md);
 }
 
 .menu-product-row__edit:hover {
@@ -101,6 +103,8 @@ function formatPriceMinor(priceMinor: number): string {
   min-width: 44px;
   min-height: 44px;
   padding: 0;
+  border-left: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 
 .menu-product-row__content {
@@ -125,5 +129,11 @@ function formatPriceMinor(priceMinor: number): string {
 .menu-product-row__price {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+}
+
+@media (max-width: 767px) {
+  .menu-product-row {
+    margin-left: var(--expressa-space-md);
+  }
 }
 </style>

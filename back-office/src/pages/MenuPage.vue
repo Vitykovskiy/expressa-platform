@@ -39,6 +39,10 @@
             >Новая группа добавок</AdminButton
           >
         </div>
+        <div class="menu-page__catalog-heading">
+          <h2>Категории</h2>
+          <p>{{ categorySummary }}</p>
+        </div>
         <p v-if="orderedCategories.length === 0" class="menu-page__state">
           Категорий пока нет. Добавьте первую категорию.
         </p>
@@ -61,8 +65,8 @@
             @toggle="toggleCategory"
           />
         </div>
-        <section class="menu-page__editor-grid">
-          <div class="menu-page__modifier-groups">
+        <section class="menu-page__catalog-tools" aria-label="Настройки меню">
+          <section class="menu-page__editor-section">
             <h2>Группы добавок</h2>
             <p
               v-if="orderedModifierGroups.length === 0"
@@ -80,8 +84,8 @@
               @click="openModifierGroupEditor(group)"
               >{{ group.name }}</AdminButton
             >
-          </div>
-          <div class="menu-page__modifier-groups">
+          </section>
+          <section class="menu-page__editor-section">
             <h2>Назначения категорий</h2>
             <AdminButton
               v-for="category in orderedCategories"
@@ -93,8 +97,19 @@
               @click="selectedCategory = category"
               >{{ category.name }}</AdminButton
             >
-          </div>
+          </section>
+          <section
+            v-if="selectedCategory === null"
+            class="menu-page__assignments"
+          >
+            <h2>Группы добавок категории</h2>
+            <p class="menu-page__state">
+              Выберите категорию, чтобы настроить её добавки.
+            </p>
+          </section>
           <CategoryModifierAssignments
+            v-else
+            class="menu-page__assignments"
             :assignments="catalogStore.categoryModifierGroupAssignments"
             :categories="orderedCategories"
             :category="selectedCategory"
@@ -207,6 +222,11 @@ const orderedCategories = computed(() =>
 const orderedModifierGroups = computed(() =>
   [...catalogStore.modifierGroups].sort(byName),
 );
+const categorySummary = computed(() => {
+  const count = orderedCategories.value.length;
+
+  return count === 1 ? "1 категория" : `${count} категорий`;
+});
 const categoryFieldErrors = computed(() => catalogStore.fieldErrors);
 const productFieldErrors = computed(() => catalogStore.fieldErrors);
 const modifierFieldErrors = computed(() => catalogStore.fieldErrors);
@@ -460,14 +480,35 @@ function byName(left: ModifierGroup, right: ModifierGroup): number {
 <style scoped lang="scss">
 .menu-page__actions,
 .menu-page__categories,
-.menu-page__editor-grid,
-.menu-page__modifier-groups,
+.menu-page__catalog-tools,
+.menu-page__editor-section,
 .menu-page__error {
   display: grid;
   gap: var(--expressa-space-md);
 }
 .menu-page__actions {
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  justify-content: start;
+  padding-bottom: var(--expressa-space-md);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+.menu-page__catalog-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--expressa-space-sm);
+  align-items: baseline;
+}
+.menu-page__catalog-heading h2,
+.menu-page__editor-section h2 {
+  margin: 0;
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-title);
+}
+.menu-page__catalog-heading p {
+  margin: 0;
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-action);
 }
 .menu-page__state {
   margin: 0;
@@ -479,18 +520,27 @@ function byName(left: ModifierGroup, right: ModifierGroup): number {
 .menu-page__error p {
   margin: 0;
 }
-.menu-page__editor-grid {
+.menu-page__categories {
+  grid-template-columns: minmax(0, 1fr);
+}
+.menu-page__catalog-tools {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: var(--expressa-space-xl);
 }
-.menu-page__modifier-groups {
+.menu-page__editor-section,
+.menu-page__assignments {
+  padding: var(--expressa-space-md);
+  background: var(--expressa-color-surface);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-lg);
+}
+.menu-page__assignments {
   grid-column: 1 / -1;
 }
-.menu-page__modifier-groups h2 {
-  margin: 0;
-  font-size: var(--expressa-font-size-title);
-}
 .menu-page__group-button {
+  display: flex;
+  width: 100%;
   justify-content: flex-start;
   min-height: var(--expressa-size-control-min-height);
 }
@@ -503,8 +553,14 @@ function byName(left: ModifierGroup, right: ModifierGroup): number {
   min-width: 0;
 }
 @media (max-width: 767px) {
-  .menu-page__editor-grid {
+  .menu-page__actions {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .menu-page__catalog-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .menu-page__assignments {
+    grid-column: auto;
   }
 }
 </style>

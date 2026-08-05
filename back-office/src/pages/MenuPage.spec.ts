@@ -213,6 +213,27 @@ describe("MenuPage", () => {
     expect(productNames(wrapper)).toEqual(["Эспрессо", "Латте"]);
   });
 
+  it("собирает каталог в адаптивную сетку и показывает счётчик категорий", () => {
+    const store = useCatalogStore();
+    store.$patch({
+      categories: [
+        ...catalog.categories,
+        { ...catalog.categories[0], id: "category-tea", name: "Чай" },
+      ],
+      status: "ready",
+    });
+    vi.spyOn(store, "load").mockResolvedValue();
+
+    const wrapper = mountPage();
+
+    expect(wrapper.get(".menu-page__categories").classes()).toContain(
+      "menu-page__categories",
+    );
+    expect(wrapper.get(".menu-page__catalog-heading").text()).toContain(
+      "2 категорий",
+    );
+  });
+
   it("перемещает категорию полным списком идентификаторов", async () => {
     const store = useCatalogStore();
     store.$patch({
