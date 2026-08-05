@@ -11,6 +11,7 @@ const meta = {
     onRemoveItem: fn(),
     onUpdateQuantity: fn(),
     onCheckout: fn(),
+    onReconfirm: fn(),
     onContinueShopping: fn(),
   },
   argTypes: {
@@ -18,6 +19,7 @@ const meta = {
     onRemoveItem: { action: "removeItem" },
     onUpdateQuantity: { action: "updateQuantity" },
     onCheckout: { action: "checkout" },
+    onReconfirm: { action: "reconfirm" },
     onContinueShopping: { action: "continueShopping" },
   },
   parameters: {
@@ -25,7 +27,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Назначение: экран корзины. Используйте для изменения количества, удаления, продолжения покупки и оформления; не используйте для loading/error состояния. Props: items; actions: updateQuantity, removeItem, checkout, continueShopping; slots отсутствуют. Состояния: populated, empty, long/addons. Валидация принадлежит checkout flow. Кнопки имеют имена; экран responsive. Источник: src/customer/pages/checkout/CartScreen.vue, src/stories/customer/Cart.stories.ts.",
+          "Назначение: экран корзины. Каждая конфигурация показана отдельной строкой; экран отображает недоступность, отправку, ошибку и повторное подтверждение изменившегося итога. Props: items и состояние checkout; actions: updateQuantity, removeItem, checkout, reconfirm, continueShopping. Оплата происходит на кассе при получении. Источник: src/customer/pages/checkout/CartScreen.vue.",
       },
     },
   },
@@ -47,6 +49,12 @@ export const Populated: Story = {
     if (!decrementGlyph || !summary) throw new Error("Cart controls missing");
 
     await expect(canvas.getByText("2 товара")).toBeVisible();
+    const paymentMessages = canvas.getAllByText(
+      "Оплата на кассе при получении",
+    );
+    await expect(
+      paymentMessages.some((message) => message.offsetParent !== null),
+    ).toBe(true);
     await expect(summary).toHaveTextContent(/товара\s*2/);
     await expect(decrementGlyph).toBeVisible();
     await expect(decrementGlyph.getBoundingClientRect().width).toBeGreaterThan(
@@ -110,6 +118,7 @@ export const Long: Story = {
         productName:
           "Очень длинное название напитка для проверки переноса в корзине",
         quantity: 21,
+        lineTotalRub: 8400,
       },
     ],
   },
@@ -121,5 +130,83 @@ export const Long: Story = {
 
     await expect(canvas.getByText("21 товар")).toBeVisible();
     await expect(summary).toHaveTextContent(/товар\s*21/);
+    await expect(summary).toHaveTextContent(/Итого\s*8\s*400 ₽/);
+  },
+};
+
+export const Unavailable: Story = {
+  args: {
+    unavailableItemIds: ["1"],
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("Проверьте корзину")).toBeVisible();
+    await expect(
+      canvas.getByText("Удалите недоступные позиции, чтобы продолжить."),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: /Оформить заказ/ }),
+    ).toBeDisabled();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Удалить Капучино" }),
+    );
+    await expect(args.onRemoveItem).toHaveBeenCalledWith("1");
+  },
+};
+
+export const TotalChanged: Story = {
+  args: {
+    checkoutState: "reconfirmation-required",
+    reconfirmedTotalRub: 720,
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("Итог изменился")).toBeVisible();
+    await expect(canvas.getAllByText("Предыдущий итог").length).toBe(2);
+    await expect(canvas.getAllByText("Новый итог").length).toBe(2);
+    await expect(canvas.getAllByText("800 ₽").length).toBeGreaterThanOrEqual(2);
+    await expect(canvas.getAllByText("720 ₽").length).toBe(2);
+    await expect(canvas.getByText("Цена до обновления")).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Подтвердить новый итог/ }),
+    );
+    await expect(args.onReconfirm).toHaveBeenCalled();
+  },
+};
+
+export const Submitting: Story = {
+  args: { checkoutState: "submitting" },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const controls = [
+      canvas.getByRole("button", { name: "Уменьшить количество Капучино" }),
+      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
+      canvas.getByRole("button", { name: "Удалить Капучино" }),
+    ];
+
+    for (const control of controls) {
+      await expect(control).toBeDisabled();
+      control.click();
+    }
+
+    await expect(args.onUpdateQuantity).not.toHaveBeenCalled();
+    await expect(args.onRemoveItem).not.toHaveBeenCalled();
+  },
+};
+
+export const CheckoutError: Story = {
+  args: {
+    checkoutState: "error",
+    errorMessage: "Не удалось связаться с кофейней. Попробуйте ещё раз.",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("Не удалось оформить заказ")).toBeVisible();
+    await expect(
+      canvas.getByText("Не удалось связаться с кофейней. Попробуйте ещё раз."),
+    ).toBeVisible();
   },
 };

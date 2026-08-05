@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - "front-office/**"
-      - "backend/openapi/openapi.json"
+      - "backend/**"
       - ".github/workflows/front-office-ci.yml"
 
 permissions:

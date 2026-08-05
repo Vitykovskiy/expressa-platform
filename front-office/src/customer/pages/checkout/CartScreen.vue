@@ -22,7 +22,10 @@
         <CartItem
           v-for="item in items"
           :key="item.id"
+          :disabled="isSubmitting"
           :item="item"
+          :price-outdated="needsReconfirmation"
+          :unavailable="unavailableItemIdSet.has(item.id)"
           @remove-item="emit('removeItem', $event)"
           @update-quantity="
             (itemId, nextQuantity) =>
@@ -31,7 +34,27 @@
         />
       </ul>
 
-      <div class="cart-screen__mobile-total" aria-label="Итого заказа">
+      <div
+        v-if="hasCheckoutMessage"
+        class="cart-screen__notice"
+        :class="noticeClass"
+        role="status"
+      >
+        <strong>{{ noticeTitle }}</strong>
+        <span>{{ noticeMessage }}</span>
+      </div>
+
+      <div
+        v-if="needsReconfirmation"
+        class="cart-screen__mobile-total cart-screen__mobile-total--changed"
+        aria-label="Изменение итога заказа"
+      >
+        <span>Предыдущий итог</span>
+        <s>{{ totalRub }} ₽</s>
+        <span>Новый итог</span>
+        <strong>{{ checkoutTotalRub }} ₽</strong>
+      </div>
+      <div v-else class="cart-screen__mobile-total" aria-label="Итого заказа">
         <span>Итого</span>
         <strong>{{ totalRub }} ₽</strong>
       </div>
@@ -42,28 +65,42 @@
           <span>{{ cartItemLabel }}</span
           ><strong>{{ totalQuantity }}</strong>
         </p>
-        <p class="cart-screen__total">
+        <template v-if="needsReconfirmation">
+          <p class="cart-screen__total cart-screen__total--previous">
+            <span>Предыдущий итог</span><s>{{ totalRub }} ₽</s>
+          </p>
+          <p class="cart-screen__total cart-screen__total--changed">
+            <span>Новый итог</span><strong>{{ checkoutTotalRub }} ₽</strong>
+          </p>
+        </template>
+        <p v-else class="cart-screen__total">
           <span>Итого</span><strong>{{ totalRub }} ₽</strong>
         </p>
+        <p class="cart-screen__payment">Оплата на кассе при получении</p>
         <ui-btn
           block
           class="cart-screen__checkout"
           size="x-large"
-          @click="emit('checkout')"
+          :disabled="isCheckoutDisabled"
+          :loading="isSubmitting"
+          @click="emitCheckout"
         >
-          Оформить заказ
+          {{ checkoutLabel }}
         </ui-btn>
       </aside>
     </div>
 
     <footer v-if="items.length" class="cart-screen__mobile-checkout">
+      <p class="cart-screen__mobile-payment">Оплата на кассе при получении</p>
       <ui-btn
         block
         class="cart-screen__checkout"
         size="x-large"
-        @click="emit('checkout')"
+        :disabled="isCheckoutDisabled"
+        :loading="isSubmitting"
+        @click="emitCheckout"
       >
-        Оформить заказ · {{ totalRub }} ₽
+        {{ mobileCheckoutLabel }}
       </ui-btn>
     </footer>
   </section>
@@ -76,7 +113,7 @@ import UiBtn from "../../shared/ui/btn/UiBtn.vue";
 import CartItem from "./CartItem.vue";
 import type { CartScreenEmits, CartScreenProps } from "./CartScreen.types";
 
-const props = defineProps<CartScreenProps>();
+const { acceptsNewOrders = true, ...props } = defineProps<CartScreenProps>();
 
 const emit = defineEmits<CartScreenEmits>();
 
@@ -96,6 +133,75 @@ const cartItemLabel = computed(() => {
 const totalRub = computed(() =>
   props.items.reduce((sum, item) => sum + item.lineTotalRub, 0),
 );
+const checkoutTotalRub = computed(() =>
+  props.checkoutState === "reconfirmation-required"
+    ? props.reconfirmedTotalRub
+    : totalRub.value,
+);
+const unavailableItemIdSet = computed(
+  () => new Set(props.unavailableItemIds ?? []),
+);
+const isSubmitting = computed(() => props.checkoutState === "submitting");
+const needsReconfirmation = computed(
+  () => props.checkoutState === "reconfirmation-required",
+);
+const isCheckoutDisabled = computed(
+  () =>
+    !acceptsNewOrders ||
+    isSubmitting.value ||
+    unavailableItemIdSet.value.size > 0,
+);
+const hasCheckoutMessage = computed(
+  () =>
+    !acceptsNewOrders ||
+    needsReconfirmation.value ||
+    props.checkoutState === "error" ||
+    unavailableItemIdSet.value.size > 0,
+);
+const noticeTitle = computed(() => {
+  if (!acceptsNewOrders) return "Заказы временно недоступны";
+  if (unavailableItemIdSet.value.size > 0) return "Проверьте корзину";
+  if (needsReconfirmation.value) return "Итог изменился";
+  return "Не удалось оформить заказ";
+});
+const noticeMessage = computed(() => {
+  if (!acceptsNewOrders)
+    return props.errorMessage ?? "Приём новых заказов сейчас закрыт.";
+  if (unavailableItemIdSet.value.size > 0)
+    return "Удалите недоступные позиции, чтобы продолжить.";
+  if (props.checkoutState === "reconfirmation-required")
+    return "Проверьте предыдущий и новый итог, затем подтвердите заказ ещё раз.";
+  return props.errorMessage ?? "Попробуйте ещё раз.";
+});
+const noticeClass = computed(() => ({
+  "cart-screen__notice--warning":
+    acceptsNewOrders &&
+    needsReconfirmation.value &&
+    unavailableItemIdSet.value.size === 0,
+  "cart-screen__notice--error":
+    !acceptsNewOrders ||
+    !needsReconfirmation.value ||
+    unavailableItemIdSet.value.size > 0,
+}));
+const checkoutLabel = computed(() => {
+  if (isSubmitting.value) return "Оформляем заказ";
+  if (needsReconfirmation.value) return "Подтвердить новый итог";
+  return "Оформить заказ";
+});
+const mobileCheckoutLabel = computed(
+  () => `${checkoutLabel.value} · ${checkoutTotalRub.value} ₽`,
+);
+
+function emitCheckout(): void {
+  if (isCheckoutDisabled.value) return;
+
+  if (needsReconfirmation.value) {
+    emit("reconfirm");
+    return;
+  }
+
+  emit("checkout");
+}
 </script>
 
 <style scoped lang="scss">
@@ -186,6 +292,30 @@ const totalRub = computed(() =>
   font-size: var(--customer-font-size-md);
   font-weight: var(--customer-font-weight-bold);
 }
+.cart-screen__mobile-total--changed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--customer-space-4) var(--customer-space-7);
+}
+.cart-screen__mobile-total s {
+  color: var(--customer-color-text-muted-on-brand);
+  font-weight: var(--customer-font-weight-bold);
+}
+.cart-screen__notice {
+  display: grid;
+  gap: var(--customer-space-3);
+  padding: var(--customer-space-8) var(--customer-space-9);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-left: var(--customer-space-2) solid var(--customer-danger);
+  border-radius: var(--customer-radius-sm);
+}
+.cart-screen__notice--warning {
+  border-left-color: var(--customer-primary);
+}
+.cart-screen__notice span {
+  color: var(--customer-color-text-muted-on-surface);
+}
 .cart-screen__mobile-total strong {
   font-size: var(--customer-font-size-4xl);
   font-weight: var(--customer-font-weight-black);
@@ -210,6 +340,17 @@ const totalRub = computed(() =>
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-bold);
 }
+.cart-screen__total--previous {
+  color: var(--customer-color-text-muted-on-surface);
+}
+.cart-screen__total--previous s {
+  font-weight: var(--customer-font-weight-bold);
+}
+.cart-screen__total--changed {
+  margin-top: var(--customer-space-5);
+  padding-top: 0;
+  border-top: 0;
+}
 .cart-screen__summary-row strong {
   color: var(--customer-text-on-surface);
 }
@@ -225,6 +366,12 @@ const totalRub = computed(() =>
   font-size: var(--customer-font-size-5xl);
   font-weight: var(--customer-font-weight-black);
 }
+.cart-screen__payment {
+  margin: var(--customer-space-6) 0 0;
+  color: var(--customer-color-text-muted-on-surface);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
 .cart-screen__checkout {
   margin-top: var(--customer-space-9);
   font-weight: var(--customer-font-weight-black);
@@ -237,11 +384,19 @@ const totalRub = computed(() =>
   position: sticky;
   bottom: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  flex-direction: column;
   gap: var(--customer-space-9);
   padding: var(--customer-space-9);
   background: var(--customer-background);
   border-top: 1px solid var(--customer-border);
+}
+.cart-screen__mobile-payment {
+  margin: 0;
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+  text-align: center;
 }
 @media (min-width: 1024px) {
   .cart-screen__header {
@@ -250,10 +405,20 @@ const totalRub = computed(() =>
   }
   .cart-screen__content {
     display: grid;
+    grid-template-areas:
+      "items summary"
+      "notice summary";
     grid-template-columns: minmax(0, 1fr) var(--customer-size-summary);
     align-items: start;
+    align-content: start;
     gap: var(--customer-space-16);
     padding: 0 var(--customer-space-16) var(--customer-space-16);
+  }
+  .cart-screen__items {
+    grid-area: items;
+  }
+  .cart-screen__notice {
+    grid-area: notice;
   }
   .cart-screen__mobile-total {
     display: none;
@@ -261,6 +426,7 @@ const totalRub = computed(() =>
   .cart-screen__summary {
     display: block;
     position: sticky;
+    grid-area: summary;
     top: var(--customer-space-11);
   }
   .cart-screen__mobile-checkout {

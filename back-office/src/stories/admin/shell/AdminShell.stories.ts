@@ -72,7 +72,7 @@ export const Administrator: Story = {
   parameters: { viewport: { defaultViewport: "desktop" } },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const orders = canvas.getByRole("button", { name: "Заказы" });
+    const orders = canvas.getByRole("button", { name: "Очередь" });
     await expect(orders).toHaveAttribute("aria-current", "page");
     await expect(canvas.getByRole("button", { name: "Меню" })).toBeVisible();
     await expect(
@@ -108,12 +108,11 @@ export const Barista: Story = {
     await expect(
       canvas.queryByRole("button", { name: "Меню" }),
     ).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Заказы" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Очередь" }));
     await expect(args.onNavigate).toHaveBeenCalledWith("orders");
-    const action = canvas.getByRole("button", { name: "Действие" });
-    await expect(action).toBeVisible();
-    await userEvent.click(action);
-    await expect(args.onTopBarAction).toHaveBeenCalledTimes(1);
+    await expect(
+      canvas.queryByRole("button", { name: "Действие" }),
+    ).not.toBeInTheDocument();
   },
 };
 

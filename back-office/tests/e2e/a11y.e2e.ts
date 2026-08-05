@@ -5,7 +5,7 @@ const storyIds = [
   "admin-auth-authscreen--phone-validation",
   "admin-orders-screen--all-statuses",
   "admin-availability-availabilityscreen--default",
-  "admin-menu-parts--expanded-option-group",
+  "admin-menu-modifiers--category-assignment",
   "admin-settings-settingsscreen--initial-values",
   "admin-users-usersscreen--flow",
   "admin-shell--administrator",

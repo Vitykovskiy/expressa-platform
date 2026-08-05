@@ -10,6 +10,8 @@ import {
   createSessionStoreDependencies,
   setSessionStoreDependencies,
 } from "./app/session.store.dependencies";
+import { setCatalogStoreDependencies } from "./admin/pages/menu/catalog.dependencies";
+import { CatalogApi } from "./shared/api/catalog.api";
 import { apiClientKey, createApiClient } from "./shared/api/client";
 import { validateEnvironment } from "./shared/config/environment";
 
@@ -19,6 +21,7 @@ const apiClient = createApiClient(environment.apiBaseUrl);
 const app = createApp(App);
 
 setSessionStoreDependencies(createSessionStoreDependencies(apiClient));
+setCatalogStoreDependencies({ catalogApi: new CatalogApi(apiClient) });
 installPlugins(app);
 app.provide(apiClientKey, apiClient);
 app.mount("#app");

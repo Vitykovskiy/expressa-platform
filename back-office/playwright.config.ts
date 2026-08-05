@@ -4,6 +4,13 @@ import {
   authBackendCommand,
   authBackendReadyUrl,
   authServerEnvironment,
+  catalogBackendCommand,
+  catalogBackendReadyUrl,
+  catalogBackOfficeWebServerCommand,
+  catalogFrontendUrl,
+  catalogFrontendWebServerCommand,
+  catalogOrigin,
+  catalogServerEnvironment,
   backOfficeAppUrl,
   backOfficeAppWebServerCommand,
   backOfficeAuthWebServerCommand,
@@ -23,6 +30,7 @@ import type { PlaywrightTarget } from "./playwright.config.types";
 const target = process.env.PLAYWRIGHT_TARGET as PlaywrightTarget | undefined;
 const storybookTarget = target === playwrightTargets.storybook;
 const authTarget = target === playwrightTargets.auth;
+const catalogTarget = target === playwrightTargets.catalog;
 
 export default defineConfig({
   workers: process.env.CI ? 2 : 4,
@@ -35,7 +43,9 @@ export default defineConfig({
       ? backOfficeStorybookUrl
       : authTarget
         ? authFrontendUrl
-        : backOfficeAppUrl,
+        : catalogTarget
+          ? catalogOrigin
+          : backOfficeAppUrl,
     trace: backOfficePlaywrightTrace,
   },
   projects: [
@@ -47,6 +57,11 @@ export default defineConfig({
     {
       name: backOfficePlaywrightProjectName.auth,
       testMatch: backOfficePlaywrightTestMatch.auth,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
+    },
+    {
+      name: backOfficePlaywrightProjectName.catalog,
+      testMatch: backOfficePlaywrightTestMatch.catalog,
       use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
     {
@@ -65,28 +80,50 @@ export default defineConfig({
       use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
   ],
-  webServer: authTarget
+  webServer: catalogTarget
     ? [
         {
-          command: backOfficeAuthWebServerCommand,
-          url: authFrontendUrl,
+          command: catalogBackendCommand,
+          env: catalogServerEnvironment,
+          url: catalogBackendReadyUrl,
           reuseExistingServer: false,
           timeout: backOfficeWebServerTimeout,
         },
         {
-          command: authBackendCommand,
-          env: authServerEnvironment,
-          url: authBackendReadyUrl,
+          command: catalogBackOfficeWebServerCommand,
+          url: catalogOrigin,
+          reuseExistingServer: false,
+          timeout: backOfficeWebServerTimeout,
+        },
+        {
+          command: catalogFrontendWebServerCommand,
+          url: catalogFrontendUrl,
           reuseExistingServer: false,
           timeout: backOfficeWebServerTimeout,
         },
       ]
-    : {
-        command: storybookTarget
-          ? backOfficeStorybookWebServerCommand
-          : backOfficeAppWebServerCommand,
-        url: storybookTarget ? backOfficeStorybookUrl : backOfficeAppUrl,
-        reuseExistingServer: !process.env.CI,
-        timeout: backOfficeWebServerTimeout,
-      },
+    : authTarget
+      ? [
+          {
+            command: backOfficeAuthWebServerCommand,
+            url: authFrontendUrl,
+            reuseExistingServer: false,
+            timeout: backOfficeWebServerTimeout,
+          },
+          {
+            command: authBackendCommand,
+            env: authServerEnvironment,
+            url: authBackendReadyUrl,
+            reuseExistingServer: false,
+            timeout: backOfficeWebServerTimeout,
+          },
+        ]
+      : {
+          command: storybookTarget
+            ? backOfficeStorybookWebServerCommand
+            : backOfficeAppWebServerCommand,
+          url: storybookTarget ? backOfficeStorybookUrl : backOfficeAppUrl,
+          reuseExistingServer: !process.env.CI,
+          timeout: backOfficeWebServerTimeout,
+        },
 });

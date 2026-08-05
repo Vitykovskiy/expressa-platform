@@ -2,6 +2,10 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import { catalogSeed } from '../../scripts/seed.constants';
+import {
+  catalogAdvisoryLockKey,
+  catalogCommandAdvisoryLockSql,
+} from '../../src/catalog/adapters/catalog-advisory-lock.constants';
 import { PostgresPublicMenuRepository } from '../../src/catalog/adapters/postgres-public-menu.repository';
 import { GetPublicMenuUseCase } from '../../src/catalog/application/get-public-menu.use-case';
 
@@ -27,10 +31,33 @@ function runScript(script: 'migrate' | 'seed'): void {
 }
 
 async function resetCatalog(pool: Pool): Promise<void> {
+  await pool.query(`UPDATE service_settings SET value = true WHERE key = 'accepts_new_orders'`);
   await pool.query(
-    `TRUNCATE category_modifier_groups, modifier_options, modifier_groups, product_variants, products, categories`,
+    `TRUNCATE order_item_modifiers, order_items, orders, category_modifier_groups, modifier_options,
+      modifier_groups, product_variants, products, categories`,
   );
   runScript('seed');
+}
+
+async function waitForReaderToWaitForCatalogLock(pool: Pool): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const result = await pool.query<{ is_waiting: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_locks
+         WHERE locktype = 'advisory' AND objid = $1 AND NOT granted
+       ) AS is_waiting`,
+      [catalogAdvisoryLockKey],
+    );
+
+    if (result.rows[0]?.is_waiting === true) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+
+  throw new Error('Public menu reader did not wait for catalog lock');
 }
 
 describe('PostgreSQL repository публичного меню', () => {
@@ -48,6 +75,10 @@ describe('PostgreSQL repository публичного меню', () => {
   });
 
   beforeEach(async () => {
+    await resetCatalog(pool);
+  });
+
+  afterEach(async () => {
     await resetCatalog(pool);
   });
 
@@ -264,6 +295,47 @@ describe('PostgreSQL repository публичного меню', () => {
 
       expect(result.categories[0]?.products.map((product) => product.name)).toEqual(['Эспрессо']);
       expect(result.categories[1]?.products.map((product) => product.name)).toEqual(['Круассан', cheesecake.name]);
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    'после ожидания блокировки читает согласованное новое состояние настроек и каталога',
+    async () => {
+      const coffee = catalogSeed.categories[0];
+
+      if (coffee === undefined) {
+        throw new Error('Catalog seed fixture is incomplete');
+      }
+
+      const writer = await pool.connect();
+      let committed = false;
+
+      try {
+        await writer.query('BEGIN');
+        await writer.query(catalogCommandAdvisoryLockSql, [catalogAdvisoryLockKey]);
+        await writer.query(`UPDATE service_settings SET value = false WHERE key = 'accepts_new_orders'`);
+        await writer.query(`UPDATE categories SET name = 'Кофе после обновления' WHERE id = $1`, [coffee.id]);
+
+        const reader = useCase.execute();
+        await waitForReaderToWaitForCatalogLock(pool);
+
+        await writer.query('COMMIT');
+        committed = true;
+
+        await expect(reader).resolves.toMatchObject({
+          acceptsNewOrders: false,
+          categories: expect.arrayContaining([
+            expect.objectContaining({ id: coffee.id, name: 'Кофе после обновления' }),
+          ]),
+        });
+      } finally {
+        if (!committed) {
+          await writer.query('ROLLBACK');
+        }
+
+        writer.release();
+      }
     },
     externalProcessTimeoutMs,
   );

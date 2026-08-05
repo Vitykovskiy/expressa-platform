@@ -4,6 +4,8 @@ import { DevelopmentOtpAdapter } from './auth/adapters/development-otp.adapter';
 import { otpCodeGeneratorPort, smsSenderPort } from './auth/auth.constants';
 import { GetPublicMenuUseCase } from './catalog/application/get-public-menu.use-case';
 import { CatalogModule } from './catalog/catalog.module';
+import { CreateOrderUseCase } from './orders/application/create-order.use-case';
+import { OrdersModule } from './orders/orders.module';
 
 const loadModule = createRequire(__filename);
 
@@ -38,5 +40,6 @@ describe('AppModule', () => {
     expect(module.select(AuthModule).get(otpCodeGeneratorPort, { strict: true })).toBeInstanceOf(DevelopmentOtpAdapter);
     expect(module.select(AuthModule).get(smsSenderPort, { strict: true })).toBeInstanceOf(DevelopmentOtpAdapter);
     expect(module.select(CatalogModule).get(GetPublicMenuUseCase, { strict: true })).toBeInstanceOf(GetPublicMenuUseCase);
+    expect(module.select(OrdersModule).get(CreateOrderUseCase, { strict: true })).toBeInstanceOf(CreateOrderUseCase);
   });
 });

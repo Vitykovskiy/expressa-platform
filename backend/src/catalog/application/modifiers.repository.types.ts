@@ -1,0 +1,13 @@
+import type { AdminModifierGroup, AdminModifierOption, ModifierGroupDetails, ModifierOptionDetails, ModifierOptionInput } from '../domain/modifier-admin.policy.types';
+
+export type ModifierAuditAction = 'MODIFIER_GROUP_CREATED' | 'MODIFIER_GROUP_UPDATED' | 'MODIFIER_GROUP_ARCHIVED' | 'MODIFIER_OPTION_CREATED' | 'MODIFIER_OPTION_UPDATED' | 'MODIFIER_OPTION_REORDERED' | 'MODIFIER_OPTION_ARCHIVED';
+export type ModifierAuditEvent = { actorId: string; requestId: string; action: ModifierAuditAction; entityType: 'modifier_group' | 'modifier_option'; entityId: string; before: AdminModifierGroup | AdminModifierOption | null; after: AdminModifierGroup | AdminModifierOption | null };
+export interface ModifiersRepository { findGroupById(id: string): Promise<AdminModifierGroup | null>; findOptionById(id: string): Promise<AdminModifierOption | null>; findCurrentOptionsByGroup(groupId: string): Promise<AdminModifierOption[]>; createGroup(details: ModifierGroupDetails, options: readonly ModifierOptionInput[]): Promise<AdminModifierGroup>; updateGroup(id: string, details: ModifierGroupDetails, options: readonly ModifierOptionInput[]): Promise<AdminModifierGroup>; archiveGroup(id: string): Promise<AdminModifierGroup>; createOption(groupId: string, details: ModifierOptionDetails): Promise<AdminModifierOption>; updateOption(id: string, details: ModifierOptionDetails): Promise<AdminModifierOption>; reorderOptions(options: readonly AdminModifierOption[], optionIds: readonly string[]): Promise<AdminModifierOption[]>; archiveOption(id: string): Promise<AdminModifierOption>; writeAudit(event: ModifierAuditEvent): Promise<void>; }
+export interface ModifiersUnitOfWork { run<Result>(command: (repository: ModifiersRepository) => Promise<Result>, audit: (repository: ModifiersRepository, result: Result) => Promise<void>): Promise<Result>; }
+export type CreateModifierGroupCommand = ModifierGroupDetails & { options: ModifierOptionInput[]; actorId: string; requestId: string };
+export type UpdateModifierGroupCommand = ModifierGroupDetails & { options: ModifierOptionInput[]; groupId: string; actorId: string; requestId: string };
+export type ArchiveModifierGroupCommand = { groupId: string; actorId: string; requestId: string };
+export type CreateModifierOptionCommand = ModifierOptionDetails & { groupId: string; actorId: string; requestId: string };
+export type UpdateModifierOptionCommand = ModifierOptionDetails & { optionId: string; actorId: string; requestId: string };
+export type ReorderModifierOptionsCommand = { groupId: string; optionIds: string[]; actorId: string; requestId: string };
+export type ArchiveModifierOptionCommand = { optionId: string; actorId: string; requestId: string };

@@ -1,6 +1,8 @@
 <template>
   <li
     class="cart-item"
+    :class="{ 'cart-item--unavailable': props.unavailable }"
+    :aria-busy="props.disabled"
     :aria-label="`Позиция корзины: ${props.item.productName}`"
   >
     <div class="cart-item__details">
@@ -12,6 +14,9 @@
           >Размер {{ props.item.size }}</span
         >
       </div>
+      <p v-if="props.unavailable" class="cart-item__unavailable" role="status">
+        Сейчас недоступно — удалите позицию или выберите другую
+      </p>
       <ul
         v-if="addonRows.length"
         class="cart-item__addons"
@@ -27,16 +32,19 @@
         </li>
       </ul>
     </div>
-    <ui-icon-btn
+    <button
       type="button"
       class="cart-item__remove"
       :aria-label="`Удалить ${props.item.productName}`"
+      :disabled="props.disabled"
       @click="emit('removeItem', props.item.id)"
     >
       <Trash2 class="cart-item__remove-icon" aria-hidden="true" />
-    </ui-icon-btn>
+      <span>Удалить</span>
+    </button>
     <footer class="cart-item__footer">
       <p class="cart-item__price">
+        <span v-if="props.priceOutdated">Цена до обновления</span>
         <strong>{{ props.item.lineTotalRub }} ₽</strong>
       </p>
       <div class="cart-item__quantity" aria-label="Количество">
@@ -44,7 +52,9 @@
           type="button"
           class="cart-item__quantity-control"
           :aria-label="`Уменьшить количество ${props.item.productName}`"
-          :disabled="props.item.quantity === 1"
+          :disabled="
+            props.disabled || props.item.quantity === 1 || props.unavailable
+          "
           @click="
             emit('updateQuantity', props.item.id, props.item.quantity - 1)
           "
@@ -58,6 +68,7 @@
           type="button"
           class="cart-item__quantity-control"
           :aria-label="`Увеличить количество ${props.item.productName}`"
+          :disabled="props.disabled || props.unavailable"
           @click="
             emit('updateQuantity', props.item.id, props.item.quantity + 1)
           "
@@ -116,6 +127,11 @@ const addonRows = computed(() => {
   box-shadow: var(--customer-shadow-card);
 }
 
+.cart-item--unavailable {
+  outline: 2px solid var(--customer-danger);
+  outline-offset: -2px;
+}
+
 .cart-item__details {
   display: grid;
   grid-area: details;
@@ -124,10 +140,17 @@ const addonRows = computed(() => {
 }
 
 .cart-item__title {
-  display: grid;
-  grid-template-columns: minmax(0, max-content) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--customer-space-5);
+}
+
+.cart-item__unavailable {
+  margin: 0;
+  color: var(--customer-danger);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
 }
 
 .cart-item__name {
@@ -180,8 +203,16 @@ const addonRows = computed(() => {
 }
 
 .cart-item__price {
+  display: grid;
+  gap: var(--customer-space-2);
   margin: 0;
   white-space: nowrap;
+}
+
+.cart-item__price span {
+  color: var(--customer-color-text-muted-on-surface);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-semibold);
 }
 
 .cart-item__price strong {
@@ -231,18 +262,55 @@ const addonRows = computed(() => {
 }
 
 .cart-item__remove {
+  display: inline-flex;
   grid-area: remove;
+  align-items: center;
+  justify-content: center;
+  gap: var(--customer-space-3);
   min-width: calc(var(--customer-space-12) * 2);
   min-height: calc(var(--customer-space-12) * 2);
-  width: calc(var(--customer-space-12) * 2);
-  height: calc(var(--customer-space-12) * 2);
+  padding: 0 var(--customer-space-6);
   color: var(--customer-danger);
   background: var(--customer-danger-10);
   border: 0;
+  border-radius: var(--customer-radius-pill);
+  font: inherit;
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
+  cursor: pointer;
 }
 
 .cart-item__remove-icon {
-  width: var(--customer-spacing-xl);
-  height: var(--customer-spacing-xl);
+  width: var(--customer-size-icon-sm);
+  height: var(--customer-size-icon-sm);
+}
+
+.cart-item__remove:disabled {
+  cursor: not-allowed;
+  opacity: var(--customer-state-disabled-opacity);
+}
+
+@media (max-width: 479px) {
+  .cart-item {
+    grid-template-areas:
+      "details"
+      "footer"
+      "remove";
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--customer-space-9);
+  }
+
+  .cart-item__remove {
+    grid-area: remove;
+    justify-self: start;
+  }
+
+  .cart-item__footer {
+    flex-wrap: wrap;
+  }
+
+  .cart-item__quantity {
+    margin-left: auto;
+  }
 }
 </style>

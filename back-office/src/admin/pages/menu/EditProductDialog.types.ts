@@ -1,21 +1,18 @@
+import type { Category, Product } from "./catalog.types";
 import type {
-  EditMenuProductData,
-  MenuItem,
-} from "../../shared/ui/Admin.types";
-
-export interface ProductSizeDraft {
-  id: string;
-  size: string;
-  price: number;
-}
+  ProductFormData,
+  ProductFormField,
+} from "./AddProductDialog.types";
 
 export interface EditProductDialogProps {
-  product: MenuItem | null;
-  categories: readonly string[];
+  disabled: boolean;
+  product: Product | null;
+  categories: readonly Category[];
+  fieldErrors?: Partial<Record<ProductFormField, string>>;
 }
 
 export interface EditProductDialogEmits {
-  save: [data: EditMenuProductData];
+  save: [data: ProductFormData];
   delete: [];
   cancel: [];
 }

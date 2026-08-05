@@ -1,0 +1,56 @@
+import { ApiProperty } from '@nestjs/swagger';
+import type { OrderItemDto, OrderModifierDto, OrderStageDto } from './order.dto.types';
+
+export class OrderModifierResponseDto implements OrderModifierDto {
+  @ApiProperty({ format: 'uuid' })
+  modifierOptionId!: string;
+
+  @ApiProperty()
+  modifierName!: string;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  priceDeltaMinor!: number;
+}
+
+export class OrderItemResponseDto implements OrderItemDto {
+  @ApiProperty({ format: 'uuid' })
+  productId!: string;
+
+  @ApiProperty({ type: 'string', format: 'uuid', nullable: true })
+  variantId!: string | null;
+
+  @ApiProperty()
+  productName!: string;
+
+  @ApiProperty({ enum: ['S', 'M', 'L'], nullable: true })
+  size!: 'S' | 'M' | 'L' | null;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  quantity!: number;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  unitTotalMinor!: number;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  lineTotalMinor!: number;
+
+  @ApiProperty({ isArray: true, type: () => OrderModifierResponseDto })
+  modifiers!: OrderModifierResponseDto[];
+}
+
+export class OrderDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: '20300102-001' })
+  number!: string;
+
+  @ApiProperty({ enum: ['CREATED'] })
+  stage!: OrderStageDto;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  totalMinor!: number;
+
+  @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
+  items!: OrderItemResponseDto[];
+}

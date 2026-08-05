@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - "back-office/**"
+      - "backend/**"
+      - "front-office/**"
       - "backend/openapi/**"
       - ".github/workflows/back-office-ci.yml"
 
@@ -134,6 +136,10 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Install front-office dependencies
+        working-directory: front-office
+        run: npm ci
+
       - name: Install Chromium
         working-directory: back-office
         run: npx playwright install --with-deps chromium
@@ -143,3 +149,7 @@ jobs:
         run: >-
           VITE_APP_ENV=development VITE_API_BASE_URL=http://127.0.0.1:3000
           npm run build && PLAYWRIGHT_TARGET=auth npx playwright test --project=auth-e2e
+
+      - name: Run catalog browser E2E
+        working-directory: back-office
+        run: npm run test:catalog:e2e

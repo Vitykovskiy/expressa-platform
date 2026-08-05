@@ -1,5 +1,9 @@
 export const frontOfficeAppOrigin = "http://127.0.0.1:4174";
 export const frontOfficeBackendReadyUrl = "http://127.0.0.1:3000/health/ready";
+export const frontOfficeBackendGracefulShutdown = {
+  signal: "SIGTERM",
+  timeout: 30_000,
+} as const;
 export const frontOfficeE2eComposeProjectName = "expressa-frontoffice-e2e";
 export const frontOfficeE2eDatabaseUrl =
   "postgresql://expressa:expressa@127.0.0.1:5434/expressa";

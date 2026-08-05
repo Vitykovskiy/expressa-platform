@@ -8,6 +8,7 @@ const groupId = 'milk';
 
 function createCandidates(): PublicMenuCandidates {
   return {
+    acceptsNewOrders: true,
     categories: [
       {
         id: categoryId,
@@ -202,6 +203,15 @@ describe('GetPublicMenuUseCase', () => {
     await expect(createUseCase(candidates).execute()).resolves.toEqual({
       acceptsNewOrders: true,
       categories: [],
+    });
+  });
+
+  it('возвращает значение приёма новых заказов из кандидатов репозитория', async () => {
+    const candidates = createCandidates();
+    candidates.acceptsNewOrders = false;
+
+    await expect(createUseCase(candidates).execute()).resolves.toMatchObject({
+      acceptsNewOrders: false,
     });
   });
 

@@ -1,9 +1,14 @@
-import type { MenuItem } from "../../shared/ui/Admin.types";
+import type { Product } from "./catalog.types";
 
 export interface MenuProductRowProps {
-  product: MenuItem;
+  product: Product;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  disabled: boolean;
 }
 
 export interface MenuProductRowEmits {
-  edit: [product: MenuItem];
+  edit: [product: Product];
+  moveUp: [product: Product];
+  moveDown: [product: Product];
 }

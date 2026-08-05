@@ -231,7 +231,9 @@ function toPublicDrinkMenuProduct(
     description: product.description,
     priceMinor: product.priceMinor,
     isAvailable: product.isAvailable,
-    variants: product.variants.map(toPublicMenuVariant),
+    variants: product.variants
+      .filter((variant) => variant.isAvailable)
+      .map(toPublicMenuVariant),
     modifierGroups: product.modifierGroups.map(toPublicMenuModifierGroup),
   };
 }

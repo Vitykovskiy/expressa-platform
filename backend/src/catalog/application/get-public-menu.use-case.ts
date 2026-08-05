@@ -1,4 +1,3 @@
-import { acceptsNewOrders } from '../domain/catalog.constants';
 import type {
   CatalogCategoryCandidate,
   CatalogCategoryModifierGroupCandidate,
@@ -22,7 +21,7 @@ export class GetPublicMenuUseCase {
     const publishableGroups = createPublishableModifierGroups(candidates);
 
     return {
-      acceptsNewOrders,
+      acceptsNewOrders: candidates.acceptsNewOrders,
       categories: candidates.categories
         .filter(isPublishedCatalogEntity)
         .map((category) => createCategory(category, candidates, publishableGroups))

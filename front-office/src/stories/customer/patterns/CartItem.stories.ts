@@ -5,6 +5,7 @@ import type { CartItem as CartItemModel } from "../../../customer/shared/model/c
 
 type CartItemStoryArgs = {
   item: CartItemModel;
+  unavailable?: boolean;
   onRemoveItem: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, nextQuantity: number) => void;
 };
@@ -51,7 +52,7 @@ const meta = {
     components: { CartItem },
     setup: () => ({ args }),
     template:
-      '<ul aria-label="Позиции в корзине" style="margin: 0; padding: 0; list-style: none"><CartItem :item="args.item" @remove-item="args.onRemoveItem" @update-quantity="args.onUpdateQuantity" /></ul>',
+      '<ul aria-label="Позиции в корзине" style="margin: 0; padding: 0; list-style: none"><CartItem :item="args.item" :unavailable="args.unavailable" @remove-item="args.onRemoveItem" @update-quantity="args.onUpdateQuantity" /></ul>',
   }),
 } satisfies Meta<CartItemStoryArgs>;
 
@@ -82,8 +83,12 @@ export const Default: Story = {
     await expect(decrementGlyph.getBoundingClientRect().height).toBeGreaterThan(
       0,
     );
-    await expect(remove.getBoundingClientRect().width).toBe(44);
-    await expect(remove.getBoundingClientRect().height).toBe(44);
+    await expect(remove.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      44,
+    );
+    await expect(remove.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+      44,
+    );
     await userEvent.click(decrement);
     await expect(args.onUpdateQuantity).toHaveBeenCalledWith(
       "cart-cappuccino",
@@ -159,6 +164,25 @@ export const Remove: Story = {
     await expect(decrement).toBeDisabled();
     decrement.click();
     await expect(args.onUpdateQuantity).not.toHaveBeenCalled();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Удалить Капучино" }),
+    );
+    await expect(args.onRemoveItem).toHaveBeenCalledWith("cart-cappuccino");
+  },
+};
+
+export const Unavailable: Story = {
+  args: { unavailable: true },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText(/Сейчас недоступно/)).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: "Уменьшить количество Капучино" }),
+    ).toBeDisabled();
+    await expect(
+      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
+    ).toBeDisabled();
     await userEvent.click(
       canvas.getByRole("button", { name: "Удалить Капучино" }),
     );

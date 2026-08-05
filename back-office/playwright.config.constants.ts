@@ -9,7 +9,7 @@ export const authBackendPidPath = "/tmp/expressa-backoffice-e2e-backend.pid";
 export const authBackendCommand =
   'sh -c \'set -e; rm -f /tmp/expressa-backoffice-e2e-backend.pid; docker compose -p expressa-backoffice-e2e -f ../backend/compose.local.yml -f playwright.auth.compose.yml down --volumes; docker compose -p expressa-backoffice-e2e -f ../backend/compose.local.yml -f playwright.auth.compose.yml up -d --wait; (cd ../backend && npm run migrate); (cd ../backend && exec ./node_modules/.bin/nest start) & backend_pid=$!; echo "$backend_pid" > /tmp/expressa-backoffice-e2e-backend.pid; wait "$backend_pid"\'';
 export const authServerEnvironment = {
-  AUTH_ACCESS_TOKEN_SECRET: "back-office-e2e-access-token-secret",
+  AUTH_ACCESS_TOKEN_SECRET: "changeme-back-office-e2e-access-token-secret",
   AUTH_DEVELOPMENT_OTP: "123456",
   AUTH_OTP_PEPPER: "back-office-e2e-otp-pepper",
   CORS_ORIGINS: authOrigin,
@@ -22,9 +22,34 @@ export const backOfficeAppWebServerCommand = "npm run preview";
 export const backOfficeDesktopBrowserDeviceName = "Desktop Chrome";
 export const backOfficeAuthWebServerCommand =
   "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && npm run preview -- --port 4175";
+export const catalogBackendPidPath =
+  "/tmp/expressa-backoffice-catalog-e2e-backend.pid";
+export const catalogBackendReadyUrl = "http://127.0.0.1:3001/docs";
+export const catalogComposeProjectName = "expressa-backoffice-catalog-e2e";
+export const catalogDatabaseUrl =
+  "postgresql://expressa:expressa@127.0.0.1:5435/expressa";
+export const catalogFrontendUrl = "http://127.0.0.1:4174";
+export const catalogBackOfficeWebServerCommand =
+  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3001 npm run build && npm run preview -- --port 4175";
+export const catalogFrontendWebServerCommand =
+  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3001 npm --prefix ../front-office run build && (cd ../front-office && npx vite preview --host 127.0.0.1 --port 4174)";
+export const catalogOrigin = "http://127.0.0.1:4175";
+export const catalogServerEnvironment = {
+  AUTH_ACCESS_TOKEN_SECRET:
+    "changeme-back-office-catalog-e2e-access-token-secret",
+  AUTH_DEVELOPMENT_OTP: "123456",
+  AUTH_OTP_PEPPER: "back-office-catalog-e2e-otp-pepper",
+  CORS_ORIGINS: `${catalogOrigin},${catalogFrontendUrl}`,
+  ["DATABASE_URL"]: catalogDatabaseUrl,
+  NODE_ENV: "local",
+  PORT: "3001",
+} as const;
+export const catalogBackendCommand =
+  'sh -c \'set -e; rm -f /tmp/expressa-backoffice-catalog-e2e-backend.pid; docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml down --volumes; printf "services:\\n  postgres:\\n    ports: !override\\n      - 127.0.0.1:5435:5432\\n" | docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml -f - up -d --wait; (cd ../backend && env DATABASE_URL=postgresql://expressa:expressa@127.0.0.1:5435/expressa AUTH_ACCESS_TOKEN_SECRET=changeme-back-office-catalog-e2e-access-token-secret AUTH_DEVELOPMENT_OTP=123456 AUTH_OTP_PEPPER=back-office-catalog-e2e-otp-pepper CORS_ORIGINS=http://127.0.0.1:4175,http://127.0.0.1:4174 NODE_ENV=local PORT=3001 npm run migrate && exec ./node_modules/.bin/nest start) & backend_pid=$!; echo "$backend_pid" > /tmp/expressa-backoffice-catalog-e2e-backend.pid; wait "$backend_pid"\'';
 export const backOfficePlaywrightProjectName = {
   app: "app-e2e",
   auth: "auth-e2e",
+  catalog: "catalog-e2e",
   storybook: "storybook-e2e",
   storybookA11y: "storybook-a11y",
   storybookVisual: "storybook-visual",
@@ -34,6 +59,7 @@ export const backOfficePlaywrightSnapshotPathTemplate =
 export const backOfficePlaywrightTestMatch = {
   app: /app\.e2e\.ts/,
   auth: /auth\.e2e\.ts/,
+  catalog: /catalog\.e2e\.ts/,
   storybook: /navigation\.e2e\.ts/,
   storybookA11y: /a11y\.e2e\.ts/,
   storybookVisual: /visual\.e2e\.ts/,
@@ -46,5 +72,6 @@ export const backOfficeStorybookWebServerCommand =
 export const backOfficeWebServerTimeout = 120_000;
 export const playwrightTargets = {
   auth: "auth",
+  catalog: "catalog",
   storybook: "storybook",
 } as const;

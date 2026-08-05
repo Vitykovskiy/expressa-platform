@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import type { PublicMenuCandidates, PublicMenuRepository } from '../application/public-menu.repository.types';
 import {
+  acceptsNewOrdersSettingKey,
   modifierSelectionTypes,
   productSizes,
   productTypes,
@@ -17,53 +18,93 @@ import type {
   CatalogModifierSelectionType,
 } from '../domain/catalog.types';
 import type { DatabaseRow } from './postgres-public-menu.repository.types';
+import {
+  catalogAdvisoryLockKey,
+  publicMenuAdvisoryLockSql,
+} from './catalog-advisory-lock.constants';
 
 export class PostgresPublicMenuRepository implements PublicMenuRepository {
   constructor(private readonly pool: Pool) {}
 
   async findCandidates(): Promise<PublicMenuCandidates> {
-    const [categories, products, productVariants, modifierGroups, modifierOptions, categoryModifierGroups] =
-      await Promise.all([
-        this.pool.query<DatabaseRow>(
-          `SELECT id, name, description, sort_order, is_active, archived_at
-           FROM categories
-           ORDER BY sort_order`,
-        ),
-        this.pool.query<DatabaseRow>(
-          `SELECT id, category_id, type, name, description, price_minor, sort_order, is_active, is_available, archived_at
-           FROM products
-           ORDER BY sort_order`,
-        ),
-        this.pool.query<DatabaseRow>(
-          `SELECT id, product_id, size, price_minor, sort_order, is_available, archived_at
-           FROM product_variants
-           ORDER BY sort_order`,
-        ),
-        this.pool.query<DatabaseRow>(
-          `SELECT id, name, selection_type, min_select, max_select, is_active, archived_at
-           FROM modifier_groups`,
-        ),
-        this.pool.query<DatabaseRow>(
-          `SELECT id, group_id, name, price_delta_minor, sort_order, is_default, is_available, archived_at
-           FROM modifier_options
-           ORDER BY sort_order`,
-        ),
-        this.pool.query<DatabaseRow>(
-          `SELECT category_id, group_id, sort_order
-           FROM category_modifier_groups
-           ORDER BY sort_order`,
-        ),
-      ]);
+    const client = await this.pool.connect();
 
-    return {
-      categories: categories.rows.map(parseCategory),
-      products: products.rows.map(parseProduct),
-      productVariants: productVariants.rows.map(parseProductVariant),
-      modifierGroups: modifierGroups.rows.map(parseModifierGroup),
-      modifierOptions: modifierOptions.rows.map(parseModifierOption),
-      categoryModifierGroups: categoryModifierGroups.rows.map(parseCategoryModifierGroup),
-    };
+    try {
+      await client.query('BEGIN');
+      await client.query(publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
+
+      const [settings, categories, products, productVariants, modifierGroups, modifierOptions, categoryModifierGroups] =
+        await Promise.all([
+          client.query<DatabaseRow>(
+            `SELECT value
+             FROM service_settings
+             WHERE key = $1`,
+            [acceptsNewOrdersSettingKey],
+          ),
+          client.query<DatabaseRow>(
+            `SELECT id, name, description, sort_order, is_active, archived_at
+             FROM categories
+             ORDER BY sort_order`,
+          ),
+          client.query<DatabaseRow>(
+            `SELECT id, category_id, type, name, description, price_minor, sort_order, is_active, is_available, archived_at
+             FROM products
+             ORDER BY sort_order`,
+          ),
+          client.query<DatabaseRow>(
+            `SELECT id, product_id, size, price_minor, sort_order, is_available, archived_at
+             FROM product_variants
+             ORDER BY sort_order`,
+          ),
+          client.query<DatabaseRow>(
+            `SELECT id, name, selection_type, min_select, max_select, is_active, archived_at
+             FROM modifier_groups`,
+          ),
+          client.query<DatabaseRow>(
+            `SELECT id, group_id, name, price_delta_minor, sort_order, is_default, is_available, archived_at
+             FROM modifier_options
+             ORDER BY sort_order`,
+          ),
+          client.query<DatabaseRow>(
+            `SELECT category_id, group_id, sort_order
+             FROM category_modifier_groups
+             ORDER BY sort_order`,
+          ),
+        ]);
+
+      const candidates = {
+        acceptsNewOrders: readAcceptsNewOrders(settings.rows),
+        categories: categories.rows.map(parseCategory),
+        products: products.rows.map(parseProduct),
+        productVariants: productVariants.rows.map(parseProductVariant),
+        modifierGroups: modifierGroups.rows.map(parseModifierGroup),
+        modifierOptions: modifierOptions.rows.map(parseModifierOption),
+        categoryModifierGroups: categoryModifierGroups.rows.map(parseCategoryModifierGroup),
+      };
+
+      await client.query('COMMIT');
+      return candidates;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
+}
+
+function readAcceptsNewOrders(rows: DatabaseRow[]): boolean {
+  if (rows.length !== 1) {
+    throw new Error('Invalid PostgreSQL service setting: accepts_new_orders');
+  }
+
+  const value = rows[0]!['value'];
+
+  if (typeof value !== 'boolean') {
+    throw new Error('Invalid PostgreSQL service setting: accepts_new_orders');
+  }
+
+  return value;
 }
 
 function parseCategory(row: DatabaseRow): CatalogCategoryCandidate {

@@ -1,10 +1,17 @@
-import type { CreateMenuCategoryData } from "../../shared/ui/Admin.types";
+export type CategoryFormField = "name" | "description" | "isActive";
+
+export interface CategoryFormData {
+  name: string;
+  description: string;
+  isActive: boolean;
+}
 
 export interface AddCategoryDialogProps {
-  categories?: readonly string[];
-  optionGroups?: readonly string[];
+  disabled: boolean;
+  fieldErrors?: Partial<Record<CategoryFormField, string>>;
 }
+
 export interface AddCategoryDialogEmits {
-  confirm: [data: CreateMenuCategoryData];
+  confirm: [data: CategoryFormData];
   cancel: [];
 }

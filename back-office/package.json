@@ -21,6 +21,7 @@
     "test:a11y": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-a11y",
     "test:visual": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-visual",
     "test:e2e": "VITE_APP_ENV=development VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && PLAYWRIGHT_TARGET=app playwright test --project=app-e2e",
+    "test:catalog:e2e": "PLAYWRIGHT_TARGET=catalog playwright test --project=catalog-e2e",
     "contract:check": "node scripts/check-openapi.mjs"
   },
   "dependencies": {

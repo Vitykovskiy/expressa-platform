@@ -7,6 +7,7 @@ import { registerPwa } from "./app/pwa";
 import { router } from "./app/router";
 import { configureSessionDependencies } from "./app/session.store.dependencies";
 import { configureMenuStoreDependencies } from "./customer/shared/model/menu.store.dependencies";
+import { configureCheckoutStoreDependencies } from "./customer/pages/checkout/checkout.store.dependencies";
 import { apiClientKey, createApiClient } from "./shared/api/client";
 import { validateEnvironment } from "./shared/config/environment";
 import "./styles/main.css";
@@ -16,6 +17,7 @@ const apiClient = createApiClient(environment.apiBaseUrl);
 
 configureSessionDependencies(apiClient);
 configureMenuStoreDependencies(apiClient);
+configureCheckoutStoreDependencies(apiClient);
 
 const app = createApp(App);
 

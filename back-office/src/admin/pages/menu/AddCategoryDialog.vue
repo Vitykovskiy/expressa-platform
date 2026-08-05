@@ -6,60 +6,76 @@
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <v-card-title>Новая группа</v-card-title>
-      <v-card-text
-        >Создайте новую группу для организации товаров в меню</v-card-text
-      >
+      <v-card-title>Новая категория</v-card-title>
+      <v-card-text>Создайте новую категорию для товаров меню</v-card-text>
       <v-card-text class="add-dialog-fields">
-        <label :for="nameId">Название группы</label>
+        <label :for="nameId">Название категории</label>
         <AdminTextField
           :id="nameId"
           ref="nameInput"
           v-model="name"
+          :aria-describedby="nameError ? nameErrorId : undefined"
+          :aria-invalid="Boolean(nameError)"
           autofocus
           class="add-dialog-input"
           placeholder="Например: Кофе, Чай, Десерты"
           type="text"
           @keydown="submitOnEnter"
+          @update:model-value="dismissFieldError('name')"
         />
+        <p
+          v-if="nameError"
+          :id="nameErrorId"
+          class="add-dialog-error"
+          role="alert"
+        >
+          {{ nameError }}
+        </p>
+        <label :for="descriptionId">Описание</label>
+        <AdminTextField
+          :id="descriptionId"
+          v-model="description"
+          :aria-describedby="descriptionError ? descriptionErrorId : undefined"
+          :aria-invalid="Boolean(descriptionError)"
+          class="add-dialog-input"
+          placeholder="Например: Горячие напитки"
+          type="text"
+          @update:model-value="dismissFieldError('description')"
+        />
+        <p
+          v-if="descriptionError"
+          :id="descriptionErrorId"
+          class="add-dialog-error"
+          role="alert"
+        >
+          {{ descriptionError }}
+        </p>
         <div class="add-dialog-toggle">
-          <div>
-            <strong :id="optionLabelId">Группа опций</strong>
-            <span>Эта группа является набором опций для другой группы</span>
-          </div>
+          <strong :id="activeLabelId">Категория активна</strong>
           <AdminToggle
-            v-model="isOptionGroup"
-            :aria-labelledby="optionLabelId"
+            v-model="isActive"
+            :aria-labelledby="activeLabelId"
+            @update:model-value="dismissFieldError('isActive')"
           />
         </div>
-        <label :for="parentId">Выбрать группу опций</label>
-        <AdminSelect
-          :id="parentId"
-          v-model="parentGroupId"
-          :disabled="isOptionGroup"
-          class="add-dialog-input"
-        >
-          <option value="">Не выбрано</option>
-          <option
-            v-for="group in props.optionGroups"
-            :key="group"
-            :value="group"
-          >
-            {{ group }}
-          </option>
-        </AdminSelect>
-        <p
-          v-if="!isOptionGroup && !props.optionGroups.length"
-          class="add-dialog-hint"
-        >
-          Нет доступных групп опций
+        <p v-if="activeError" class="add-dialog-error" role="alert">
+          {{ activeError }}
         </p>
       </v-card-text>
       <v-card-actions class="add-dialog-actions admin-dialog-actions">
-        <AdminButton :disabled="!isNameValid" type="button" @click="confirm">
+        <AdminButton
+          :disabled="props.disabled || !isFormValid"
+          type="button"
+          @click="confirm"
+        >
           Добавить категорию
         </AdminButton>
-        <AdminButton type="button" variant="ghost" @click="cancel">
+        <AdminButton
+          :disabled="props.disabled"
+          type="button"
+          variant="ghost"
+          @click="cancel"
+        >
           Отмена
         </AdminButton>
       </v-card-actions>
@@ -72,7 +88,6 @@ import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
 
 import AdminButton from "../../shared/ui/admin-button/AdminButton.vue";
 import AdminDialog from "../../shared/ui/admin-dialog/AdminDialog.vue";
-import AdminSelect from "../../shared/ui/admin-select/AdminSelect.vue";
 import AdminTextField from "../../shared/ui/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../../shared/ui/admin-toggle/AdminToggle.vue";
 import { ADD_CATEGORY_DIALOG_DEFAULTS } from "./AddCategoryDialog.constants";
@@ -80,6 +95,7 @@ import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   AddCategoryDialogEmits,
   AddCategoryDialogProps,
+  CategoryFormField,
 } from "./AddCategoryDialog.types";
 
 const props = withDefaults(
@@ -89,20 +105,44 @@ const props = withDefaults(
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<AddCategoryDialogEmits>();
 const name = shallowRef("");
-const isOptionGroup = shallowRef(false);
-const parentGroupId = shallowRef("");
+const description = shallowRef("");
+const isActive = shallowRef(true);
+const dismissedFieldErrors = shallowRef<ReadonlySet<CategoryFormField>>(
+  new Set(),
+);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const nameId = `add-category-name-${useId()}`;
-const optionLabelId = `add-category-option-${useId()}`;
-const parentId = `add-category-parent-${useId()}`;
+const descriptionId = `add-category-description-${useId()}`;
+const activeLabelId = `add-category-active-${useId()}`;
+const nameErrorId = `add-category-name-error-${useId()}`;
+const descriptionErrorId = `add-category-description-error-${useId()}`;
 const nameInput =
   useTemplateRef<InstanceType<typeof AdminTextField>>("nameInput");
-const isNameValid = computed(() => Boolean(name.value.trim()));
+const nameError = computed(() =>
+  name.value.trim() ? serverFieldError("name") : "Введите название категории",
+);
+const descriptionError = computed(() => serverFieldError("description"));
+const activeError = computed(() => serverFieldError("isActive"));
+const isFormValid = computed(() => !nameError.value);
 
 function resetDraft() {
   name.value = "";
-  isOptionGroup.value = false;
-  parentGroupId.value = "";
+  description.value = "";
+  isActive.value = true;
+  dismissedFieldErrors.value = new Set();
+}
+
+function serverFieldError(field: CategoryFormField) {
+  return dismissedFieldErrors.value.has(field)
+    ? undefined
+    : props.fieldErrors[field];
+}
+
+function dismissFieldError(field: CategoryFormField) {
+  if (!props.fieldErrors[field] || dismissedFieldErrors.value.has(field))
+    return;
+
+  dismissedFieldErrors.value = new Set(dismissedFieldErrors.value).add(field);
 }
 
 function cancel() {
@@ -117,21 +157,19 @@ function updateOpen(value: boolean) {
 }
 
 function confirm() {
-  if (!isNameValid.value) return;
+  if (!isFormValid.value) return;
+
+  dismissedFieldErrors.value = new Set();
 
   emit("confirm", {
-    categoryName: name.value.trim(),
-    isOptionGroup: isOptionGroup.value,
-    parentGroupId: isOptionGroup.value
-      ? undefined
-      : parentGroupId.value || undefined,
+    name: name.value.trim(),
+    description: description.value.trim(),
+    isActive: isActive.value,
   });
-  resetDraft();
-  open.value = false;
 }
 
 function submitOnEnter(event: { key: string; preventDefault: () => void }) {
-  if (event.key === "Enter" && isNameValid.value) {
+  if (event.key === "Enter" && isFormValid.value) {
     event.preventDefault();
     confirm();
   }
@@ -151,6 +189,13 @@ watch(open, (value, previous) => {
     restoreFocus();
   }
 });
+
+watch(
+  () => props.fieldErrors,
+  () => {
+    dismissedFieldErrors.value = new Set();
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -203,6 +248,14 @@ watch(open, (value, previous) => {
 .add-dialog-hint {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+}
+.add-dialog-error {
+  margin: 0;
+  color: var(--expressa-color-status-error);
+  font-size: var(--expressa-font-size-caption);
+}
+.add-dialog-input[aria-invalid="true"] {
+  border-color: var(--expressa-color-status-error);
 }
 .add-dialog-actions {
   padding: var(--expressa-space-lg);

@@ -1,5 +1,5 @@
 <template>
-  <v-switch
+  <VSwitch
     v-bind="toggleAttrs"
     class="admin-toggle"
     :disabled="props.disabled"
@@ -14,6 +14,7 @@
 
 <script setup lang="ts">
 import { computed, useAttrs } from "vue";
+import { VSwitch } from "vuetify/components";
 import { ADMIN_TOGGLE_DEFAULTS } from "./AdminToggle.constants";
 import type { AdminToggleEmits, AdminToggleProps } from "./AdminToggle.types";
 
@@ -37,6 +38,23 @@ const toggleAttrs = computed(() => ({
 <style scoped lang="scss">
 .admin-toggle {
   min-height: var(--expressa-size-control-min-height);
+}
+
+.admin-toggle :deep(.v-selection-control__wrapper),
+.admin-toggle :deep(.v-selection-control__input),
+.admin-toggle :deep(input[role="switch"]) {
+  width: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
+  );
+  min-width: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
+  );
+  height: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
+  );
+  min-height: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
+  );
 }
 
 .admin-toggle:has(input:focus-visible) {

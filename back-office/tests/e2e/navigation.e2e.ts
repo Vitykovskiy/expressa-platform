@@ -10,6 +10,23 @@ const storyIds = Object.values(reference.entries)
   .map((entry) => entry.id);
 const storyPath = (storyId: string) =>
   `/iframe.html?id=${storyId}&viewMode=story`;
+const criticalSizeStories = new Map<string, readonly string[]>([
+  ["admin-menu-add-dialogs--add-drink-only-s", ["S"]],
+  ["admin-menu-edit-dialogs--edit-drink-only-s", ["M", "S"]],
+  ["admin-menu-edit-dialogs--edit-drink-sizes-sml", ["S", "M", "L"]],
+]);
+const criticalSizeWidths = [320, 768, 1280] as const;
+
+const collectStoryErrors = (page: Page): string[] => {
+  const errors: string[] = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+
+  return errors;
+};
 
 const waitForReferenceStory = async (page: Page) => {
   await expect
@@ -31,9 +48,40 @@ test.describe.configure({ mode: "parallel" });
 
 for (const storyId of storyIds) {
   test(`reference story завершается: ${storyId}`, async ({ page }) => {
+    const storyErrors = collectStoryErrors(page);
+
     await page.goto(storyPath(storyId));
     await waitForReferenceStory(page);
     await expect(page.locator("#error-message")).toBeEmpty();
+    expect(storyErrors, `Storybook errors in ${storyId}`).toEqual([]);
+
+    const configuredSizes = criticalSizeStories.get(storyId);
+    if (configuredSizes) {
+      for (const width of criticalSizeWidths) {
+        const previousErrorCount = storyErrors.length;
+
+        await page.setViewportSize({ height: 900, width });
+        await page.goto(storyPath(storyId));
+        await waitForReferenceStory(page);
+        await expect(page.locator("#error-message")).toBeEmpty();
+        expect(
+          storyErrors.slice(previousErrorCount),
+          `Storybook errors in ${storyId} at ${width}px`,
+        ).toEqual([]);
+        await expect
+          .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+          .toBeLessThanOrEqual(width);
+
+        for (const size of configuredSizes) {
+          const price = page.getByRole("spinbutton", {
+            name: `Цена ${size}, коп.`,
+          });
+          await price.scrollIntoViewIfNeeded();
+          await expect(price).toBeVisible();
+          await expect(price).toBeEnabled();
+        }
+      }
+    }
 
     if (storyId === "admin-orders-screen--reject-dialog-visual") {
       const dialog = page.getByRole("dialog", { name: "Отклонить заказ" });
@@ -58,7 +106,7 @@ for (const width of [320, 390, 479, 480, 767, 768, 1023, 1024, 1280, 1440]) {
   for (const storyId of [
     "admin-orders-screen--all-statuses",
     "admin-availability-availabilityscreen--default",
-    "admin-menu-parts--expanded-option-group",
+    "admin-menu-modifiers--category-assignment",
     "admin-users-usersscreen--flow",
   ]) {
     test(`${storyId} сохраняет ширину ${width}px`, async ({ page }) => {
@@ -71,6 +119,29 @@ for (const width of [320, 390, 479, 480, 767, 768, 1023, 1024, 1280, 1440]) {
         .toBeLessThanOrEqual(width);
     });
   }
+}
+
+for (const width of [768, 1280, 1440]) {
+  test(`admin-menu-parts--long-content сохраняет ширину ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 900, width });
+    await page.goto(storyPath("admin-menu-parts--long-content"));
+    await page.locator("#storybook-root").waitFor();
+
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(width);
+    await expect(
+      page.getByRole("button", { name: /Редактировать категорию/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Редактировать товар Очень длинное название напитка с подробным описанием состава",
+        exact: true,
+      }),
+    ).toBeVisible();
+  });
 }
 
 test("OTP visual показывает состояние невалидного кода", async ({ page }) => {

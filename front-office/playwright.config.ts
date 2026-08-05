@@ -4,6 +4,7 @@ import {
   frontOfficeAppOrigin,
   frontOfficeAppWebServerCommand,
   frontOfficeAuthBackendCommand,
+  frontOfficeBackendGracefulShutdown,
   frontOfficeBackendReadyUrl,
   frontOfficeMobileViewport,
   frontOfficePlaywrightOutputDirectory,
@@ -52,6 +53,7 @@ export default defineConfig({
     : [
         {
           command: frontOfficeAuthBackendCommand,
+          gracefulShutdown: frontOfficeBackendGracefulShutdown,
           reuseExistingServer: false,
           url: frontOfficeBackendReadyUrl,
         },

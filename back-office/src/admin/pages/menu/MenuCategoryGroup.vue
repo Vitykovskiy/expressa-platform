@@ -13,7 +13,7 @@
         </span>
         <span class="menu-category__copy">
           <span class="menu-category__name">
-            {{ props.category }}
+            {{ props.category.name }}
           </span>
           <span class="menu-category__count">
             {{ countLabel }}
@@ -21,10 +21,29 @@
         </span>
       </AdminButton>
       <AdminButton
+        :disabled="props.disabled || !props.canMoveUp"
+        :aria-label="`Переместить категорию ${props.category.name} вверх`"
+        class="menu-category__move"
+        type="button"
+        variant="ghost"
+        @click="emit('moveUp', props.category)"
+        >↑</AdminButton
+      >
+      <AdminButton
+        :disabled="props.disabled || !props.canMoveDown"
+        :aria-label="`Переместить категорию ${props.category.name} вниз`"
+        class="menu-category__move"
+        type="button"
+        variant="ghost"
+        @click="emit('moveDown', props.category)"
+        >↓</AdminButton
+      >
+      <AdminButton
+        :disabled="props.disabled"
         class="menu-category__edit"
         type="button"
         variant="ghost"
-        :aria-label="`Редактировать группу ${props.category}`"
+        :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
       >
         Редактировать
@@ -32,19 +51,20 @@
     </header>
 
     <div v-if="props.expanded">
-      <p v-if="props.items.length === 0" class="menu-category__empty">
-        {{
-          isOptionGroup
-            ? "Опций в этой группе пока нет"
-            : "Товаров в этой группе пока нет"
-        }}
+      <p v-if="props.products.length === 0" class="menu-category__empty">
+        Товаров в этой категории пока нет
       </p>
       <MenuProductRow
-        v-for="item in props.items"
+        v-for="(product, index) in props.products"
         v-else
-        :key="item.id"
-        :product="item"
+        :key="product.id"
+        :product="product"
+        :can-move-up="index > 0"
+        :can-move-down="index < props.products.length - 1"
+        :disabled="props.disabled"
         @edit="emit('edit', $event)"
+        @move-up="emit('moveProductUp', $event)"
+        @move-down="emit('moveProductDown', $event)"
       />
     </div>
   </section>
@@ -63,20 +83,10 @@ import type {
 const props = defineProps<MenuCategoryGroupProps>();
 const emit = defineEmits<MenuCategoryGroupEmits>();
 
-const isOptionGroup = computed(() =>
-  props.items.some((item) => item.isOptionGroup),
-);
-
 const countLabel = computed(() => {
-  const itemType = isOptionGroup.value
-    ? props.items.length === 1
-      ? "опция"
-      : "опций"
-    : props.items.length === 1
-      ? "товар"
-      : "товаров";
+  const itemType = props.products.length === 1 ? "товар" : "товаров";
 
-  return `${props.items.length} ${itemType}`;
+  return `${props.products.length} ${itemType}`;
 });
 </script>
 
@@ -95,11 +105,19 @@ const countLabel = computed(() => {
 }
 
 .menu-category__toggle,
-.menu-category__edit {
+.menu-category__edit,
+.menu-category__move {
   min-height: var(--expressa-size-control-min-height);
   border: var(--expressa-border-width-none);
   background: var(--expressa-color-transparent);
   cursor: pointer;
+}
+
+.menu-category__move {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
 }
 
 .menu-category__toggle {
@@ -144,5 +162,19 @@ const countLabel = computed(() => {
   text-align: center;
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
+}
+
+@media (max-width: 767px) {
+  .menu-category__header {
+    flex-wrap: wrap;
+  }
+
+  .menu-category__toggle {
+    flex-basis: calc(100% - 88px);
+  }
+
+  .menu-category__edit {
+    width: 100%;
+  }
 }
 </style>

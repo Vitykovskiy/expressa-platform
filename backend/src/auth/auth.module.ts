@@ -109,6 +109,14 @@ import { SessionGuard } from './transport/session.guard';
     SessionGuard,
     RolesGuard,
   ],
+  exports: [
+    authRepositoryPort,
+    authCryptoPort,
+    clockPort,
+    sessionGuardConfigurationToken,
+    SessionGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}
 

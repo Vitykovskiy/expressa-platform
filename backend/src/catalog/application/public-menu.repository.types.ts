@@ -8,6 +8,7 @@ import type {
 } from '../domain/catalog.types';
 
 export type PublicMenuCandidates = {
+  acceptsNewOrders: boolean;
   categories: CatalogCategoryCandidate[];
   products: CatalogProductCandidate[];
   productVariants: CatalogProductVariantCandidate[];

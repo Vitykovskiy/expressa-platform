@@ -1,15 +1,17 @@
-import type { EditMenuCategoryData } from "../../shared/ui/Admin.types";
+import type { Category } from "./catalog.types";
+import type {
+  CategoryFormData,
+  CategoryFormField,
+} from "./AddCategoryDialog.types";
 
 export interface EditCategoryDialogProps {
-  categoryName: string | null;
-  productCount: number;
-  optionGroups?: readonly string[];
-  isOptionGroup?: boolean;
-  parentGroupId?: string;
+  disabled: boolean;
+  category: Category | null;
+  fieldErrors?: Partial<Record<CategoryFormField, string>>;
 }
 
 export interface EditCategoryDialogEmits {
-  save: [data: EditMenuCategoryData];
-  delete: [];
+  save: [data: CategoryFormData];
+  archive: [categoryId: string];
   cancel: [];
 }

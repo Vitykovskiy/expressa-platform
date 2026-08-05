@@ -1,9 +1,19 @@
-import type { ProductSizeDraft } from "./AddProductDialog.types";
+import { productSizes } from "./catalog.constants";
+import type {
+  ProductTypeOption,
+  ProductVariantDraft,
+} from "./AddProductDialog.types";
 
-export function createInitialProductSizeDrafts(): ProductSizeDraft[] {
-  return [
-    { id: "small", size: "S", price: "" },
-    { id: "medium", size: "M", price: "" },
-    { id: "large", size: "L", price: "" },
-  ];
+export const PRODUCT_TYPE_OPTIONS: readonly ProductTypeOption[] = [
+  { value: "DRINK", label: "Напиток" },
+  { value: "OTHER", label: "Товар без размеров" },
+];
+
+export function createInitialProductVariantDrafts(): ProductVariantDraft[] {
+  return productSizes.map((size) => ({
+    size,
+    priceMinor: "",
+    isConfigured: true,
+    isAvailable: true,
+  }));
 }

@@ -22,6 +22,33 @@ backend CI-эквивалент, браузерные auth-сценарии об
 - Backend: [CatalogModule](../../backend/src/catalog/catalog.module.ts), [сценарий публичного меню](../../backend/src/catalog/application/get-public-menu.use-case.spec.ts) и [OpenAPI](../../backend/openapi/openapi.json).
 - Front-office: [публичное menu E2E](../../front-office/tests/e2e/menu.e2e.spec.ts) и [CI](../../.github/workflows/front-office-ci.yml).
 
+## E06 — управление меню
+
+Область проверки E06: PostgreSQL-команды каталога, OpenAPI, runtime back-office
+и реальный Chromium-путь Administrator → backend → публичное меню. Сквозной
+сценарий работает с back-office на `1280` px и проверяет результат во
+front-office на `768`, `1280` и `1440` px; это фактические размеры E06, а не
+общая матрица визуальных проверок клиентов.
+
+- Backend: [admin catalog E2E](../../backend/test/e2e/admin-catalog.e2e-spec.ts), [интеграция схемы](../../backend/test/integration/catalog-admin-schema.integration.spec.ts) и [OpenAPI](../../backend/openapi/openapi.json).
+- Back-office и front-office: [сквозной catalog E2E](../../back-office/tests/e2e/catalog.e2e.ts) и [CI](../../.github/workflows/back-office-ci.yml).
+
+## E07 — корзина и создание заказа
+
+Область проверки E07: миграция схемы заказов, атомарная серверная актуализация и
+снимки, customer-only `POST /api/v1/orders`, идемпотентность и реальный Chromium
+checkout. Browser suite содержит шесть сценариев: путь гостя через OTP, изменение
+цены, недоступный вариант, закрытый приём, потерю ответа с повтором и адаптивную
+проверку. Последняя проходит на `320`, `390`, `479`, `480`, `767`, `768`, `1023`,
+`1024`, `1280` и `1440` px.
+
+- Backend: [create-order E2E](../../backend/test/e2e/create-order.e2e-spec.ts),
+  [схема PostgreSQL](../../backend/test/integration/orders-schema.integration.spec.ts),
+  [unit of work](../../backend/test/integration/order-unit-of-work.integration.spec.ts)
+  и [OpenAPI](../../backend/openapi/openapi.json).
+- Front-office: [checkout E2E](../../front-office/tests/e2e/checkout.e2e.spec.ts)
+  и [CI](../../.github/workflows/front-office-ci.yml).
+
 ## Definition of Ready
 
 Задача готова к разработке, когда содержит:

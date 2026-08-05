@@ -1,1 +1,1 @@
-export type PlaywrightTarget = "app" | "auth" | "storybook";
+export type PlaywrightTarget = "app" | "auth" | "catalog" | "storybook";

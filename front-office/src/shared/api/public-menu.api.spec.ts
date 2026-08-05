@@ -16,6 +16,53 @@ describe("PublicMenuApi", () => {
     expect(menu.categories[0]?.products[1]?.type).toBe("OTHER");
   });
 
+  it("передаёт customer только доступные размеры напитка", async () => {
+    const response = {
+      ...menuResponse,
+      categories: [
+        {
+          ...menuResponse.categories[0],
+          products: [
+            {
+              ...menuResponse.categories[0]!.products[0],
+              variants: [
+                {
+                  id: "00000000-0000-4000-8000-000000000006",
+                  size: "S" as const,
+                  priceMinor: 20000,
+                  isAvailable: true,
+                },
+                {
+                  id: "00000000-0000-4000-8000-000000000007",
+                  size: "M" as const,
+                  priceMinor: 24000,
+                  isAvailable: false,
+                },
+                {
+                  id: "00000000-0000-4000-8000-000000000008",
+                  size: "L" as const,
+                  priceMinor: 28000,
+                  isAvailable: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const menu = await createPublicMenuApi(client(response)).getMenu();
+
+    expect(menu.categories[0]?.products[0]?.variants).toEqual([
+      {
+        id: "00000000-0000-4000-8000-000000000006",
+        size: "S",
+        priceMinor: 20000,
+        isAvailable: true,
+      },
+    ]);
+  });
+
   it.each([
     {
       ...menuResponse,
