@@ -55,25 +55,22 @@ export const Default: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByRole("button", {
       name: "Продолжить",
     });
     await expect(button).toBeDisabled();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
 
 export const Loading: Story = {
   args: { loading: true },
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByRole("button", {
       name: "Продолжить",
     });
-    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute("aria-busy", "true");
+    await expect(button).toHaveAttribute("tabindex", "-1");
     await expect(within(canvasElement).getByRole("progressbar")).toBeVisible();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
   },
 };

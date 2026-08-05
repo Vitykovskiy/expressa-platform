@@ -1,10 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const visualStories = [
   ["admin-orders", "admin-orders-screen--all-statuses"],
-  ["admin-availability", "admin-availability-availabilityscreen--default"],
-  ["admin-shell", "admin-shell--administrator"],
+  [
+    "admin-availability",
+    "admin-availability-availabilityscreen--default-visual",
+  ],
+  ["admin-shell", "admin-shell--administrator-visual"],
 ] as const;
+
+async function waitForStoryRender(page: Page) {
+  await page.waitForFunction(
+    () =>
+      (
+        window as Window & {
+          __STORYBOOK_PREVIEW__?: {
+            currentRender?: { phase?: string };
+          };
+        }
+      ).__STORYBOOK_PREVIEW__?.currentRender?.phase === "finished",
+  );
+}
 
 for (const [name, storyId] of visualStories) {
   test(`визуальный снимок ${name}`, async ({ page }) => {
@@ -12,10 +28,10 @@ for (const [name, storyId] of visualStories) {
     await page.goto(`/iframe.html?id=${storyId}&viewMode=story`);
     await page.locator("#storybook-root").waitFor();
     await page.evaluate(() => document.fonts.ready);
+    await waitForStoryRender(page);
 
-    await expect(page.locator("#storybook-root")).toHaveScreenshot(
-      `${name}.png`,
-      { animations: "disabled" },
-    );
+    await expect(page).toHaveScreenshot(`${name}.png`, {
+      animations: "disabled",
+    });
   });
 }

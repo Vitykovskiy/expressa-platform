@@ -11,10 +11,49 @@ const storyIds = Object.values(reference.entries)
   .filter((entry) => entry.type === "story")
   .map((entry) => entry.id);
 
+function collectRuntimeFailures(page) {
+  const runtimeFailures = [];
+  const recordRuntimeFailure = (message) => {
+    if (!runtimeFailures.includes(message)) runtimeFailures.push(message);
+  };
+
+  page.on("console", (message) => {
+    if (message.type() === "error") recordRuntimeFailure(message.text());
+  });
+  page.on("pageerror", (error) => recordRuntimeFailure(error.message));
+  page.on("requestfailed", (request) => {
+    const errorText = request.failure()?.errorText;
+
+    // Browser cancels in-flight navigation requests with this explicit signal.
+    if (errorText === "net::ERR_ABORTED") return;
+
+    recordRuntimeFailure(`${request.method()} ${request.url()}: ${errorText}`);
+  });
+
+  return runtimeFailures;
+}
+
+async function waitForRuntimeSettling(page) {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => queueMicrotask(resolve)),
+        ),
+      ),
+  );
+}
+
+function assertNoRuntimeFailures(storyId, runtimeFailures) {
+  expect(runtimeFailures, `Storybook runtime errors: ${storyId}`).toEqual([]);
+}
+
 test.describe.configure({ mode: "parallel" });
 
 for (const storyId of storyIds) {
   test(`reference story завершается: ${storyId}`, async ({ page }) => {
+    const runtimeFailures = collectRuntimeFailures(page);
+
     await openStory(page, storyId);
 
     await expect
@@ -24,9 +63,46 @@ for (const storyId of storyIds) {
         ),
       )
       .toBe("finished");
+    await waitForRuntimeSettling(page);
     await expect(page.locator("#error-message")).toBeEmpty();
+    assertNoRuntimeFailures(storyId, runtimeFailures);
   });
 }
+
+test("Storybook runtime guard ловит thrown и console errors", async ({
+  page,
+}) => {
+  const runtimeFailures = collectRuntimeFailures(page);
+
+  await openStory(page, "foundation-breakpoints--thresholds");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => globalThis.__STORYBOOK_PREVIEW__?.currentRender?.phase,
+      ),
+    )
+    .toBe("finished");
+  await waitForRuntimeSettling(page);
+  await page.evaluate(() => {
+    window.setTimeout(() => {
+      console.error("TestingLibrary assertion failed");
+      throw new Error("Storybook play function failed");
+    });
+  });
+
+  await expect
+    .poll(() => runtimeFailures)
+    .toEqual([
+      "TestingLibrary assertion failed",
+      "Storybook play function failed",
+    ]);
+  expect(() =>
+    assertNoRuntimeFailures(
+      "foundation-breakpoints--thresholds",
+      runtimeFailures,
+    ),
+  ).toThrow(/Storybook runtime errors/);
+});
 
 test("responsive screens сохраняют ширину reference", async ({ page }) => {
   const responsiveStories = [

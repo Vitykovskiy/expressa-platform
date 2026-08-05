@@ -1,0 +1,1501 @@
+{
+  "generatedAt": "2026-08-05T14:18:22.435Z",
+  "screenshotCount": 517,
+  "storyCount": 139,
+  "stories": [
+    {
+      "files": [
+        "components-atoms-button--default.png"
+      ],
+      "id": "components-atoms-button--default",
+      "responsive": false,
+      "title": "Components/Atoms/Button"
+    },
+    {
+      "files": [
+        "components-atoms-button--disabled.png"
+      ],
+      "id": "components-atoms-button--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/Button"
+    },
+    {
+      "files": [
+        "components-atoms-button--loading.png"
+      ],
+      "id": "components-atoms-button--loading",
+      "responsive": false,
+      "title": "Components/Atoms/Button"
+    },
+    {
+      "files": [
+        "components-atoms-fieldmessage--default.png"
+      ],
+      "id": "components-atoms-fieldmessage--default",
+      "responsive": false,
+      "title": "Components/Atoms/FieldMessage"
+    },
+    {
+      "files": [
+        "components-atoms-fieldmessage--empty.png"
+      ],
+      "id": "components-atoms-fieldmessage--empty",
+      "responsive": false,
+      "title": "Components/Atoms/FieldMessage"
+    },
+    {
+      "files": [
+        "components-atoms-fieldmessage--error.png"
+      ],
+      "id": "components-atoms-fieldmessage--error",
+      "responsive": false,
+      "title": "Components/Atoms/FieldMessage"
+    },
+    {
+      "files": [
+        "components-atoms-iconbutton--default.png"
+      ],
+      "id": "components-atoms-iconbutton--default",
+      "responsive": false,
+      "title": "Components/Atoms/IconButton"
+    },
+    {
+      "files": [
+        "components-atoms-iconbutton--disabled.png"
+      ],
+      "id": "components-atoms-iconbutton--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/IconButton"
+    },
+    {
+      "files": [
+        "components-atoms-iconbutton--loading.png"
+      ],
+      "id": "components-atoms-iconbutton--loading",
+      "responsive": false,
+      "title": "Components/Atoms/IconButton"
+    },
+    {
+      "files": [
+        "components-atoms-otpinput--default.png"
+      ],
+      "id": "components-atoms-otpinput--default",
+      "responsive": false,
+      "title": "Components/Atoms/OtpInput"
+    },
+    {
+      "files": [
+        "components-atoms-otpinput--disabled.png"
+      ],
+      "id": "components-atoms-otpinput--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/OtpInput"
+    },
+    {
+      "files": [
+        "components-atoms-otpinput--filled.png"
+      ],
+      "id": "components-atoms-otpinput--filled",
+      "responsive": false,
+      "title": "Components/Atoms/OtpInput"
+    },
+    {
+      "files": [
+        "components-atoms-otpinput--loading.png"
+      ],
+      "id": "components-atoms-otpinput--loading",
+      "responsive": false,
+      "title": "Components/Atoms/OtpInput"
+    },
+    {
+      "files": [
+        "components-atoms-otpinput--with-loader.png"
+      ],
+      "id": "components-atoms-otpinput--with-loader",
+      "responsive": false,
+      "title": "Components/Atoms/OtpInput"
+    },
+    {
+      "files": [
+        "components-atoms-phoneinput--default.png"
+      ],
+      "id": "components-atoms-phoneinput--default",
+      "responsive": false,
+      "title": "Components/Atoms/PhoneInput"
+    },
+    {
+      "files": [
+        "components-atoms-phoneinput--disabled.png"
+      ],
+      "id": "components-atoms-phoneinput--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/PhoneInput"
+    },
+    {
+      "files": [
+        "components-atoms-phoneinput--filled.png"
+      ],
+      "id": "components-atoms-phoneinput--filled",
+      "responsive": false,
+      "title": "Components/Atoms/PhoneInput"
+    },
+    {
+      "files": [
+        "components-atoms-phoneinput--loading.png"
+      ],
+      "id": "components-atoms-phoneinput--loading",
+      "responsive": false,
+      "title": "Components/Atoms/PhoneInput"
+    },
+    {
+      "files": [
+        "components-atoms-phoneinput--with-loader.png"
+      ],
+      "id": "components-atoms-phoneinput--with-loader",
+      "responsive": false,
+      "title": "Components/Atoms/PhoneInput"
+    },
+    {
+      "files": [
+        "components-atoms-progress--default.png"
+      ],
+      "id": "components-atoms-progress--default",
+      "responsive": false,
+      "title": "Components/Atoms/Progress"
+    },
+    {
+      "files": [
+        "components-atoms-progress--indeterminate.png"
+      ],
+      "id": "components-atoms-progress--indeterminate",
+      "responsive": false,
+      "title": "Components/Atoms/Progress"
+    },
+    {
+      "files": [
+        "components-atoms-progress--spinner.png"
+      ],
+      "id": "components-atoms-progress--spinner",
+      "responsive": false,
+      "title": "Components/Atoms/Progress"
+    },
+    {
+      "files": [
+        "components-atoms-textfield--default.png"
+      ],
+      "id": "components-atoms-textfield--default",
+      "responsive": false,
+      "title": "Components/Atoms/TextField"
+    },
+    {
+      "files": [
+        "components-atoms-textfield--disabled.png"
+      ],
+      "id": "components-atoms-textfield--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/TextField"
+    },
+    {
+      "files": [
+        "components-atoms-textfield--model.png"
+      ],
+      "id": "components-atoms-textfield--model",
+      "responsive": false,
+      "title": "Components/Atoms/TextField"
+    },
+    {
+      "files": [
+        "components-atoms-uibadge--default.png"
+      ],
+      "id": "components-atoms-uibadge--default",
+      "responsive": false,
+      "title": "Components/Atoms/UiBadge"
+    },
+    {
+      "files": [
+        "components-atoms-uibadge--error.png"
+      ],
+      "id": "components-atoms-uibadge--error",
+      "responsive": false,
+      "title": "Components/Atoms/UiBadge"
+    },
+    {
+      "files": [
+        "components-atoms-uibadge--success.png"
+      ],
+      "id": "components-atoms-uibadge--success",
+      "responsive": false,
+      "title": "Components/Atoms/UiBadge"
+    },
+    {
+      "files": [
+        "components-atoms-uidialog--default.png"
+      ],
+      "id": "components-atoms-uidialog--default",
+      "responsive": false,
+      "title": "Components/Atoms/UiDialog"
+    },
+    {
+      "files": [
+        "components-atoms-uidialog--model.png"
+      ],
+      "id": "components-atoms-uidialog--model",
+      "responsive": false,
+      "title": "Components/Atoms/UiDialog"
+    },
+    {
+      "files": [
+        "components-atoms-uitoggle--default.png"
+      ],
+      "id": "components-atoms-uitoggle--default",
+      "responsive": false,
+      "title": "Components/Atoms/UiToggle"
+    },
+    {
+      "files": [
+        "components-atoms-uitoggle--disabled.png"
+      ],
+      "id": "components-atoms-uitoggle--disabled",
+      "responsive": false,
+      "title": "Components/Atoms/UiToggle"
+    },
+    {
+      "files": [
+        "components-atoms-uitoggle--model.png"
+      ],
+      "id": "components-atoms-uitoggle--model",
+      "responsive": false,
+      "title": "Components/Atoms/UiToggle"
+    },
+    {
+      "files": [
+        "components-patterns-authform--otp.png"
+      ],
+      "id": "components-patterns-authform--otp",
+      "responsive": false,
+      "title": "Components/Patterns/AuthForm"
+    },
+    {
+      "files": [
+        "components-patterns-authform--otp-error.png"
+      ],
+      "id": "components-patterns-authform--otp-error",
+      "responsive": false,
+      "title": "Components/Patterns/AuthForm"
+    },
+    {
+      "files": [
+        "components-patterns-authform--phone.png"
+      ],
+      "id": "components-patterns-authform--phone",
+      "responsive": false,
+      "title": "Components/Patterns/AuthForm"
+    },
+    {
+      "files": [
+        "components-patterns-authgateprompt--confirm.png"
+      ],
+      "id": "components-patterns-authgateprompt--confirm",
+      "responsive": false,
+      "title": "Components/Patterns/AuthGatePrompt"
+    },
+    {
+      "files": [
+        "components-patterns-authgateprompt--default.png"
+      ],
+      "id": "components-patterns-authgateprompt--default",
+      "responsive": false,
+      "title": "Components/Patterns/AuthGatePrompt"
+    },
+    {
+      "files": [
+        "components-patterns-authgateprompt--long.png"
+      ],
+      "id": "components-patterns-authgateprompt--long",
+      "responsive": false,
+      "title": "Components/Patterns/AuthGatePrompt"
+    },
+    {
+      "files": [
+        "components-patterns-cartitem--default.png"
+      ],
+      "id": "components-patterns-cartitem--default",
+      "responsive": false,
+      "title": "Components/Patterns/CartItem"
+    },
+    {
+      "files": [
+        "components-patterns-cartitem--long-addons.png"
+      ],
+      "id": "components-patterns-cartitem--long-addons",
+      "responsive": false,
+      "title": "Components/Patterns/CartItem"
+    },
+    {
+      "files": [
+        "components-patterns-cartitem--remove.png"
+      ],
+      "id": "components-patterns-cartitem--remove",
+      "responsive": false,
+      "title": "Components/Patterns/CartItem"
+    },
+    {
+      "files": [
+        "components-patterns-cartitem--unavailable.png"
+      ],
+      "id": "components-patterns-cartitem--unavailable",
+      "responsive": false,
+      "title": "Components/Patterns/CartItem"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--cancelled.png"
+      ],
+      "id": "components-patterns-ordercard--cancelled",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--collapsed.png"
+      ],
+      "id": "components-patterns-ordercard--collapsed",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--completed.png"
+      ],
+      "id": "components-patterns-ordercard--completed",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--expanded.png"
+      ],
+      "id": "components-patterns-ordercard--expanded",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--pending.png"
+      ],
+      "id": "components-patterns-ordercard--pending",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--preparing.png"
+      ],
+      "id": "components-patterns-ordercard--preparing",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-ordercard--ready.png"
+      ],
+      "id": "components-patterns-ordercard--ready",
+      "responsive": false,
+      "title": "Components/Patterns/OrderCard"
+    },
+    {
+      "files": [
+        "components-patterns-productcard--default.png"
+      ],
+      "id": "components-patterns-productcard--default",
+      "responsive": false,
+      "title": "Components/Patterns/ProductCard"
+    },
+    {
+      "files": [
+        "components-patterns-productcard--long.png"
+      ],
+      "id": "components-patterns-productcard--long",
+      "responsive": false,
+      "title": "Components/Patterns/ProductCard"
+    },
+    {
+      "files": [
+        "components-patterns-productcard--no-price.png"
+      ],
+      "id": "components-patterns-productcard--no-price",
+      "responsive": false,
+      "title": "Components/Patterns/ProductCard"
+    },
+    {
+      "files": [
+        "components-patterns-productcard--sized-prices.png"
+      ],
+      "id": "components-patterns-productcard--sized-prices",
+      "responsive": false,
+      "title": "Components/Patterns/ProductCard"
+    },
+    {
+      "files": [
+        "components-patterns-shellnavigation--authenticated.png"
+      ],
+      "id": "components-patterns-shellnavigation--authenticated",
+      "responsive": false,
+      "title": "Components/Patterns/ShellNavigation"
+    },
+    {
+      "files": [
+        "components-patterns-shellnavigation--default.png"
+      ],
+      "id": "components-patterns-shellnavigation--default",
+      "responsive": false,
+      "title": "Components/Patterns/ShellNavigation"
+    },
+    {
+      "files": [
+        "components-patterns-shellnavigation--empty-cart.png"
+      ],
+      "id": "components-patterns-shellnavigation--empty-cart",
+      "responsive": false,
+      "title": "Components/Patterns/ShellNavigation"
+    },
+    {
+      "files": [
+        "components-patterns-shellnavigation--selected-category.png"
+      ],
+      "id": "components-patterns-shellnavigation--selected-category",
+      "responsive": false,
+      "title": "Components/Patterns/ShellNavigation"
+    },
+    {
+      "files": [
+        "components-patterns-slotoption--default.png"
+      ],
+      "id": "components-patterns-slotoption--default",
+      "responsive": false,
+      "title": "Components/Patterns/SlotOption"
+    },
+    {
+      "files": [
+        "components-patterns-slotoption--disabled.png"
+      ],
+      "id": "components-patterns-slotoption--disabled",
+      "responsive": false,
+      "title": "Components/Patterns/SlotOption"
+    },
+    {
+      "files": [
+        "components-patterns-slotoption--full.png"
+      ],
+      "id": "components-patterns-slotoption--full",
+      "responsive": false,
+      "title": "Components/Patterns/SlotOption"
+    },
+    {
+      "files": [
+        "components-patterns-slotoption--long.png"
+      ],
+      "id": "components-patterns-slotoption--long",
+      "responsive": false,
+      "title": "Components/Patterns/SlotOption"
+    },
+    {
+      "files": [
+        "components-patterns-slotoption--selected.png"
+      ],
+      "id": "components-patterns-slotoption--selected",
+      "responsive": false,
+      "title": "Components/Patterns/SlotOption"
+    },
+    {
+      "files": [
+        "components-patterns-surfacecard--default.png"
+      ],
+      "id": "components-patterns-surfacecard--default",
+      "responsive": false,
+      "title": "Components/Patterns/SurfaceCard"
+    },
+    {
+      "files": [
+        "components-patterns-surfacecard--empty.png"
+      ],
+      "id": "components-patterns-surfacecard--empty",
+      "responsive": false,
+      "title": "Components/Patterns/SurfaceCard"
+    },
+    {
+      "files": [
+        "components-patterns-surfacecard--muted.png"
+      ],
+      "id": "components-patterns-surfacecard--muted",
+      "responsive": false,
+      "title": "Components/Patterns/SurfaceCard"
+    },
+    {
+      "files": [
+        "components-patterns-surfacecard--with-default-slot.png"
+      ],
+      "id": "components-patterns-surfacecard--with-default-slot",
+      "responsive": false,
+      "title": "Components/Patterns/SurfaceCard"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--auth-cancel-origin.png",
+        "customer-journeys-customershell--auth-cancel-origin-479.png",
+        "customer-journeys-customershell--auth-cancel-origin-480.png",
+        "customer-journeys-customershell--auth-cancel-origin-768.png",
+        "customer-journeys-customershell--auth-cancel-origin-1023.png",
+        "customer-journeys-customershell--auth-cancel-origin-1024.png",
+        "customer-journeys-customershell--auth-cancel-origin-1280.png"
+      ],
+      "id": "customer-journeys-customershell--auth-cancel-origin",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--authenticated-navigation-stack.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-479.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-480.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-768.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-1023.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-1024.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-1280.png"
+      ],
+      "id": "customer-journeys-customershell--authenticated-navigation-stack",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--authenticated-navigation-stack-view.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-479.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-480.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-768.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-1023.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-1024.png",
+        "customer-journeys-customershell--authenticated-navigation-stack-view-1280.png"
+      ],
+      "id": "customer-journeys-customershell--authenticated-navigation-stack-view",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--back-stack.png",
+        "customer-journeys-customershell--back-stack-479.png",
+        "customer-journeys-customershell--back-stack-480.png",
+        "customer-journeys-customershell--back-stack-768.png",
+        "customer-journeys-customershell--back-stack-1023.png",
+        "customer-journeys-customershell--back-stack-1024.png",
+        "customer-journeys-customershell--back-stack-1280.png"
+      ],
+      "id": "customer-journeys-customershell--back-stack",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--cart-quantity-update.png",
+        "customer-journeys-customershell--cart-quantity-update-479.png",
+        "customer-journeys-customershell--cart-quantity-update-480.png",
+        "customer-journeys-customershell--cart-quantity-update-768.png",
+        "customer-journeys-customershell--cart-quantity-update-1023.png",
+        "customer-journeys-customershell--cart-quantity-update-1024.png",
+        "customer-journeys-customershell--cart-quantity-update-1280.png"
+      ],
+      "id": "customer-journeys-customershell--cart-quantity-update",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--protected-action-auth-resume.png",
+        "customer-journeys-customershell--protected-action-auth-resume-479.png",
+        "customer-journeys-customershell--protected-action-auth-resume-480.png",
+        "customer-journeys-customershell--protected-action-auth-resume-768.png",
+        "customer-journeys-customershell--protected-action-auth-resume-1023.png",
+        "customer-journeys-customershell--protected-action-auth-resume-1024.png",
+        "customer-journeys-customershell--protected-action-auth-resume-1280.png"
+      ],
+      "id": "customer-journeys-customershell--protected-action-auth-resume",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--protected-confirmation.png",
+        "customer-journeys-customershell--protected-confirmation-479.png",
+        "customer-journeys-customershell--protected-confirmation-480.png",
+        "customer-journeys-customershell--protected-confirmation-768.png",
+        "customer-journeys-customershell--protected-confirmation-1023.png",
+        "customer-journeys-customershell--protected-confirmation-1024.png",
+        "customer-journeys-customershell--protected-confirmation-1280.png"
+      ],
+      "id": "customer-journeys-customershell--protected-confirmation",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-journeys-customershell--sign-out-resets-protected-history.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-479.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-480.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-768.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-1023.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-1024.png",
+        "customer-journeys-customershell--sign-out-resets-protected-history-1280.png"
+      ],
+      "id": "customer-journeys-customershell--sign-out-resets-protected-history",
+      "responsive": true,
+      "title": "Customer/Journeys/CustomerShell"
+    },
+    {
+      "files": [
+        "customer-screens-auth--invalid-phone.png",
+        "customer-screens-auth--invalid-phone-479.png",
+        "customer-screens-auth--invalid-phone-480.png",
+        "customer-screens-auth--invalid-phone-768.png",
+        "customer-screens-auth--invalid-phone-1023.png",
+        "customer-screens-auth--invalid-phone-1024.png",
+        "customer-screens-auth--invalid-phone-1280.png"
+      ],
+      "id": "customer-screens-auth--invalid-phone",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--loading.png",
+        "customer-screens-auth--loading-479.png",
+        "customer-screens-auth--loading-480.png",
+        "customer-screens-auth--loading-768.png",
+        "customer-screens-auth--loading-1023.png",
+        "customer-screens-auth--loading-1024.png",
+        "customer-screens-auth--loading-1280.png"
+      ],
+      "id": "customer-screens-auth--loading",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--loading-visual.png",
+        "customer-screens-auth--loading-visual-479.png",
+        "customer-screens-auth--loading-visual-480.png",
+        "customer-screens-auth--loading-visual-768.png",
+        "customer-screens-auth--loading-visual-1023.png",
+        "customer-screens-auth--loading-visual-1024.png",
+        "customer-screens-auth--loading-visual-1280.png"
+      ],
+      "id": "customer-screens-auth--loading-visual",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--otp.png",
+        "customer-screens-auth--otp-479.png",
+        "customer-screens-auth--otp-480.png",
+        "customer-screens-auth--otp-768.png",
+        "customer-screens-auth--otp-1023.png",
+        "customer-screens-auth--otp-1024.png",
+        "customer-screens-auth--otp-1280.png"
+      ],
+      "id": "customer-screens-auth--otp",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--otp-error.png",
+        "customer-screens-auth--otp-error-479.png",
+        "customer-screens-auth--otp-error-480.png",
+        "customer-screens-auth--otp-error-768.png",
+        "customer-screens-auth--otp-error-1023.png",
+        "customer-screens-auth--otp-error-1024.png",
+        "customer-screens-auth--otp-error-1280.png"
+      ],
+      "id": "customer-screens-auth--otp-error",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--otp-error-visual.png",
+        "customer-screens-auth--otp-error-visual-479.png",
+        "customer-screens-auth--otp-error-visual-480.png",
+        "customer-screens-auth--otp-error-visual-768.png",
+        "customer-screens-auth--otp-error-visual-1023.png",
+        "customer-screens-auth--otp-error-visual-1024.png",
+        "customer-screens-auth--otp-error-visual-1280.png"
+      ],
+      "id": "customer-screens-auth--otp-error-visual",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--phone.png",
+        "customer-screens-auth--phone-479.png",
+        "customer-screens-auth--phone-480.png",
+        "customer-screens-auth--phone-768.png",
+        "customer-screens-auth--phone-1023.png",
+        "customer-screens-auth--phone-1024.png",
+        "customer-screens-auth--phone-1280.png"
+      ],
+      "id": "customer-screens-auth--phone",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--phone-nine-digits.png",
+        "customer-screens-auth--phone-nine-digits-479.png",
+        "customer-screens-auth--phone-nine-digits-480.png",
+        "customer-screens-auth--phone-nine-digits-768.png",
+        "customer-screens-auth--phone-nine-digits-1023.png",
+        "customer-screens-auth--phone-nine-digits-1024.png",
+        "customer-screens-auth--phone-nine-digits-1280.png"
+      ],
+      "id": "customer-screens-auth--phone-nine-digits",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--phone-ten-digits.png",
+        "customer-screens-auth--phone-ten-digits-479.png",
+        "customer-screens-auth--phone-ten-digits-480.png",
+        "customer-screens-auth--phone-ten-digits-768.png",
+        "customer-screens-auth--phone-ten-digits-1023.png",
+        "customer-screens-auth--phone-ten-digits-1024.png",
+        "customer-screens-auth--phone-ten-digits-1280.png"
+      ],
+      "id": "customer-screens-auth--phone-ten-digits",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--phone-visual.png",
+        "customer-screens-auth--phone-visual-479.png",
+        "customer-screens-auth--phone-visual-480.png",
+        "customer-screens-auth--phone-visual-768.png",
+        "customer-screens-auth--phone-visual-1023.png",
+        "customer-screens-auth--phone-visual-1024.png",
+        "customer-screens-auth--phone-visual-1280.png"
+      ],
+      "id": "customer-screens-auth--phone-visual",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--register.png",
+        "customer-screens-auth--register-479.png",
+        "customer-screens-auth--register-480.png",
+        "customer-screens-auth--register-768.png",
+        "customer-screens-auth--register-1023.png",
+        "customer-screens-auth--register-1024.png",
+        "customer-screens-auth--register-1280.png"
+      ],
+      "id": "customer-screens-auth--register",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--short-name.png",
+        "customer-screens-auth--short-name-479.png",
+        "customer-screens-auth--short-name-480.png",
+        "customer-screens-auth--short-name-768.png",
+        "customer-screens-auth--short-name-1023.png",
+        "customer-screens-auth--short-name-1024.png",
+        "customer-screens-auth--short-name-1280.png"
+      ],
+      "id": "customer-screens-auth--short-name",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--short-otp.png",
+        "customer-screens-auth--short-otp-479.png",
+        "customer-screens-auth--short-otp-480.png",
+        "customer-screens-auth--short-otp-768.png",
+        "customer-screens-auth--short-otp-1023.png",
+        "customer-screens-auth--short-otp-1024.png",
+        "customer-screens-auth--short-otp-1280.png"
+      ],
+      "id": "customer-screens-auth--short-otp",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-auth--success.png",
+        "customer-screens-auth--success-479.png",
+        "customer-screens-auth--success-480.png",
+        "customer-screens-auth--success-768.png",
+        "customer-screens-auth--success-1023.png",
+        "customer-screens-auth--success-1024.png",
+        "customer-screens-auth--success-1280.png"
+      ],
+      "id": "customer-screens-auth--success",
+      "responsive": true,
+      "title": "Customer/Screens/Auth"
+    },
+    {
+      "files": [
+        "customer-screens-cart--checkout-error.png",
+        "customer-screens-cart--checkout-error-479.png",
+        "customer-screens-cart--checkout-error-480.png",
+        "customer-screens-cart--checkout-error-768.png",
+        "customer-screens-cart--checkout-error-1023.png",
+        "customer-screens-cart--checkout-error-1024.png",
+        "customer-screens-cart--checkout-error-1280.png"
+      ],
+      "id": "customer-screens-cart--checkout-error",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--empty.png",
+        "customer-screens-cart--empty-479.png",
+        "customer-screens-cart--empty-480.png",
+        "customer-screens-cart--empty-768.png",
+        "customer-screens-cart--empty-1023.png",
+        "customer-screens-cart--empty-1024.png",
+        "customer-screens-cart--empty-1280.png"
+      ],
+      "id": "customer-screens-cart--empty",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--long.png",
+        "customer-screens-cart--long-479.png",
+        "customer-screens-cart--long-480.png",
+        "customer-screens-cart--long-768.png",
+        "customer-screens-cart--long-1023.png",
+        "customer-screens-cart--long-1024.png",
+        "customer-screens-cart--long-1280.png"
+      ],
+      "id": "customer-screens-cart--long",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--populated.png",
+        "customer-screens-cart--populated-479.png",
+        "customer-screens-cart--populated-480.png",
+        "customer-screens-cart--populated-768.png",
+        "customer-screens-cart--populated-1023.png",
+        "customer-screens-cart--populated-1024.png",
+        "customer-screens-cart--populated-1280.png"
+      ],
+      "id": "customer-screens-cart--populated",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--submitting.png",
+        "customer-screens-cart--submitting-479.png",
+        "customer-screens-cart--submitting-480.png",
+        "customer-screens-cart--submitting-768.png",
+        "customer-screens-cart--submitting-1023.png",
+        "customer-screens-cart--submitting-1024.png",
+        "customer-screens-cart--submitting-1280.png"
+      ],
+      "id": "customer-screens-cart--submitting",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--total-changed.png",
+        "customer-screens-cart--total-changed-479.png",
+        "customer-screens-cart--total-changed-480.png",
+        "customer-screens-cart--total-changed-768.png",
+        "customer-screens-cart--total-changed-1023.png",
+        "customer-screens-cart--total-changed-1024.png",
+        "customer-screens-cart--total-changed-1280.png"
+      ],
+      "id": "customer-screens-cart--total-changed",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-cart--unavailable.png",
+        "customer-screens-cart--unavailable-479.png",
+        "customer-screens-cart--unavailable-480.png",
+        "customer-screens-cart--unavailable-768.png",
+        "customer-screens-cart--unavailable-1023.png",
+        "customer-screens-cart--unavailable-1024.png",
+        "customer-screens-cart--unavailable-1280.png"
+      ],
+      "id": "customer-screens-cart--unavailable",
+      "responsive": true,
+      "title": "Customer/Screens/Cart"
+    },
+    {
+      "files": [
+        "customer-screens-menugroup--default.png",
+        "customer-screens-menugroup--default-479.png",
+        "customer-screens-menugroup--default-480.png",
+        "customer-screens-menugroup--default-768.png",
+        "customer-screens-menugroup--default-1023.png",
+        "customer-screens-menugroup--default-1024.png",
+        "customer-screens-menugroup--default-1280.png"
+      ],
+      "id": "customer-screens-menugroup--default",
+      "responsive": true,
+      "title": "Customer/Screens/MenuGroup"
+    },
+    {
+      "files": [
+        "customer-screens-menugroup--empty.png",
+        "customer-screens-menugroup--empty-479.png",
+        "customer-screens-menugroup--empty-480.png",
+        "customer-screens-menugroup--empty-768.png",
+        "customer-screens-menugroup--empty-1023.png",
+        "customer-screens-menugroup--empty-1024.png",
+        "customer-screens-menugroup--empty-1280.png"
+      ],
+      "id": "customer-screens-menugroup--empty",
+      "responsive": true,
+      "title": "Customer/Screens/MenuGroup"
+    },
+    {
+      "files": [
+        "customer-screens-menugroup--long.png",
+        "customer-screens-menugroup--long-479.png",
+        "customer-screens-menugroup--long-480.png",
+        "customer-screens-menugroup--long-768.png",
+        "customer-screens-menugroup--long-1023.png",
+        "customer-screens-menugroup--long-1024.png",
+        "customer-screens-menugroup--long-1280.png"
+      ],
+      "id": "customer-screens-menugroup--long",
+      "responsive": true,
+      "title": "Customer/Screens/MenuGroup"
+    },
+    {
+      "files": [
+        "customer-screens-menugroup--missing.png",
+        "customer-screens-menugroup--missing-479.png",
+        "customer-screens-menugroup--missing-480.png",
+        "customer-screens-menugroup--missing-768.png",
+        "customer-screens-menugroup--missing-1023.png",
+        "customer-screens-menugroup--missing-1024.png",
+        "customer-screens-menugroup--missing-1280.png"
+      ],
+      "id": "customer-screens-menugroup--missing",
+      "responsive": true,
+      "title": "Customer/Screens/MenuGroup"
+    },
+    {
+      "files": [
+        "customer-screens-menuroot--default.png",
+        "customer-screens-menuroot--default-479.png",
+        "customer-screens-menuroot--default-480.png",
+        "customer-screens-menuroot--default-768.png",
+        "customer-screens-menuroot--default-1023.png",
+        "customer-screens-menuroot--default-1024.png",
+        "customer-screens-menuroot--default-1280.png"
+      ],
+      "id": "customer-screens-menuroot--default",
+      "responsive": true,
+      "title": "Customer/Screens/MenuRoot"
+    },
+    {
+      "files": [
+        "customer-screens-menuroot--empty.png",
+        "customer-screens-menuroot--empty-479.png",
+        "customer-screens-menuroot--empty-480.png",
+        "customer-screens-menuroot--empty-768.png",
+        "customer-screens-menuroot--empty-1023.png",
+        "customer-screens-menuroot--empty-1024.png",
+        "customer-screens-menuroot--empty-1280.png"
+      ],
+      "id": "customer-screens-menuroot--empty",
+      "responsive": true,
+      "title": "Customer/Screens/MenuRoot"
+    },
+    {
+      "files": [
+        "customer-screens-menuroot--long.png",
+        "customer-screens-menuroot--long-479.png",
+        "customer-screens-menuroot--long-480.png",
+        "customer-screens-menuroot--long-768.png",
+        "customer-screens-menuroot--long-1023.png",
+        "customer-screens-menuroot--long-1024.png",
+        "customer-screens-menuroot--long-1280.png"
+      ],
+      "id": "customer-screens-menuroot--long",
+      "responsive": true,
+      "title": "Customer/Screens/MenuRoot"
+    },
+    {
+      "files": [
+        "customer-screens-orderpage--created.png",
+        "customer-screens-orderpage--created-479.png",
+        "customer-screens-orderpage--created-480.png",
+        "customer-screens-orderpage--created-768.png",
+        "customer-screens-orderpage--created-1023.png",
+        "customer-screens-orderpage--created-1024.png",
+        "customer-screens-orderpage--created-1280.png"
+      ],
+      "id": "customer-screens-orderpage--created",
+      "responsive": true,
+      "title": "Customer/Screens/OrderPage"
+    },
+    {
+      "files": [
+        "customer-screens-orderpage--long-content.png",
+        "customer-screens-orderpage--long-content-479.png",
+        "customer-screens-orderpage--long-content-480.png",
+        "customer-screens-orderpage--long-content-768.png",
+        "customer-screens-orderpage--long-content-1023.png",
+        "customer-screens-orderpage--long-content-1024.png",
+        "customer-screens-orderpage--long-content-1280.png"
+      ],
+      "id": "customer-screens-orderpage--long-content",
+      "responsive": true,
+      "title": "Customer/Screens/OrderPage"
+    },
+    {
+      "files": [
+        "customer-screens-orderpage--unavailable.png",
+        "customer-screens-orderpage--unavailable-479.png",
+        "customer-screens-orderpage--unavailable-480.png",
+        "customer-screens-orderpage--unavailable-768.png",
+        "customer-screens-orderpage--unavailable-1023.png",
+        "customer-screens-orderpage--unavailable-1024.png",
+        "customer-screens-orderpage--unavailable-1280.png"
+      ],
+      "id": "customer-screens-orderpage--unavailable",
+      "responsive": true,
+      "title": "Customer/Screens/OrderPage"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--cancelled.png",
+        "customer-screens-ordershistory--cancelled-479.png",
+        "customer-screens-ordershistory--cancelled-480.png",
+        "customer-screens-ordershistory--cancelled-768.png",
+        "customer-screens-ordershistory--cancelled-1023.png",
+        "customer-screens-ordershistory--cancelled-1024.png",
+        "customer-screens-ordershistory--cancelled-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--cancelled",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--completed.png",
+        "customer-screens-ordershistory--completed-479.png",
+        "customer-screens-ordershistory--completed-480.png",
+        "customer-screens-ordershistory--completed-768.png",
+        "customer-screens-ordershistory--completed-1023.png",
+        "customer-screens-ordershistory--completed-1024.png",
+        "customer-screens-ordershistory--completed-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--completed",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--empty.png",
+        "customer-screens-ordershistory--empty-479.png",
+        "customer-screens-ordershistory--empty-480.png",
+        "customer-screens-ordershistory--empty-768.png",
+        "customer-screens-ordershistory--empty-1023.png",
+        "customer-screens-ordershistory--empty-1024.png",
+        "customer-screens-ordershistory--empty-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--empty",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--expanded.png",
+        "customer-screens-ordershistory--expanded-479.png",
+        "customer-screens-ordershistory--expanded-480.png",
+        "customer-screens-ordershistory--expanded-768.png",
+        "customer-screens-ordershistory--expanded-1023.png",
+        "customer-screens-ordershistory--expanded-1024.png",
+        "customer-screens-ordershistory--expanded-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--expanded",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--long.png",
+        "customer-screens-ordershistory--long-479.png",
+        "customer-screens-ordershistory--long-480.png",
+        "customer-screens-ordershistory--long-768.png",
+        "customer-screens-ordershistory--long-1023.png",
+        "customer-screens-ordershistory--long-1024.png",
+        "customer-screens-ordershistory--long-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--long",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--pending.png",
+        "customer-screens-ordershistory--pending-479.png",
+        "customer-screens-ordershistory--pending-480.png",
+        "customer-screens-ordershistory--pending-768.png",
+        "customer-screens-ordershistory--pending-1023.png",
+        "customer-screens-ordershistory--pending-1024.png",
+        "customer-screens-ordershistory--pending-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--pending",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--populated.png",
+        "customer-screens-ordershistory--populated-479.png",
+        "customer-screens-ordershistory--populated-480.png",
+        "customer-screens-ordershistory--populated-768.png",
+        "customer-screens-ordershistory--populated-1023.png",
+        "customer-screens-ordershistory--populated-1024.png",
+        "customer-screens-ordershistory--populated-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--populated",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--preparing.png",
+        "customer-screens-ordershistory--preparing-479.png",
+        "customer-screens-ordershistory--preparing-480.png",
+        "customer-screens-ordershistory--preparing-768.png",
+        "customer-screens-ordershistory--preparing-1023.png",
+        "customer-screens-ordershistory--preparing-1024.png",
+        "customer-screens-ordershistory--preparing-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--preparing",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--ready.png",
+        "customer-screens-ordershistory--ready-479.png",
+        "customer-screens-ordershistory--ready-480.png",
+        "customer-screens-ordershistory--ready-768.png",
+        "customer-screens-ordershistory--ready-1023.png",
+        "customer-screens-ordershistory--ready-1024.png",
+        "customer-screens-ordershistory--ready-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--ready",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-ordershistory--refreshing.png",
+        "customer-screens-ordershistory--refreshing-479.png",
+        "customer-screens-ordershistory--refreshing-480.png",
+        "customer-screens-ordershistory--refreshing-768.png",
+        "customer-screens-ordershistory--refreshing-1023.png",
+        "customer-screens-ordershistory--refreshing-1024.png",
+        "customer-screens-ordershistory--refreshing-1280.png"
+      ],
+      "id": "customer-screens-ordershistory--refreshing",
+      "responsive": true,
+      "title": "Customer/Screens/OrdersHistory"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--addon-selected.png",
+        "customer-screens-productdetail--addon-selected-479.png",
+        "customer-screens-productdetail--addon-selected-480.png",
+        "customer-screens-productdetail--addon-selected-768.png",
+        "customer-screens-productdetail--addon-selected-1023.png",
+        "customer-screens-productdetail--addon-selected-1024.png",
+        "customer-screens-productdetail--addon-selected-1280.png"
+      ],
+      "id": "customer-screens-productdetail--addon-selected",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--default.png",
+        "customer-screens-productdetail--default-479.png",
+        "customer-screens-productdetail--default-480.png",
+        "customer-screens-productdetail--default-768.png",
+        "customer-screens-productdetail--default-1023.png",
+        "customer-screens-productdetail--default-1024.png",
+        "customer-screens-productdetail--default-1280.png"
+      ],
+      "id": "customer-screens-productdetail--default",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--edit.png",
+        "customer-screens-productdetail--edit-479.png",
+        "customer-screens-productdetail--edit-480.png",
+        "customer-screens-productdetail--edit-768.png",
+        "customer-screens-productdetail--edit-1023.png",
+        "customer-screens-productdetail--edit-1024.png",
+        "customer-screens-productdetail--edit-1280.png"
+      ],
+      "id": "customer-screens-productdetail--edit",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--long.png",
+        "customer-screens-productdetail--long-479.png",
+        "customer-screens-productdetail--long-480.png",
+        "customer-screens-productdetail--long-768.png",
+        "customer-screens-productdetail--long-1023.png",
+        "customer-screens-productdetail--long-1024.png",
+        "customer-screens-productdetail--long-1280.png"
+      ],
+      "id": "customer-screens-productdetail--long",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--minimum-quantity.png",
+        "customer-screens-productdetail--minimum-quantity-479.png",
+        "customer-screens-productdetail--minimum-quantity-480.png",
+        "customer-screens-productdetail--minimum-quantity-768.png",
+        "customer-screens-productdetail--minimum-quantity-1023.png",
+        "customer-screens-productdetail--minimum-quantity-1024.png",
+        "customer-screens-productdetail--minimum-quantity-1280.png"
+      ],
+      "id": "customer-screens-productdetail--minimum-quantity",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--quantity-changed.png",
+        "customer-screens-productdetail--quantity-changed-479.png",
+        "customer-screens-productdetail--quantity-changed-480.png",
+        "customer-screens-productdetail--quantity-changed-768.png",
+        "customer-screens-productdetail--quantity-changed-1023.png",
+        "customer-screens-productdetail--quantity-changed-1024.png",
+        "customer-screens-productdetail--quantity-changed-1280.png"
+      ],
+      "id": "customer-screens-productdetail--quantity-changed",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--size-changed.png",
+        "customer-screens-productdetail--size-changed-479.png",
+        "customer-screens-productdetail--size-changed-480.png",
+        "customer-screens-productdetail--size-changed-768.png",
+        "customer-screens-productdetail--size-changed-1023.png",
+        "customer-screens-productdetail--size-changed-1024.png",
+        "customer-screens-productdetail--size-changed-1280.png"
+      ],
+      "id": "customer-screens-productdetail--size-changed",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-productdetail--size-changed-visual.png",
+        "customer-screens-productdetail--size-changed-visual-479.png",
+        "customer-screens-productdetail--size-changed-visual-480.png",
+        "customer-screens-productdetail--size-changed-visual-768.png",
+        "customer-screens-productdetail--size-changed-visual-1023.png",
+        "customer-screens-productdetail--size-changed-visual-1024.png",
+        "customer-screens-productdetail--size-changed-visual-1280.png"
+      ],
+      "id": "customer-screens-productdetail--size-changed-visual",
+      "responsive": true,
+      "title": "Customer/Screens/ProductDetail"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--error.png",
+        "customer-screens-slotpicker--error-479.png",
+        "customer-screens-slotpicker--error-480.png",
+        "customer-screens-slotpicker--error-768.png",
+        "customer-screens-slotpicker--error-1023.png",
+        "customer-screens-slotpicker--error-1024.png",
+        "customer-screens-slotpicker--error-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--error",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--full-disabled.png",
+        "customer-screens-slotpicker--full-disabled-479.png",
+        "customer-screens-slotpicker--full-disabled-480.png",
+        "customer-screens-slotpicker--full-disabled-768.png",
+        "customer-screens-slotpicker--full-disabled-1023.png",
+        "customer-screens-slotpicker--full-disabled-1024.png",
+        "customer-screens-slotpicker--full-disabled-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--full-disabled",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--loading.png",
+        "customer-screens-slotpicker--loading-479.png",
+        "customer-screens-slotpicker--loading-480.png",
+        "customer-screens-slotpicker--loading-768.png",
+        "customer-screens-slotpicker--loading-1023.png",
+        "customer-screens-slotpicker--loading-1024.png",
+        "customer-screens-slotpicker--loading-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--loading",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--loading-visual.png",
+        "customer-screens-slotpicker--loading-visual-479.png",
+        "customer-screens-slotpicker--loading-visual-480.png",
+        "customer-screens-slotpicker--loading-visual-768.png",
+        "customer-screens-slotpicker--loading-visual-1023.png",
+        "customer-screens-slotpicker--loading-visual-1024.png",
+        "customer-screens-slotpicker--loading-visual-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--loading-visual",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--selected.png",
+        "customer-screens-slotpicker--selected-479.png",
+        "customer-screens-slotpicker--selected-480.png",
+        "customer-screens-slotpicker--selected-768.png",
+        "customer-screens-slotpicker--selected-1023.png",
+        "customer-screens-slotpicker--selected-1024.png",
+        "customer-screens-slotpicker--selected-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--selected",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "customer-screens-slotpicker--unselected.png",
+        "customer-screens-slotpicker--unselected-479.png",
+        "customer-screens-slotpicker--unselected-480.png",
+        "customer-screens-slotpicker--unselected-768.png",
+        "customer-screens-slotpicker--unselected-1023.png",
+        "customer-screens-slotpicker--unselected-1024.png",
+        "customer-screens-slotpicker--unselected-1280.png"
+      ],
+      "id": "customer-screens-slotpicker--unselected",
+      "responsive": true,
+      "title": "Customer/Screens/SlotPicker"
+    },
+    {
+      "files": [
+        "foundation-breakpoints--thresholds.png"
+      ],
+      "id": "foundation-breakpoints--thresholds",
+      "responsive": false,
+      "title": "Foundation/Breakpoints"
+    },
+    {
+      "files": [
+        "foundation-colors--palette.png"
+      ],
+      "id": "foundation-colors--palette",
+      "responsive": false,
+      "title": "Foundation/Colors"
+    },
+    {
+      "files": [
+        "foundation-elevation--scale.png"
+      ],
+      "id": "foundation-elevation--scale",
+      "responsive": false,
+      "title": "Foundation/Elevation"
+    },
+    {
+      "files": [
+        "foundation-icons--catalog.png"
+      ],
+      "id": "foundation-icons--catalog",
+      "responsive": false,
+      "title": "Foundation/Icons"
+    },
+    {
+      "files": [
+        "foundation-motion--tokens.png"
+      ],
+      "id": "foundation-motion--tokens",
+      "responsive": false,
+      "title": "Foundation/Motion"
+    },
+    {
+      "files": [
+        "foundation-radius--scale.png"
+      ],
+      "id": "foundation-radius--scale",
+      "responsive": false,
+      "title": "Foundation/Radius"
+    },
+    {
+      "files": [
+        "foundation-spacing--scale.png"
+      ],
+      "id": "foundation-spacing--scale",
+      "responsive": false,
+      "title": "Foundation/Spacing"
+    },
+    {
+      "files": [
+        "foundation-typography--scale.png"
+      ],
+      "id": "foundation-typography--scale",
+      "responsive": false,
+      "title": "Foundation/Typography"
+    },
+    {
+      "files": [
+        "foundation-vuetify--default.png"
+      ],
+      "id": "foundation-vuetify--default",
+      "responsive": false,
+      "title": "Foundation/Vuetify"
+    }
+  ],
+  "verification": {
+    "runtimeFailures": [],
+    "status": "verified"
+  }
+}

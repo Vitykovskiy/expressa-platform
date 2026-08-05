@@ -5,5 +5,6 @@ export interface MenuGroupScreenProps {
 }
 
 export type MenuGroupScreenEmits = {
+  returnToMenu: [];
   selectProduct: [productId: string];
 };

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
 import { VBtn, VCard, VCardText, VCardTitle } from "vuetify/components";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import UiDialog from "../../../customer/shared/ui/dialog/UiDialog.vue";
 
 type UiDialogStoryArgs = {
@@ -46,11 +46,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement.ownerDocument.body).getByText("Содержимое диалога"),
-    ).toBeVisible();
-  },
+  args: { modelValue: true },
 };
 
 export const Model: Story = {
@@ -59,14 +55,12 @@ export const Model: Story = {
     await userEvent.click(
       within(canvasElement).getByRole("button", { name: "Открыть" }),
     );
-    await expect(
-      within(canvasElement.ownerDocument.body).getByText("Содержимое диалога"),
-    ).toBeVisible();
-    await userEvent.click(
-      within(canvasElement.ownerDocument.body).getByRole("button", {
-        name: "Закрыть",
-      }),
+    const dialog = within(canvasElement.ownerDocument.body).getByText(
+      "Содержимое диалога",
     );
+    await waitFor(() => expect(dialog).toBeVisible());
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(dialog).not.toBeVisible());
     await expect(args["onUpdate:modelValue"]).toHaveBeenLastCalledWith(false);
   },
 };

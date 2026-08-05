@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { shallowRef } from "vue";
+import { VApp } from "vuetify/components";
 
 import FilterTabs from "../../../admin/shared/ui/filter-tabs/FilterTabs.vue";
 import ToggleRow from "../../../admin/shared/ui/toggle-row/ToggleRow.vue";
@@ -45,7 +46,7 @@ export const FilterTabsControlled: FilterTabsStory = {
     onUpdateModelValue: fn<(value: FilterValue) => void>(),
   },
   render: (args) => ({
-    components: { FilterTabs },
+    components: { FilterTabs, VApp },
     setup() {
       const selected = shallowRef<FilterValue>("all");
 
@@ -83,7 +84,7 @@ export const ToggleRowControlled: ToggleRowStory = {
     onUpdateModelValue: fn<(value: boolean) => void>(),
   },
   render: (args) => ({
-    components: { ToggleRow },
+    components: { ToggleRow, VApp },
     setup() {
       const available = shallowRef(false);
       function updateAvailable(value: boolean) {
@@ -121,7 +122,7 @@ export const ToggleRowDisabled: ToggleRowStory = {
     onUpdateModelValue: fn<(value: boolean) => void>(),
   },
   render: (args) => ({
-    components: { ToggleRow },
+    components: { ToggleRow, VApp },
     setup() {
       const available = shallowRef(false);
       function updateAvailable(value: boolean) {
@@ -156,7 +157,7 @@ export const ToggleRowDisabled: ToggleRowStory = {
 
 export const LongLabel: Story = {
   render: () => ({
-    components: { ToggleRow },
+    components: { ToggleRow, VApp },
     setup() {
       const available = shallowRef(true);
 

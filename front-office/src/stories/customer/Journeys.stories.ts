@@ -283,9 +283,10 @@ export const ProtectedActionAuthResume: Story = {
     );
     await userEvent.type(
       canvas.getByRole("textbox", { name: "Код из сообщения" }),
-      "1234",
+      "123456",
     );
     await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
+    await expect(canvas.queryByRole("alert")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Продолжить" }));
     await expect(
       canvas.getByRole("heading", { name: "Корзина" }),

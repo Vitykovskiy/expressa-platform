@@ -82,11 +82,11 @@ export const Loading: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const status = canvas.getByRole("status");
-    const confirm = canvas.getByRole("button", { name: "Подтвердить заказ" });
+    const confirm = canvas.getByRole("button", { name: "Подтверждаем..." });
     const selectedSlot = canvas.getByRole("button", { name: /10:00–10:15/ });
 
     await expect(status).toHaveTextContent("Создаём заказ...");
-    await expect(canvas.queryByText("Подтверждаем...")).not.toBeInTheDocument();
+    await expect(canvas.getByText("Подтверждаем...")).toBeVisible();
     await expect(confirm).toBeDisabled();
     await expect(selectedSlot).toHaveAttribute("aria-pressed", "true");
     await expect(selectedSlot).toBeDisabled();

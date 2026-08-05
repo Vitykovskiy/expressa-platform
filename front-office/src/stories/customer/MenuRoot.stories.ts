@@ -34,11 +34,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: /Эспрессо 2 позиц/ }),
-    );
+    const category = within(canvasElement).getByRole("button", {
+      name: /Эспрессо 2 позиц/,
+    });
+
+    await userEvent.click(category);
     await expect(args.onSelectCategory).toHaveBeenCalledTimes(1);
     await expect(args.onSelectCategory).toHaveBeenCalledWith("espresso");
+    category.blur();
+    await expect(category).not.toHaveFocus();
   },
 };
 export const Empty: Story = { args: { categories: [] } };

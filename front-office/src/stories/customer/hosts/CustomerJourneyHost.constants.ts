@@ -1,4 +1,4 @@
-export const CUSTOMER_JOURNEY_OTP = "1234";
+export const CUSTOMER_JOURNEY_OTP = "123456";
 
 export const CUSTOMER_JOURNEY_KNOWN_PHONE_NUMBERS = new Set([
   "79001234567",

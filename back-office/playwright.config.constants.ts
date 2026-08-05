@@ -51,6 +51,7 @@ export const backOfficePlaywrightProjectName = {
   auth: "auth-e2e",
   catalog: "catalog-e2e",
   storybook: "storybook-e2e",
+  storybookScreenshots: "storybook-screenshots",
   storybookA11y: "storybook-a11y",
   storybookVisual: "storybook-visual",
 } as const;
@@ -61,6 +62,7 @@ export const backOfficePlaywrightTestMatch = {
   auth: /auth\.e2e\.ts/,
   catalog: /catalog\.e2e\.ts/,
   storybook: /navigation\.e2e\.ts/,
+  storybookScreenshots: /storybook-screenshots\.e2e\.ts/,
   storybookA11y: /a11y\.e2e\.ts/,
   storybookVisual: /visual\.e2e\.ts/,
 } as const;

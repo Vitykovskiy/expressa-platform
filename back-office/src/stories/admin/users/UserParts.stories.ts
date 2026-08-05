@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { VApp } from "vuetify/components";
 
 import type { User, UserAction } from "../../../admin/shared/ui/Admin.types";
 import UserActionMenu from "../../../admin/pages/users/UserActionMenu.vue";
@@ -63,7 +64,7 @@ function userRowRender(
   args: { onAction: (action: UserAction) => void },
 ) {
   return {
-    components: { UserRow },
+    components: { UserRow, VApp },
     setup() {
       return { args, user };
     },
@@ -115,7 +116,7 @@ export const KeyboardSelect: UserActionMenuStory = {
     onSelect: fn<(action: UserAction) => void>(),
   },
   render: (args) => ({
-    components: { UserActionMenu },
+    components: { UserActionMenu, VApp },
     setup() {
       return { args, user: activeAdministrator };
     },
@@ -156,7 +157,7 @@ export const KeyboardEscape: UserActionMenuStory = {
     onSelect: fn<(action: UserAction) => void>(),
   },
   render: (args) => ({
-    components: { UserActionMenu },
+    components: { UserActionMenu, VApp },
     setup() {
       return { args, user: blockedBarista };
     },

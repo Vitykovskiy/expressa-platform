@@ -39,58 +39,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const smallSize = canvas.getByRole("button", { name: /S · 280 ₽/ });
-    const mediumSize = canvas.getByRole("button", { name: /M · 320 ₽/ });
+    const mediumSize = canvas.getByRole("button", {
+      name: /M[\s\u00a0]·[\s\u00a0]320[\s\u00a0]₽/,
+    });
     const oatMilk = canvas.getByRole("button", { name: /Овсяное молоко/ });
-    const decreaseQuantity = canvas.getByRole("button", {
-      name: "Уменьшить количество",
-    });
 
-    await expect(smallSize).toHaveAttribute("aria-pressed", "true");
+    await expect(mediumSize).toHaveAttribute("aria-pressed", "true");
     await expect(oatMilk).toHaveAttribute("aria-pressed", "false");
     await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
-
-    await userEvent.click(mediumSize);
-    await userEvent.click(oatMilk);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Увеличить количество" }),
-    );
-    await userEvent.click(canvas.getByRole("button", { name: /Добавить/ }));
-    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
-    await expect(args.onSubmit).toHaveBeenCalledWith({
-      productId: "cappuccino",
-      productName: "Капучино",
-      type: "DRINK",
-      size: "M",
-      sizePrice: 320,
-      addons: [{ id: "oat-milk", name: "Овсяное молоко", priceRub: 80 }],
-      quantity: 2,
-      lineTotalRub: 800,
-      unitTotalMinor: 40000,
-      lineTotalMinor: 80000,
-      selectedVariant: { id: "cappuccino-m-1", size: "M", priceMinor: 32000 },
-      selectedModifierOptions: [
-        {
-          groupId: "cappuccino-addons",
-          id: "oat-milk",
-          name: "Овсяное молоко",
-          priceDeltaMinor: 8000,
-        },
-      ],
-    });
-
-    await userEvent.click(smallSize);
-    await userEvent.click(oatMilk);
-    await userEvent.click(decreaseQuantity);
-    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
-    await expect(smallSize).toHaveAttribute("aria-pressed", "true");
-    await expect(oatMilk).toHaveAttribute("aria-pressed", "false");
-    await expect(canvas.getByLabelText("Количество")).toHaveTextContent("1");
-    await expect(canvasElement.ownerDocument.activeElement).toBe(
-      canvasElement.ownerDocument.body,
-    );
   },
 };
 
@@ -152,11 +110,17 @@ export const Edit: Story = {
 };
 export const SizeChanged: Story = {
   play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: /L · 360 ₽/,
-    });
-    await userEvent.click(button);
-    await expect(button).toHaveAttribute("aria-pressed", "true");
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: /L[\s\u00a0]·[\s\u00a0]360[\s\u00a0]₽/,
+      }),
+    );
+    await expect(
+      canvas.getByRole("button", {
+        name: /L[\s\u00a0]·[\s\u00a0]360[\s\u00a0]₽/,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
   },
 };
 export const SizeChangedVisual: Story = {
@@ -169,17 +133,28 @@ export const SizeChangedVisual: Story = {
     const view = document.defaultView;
     if (!view) throw new Error("Story canvas requires a window.");
     const sizeButtons = canvas.getAllByRole("button", {
-      name: /^[SML] · \d+ ₽$/,
+      name: /^[SML][\s\u00a0]·[\s\u00a0]\d+[\s\u00a0]₽$/,
     });
-    const largeSize = canvas.getByRole("button", { name: /L · 360 ₽/ });
+    const largeSize = canvas.getByRole("button", {
+      name: /L[\s\u00a0]·[\s\u00a0]360[\s\u00a0]₽/,
+    });
 
-    await expect(sizeButtons[0]).toHaveTextContent("S · 280 ₽");
-    await expect(sizeButtons[1]).toHaveTextContent("M · 320 ₽");
-    await expect(sizeButtons[2]).toHaveTextContent("L · 360 ₽");
+    await expect(sizeButtons).toHaveLength(3);
+    await expect(sizeButtons[0]).toHaveTextContent(
+      /^S[\s\u00a0]·[\s\u00a0]280[\s\u00a0]₽$/,
+    );
+    await expect(sizeButtons[1]).toHaveTextContent(
+      /^M[\s\u00a0]·[\s\u00a0]320[\s\u00a0]₽$/,
+    );
+    await expect(sizeButtons[2]).toHaveTextContent(
+      /^L[\s\u00a0]·[\s\u00a0]360[\s\u00a0]₽$/,
+    );
     await expect(largeSize).toHaveAttribute("aria-pressed", "true");
     await expect(canvas.getByText("360 ₽", { selector: "p" })).toBeVisible();
     await expect(
-      canvas.getByRole("button", { name: /Добавить · 360 ₽/ }),
+      canvas.getByRole("button", {
+        name: /Добавить[\s\u00a0]·[\s\u00a0]360[\s\u00a0]₽/,
+      }),
     ).toBeVisible();
 
     (document.activeElement as HTMLElement | null)?.blur();

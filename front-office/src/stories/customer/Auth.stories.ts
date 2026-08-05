@@ -149,10 +149,14 @@ export const Loading: Story = {
   args: { step: "loading" },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const status = canvas.getByRole("status");
-    await expect(status).toHaveAccessibleName("Обрабатываем запрос...");
-    await expect(canvas.getAllByRole("progressbar")).toHaveLength(1);
-    await expect(canvas.getByRole("heading")).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Подождите..." }),
+    ).toBeVisible();
+    await expect(canvas.getByText("Обрабатываем запрос...")).toBeVisible();
+    await expect(canvas.getByRole("status")).toBeVisible();
+    await expect(
+      canvas.getByRole("progressbar", { name: "Обрабатываем запрос..." }),
+    ).toBeVisible();
     await userEvent.tab();
     await expect(args.onUpdatePhone).not.toHaveBeenCalled();
     await expect(args.onSendCode).not.toHaveBeenCalled();
@@ -189,11 +193,16 @@ export const OtpError: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const errorAlert = canvas
+      .getByText("Код неверный или истёк")
+      .closest<HTMLElement>(".auth-form .ui-field-message");
+    if (!errorAlert) {
+      throw new Error("Ожидалось inline OTP-сообщение об ошибке.");
+    }
 
-    await expect(canvas.getByRole("alert")).toHaveTextContent(
-      "Код неверный или истёк",
-    );
-    await expect(canvas.getByText("Код неверный или истёк")).toBeVisible();
+    await expect(errorAlert).toHaveAttribute("role", "alert");
+    await expect(errorAlert).toHaveTextContent("Код неверный или истёк");
+    await expect(errorAlert).toBeVisible();
   },
 };
 
@@ -205,12 +214,28 @@ export const Success: Story = {
   args: { step: "success", phone: "+7 (900) 123-45-67", name: "Клиент" },
 };
 export const InvalidPhone: Story = {
-  args: { phone: "+7 (900) 12" },
+  args: {
+    phone: "+7 (900) 12",
+    errorMessage: "Номер неполный: введите 10 цифр после +7.",
+  },
   play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", {
       name: "Отправить код",
     });
+    const errorAlert = canvas
+      .getByText("Номер неполный: введите 10 цифр после +7.")
+      .closest<HTMLElement>(".auth-form .ui-field-message");
+    if (!errorAlert) {
+      throw new Error("Ожидалось inline-сообщение о неполном номере.");
+    }
+
     await expect(button).toBeDisabled();
+    await expect(errorAlert).toHaveAttribute("role", "alert");
+    await expect(errorAlert).toHaveTextContent(
+      "Номер неполный: введите 10 цифр после +7.",
+    );
+    await expect(errorAlert).toBeVisible();
     button.click();
     await expect(args.onSendCode).not.toHaveBeenCalled();
   },

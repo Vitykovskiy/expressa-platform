@@ -79,9 +79,20 @@ export const Administrator: Story = {
       canvas.queryByRole("button", { name: "Действие" }),
     ).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Меню" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Выйти" }));
     await expect(args.onNavigate).toHaveBeenCalledWith("menu");
-    await expect(args.onLogout).toHaveBeenCalledTimes(1);
+
+    const viewportWidth =
+      canvasElement.ownerDocument.documentElement.clientWidth;
+    const logout =
+      canvasElement.querySelector<HTMLButtonElement>(".side-nav-logout");
+    await expect(logout).toBeInTheDocument();
+    if (viewportWidth >= 768) {
+      await expect(logout).toBeVisible();
+      await userEvent.click(logout!);
+      await expect(args.onLogout).toHaveBeenCalledTimes(1);
+    } else {
+      await expect(logout).not.toBeVisible();
+    }
   },
 };
 
@@ -98,6 +109,7 @@ export const Barista: Story = {
     activeSection: "availability",
     onNavigate: fn(),
     onLogout: fn(),
+    onTopBarAction: fn(),
   },
   render: renderBarista,
   globals: { viewport: { value: "mobile1", isRotated: false } },
@@ -110,9 +122,19 @@ export const Barista: Story = {
     ).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Очередь" }));
     await expect(args.onNavigate).toHaveBeenCalledWith("orders");
-    await expect(
-      canvas.queryByRole("button", { name: "Действие" }),
-    ).not.toBeInTheDocument();
+    const viewportWidth =
+      canvasElement.ownerDocument.documentElement.clientWidth;
+    const action =
+      canvasElement.querySelector<HTMLButtonElement>(".top-bar-action");
+    await expect(action).toBeInTheDocument();
+    if (viewportWidth < 768) {
+      await expect(action).toHaveTextContent("Обновить");
+      await expect(action).toBeVisible();
+      await userEvent.click(action!);
+      await expect(args.onTopBarAction).toHaveBeenCalledTimes(1);
+    } else {
+      await expect(action).not.toBeVisible();
+    }
   },
 };
 

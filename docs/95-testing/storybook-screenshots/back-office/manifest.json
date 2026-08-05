@@ -1,0 +1,839 @@
+{
+  "generatedAt": "2026-08-05T13:19:45.133Z",
+  "screenshotCount": 205,
+  "storyCount": 89,
+  "stories": [
+    {
+      "files": [
+        "admin-auth-authscreen--denied.png",
+        "admin-auth-authscreen--denied-390.png",
+        "admin-auth-authscreen--denied-767.png",
+        "admin-auth-authscreen--denied-768.png",
+        "admin-auth-authscreen--denied-1280.png"
+      ],
+      "id": "admin-auth-authscreen--denied",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-auth-authscreen--otp-validation.png",
+        "admin-auth-authscreen--otp-validation-390.png",
+        "admin-auth-authscreen--otp-validation-767.png",
+        "admin-auth-authscreen--otp-validation-768.png",
+        "admin-auth-authscreen--otp-validation-1280.png"
+      ],
+      "id": "admin-auth-authscreen--otp-validation",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-auth-authscreen--otp-validation-visual.png",
+        "admin-auth-authscreen--otp-validation-visual-390.png",
+        "admin-auth-authscreen--otp-validation-visual-767.png",
+        "admin-auth-authscreen--otp-validation-visual-768.png",
+        "admin-auth-authscreen--otp-validation-visual-1280.png"
+      ],
+      "id": "admin-auth-authscreen--otp-validation-visual",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-auth-authscreen--phone-validation.png",
+        "admin-auth-authscreen--phone-validation-390.png",
+        "admin-auth-authscreen--phone-validation-767.png",
+        "admin-auth-authscreen--phone-validation-768.png",
+        "admin-auth-authscreen--phone-validation-1280.png"
+      ],
+      "id": "admin-auth-authscreen--phone-validation",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-auth-authscreen--phone-validation-visual.png",
+        "admin-auth-authscreen--phone-validation-visual-390.png",
+        "admin-auth-authscreen--phone-validation-visual-767.png",
+        "admin-auth-authscreen--phone-validation-visual-768.png",
+        "admin-auth-authscreen--phone-validation-visual-1280.png"
+      ],
+      "id": "admin-auth-authscreen--phone-validation-visual",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-auth-authscreen--success.png",
+        "admin-auth-authscreen--success-390.png",
+        "admin-auth-authscreen--success-767.png",
+        "admin-auth-authscreen--success-768.png",
+        "admin-auth-authscreen--success-1280.png"
+      ],
+      "id": "admin-auth-authscreen--success",
+      "responsive": true,
+      "title": "Admin/Auth/AuthScreen"
+    },
+    {
+      "files": [
+        "admin-availability-availabilityscreen--category-filter.png",
+        "admin-availability-availabilityscreen--category-filter-390.png",
+        "admin-availability-availabilityscreen--category-filter-767.png",
+        "admin-availability-availabilityscreen--category-filter-768.png",
+        "admin-availability-availabilityscreen--category-filter-1280.png"
+      ],
+      "id": "admin-availability-availabilityscreen--category-filter",
+      "responsive": true,
+      "title": "Admin/Availability/AvailabilityScreen"
+    },
+    {
+      "files": [
+        "admin-availability-availabilityscreen--default.png",
+        "admin-availability-availabilityscreen--default-390.png",
+        "admin-availability-availabilityscreen--default-767.png",
+        "admin-availability-availabilityscreen--default-768.png",
+        "admin-availability-availabilityscreen--default-1280.png"
+      ],
+      "id": "admin-availability-availabilityscreen--default",
+      "responsive": true,
+      "title": "Admin/Availability/AvailabilityScreen"
+    },
+    {
+      "files": [
+        "admin-availability-availabilityscreen--default-visual.png",
+        "admin-availability-availabilityscreen--default-visual-390.png",
+        "admin-availability-availabilityscreen--default-visual-767.png",
+        "admin-availability-availabilityscreen--default-visual-768.png",
+        "admin-availability-availabilityscreen--default-visual-1280.png"
+      ],
+      "id": "admin-availability-availabilityscreen--default-visual",
+      "responsive": true,
+      "title": "Admin/Availability/AvailabilityScreen"
+    },
+    {
+      "files": [
+        "admin-availability-availabilityscreen--empty.png",
+        "admin-availability-availabilityscreen--empty-390.png",
+        "admin-availability-availabilityscreen--empty-767.png",
+        "admin-availability-availabilityscreen--empty-768.png",
+        "admin-availability-availabilityscreen--empty-1280.png"
+      ],
+      "id": "admin-availability-availabilityscreen--empty",
+      "responsive": true,
+      "title": "Admin/Availability/AvailabilityScreen"
+    },
+    {
+      "files": [
+        "admin-availability-availabilityscreen--long-narrow.png",
+        "admin-availability-availabilityscreen--long-narrow-390.png",
+        "admin-availability-availabilityscreen--long-narrow-767.png",
+        "admin-availability-availabilityscreen--long-narrow-768.png",
+        "admin-availability-availabilityscreen--long-narrow-1280.png"
+      ],
+      "id": "admin-availability-availabilityscreen--long-narrow",
+      "responsive": true,
+      "title": "Admin/Availability/AvailabilityScreen"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--add-category.png"
+      ],
+      "id": "admin-menu-add-dialogs--add-category",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--add-drink-only-s.png"
+      ],
+      "id": "admin-menu-add-dialogs--add-drink-only-s",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--add-drink-sizes-sml.png"
+      ],
+      "id": "admin-menu-add-dialogs--add-drink-sizes-sml",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--add-other.png"
+      ],
+      "id": "admin-menu-add-dialogs--add-other",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--category-server-field-error.png"
+      ],
+      "id": "admin-menu-add-dialogs--category-server-field-error",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-add-dialogs--product-server-field-error.png"
+      ],
+      "id": "admin-menu-add-dialogs--product-server-field-error",
+      "responsive": false,
+      "title": "Admin/Menu/Add dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-category.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-category",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-category-server-field-error.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-category-server-field-error",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-drink-only-s.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-drink-only-s",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-drink-sizes-sml.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-drink-sizes-sml",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-other.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-other",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-edit-dialogs--edit-product-server-field-error.png"
+      ],
+      "id": "admin-menu-edit-dialogs--edit-product-server-field-error",
+      "responsive": false,
+      "title": "Admin/Menu/Edit dialogs"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--category-assignment.png"
+      ],
+      "id": "admin-menu-modifiers--category-assignment",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--category-assignment-error.png"
+      ],
+      "id": "admin-menu-modifiers--category-assignment-error",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--category-assignment-loading-disabled-and-error.png"
+      ],
+      "id": "admin-menu-modifiers--category-assignment-loading-disabled-and-error",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--modifier-defaults.png"
+      ],
+      "id": "admin-menu-modifiers--modifier-defaults",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--modifier-defaults-invalid.png"
+      ],
+      "id": "admin-menu-modifiers--modifier-defaults-invalid",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--modifier-error.png"
+      ],
+      "id": "admin-menu-modifiers--modifier-error",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--modifier-loading.png"
+      ],
+      "id": "admin-menu-modifiers--modifier-loading",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-modifiers--modifier-loading-disabled-and-error.png"
+      ],
+      "id": "admin-menu-modifiers--modifier-loading-disabled-and-error",
+      "responsive": false,
+      "title": "Admin/Menu/Modifiers"
+    },
+    {
+      "files": [
+        "admin-menu-parts--collapsed.png"
+      ],
+      "id": "admin-menu-parts--collapsed",
+      "responsive": false,
+      "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
+        "admin-menu-parts--empty.png"
+      ],
+      "id": "admin-menu-parts--empty",
+      "responsive": false,
+      "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
+        "admin-menu-parts--expanded-drink-sml.png"
+      ],
+      "id": "admin-menu-parts--expanded-drink-sml",
+      "responsive": false,
+      "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
+        "admin-menu-parts--long-content.png"
+      ],
+      "id": "admin-menu-parts--long-content",
+      "responsive": false,
+      "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
+        "admin-orders-screen--all-statuses.png",
+        "admin-orders-screen--all-statuses-390.png",
+        "admin-orders-screen--all-statuses-767.png",
+        "admin-orders-screen--all-statuses-768.png",
+        "admin-orders-screen--all-statuses-1280.png"
+      ],
+      "id": "admin-orders-screen--all-statuses",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--close-dialog-cancel-and-confirm.png",
+        "admin-orders-screen--close-dialog-cancel-and-confirm-390.png",
+        "admin-orders-screen--close-dialog-cancel-and-confirm-767.png",
+        "admin-orders-screen--close-dialog-cancel-and-confirm-768.png",
+        "admin-orders-screen--close-dialog-cancel-and-confirm-1280.png"
+      ],
+      "id": "admin-orders-screen--close-dialog-cancel-and-confirm",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--empty.png",
+        "admin-orders-screen--empty-390.png",
+        "admin-orders-screen--empty-767.png",
+        "admin-orders-screen--empty-768.png",
+        "admin-orders-screen--empty-1280.png"
+      ],
+      "id": "admin-orders-screen--empty",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--filters-and-refresh.png",
+        "admin-orders-screen--filters-and-refresh-390.png",
+        "admin-orders-screen--filters-and-refresh-767.png",
+        "admin-orders-screen--filters-and-refresh-768.png",
+        "admin-orders-screen--filters-and-refresh-1280.png"
+      ],
+      "id": "admin-orders-screen--filters-and-refresh",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--long-content-narrow.png",
+        "admin-orders-screen--long-content-narrow-390.png",
+        "admin-orders-screen--long-content-narrow-767.png",
+        "admin-orders-screen--long-content-narrow-768.png",
+        "admin-orders-screen--long-content-narrow-1280.png"
+      ],
+      "id": "admin-orders-screen--long-content-narrow",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--reject-dialog.png",
+        "admin-orders-screen--reject-dialog-390.png",
+        "admin-orders-screen--reject-dialog-767.png",
+        "admin-orders-screen--reject-dialog-768.png",
+        "admin-orders-screen--reject-dialog-1280.png"
+      ],
+      "id": "admin-orders-screen--reject-dialog",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--reject-dialog-visual.png",
+        "admin-orders-screen--reject-dialog-visual-390.png",
+        "admin-orders-screen--reject-dialog-visual-767.png",
+        "admin-orders-screen--reject-dialog-visual-768.png",
+        "admin-orders-screen--reject-dialog-visual-1280.png"
+      ],
+      "id": "admin-orders-screen--reject-dialog-visual",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-orders-screen--status-actions.png",
+        "admin-orders-screen--status-actions-390.png",
+        "admin-orders-screen--status-actions-767.png",
+        "admin-orders-screen--status-actions-768.png",
+        "admin-orders-screen--status-actions-1280.png"
+      ],
+      "id": "admin-orders-screen--status-actions",
+      "responsive": true,
+      "title": "Admin/Orders/Screen"
+    },
+    {
+      "files": [
+        "admin-settings-settingsscreen--edit-and-save-with-keyboard.png",
+        "admin-settings-settingsscreen--edit-and-save-with-keyboard-390.png",
+        "admin-settings-settingsscreen--edit-and-save-with-keyboard-767.png",
+        "admin-settings-settingsscreen--edit-and-save-with-keyboard-768.png",
+        "admin-settings-settingsscreen--edit-and-save-with-keyboard-1280.png"
+      ],
+      "id": "admin-settings-settingsscreen--edit-and-save-with-keyboard",
+      "responsive": true,
+      "title": "Admin/Settings/SettingsScreen"
+    },
+    {
+      "files": [
+        "admin-settings-settingsscreen--initial-values.png",
+        "admin-settings-settingsscreen--initial-values-390.png",
+        "admin-settings-settingsscreen--initial-values-767.png",
+        "admin-settings-settingsscreen--initial-values-768.png",
+        "admin-settings-settingsscreen--initial-values-1280.png"
+      ],
+      "id": "admin-settings-settingsscreen--initial-values",
+      "responsive": true,
+      "title": "Admin/Settings/SettingsScreen"
+    },
+    {
+      "files": [
+        "admin-settings-settingsscreen--long-content-narrow.png",
+        "admin-settings-settingsscreen--long-content-narrow-390.png",
+        "admin-settings-settingsscreen--long-content-narrow-767.png",
+        "admin-settings-settingsscreen--long-content-narrow-768.png",
+        "admin-settings-settingsscreen--long-content-narrow-1280.png"
+      ],
+      "id": "admin-settings-settingsscreen--long-content-narrow",
+      "responsive": true,
+      "title": "Admin/Settings/SettingsScreen"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--dialog-controlled.png"
+      ],
+      "id": "admin-shared-admin-controls--dialog-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--select-controlled.png"
+      ],
+      "id": "admin-shared-admin-controls--select-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--select-disabled.png"
+      ],
+      "id": "admin-shared-admin-controls--select-disabled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--text-field-controlled.png"
+      ],
+      "id": "admin-shared-admin-controls--text-field-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--text-field-disabled.png"
+      ],
+      "id": "admin-shared-admin-controls--text-field-disabled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--toggle-controlled.png"
+      ],
+      "id": "admin-shared-admin-controls--toggle-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-admin-controls--toggle-disabled.png"
+      ],
+      "id": "admin-shared-admin-controls--toggle-disabled",
+      "responsive": false,
+      "title": "Admin/Shared/Admin controls"
+    },
+    {
+      "files": [
+        "admin-shared-confirm-dialog--cancel-resets-reason.png"
+      ],
+      "id": "admin-shared-confirm-dialog--cancel-resets-reason",
+      "responsive": false,
+      "title": "Admin/Shared/Confirm dialog"
+    },
+    {
+      "files": [
+        "admin-shared-confirm-dialog--confirm.png"
+      ],
+      "id": "admin-shared-confirm-dialog--confirm",
+      "responsive": false,
+      "title": "Admin/Shared/Confirm dialog"
+    },
+    {
+      "files": [
+        "admin-shared-confirm-dialog--required-reason.png"
+      ],
+      "id": "admin-shared-confirm-dialog--required-reason",
+      "responsive": false,
+      "title": "Admin/Shared/Confirm dialog"
+    },
+    {
+      "files": [
+        "admin-shared-controls--filter-tabs-controlled.png"
+      ],
+      "id": "admin-shared-controls--filter-tabs-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Controls"
+    },
+    {
+      "files": [
+        "admin-shared-controls--long-label.png"
+      ],
+      "id": "admin-shared-controls--long-label",
+      "responsive": false,
+      "title": "Admin/Shared/Controls"
+    },
+    {
+      "files": [
+        "admin-shared-controls--toggle-row-controlled.png"
+      ],
+      "id": "admin-shared-controls--toggle-row-controlled",
+      "responsive": false,
+      "title": "Admin/Shared/Controls"
+    },
+    {
+      "files": [
+        "admin-shared-controls--toggle-row-disabled.png"
+      ],
+      "id": "admin-shared-controls--toggle-row-disabled",
+      "responsive": false,
+      "title": "Admin/Shared/Controls"
+    },
+    {
+      "files": [
+        "admin-shared-display--button-default.png"
+      ],
+      "id": "admin-shared-display--button-default",
+      "responsive": false,
+      "title": "Admin/Shared/Display"
+    },
+    {
+      "files": [
+        "admin-shared-display--button-disabled.png"
+      ],
+      "id": "admin-shared-display--button-disabled",
+      "responsive": false,
+      "title": "Admin/Shared/Display"
+    },
+    {
+      "files": [
+        "admin-shared-display--empty.png"
+      ],
+      "id": "admin-shared-display--empty",
+      "responsive": false,
+      "title": "Admin/Shared/Display"
+    },
+    {
+      "files": [
+        "admin-shared-display--empty-with-long-text.png"
+      ],
+      "id": "admin-shared-display--empty-with-long-text",
+      "responsive": false,
+      "title": "Admin/Shared/Display"
+    },
+    {
+      "files": [
+        "admin-shared-display--order-statuses.png"
+      ],
+      "id": "admin-shared-display--order-statuses",
+      "responsive": false,
+      "title": "Admin/Shared/Display"
+    },
+    {
+      "files": [
+        "admin-shell--administrator.png",
+        "admin-shell--administrator-390.png",
+        "admin-shell--administrator-767.png",
+        "admin-shell--administrator-768.png",
+        "admin-shell--administrator-1280.png"
+      ],
+      "id": "admin-shell--administrator",
+      "responsive": true,
+      "title": "Admin/Shell"
+    },
+    {
+      "files": [
+        "admin-shell--administrator-visual.png",
+        "admin-shell--administrator-visual-390.png",
+        "admin-shell--administrator-visual-767.png",
+        "admin-shell--administrator-visual-768.png",
+        "admin-shell--administrator-visual-1280.png"
+      ],
+      "id": "admin-shell--administrator-visual",
+      "responsive": true,
+      "title": "Admin/Shell"
+    },
+    {
+      "files": [
+        "admin-shell--barista.png",
+        "admin-shell--barista-390.png",
+        "admin-shell--barista-767.png",
+        "admin-shell--barista-768.png",
+        "admin-shell--barista-1280.png"
+      ],
+      "id": "admin-shell--barista",
+      "responsive": true,
+      "title": "Admin/Shell"
+    },
+    {
+      "files": [
+        "admin-shell--barista-visual.png",
+        "admin-shell--barista-visual-390.png",
+        "admin-shell--barista-visual-767.png",
+        "admin-shell--barista-visual-768.png",
+        "admin-shell--barista-visual-1280.png"
+      ],
+      "id": "admin-shell--barista-visual",
+      "responsive": true,
+      "title": "Admin/Shell"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--add-user.png"
+      ],
+      "id": "admin-users-dialogs--add-user",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--add-user-visual.png"
+      ],
+      "id": "admin-users-dialogs--add-user-visual",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--block-user.png"
+      ],
+      "id": "admin-users-dialogs--block-user",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--block-user-visual.png"
+      ],
+      "id": "admin-users-dialogs--block-user-visual",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--cancel-resets-and-returns-focus.png"
+      ],
+      "id": "admin-users-dialogs--cancel-resets-and-returns-focus",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--change-role.png"
+      ],
+      "id": "admin-users-dialogs--change-role",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--change-role-visual.png"
+      ],
+      "id": "admin-users-dialogs--change-role-visual",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--keyboard-focus-trap-and-escape.png"
+      ],
+      "id": "admin-users-dialogs--keyboard-focus-trap-and-escape",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--unblock-user.png"
+      ],
+      "id": "admin-users-dialogs--unblock-user",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-dialogs--unblock-user-visual.png"
+      ],
+      "id": "admin-users-dialogs--unblock-user-visual",
+      "responsive": false,
+      "title": "Admin/Users/Dialogs"
+    },
+    {
+      "files": [
+        "admin-users-parts--active-administrator.png"
+      ],
+      "id": "admin-users-parts--active-administrator",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-parts--blocked-barista.png"
+      ],
+      "id": "admin-users-parts--blocked-barista",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-parts--keyboard-escape.png"
+      ],
+      "id": "admin-users-parts--keyboard-escape",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-parts--keyboard-select.png"
+      ],
+      "id": "admin-users-parts--keyboard-select",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-parts--long-name.png"
+      ],
+      "id": "admin-users-parts--long-name",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-parts--without-role.png"
+      ],
+      "id": "admin-users-parts--without-role",
+      "responsive": false,
+      "title": "Admin/Users/Parts"
+    },
+    {
+      "files": [
+        "admin-users-usersscreen--add-user.png",
+        "admin-users-usersscreen--add-user-390.png",
+        "admin-users-usersscreen--add-user-767.png",
+        "admin-users-usersscreen--add-user-768.png",
+        "admin-users-usersscreen--add-user-1280.png"
+      ],
+      "id": "admin-users-usersscreen--add-user",
+      "responsive": true,
+      "title": "Admin/Users/UsersScreen"
+    },
+    {
+      "files": [
+        "admin-users-usersscreen--flow.png",
+        "admin-users-usersscreen--flow-390.png",
+        "admin-users-usersscreen--flow-767.png",
+        "admin-users-usersscreen--flow-768.png",
+        "admin-users-usersscreen--flow-1280.png"
+      ],
+      "id": "admin-users-usersscreen--flow",
+      "responsive": true,
+      "title": "Admin/Users/UsersScreen"
+    },
+    {
+      "files": [
+        "admin-users-usersscreen--stable-visual.png",
+        "admin-users-usersscreen--stable-visual-390.png",
+        "admin-users-usersscreen--stable-visual-767.png",
+        "admin-users-usersscreen--stable-visual-768.png",
+        "admin-users-usersscreen--stable-visual-1280.png"
+      ],
+      "id": "admin-users-usersscreen--stable-visual",
+      "responsive": true,
+      "title": "Admin/Users/UsersScreen"
+    },
+    {
+      "files": [
+        "foundation-vuetify--default.png"
+      ],
+      "id": "foundation-vuetify--default",
+      "responsive": false,
+      "title": "Foundation/Vuetify"
+    }
+  ],
+  "verification": {
+    "runtimeFailures": [],
+    "status": "verified"
+  }
+}

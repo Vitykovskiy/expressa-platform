@@ -2,11 +2,13 @@ import { fileURLToPath, URL } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import vuetify from 'vite-plugin-vuetify'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [
     vue(),
+    vuetify({ autoImport: true }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],

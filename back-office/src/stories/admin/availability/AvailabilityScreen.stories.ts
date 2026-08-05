@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { ref } from "vue";
+import { VApp } from "vuetify/components";
 
 import type {
   AvailabilityChangeEvent,
@@ -35,7 +36,7 @@ function screenRender(args: {
   "onAvailability-change"?: (event: AvailabilityChangeEvent) => void;
 }) {
   return {
-    components: { AvailabilityScreen },
+    components: { AvailabilityScreen, VApp },
     setup() {
       const menuItems = ref(args.menuItems.map((item) => ({ ...item })));
 

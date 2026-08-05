@@ -6,8 +6,10 @@
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <v-card-title>Новый товар</v-card-title>
-      <v-card-text>Добавьте новый товар в меню</v-card-text>
+      <v-card-title class="add-dialog-title">Новый товар</v-card-title>
+      <v-card-text class="add-dialog-description"
+        >Добавьте новый товар в меню</v-card-text
+      >
       <v-card-text class="add-dialog-fields">
         <label :for="categoryId">Категория</label>
         <AdminSelect
@@ -507,12 +509,31 @@ watch(
 
 <style scoped lang="scss">
 .add-dialog {
+  flex: none;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  block-size: min(
+    44rem,
+    calc(100dvh - var(--expressa-space-xl) - var(--expressa-space-xl))
+  );
+  min-block-size: 0;
+  overflow: hidden;
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
+.add-dialog-title {
+  padding-bottom: 0;
+}
+.add-dialog-description {
+  padding-bottom: var(--expressa-space-sm);
+}
 .add-dialog-fields {
+  min-block-size: 0;
   display: grid;
   gap: var(--expressa-space-sm);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .add-dialog-fields label {
   color: var(--expressa-color-text-secondary);
@@ -622,6 +643,10 @@ watch(
   }
 }
 .add-dialog-actions {
+  flex: none;
   padding: var(--expressa-space-lg);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  background: var(--expressa-color-surface);
 }
 </style>

@@ -70,6 +70,11 @@ export default defineConfig({
       use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
     {
+      name: backOfficePlaywrightProjectName.storybookScreenshots,
+      testMatch: backOfficePlaywrightTestMatch.storybookScreenshots,
+      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
+    },
+    {
       name: backOfficePlaywrightProjectName.storybookA11y,
       testMatch: backOfficePlaywrightTestMatch.storybookA11y,
       use: { ...devices[backOfficeDesktopBrowserDeviceName] },

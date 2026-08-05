@@ -6,6 +6,7 @@
   />
   <template v-else-if="screen.id === 'category'">
     <ui-btn
+      v-if="selectedCategory?.products.length !== 0"
       type="button"
       variant="text"
       class="menu-flow__back"
@@ -14,6 +15,7 @@
     >
     <menu-group-screen
       :category="selectedCategory"
+      @return-to-menu="openRoot"
       @select-product="openProduct"
     />
   </template>

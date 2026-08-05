@@ -1,4 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import {
+  VApp,
+  VBtn,
+  VCard,
+  VCardItem,
+  VCardSubtitle,
+  VCardText,
+  VCardTitle,
+  VChip,
+  VContainer,
+  VMain,
+} from "vuetify/components";
 
 const meta = {
   title: "Foundation/Vuetify",
@@ -6,6 +18,18 @@ const meta = {
     layout: "fullscreen",
   },
   render: () => ({
+    components: {
+      VApp,
+      VBtn,
+      VCard,
+      VCardItem,
+      VCardSubtitle,
+      VCardText,
+      VCardTitle,
+      VChip,
+      VContainer,
+      VMain,
+    },
     template: `
       <v-app>
         <v-main>

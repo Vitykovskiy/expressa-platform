@@ -111,14 +111,30 @@ export const SelectedCategory: Story = {
     selectedCategoryId: categories[0]!.id,
     showBack: true,
   },
+  parameters: {
+    viewport: { defaultViewport: "desktop1024" },
+  },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const isDesktop = canvasElement.ownerDocument.defaultView?.matchMedia(
+      "(min-width: 1024px)",
+    ).matches;
 
-    await userEvent.click(canvas.getByRole("button", { name: "Назад" }));
-    await expect(args.onBack).toHaveBeenCalledTimes(1);
-    await userEvent.click(
-      canvas.getByRole("button", { name: categories[0]!.name }),
-    );
-    await expect(args.onSelectCategory).toHaveBeenCalledWith(categories[0]!.id);
+    if (isDesktop) {
+      const selectedCategory = canvasElement.querySelector(
+        ".shell-navigation__category-nav .shell-navigation__nav-button--active",
+      );
+
+      await expect(selectedCategory).toHaveTextContent(categories[0]!.name);
+      await userEvent.click(
+        canvas.getByRole("button", { name: categories[0]!.name }),
+      );
+      await expect(args.onSelectCategory).toHaveBeenCalledWith(
+        categories[0]!.id,
+      );
+    } else {
+      await userEvent.click(canvas.getByRole("button", { name: "Назад" }));
+      await expect(args.onBack).toHaveBeenCalledTimes(1);
+    }
   },
 };

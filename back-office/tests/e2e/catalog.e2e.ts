@@ -54,6 +54,42 @@ test.afterAll(async () => {
   );
 });
 
+test("production runtime компилирует Vuetify-диалог категории", async ({
+  browser,
+}) => {
+  const administrator = phone();
+  createStaff(administrator, "administrator");
+
+  const context = await browser.newContext({
+    viewport: { height: catalogViewportHeight, width: 1280 },
+  });
+  const page = await context.newPage();
+  const issues = collectBrowserIssues(page);
+
+  await login(page, administrator);
+  await page.getByRole("button", { name: "Меню" }).click();
+  await page
+    .locator(".menu-page__actions")
+    .getByRole("button", { name: "Добавить категорию" })
+    .click();
+
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator(".v-overlay--active .add-dialog")).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator("*")
+        .evaluateAll((elements) =>
+          elements
+            .map((element) => element.localName)
+            .filter((name) => name.startsWith("v-")),
+        ),
+    )
+    .toEqual([]);
+  await expect(issues()).toEqual([]);
+  await context.close();
+});
+
 test("administrator создаёт и публикует каталог для public menu", async ({
   browser,
 }) => {
@@ -296,6 +332,8 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
   await expect
     .poll(() => modifierOptionNames(page.locator(".modifier-group-editor")))
     .toEqual([catalogModifierSecondOptionName, catalogModifierOptionName]);
+  await editor.getByRole("button", { name: "Отмена" }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
 }
 
 async function assignModifierGroup(page: CatalogPage): Promise<void> {

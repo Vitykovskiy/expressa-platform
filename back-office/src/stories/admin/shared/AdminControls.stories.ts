@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { shallowRef } from "vue";
+import { VApp, VCard, VCardText, VCardTitle } from "vuetify/components";
 
 import AdminDialog from "../../../admin/shared/ui/admin-dialog/AdminDialog.vue";
 import AdminSelect from "../../../admin/shared/ui/admin-select/AdminSelect.vue";
@@ -199,7 +200,7 @@ export const ToggleControlled: ToggleStory = {
     onUpdateModelValue: fn<(value: boolean | null) => void>(),
   },
   render: (args) => ({
-    components: { AdminToggle },
+    components: { AdminToggle, VApp },
     setup() {
       const enabled = shallowRef<boolean | null>(false);
 
@@ -241,7 +242,7 @@ export const ToggleControlled: ToggleStory = {
 
 export const ToggleDisabled: Story = {
   render: () => ({
-    components: { AdminToggle },
+    components: { AdminToggle, VApp },
     template: `
       <v-app>
         <AdminToggle
@@ -266,7 +267,7 @@ export const DialogControlled: DialogStory = {
     onUpdateModelValue: fn<(value: boolean) => void>(),
   },
   render: (args) => ({
-    components: { AdminDialog },
+    components: { AdminDialog, VApp, VCard, VCardText, VCardTitle },
     setup() {
       const open = shallowRef(false);
 

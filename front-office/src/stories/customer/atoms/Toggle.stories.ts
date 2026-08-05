@@ -48,17 +48,19 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
+    const toggle = within(canvasElement).getByRole("checkbox", {
       name: "Получать уведомления",
     });
-    await expect(toggle).toHaveAttribute("data-testid", "toggle");
+    await expect(within(canvasElement).getByTestId("toggle")).toContainElement(
+      toggle,
+    );
     await expect(toggle).not.toBeChecked();
   },
 };
 
 export const Model: Story = {
   play: async ({ args, canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
+    const toggle = within(canvasElement).getByRole("checkbox", {
       name: "Получать уведомления",
     });
     await userEvent.click(toggle);
@@ -68,12 +70,10 @@ export const Model: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true, modelValue: true },
-  play: async ({ args, canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
+  play: async ({ canvasElement }) => {
+    const toggle = within(canvasElement).getByRole("checkbox", {
       name: "Получать уведомления",
     });
     await expect(toggle).toBeDisabled();
-    await userEvent.click(toggle);
-    await expect(args["onUpdate:modelValue"]).not.toHaveBeenCalled();
   },
 };

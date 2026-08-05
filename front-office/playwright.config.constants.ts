@@ -19,6 +19,7 @@ export const frontOfficePlaywrightTestMatch = "tests/e2e/**/*.spec.ts";
 export const frontOfficePlaywrightTarget = {
   a11y: "a11y",
   app: "app",
+  screenshots: "screenshots",
   visual: "visual",
 } as const;
 export const frontOfficeScreenshotOptions = {
@@ -30,6 +31,7 @@ export const frontOfficeStorybookOrigin = "http://127.0.0.1:6006";
 export const frontOfficeStorybookTestMatches = {
   a11y: "scripts/storybook-a11y.spec.mjs",
   default: "scripts/storybook-interactions.spec.mjs",
+  screenshots: "scripts/storybook-screenshots.spec.mjs",
   visual: "scripts/visual.spec.mjs",
 } as const;
 export const frontOfficeStorybookWebServerCommand =

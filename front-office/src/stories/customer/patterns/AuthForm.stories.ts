@@ -81,17 +81,21 @@ export const Otp: Story = {
     const canvas = within(canvasElement);
     const otp = canvas.getByRole("textbox", { name: "Код из сообщения" });
 
-    await userEvent.type(otp, "1234");
+    await userEvent.type(otp, "123456");
     await userEvent.click(
       canvas.getByRole("button", { name: "Отправить код ещё раз" }),
     );
     await expect(args.onUpdateOtp).toHaveBeenLastCalledWith("");
     await expect(args.onSendCode).toHaveBeenCalledTimes(1);
 
-    await userEvent.type(otp, "5678");
+    const resetOtp = canvas.getByRole("textbox", { name: "Код из сообщения" });
+    await userEvent.type(resetOtp, "567890");
+    await expect(
+      canvas.getByRole("button", { name: "Подтвердить" }),
+    ).toBeEnabled();
     await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
 
-    await expect(args.onVerifyOtp).toHaveBeenCalledWith("5678");
+    await expect(args.onVerifyOtp).toHaveBeenCalledWith("567890");
   },
 };
 
@@ -106,8 +110,11 @@ export const OtpError: Story = {
     },
   },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole("alert")).toHaveTextContent(
+    const errorMessage = within(canvasElement).getByText(
       "Код неверный или истёк",
     );
+    const errorAlert = errorMessage.closest("[role='alert']");
+
+    await expect(errorAlert).toHaveTextContent("Код неверный или истёк");
   },
 };

@@ -19,9 +19,16 @@ type OrdersHistoryStoryArgs = {
 
 const fixtures = createCustomerDefaults();
 const [firstOrder] = fixtures.orders;
+const statusOrderIds: Record<OrderStatus, string> = {
+  pending: "1051",
+  preparing: "1050",
+  ready: "1049",
+  completed: "1048",
+  cancelled: "1047",
+};
 
 function withStatus(status: OrderStatus): Order {
-  return { ...firstOrder, id: `status-${status}`, status };
+  return { ...firstOrder, id: statusOrderIds[status], status };
 }
 
 const meta = {
@@ -145,7 +152,7 @@ export const Long: Story = {
     orders: [
       {
         ...firstOrder,
-        id: "long-order",
+        id: "1046",
         createdAt: "9 марта 2026, 10:32",
         items: [
           {

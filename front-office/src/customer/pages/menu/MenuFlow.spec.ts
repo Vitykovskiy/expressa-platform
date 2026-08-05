@@ -57,6 +57,38 @@ describe("MenuFlow", () => {
     );
     Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
   });
+
+  it("показывает для пустой категории единое действие возврата к категориям", async () => {
+    const defaults = createCustomerDefaults();
+    const menu = {
+      ...defaults,
+      acceptsNewOrders: true,
+      categories: defaults.categories.map((category) =>
+        category.id === "espresso" ? { ...category, products: [] } : category,
+      ),
+    };
+    const wrapper = mount(MenuFlow, {
+      props: { menu },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper
+      .findComponent(MenuRootScreen)
+      .vm.$emit("selectCategory", "espresso");
+
+    expect(wrapper.get(".menu-group__empty").text()).toContain(
+      "В этой категории пока нет товаров",
+    );
+    expect(wrapper.get("button").text()).toContain("К категориям");
+    expect(
+      wrapper.findAll("button").filter((button) => button.text() === "Назад"),
+    ).toHaveLength(0);
+
+    history.replaceState({}, "");
+    await wrapper.get("button").trigger("click");
+    await nextTick();
+    expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
+  });
 });
 
 async function backTo(

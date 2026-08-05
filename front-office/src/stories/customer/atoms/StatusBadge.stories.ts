@@ -38,10 +38,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText("Метка")).toHaveAttribute(
-      "data-testid",
-      "badge",
-    );
+    const badge = within(canvasElement).getByTestId("badge");
+    await expect(badge).toHaveTextContent("Метка");
   },
 };
 
