@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="Меню" description="Категории, товары и добавки">
+  <PageShell class="menu-page__shell" title="Меню" description="">
     <p
       v-if="catalogStore.status === 'loading'"
       class="menu-page__state"
@@ -16,108 +16,198 @@
       <AdminButton type="button" @click="loadCatalog">Повторить</AdminButton>
     </section>
     <template v-if="hasConfirmedCatalog">
+      <p v-if="catalogSummary" class="menu-page__desktop-summary">
+        {{ catalogSummary }}
+      </p>
+      <AdminButton
+        :aria-expanded="managementOpen"
+        :disabled="isBusy"
+        aria-label="Управление меню"
+        class="menu-page__management-toggle"
+        title="Управление меню"
+        type="button"
+        variant="ghost"
+        @click="managementOpen = !managementOpen"
+      >
+        <span aria-hidden="true">•••</span>
+      </AdminButton>
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
-        <div class="menu-page__actions">
-          <AdminButton
-            :disabled="isBusy"
-            type="button"
-            @click="addCategoryOpen = true"
-            >Добавить категорию</AdminButton
-          >
-          <AdminButton
-            :disabled="isBusy"
-            type="button"
-            variant="secondary"
-            @click="addProductOpen = true"
-            >Добавить товар</AdminButton
-          >
-          <AdminButton
-            :disabled="isBusy"
-            type="button"
-            variant="secondary"
-            @click="openModifierGroupEditor(null)"
-            >Новая группа добавок</AdminButton
-          >
-        </div>
-        <div class="menu-page__catalog-heading">
-          <h2>Категории</h2>
-          <p>{{ categorySummary }}</p>
+        <div class="menu-page__toolbar">
+          <div class="menu-page__actions">
+            <AdminButton
+              :disabled="isBusy"
+              type="button"
+              @click="addCategoryOpen = true"
+              >Добавить группу</AdminButton
+            >
+            <AdminButton
+              :disabled="isBusy"
+              type="button"
+              variant="secondary"
+              @click="addProductOpen = true"
+              >Добавить товар</AdminButton
+            >
+          </div>
         </div>
         <p v-if="orderedCategories.length === 0" class="menu-page__state">
           Категорий пока нет. Добавьте первую категорию.
         </p>
-        <div v-else class="menu-page__categories">
-          <MenuCategoryGroup
-            v-for="(category, index) in orderedCategories"
-            :key="category.id"
-            :category="category"
-            :can-move-up="index > 0"
-            :can-move-down="index < orderedCategories.length - 1"
-            :disabled="isBusy"
-            :expanded="expandedCategoryIds.has(category.id)"
-            :products="productsByCategory(category.id)"
-            @edit="openProductEditor"
-            @edit-category="openCategoryEditor"
-            @move-up="moveCategoryUp"
-            @move-down="moveCategoryDown"
-            @move-product-up="moveProductUp"
-            @move-product-down="moveProductDown"
-            @toggle="toggleCategory"
-          />
-        </div>
-        <section class="menu-page__catalog-tools" aria-label="Настройки меню">
-          <section class="menu-page__editor-section">
-            <h2>Группы добавок</h2>
-            <p
-              v-if="orderedModifierGroups.length === 0"
-              class="menu-page__state"
-            >
-              Групп добавок пока нет.
-            </p>
-            <AdminButton
-              v-for="group in orderedModifierGroups"
-              :key="group.id"
-              class="menu-page__group-button"
-              :disabled="isBusy"
-              type="button"
-              variant="ghost"
-              @click="openModifierGroupEditor(group)"
-              >{{ group.name }}</AdminButton
-            >
-          </section>
-          <section class="menu-page__editor-section">
-            <h2>Назначения категорий</h2>
-            <AdminButton
-              v-for="category in orderedCategories"
+        <section
+          v-else
+          class="menu-page__section"
+          aria-labelledby="menu-main-heading"
+        >
+          <h2 id="menu-main-heading" class="menu-page__section-title">
+            Основное меню
+          </h2>
+          <div class="menu-page__table">
+            <MenuCategoryGroup
+              v-for="(category, index) in orderedCategories"
               :key="category.id"
-              class="menu-page__group-button"
+              :category="category"
+              :can-move-up="index > 0"
+              :can-move-down="index < orderedCategories.length - 1"
+              :disabled="isBusy"
+              :expanded="expandedCategoryIds.has(category.id)"
+              :products="productsByCategory(category.id)"
+              :show-management-actions="managementOpen"
+              @edit="openProductEditor"
+              @edit-category="openCategoryEditor"
+              @move-up="moveCategoryUp"
+              @move-down="moveCategoryDown"
+              @move-product-up="moveProductUp"
+              @move-product-down="moveProductDown"
+              @toggle="toggleCategory"
+            />
+          </div>
+        </section>
+        <section
+          v-if="modifierGroups.length > 0"
+          class="menu-page__section"
+          aria-labelledby="menu-options-heading"
+        >
+          <h2 id="menu-options-heading" class="menu-page__section-title">
+            Группы опций
+          </h2>
+          <div class="menu-page__table">
+            <section
+              v-for="group in modifierGroups"
+              :key="group.id"
+              class="menu-page__option-group"
+            >
+              <header class="menu-page__option-header">
+                <AdminButton
+                  :aria-expanded="expandedModifierGroupIds.has(group.id)"
+                  :disabled="isBusy"
+                  class="menu-page__option-toggle"
+                  type="button"
+                  variant="ghost"
+                  @click="toggleModifierGroup(group)"
+                >
+                  <span aria-hidden="true">
+                    {{ expandedModifierGroupIds.has(group.id) ? "⌄" : "›" }}
+                  </span>
+                  <span class="menu-page__option-copy">
+                    <span class="menu-page__option-name">{{ group.name }}</span>
+                    <span class="menu-page__option-count">
+                      {{ modifierOptionCountLabel(group.options.length) }}
+                    </span>
+                  </span>
+                </AdminButton>
+                <AdminButton
+                  :aria-label="`Редактировать группу опций ${group.name}`"
+                  :disabled="isBusy"
+                  class="menu-page__option-edit"
+                  type="button"
+                  variant="ghost"
+                  @click="openModifierGroupEditor(group)"
+                >
+                  <span aria-hidden="true">✎</span>
+                  <span class="menu-page__visually-hidden">Редактировать</span>
+                </AdminButton>
+              </header>
+              <div
+                v-if="expandedModifierGroupIds.has(group.id)"
+                class="menu-page__option-list"
+              >
+                <p
+                  v-if="group.options.length === 0"
+                  class="menu-page__option-empty"
+                >
+                  Опций в этой группе пока нет
+                </p>
+                <AdminButton
+                  v-for="option in group.options"
+                  v-else
+                  :key="option.id"
+                  :aria-label="`Редактировать группу опций ${group.name}`"
+                  class="menu-page__option-row"
+                  type="button"
+                  variant="ghost"
+                  @click="openModifierGroupEditor(group)"
+                >
+                  <span class="menu-page__option-row-copy">
+                    <span>{{ option.name }}</span>
+                    <span class="menu-page__option-price">
+                      {{ modifierOptionPrice(option.priceDeltaMinor) }}
+                    </span>
+                  </span>
+                  <span aria-hidden="true">›</span>
+                </AdminButton>
+              </div>
+            </section>
+          </div>
+        </section>
+        <section
+          v-if="managementOpen"
+          class="menu-page__management"
+          aria-label="Управление меню"
+        >
+          <div class="menu-page__management-heading">
+            <h2>Управление меню</h2>
+            <AdminButton
               :disabled="isBusy"
               type="button"
-              variant="ghost"
-              @click="selectedCategory = category"
-              >{{ category.name }}</AdminButton
+              variant="secondary"
+              @click="openModifierGroupEditor(null)"
+              >Новая группа опций</AdminButton
             >
-          </section>
-          <section
-            v-if="selectedCategory === null"
-            class="menu-page__assignments"
-          >
-            <h2>Группы добавок категории</h2>
-            <p class="menu-page__state">
-              Выберите категорию, чтобы настроить её добавки.
-            </p>
-          </section>
-          <CategoryModifierAssignments
-            v-else
-            class="menu-page__assignments"
-            :assignments="catalogStore.categoryModifierGroupAssignments"
-            :categories="orderedCategories"
-            :category="selectedCategory"
-            :disabled="catalogStore.status === 'loading'"
-            :groups="orderedModifierGroups"
-            @cancel="selectedCategory = null"
-            @save="saveAssignments"
-          />
+          </div>
+          <div class="menu-page__catalog-tools">
+            <section class="menu-page__editor-section">
+              <h3>Назначения категорий</h3>
+              <AdminButton
+                v-for="category in orderedCategories"
+                :key="category.id"
+                class="menu-page__group-button"
+                :disabled="isBusy"
+                type="button"
+                variant="ghost"
+                @click="selectedCategory = category"
+                >{{ category.name }}</AdminButton
+              >
+            </section>
+            <section
+              v-if="selectedCategory === null"
+              class="menu-page__assignments"
+            >
+              <h3>Группы опций категории</h3>
+              <p class="menu-page__state">
+                Выберите группу меню, чтобы настроить её опции.
+              </p>
+            </section>
+            <CategoryModifierAssignments
+              v-else
+              class="menu-page__assignments"
+              :assignments="catalogStore.categoryModifierGroupAssignments"
+              :categories="orderedCategories"
+              :category="selectedCategory"
+              :disabled="catalogStore.status === 'loading'"
+              :groups="modifierGroups"
+              @cancel="selectedCategory = null"
+              @save="saveAssignments"
+            />
+          </div>
         </section>
       </div>
     </template>
@@ -209,6 +299,8 @@ const editCategoryOpen = shallowRef(false);
 const editProductOpen = shallowRef(false);
 const modifierGroupEditorOpen = shallowRef(false);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
+const expandedModifierGroupIds = shallowRef<ReadonlySet<string>>(new Set());
+const managementOpen = shallowRef(false);
 const selectedCategory = shallowRef<Category | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
 const selectedProduct = shallowRef<Product | null>(null);
@@ -219,13 +311,14 @@ const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const orderedCategories = computed(() =>
   [...catalogStore.categories].sort(bySortOrder),
 );
-const orderedModifierGroups = computed(() =>
-  [...catalogStore.modifierGroups].sort(byName),
-);
-const categorySummary = computed(() => {
-  const count = orderedCategories.value.length;
+const modifierGroups = computed(() => catalogStore.modifierGroups);
+const catalogSummary = computed(() => {
+  const categoryCount = orderedCategories.value.length;
+  const modifierGroupCount = modifierGroups.value.length;
 
-  return count === 1 ? "1 категория" : `${count} категорий`;
+  if (categoryCount === 0 && modifierGroupCount === 0) return "";
+
+  return `${categoryCount} групп · ${modifierGroupCount} групп опций`;
 });
 const categoryFieldErrors = computed(() => catalogStore.fieldErrors);
 const productFieldErrors = computed(() => catalogStore.fieldErrors);
@@ -286,6 +379,25 @@ function toggleCategory(category: Category): void {
   if (next.has(category.id)) next.delete(category.id);
   else next.add(category.id);
   expandedCategoryIds.value = next;
+}
+
+function toggleModifierGroup(group: ModifierGroup): void {
+  const next = new Set(expandedModifierGroupIds.value);
+  if (next.has(group.id)) next.delete(group.id);
+  else next.add(group.id);
+  expandedModifierGroupIds.value = next;
+}
+
+function modifierOptionPrice(priceDeltaMinor: number): string {
+  if (priceDeltaMinor === 0) return "Бесплатно";
+  return `${priceDeltaMinor / 100} ₽`;
+}
+
+function modifierOptionCountLabel(count: number): string {
+  const label =
+    count === 1 ? "опция" : count >= 2 && count <= 4 ? "опции" : "опций";
+
+  return `${count} ${label}`;
 }
 
 function openCategoryEditor(category: Category): void {
@@ -471,62 +583,200 @@ function bySortOrder(
 ): number {
   return left.sortOrder - right.sortOrder;
 }
-
-function byName(left: ModifierGroup, right: ModifierGroup): number {
-  return left.name.localeCompare(right.name, "ru");
-}
 </script>
 
 <style scoped lang="scss">
-.menu-page__actions,
-.menu-page__categories,
+.menu-page__shell {
+  position: relative;
+}
+
+:deep(.page-shell-description) {
+  display: none;
+}
+
+.menu-page__desktop-summary {
+  position: absolute;
+  top: 35px;
+  right: var(--expressa-space-lg);
+  margin: 0;
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-body);
+}
+
+.menu-page__management-toggle {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-title);
+  letter-spacing: 0.08em;
+}
+
+.menu-page__content,
+.menu-page__section,
+.menu-page__management,
 .menu-page__catalog-tools,
 .menu-page__editor-section,
 .menu-page__error {
   display: grid;
   gap: var(--expressa-space-md);
 }
-.menu-page__actions {
-  grid-template-columns: repeat(3, minmax(0, max-content));
-  justify-content: start;
-  padding-bottom: var(--expressa-space-md);
+
+.menu-page__content {
+  gap: var(--expressa-space-lg);
+}
+
+.menu-page__toolbar,
+.menu-page__actions,
+.menu-page__management-heading {
+  display: flex;
+  gap: var(--expressa-space-sm);
+  align-items: center;
+}
+
+.menu-page__toolbar,
+.menu-page__management-heading {
+  justify-content: space-between;
+}
+
+.menu-page__section {
+  gap: var(--expressa-space-control-inline);
+}
+
+.menu-page__section-title {
+  margin: 0;
+  padding-inline: var(--expressa-space-xs);
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-medium);
+  letter-spacing: var(--expressa-letter-spacing-section-title);
+  line-height: var(--expressa-line-height-caption);
+  text-transform: uppercase;
+}
+
+.menu-page__table {
+  overflow: hidden;
+  background: var(--expressa-color-surface);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-lg);
+}
+
+.menu-page__option-group:not(:last-child) {
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
-.menu-page__catalog-heading {
+
+.menu-page__option-header,
+.menu-page__option-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--expressa-space-sm);
-  align-items: baseline;
+  min-height: 70px;
+  background: var(--expressa-color-surface-raised);
 }
-.menu-page__catalog-heading h2,
-.menu-page__editor-section h2 {
+
+.menu-page__option-toggle,
+.menu-page__option-edit,
+.menu-page__option-row {
+  border: var(--expressa-border-width-none);
+  border-radius: 0;
+}
+
+.menu-page__option-toggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: var(--expressa-space-control-inline);
+  padding: 14px var(--expressa-space-md) 14px 20px;
+  text-align: left;
+}
+
+.menu-page__option-copy,
+.menu-page__option-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--expressa-space-2xs);
+}
+
+.menu-page__option-toggle > span:first-child {
+  flex: 0 0 12px;
+  text-align: center;
+}
+
+.menu-page__option-name {
+  overflow: hidden;
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body-strong);
+  font-weight: var(--expressa-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-page__option-count,
+.menu-page__option-price {
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-caption);
+}
+
+.menu-page__option-edit {
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  place-items: center;
+  padding: 0;
+  color: var(--expressa-color-accent);
+  font-size: 18px;
+}
+
+.menu-page__option-row {
+  width: 100%;
+  min-height: 63px;
+  justify-content: space-between;
+  gap: var(--expressa-space-sm);
+  padding: 14px var(--expressa-space-md) 14px
+    var(--expressa-space-product-indent);
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-semibold);
+  text-align: left;
+  background: var(--expressa-color-surface);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.menu-page__option-empty {
+  margin: 0;
+  padding: var(--expressa-space-xl) var(--expressa-space-md);
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-body);
+  text-align: center;
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.menu-page__management {
+  padding-top: var(--expressa-space-lg);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.menu-page__management-heading h2,
+.menu-page__editor-section h3,
+.menu-page__assignments h3 {
   margin: 0;
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-title);
 }
-.menu-page__catalog-heading p {
-  margin: 0;
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-action);
-}
-.menu-page__state {
-  margin: 0;
-  color: var(--expressa-color-text-muted);
-}
-.menu-page__error {
-  color: var(--expressa-color-status-error);
-}
-.menu-page__error p {
-  margin: 0;
-}
-.menu-page__categories {
-  grid-template-columns: minmax(0, 1fr);
-}
+
 .menu-page__catalog-tools {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: var(--expressa-space-xl);
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
 }
+
 .menu-page__editor-section,
 .menu-page__assignments {
   padding: var(--expressa-space-md);
@@ -535,32 +785,103 @@ function byName(left: ModifierGroup, right: ModifierGroup): number {
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-lg);
 }
-.menu-page__assignments {
-  grid-column: 1 / -1;
-}
+
 .menu-page__group-button {
   display: flex;
   width: 100%;
   justify-content: flex-start;
   min-height: var(--expressa-size-control-min-height);
 }
+
+.menu-page__state {
+  margin: 0;
+  color: var(--expressa-color-text-muted);
+}
+
+.menu-page__error {
+  color: var(--expressa-color-status-error);
+}
+
+.menu-page__error p {
+  margin: 0;
+}
+
 .menu-page__modifier-dialog {
   max-block-size: calc(100dvh - var(--expressa-space-xl));
   min-width: 0;
   overflow-y: auto;
 }
+
 .menu-page__modifier-dialog-content {
   min-width: 0;
 }
+
+.menu-page__visually-hidden {
+  position: absolute;
+  width: var(--expressa-size-visually-hidden);
+  height: var(--expressa-size-visually-hidden);
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 767px) {
+  :deep(.page-shell-title) {
+    display: flex;
+    min-height: var(--expressa-size-top-bar-min-height);
+    align-items: center;
+    margin: 0;
+    padding: 0 var(--expressa-space-md);
+    font-size: var(--expressa-font-size-title);
+    border-bottom: var(--expressa-border-width-default) solid
+      var(--expressa-color-border);
+  }
+
+  :deep(.page-shell-content) {
+    margin-top: 0;
+    padding: var(--expressa-space-md) var(--expressa-space-md)
+      var(--expressa-space-tab-bar-clearance);
+  }
+
+  .menu-page__desktop-summary {
+    display: none;
+  }
+
+  .menu-page__management-toggle {
+    top: var(--expressa-space-xs);
+    right: var(--expressa-space-md);
+  }
+
   .menu-page__actions {
-    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
-  .menu-page__catalog-tools {
-    grid-template-columns: minmax(0, 1fr);
+
+  .menu-page__actions > .admin-button:first-child {
+    flex: 1.25;
   }
-  .menu-page__assignments {
-    grid-column: auto;
+
+  .menu-page__actions > .admin-button:last-child {
+    flex: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-page__shell {
+    padding: 21px var(--expressa-space-lg) var(--expressa-space-lg);
+  }
+
+  :deep(.page-shell-title) {
+    margin: 0;
+    font-size: var(--expressa-font-size-screen-title);
+  }
+
+  :deep(.page-shell-content) {
+    margin-top: var(--expressa-space-md);
+  }
+
+  .menu-page__management-toggle {
+    top: 21px;
+    right: 184px;
   }
 }
 </style>

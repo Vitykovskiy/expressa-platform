@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-05T22:16:12.875Z",
-  "screenshotCount": 230,
-  "storyCount": 94,
+  "generatedAt": "2026-08-06T00:26:19.272Z",
+  "screenshotCount": 236,
+  "storyCount": 96,
   "stories": [
     {
       "files": [
@@ -329,6 +329,14 @@
     },
     {
       "files": [
+        "admin-menu-parts--management.png"
+      ],
+      "id": "admin-menu-parts--management",
+      "responsive": false,
+      "title": "Admin/Menu/Parts"
+    },
+    {
+      "files": [
         "admin-menu-screen--default.png",
         "admin-menu-screen--default-390.png",
         "admin-menu-screen--default-767.png",
@@ -384,6 +392,18 @@
         "admin-menu-screen--loading-1280.png"
       ],
       "id": "admin-menu-screen--loading",
+      "responsive": true,
+      "title": "Admin/Menu/Screen"
+    },
+    {
+      "files": [
+        "admin-menu-screen--management.png",
+        "admin-menu-screen--management-390.png",
+        "admin-menu-screen--management-767.png",
+        "admin-menu-screen--management-768.png",
+        "admin-menu-screen--management-1280.png"
+      ],
+      "id": "admin-menu-screen--management",
       "responsive": true,
       "title": "Admin/Menu/Screen"
     },

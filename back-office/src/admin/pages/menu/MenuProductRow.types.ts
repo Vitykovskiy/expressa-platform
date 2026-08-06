@@ -5,6 +5,7 @@ export interface MenuProductRowProps {
   canMoveUp: boolean;
   canMoveDown: boolean;
   disabled: boolean;
+  showManagementActions?: boolean;
 }
 
 export interface MenuProductRowEmits {

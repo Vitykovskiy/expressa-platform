@@ -53,6 +53,30 @@ const products: readonly Product[] = [
     ],
   },
 ];
+const managementProducts: readonly Product[] = [
+  ...products,
+  {
+    id: "latte",
+    categoryId: "coffee",
+    type: "DRINK",
+    name: "Латте",
+    description: "",
+    priceMinor: null,
+    sortOrder: 1,
+    isActive: true,
+    isAvailable: true,
+    variants: [
+      {
+        id: "latte-s",
+        productId: "latte",
+        size: "S",
+        priceMinor: 20000,
+        sortOrder: 0,
+        isAvailable: true,
+      },
+    ],
+  },
+];
 const meta = {
   title: "Admin/Menu/Parts",
   component: MenuCategoryGroup,
@@ -113,14 +137,42 @@ export const ExpandedDrinkSML: Story = {
       canvas.getByRole("button", { name: "Редактировать товар Капучино" }),
     );
     await expect(args.onEdit).toHaveBeenCalledWith(products[0]);
+    await expect(
+      canvas.queryByRole("button", {
+        name: "Переместить категорию Кофе вверх",
+      }),
+    ).toBeNull();
+  },
+};
+export const Management: Story = {
+  args: {
+    category,
+    products: managementProducts,
+    expanded: true,
+    showManagementActions: true,
+    canMoveUp: true,
+    canMoveDown: true,
+    disabled: false,
+    onToggle: fn(),
+    "onEdit-category": fn(),
+    onEdit: fn(),
+    onMoveUp: fn(),
+    onMoveDown: fn(),
+    onMoveProductUp: fn(),
+    onMoveProductDown: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
     await userEvent.click(
       canvas.getByRole("button", { name: "Переместить категорию Кофе вверх" }),
     );
     await expect(args.onMoveUp).toHaveBeenCalledWith(category);
     await userEvent.click(
-      canvas.getByRole("button", { name: "Переместить категорию Кофе вниз" }),
+      canvas.getByRole("button", { name: "Переместить товар Капучино вниз" }),
     );
-    await expect(args.onMoveDown).toHaveBeenCalledWith(category);
+    await expect(args.onMoveProductDown).toHaveBeenCalledWith(
+      managementProducts[0],
+    );
   },
 };
 export const Empty: Story = {
@@ -147,8 +199,6 @@ export const LongContent: Story = {
 
     if (!categoryGroup) throw new Error("Menu category is not rendered");
     const categoryControls = [
-      "Переместить категорию Очень длинное название категории для узкого экрана и проверки переноса вверх",
-      "Переместить категорию Очень длинное название категории для узкого экрана и проверки переноса вниз",
       "Редактировать категорию Очень длинное название категории для узкого экрана и проверки переноса",
     ].map((name) => canvasElement.querySelector(`[aria-label="${name}"]`));
     const controls = [

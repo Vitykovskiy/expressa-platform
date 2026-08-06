@@ -18,6 +18,7 @@
       <span aria-hidden="true">›</span>
     </AdminButton>
     <AdminButton
+      v-if="props.showManagementActions"
       :disabled="props.disabled || !props.canMoveUp"
       :aria-label="`Переместить товар ${props.product.name} вверх`"
       class="menu-product-row__move"
@@ -27,6 +28,7 @@
       >↑</AdminButton
     >
     <AdminButton
+      v-if="props.showManagementActions"
       :disabled="props.disabled || !props.canMoveDown"
       :aria-label="`Переместить товар ${props.product.name} вниз`"
       class="menu-product-row__move"
@@ -71,18 +73,14 @@ function formatPriceMinor(priceMinor: number): string {
 <style scoped lang="scss">
 .menu-product-row {
   display: flex;
-  width: auto;
-  min-height: var(--expressa-size-control-min-height);
-  gap: var(--expressa-space-2xs);
-  margin: var(--expressa-space-sm) var(--expressa-space-md)
-    var(--expressa-space-sm) var(--expressa-space-product-indent);
+  width: 100%;
+  min-height: 63px;
   overflow: hidden;
   color: var(--expressa-color-text-primary);
   text-align: left;
-  background: var(--expressa-color-surface-raised);
-  border: var(--expressa-border-width-default) solid
+  background: var(--expressa-color-surface);
+  border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
 }
 
 .menu-product-row__edit:hover {
@@ -94,14 +92,15 @@ function formatPriceMinor(priceMinor: number): string {
   min-width: 0;
   flex: 1;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
+  padding: 14px var(--expressa-space-md) 14px
+    var(--expressa-space-product-indent);
   text-align: left;
 }
 
 .menu-product-row__move {
   width: 44px;
   min-width: 44px;
-  min-height: 44px;
+  min-height: 63px;
   padding: 0;
   border-left: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -129,11 +128,5 @@ function formatPriceMinor(priceMinor: number): string {
 .menu-product-row__price {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
-}
-
-@media (max-width: 767px) {
-  .menu-product-row {
-    margin-left: var(--expressa-space-md);
-  }
 }
 </style>

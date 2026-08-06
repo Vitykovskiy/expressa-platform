@@ -7,6 +7,7 @@ export interface MenuCategoryGroupProps {
   canMoveUp: boolean;
   canMoveDown: boolean;
   disabled: boolean;
+  showManagementActions?: boolean;
 }
 
 export interface MenuCategoryGroupEmits {

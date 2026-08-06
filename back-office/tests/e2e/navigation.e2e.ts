@@ -257,11 +257,11 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
   const labels = ["Очередь", "Доступность", "Меню"];
 
   for (const [width, expectedRows] of [
-    [320, [2, 1]],
-    [390, [2, 1]],
-    [479, [2, 1]],
-    [480, [2, 1]],
-    [767, [2, 1]],
+    [320, [3]],
+    [390, [3]],
+    [479, [3]],
+    [480, [3]],
+    [767, [3]],
   ] as const) {
     await page.setViewportSize({ height: 900, width });
     await page.goto(storyPath(storyId));
@@ -296,11 +296,28 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
 
       return {
         activeButton: buttons.find((button) => button.label === "Очередь"),
-        activeSurface: (() => {
+        activeIndicator: (() => {
+          const activeButton = buttons.find(
+            (button) => button.label === "Очередь",
+          );
+          const activeButtonElement = [
+            ...tabBar.querySelectorAll("button"),
+          ].find((button) => button.textContent?.trim() === "Очередь");
+          const styles = activeButtonElement
+            ? getComputedStyle(activeButtonElement, "::before")
+            : null;
+
+          return {
+            backgroundColor: styles?.backgroundColor ?? "",
+            height: styles?.height ?? "",
+            present: activeButton !== undefined,
+          };
+        })(),
+        accent: (() => {
           const reference = document.createElement("div");
           reference.style.background = getComputedStyle(
             document.documentElement,
-          ).getPropertyValue("--expressa-color-control-selected-surface");
+          ).getPropertyValue("--expressa-color-accent");
           document.body.append(reference);
           const background = getComputedStyle(reference).backgroundColor;
           reference.remove();
@@ -335,8 +352,11 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
     ).toBe(true);
     expect(geometry.rows).toEqual(expectedRows);
     expect(geometry.withinBounds).toBe(true);
-    expect(geometry.activeButton?.backgroundColor).toBe(geometry.activeSurface);
+    expect(geometry.activeButton?.backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(geometry.activeButton?.borderTopWidth).toBe("0px");
+    expect(geometry.activeIndicator.present).toBe(true);
+    expect(geometry.activeIndicator.backgroundColor).toBe(geometry.accent);
+    expect(geometry.activeIndicator.height).toBe("2px");
     expect(
       geometry.buttons.every((button) => button.whiteSpace === "nowrap"),
     ).toBe(true);
@@ -358,13 +378,18 @@ test("UIQL-I1-BO: admin tab bar сохраняет заданную геомет
     .locator(".admin-shell")
     .evaluate((shell) => {
       const content = shell.querySelector(".admin-shell-content");
+      const sideNav = shell.querySelector(".side-nav");
 
       return {
         contentHeight: content?.getBoundingClientRect().height ?? 0,
+        contentLeft: content?.getBoundingClientRect().left ?? 0,
         shellHeight: shell.getBoundingClientRect().height,
+        sideNavWidth: sideNav?.getBoundingClientRect().width ?? 0,
       };
     });
   expect(desktopGeometry.contentHeight).toBe(desktopGeometry.shellHeight);
+  expect(desktopGeometry.contentLeft).toBe(220);
+  expect(desktopGeometry.sideNavWidth).toBe(220);
 });
 
 test("UIQL-I1-BO: заказы меняют число колонок на 1024px", async ({ page }) => {

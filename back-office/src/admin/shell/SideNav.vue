@@ -15,6 +15,7 @@
         variant="ghost"
         @click="emit('select', section.id)"
       >
+        <AdminSectionIcon :section="section.id" />
         {{ section.label }}
       </AdminButton>
     </nav>
@@ -24,6 +25,19 @@
       variant="ghost"
       @click="emit('logout')"
     >
+      <svg
+        aria-hidden="true"
+        fill="none"
+        height="18"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="18"
+      >
+        <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6" />
+      </svg>
       Выйти
     </AdminButton>
   </aside>
@@ -31,6 +45,7 @@
 
 <script setup lang="ts">
 import AdminButton from "../shared/ui/admin-button/AdminButton.vue";
+import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { SideNavEmits, SideNavProps } from "./SideNav.types";
 
 defineProps<SideNavProps>();
@@ -56,6 +71,9 @@ const emit = defineEmits<SideNavEmits>();
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-brand);
 }
+.side-nav-brand strong {
+  line-height: var(--expressa-line-height-tight);
+}
 .side-nav-brand span {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
@@ -68,6 +86,10 @@ const emit = defineEmits<SideNavEmits>();
 }
 .side-nav-link,
 .side-nav-logout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block) var(--expressa-space-md);
   border: var(--expressa-border-width-none);
@@ -84,9 +106,17 @@ const emit = defineEmits<SideNavEmits>();
   color: var(--expressa-color-accent);
   background: var(--expressa-color-status-info-surface);
 }
+.side-nav-link:hover:not(.side-nav-link--active),
+.side-nav-logout:hover {
+  background: var(--expressa-color-border);
+}
 .side-nav-logout {
   margin-top: auto;
   color: var(--expressa-color-text-muted);
+}
+.side-nav-logout:hover {
+  color: var(--expressa-color-status-error);
+  background: var(--expressa-color-status-error-surface);
 }
 @media (min-width: 768px) {
   .side-nav {

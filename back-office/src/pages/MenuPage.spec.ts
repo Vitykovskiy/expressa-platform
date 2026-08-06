@@ -76,13 +76,16 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Новая группа добавок");
+    await openManagement(wrapper);
+    await clickButton(wrapper, "Новая группа опций");
     expect(
       wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
     ).toBeNull();
 
     await clickButton(wrapper, "Отмена");
-    await clickButton(wrapper, "Молоко");
+    await wrapper
+      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .trigger("click");
     expect(
       wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
     ).toMatchObject({
@@ -95,7 +98,8 @@ describe("MenuPage", () => {
     store.$patch({ ...catalog, status: "ready" });
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
-    const trigger = buttonByText(wrapper, "Новая группа добавок");
+    await openManagement(wrapper);
+    const trigger = buttonByText(wrapper, "Новая группа опций");
     const focus = vi.spyOn(trigger.element, "focus");
 
     trigger.element.focus();
@@ -119,7 +123,8 @@ describe("MenuPage", () => {
       });
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Новая группа добавок");
+    await openManagement(wrapper);
+    await clickButton(wrapper, "Новая группа опций");
     await wrapper
       .get('.modifier-group-editor input[type="text"]')
       .setValue("Сиропы");
@@ -141,7 +146,8 @@ describe("MenuPage", () => {
     });
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Новая группа добавок");
+    await openManagement(wrapper);
+    await clickButton(wrapper, "Новая группа опций");
     const input = wrapper.get('.modifier-group-editor input[type="text"]');
     await input.setValue("Сиропы");
     await clickButton(wrapper, "Сохранить группу");
@@ -213,7 +219,7 @@ describe("MenuPage", () => {
     expect(productNames(wrapper)).toEqual(["Эспрессо", "Латте"]);
   });
 
-  it("собирает каталог в адаптивную сетку и показывает счётчик категорий", () => {
+  it("собирает каталог в таблицу и скрывает управление до явного открытия", () => {
     const store = useCatalogStore();
     store.$patch({
       categories: [
@@ -226,12 +232,53 @@ describe("MenuPage", () => {
 
     const wrapper = mountPage();
 
-    expect(wrapper.get(".menu-page__categories").classes()).toContain(
-      "menu-page__categories",
-    );
-    expect(wrapper.get(".menu-page__catalog-heading").text()).toContain(
-      "2 категорий",
-    );
+    expect(wrapper.findAll(".menu-page__table")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Основное меню");
+    expect(wrapper.findAll(".menu-page__management")).toHaveLength(0);
+  });
+
+  it("сохраняет порядок групп опций из каталога и показывает фигмовские формы счётчиков", () => {
+    const store = useCatalogStore();
+    store.$patch({
+      ...catalog,
+      products: [
+        productWithSortOrder("product-cappuccino", 0),
+        productWithSortOrder("product-latte", 1),
+        productWithSortOrder("product-espresso", 2),
+      ],
+      modifierGroups: [
+        {
+          ...modifierGroup(),
+          id: "group-milk",
+          name: "Тип молока",
+          options: [
+            { id: "milk", name: "Молоко" },
+            { id: "soy", name: "Соевое молоко" },
+            { id: "almond", name: "Миндальное молоко" },
+          ].map((option, sortOrder) => ({
+            ...option,
+            groupId: "group-milk",
+            priceDeltaMinor: 0,
+            sortOrder,
+            isAvailable: true,
+            isDefault: false,
+          })),
+        },
+        { ...modifierGroup(), id: "group-additions", name: "Добавки" },
+      ],
+      status: "ready",
+    });
+    vi.spyOn(store, "load").mockResolvedValue();
+
+    const wrapper = mountPage();
+
+    expect(wrapper.get(".menu-category__count").text()).toBe("3 товара");
+    expect(
+      wrapper
+        .findAll(".menu-page__option-name")
+        .map((element) => element.text()),
+    ).toEqual(["Тип молока", "Добавки"]);
+    expect(wrapper.get(".menu-page__option-count").text()).toBe("3 опции");
   });
 
   it("перемещает категорию полным списком идентификаторов", async () => {
@@ -257,6 +304,7 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const reorder = vi.spyOn(store, "reorderCategories").mockResolvedValue();
     const wrapper = mountPage();
+    await openManagement(wrapper);
 
     await wrapper
       .get('button[aria-label="Переместить категорию Чай вверх"]')
@@ -284,6 +332,7 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const reorder = vi.spyOn(store, "reorderProducts").mockResolvedValue();
     const wrapper = mountPage();
+    await openManagement(wrapper);
     await wrapper.get(".menu-category__toggle").trigger("click");
 
     await wrapper
@@ -318,6 +367,7 @@ describe("MenuPage", () => {
     });
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
+    await openManagement(wrapper);
 
     expect(
       wrapper
@@ -473,6 +523,7 @@ describe("MenuPage", () => {
       .mockResolvedValue();
     const wrapper = mountPage();
 
+    await openManagement(wrapper);
     await clickButton(wrapper, "Кофе");
     const checkbox = wrapper.get('input[type="checkbox"]');
     await checkbox.setValue(true);
@@ -522,7 +573,9 @@ describe("MenuPage", () => {
       });
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Молоко");
+    await wrapper
+      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .trigger("click");
     await clickButton(wrapper, "Архивировать группу");
     expect(archiveGroup).not.toHaveBeenCalled();
 
@@ -566,7 +619,9 @@ describe("MenuPage", () => {
     const saveGroup = vi.spyOn(store, "saveModifierGroup").mockResolvedValue();
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Молоко");
+    await wrapper
+      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .trigger("click");
     await clickButton(wrapper, "Удалить вариант");
     expect(wrapper.text()).toContain("Удалить вариант добавки?");
     const optionEditor = wrapper.getComponent({ name: "ModifierOptionEditor" });
@@ -594,8 +649,10 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
 
-    await clickButton(wrapper, "Добавить категорию");
-    await clickButton(wrapper, "Редактировать");
+    await clickButton(wrapper, "Добавить группу");
+    await wrapper
+      .get('button[aria-label="Редактировать категорию Кофе"]')
+      .trigger("click");
     store.status = "loading";
     await wrapper.vm.$nextTick();
 
@@ -742,6 +799,10 @@ async function clickButton(
   text: string,
 ): Promise<void> {
   await buttonByText(wrapper, text).trigger("click");
+}
+
+async function openManagement(wrapper: ButtonContainer): Promise<void> {
+  await wrapper.get('button[aria-label="Управление меню"]').trigger("click");
 }
 
 function buttonByText(wrapper: ButtonContainer, text: string) {

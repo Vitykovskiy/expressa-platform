@@ -70,7 +70,7 @@ test("production runtime компилирует Vuetify-диалог катег�
   await page.getByRole("button", { name: "Меню" }).click();
   await page
     .locator(".menu-page__actions")
-    .getByRole("button", { name: "Добавить категорию" })
+    .getByRole("button", { name: "Добавить группу" })
     .click();
 
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -248,7 +248,7 @@ async function createCategory(
 ): Promise<void> {
   await page
     .locator(".menu-page__actions")
-    .getByRole("button", { name: "Добавить категорию" })
+    .getByRole("button", { name: "Добавить группу" })
     .click();
   const dialog = page.locator(".add-dialog:visible");
   await dialog.getByLabel("Название категории").fill(name);
@@ -278,7 +278,8 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
       optionReorderRequests.push(request);
   };
   page.on("request", trackModifierRequests);
-  await page.getByRole("button", { name: "Новая группа добавок" }).click();
+  await openMenuManagement(page);
+  await page.getByRole("button", { name: "Новая группа опций" }).click();
   await editor
     .getByLabel("Название", { exact: true })
     .fill(catalogModifierGroupName);
@@ -324,11 +325,10 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
     ],
   });
   page.off("request", trackModifierRequests);
-  await expect(
-    page.getByRole("button", { name: catalogModifierGroupName }),
-  ).toBeVisible();
+  await expect(modifierGroupEditButton(page)).toBeVisible();
   await page.goto("/menu");
-  await page.getByRole("button", { name: catalogModifierGroupName }).click();
+  await openMenuManagement(page);
+  await modifierGroupEditButton(page).click();
   await expect
     .poll(() => modifierOptionNames(page.locator(".modifier-group-editor")))
     .toEqual([catalogModifierSecondOptionName, catalogModifierOptionName]);
@@ -337,18 +337,28 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
 }
 
 async function assignModifierGroup(page: CatalogPage): Promise<void> {
+  await openMenuManagement(page);
   await page
     .getByRole("heading", { name: "Назначения категорий", exact: true })
     .locator("..")
     .getByRole("button", { name: catalogCategoryName, exact: true })
     .click();
-  await page.getByLabel(catalogModifierGroupName).check();
+  await page
+    .getByRole("checkbox", { name: catalogModifierGroupName, exact: true })
+    .check();
   await page.getByRole("button", { name: "Сохранить назначения" }).click();
 }
 
 function categoryToggle(page: CatalogPage, name = catalogCategoryName) {
   return page.locator(".menu-category__toggle", {
     hasText: name,
+  });
+}
+
+function modifierGroupEditButton(page: CatalogPage) {
+  return page.getByRole("button", {
+    name: `Редактировать группу опций ${catalogModifierGroupName}`,
+    exact: true,
   });
 }
 
@@ -514,6 +524,7 @@ function isCatalogProductResponse(
 }
 
 async function reorderCatalog(page: CatalogPage): Promise<void> {
+  await openMenuManagement(page);
   const [categoryResponse] = await Promise.all([
     page.waitForResponse(
       (candidate) =>
@@ -566,6 +577,18 @@ async function reorderCatalog(page: CatalogPage): Promise<void> {
       catalogProductNames.other,
       catalogProductNames.drinkOnlyS,
     ]);
+}
+
+async function openMenuManagement(page: CatalogPage): Promise<void> {
+  const toggle = page.getByRole("button", { name: "Управление меню" });
+
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+
+  await expect(
+    page.getByRole("region", { name: "Управление меню" }),
+  ).toBeVisible();
 }
 
 async function updateMediumPrice(page: CatalogPage): Promise<void> {

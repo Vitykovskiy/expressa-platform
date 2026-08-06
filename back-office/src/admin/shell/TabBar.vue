@@ -2,7 +2,7 @@
   <nav
     aria-label="Разделы администратора"
     class="tab-bar"
-    :class="{ 'tab-bar--five-sections': props.sections.length === 5 }"
+    :class="{ 'tab-bar--with-reserved-slots': props.sections.length === 3 }"
   >
     <AdminButton
       v-for="section in props.sections"
@@ -14,13 +14,15 @@
       variant="ghost"
       @click="emit('select', section.id)"
     >
-      {{ section.label }}
+      <AdminSectionIcon :section="section.id" :size="22" />
+      <span class="tab-bar-link__label">{{ section.label }}</span>
     </AdminButton>
   </nav>
 </template>
 
 <script setup lang="ts">
 import AdminButton from "../shared/ui/admin-button/AdminButton.vue";
+import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { TabBarEmits, TabBarProps } from "./TabBar.types";
 
 const props = defineProps<TabBarProps>();
@@ -30,8 +32,7 @@ const emit = defineEmits<TabBarEmits>();
 <style scoped lang="scss">
 .tab-bar {
   display: grid;
-  grid-auto-rows: var(--expressa-size-tab-bar-min-height);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   min-height: var(--expressa-size-tab-bar-min-height);
   padding-bottom: var(--expressa-safe-area-bottom);
   background: var(--expressa-color-surface);
@@ -40,44 +41,46 @@ const emit = defineEmits<TabBarEmits>();
 }
 
 .tab-bar-link {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--expressa-space-2xs);
   min-width: 0;
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-sm) var(--expressa-space-xs);
+  min-height: var(--expressa-size-tab-bar-min-height);
+  padding: var(--expressa-space-xs);
   border: var(--expressa-border-width-none);
   color: var(--expressa-color-text-muted);
   background: var(--expressa-color-transparent);
   font: inherit;
   font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-control);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .tab-bar-link--active {
-  background: var(--expressa-color-control-selected-surface);
   color: var(--expressa-color-accent);
 }
-
-.tab-bar--five-sections {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+.tab-bar-link--active::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--expressa-border-width-strong);
+  content: "";
+  background: var(--expressa-color-accent);
 }
-
-.tab-bar--five-sections .tab-bar-link {
-  grid-column: span 2;
+.tab-bar-link__label {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.tab-bar--five-sections .tab-bar-link:nth-child(n + 4) {
-  grid-column: span 3;
-}
-
-@media (min-width: 480px) {
-  .tab-bar--five-sections {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .tab-bar--five-sections .tab-bar-link,
-  .tab-bar--five-sections .tab-bar-link:nth-child(n + 4) {
-    grid-column: auto;
-  }
+.tab-bar--with-reserved-slots {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 @media (min-width: 768px) {

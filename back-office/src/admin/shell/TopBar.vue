@@ -39,8 +39,12 @@ const emit = defineEmits<TopBarEmits>();
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
+  line-height: var(--expressa-line-height-title);
 }
 .top-bar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: var(--expressa-size-control-min-height);
   min-height: var(--expressa-size-control-min-height);
   padding: 0;
