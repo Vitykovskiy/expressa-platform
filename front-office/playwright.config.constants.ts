@@ -11,7 +11,7 @@ export const frontOfficeMobileViewport = { height: 844, width: 390 };
 export const frontOfficePlaywrightOutputDirectory =
   "/tmp/expressa-front-office-playwright-results";
 export const frontOfficePlaywrightSnapshotPathTemplate =
-  "{testDir}/{testFileDir}/__screenshots__/{testFileName}/{arg}{ext}";
+  "{testDir}/{testFileDir}/__screenshots__/{testFileName}/{arg}-{platform}{ext}";
 export const frontOfficePlaywrightTestDirectory = {
   root: ".",
 } as const;
