@@ -137,9 +137,8 @@ export const BlockUser: UserActionDialogStory = {
       expect(canvas.getByText(activeUser.name)).toBeVisible(),
     );
     await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
-      "Заблокировать пользователя?",
+      "Заблокировать",
     );
-    await expect(canvas.getByText("+7 900 123-45-67")).toBeVisible();
     await expect(
       canvas.getByText(
         "Пользователь потеряет доступ к системе. Его данные сохранятся.",
@@ -174,9 +173,8 @@ export const UnblockUser: UserActionDialogStory = {
       expect(canvas.getByText(activeUser.name)).toBeVisible(),
     );
     await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
-      "Разблокировать пользователя?",
+      "Разблокировать",
     );
-    await expect(canvas.getByText("+7 900 123-45-67")).toBeVisible();
     await expect(
       canvas.getByText("Пользователь снова получит доступ к системе."),
     ).toBeVisible();

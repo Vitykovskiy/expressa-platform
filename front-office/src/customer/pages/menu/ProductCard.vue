@@ -83,13 +83,4 @@ const productKind = computed(() =>
 .product-card__price--unavailable {
   opacity: 0.45;
 }
-.product-card :deep(.v-btn__content) {
-  display: grid;
-  justify-content: start;
-  row-gap: var(--customer-space-7);
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-  white-space: normal;
-}
 </style>

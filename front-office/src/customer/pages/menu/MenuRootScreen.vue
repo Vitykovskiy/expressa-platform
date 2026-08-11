@@ -105,6 +105,8 @@ function selectCategory(categoryId: string): void {
   height: auto;
   min-height: 44px;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--customer-space-7);
   padding: var(--customer-space-10) var(--customer-space-11);
   color: var(--customer-text-on-surface);
   text-align: left;
@@ -153,17 +155,6 @@ function selectCategory(categoryId: string): void {
   color: var(--customer-text);
   background: var(--customer-background);
   border-radius: var(--customer-radius-round);
-}
-.menu-root__card :deep(.v-btn__content) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--customer-size-control-md);
-  align-items: center;
-  column-gap: var(--customer-space-7);
-  justify-content: start;
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-  white-space: normal;
 }
 @media (min-width: 768px) {
   .menu-root__header {

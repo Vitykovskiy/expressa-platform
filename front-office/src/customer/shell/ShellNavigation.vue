@@ -3,7 +3,7 @@
     <header class="shell-navigation__mobile-header">
       <div class="shell-navigation__header-actions">
         <ui-icon-btn
-          v-if="props.activeDestination !== 'menu' || props.showBack"
+          v-if="props.showBack"
           type="button"
           aria-label="Назад"
           @click="emit('back')"
@@ -11,7 +11,7 @@
           <ArrowLeft aria-hidden="true" />
         </ui-icon-btn>
         <ui-icon-btn
-          v-if="props.activeDestination !== 'menu' || props.showBack"
+          v-if="props.showBack"
           type="button"
           aria-label="В меню"
           @click="emit('navigate', 'menu')"
@@ -19,10 +19,7 @@
           <House aria-hidden="true" />
         </ui-icon-btn>
       </div>
-      <span class="shell-navigation__brand">
-        <Coffee class="shell-navigation__brand-icon" aria-hidden="true" />
-        Ex-pressa
-      </span>
+      <span class="shell-navigation__brand"> Ex-pressa ☕ </span>
       <div
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
@@ -36,7 +33,7 @@
         <ui-icon-btn
           type="button"
           class="shell-navigation__cart-button"
-          :aria-label="cartAriaLabel"
+          aria-label="Корзина"
           @click="emit('navigate', 'cart')"
         >
           <ShoppingCart aria-hidden="true" />
@@ -57,8 +54,7 @@
         class="shell-navigation__brand shell-navigation__brand--button"
         @click="emit('navigate', 'menu')"
       >
-        <Coffee class="shell-navigation__brand-icon" aria-hidden="true" />
-        Ex-pressa
+        Ex-pressa ☕
       </ui-btn>
       <nav class="shell-navigation__nav" aria-label="Основная навигация">
         <ui-btn
@@ -66,10 +62,10 @@
           :key="item.destination"
           :class="{
             'shell-navigation__nav-button--active':
-              props.activeDestination === item.destination,
+              props.activeDestination === item.destination &&
+              (item.destination !== 'menu' || !props.selectedCategoryId),
           }"
           type="button"
-          :aria-label="item.destination === 'cart' ? cartAriaLabel : undefined"
           @click="emit('navigate', item.destination)"
         >
           <component :is="item.icon" aria-hidden="true" />
@@ -116,7 +112,7 @@
           {{ accountControl.actionLabel }}
         </span>
       </ui-btn>
-      <p class="shell-navigation__copyright">(c) Ex-pressa Customer</p>
+      <p class="shell-navigation__copyright">© Ex-pressa Customer</p>
     </aside>
   </div>
 </template>
@@ -126,7 +122,6 @@ import { computed } from "vue";
 import type { Component } from "vue";
 import {
   ArrowLeft,
-  Coffee,
   History,
   House,
   LogIn,
@@ -151,22 +146,6 @@ const navigationItems = [
   { destination: "orders", label: "История", icon: History },
   { destination: "cart", label: "Корзина", icon: ShoppingCart },
 ] satisfies (ShellNavigationItem & { icon: Component })[];
-
-const cartItemLabel = computed(() => {
-  const lastTwoDigits = props.cartCount % 100;
-  const lastDigit = props.cartCount % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "товаров";
-  if (lastDigit === 1) return "товар";
-  if (lastDigit >= 2 && lastDigit <= 4) return "товара";
-
-  return "товаров";
-});
-const cartAriaLabel = computed(() =>
-  props.cartCount
-    ? `Корзина, ${props.cartCount} ${cartItemLabel.value}`
-    : "Корзина",
-);
 
 const accountControl = computed(() => {
   if (props.isAuthenticated) {
@@ -199,18 +178,18 @@ const accountControl = computed(() => {
 .shell-navigation__mobile-header {
   position: relative;
   z-index: 2;
-  display: grid;
+  display: flex;
   flex: 0 0 calc(var(--customer-space-17) + var(--customer-space-9));
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   height: calc(var(--customer-space-17) + var(--customer-space-9));
   align-items: center;
-  padding: 0 var(--customer-space-3);
+  justify-content: space-between;
+  padding: 0 var(--customer-space-9);
   background: var(--customer-background);
 }
 
 .shell-navigation__header-actions {
   display: flex;
-  justify-content: start;
+  width: var(--customer-space-21);
   gap: var(--customer-space-3);
 }
 
@@ -246,6 +225,8 @@ const accountControl = computed(() => {
 }
 
 .shell-navigation__brand--button {
+  justify-content: flex-start;
+  min-height: 0;
   padding: 0;
   text-align: left;
   background: transparent;
@@ -303,6 +284,7 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__category-nav {
+    gap: var(--customer-space-1);
     margin-top: 0;
   }
 
@@ -317,17 +299,24 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__nav .ui-btn {
-    display: block;
-    width: 100%;
-    min-height: var(--customer-size-control-xl);
+    display: flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--customer-space-7);
     padding: var(--customer-space-6) var(--customer-space-7);
     color: var(--customer-text-strong-on-brand);
     text-align: left;
     background: transparent;
     border: 0;
-    border-radius: var(--customer-radius-xs);
+    border-radius: var(--customer-radius-md);
     font-size: var(--customer-font-size-body);
     font-weight: var(--customer-font-weight-extrabold);
+  }
+
+  .shell-navigation__nav .ui-btn > svg {
+    width: var(--customer-font-size-lg);
+    height: var(--customer-font-size-lg);
   }
 
   .shell-navigation__nav .shell-navigation__nav-button--active {
@@ -335,30 +324,8 @@ const accountControl = computed(() => {
     background: var(--customer-surface);
   }
 
-  .shell-navigation__nav .ui-btn :deep(.v-btn__content) {
-    width: 100%;
-    min-width: 0;
-    white-space: normal;
-  }
-
-  .shell-navigation__nav:not(.shell-navigation__category-nav)
-    .ui-btn
-    :deep(.v-btn__content) {
-    display: grid;
-    grid-template-columns: var(--customer-size-icon-sm) minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: var(--customer-space-7);
-    justify-content: start;
-  }
-
-  .shell-navigation__nav:not(.shell-navigation__category-nav)
-    .ui-btn
-    :deep(.shell-navigation__badge) {
-    grid-column: 3;
-  }
-
-  .shell-navigation__category-nav .ui-btn :deep(.v-btn__content) {
-    justify-content: start;
+  .shell-navigation__nav .shell-navigation__badge {
+    margin-left: auto;
   }
 
   .shell-navigation__spacer {
@@ -366,10 +333,14 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__account {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--customer-space-5);
     width: 100%;
     margin-bottom: var(--customer-space-7);
     padding: var(--customer-space-7);
-    color: var(--customer-text-muted-on-brand);
+    color: var(--customer-text-tertiary-on-brand);
     text-align: left;
     background: var(--customer-surface-note);
     border: calc(var(--customer-space-1) / 2) solid
@@ -379,14 +350,9 @@ const accountControl = computed(() => {
     font-weight: var(--customer-font-weight-extrabold);
   }
 
-  .shell-navigation__account :deep(.v-btn__content) {
-    display: grid;
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: var(--customer-size-icon-sm) minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: var(--customer-space-5);
-    justify-content: start;
+  .shell-navigation__account > svg {
+    width: var(--customer-font-size-body);
+    height: var(--customer-font-size-body);
   }
 
   .shell-navigation__account-action {
@@ -396,7 +362,7 @@ const accountControl = computed(() => {
 
   .shell-navigation__copyright {
     margin: 0 var(--customer-space-7);
-    color: var(--customer-text-faint-on-brand);
+    color: var(--customer-color-white-35);
     font-size: var(--customer-font-size-2xs);
     font-weight: var(--customer-font-weight-bold);
   }

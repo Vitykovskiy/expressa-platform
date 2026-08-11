@@ -4,16 +4,26 @@
     :aria-labelledby="titleId"
     :model-value="open"
     max-width="400"
+    @after-enter="focusInitialControl"
     @update:model-value="handleDialogUpdate"
   >
     <v-card class="user-action-dialog">
-      <v-card-title :id="titleId" class="user-action-dialog-title">
-        {{ presentation.title }}
-      </v-card-title>
+      <div class="user-action-dialog-header">
+        <h2 :id="titleId" class="user-action-dialog-title">
+          {{ presentation.title }}
+        </h2>
+        <button
+          aria-label="Закрыть"
+          class="user-action-dialog-close"
+          type="button"
+          @click="closeAsCancelled"
+        >
+          ×
+        </button>
+      </div>
 
       <v-card-text v-if="!isRoleChange" class="user-action-dialog-user">
-        <strong>{{ props.user.name }}</strong>
-        <span v-if="props.user.phone">{{ props.user.phone }}</span>
+        {{ props.user.name }}
       </v-card-text>
 
       <v-card-text
@@ -28,10 +38,14 @@
       </v-card-text>
 
       <v-card-text v-if="isRoleChange" class="user-action-dialog-roles">
-        <fieldset :id="roleGroupId" class="user-action-dialog-role-group">
-          <legend class="user-action-dialog-role-legend">Роль</legend>
+        <fieldset
+          :id="roleGroupId"
+          aria-label="Роль"
+          class="user-action-dialog-role-group"
+        >
           <label class="user-action-dialog-role-option">
             <input
+              ref="roleOption"
               v-model="selectedRole"
               name="user-role"
               type="radio"
@@ -57,15 +71,16 @@
         </fieldset>
       </v-card-text>
 
-      <v-card-actions class="user-action-dialog-actions admin-dialog-actions">
+      <v-card-actions class="user-action-dialog-actions">
+        <AdminButton variant="secondary" @click="closeAsCancelled">
+          Отмена
+        </AdminButton>
         <AdminButton
+          ref="confirmButton"
           :variant="presentation.confirmVariant"
           @click="confirmAction"
         >
           {{ presentation.confirmLabel }}
-        </AdminButton>
-        <AdminButton variant="ghost" @click="closeAsCancelled">
-          Отмена
         </AdminButton>
       </v-card-actions>
     </v-card>
@@ -73,7 +88,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useId, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import { DEFAULT_ACTION_USER_ROLE } from "./UserActionDialog.constants";
 import type {
@@ -90,6 +112,9 @@ const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<UserActionDialogEmits>();
 const selectedRole = shallowRef(DEFAULT_ACTION_USER_ROLE);
 const returnFocusTarget = shallowRef<FocusableElement | null>(null);
+const roleOption = useTemplateRef<FocusableElement>("roleOption");
+const confirmButton =
+  useTemplateRef<InstanceType<typeof AdminButton>>("confirmButton");
 const titleId = `user-action-dialog-title-${useId()}`;
 const descriptionId = `user-action-dialog-description-${useId()}`;
 const roleGroupId = `user-action-dialog-role-${useId()}`;
@@ -105,7 +130,7 @@ const presentation = computed<UserActionDialogPresentation>(() => {
 
   if (props.action === "block") {
     return {
-      title: "Заблокировать пользователя?",
+      title: "Заблокировать",
       confirmLabel: "Заблокировать",
       confirmVariant: "destructive",
       description:
@@ -114,7 +139,7 @@ const presentation = computed<UserActionDialogPresentation>(() => {
   }
 
   return {
-    title: "Разблокировать пользователя?",
+    title: "Разблокировать",
     confirmLabel: "Разблокировать",
     confirmVariant: "primary",
     description: "Пользователь снова получит доступ к системе.",
@@ -122,17 +147,17 @@ const presentation = computed<UserActionDialogPresentation>(() => {
 });
 const isRoleChange = computed(() => props.action === "change_role");
 
-function resetDraft() {
-  selectedRole.value = DEFAULT_ACTION_USER_ROLE;
+function resetDraft(): void {
+  selectedRole.value = props.user.role ?? DEFAULT_ACTION_USER_ROLE;
 }
 
-function closeAsCancelled() {
+function closeAsCancelled(): void {
   resetDraft();
   open.value = false;
   emit("cancel");
 }
 
-function handleDialogUpdate(isOpen: boolean) {
+function handleDialogUpdate(isOpen: boolean): void {
   if (isOpen) {
     open.value = true;
     return;
@@ -141,10 +166,19 @@ function handleDialogUpdate(isOpen: boolean) {
   closeAsCancelled();
 }
 
-function confirmAction() {
+function confirmAction(): void {
   emit("confirm", isRoleChange.value ? selectedRole.value : undefined);
   resetDraft();
   open.value = false;
+}
+
+function focusInitialControl(): void {
+  if (isRoleChange.value) {
+    roleOption.value?.focus();
+    return;
+  }
+
+  confirmButton.value?.$el.focus();
 }
 
 function isFocusableElement(value: unknown): value is FocusableElement {
@@ -162,6 +196,7 @@ watch(open, (isOpen, wasOpen) => {
     returnFocusTarget.value = isFocusableElement(activeElement)
       ? activeElement
       : null;
+    resetDraft();
     return;
   }
 
@@ -183,35 +218,67 @@ watch(open, (isOpen, wasOpen) => {
   background: var(--expressa-color-surface);
 }
 
+.user-action-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--expressa-space-sm);
+  padding: 20px;
+  padding-bottom: var(--expressa-space-control-inline);
+}
+
 .user-action-dialog-title {
-  padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-sm);
-  font-size: var(--expressa-font-size-title);
+  margin: 0;
+  font-size: 17px;
   font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-title);
+  line-height: 25.5px;
   white-space: normal;
 }
 
-.user-action-dialog-description {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+.user-action-dialog-close {
+  display: grid;
+  width: var(--expressa-size-control-min-height);
+  height: var(--expressa-size-control-min-height);
+  flex: 0 0 auto;
+  place-items: center;
+  padding: var(--expressa-space-xs);
+  border: 0;
+  border-radius: var(--expressa-radius-sm);
+  color: var(--expressa-color-text-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.user-action-dialog-close:focus-visible {
+  outline: var(--expressa-focus-ring);
+  outline-offset: var(--expressa-space-2xs);
+}
+
+.user-action-dialog-close:hover {
   color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
+  background: var(--expressa-color-surface-raised);
+}
+
+.user-action-dialog-description {
+  padding: 0 20px var(--expressa-space-md);
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-action);
+  line-height: 19.5px;
   white-space: normal;
 }
 
 .user-action-dialog-user {
-  display: grid;
-  gap: var(--expressa-space-2xs);
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-sm);
+  padding: 0 20px var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
+  font-size: var(--expressa-font-size-action);
+  line-height: 19.5px;
   white-space: normal;
 }
 
 .user-action-dialog-description--destructive {
-  margin: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  margin: 0 20px 20px;
   padding: var(--expressa-space-sm) var(--expressa-space-control-inline);
   border-radius: var(--expressa-radius-sm);
   color: var(--expressa-color-status-error);
@@ -219,7 +286,7 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .user-action-dialog-roles {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  padding: 0 20px 20px;
 }
 
 .user-action-dialog-role-group {
@@ -230,20 +297,12 @@ watch(open, (isOpen, wasOpen) => {
   border: var(--expressa-border-width-none);
 }
 
-.user-action-dialog-role-legend {
-  padding: 0;
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-}
-
 .user-action-dialog-role-option {
   display: flex;
   min-height: var(--expressa-size-role-option-min-height);
   align-items: center;
   gap: var(--expressa-space-control-inline);
-  padding: var(--expressa-space-control-block)
-    var(--expressa-space-control-inline);
+  padding: var(--expressa-space-control-inline);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
@@ -264,20 +323,29 @@ watch(open, (isOpen, wasOpen) => {
 
 .user-action-dialog-role-option span {
   display: grid;
-  gap: var(--expressa-space-2xs);
+  gap: 0;
 }
 
 .user-action-dialog-role-option strong {
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-medium);
+  line-height: 21px;
 }
 
 .user-action-dialog-role-option small {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+  line-height: 18px;
 }
 
 .user-action-dialog-actions {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  display: flex;
+  gap: var(--expressa-space-sm);
+  padding: 0 20px 20px;
+}
+
+.user-action-dialog-actions > .admin-button {
+  flex: 1 1 0;
 }
 </style>

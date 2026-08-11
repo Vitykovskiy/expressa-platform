@@ -26,8 +26,7 @@ Design tokens определены в
 
 Проверки и команды находятся в [`package.json`](../package.json). Визуальные
 эталоны хранятся рядом с
-[`visual.spec.mjs`](../scripts/visual.spec.mjs); интерактивная проверка запускает
-каждую эталонную story в Chromium. Автоматическая accessibility-проверка
+[`visual.spec.mjs`](../tests/e2e/visual.spec.mjs). Автоматическая accessibility-проверка
 покрывает семантику в границе
 [`UI-accessibility`](../../docs/40-quality/UI-accessibility.md); правила Axe для
 контраста и landmarks не подменяют визуально согласованный эталон и исключены

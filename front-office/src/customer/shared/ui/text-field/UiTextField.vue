@@ -50,7 +50,52 @@ defineSlots<{
 .ui-text-field {
   width: 100%;
 }
+
 .ui-text-field :deep(.v-field) {
-  border-radius: var(--customer-radius);
+  --v-input-control-height: var(--customer-size-field);
+  --v-field-padding-start: var(--customer-space-9);
+  --v-field-padding-end: var(--customer-space-9);
+
+  min-height: var(--customer-size-field);
+  color: var(--customer-text);
+  background: var(--customer-color-white-13);
+  border-radius: var(--customer-radius-md);
+}
+
+.ui-text-field :deep(.v-field__outline) {
+  --v-field-border-width: 1.5px;
+  color: var(--customer-color-white-22);
+  --v-field-border-opacity: 1;
+}
+
+.ui-text-field :deep(.v-field--focused .v-field__outline) {
+  color: var(--customer-focus-ring);
+}
+
+.ui-text-field :deep(.v-field--error .v-field__outline) {
+  color: var(--customer-error);
+}
+
+.ui-text-field :deep(.v-field__input) {
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-bold);
+}
+
+.ui-text-field :deep(.v-messages) {
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-semibold);
+  line-height: normal;
+}
+
+.ui-text-field :deep(input::placeholder) {
+  color: var(--customer-text-faint-on-brand);
+  opacity: 1;
+}
+
+.ui-text-field :deep(input[inputmode="numeric"]) {
+  text-align: center;
+  font-size: var(--customer-font-size-6xl);
+  letter-spacing: var(--customer-letter-spacing-otp);
 }
 </style>

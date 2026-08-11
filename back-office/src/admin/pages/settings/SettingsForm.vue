@@ -36,7 +36,7 @@
       </section>
 
       <section
-        class="settings-form__section"
+        class="settings-form__section settings-form__section--slots"
         aria-labelledby="slot-capacity-title"
       >
         <header class="settings-form__section-header">
@@ -101,11 +101,16 @@ function save() {
 <style scoped lang="scss">
 .settings-form {
   display: grid;
-  gap: var(--expressa-space-lg);
+  min-height: 0;
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .settings-form__content {
   min-width: 0;
+  overflow-y: auto;
+  padding: var(--expressa-space-md) var(--expressa-space-md)
+    var(--expressa-space-tab-bar-clearance);
 }
 
 .settings-form__section {
@@ -121,7 +126,7 @@ function save() {
 }
 
 .settings-form__section-header {
-  padding: var(--expressa-space-md);
+  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
@@ -131,8 +136,8 @@ function save() {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: var(--expressa-letter-spacing-label);
-  line-height: var(--expressa-line-height-tight);
+  letter-spacing: 0.025em;
+  line-height: var(--expressa-line-height-body);
   text-transform: uppercase;
 }
 
@@ -144,7 +149,7 @@ function save() {
 
 .settings-form__field {
   display: grid;
-  gap: var(--expressa-space-xs);
+  gap: var(--expressa-space-field-label);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
@@ -153,7 +158,6 @@ function save() {
 
 .settings-form__input {
   width: 100%;
-  min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block)
     var(--expressa-space-control-inline);
   border: var(--expressa-border-width-default) solid
@@ -163,6 +167,10 @@ function save() {
   background: var(--expressa-color-surface);
   font: inherit;
   font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-regular);
+  line-height: calc(
+    var(--expressa-font-size-body) + var(--expressa-space-field-label)
+  );
 }
 
 .settings-form__input:focus {
@@ -172,14 +180,20 @@ function save() {
 }
 
 .settings-form__hint {
-  margin: calc(var(--expressa-space-xs) * -1) 0 0;
+  margin: var(--expressa-space-field-label) 0 0;
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
-  line-height: var(--expressa-line-height-body);
+  line-height: calc(
+    var(--expressa-font-size-caption) + var(--expressa-space-xs)
+  );
+}
+
+.settings-form__section--slots .settings-form__section-content {
+  gap: 0;
 }
 
 .settings-form__actions {
-  padding: var(--expressa-space-md);
+  padding: var(--expressa-space-md) var(--expressa-space-md) 0;
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   background: var(--expressa-color-surface);
@@ -187,5 +201,16 @@ function save() {
 
 .settings-form__submit {
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  .settings-form__content {
+    padding: var(--expressa-space-md) var(--expressa-space-lg)
+      var(--expressa-space-lg);
+  }
+
+  .settings-form__actions {
+    margin-bottom: var(--expressa-space-lg);
+  }
 }
 </style>

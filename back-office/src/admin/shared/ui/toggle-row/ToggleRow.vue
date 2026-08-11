@@ -39,19 +39,18 @@ function updateModel(value: boolean | null) {
 
 <style scoped lang="scss">
 .toggle-row {
-  display: flex;
-  min-height: var(--expressa-size-row-min);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--expressa-space-md);
-  padding: var(--expressa-space-row-block) 0;
+  position: relative;
+  display: block;
+  min-block-size: var(--expressa-size-status-min-height);
+  padding: var(--expressa-space-row-block)
+    var(--expressa-size-control-min-height) var(--expressa-space-row-block) 0;
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
 
 .toggle-row-content {
   min-width: 0;
-  flex: 1;
+  min-block-size: var(--expressa-size-status-min-height);
 }
 
 .toggle-row-label {
@@ -65,6 +64,7 @@ function updateModel(value: boolean | null) {
   margin-top: var(--expressa-space-2xs);
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+  line-height: calc(var(--expressa-font-size-caption) * 4 / 3);
   overflow-wrap: anywhere;
 }
 
@@ -73,6 +73,10 @@ function updateModel(value: boolean | null) {
 }
 
 .toggle-row-switch {
-  flex: 0 0 auto;
+  position: absolute;
+  block-size: var(--expressa-size-control-min-height);
+  inset-inline-end: 0;
+  inset-block: 0;
+  margin-block: auto;
 }
 </style>

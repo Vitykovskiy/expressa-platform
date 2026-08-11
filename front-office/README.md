@@ -23,7 +23,6 @@ npm run build
 npm run contract:check
 ```
 
-`npm run test:visual` запускает снимки Storybook в закреплённом Linux-образе
-Playwright. Для этого на машине нужен Docker.
+`npm run test:visual` запускает снимки Storybook через Playwright.
 
 Текущая база знаний: [docs/INDEX.md](docs/INDEX.md).

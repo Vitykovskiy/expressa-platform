@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap");
 @import "./customer-tokens.css";
 
 :root {
@@ -9,6 +10,11 @@
 html,
 body,
 #storybook-root {
+  min-height: 100dvh;
+}
+
+#app {
+  display: flex;
   min-height: 100dvh;
 }
 
@@ -27,7 +33,6 @@ body {
   display: flex;
   flex: 1;
   min-height: inherit;
-  min-width: 0;
 }
 
 :disabled,
@@ -42,8 +47,10 @@ body {
     background: var(--customer-background-raised);
   }
 
+  #app,
   #storybook-root {
     max-width: var(--customer-content-width);
+    height: calc(100dvh - var(--customer-space-13) * 2);
     min-height: 0;
     margin: 0 auto;
     overflow: hidden;
@@ -53,16 +60,9 @@ body {
 }
 
 @media (min-width: 768px) {
+  #app,
   #storybook-root {
     max-width: var(--customer-content-width);
-  }
-}
-
-@media (min-width: 480px) and (max-width: 1023px) {
-  #storybook-root {
-    max-width: none;
-    width: 100vw;
-    margin: 0;
   }
 }
 
@@ -72,8 +72,10 @@ body {
     background: var(--customer-background);
   }
 
+  #app,
   #storybook-root {
     max-width: none;
+    height: auto;
     min-height: 100dvh;
     margin: 0;
     overflow: visible;

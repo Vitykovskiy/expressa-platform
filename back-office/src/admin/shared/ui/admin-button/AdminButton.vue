@@ -32,13 +32,13 @@ defineSlots<{ default(): unknown }>();
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block)
     var(--expressa-space-button-inline);
-  border: var(--expressa-border-width-default) solid
+  border: var(--expressa-border-width-none) solid
     var(--expressa-color-transparent);
   border-radius: var(--expressa-radius-md);
   font: inherit;
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-control);
+  line-height: var(--expressa-line-height-body);
   cursor: pointer;
   transition: opacity var(--expressa-motion-duration-control) ease-in-out;
 }
@@ -66,6 +66,7 @@ defineSlots<{ default(): unknown }>();
 .admin-button--secondary {
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface-raised);
+  border-width: var(--expressa-border-width-default);
   border-color: var(--expressa-color-border);
 }
 

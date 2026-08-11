@@ -4,13 +4,10 @@
       <div
         class="state-icon"
         :class="`state-icon--${presentation.iconTone}`"
-        :aria-hidden="presentation.content !== 'loading'"
-        :aria-live="presentation.content === 'loading' ? 'polite' : undefined"
-        :role="presentation.content === 'loading' ? 'status' : undefined"
+        aria-hidden="true"
       >
         <v-progress-circular
           v-if="presentation.content === 'loading'"
-          aria-label="Обрабатываем запрос..."
           class="loading-spinner"
           indeterminate
           :size="30"
@@ -54,6 +51,22 @@
       >
         Продолжить
       </ui-btn>
+
+      <div
+        v-else-if="presentation.content === 'loading'"
+        class="loading-state"
+        role="status"
+        aria-live="polite"
+      >
+        <v-progress-circular
+          aria-label="Загрузка подтверждения"
+          color="surface"
+          indeterminate
+          :size="20"
+          :width="3"
+        />
+        <span>Пожалуйста, подождите...</span>
+      </div>
     </div>
   </section>
 </template>
@@ -74,17 +87,13 @@ const isLoading = computed(() => presentation.value.content === "loading");
 </script>
 
 <style scoped lang="scss">
-.loading-spinner {
-  color: var(--customer-background);
-}
-
 .auth-screen {
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 100dvh;
+  min-height: 100%;
   padding: var(--customer-space-17) var(--customer-space-9);
   background: var(--customer-background);
 }
@@ -113,6 +122,10 @@ const isLoading = computed(() => presentation.value.content === "loading");
 
 .state-icon--success {
   color: var(--customer-success);
+}
+
+.loading-spinner {
+  color: var(--customer-background);
 }
 
 .state-icon-icon {
@@ -150,9 +163,15 @@ const isLoading = computed(() => presentation.value.content === "loading");
   color: var(--customer-background);
 }
 
-@media (min-width: 1024px) {
-  .auth-screen {
-    min-height: 100dvh;
-  }
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--customer-size-control-xl);
+  gap: var(--customer-space-7);
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-body);
+  font-weight: var(--customer-font-weight-bold);
 }
 </style>

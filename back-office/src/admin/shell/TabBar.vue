@@ -49,15 +49,13 @@ const emit = defineEmits<TabBarEmits>();
   gap: var(--expressa-space-2xs);
   min-width: 0;
   min-height: var(--expressa-size-tab-bar-min-height);
-  padding: var(--expressa-space-xs);
+  padding: 0;
   border: var(--expressa-border-width-none);
   color: var(--expressa-color-text-muted);
   background: var(--expressa-color-transparent);
   font: inherit;
-  font-size: var(--expressa-font-size-caption);
-  line-height: var(--expressa-line-height-control);
   cursor: pointer;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .tab-bar-link--active {
@@ -77,6 +75,8 @@ const emit = defineEmits<TabBarEmits>();
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
+  font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-caption-compact);
   text-overflow: ellipsis;
 }
 .tab-bar--with-reserved-slots {

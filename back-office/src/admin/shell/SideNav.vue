@@ -25,20 +25,22 @@
       variant="ghost"
       @click="emit('logout')"
     >
-      <svg
-        aria-hidden="true"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-      >
-        <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6" />
-      </svg>
-      Выйти
+      <span class="side-nav-logout__content">
+        <svg
+          aria-hidden="true"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+        >
+          <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6" />
+        </svg>
+        <span>Выйти</span>
+      </span>
     </AdminButton>
   </aside>
 </template>
@@ -72,11 +74,12 @@ const emit = defineEmits<SideNavEmits>();
   font-size: var(--expressa-font-size-brand);
 }
 .side-nav-brand strong {
-  line-height: var(--expressa-line-height-tight);
+  line-height: 28px;
 }
 .side-nav-brand span {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+  line-height: 16px;
 }
 .side-nav-links {
   display: grid;
@@ -88,7 +91,7 @@ const emit = defineEmits<SideNavEmits>();
 .side-nav-logout {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--expressa-space-control-inline);
   width: 100%;
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block) var(--expressa-space-md);
@@ -112,7 +115,16 @@ const emit = defineEmits<SideNavEmits>();
 }
 .side-nav-logout {
   margin-top: auto;
+  min-height: var(--expressa-size-control-min-height);
+  padding-block: var(--expressa-space-control-inline);
   color: var(--expressa-color-text-muted);
+}
+.side-nav-logout__content {
+  display: flex;
+  position: relative;
+  top: 0.25px;
+  align-items: center;
+  gap: var(--expressa-space-control-inline);
 }
 .side-nav-logout:hover {
   color: var(--expressa-color-status-error);

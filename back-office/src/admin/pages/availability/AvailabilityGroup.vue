@@ -59,8 +59,8 @@ function updateAvailability(id: string, checked: boolean) {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: var(--expressa-letter-spacing-section-title);
-  line-height: var(--expressa-line-height-title);
+  letter-spacing: 0.025em;
+  line-height: var(--expressa-line-height-body);
   overflow-wrap: anywhere;
   text-transform: uppercase;
 }

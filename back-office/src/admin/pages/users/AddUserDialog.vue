@@ -4,6 +4,7 @@
     :aria-labelledby="titleId"
     :model-value="open"
     max-width="448"
+    @after-enter="focusNameField"
     @update:model-value="handleDialogUpdate"
   >
     <v-card class="add-user-dialog">
@@ -19,6 +20,7 @@
           <span>Имя</span>
           <AdminTextField
             :id="nameId"
+            ref="nameField"
             v-model="name"
             autocomplete="name"
             placeholder="Например: Иван Петров"
@@ -56,7 +58,7 @@
           >
         </div>
 
-        <div class="add-user-dialog-actions admin-dialog-actions">
+        <div class="add-user-dialog-actions">
           <AdminButton :disabled="!isValid" type="submit">
             Добавить пользователя
           </AdminButton>
@@ -70,7 +72,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useId, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import { DEFAULT_NEW_USER_ROLE } from "./AddUserDialog.constants";
 import type {
@@ -88,6 +97,8 @@ const name = shallowRef("");
 const phone = shallowRef("");
 const role = shallowRef(DEFAULT_NEW_USER_ROLE);
 const returnFocusTarget = shallowRef<FocusableElement | null>(null);
+const nameField =
+  useTemplateRef<InstanceType<typeof AdminTextField>>("nameField");
 const titleId = `add-user-dialog-title-${useId()}`;
 const descriptionId = `add-user-dialog-description-${useId()}`;
 const nameId = `add-user-dialog-name-${useId()}`;
@@ -99,7 +110,7 @@ const isValid = computed(
     Boolean(name.value.trim()) && phone.value.replace(/\D/g, "").length >= 11,
 );
 
-function formatPhone(value: string) {
+function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, "");
 
   if (!digits) {
@@ -127,19 +138,19 @@ function formatPhone(value: string) {
   return formatted;
 }
 
-function resetDraft() {
+function resetDraft(): void {
   name.value = "";
   phone.value = "";
   role.value = DEFAULT_NEW_USER_ROLE;
 }
 
-function closeAsCancelled() {
+function closeAsCancelled(): void {
   resetDraft();
   open.value = false;
   emit("cancel");
 }
 
-function handleDialogUpdate(isOpen: boolean) {
+function handleDialogUpdate(isOpen: boolean): void {
   if (isOpen) {
     open.value = true;
     return;
@@ -148,11 +159,11 @@ function handleDialogUpdate(isOpen: boolean) {
   closeAsCancelled();
 }
 
-function updatePhone(value: string) {
+function updatePhone(value: string): void {
   phone.value = formatPhone(value);
 }
 
-function addUser() {
+function addUser(): void {
   if (!isValid.value) {
     return;
   }
@@ -164,6 +175,10 @@ function addUser() {
   });
   resetDraft();
   open.value = false;
+}
+
+function focusNameField(): void {
+  nameField.value?.focus();
 }
 
 function isFocusableElement(value: unknown): value is FocusableElement {
@@ -204,25 +219,25 @@ watch(open, (isOpen, wasOpen) => {
 
 .add-user-dialog-title {
   padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-sm);
+    var(--expressa-space-xs);
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-title);
+  line-height: 28px;
   white-space: normal;
 }
 
 .add-user-dialog-description {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  padding: 0 var(--expressa-space-lg) 20px;
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
+  line-height: 20px;
   white-space: normal;
 }
 
 .add-user-dialog-form {
   display: grid;
   gap: var(--expressa-space-md);
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  padding: 0 var(--expressa-space-lg);
 }
 
 .add-user-dialog-field {
@@ -237,9 +252,16 @@ watch(open, (isOpen, wasOpen) => {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
   font-weight: var(--expressa-font-weight-regular);
-  line-height: var(--expressa-line-height-caption);
+  line-height: var(--expressa-line-height-caption-compact);
 }
 
 .add-user-dialog-actions {
+  display: grid;
+  gap: var(--expressa-space-sm);
+  margin-top: var(--expressa-space-sm);
+}
+
+.add-user-dialog-actions > .admin-button {
+  width: 100%;
 }
 </style>

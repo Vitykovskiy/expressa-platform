@@ -1,53 +1,54 @@
 <template>
   <section class="orders-screen" aria-labelledby="orders-title">
-    <div class="orders-screen__workspace">
-      <header class="orders-screen__header">
-        <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
-        <AdminButton
-          aria-label="Обновить заказы"
-          title="Обновить заказы"
-          variant="secondary"
-          @click="handleRefresh"
+    <TopBar action-label="Обновить" title="Заказы" @action="handleRefresh">
+      <template #action>
+        <svg
+          aria-hidden="true"
+          class="orders-screen__refresh-icon"
+          viewBox="0 0 24 24"
         >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="20"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-            width="20"
-          >
-            <path d="M21 12a9 9 0 0 0-15.34-6.34L3 8" />
-            <path d="M3 3v5h5" />
-            <path d="M3 12a9 9 0 0 0 15.34 6.34L21 16" />
-            <path d="M21 21v-5h-5" />
-          </svg>
-        </AdminButton>
-      </header>
+          <path d="M21 12a9 9 0 0 0-15.34-6.34L3 8" />
+          <path d="M3 3v5h5" />
+          <path d="M3 12a9 9 0 0 0 15.34 6.34L21 16" />
+          <path d="M21 21v-5h-5" />
+        </svg>
+      </template>
+    </TopBar>
 
+    <div class="orders-screen__header">
+      <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
       <FilterTabs
         v-model="activeFilter"
         class="orders-screen__filters"
         :items="filterTabs"
+        layout="responsive"
       />
+    </div>
 
-      <div class="orders-screen__content">
-        <EmptyState
-          v-if="filteredOrders.length === 0"
-          title="Заказов нет"
-          description="Активные заказы появятся здесь"
+    <div class="orders-screen__content">
+      <EmptyState
+        v-if="filteredOrders.length === 0"
+        title="Заказов нет"
+        description="Активные заказы появятся здесь"
+      >
+        <template #icon>
+          <svg
+            aria-hidden="true"
+            class="orders-screen__empty-icon"
+            viewBox="0 0 24 24"
+          >
+            <rect x="5" y="3" width="14" height="18" rx="2" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+        </template>
+      </EmptyState>
+      <div v-else class="orders-screen__grid">
+        <OrderCard
+          v-for="order in filteredOrders"
+          :key="order.id"
+          :order="order"
+          @action="handleCardAction(order, $event)"
         />
-        <div v-else class="orders-screen__grid">
-          <OrderCard
-            v-for="order in filteredOrders"
-            :key="order.id"
-            :order="order"
-            @action="handleCardAction(order, $event)"
-          />
-        </div>
       </div>
     </div>
 
@@ -73,6 +74,7 @@
 
     <v-snackbar
       v-model="snackbarOpen"
+      :color="snackbarTone"
       :timeout="ORDERS_SNACKBAR_TIMEOUT"
       role="status"
     >
@@ -85,10 +87,10 @@
 import { computed, shallowRef } from "vue";
 
 import type { Order, OrderAction } from "../../shared/ui/Admin.types";
-import AdminButton from "../../shared/ui/admin-button/AdminButton.vue";
 import ConfirmDialog from "../../shared/ui/confirm-dialog/ConfirmDialog.vue";
 import EmptyState from "../../shared/ui/empty-state/EmptyState.vue";
 import FilterTabs from "../../shared/ui/filter-tabs/FilterTabs.vue";
+import TopBar from "../../shell/TopBar.vue";
 import {
   ORDER_FILTER_TABS,
   ORDERS_SNACKBAR_TIMEOUT,
@@ -99,6 +101,7 @@ import type {
   OrderMutationAction,
   OrdersScreenEmits,
   OrdersScreenProps,
+  OrdersSnackbarTone,
 } from "./OrdersScreen.types";
 
 const props = defineProps<OrdersScreenProps>();
@@ -111,6 +114,7 @@ const rejectDialogOpen = shallowRef(false);
 const closeDialogOpen = shallowRef(false);
 const snackbarMessage = shallowRef("");
 const snackbarOpen = shallowRef(false);
+const snackbarTone = shallowRef<OrdersSnackbarTone>("success");
 
 const filteredOrders = computed(() =>
   props.orders.filter((order) => {
@@ -130,8 +134,9 @@ const filteredOrders = computed(() =>
   }),
 );
 
-function showSnackbar(message: string) {
+function showSnackbar(message: string, tone: OrdersSnackbarTone = "success") {
   snackbarMessage.value = message;
+  snackbarTone.value = tone;
   snackbarOpen.value = true;
 }
 
@@ -177,7 +182,7 @@ function handleRejectConfirm(reason: string | undefined) {
     action: "reject",
     reason,
   });
-  showSnackbar(`Заказ отклонён${reason ? `: ${reason}` : ""}`);
+  showSnackbar(`Заказ отклонён${reason ? `: ${reason}` : ""}`, "error");
   clearSelection();
 }
 
@@ -194,46 +199,42 @@ function handleCloseConfirm() {
 
 <style scoped lang="scss">
 .orders-screen {
+  display: flex;
   min-width: 0;
   min-height: 100%;
-  background: var(--expressa-color-surface);
-}
-
-.orders-screen__workspace {
-  display: grid;
-  width: min(100%, 1120px);
-  min-width: 0;
-  min-height: 100%;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  margin: 0 auto;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--expressa-color-surface-raised);
 }
 
 .orders-screen__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--expressa-space-md);
-  padding: var(--expressa-space-md);
+  display: contents;
 }
 
 .orders-screen__title {
+  display: none;
   min-width: 0;
   margin: 0;
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-screen-title);
   font-weight: var(--expressa-font-weight-bold);
-  line-height: var(--expressa-line-height-tight);
+  line-height: 2rem;
   overflow-wrap: anywhere;
 }
 
 .orders-screen__filters {
-  padding-right: var(--expressa-space-md);
-  padding-left: var(--expressa-space-md);
+  flex: 0 0 auto;
+  background: var(--expressa-color-surface);
 }
 
 .orders-screen__content {
   min-width: 0;
-  padding: var(--expressa-space-md);
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--expressa-space-md) var(--expressa-space-md)
+    var(--expressa-space-tab-bar-clearance);
 }
 
 .orders-screen__grid {
@@ -242,22 +243,45 @@ function handleCloseConfirm() {
   gap: var(--expressa-space-md);
 }
 
+.orders-screen__refresh-icon,
+.orders-screen__empty-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--expressa-stroke-width-icon);
+}
+
+.orders-screen__refresh-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.orders-screen__empty-icon {
+  width: 48px;
+  height: 48px;
+}
+
 @media (min-width: 768px) {
-  .orders-screen__header {
-    padding: var(--expressa-space-lg);
+  .orders-screen {
+    background: var(--expressa-color-surface);
   }
 
-  .orders-screen__filters {
-    padding-right: var(--expressa-space-lg);
-    padding-left: var(--expressa-space-lg);
+  .orders-screen__header {
+    display: block;
+    padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
+  }
+
+  .orders-screen__title {
+    display: block;
+    margin-bottom: var(--expressa-space-md);
   }
 
   .orders-screen__content {
-    padding: var(--expressa-space-lg);
+    padding: var(--expressa-space-md) var(--expressa-space-lg)
+      var(--expressa-space-lg);
   }
-}
 
-@media (min-width: 1024px) {
   .orders-screen__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

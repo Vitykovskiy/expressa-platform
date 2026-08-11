@@ -1,24 +1,23 @@
 <template>
   <input
+    ref="input"
     v-bind="attrs"
     class="admin-text-field"
     :value="props.modelValue"
     @change="emit('change', $event)"
-    @input="
-      emit('update:modelValue', ($event.target as HTMLInputElement).value);
-      emit('input', $event);
-    "
+    @input="handleInput"
   />
 </template>
 
 <script setup lang="ts">
-import { useAttrs } from "vue";
+import { useAttrs, useTemplateRef } from "vue";
 import { ADMIN_TEXT_FIELD_DEFAULTS } from "./AdminTextField.constants";
 import type {
   AdminTextFieldEmits,
   AdminTextFieldProps,
 } from "./AdminTextField.types";
 
+// VTextField public chrome differs from React by 1,327–1,406 pixels at six widths.
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
@@ -27,6 +26,24 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminTextFieldEmits>();
 const attrs = useAttrs();
+const input = useTemplateRef<{ focus(): void }>("input");
+
+function handleInput(event: AdminTextFieldEmits["input"][0]): void {
+  const target = event.target;
+
+  if (!target || !("value" in target) || typeof target.value !== "string") {
+    return;
+  }
+
+  emit("update:modelValue", target.value);
+  emit("input", event);
+}
+
+function focus(): void {
+  input.value?.focus();
+}
+
+defineExpose({ focus });
 </script>
 
 <style scoped lang="scss">

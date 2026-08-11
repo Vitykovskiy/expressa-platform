@@ -366,18 +366,6 @@ function createInitialConfiguration(product = props.product) {
   font-weight: var(--customer-font-weight-black);
   cursor: pointer;
 }
-.product-detail__submit :deep(.v-btn__content) {
-  display: inline-grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  justify-content: center;
-  gap: var(--customer-space-5);
-  min-width: 0;
-  white-space: normal;
-}
-.product-detail__submit :deep(.v-btn__content svg) {
-  flex: 0 0 auto;
-}
 @media (min-width: 1024px) {
   .product-detail__header,
   .product-detail__content {

@@ -152,10 +152,10 @@ export const Loading: Story = {
     await expect(
       canvas.getByRole("heading", { name: "Подождите..." }),
     ).toBeVisible();
-    await expect(canvas.getByText("Обрабатываем запрос...")).toBeVisible();
+    await expect(canvas.getByText("Пожалуйста, подождите...")).toBeVisible();
     await expect(canvas.getByRole("status")).toBeVisible();
     await expect(
-      canvas.getByRole("progressbar", { name: "Обрабатываем запрос..." }),
+      canvas.getByRole("progressbar", { name: "Загрузка подтверждения" }),
     ).toBeVisible();
     await userEvent.tab();
     await expect(args.onUpdatePhone).not.toHaveBeenCalled();

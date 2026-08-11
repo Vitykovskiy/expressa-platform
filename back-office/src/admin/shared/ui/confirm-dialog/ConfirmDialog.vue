@@ -1,9 +1,9 @@
 <template>
-  <v-dialog
+  <AdminDialog
     :aria-describedby="descriptionId"
     :aria-labelledby="titleId"
     :model-value="open"
-    max-width="400"
+    max-width="448"
     @update:model-value="handleDialogUpdate"
   >
     <v-card class="confirm-dialog">
@@ -21,10 +21,11 @@
           class="confirm-dialog-reason-input"
           :aria-describedby="reasonDescribedBy"
           :error="Boolean(reasonError)"
-          :label="'Причина'"
           :model-value="reason"
           :placeholder="props.inputPlaceholder"
+          density="comfortable"
           hide-details
+          variant="outlined"
           @keydown.enter="handleConfirm"
           @update:model-value="handleReasonUpdate"
         />
@@ -38,16 +39,24 @@
         </p>
       </v-card-text>
 
-      <v-card-actions class="confirm-dialog-actions admin-dialog-actions">
-        <AdminButton :variant="props.confirmVariant" @click="handleConfirm">
+      <v-card-actions class="confirm-dialog-actions">
+        <AdminButton
+          class="confirm-dialog-action"
+          :variant="props.confirmVariant"
+          @click="handleConfirm"
+        >
           {{ props.confirmLabel }}
         </AdminButton>
-        <AdminButton variant="ghost" @click="closeAsCancelled">
+        <AdminButton
+          class="confirm-dialog-action"
+          variant="ghost"
+          @click="closeAsCancelled"
+        >
           Отмена
         </AdminButton>
       </v-card-actions>
     </v-card>
-  </v-dialog>
+  </AdminDialog>
 </template>
 
 <script setup lang="ts">
@@ -60,6 +69,7 @@ import type {
   FocusableElement,
 } from "./ConfirmDialog.types";
 import AdminButton from "../admin-button/AdminButton.vue";
+import AdminDialog from "../admin-dialog/AdminDialog.vue";
 
 const props = withDefaults(
   defineProps<ConfirmDialogProps>(),
@@ -152,6 +162,7 @@ watch(open, (isOpen, wasOpen) => {
 
 <style scoped lang="scss">
 .confirm-dialog {
+  border-radius: var(--expressa-radius-lg);
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
@@ -161,7 +172,7 @@ watch(open, (isOpen, wasOpen) => {
     var(--expressa-space-sm);
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-title);
+  line-height: 28px;
   white-space: normal;
 }
 
@@ -169,7 +180,7 @@ watch(open, (isOpen, wasOpen) => {
   padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
+  line-height: 20px;
   white-space: normal;
 }
 
@@ -190,6 +201,15 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .confirm-dialog-actions {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--expressa-space-sm);
+  padding: 0 var(--expressa-space-lg);
+}
+
+.confirm-dialog-action {
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
 }
 </style>

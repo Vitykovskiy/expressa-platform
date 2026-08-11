@@ -3,6 +3,9 @@ export interface FilterTab<T extends string> {
   label: string;
 }
 
+export type FilterTabsLayout = "contained" | "intrinsic" | "responsive";
+
 export interface FilterTabsProps<T extends string> {
   items: readonly FilterTab<T>[];
+  layout?: FilterTabsLayout;
 }

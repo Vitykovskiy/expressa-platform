@@ -56,7 +56,11 @@
 
     <p class="order-card__total">{{ props.order.total }} ₽</p>
 
-    <div v-if="orderActions.length" class="order-card__actions">
+    <div
+      v-if="orderActions.length"
+      class="order-card__actions"
+      :class="{ 'order-card__actions--single': orderActions.length === 1 }"
+    >
       <AdminButton
         v-for="action in orderActions"
         :key="action.action"
@@ -120,6 +124,7 @@ const orderActions = computed(() => ORDER_CARD_ACTIONS[props.order.status]);
   margin: 0;
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+  line-height: 16px;
 }
 
 .order-card__clock {
@@ -136,6 +141,7 @@ const orderActions = computed(() => ORDER_CARD_ACTIONS[props.order.status]);
   display: grid;
   min-width: 0;
   gap: var(--expressa-space-xs);
+  margin-top: -4px;
 }
 
 .order-card__customer,
@@ -225,9 +231,16 @@ const orderActions = computed(() => ORDER_CARD_ACTIONS[props.order.status]);
 
 .order-card__actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--expressa-space-sm);
-  padding-top: var(--expressa-space-sm);
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  margin-top: var(--expressa-space-xs);
+}
+
+.order-card__actions .admin-button {
+  min-height: 39.5px;
+}
+
+.order-card__actions--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 </style>

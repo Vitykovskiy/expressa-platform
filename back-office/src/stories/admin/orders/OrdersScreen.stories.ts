@@ -100,15 +100,7 @@ export const FiltersAndRefresh: Story = {
     await user.click(canvas.getByRole("button", { name: "Готовы" }));
     await expect(canvas.getByText("#1236")).toBeVisible();
 
-    const refreshButton = canvas.getByRole("button", {
-      name: "Обновить заказы",
-    });
-    await expect(refreshButton).toHaveAttribute("title", "Обновить заказы");
-    await expect(refreshButton.querySelector("svg")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
-    await user.click(refreshButton);
+    await user.click(canvas.getByRole("button", { name: "Обновить" }));
     await expect(args.onRefresh).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(page.getByText("Обновлено")).toBeVisible());
   },
@@ -245,34 +237,8 @@ export const LongContentNarrow: Story = {
         id: "long",
         orderNumber: "#12345678901234567890",
         customerName: "Александра Александровна Константинопольская",
-        items: [
-          {
-            productName:
-              "Большой капучино с очень длинным названием авторской кофейной смеси",
-            size: "Большой",
-            quantity: 2,
-            addons: [
-              {
-                name: "Альтернативное овсяное молоко с дополнительной пеной",
-                quantity: 1,
-              },
-              {
-                name: "Двойная карамель с натуральной ванилью",
-                quantity: 2,
-              },
-            ],
-          },
-          {
-            productName: "Круассан с миндальным кремом и сезонными ягодами",
-            quantity: 1,
-            addons: [
-              {
-                name: "Дополнительная порция клубничного соуса",
-                quantity: 1,
-              },
-            ],
-          },
-        ],
+        items:
+          "Большой капучино с альтернативным молоком, двойной карамелью, сиропом ваниль и дополнительным круассаном",
         total: 1280,
         status: "Created",
         slotTime: "10:30",
@@ -283,19 +249,4 @@ export const LongContentNarrow: Story = {
     "onOrder-action": fn<(event: OrderActionEvent) => void>(),
   },
   parameters: { viewport: { defaultViewport: "mobile1" } },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const card = canvas.getByRole("article");
-    const productQuantities = [
-      ...card.querySelectorAll(
-        ".order-card__product-row .order-card__quantity",
-      ),
-    ].map((quantity) => quantity.textContent?.trim());
-    const addonQuantities = [
-      ...card.querySelectorAll(".order-card__addon .order-card__quantity"),
-    ].map((quantity) => quantity.textContent?.trim());
-
-    await expect(productQuantities).toEqual(["× 2", "× 1"]);
-    await expect(addonQuantities).toEqual(["× 1", "× 2", "× 1"]);
-  },
 };

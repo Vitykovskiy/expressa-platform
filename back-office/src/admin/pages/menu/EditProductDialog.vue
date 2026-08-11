@@ -550,12 +550,14 @@ watch(
 }
 .edit-dialog-fields {
   display: grid;
-  gap: var(--expressa-space-sm);
+  gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
 }
 .edit-dialog-fields label {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-body);
 }
 .edit-dialog-input {
   width: 100%;
@@ -573,7 +575,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-space-md);
+  gap: var(--expressa-border-width-none);
   padding: var(--expressa-space-control-inline) 0;
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -660,6 +662,6 @@ watch(
   }
 }
 .edit-dialog-actions {
-  padding: var(--expressa-space-lg);
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
 }
 </style>

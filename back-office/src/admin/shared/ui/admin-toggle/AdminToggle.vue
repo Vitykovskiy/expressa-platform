@@ -1,23 +1,25 @@
 <template>
-  <VSwitch
-    v-bind="toggleAttrs"
+  <button
+    v-bind="attrs"
     class="admin-toggle"
+    :aria-checked="props.modelValue === true"
     :disabled="props.disabled"
-    :model-value="props.modelValue"
-    color="primary"
-    hide-details
-    inset
     role="switch"
-    @update:model-value="emit('update:modelValue', $event)"
-  />
+    type="button"
+    @click="toggle"
+  >
+    <span class="admin-toggle__track" aria-hidden="true">
+      <span class="admin-toggle__thumb" />
+    </span>
+  </button>
 </template>
 
 <script setup lang="ts">
-import { computed, useAttrs } from "vue";
-import { VSwitch } from "vuetify/components";
+import { useAttrs } from "vue";
 import { ADMIN_TOGGLE_DEFAULTS } from "./AdminToggle.constants";
 import type { AdminToggleEmits, AdminToggleProps } from "./AdminToggle.types";
 
+// VSwitch's public `hide-details` root is 56px; this switch has a 44px boolean target.
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
@@ -26,39 +28,63 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminToggleEmits>();
 const attrs = useAttrs();
-const toggleAttrs = computed(() => ({
-  "aria-label": attrs["aria-label"],
-  "aria-labelledby": attrs["aria-labelledby"],
-  class: attrs.class,
-  "data-testid": attrs["data-testid"],
-  style: attrs.style,
-}));
+
+function toggle(): void {
+  if (!props.disabled) {
+    emit("update:modelValue", props.modelValue !== true);
+  }
+}
 </script>
 
 <style scoped lang="scss">
 .admin-toggle {
+  display: inline-flex;
+  width: var(--expressa-size-control-min-height);
+  min-width: var(--expressa-size-control-min-height);
   min-height: var(--expressa-size-control-min-height);
+  align-items: center;
+  justify-content: center;
+  padding: var(--expressa-space-2xs) 0;
+  border: var(--expressa-border-width-none);
+  background: var(--expressa-color-transparent);
+  cursor: pointer;
 }
 
-.admin-toggle :deep(.v-selection-control__wrapper),
-.admin-toggle :deep(.v-selection-control__input),
-.admin-toggle :deep(input[role="switch"]) {
-  width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  height: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-height: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
+.admin-toggle__track {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: var(--expressa-size-control-min-height);
+  height: var(--expressa-size-status-min-height);
+  align-items: center;
+  padding: var(--expressa-space-2xs);
+  border-radius: var(--expressa-radius-pill);
+  background: var(--expressa-color-border-strong);
+  transition: background var(--expressa-motion-duration-control) ease-in-out;
 }
 
-.admin-toggle:has(input:focus-visible) {
+.admin-toggle[aria-checked="true"] .admin-toggle__track {
+  justify-content: flex-end;
+  background: var(--expressa-color-accent);
+}
+
+.admin-toggle:disabled {
+  cursor: not-allowed;
+  opacity: var(--expressa-state-disabled-opacity);
+}
+
+.admin-toggle:focus-visible {
   outline: var(--expressa-focus-ring);
   outline-offset: var(--expressa-space-2xs);
+}
+
+.admin-toggle__thumb {
+  width: calc(
+    var(--expressa-size-status-min-height) - var(--expressa-space-xs)
+  );
+  height: calc(
+    var(--expressa-size-status-min-height) - var(--expressa-space-xs)
+  );
+  border-radius: var(--expressa-radius-pill);
+  background: var(--expressa-color-surface);
 }
 </style>

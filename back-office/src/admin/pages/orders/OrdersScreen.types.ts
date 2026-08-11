@@ -8,6 +8,8 @@ export type OrderFilter = "all" | "created" | "confirmed" | "ready";
 
 export type OrderMutationAction = Exclude<OrderAction, "reject" | "close">;
 
+export type OrdersSnackbarTone = "success" | "error";
+
 export interface OrdersScreenProps {
   orders: readonly Order[];
 }

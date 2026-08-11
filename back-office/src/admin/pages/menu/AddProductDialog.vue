@@ -6,10 +6,8 @@
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <v-card-title class="add-dialog-title">Новый товар</v-card-title>
-      <v-card-text class="add-dialog-description"
-        >Добавьте новый товар в меню</v-card-text
-      >
+      <h2 class="add-dialog__title">Новый товар</h2>
+      <p class="add-dialog__description">Добавьте новый товар в меню</p>
       <v-card-text class="add-dialog-fields">
         <label :for="categoryId">Категория</label>
         <AdminSelect
@@ -521,16 +519,26 @@ watch(
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
-.add-dialog-title {
-  padding-bottom: 0;
+.add-dialog__title {
+  margin: 0;
+  padding: var(--expressa-space-lg) var(--expressa-space-lg)
+    var(--expressa-space-sm);
+  font-size: var(--expressa-font-size-title);
+  font-weight: var(--expressa-font-weight-semibold);
+  line-height: 28px;
 }
-.add-dialog-description {
-  padding-bottom: var(--expressa-space-sm);
+.add-dialog__description {
+  margin: 0;
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-body);
+  line-height: 20px;
 }
 .add-dialog-fields {
   min-block-size: 0;
   display: grid;
-  gap: var(--expressa-space-sm);
+  gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -539,6 +547,7 @@ watch(
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-body);
 }
 .add-dialog-input {
   width: 100%;
@@ -556,13 +565,14 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-space-md);
+  gap: var(--expressa-border-width-none);
   padding: var(--expressa-space-control-inline) 0;
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
 .add-dialog-toggle strong {
   font-size: var(--expressa-font-size-body-strong);
+  line-height: var(--expressa-line-height-body);
 }
 .add-dialog-error {
   margin: 0;
@@ -644,7 +654,7 @@ watch(
 }
 .add-dialog-actions {
   flex: none;
-  padding: var(--expressa-space-lg);
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   background: var(--expressa-color-surface);

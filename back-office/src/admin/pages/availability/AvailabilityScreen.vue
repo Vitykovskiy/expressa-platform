@@ -1,26 +1,48 @@
 <template>
   <main class="availability-screen">
-    <div class="availability-screen__workspace">
-      <div class="availability-screen__filters">
-        <h1 class="availability-screen__title">Доступность</h1>
-        <FilterTabs v-model="activeCategory" :items="categoryTabs" />
-      </div>
+    <TopBar title="Доступность" />
 
-      <div class="availability-screen__content">
-        <EmptyState
-          v-if="groupedItems.length === 0"
-          title="Меню пусто"
-          description="Позиции появятся после добавления в меню"
+    <div class="availability-screen__filters">
+      <h1 class="availability-screen__title">Доступность</h1>
+      <FilterTabs
+        v-model="activeCategory"
+        class="availability-screen__tabs"
+        :items="categoryTabs"
+        layout="responsive"
+      />
+    </div>
+
+    <div class="availability-screen__content">
+      <EmptyState
+        v-if="groupedItems.length === 0"
+        title="Меню пусто"
+        description="Позиции появятся после добавления в меню"
+      >
+        <template #icon>
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="48"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            width="48"
+          >
+            <path d="M7 6h10a5 5 0 1 1 0 10H7a5 5 0 1 1 0-10Z" />
+            <path d="M7 11a1 1 0 1 0 0 .01" />
+          </svg>
+        </template>
+      </EmptyState>
+      <div v-else class="availability-screen__groups">
+        <AvailabilityGroup
+          v-for="group in groupedItems"
+          :key="group.category"
+          :category="group.category"
+          :items="group.items"
+          @availability-change="changeAvailability"
         />
-        <div v-else class="availability-screen__groups">
-          <AvailabilityGroup
-            v-for="group in groupedItems"
-            :key="group.category"
-            :category="group.category"
-            :items="group.items"
-            @availability-change="changeAvailability"
-          />
-        </div>
       </div>
     </div>
 
@@ -34,6 +56,7 @@
 import { computed, shallowRef } from "vue";
 
 import type { AvailabilityChangeEvent } from "../../shared/ui/Admin.types";
+import TopBar from "../../shell/TopBar.vue";
 import EmptyState from "../../shared/ui/empty-state/EmptyState.vue";
 import FilterTabs from "../../shared/ui/filter-tabs/FilterTabs.vue";
 import AvailabilityGroup from "./AvailabilityGroup.vue";
@@ -93,6 +116,10 @@ function changeAvailability(event: AvailabilityChangeEvent) {
 <style scoped lang="scss">
 .availability-screen {
   display: flex;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  height: 100%;
   min-height: 100%;
   flex: 1;
   flex-direction: column;
@@ -100,26 +127,24 @@ function changeAvailability(event: AvailabilityChangeEvent) {
   background: var(--expressa-color-surface-raised);
 }
 
-.availability-screen__workspace {
-  display: flex;
-  width: min(100%, 1120px);
-  min-width: 0;
-  min-height: 100%;
-  flex: 1;
-  flex-direction: column;
-  margin: 0 auto;
-}
-
 .availability-screen__filters {
-  padding: var(--expressa-space-md);
+  padding: 0;
 }
 
 .availability-screen__title {
-  margin: 0 0 var(--expressa-space-sm);
+  display: none;
+  margin: 0;
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-screen-title);
   font-weight: var(--expressa-font-weight-bold);
-  line-height: var(--expressa-line-height-tight);
+  line-height: 2rem;
+}
+
+.availability-screen__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--expressa-color-surface);
 }
 
 .availability-screen__content {
@@ -137,11 +162,23 @@ function changeAvailability(event: AvailabilityChangeEvent) {
 
 @media (min-width: 768px) {
   .availability-screen {
+    inline-size: 100%;
+    min-inline-size: max-content;
+    max-inline-size: none;
     background: var(--expressa-color-surface);
   }
 
   .availability-screen__filters {
     padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
+  }
+
+  .availability-screen__title {
+    display: block;
+    margin-bottom: var(--expressa-space-md);
+  }
+
+  .availability-screen__tabs {
+    position: static;
   }
 
   .availability-screen__content {

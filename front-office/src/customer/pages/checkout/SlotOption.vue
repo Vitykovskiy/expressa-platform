@@ -48,10 +48,15 @@ const isDisabled = computed(
 </script>
 
 <style scoped lang="scss">
-.slot-option.v-btn {
+.slot-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--customer-space-5);
   height: auto;
   min-height: var(--customer-size-control-xl);
   width: 100%;
+  min-width: 0;
   padding: var(--customer-space-5) var(--customer-space-10);
   color: var(--customer-text);
   text-align: left;
@@ -59,6 +64,7 @@ const isDisabled = computed(
   border: 1px solid transparent;
   border-radius: var(--customer-radius);
   transition: var(--customer-transition-surface);
+  white-space: normal;
 }
 
 .slot-option:active:not(:disabled) {
@@ -79,17 +85,6 @@ const isDisabled = computed(
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);
   box-shadow: var(--customer-shadow-card);
-}
-
-.slot-option :deep(.v-btn__content) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--customer-space-5);
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-  white-space: normal;
 }
 
 .slot-option__main {

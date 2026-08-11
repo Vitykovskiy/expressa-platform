@@ -66,6 +66,7 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   min-height: 100dvh;
   overflow-x: clip;
   color: var(--customer-text);
+  background: var(--customer-background);
   font-family: var(--customer-font-family);
 }
 
@@ -75,7 +76,6 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  background: var(--customer-background);
 }
 
 .customer-shell__desktop-back {
@@ -89,10 +89,9 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   }
 
   .customer-shell__content {
-    flex: 1;
     width: auto;
-    max-width: none;
-    margin: 0;
+    max-width: calc(var(--customer-content-width) * 2.5);
+    margin: 0 auto;
     padding: var(--customer-space-5) var(--customer-space-17);
   }
 
@@ -100,8 +99,9 @@ function handleNavigate(destination: ShellNavigationDestination): void {
     align-self: start;
     display: inline-flex;
     align-items: center;
-    gap: var(--customer-space-4);
-    margin-top: var(--customer-space-7);
+    min-height: 0;
+    gap: var(--customer-space-5);
+    margin-top: var(--customer-space-11);
     padding: var(--customer-space-5) var(--customer-space-8)
       var(--customer-space-5) var(--customer-space-6);
     color: var(--customer-text);
@@ -113,8 +113,8 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   }
 
   .customer-shell__desktop-back-icon {
-    width: var(--customer-font-size-lg);
-    height: var(--customer-font-size-lg);
+    width: var(--customer-font-size-md);
+    height: var(--customer-font-size-md);
   }
 }
 </style>

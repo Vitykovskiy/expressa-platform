@@ -1,6 +1,8 @@
 <template>
   <section class="auth-gate-prompt" aria-labelledby="auth-gate-prompt-title">
-    <LockKeyhole class="auth-gate-prompt__icon" aria-hidden="true" />
+    <span class="auth-gate-prompt__icon" aria-hidden="true">
+      <Lock :size="30" :stroke-width="2.5" />
+    </span>
     <div>
       <h1 id="auth-gate-prompt-title" class="auth-gate-prompt__title">
         {{ props.title }}
@@ -25,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { LockKeyhole } from "lucide-vue-next";
+import { Lock } from "lucide-vue-next";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
 import type {
   AuthGatePromptEmits,
@@ -44,7 +46,7 @@ const emit = defineEmits<AuthGatePromptEmits>();
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: var(--customer-size-content-auth);
+  max-width: calc(var(--customer-size-content-auth) + var(--customer-space-16));
   gap: var(--customer-space-13);
   margin: 0 auto;
   padding: var(--customer-space-17) var(--customer-space-9);
@@ -52,9 +54,11 @@ const emit = defineEmits<AuthGatePromptEmits>();
 }
 
 .auth-gate-prompt__icon {
-  width: var(--customer-font-size-state);
-  height: var(--customer-font-size-state);
-  padding: var(--customer-space-14);
+  display: grid;
+  width: 5rem;
+  height: 5rem;
+  flex: 0 0 auto;
+  place-items: center;
   color: var(--customer-background);
   background: var(--customer-surface);
   border-radius: var(--customer-radius-round);
@@ -65,6 +69,8 @@ const emit = defineEmits<AuthGatePromptEmits>();
   margin: 0 0 var(--customer-space-5);
   font-size: var(--customer-font-size-6xl);
   font-weight: var(--customer-font-weight-black);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .auth-gate-prompt__description,
@@ -80,7 +86,9 @@ const emit = defineEmits<AuthGatePromptEmits>();
   width: 100%;
   padding: var(--customer-space-9) var(--customer-space-11);
   background: var(--customer-surface-note);
-  border-radius: var(--customer-radius);
+  border-radius: 1rem;
+  font-size: var(--customer-font-size-sm);
+  line-height: var(--customer-line-height-normal);
 }
 
 .auth-gate-prompt__button {

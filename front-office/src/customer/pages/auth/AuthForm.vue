@@ -4,9 +4,6 @@
     class="auth-form"
     @submit.prevent="sendCode"
   >
-    <label class="auth-form__field-label" for="auth-phone">
-      Номер телефона
-    </label>
     <ui-text-field
       id="auth-phone"
       autocomplete="tel"
@@ -14,8 +11,11 @@
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
+      hint="Формат: +7 (___) ___-__-__"
       inputmode="tel"
+      label="Номер телефона"
       placeholder="+7 (___) ___-__-__"
+      persistent-hint
       variant="outlined"
       :disabled="isLoading"
       :model-value="props.state.phone"
@@ -87,6 +87,7 @@
       variant="text"
       @click="emit('backToPhone')"
     >
+      <ArrowLeft aria-hidden="true" :size="14" :stroke-width="2.5" />
       Изменить номер
     </ui-btn>
   </form>
@@ -96,7 +97,6 @@
     class="auth-form"
     @submit.prevent="submitName"
   >
-    <label class="auth-form__field-label" for="auth-name">Ваше имя</label>
     <ui-text-field
       id="auth-name"
       autocomplete="name"
@@ -105,6 +105,7 @@
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
       hint="Имя появится в заказах и истории"
+      label="Ваше имя"
       placeholder="Ваше имя"
       persistent-hint
       variant="outlined"
@@ -130,7 +131,7 @@
 
 <script setup lang="ts">
 import { computed, shallowRef, watch } from "vue";
-import { Phone, UserRound } from "lucide-vue-next";
+import { ArrowLeft, Phone, UserRound } from "lucide-vue-next";
 import UiBtn from "../../shared/ui/btn/UiBtn.vue";
 import UiFieldMessage from "../../shared/ui/field-message/UiFieldMessage.vue";
 import UiTextField from "../../shared/ui/text-field/UiTextField.vue";
@@ -224,17 +225,11 @@ function submitName() {
   color: var(--customer-color-text-muted-on-brand);
 }
 
-.auth-form__field-label {
-  margin-bottom: calc(var(--customer-space-4) * -1);
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-xs);
-  font-weight: var(--customer-font-weight-bold);
-  letter-spacing: var(--customer-letter-spacing-overline);
-}
-
 .auth-form__ghost-button {
   align-self: center;
+  gap: var(--customer-space-3);
   color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
 
@@ -242,7 +237,7 @@ function submitName() {
   margin: 0;
   padding: var(--customer-space-9) var(--customer-space-11);
   border: 1px solid var(--customer-border);
-  border-radius: var(--customer-radius);
+  border-radius: 1rem;
   background: var(--customer-color-surface-subtle);
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-sm);

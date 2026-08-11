@@ -13,10 +13,10 @@ describe("AdminToggle", () => {
       attrs: { "aria-label": "Выбор обязателен" },
       global: { plugins: [vuetify] },
     });
-    const input = wrapper.get('input[role="switch"]');
+    const input = wrapper.get('[role="switch"]');
 
     expect(wrapper.find("v-switch").exists()).toBe(false);
-    await input.setValue(true);
+    await input.trigger("click");
 
     expect(wrapper.emitted("update:modelValue")).toEqual([[true]]);
   });

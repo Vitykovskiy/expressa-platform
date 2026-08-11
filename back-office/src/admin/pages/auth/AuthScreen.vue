@@ -9,7 +9,14 @@
       class="auth-screen__success"
       role="status"
     >
-      Вход выполнен
+      <svg
+        aria-hidden="true"
+        class="auth-screen__success-icon"
+        viewBox="0 0 24 24"
+      >
+        <path d="m5 12 4 4L19 6" />
+      </svg>
+      <span>Вход выполнен</span>
     </p>
     <section v-else class="auth-screen__card">
       <header class="auth-screen__header">
@@ -62,6 +69,8 @@ const emit = defineEmits<AuthScreenEmits>();
   padding: var(--expressa-space-lg);
   place-items: center;
   background: var(--expressa-color-surface-raised);
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
 }
 
 .auth-screen__card {
@@ -71,6 +80,9 @@ const emit = defineEmits<AuthScreenEmits>();
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-lg);
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 10%),
+    0 1px 2px -1px rgb(0 0 0 / 10%);
 }
 
 .auth-screen__header {
@@ -84,20 +96,40 @@ const emit = defineEmits<AuthScreenEmits>();
 }
 
 .auth-screen__header p {
+  margin-bottom: var(--expressa-space-xs);
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
   font-weight: var(--expressa-font-weight-medium);
+  letter-spacing: var(--expressa-letter-spacing-section-title);
+  text-transform: uppercase;
 }
 
 .auth-screen__header h1 {
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-heading);
-  line-height: var(--expressa-line-height-tight);
+  line-height: var(--expressa-line-height-body);
 }
 
 .auth-screen__success {
+  display: grid;
+  gap: var(--expressa-space-sm);
+  justify-items: center;
   color: var(--expressa-color-status-success);
   font-size: var(--expressa-font-size-action);
   text-align: center;
+}
+
+.auth-screen__success-icon {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--expressa-stroke-width-icon);
+}
+
+.auth-screen__success span {
+  color: var(--expressa-color-text-secondary);
 }
 </style>

@@ -40,27 +40,38 @@ function save(settings: SettingsScreenProps["settings"]) {
 
 <style scoped lang="scss">
 .settings-screen {
+  display: flex;
+  min-width: 0;
   min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface-raised);
 }
 
 .settings-screen__content {
-  display: grid;
-  width: min(100%, var(--expressa-size-settings-content-max-width));
+  display: flex;
+  width: 100%;
   min-width: 0;
-  min-height: 100%;
-  align-content: start;
-  gap: var(--expressa-space-lg);
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   margin: 0 auto;
   padding: var(--expressa-space-md);
 }
 
 .settings-screen__title {
+  flex: 0 0 auto;
   display: none;
   margin: 0;
+  padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
   font-size: var(--expressa-font-size-screen-title);
-  line-height: var(--expressa-line-height-heading);
+  font-weight: var(--expressa-font-weight-bold);
+  line-height: calc(
+    var(--expressa-font-size-screen-title) + var(--expressa-space-xs) * 2
+  );
+  margin-bottom: var(--expressa-space-md);
 }
 
 @media (min-width: 768px) {
@@ -70,6 +81,10 @@ function save(settings: SettingsScreenProps["settings"]) {
 
   .settings-screen__title {
     display: block;
+  }
+
+  .settings-screen__content {
+    width: min(100%, var(--expressa-size-settings-content-max-width));
   }
 }
 </style>

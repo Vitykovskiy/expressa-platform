@@ -94,10 +94,10 @@
   --customer-danger-pale: var(--customer-color-danger-pale);
   --customer-border: var(--customer-color-border-on-brand);
   --customer-focus-ring: var(--customer-color-orange-500-65);
-  --customer-state-disabled-opacity: 0.38;
+  --customer-state-disabled-opacity: 0.35;
 
   /* Typography */
-  --customer-font-family: Nunito, Inter, system-ui, sans-serif;
+  --customer-font-family: Nunito, Inter, sans-serif;
   --customer-font-size-2xs: 0.6875rem;
   --customer-font-size-caption: 0.625rem;
   --customer-font-size-xs: 0.75rem;
@@ -169,7 +169,7 @@
   --customer-size-control-xl: 3.25rem;
   --customer-size-field: 3.375rem;
   --customer-size-state-icon: 4.75rem;
-  --customer-size-content-auth: 24rem;
+  --customer-size-content-auth: 23.5rem;
   --customer-size-content-detail: 46rem;
   --customer-size-summary: 21.25rem;
 

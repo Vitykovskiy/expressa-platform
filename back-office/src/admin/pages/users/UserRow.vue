@@ -1,6 +1,6 @@
 <template>
   <article class="user-row">
-    <div class="user-avatar" aria-hidden="true">
+    <div class="user-avatar" :class="avatarClass" aria-hidden="true">
       {{ initials }}
     </div>
 
@@ -61,6 +61,10 @@ const userRole = computed(() =>
   props.user.role ? USER_ROLE_PRESENTATION[props.user.role] : null,
 );
 
+const avatarClass = computed(() =>
+  props.user.role ? `user-avatar--${props.user.role}` : "user-avatar--no-role",
+);
+
 const initials = computed(() =>
   props.user.name
     .split(" ")
@@ -78,6 +82,7 @@ const availableActions = computed<readonly UserAction[]>(() => [
 
 <style scoped lang="scss">
 .user-row {
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -86,6 +91,13 @@ const availableActions = computed<readonly UserAction[]>(() => [
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   background: var(--expressa-color-surface);
+}
+
+.user-row :deep(.action-menu-trigger) {
+  position: absolute;
+  top: 50%;
+  right: var(--expressa-space-md);
+  transform: translateY(-50%);
 }
 
 .user-row:last-child {
@@ -103,6 +115,21 @@ const availableActions = computed<readonly UserAction[]>(() => [
   background: var(--expressa-color-status-info-surface);
   font-size: var(--expressa-font-size-caption);
   font-weight: var(--expressa-font-weight-semibold);
+}
+
+.user-avatar--administrator {
+  color: var(--expressa-color-accent);
+  background: var(--expressa-color-status-info-surface);
+}
+
+.user-avatar--barista {
+  color: var(--expressa-color-status-success);
+  background: var(--expressa-color-status-success-surface);
+}
+
+.user-avatar--no-role {
+  color: var(--expressa-color-text-muted);
+  background: var(--expressa-color-surface-raised);
 }
 
 .user-details {
@@ -128,9 +155,9 @@ const availableActions = computed<readonly UserAction[]>(() => [
 .user-role,
 .user-status {
   display: inline-flex;
-  min-height: var(--expressa-size-status-min-height);
+  min-height: auto;
   align-items: center;
-  padding: var(--expressa-space-badge-block) var(--expressa-space-sm);
+  padding: var(--expressa-space-2xs) var(--expressa-space-sm);
   border-radius: var(--expressa-radius-pill);
   font-size: var(--expressa-font-size-status);
   font-weight: var(--expressa-font-weight-medium);
@@ -154,8 +181,8 @@ const availableActions = computed<readonly UserAction[]>(() => [
 }
 
 .user-status--no-role {
-  color: var(--expressa-color-status-warning);
-  background: var(--expressa-color-status-warning-surface);
+  color: #f57f17;
+  background: #fff8e1;
 }
 
 .user-phone {

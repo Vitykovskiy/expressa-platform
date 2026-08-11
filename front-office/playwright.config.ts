@@ -23,11 +23,7 @@ const storybook = target !== frontOfficePlaywrightTarget.app;
 const storybookTestMatch =
   target === frontOfficePlaywrightTarget.a11y
     ? frontOfficeStorybookTestMatches.a11y
-    : target === frontOfficePlaywrightTarget.screenshots
-      ? frontOfficeStorybookTestMatches.screenshots
-      : target === frontOfficePlaywrightTarget.visual
-        ? frontOfficeStorybookTestMatches.visual
-        : frontOfficeStorybookTestMatches.default;
+    : frontOfficeStorybookTestMatches.visual;
 
 export default defineConfig({
   expect: {

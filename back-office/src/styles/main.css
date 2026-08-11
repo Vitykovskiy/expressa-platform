@@ -1,12 +1,12 @@
 :root {
   /* Values derive from the canonical Vuetify theme in src/styles/theme.ts. */
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  --expressa-font-family-sans:
+    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --v-font-body: var(--expressa-font-family-sans);
+  --v-font-heading: var(--expressa-font-family-sans);
+
+  font-family: var(--expressa-font-family-sans);
   --expressa-color-background: rgb(var(--v-theme-background));
   --expressa-color-surface: rgb(var(--v-theme-surface));
   --expressa-color-surface-raised: rgb(var(--v-theme-surface-raised));
@@ -87,6 +87,7 @@
   --expressa-line-height-title: 1.3;
   --expressa-line-height-emphasis: 1.35;
   --expressa-line-height-caption: 1.4;
+  --expressa-line-height-caption-compact: 16px;
   --expressa-line-height-body: 1.5;
   --expressa-letter-spacing-label: 0.04em;
   --expressa-letter-spacing-section-title: 0.05em;
@@ -127,12 +128,14 @@
 
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface-raised);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 html,
 body,
+#app,
 #storybook-root {
   min-height: 100%;
   margin: 0;
@@ -140,47 +143,4 @@ body,
 
 * {
   box-sizing: border-box;
-}
-
-.admin-dialog-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--expressa-space-sm);
-}
-
-.admin-dialog-actions > .admin-button {
-  width: 100%;
-}
-
-@media (min-width: 768px) {
-  .admin-dialog-actions {
-    grid-template-columns: repeat(2, max-content);
-    grid-template-areas: "cancel primary";
-    justify-content: end;
-  }
-
-  .admin-dialog-actions > .admin-button {
-    width: auto;
-  }
-
-  .admin-dialog-actions > .admin-button:first-child {
-    grid-area: primary;
-  }
-
-  .admin-dialog-actions > .admin-button:nth-child(2) {
-    grid-area: cancel;
-  }
-
-  .admin-dialog-actions--with-destructive {
-    grid-template-columns: max-content 1fr max-content max-content;
-    grid-template-areas: "delete . cancel primary";
-  }
-
-  .admin-dialog-actions--with-destructive > .admin-button:nth-child(2) {
-    grid-area: delete;
-  }
-
-  .admin-dialog-actions--with-destructive > .admin-button:nth-child(3) {
-    grid-area: cancel;
-  }
 }
