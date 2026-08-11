@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { useCheckoutStore } from "../customer/pages/checkout/checkout.store";
+import { useCheckoutStore } from "@/features/checkout/checkout.store";
 import OrderPage from "./OrderPage.vue";
 
 describe("OrderPage", () => {

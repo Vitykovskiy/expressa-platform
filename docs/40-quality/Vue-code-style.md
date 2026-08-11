@@ -6,6 +6,8 @@ area: quality
 status: active
 tags: [vue, typescript, quality]
 updated: 2026-08-01
+owner: root
+last_verified: 2026-08-11
 sources:
   - ../../back-office/package.json
   - ../../front-office/package.json

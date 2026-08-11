@@ -1,54 +1,23 @@
 ---
 title: Архитектура клиентов
-description: Целевое устройство front-office и back-office как автономных PWA.
 type: architecture
-area: architecture
-status: current
-tags: [expressa, frontend, pwa, vue]
-updated: 2026-07-26
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/docs/INDEX.md
+  - ../../back-office/docs/INDEX.md
 ---
 
 # Архитектура клиентов
 
-- **TR-REP-002.** Репозиторий `front-office` использует Vue 3, Vuetify, TypeScript, Vite, npm, реализует устанавливаемое PWA, содержит базу знаний по требованиям раздела 2.3, тесты и pipeline.
-- **TR-REP-003.** Репозиторий `back-office` использует Vue 3, Vuetify, TypeScript, Vite, npm, реализует устанавливаемое PWA, содержит базу знаний по требованиям раздела 2.3, тесты и pipeline.
+Front-office и back-office — независимые Vue/Vite PWA: каждый владеет runtime,
+маршрутами, состоянием, UI, API-клиентом, тестами и локальной документацией.
+[Front-office](../../front-office/docs/INDEX.md), [back-office](../../back-office/docs/INDEX.md).
 
-## 17. Архитектура front-office и back-office
+Front-office обслуживает customer-путь меню, корзины, OTP и заказа. Back-office
+реализует вход и администрирование каталога; `/queue` и `/availability` —
+защищённые заглушки, а не работающие операции. [Front coverage](../../front-office/docs/COVERAGE.md),
+[back coverage](../../back-office/docs/COVERAGE.md).
 
-Каждый клиентский репозиторий содержит собственные:
-
-- тему Vuetify;
-- UI-компоненты;
-- Storybook;
-- маршруты;
-- хранилища Pinia;
-- API-клиент;
-- типы API;
-- обработку ошибок;
-- тестовые фикстуры;
-- E2E-сценарии;
-- документацию.
-
-Рекомендуемая структура:
-
-```text
-src/
-  app/
-  pages/
-  widgets/
-  features/
-  entities/
-  shared/
-    api/
-    ui/
-    lib/
-    config/
-```
-
-Каталог `shared` принадлежит конкретному репозиторию и обслуживает только это приложение.
-
-Front-office и back-office устанавливаются как PWA и поддерживают push-уведомления. Основные функции приложений требуют подключения к сети.
-
-## Публичное меню front-office
-
-Front-office получает публичное меню через собственный API-клиент и хранит состояние загрузки в Pinia. Экран меню показывает загрузку, ошибку с повтором, пустое меню либо навигацию категория → товар; конфигурация товара и локальная корзина остаются на клиенте. Корзина объединяет только одинаковые товар, вариант напитка и набор добавок; серверное создание заказа в этот контур не входит.
+Клиенты не импортируют исходный код друг друга или backend; их совместимость
+определяют HTTP и локальные OpenAPI-снимки. [Контракт](Cross-repository-contracts.md).

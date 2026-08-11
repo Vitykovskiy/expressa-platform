@@ -4,5 +4,7 @@ coverage/
 playwright-report/
 storybook-static/
 test-results/
+/.storybook/artifacts/*
+!/.storybook/artifacts/reference-index.json
 *.local
 .DS_Store

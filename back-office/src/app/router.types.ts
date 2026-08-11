@@ -1,6 +1,6 @@
 import type { RouterHistory } from "vue-router";
 
-import type { AdminSection } from "../admin/shared/ui/Admin.types";
+import type { AdminSection } from "../shared/ui/admin/Admin.types";
 import type { BackOfficeRole } from "./navigation.types";
 
 declare module "vue-router" {

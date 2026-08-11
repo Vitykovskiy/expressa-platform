@@ -20,8 +20,8 @@ E05 реализует публичный каталог и его просмо�
 | --- | --- | --- |
 | [[front-office/BL-0078]] | complete | [Клиент публичного меню и тесты](../../../../front-office/src/shared/api/public-menu.api.spec.ts) |
 | [[front-office/BL-0079]] | complete | [Интеграция MenuPage](../../../../front-office/src/pages/MenuPage.spec.ts) |
-| [[front-office/BL-0080]] | complete | [Правила конфигурации товара](../../../../front-office/src/customer/pages/menu/product-configuration.spec.ts) |
-| [[front-office/BL-0081]] | complete | [Возврат и прокрутка MenuFlow](../../../../front-office/src/customer/pages/menu/MenuFlow.spec.ts) |
+| [[front-office/BL-0080]] | complete | [Локальная документация меню](../../../../front-office/docs/INDEX.md) |
+| [[front-office/BL-0081]] | complete | [Локальная документация меню](../../../../front-office/docs/INDEX.md) |
 
 ## quality
 

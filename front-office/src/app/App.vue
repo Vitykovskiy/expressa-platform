@@ -23,7 +23,7 @@ import { VApp, VBtn, VContainer, VMain } from "vuetify/components";
 import { RouterView, useRouter } from "vue-router";
 
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
-import { useCartStore } from "../customer/shared/model/cart.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
 
 import { useAppStore } from "./app.store";
 import { appRoute } from "./App.constants";

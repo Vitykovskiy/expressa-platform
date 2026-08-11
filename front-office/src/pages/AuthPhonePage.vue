@@ -11,7 +11,7 @@ import { computed, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
-import AuthScreen from "../customer/pages/auth/AuthScreen.vue";
+import AuthScreen from "@/features/auth/AuthScreen.vue";
 import { authPhoneRoute } from "./AuthPhonePage.constants";
 import type { AuthPhonePageState } from "./AuthPhonePage.types";
 

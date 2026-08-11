@@ -7,7 +7,7 @@ import { setSessionDependencies } from "../app/session.store.dependencies";
 import type { SessionDependencies } from "../app/session.store.types";
 import AuthPhonePage from "./AuthPhonePage.vue";
 
-vi.mock("../customer/pages/auth/AuthScreen.vue", () => ({
+vi.mock("@/features/auth/AuthScreen.vue", () => ({
   default: {
     emits: ["sendCode", "updatePhone"],
     template:

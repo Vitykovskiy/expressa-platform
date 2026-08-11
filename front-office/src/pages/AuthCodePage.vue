@@ -13,7 +13,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
 import { getSessionDependencies } from "../app/session.store.dependencies";
-import AuthScreen from "../customer/pages/auth/AuthScreen.vue";
+import AuthScreen from "@/features/auth/AuthScreen.vue";
 import { authCodeRoute } from "./AuthCodePage.constants";
 import type { AuthCodePageState } from "./AuthCodePage.types";
 

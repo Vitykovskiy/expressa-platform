@@ -7,9 +7,9 @@ const session = { accessToken: "access-token" };
 vi.mock("../app/session.store", () => ({ useSessionStore: () => session }));
 
 import MenuPage from "./MenuPage.vue";
-import { setCatalogStoreDependencies } from "../admin/pages/menu/catalog.dependencies";
-import { useCatalogStore } from "../admin/pages/menu/catalog.store";
-import type { ProductFormData } from "../admin/pages/menu/AddProductDialog.types";
+import { setCatalogStoreDependencies } from "./admin/menu/catalog.dependencies";
+import { useCatalogStore } from "./admin/menu/catalog.store";
+import type { ProductFormData } from "./admin/menu/AddProductDialog.types";
 
 const catalog = {
   categories: [

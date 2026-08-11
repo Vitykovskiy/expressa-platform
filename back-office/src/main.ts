@@ -10,7 +10,7 @@ import {
   createSessionStoreDependencies,
   setSessionStoreDependencies,
 } from "./app/session.store.dependencies";
-import { setCatalogStoreDependencies } from "./admin/pages/menu/catalog.dependencies";
+import { setCatalogStoreDependencies } from "./pages/admin/menu/catalog.dependencies";
 import { CatalogApi } from "./shared/api/catalog.api";
 import { apiClientKey, createApiClient } from "./shared/api/client";
 import { validateEnvironment } from "./shared/config/environment";

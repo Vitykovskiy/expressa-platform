@@ -1,37 +1,22 @@
+---
+type: feature
+owner: root
+implementation_status: current
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/src/pages/CartPage.vue
+---
 # Авторизация и оформление заказа
 
-### 6.2. Авторизация и оформление
-
-1. Клиент открывает корзину.
-2. Защищённое действие направляет гостя к телефонной авторизации.
-3. Клиент вводит номер телефона и одноразовый код.
-4. Backend находит либо создаёт учётную запись `customer` и выдаёт сессию.
-5. Front-office сохраняет собранную до входа корзину и возвращает клиента только на безопасный внутренний `returnTo`.
-6. Customer подтверждает актуальный итог; front-office отправляет `POST /api/v1/orders` со стабильным `Idempotency-Key`.
-7. После успешного ответа открывается `/orders/:id`, где начальный заказ показывается из сохранённого ответа создания.
-
-Если цена изменилась, требуется повторное подтверждение нового итога. Недоступная
-позиция выделяется в корзине, а закрытый приём блокирует оформление. Потерянный
-ответ повторяется с тем же ключом, поэтому второй заказ не создаётся. E07 не
-загружает заказ по `GET`, не показывает историю и не обновляет стадии.
-
-Обычное изменение цены размера Administrator через форму товара сохраняет UUID
-варианта. Уже собранная корзина остаётся адресуемой, а backend отвечает
-`ORDER_TOTAL_CHANGED` с новым итогом; customer повторно подтверждает его и
-создаёт заказ по актуальной цене. Этот путь проверяется через реальные
-back-office, backend и front-office в [catalog E2E](../../back-office/tests/e2e/catalog.e2e.ts).
+## 6.2. Авторизация и оформление
 
 ### 8.1. Телефонная авторизация
 
-- **FR-AUTH-001.** Система принимает российский номер телефона и приводит его к формату E.164.
-- **FR-AUTH-002.** Система отправляет шестизначный одноразовый код: через фиксированный адаптер в `local` и `development`, через SMS.RU в `staging` и `production`.
-- **FR-AUTH-003.** Срок действия кода составляет 5 минут.
-- **FR-AUTH-004.** Повторная отправка доступна через 60 секунд.
-- **FR-AUTH-005.** Один код поддерживает до 5 попыток ввода.
-- **FR-AUTH-006.** Успешная проверка создаёт customer при первом входе.
-- **FR-AUTH-007.** Сессия использует access token на 15 минут в памяти клиента и обновляемый refresh token.
-- **FR-AUTH-008.** Refresh token хранится в HttpOnly `SameSite=Strict` cookie с путём `/api/v1/auth`, обновляется при использовании и действует не более 30 дней.
-- **FR-AUTH-009.** Front-office восстанавливает сессию после перезагрузки страницы.
-- **FR-AUTH-010.** Back-office допускает пользователей с ролью barista либо administrator.
-- **FR-AUTH-011.** Выход завершает текущую сессию и отзывает refresh token.
-- **FR-AUTH-012.** Среды `local` и `development` поддерживают фиксированный код через `AUTH_DEVELOPMENT_OTP`.
+Гость из корзины идёт на OTP с внутренним `returnTo`; customer отправляет
+checkout. Успех очищает корзину и открывает `/orders/:id`; страница читает только
+сохранённый результат checkout. [Источники: CartPage](../../front-office/src/pages/CartPage.vue), [OrderPage](../../front-office/src/pages/OrderPage.vue).
+
+Network повторяет тот же ключ; изменение total требует reconfirm, unavailable
+выделяет позиции. Submit отключает только `acceptsNewOrders=false`; ответ
+`ORDER_INTAKE_CLOSED` показывает ошибку checkout, но не делает retry permanently
+disabled. [Источники: CartPage](../../front-office/src/pages/CartPage.vue), [CartScreen](../../front-office/src/features/checkout/CartScreen.vue), [checkout store](../../front-office/src/features/checkout/checkout.store.ts).

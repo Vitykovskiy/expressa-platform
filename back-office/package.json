@@ -16,7 +16,7 @@
     "typecheck": "vue-tsc --build",
     "test": "vitest",
     "storybook": "storybook dev --port 6006",
-    "storybook:build": "storybook build --output-dir node_modules/.storybook-static && node tests/e2e/check-storybook-manifest.mjs",
+    "storybook:build": "storybook build --output-dir node_modules/.storybook-static && node .storybook/scripts/check-storybook-manifest.mjs",
     "test:storybook": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-e2e",
     "test:storybook:screenshots": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-screenshots",
     "test:a11y": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-a11y",

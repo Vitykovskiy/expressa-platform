@@ -6,12 +6,16 @@ area: quality
 status: active
 tags: [quality, ui, accessibility, touch]
 updated: 2026-08-01
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/.storybook/tests/a11y.spec.mjs
+  - ../../back-office/.storybook/tests/a11y.e2e.ts
 ---
 
 # Доступность и взаимодействие UI
 
-Эта нота задаёт критерии приёмки всего Vue UI-кода Customer и Admin на основании
-[[../20-architecture/ADR/ADR-007-touch-interaction-and-limited-keyboard-support|ADR-007]].
+Эта нота задаёт критерии приёмки всего Vue UI-кода Customer и Admin.
 Критерии описывают целевое поведение; готовность конкретного интерфейса
 подтверждают выполненные проверки, а не наличие этой ноты.
 
@@ -25,7 +29,7 @@ updated: 2026-08-01
 
 Проверка только с клавиатурой и проверка программой экранного доступа не входят
 в критерии выпуска Customer и сенсорного Admin. Изменение этой границы требует
-нового продуктового требования и обновления ADR-007.
+нового продуктового требования.
 
 ## Сенсорное управление
 

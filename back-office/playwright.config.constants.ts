@@ -58,15 +58,15 @@ export const backOfficePlaywrightProjectName = {
 export const backOfficePlaywrightSnapshotPathTemplate =
   "{testDir}/{testFilePath}-snapshots/{arg}{ext}";
 export const backOfficePlaywrightTestMatch = {
-  app: /app\.e2e\.ts/,
-  auth: /auth\.e2e\.ts/,
-  catalog: /catalog\.e2e\.ts/,
-  storybook: /navigation\.e2e\.ts/,
-  storybookScreenshots: /storybook-screenshots\.e2e\.ts/,
-  storybookA11y: /a11y\.e2e\.ts/,
-  storybookVisual: /visual\.e2e\.ts/,
+  app: /tests\/e2e\/app\.e2e\.ts/,
+  auth: /tests\/e2e\/auth\.e2e\.ts/,
+  catalog: /tests\/e2e\/catalog\.e2e\.ts/,
+  storybook: /\.storybook\/tests\/navigation\.e2e\.ts/,
+  storybookScreenshots: /\.storybook\/tests\/storybook-screenshots\.e2e\.ts/,
+  storybookA11y: /\.storybook\/tests\/a11y\.e2e\.ts/,
+  storybookVisual: /\.storybook\/tests\/visual\.e2e\.ts/,
 } as const;
-export const backOfficePlaywrightTestDirectory = "./tests/e2e";
+export const backOfficePlaywrightTestDirectory = ".";
 export const backOfficePlaywrightTrace = "on-first-retry";
 export const backOfficeStorybookUrl = "http://127.0.0.1:6006";
 export const backOfficeStorybookWebServerCommand =

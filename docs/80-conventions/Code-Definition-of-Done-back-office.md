@@ -2,6 +2,11 @@
 title: Definition of Done для production-кода back-office
 description: Обязательные критерии готовности и приёмки production-кода автономного приложения back-office.
 type: convention
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../AGENTS.md
+  - ../../back-office/package.json
 area: back-office
 status: stable
 tags: [definition-of-done, back-office, vue, typescript]

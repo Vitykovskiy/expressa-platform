@@ -1,9 +1,13 @@
+---
+type: domain
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/src/orders/domain/order-revalidation.ts
+---
 # Цены
 
-- **BR-003.** Сервер рассчитывает итоговую стоимость заказа.
-- **BR-014.** Валюта интерфейса — российский рубль. Денежные значения хранятся целым числом копеек.
-
-При создании заказа backend заново рассчитывает цену каждой конфигурации и общий
-итог по актуальному каталогу. Переданный `expectedTotalMinor` служит только для
-сверки: при расхождении сервер возвращает `ORDER_TOTAL_CHANGED` с новым итогом и
-не сохраняет заказ до повторного подтверждения.
+Backend пересчитывает конфигурацию по актуальному каталогу в minor units.
+`expectedTotalMinor` — optimistic check: расхождение возвращает
+`ORDER_TOTAL_CHANGED` с новым total без заказа; недоступность возвращает
+`MENU_ITEM_UNAVAILABLE`. [Источники: revalidation](../../backend/src/orders/domain/order-revalidation.ts), [E2E](../../backend/test/e2e/create-order.e2e-spec.ts).

@@ -6,6 +6,11 @@ area: quality
 status: active
 tags: [quality, ui, vue, dod]
 updated: 2026-08-01
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/package.json
+  - ../../back-office/package.json
 ---
 
 # Definition of Done для UI
@@ -17,8 +22,8 @@ Vue-кода]].
 
 ## Gate
 
-- Изменение сохраняет границы двух независимых продуктов, `pages`, `shared`,
-  `shell` и Storybook по [[20-architecture/ADR/ADR-006-runtime-ui-and-storybook-boundaries|ADR-006]].
+- Изменение сохраняет границы двух независимых продуктов, runtime и Storybook
+  по [[../20-architecture/ADR/ADR-003-local-application-documentation-and-storybook|ADR-003]].
 - Изменённый Vue/Vuetify-код соответствует
   [[Vue-code-style|стилю Vue-кода]]; истории остаются отдельным
   демонстрационным слоем и импортируют готовый runtime-код.

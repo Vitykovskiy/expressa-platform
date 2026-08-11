@@ -2,6 +2,10 @@
 title: Протокол обновления
 description: Правила синхронного обновления документации и реализации.
 type: process
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../AGENTS.md
 area: meta
 status: current
 tags: [expressa, documentation, maintenance]

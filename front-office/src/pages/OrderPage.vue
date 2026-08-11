@@ -47,8 +47,8 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 
-import { useCheckoutStore } from "../customer/pages/checkout/checkout.store";
-import { formatMinorAmount } from "../customer/shared/model/money";
+import { useCheckoutStore } from "@/features/checkout/checkout.store";
+import { formatMinorAmount } from "@/entities/customer/model/money";
 import { orderPageMessages, orderPageStageLabels } from "./OrderPage.constants";
 import type { OrderPageItem, OrderPageOrder } from "./OrderPage.types";
 

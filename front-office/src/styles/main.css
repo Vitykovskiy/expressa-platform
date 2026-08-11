@@ -8,8 +8,7 @@
 }
 
 html,
-body,
-#storybook-root {
+body {
   min-height: 100dvh;
 }
 
@@ -24,17 +23,6 @@ body {
   background: var(--customer-background);
 }
 
-#storybook-root {
-  display: flex;
-  width: 100%;
-}
-
-.storybook-customer-root {
-  display: flex;
-  flex: 1;
-  min-height: inherit;
-}
-
 :disabled,
 [aria-busy="true"] {
   transform: none;
@@ -47,8 +35,7 @@ body {
     background: var(--customer-background-raised);
   }
 
-  #app,
-  #storybook-root {
+  #app {
     max-width: var(--customer-content-width);
     height: calc(100dvh - var(--customer-space-13) * 2);
     min-height: 0;
@@ -60,8 +47,7 @@ body {
 }
 
 @media (min-width: 768px) {
-  #app,
-  #storybook-root {
+  #app {
     max-width: var(--customer-content-width);
   }
 }
@@ -72,8 +58,7 @@ body {
     background: var(--customer-background);
   }
 
-  #app,
-  #storybook-root {
+  #app {
     max-width: none;
     height: auto;
     min-height: 100dvh;

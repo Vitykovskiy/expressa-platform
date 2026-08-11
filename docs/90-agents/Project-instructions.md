@@ -2,6 +2,10 @@
 title: Проектные инструкции
 description: Условия создания раздела инструкций и процессов агентов.
 type: guide
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../AGENTS.md
 area: agents
 status: current
 tags: [expressa, agents, instructions]

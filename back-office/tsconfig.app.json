@@ -16,5 +16,5 @@
     "jsx": "preserve",
     "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.vue", ".storybook/stories/**/*.ts"]
 }

@@ -1,28 +1,20 @@
 ---
-title: Карта предметной области
-description: Навигация по каноническим нотам предметной модели Expressa.
 type: moc
-area: domain
-status: current
-tags: [expressa, domain, moc]
-updated: 2026-07-26
-source_mode: normative
-sources: [Expressa_MVP_Техническое_задание.md]
-requirements: [BR-003, BR-004, BR-009, BR-010, BR-014, BR-015, BR-021, BR-023]
-repositories: [backend, front-office, back-office]
-related: ["[[Domain-model]]", "[[../00-meta/Glossary]]"]
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/openapi/openapi.json
 ---
+# Доменные контракты
 
-# Карта предметной области
+Корневые ноты фиксируют межконтурную семантику; runtime-детали находятся в
+локальных docs. [Источник: OpenAPI](../../backend/openapi/openapi.json).
 
-Канонические правила предметной модели Expressa.
+- [Аудит](Audit.md), [идентификация и доступ](Identity-and-access.md).
+- [Каталог и меню](Catalog-and-menu.md), [конфигурация товара](Product-configuration.md), [доступность](Availability.md).
+- [Доменная модель](Domain-model.md), [цены](Pricing.md).
+- [Жизненный цикл](Order-lifecycle.md), [снимки](Order-snapshots.md).
 
-- [[Domain-model|Доменная модель]]
-- [[Identity-and-access|Идентификация и доступ]]
-- [[Catalog-and-menu|Каталог и меню]]
-- [[Product-configuration|Конфигурация товара]]
-- [[Pricing|Цены]]
-- [[Availability|Доступность]]
-- [[Order-lifecycle|Жизненный цикл заказа]]
-- [[Order-snapshots|Снимки заказа]]
-- [[Audit|Аудит]]
+Только создание заказа имеет current server contract; очередь, переходы стадий и
+управление доступностью не выводятся из этого MOC как активные сценарии.
+[Источник: OpenAPI](../../backend/openapi/openapi.json).

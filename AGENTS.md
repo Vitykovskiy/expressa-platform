@@ -21,6 +21,13 @@
 - Перед реализацией определить затронутые приложения и применять при реализации и приёмке соответствующий DoD: [front-office](docs/80-conventions/Code-Definition-of-Done-front-office.md), [back-office](docs/80-conventions/Code-Definition-of-Done-back-office.md), [backend](docs/80-conventions/Code-Definition-of-Done-backend.md).
 - Для межконтурной задачи применять DoD всех затронутых приложений. Задача принимается только после выполнения применимых критериев.
 
+## Входы контуров
+
+- Backend: [README](backend/README.md), [AGENTS](backend/AGENTS.md), [docs](backend/docs/INDEX.md).
+- Front-office: [README](front-office/README.md), [AGENTS](front-office/AGENTS.md), [docs](front-office/docs/INDEX.md).
+- Back-office: [README](back-office/README.md), [AGENTS](back-office/AGENTS.md), [docs](back-office/docs/INDEX.md).
+- Корневой `docs/` владеет системой, поставкой и межконтурными контрактами; детали контура живут в его `docs/`.
+
 ## Приоритеты принципов
 
 - При конфликте правил применяйте приоритеты в таком порядке: корректность, безопасность, проверяемость, сопровождаемость, простота, скорость и лаконичность.

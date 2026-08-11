@@ -1,78 +1,26 @@
 ---
 title: Архитектура backend
-description: Целевые модули и слои backend Expressa.
 type: architecture
-area: architecture
-status: current
-tags: [expressa, backend, nestjs]
-updated: 2026-08-05
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/docs/10-architecture/Layers.md
+  - ../../backend/openapi/openapi.json
 ---
 
 # Архитектура backend
 
-- **TR-REP-001.** Репозиторий `backend` использует NestJS, TypeScript, npm, базу знаний по требованиям раздела 2.3, тесты и pipeline.
-- **TR-DATA-001.** Backend использует PostgreSQL и последовательные миграции схемы.
+Backend — единственный владелец HTTP API, предметных правил и PostgreSQL.
+Локальная [архитектура](../../backend/docs/10-architecture/Layers.md) описывает
+controller → use case → port → adapter и DI-сборку модулей.
 
-## 16. Архитектура backend
+Он реализует OTP/session и `/me`, публичное и административное меню, создание
+customer-заказа и health; полный список 22 путей — [локальная карта API](../../backend/docs/50-api/_MOC-api.md)
+и [OpenAPI](../../backend/openapi/openapi.json). Чтение истории заказа, переходы
+стадий, отдельные Users/Availability/Audit HTTP-модули не опубликованы: они не
+являются текущими API-возможностями. [Реестр покрытия](../../backend/docs/COVERAGE.md).
 
-### 16.1. Модули
-
-- `ConfigModule` — конфигурация и проверка окружения;
-- `DatabaseModule` — подключение, миграции, транзакции;
-- `AuthModule` — OTP, SMS-адаптер, сессии;
-- `UsersModule` — роли и эксплуатационные команды;
-- `CatalogModule` — категории, товары, варианты и добавки;
-- `OrdersModule` — корзинная проверка, заказ, стадии и история;
-- `AvailabilityModule` — оперативная доступность и приём новых заказов;
-- `AuditModule` — аудит действий сотрудников;
-- `HealthModule` — readiness и liveness;
-- `ObservabilityModule` — request ID, структурированные журналы и метрики.
-
-### 16.2. Слои
-
-Каждый бизнес-модуль использует слои:
-
-1. transport/controller;
-2. application/use case;
-3. domain rules;
-4. persistence adapter;
-5. external adapter.
-
-Контроллеры выполняют разбор запроса и передачу в сценарий. Доменная логика стадий, цены и доступности размещается в сервисах предметной области.
-
-### 16.3. Аутентификация
-
-`AuthModule` предоставляет телефонную OTP-аутентификацию и текущую сессию. Контроллеры задают HTTP-границу, сценарии управляют жизненным циклом кода и сессии, PostgreSQL-адаптер атомарно резервирует код и изменяет сессию, а внешние адаптеры создают криптографические значения и доставляют SMS.
-
-Проверка защищённого запроса сверяет Bearer access token с активной сессией и актуальной ролью пользователя в БД; роль из устаревшего токена не даёт доступ. Refresh token хранится только как хеш в сессии, при обновлении ротируется, а cookie ограничена `HttpOnly`, `SameSite=Strict` и путём `/api/v1/auth`; для всех сред, кроме `local`, используется `Secure`.
-
-В `local` и `development` адаптер использует шестизначный `AUTH_DEVELOPMENT_OTP`; в `staging` и `production` код генерируется криптографически и отправляется через SMS.RU. Полный HTTP-контракт является источником истины в [API аутентификации](../50-interfaces/Authentication-API.md).
-
-### 16.4. Публичное меню
-
-Для публичного клиента `CatalogModule` предоставляет read-model `GET /api/v1/public/menu`. PostgreSQL-адаптер одним набором упорядоченных выборок читает категории, товары, варианты, группы и варианты добавок, а сценарий собирает вложенный публичный контракт и отсекает непубликуемые или некорректные конфигурации. Полная HTTP-схема — [OpenAPI](../../backend/openapi/openapi.json), краткая граница — [API меню](../50-interfaces/Menu-API.md).
-
-### 16.5. Управление каталогом
-
-`CatalogModule` также предоставляет Administrator-команды
-`/api/v1/backoffice/catalog/*`. Контроллеры проверяют роль и переводят
-ошибки доменных правил в `VALIDATION_ERROR` с путями полей. Сценарии категорий,
-товаров, групп добавок и назначений выполняют изменение и запись аудита в одной
-транзакции. PostgreSQL-адаптер сериализует изменение порядка консультативной
-блокировкой PostgreSQL и архивирует сущности через `archived_at`; публичный
-read-model читает результат из тех же таблиц каталога.
-
-Источник HTTP-контракта — [OpenAPI](../../backend/openapi/openapi.json),
-пользовательский сценарий — [[../40-features/Manage-menu|Управление меню]].
-
-### 16.6. Создание заказа
-
-`OrdersModule` предоставляет customer-команду `POST /api/v1/orders`.
-`PostgresOrderUnitOfWork` в одной транзакции сериализует повтор по паре customer и
-`Idempotency-Key`, читает актуальные каталог и настройку `accepts_new_orders`,
-пересчитывает конфигурации и сохраняет заказ, позиции и добавки как снимки.
-Человекочитаемый номер `YYYYMMDD-NNN` использует календарный день UTC и суточный
-счётчик. Чтение заказа, история и переходы стадий этой границей не реализуются.
-
-Источник HTTP-контракта — [OpenAPI](../../backend/openapi/openapi.json), краткая
-граница — [API заказов](../50-interfaces/Orders-API.md).
+Границы данных, транзакций, auth security и эксплуатационные свойства принадлежат
+локальным нотам [данных](../../backend/docs/40-data/PostgreSQL-and-migrations.md),
+[авторизации](../../backend/docs/30-domains/Auth.md), [заказов](../../backend/docs/30-domains/Orders.md)
+и [операций](../../backend/docs/60-operations/Run-and-environment.md).

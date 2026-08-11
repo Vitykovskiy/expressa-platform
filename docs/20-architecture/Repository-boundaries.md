@@ -1,23 +1,24 @@
 ---
 title: Границы приложений
-description: Ответственность и автономность backend, front-office и back-office внутри корневого репозитория.
 type: architecture
-area: architecture
-status: current
-tags: [expressa, architecture, repositories]
-updated: 2026-08-01
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/src/main.ts
+  - ../../front-office/src/main.ts
+  - ../../back-office/src/main.ts
 ---
 
 # Границы приложений
 
-### 2.1. Каталоги приложений
+Корневой репозиторий содержит три автономно собираемых приложения и общую
+системную документацию. Каждое приложение имеет собственные зависимости,
+lock-файл, команды, образ и локальную Docs-as-Code; root хранит только
+межконтурные и поставочные факты. [Backend](../../backend/package.json),
+[front-office](../../front-office/package.json), [back-office](../../back-office/package.json).
 
-Текущий репозиторий `expressa` является корневым репозиторием системы и содержит общую документацию в `docs/`. Код размещается в трёх автономно собираемых каталогах:
+`backend` владеет API и PostgreSQL; `front-office` — customer-клиентом;
+`back-office` — staff-клиентом. Детали принадлежат их [локальным картам](../../backend/docs/INDEX.md),
+[front-office](../../front-office/docs/INDEX.md) и [back-office](../../back-office/docs/INDEX.md).
 
-| Каталог | Назначение | Основной стек |
-|---|---|---|
-| `backend` | API, бизнес-логика, данные, авторизация, аудит | NestJS, TypeScript, PostgreSQL |
-| `front-office` | Клиентское мобильное PWA | Vue 3, Vuetify, TypeScript, Vite |
-| `back-office` | Рабочее PWA бариста и администратора | Vue 3, Vuetify, TypeScript, Vite |
-
-Каждое приложение содержит собственные зависимости, типы, компоненты, конфигурацию, тесты и конвейер поставки. Общая документация и бэклог хранятся только в корневом `docs/`. Полная структура зафиксирована в [[ADR/ADR-001-Root-repository-structure|ADR-001]].
+Граница root/local документации и Storybook закреплена в [ADR-003](ADR/ADR-003-local-application-documentation-and-storybook.md).

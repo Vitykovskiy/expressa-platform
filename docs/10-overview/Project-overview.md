@@ -2,6 +2,10 @@
 title: Обзор проекта Expressa
 description: Цель продукта и состав трёх автономных репозиториев.
 type: overview
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
 area: overview
 status: current
 tags: [expressa, overview, pwa]

@@ -35,7 +35,7 @@ E04 реализует основу аутентификации, сессии �
 | Карточка | Статус | Доказательство |
 | --- | --- | --- |
 | [[back-office/BL-0071]] | complete | [Браузерные auth и роли](../../../../back-office/tests/e2e/auth.e2e.ts) |
-| [[back-office/BL-0072]] | complete | [Stories экрана входа](../../../../back-office/src/stories/admin/auth/AuthScreen.stories.ts) |
+| [[back-office/BL-0072]] | complete | [Локальная документация Storybook](../../../../back-office/docs/INDEX.md) |
 | [[back-office/BL-0073]] | complete | [Router role policy](../../../../back-office/src/app/router.spec.ts) |
 
 ## quality

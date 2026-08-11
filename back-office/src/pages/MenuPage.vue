@@ -270,25 +270,25 @@
 import { computed, onMounted, shallowRef, watch } from "vue";
 
 import { useSessionStore } from "../app/session.store";
-import AddCategoryDialog from "../admin/pages/menu/AddCategoryDialog.vue";
-import type { CategoryFormData } from "../admin/pages/menu/AddCategoryDialog.types";
-import AddProductDialog from "../admin/pages/menu/AddProductDialog.vue";
-import type { ProductFormData } from "../admin/pages/menu/AddProductDialog.types";
-import CategoryModifierAssignments from "../admin/pages/menu/CategoryModifierAssignments.vue";
-import EditCategoryDialog from "../admin/pages/menu/EditCategoryDialog.vue";
-import EditProductDialog from "../admin/pages/menu/EditProductDialog.vue";
-import MenuCategoryGroup from "../admin/pages/menu/MenuCategoryGroup.vue";
-import ModifierGroupEditor from "../admin/pages/menu/ModifierGroupEditor.vue";
-import type { ModifierGroupFormData } from "../admin/pages/menu/ModifierGroupEditor.types";
-import { useDialogFocusLifecycle } from "../admin/pages/menu/composables/useDialogFocusLifecycle";
-import { useCatalogStore } from "../admin/pages/menu/catalog.store";
+import AddCategoryDialog from "./admin/menu/AddCategoryDialog.vue";
+import type { CategoryFormData } from "./admin/menu/AddCategoryDialog.types";
+import AddProductDialog from "./admin/menu/AddProductDialog.vue";
+import type { ProductFormData } from "./admin/menu/AddProductDialog.types";
+import CategoryModifierAssignments from "./admin/menu/CategoryModifierAssignments.vue";
+import EditCategoryDialog from "./admin/menu/EditCategoryDialog.vue";
+import EditProductDialog from "./admin/menu/EditProductDialog.vue";
+import MenuCategoryGroup from "./admin/menu/MenuCategoryGroup.vue";
+import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
+import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
+import { useDialogFocusLifecycle } from "./admin/menu/composables/useDialogFocusLifecycle";
+import { useCatalogStore } from "./admin/menu/catalog.store";
 import type {
   Category,
   ModifierGroup,
   Product,
-} from "../admin/pages/menu/catalog.types";
-import AdminButton from "../admin/shared/ui/admin-button/AdminButton.vue";
-import AdminDialog from "../admin/shared/ui/admin-dialog/AdminDialog.vue";
+} from "./admin/menu/catalog.types";
+import AdminButton from "../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import PageShell from "./PageShell.vue";
 
 const sessionStore = useSessionStore();

@@ -1,99 +1,54 @@
 ---
 title: Интерфейс back-office
-sources: [Expressa_MVP_Техническое_задание.md]
+type: interface
+owner: root
+implementation_status: current
+last_verified: 2026-08-11
+sources:
+  - ../../back-office/src/app/router.ts
+  - ../../back-office/src/app/router.constants.ts
+  - ../../back-office/src/pages/MenuPage.vue
+  - ../../back-office/src/pages/admin/menu/catalog.store.ts
 ---
 
 # Интерфейс back-office
 
-- **TR-BO-001.** Back-office содержит локальные маршруты, stores, API-клиент, компоненты, ролевую навигацию и обработку ошибок.
+## Активные границы
 
-## Вход и роли
+Маршрутизатор регистрирует `/login`, `/queue`, `/availability`, `/menu`; guard
+восстанавливает сессию и направляет неаутентифицированного сотрудника на вход.
+[back-office/src/app/router.ts:createBackOfficeRouter](../../back-office/src/app/router.ts).
 
-`/login` запрашивает OTP; успешная проверка выдаёт access token, после чего клиент получает `/api/v1/me`. При запуске и переходе на защищённый маршрут клиент восстанавливает сессию через refresh и при его успехе — `/api/v1/me`. Access token хранится только в памяти; refresh-cookie отправляется браузером с credentials. Пока восстановление не завершено, защищённый экран не рендерится.
+`/menu` — активная administrator-страница. Она показывает loading, error с
+повтором и подтверждённый empty; во время loading контент получает `aria-busy`
+и блокируется. [back-office/src/pages/MenuPage.vue:entry](../../back-office/src/pages/MenuPage.vue).
 
-| Роль | `/queue` | `/availability` | `/menu` | Начальный маршрут |
-|---|:---:|:---:|:---:|---|
-| `barista` | ✓ | ✓ | — | `/queue` |
-| `administrator` | ✓ | ✓ | ✓ | `/queue` |
-| `customer` | — | — | — | `/login` с отказом во входе |
+`useCatalogStore` владеет каноническим каталогом, запросом, ошибкой полей и
+флагом результата команды; после mutation он заново читает каталог.
+[back-office/src/pages/admin/menu/catalog.store.ts:useCatalogStore](../../back-office/src/pages/admin/menu/catalog.store.ts).
 
-Маршруты рабочего пространства защищены тем же ролевым правилом, что и навигация: прямой переход на недоступный раздел возвращает на начальный маршрут роли. Входящий на `/login` сотрудник направляется в рабочее пространство. Logout сначала завершает серверную сессию и только после успеха очищает локальное состояние и открывает `/login`.
+`MenuPage` владеет refs открытия и передаёт их в dialog components.
+[back-office/src/pages/MenuPage.vue:entry](../../back-office/src/pages/MenuPage.vue).
 
-## Разделы
+Breakpoint мобильного диалога — не шире 767px.
+[back-office/src/shared/ui/admin/admin-dialog/AdminDialog.constants.ts:ADMIN_DIALOG_MOBILE_MEDIA_QUERY](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.constants.ts).
 
-| Раздел | Barista | Administrator |
-|---|:---:|:---:|
-| Заказы | ✓ | ✓ |
-| Доступность | ✓ | ✓ |
-| Меню |  | ✓ |
+На мобильной ширине `AdminDialog` располагается снизу по центру; иначе — по
+центру экрана. [back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:dialogLocation](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
 
-## Очередь заказов
+Поверхность dialog имеет нижние скругления на мобильном экране, полные
+скругления от 768px и max-height 90vh.
+[back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:admin-dialog__surface](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
 
-- вкладки либо фильтры по стадии;
-- счётчики заказов;
-- сортировка по времени создания;
-- поиск по номеру;
-- карточка с номером, временем, суммой и стадией;
-- панель деталей;
-- одна основная кнопка следующего действия;
-- действие `Выдать` на стадии `Готов`;
-- [[Push-notifications|push-уведомление о новом заказе]];
-- автообновление очереди.
+## Placeholder и orphan
 
-## Доступность
+`/queue` и `/availability` защищены role metadata. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
 
-- группировка по категориям;
-- поиск;
-- переключатели товара, размера напитка и добавки;
-- переключатель `Приём новых заказов`;
-- оптимистичное обновление с возвратом состояния при ошибке;
-- отображение автора и времени последнего изменения в деталях.
+`/queue` показывает только сообщение до публикации orders API.
+[back-office/src/pages/QueuePage.vue:entry](../../back-office/src/pages/QueuePage.vue).
 
-## Меню
+`/availability` показывает только сообщение до публикации availability API.
+[back-office/src/pages/AvailabilityPage.vue:entry](../../back-office/src/pages/AvailabilityPage.vue).
 
-- список категорий и порядок;
-- список товаров внутри категории;
-- формы категорий и товаров;
-- редактор доступных размеров из `S`, `M`, `L` и их цен для напитка либо единой цены для товара без размера;
-- редактор групп добавок;
-- редактор вариантов добавок;
-- выбор бесплатных вариантов по умолчанию для каждой обязательной группы;
-- связь групп добавок с категориями;
-- архивирование с подтверждением;
-- серверная валидация и отображение ошибок у соответствующих полей.
-
-Порядок категорий и товаров меняется 44-пиксельными кнопками вверх и вниз рядом
-со строкой; для первого и последнего элемента недоступное направление
-заблокировано. Формы не требуют числового порядка. Создание добавляет элемент в
-конец, редактирование сохраняет позицию, а смена категории товара ставит его в
-конец выбранной категории. После команды экран ждёт канонический каталог от
-store и не переставляет подтверждённые данные оптимистично.
-
-В форме напитка каждый размер `S`, `M`, `L` сначала выбирается для использования,
-а затем получает цену и независимый признак доступности. Последний выбранный
-размер снять нельзя. Активному напитку нужен хотя бы один доступный размер;
-неактивный напиток допускает все выбранные размеры недоступными. Порядок
-выбранных размеров меняется кнопками вверх и вниз с областью действия не меньше
-44 пикселей; новый выбранный размер добавляется в конец, числового поля порядка
-нет.
-
-В редакторе группы те же действия меняют только локальный порядок вариантов,
-включая новые варианты. Добавление, удаление и перемещение сохраняются одной
-командой агрегата с последовательными `sortOrder` от нуля; промежуточных API-
-запросов перестановки нет. При ошибке черновик остаётся доступен для исправления.
-
-Рабочий экран `/menu` загружает каталог через отдельный API-клиент и Pinia
-store. Команды категорий, товаров, групп, вариантов и назначений блокируют
-параллельное сохранение, после успеха перечитывают каталог, а при ошибке
-сохраняют `requestId` и карту серверных ошибок полей. Архивирование требует
-подтверждения; Barista при прямом переходе на `/menu` возвращается в очередь.
-
-UI-поведение и адаптивность подтверждают [компонентные тесты меню](../../back-office/src/pages/MenuPage.spec.ts),
-[тест редактора группы](../../back-office/src/admin/pages/menu/ModifierGroupEditor.spec.ts),
-Storybook-сценарии [создания](../../back-office/src/stories/admin/menu/MenuAddDialogs.stories.ts),
-[редактирования](../../back-office/src/stories/admin/menu/MenuEditDialogs.stories.ts)
-и [добавок](../../back-office/src/stories/admin/menu/MenuModifiers.stories.ts),
-а также [браузерная проверка Storybook](../../back-office/tests/e2e/navigation.e2e.ts).
-Браузерная проверка принимает story только после завершения `play` и отклоняет
-ошибки `play`, страницы и `console.error`; критические формы размеров проверяются
-на `320`, `768` и `1280` px без горизонтального overflow.
+`OrdersScreen`, `AvailabilityScreen`, `UsersScreen`, `SettingsScreen` не
+зарегистрированы среди active routes. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).

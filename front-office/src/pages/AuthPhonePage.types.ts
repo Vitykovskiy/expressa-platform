@@ -1,1 +1,1 @@
-export type { AuthState as AuthPhonePageState } from "../customer/shared/model/customer.types";
+export type { AuthState as AuthPhonePageState } from "@/entities/customer/model/customer.types";

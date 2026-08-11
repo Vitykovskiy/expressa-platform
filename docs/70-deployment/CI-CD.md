@@ -1,9 +1,34 @@
-# CI/CD
+---
+title: CI и поставка
+type: operations
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../.github/workflows/development-delivery.yml
+  - ../../.github/workflows/staging-deploy.yml
+---
 
-`development-delivery.yml` на `main` вызывает CI backend, front-office и back-office, собирает три образа с SHA коммита и развёртывает их в development.
+# CI и поставка
 
-`staging-deploy.yml` запускается тегом `staging-v*`, читает три immutable digest из [deploy/staging.env](../../deploy/staging.env) и развёртывает их без build. Для обоих путей GitHub environment хранит SSH-параметры VPS и `BOOTSTRAP_ADMIN_PHONE`.
+PR-проверки запускаются отдельно для backend, front-office, back-office и
+delivery scripts. Backend CI включает PostgreSQL integration/e2e, OpenAPI и
+Docker build; client CI включает contract, UI и container проверки. [Backend CI](../../.github/workflows/backend-ci.yml),
+[front CI](../../.github/workflows/front-office-ci.yml), [back CI](../../.github/workflows/back-office-ci.yml),
+[delivery CI](../../.github/workflows/delivery-ci.yml).
 
-`deploy/run-remote.sh` передаёт текущие `deploy.sh` и `compose.yml` через SCP во временный каталог VPS. Файл `/srv/expressa/<environment>/runtime.env` хранит `POSTGRES_PASSWORD`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER`, `CORS_ORIGINS` и переменные OTP-провайдера: `AUTH_DEVELOPMENT_OTP` для development либо `SMS_RU_API_ID` и `SMS_RU_SENDER` для staging. `deploy.sh` проверяет их до миграции, а `compose.yml` передаёт только backend-контейнеру. Секреты не выводятся.
+После main три проверенных образа получают SHA-tag, публикуются в локальный
+registry и передаются по digest в development. Staging проверяет manifest из
+`deploy/staging.env` и развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
+[staging](../../.github/workflows/staging-deploy.yml).
 
-Подтверждённый trace: commit `5b3d2bb45841a276d998e4b6bb5e51aed9af462c`, development run `30750587887`, тег `staging-v0.1.2` и staging run `30750840290`. Это разные deployment set: staging использует manifest digest. После runs оператор отдельно выполнил read-only health, same-origin и DB aggregate проверки; агрегат каждой PostgreSQL содержит одну запись и одного administrator без публикации телефона.
+GitHub SSH-переменные остаются входами runner для соединения с VPS и не
+передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
+`compose.yml` и image manifest; stdin SSH передаёт только `BOOTSTRAP_ADMIN_PHONE`.
+`deploy.sh` читает runtime-секреты и конфигурацию из заранее созданного
+`/srv/expressa/<environment>/runtime.env`. Этот файл содержит
+`POSTGRES_PASSWORD`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER`,
+`CORS_ORIGINS` и OTP-настройку: development `AUTH_DEVELOPMENT_OTP`, staging
+`SMS_RU_API_ID`/`SMS_RU_SENDER`. Значения не печатаются и не входят в GitHub
+workflow. [Development deploy step](../../.github/workflows/development-delivery.yml),
+[staging deploy step](../../.github/workflows/staging-deploy.yml),
+[remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).

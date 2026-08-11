@@ -1,8 +1,9 @@
 import type { Preview } from "@storybook/vue3-vite";
 import { setup } from "@storybook/vue3-vite";
 
-import { vuetify } from "../src/plugins/vuetify";
+import { vuetify } from "../src/app/plugins/vuetify";
 import "../src/styles/main.css";
+import "./preview.css";
 
 setup((app) => {
   app.use(vuetify);

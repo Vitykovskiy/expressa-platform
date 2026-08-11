@@ -1,21 +1,21 @@
 ---
-title: Карта документации front-office
-description: Навигация по текущему устройству клиентского приложения Expressa.
 type: index
-area: front-office
-status: current
-tags: [expressa, front-office, navigation]
-updated: 2026-08-01
+owner: front-office
+last_verified: 2026-08-11
+sources:
+  - ../src/app/router.ts
 ---
 
-# Карта документации front-office
+# Документация front-office
 
-Front-office — автономный Vue-клиент для пользовательских сценариев Expressa. Базовая инициализация находится в [исходном коде приложения](../src/app/).
+Здесь описано фактическое клиентское приложение: маршрут, экран, состояние,
+HTTP-обмен и проверка сценария. Код, тесты, OpenAPI-снимок и конфигурация имеют
+приоритет над текстом. [Источники: маршруты](../src/app/router.ts),
+[проверки](../package.json).
 
-- Клиентское приложение: [точка входа](../src/main.ts), [подключение Pinia и темы Vuetify](../src/app/plugins.ts), [маршруты](../src/app/router.ts), [корневой интерфейс](../src/app/App.vue).
-- Маршруты принадлежат `src/app/router.ts`: `/` — меню, `/cart` — корзина, `/auth/phone` и `/auth/code` — вход, `/orders/:id` — заказ, `/orders` — история заказов. Страницы в `src/pages/` пока являются честными оболочками разделов без данных и действий.
-- Локальное состояние приложения и сессии принадлежит `src/app/`. Оно не содержит API-типов.
-- Интеграция API: [единый клиент](../src/shared/api/client.ts) запрашивает `/api/v1`, проверяет ответы во время выполнения и приводит ошибки к `code`, `message`, `details`, `requestId`. [Снимок OpenAPI](../contracts/openapi.json) сравнивается с backend-компактной копией через `npm run contract:check`.
-- UI: текущая тема Vuetify определена в [plugins.ts](../src/app/plugins.ts); [ErrorNotice](../src/shared/ui/ErrorNotice.vue) показывает ошибку экрана.
-- [Customer Storybook](storybook.md) демонстрирует перенесённые runtime UI,
-  дизайн-систему и эталонный каталог состояний.
+- [Покрытие](COVERAGE.md) — полный реестр runtime-объектов и нотов.
+- [Контур](00-meta/Scope.md) — актор, маршруты и потребляемый API.
+- [Структура](20-architecture/Structure.md), [состояние и API](20-architecture/Application-state-and-API.md).
+- Сценарии: [меню](30-features/Menu-and-configuration.md), [корзина](30-features/Cart-and-checkout.md), [вход](30-features/Authentication-and-returnTo.md), [заказ](30-features/Orders.md).
+- [Контракты UI](30-conventions/UI-contracts.md), [runtime и Storybook](30-conventions/Runtime-and-Storybook.md), [проверки](40-testing/Verification.md).
+- [ADR-001](50-adr/ADR-001-runtime-and-storybook-boundaries.md), [источники](_sources/README.md), [журнал](_journal/README.md).

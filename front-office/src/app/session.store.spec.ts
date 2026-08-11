@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useCartStore } from "../customer/shared/model/cart.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
 import { ApiError, createApiClient } from "../shared/api/client";
 import {
   configureSessionDependencies,

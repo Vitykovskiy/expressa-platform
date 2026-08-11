@@ -2,6 +2,10 @@
 title: Как пользоваться базой знаний
 description: Правила чтения и навигации по документации Expressa.
 type: guide
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../AGENTS.md
 area: meta
 status: current
 tags: [expressa, documentation, navigation]

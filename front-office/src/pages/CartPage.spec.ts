@@ -7,14 +7,14 @@ import { useSessionStore } from "../app/session.store";
 import {
   checkoutErrorCodes,
   checkoutStatuses,
-} from "../customer/pages/checkout/checkout.store.constants";
-import { setCheckoutStoreDependencies } from "../customer/pages/checkout/checkout.store.dependencies";
-import { useCheckoutStore } from "../customer/pages/checkout/checkout.store";
-import { useCartStore } from "../customer/shared/model/cart.store";
-import { useMenuStore } from "../customer/shared/model/menu.store";
+} from "@/features/checkout/checkout.store.constants";
+import { setCheckoutStoreDependencies } from "@/features/checkout/checkout.store.dependencies";
+import { useCheckoutStore } from "@/features/checkout/checkout.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
+import { useMenuStore } from "@/entities/customer/model/menu.store";
 import CartPage from "./CartPage.vue";
 
-vi.mock("../customer/pages/checkout/CartScreen.vue", () => ({
+vi.mock("@/features/checkout/CartScreen.vue", () => ({
   default: {
     emits: [
       "checkout",

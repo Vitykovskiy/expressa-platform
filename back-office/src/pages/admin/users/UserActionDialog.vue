@@ -1,0 +1,351 @@
+<template>
+  <AdminDialog
+    :aria-describedby="descriptionId"
+    :aria-labelledby="titleId"
+    :model-value="open"
+    max-width="400"
+    @after-enter="focusInitialControl"
+    @update:model-value="handleDialogUpdate"
+  >
+    <v-card class="user-action-dialog">
+      <div class="user-action-dialog-header">
+        <h2 :id="titleId" class="user-action-dialog-title">
+          {{ presentation.title }}
+        </h2>
+        <button
+          aria-label="Закрыть"
+          class="user-action-dialog-close"
+          type="button"
+          @click="closeAsCancelled"
+        >
+          ×
+        </button>
+      </div>
+
+      <v-card-text v-if="!isRoleChange" class="user-action-dialog-user">
+        {{ props.user.name }}
+      </v-card-text>
+
+      <v-card-text
+        :id="descriptionId"
+        class="user-action-dialog-description"
+        :class="{
+          'user-action-dialog-description--destructive':
+            props.action === 'block',
+        }"
+      >
+        {{ presentation.description }}
+      </v-card-text>
+
+      <v-card-text v-if="isRoleChange" class="user-action-dialog-roles">
+        <fieldset
+          :id="roleGroupId"
+          aria-label="Роль"
+          class="user-action-dialog-role-group"
+        >
+          <label class="user-action-dialog-role-option">
+            <input
+              ref="roleOption"
+              v-model="selectedRole"
+              name="user-role"
+              type="radio"
+              value="barista"
+            />
+            <span>
+              <strong>Бариста</strong>
+              <small>Заказы и доступность</small>
+            </span>
+          </label>
+          <label class="user-action-dialog-role-option">
+            <input
+              v-model="selectedRole"
+              name="user-role"
+              type="radio"
+              value="administrator"
+            />
+            <span>
+              <strong>Администратор</strong>
+              <small>Полный доступ</small>
+            </span>
+          </label>
+        </fieldset>
+      </v-card-text>
+
+      <v-card-actions class="user-action-dialog-actions">
+        <AdminButton variant="secondary" @click="closeAsCancelled">
+          Отмена
+        </AdminButton>
+        <AdminButton
+          ref="confirmButton"
+          :variant="presentation.confirmVariant"
+          @click="confirmAction"
+        >
+          {{ presentation.confirmLabel }}
+        </AdminButton>
+      </v-card-actions>
+    </v-card>
+  </AdminDialog>
+</template>
+
+<script setup lang="ts">
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
+
+import { DEFAULT_ACTION_USER_ROLE } from "./UserActionDialog.constants";
+import type {
+  FocusableElement,
+  UserActionDialogEmits,
+  UserActionDialogPresentation,
+  UserActionDialogProps,
+} from "./UserActionDialog.types";
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
+
+const props = defineProps<UserActionDialogProps>();
+const open = defineModel<boolean>("open", { required: true });
+const emit = defineEmits<UserActionDialogEmits>();
+const selectedRole = shallowRef(DEFAULT_ACTION_USER_ROLE);
+const returnFocusTarget = shallowRef<FocusableElement | null>(null);
+const roleOption = useTemplateRef<FocusableElement>("roleOption");
+const confirmButton =
+  useTemplateRef<InstanceType<typeof AdminButton>>("confirmButton");
+const titleId = `user-action-dialog-title-${useId()}`;
+const descriptionId = `user-action-dialog-description-${useId()}`;
+const roleGroupId = `user-action-dialog-role-${useId()}`;
+const presentation = computed<UserActionDialogPresentation>(() => {
+  if (props.action === "change_role") {
+    return {
+      title: "Изменить роль",
+      confirmLabel: "Назначить",
+      confirmVariant: "primary",
+      description: props.user.name,
+    };
+  }
+
+  if (props.action === "block") {
+    return {
+      title: "Заблокировать",
+      confirmLabel: "Заблокировать",
+      confirmVariant: "destructive",
+      description:
+        "Пользователь потеряет доступ к системе. Его данные сохранятся.",
+    };
+  }
+
+  return {
+    title: "Разблокировать",
+    confirmLabel: "Разблокировать",
+    confirmVariant: "primary",
+    description: "Пользователь снова получит доступ к системе.",
+  };
+});
+const isRoleChange = computed(() => props.action === "change_role");
+
+function resetDraft(): void {
+  selectedRole.value = props.user.role ?? DEFAULT_ACTION_USER_ROLE;
+}
+
+function closeAsCancelled(): void {
+  resetDraft();
+  open.value = false;
+  emit("cancel");
+}
+
+function handleDialogUpdate(isOpen: boolean): void {
+  if (isOpen) {
+    open.value = true;
+    return;
+  }
+
+  closeAsCancelled();
+}
+
+function confirmAction(): void {
+  emit("confirm", isRoleChange.value ? selectedRole.value : undefined);
+  resetDraft();
+  open.value = false;
+}
+
+function focusInitialControl(): void {
+  if (isRoleChange.value) {
+    roleOption.value?.focus();
+    return;
+  }
+
+  confirmButton.value?.$el.focus();
+}
+
+function isFocusableElement(value: unknown): value is FocusableElement {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "focus" in value &&
+    typeof value.focus === "function"
+  );
+}
+
+watch(open, (isOpen, wasOpen) => {
+  if (isOpen && !wasOpen) {
+    const activeElement = globalThis.document?.activeElement;
+    returnFocusTarget.value = isFocusableElement(activeElement)
+      ? activeElement
+      : null;
+    resetDraft();
+    return;
+  }
+
+  if (!isOpen && wasOpen) {
+    resetDraft();
+    const focusTarget = returnFocusTarget.value;
+    returnFocusTarget.value = null;
+
+    if (focusTarget) {
+      void nextTick(() => focusTarget.focus());
+    }
+  }
+});
+</script>
+
+<style scoped lang="scss">
+.user-action-dialog {
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-surface);
+}
+
+.user-action-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--expressa-space-sm);
+  padding: 20px;
+  padding-bottom: var(--expressa-space-control-inline);
+}
+
+.user-action-dialog-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: var(--expressa-font-weight-semibold);
+  line-height: 25.5px;
+  white-space: normal;
+}
+
+.user-action-dialog-close {
+  display: grid;
+  width: var(--expressa-size-control-min-height);
+  height: var(--expressa-size-control-min-height);
+  flex: 0 0 auto;
+  place-items: center;
+  padding: var(--expressa-space-xs);
+  border: 0;
+  border-radius: var(--expressa-radius-sm);
+  color: var(--expressa-color-text-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.user-action-dialog-close:focus-visible {
+  outline: var(--expressa-focus-ring);
+  outline-offset: var(--expressa-space-2xs);
+}
+
+.user-action-dialog-close:hover {
+  color: var(--expressa-color-text-secondary);
+  background: var(--expressa-color-surface-raised);
+}
+
+.user-action-dialog-description {
+  padding: 0 20px var(--expressa-space-md);
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-action);
+  line-height: 19.5px;
+  white-space: normal;
+}
+
+.user-action-dialog-user {
+  padding: 0 20px var(--expressa-space-md);
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-action);
+  line-height: 19.5px;
+  white-space: normal;
+}
+
+.user-action-dialog-description--destructive {
+  margin: 0 20px 20px;
+  padding: var(--expressa-space-sm) var(--expressa-space-control-inline);
+  border-radius: var(--expressa-radius-sm);
+  color: var(--expressa-color-status-error);
+  background: var(--expressa-color-status-error-surface);
+}
+
+.user-action-dialog-roles {
+  padding: 0 20px 20px;
+}
+
+.user-action-dialog-role-group {
+  display: grid;
+  gap: var(--expressa-space-sm);
+  margin: 0;
+  padding: 0;
+  border: var(--expressa-border-width-none);
+}
+
+.user-action-dialog-role-option {
+  display: flex;
+  min-height: var(--expressa-size-role-option-min-height);
+  align-items: center;
+  gap: var(--expressa-space-control-inline);
+  padding: var(--expressa-space-control-inline);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-md);
+  cursor: pointer;
+}
+
+.user-action-dialog-role-option:has(input:checked) {
+  border-color: var(--expressa-color-accent);
+  background: var(--expressa-color-status-info-surface);
+}
+
+.user-action-dialog-role-option input {
+  width: var(--expressa-size-checkbox);
+  height: var(--expressa-size-checkbox);
+  margin: 0;
+  accent-color: var(--expressa-color-accent);
+}
+
+.user-action-dialog-role-option span {
+  display: grid;
+  gap: 0;
+}
+
+.user-action-dialog-role-option strong {
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-medium);
+  line-height: 21px;
+}
+
+.user-action-dialog-role-option small {
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-caption);
+  line-height: 18px;
+}
+
+.user-action-dialog-actions {
+  display: flex;
+  gap: var(--expressa-space-sm);
+  padding: 0 20px 20px;
+}
+
+.user-action-dialog-actions > .admin-button {
+  flex: 1 1 0;
+}
+</style>

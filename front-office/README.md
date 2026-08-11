@@ -1,7 +1,6 @@
 # Expressa front-office
 
-Автономный клиент Expressa на Vue 3, Vuetify, Pinia и Vite.
-
+Клиентское приложение кофейни: меню, авторизация по телефону, корзина и заказ.
 Используйте Node.js `24.15.0` из `.nvmrc`.
 
 ```bash
@@ -9,20 +8,14 @@ npm ci
 npm run dev
 ```
 
-Проверки:
+Runtime-код лежит в `src`: `app` собирает приложение и сессию, `pages` владеют
+маршрутами, `widgets` — оболочкой, `features` — действиями пользователя,
+`entities` — корзиной и меню, `shared` — HTTP-клиентом и UI-примитивами.
+[Исходник: слои и маршруты](src/app/router.ts).
 
-```bash
-npm run lint
-npm run typecheck
-npm test -- --run
-npm run storybook:build
-npm run test:a11y
-npm run test:visual
-npm run test:e2e
-npm run build
-npm run contract:check
-```
+Storybook запускается `npm run storybook`; он зависит от runtime, а runtime не
+импортирует истории. Истории, fixtures и проверки лежат в `.storybook`.
+[Источник: конфигурация Storybook](.storybook/main.ts).
 
-`npm run test:visual` запускает снимки Storybook через Playwright.
-
-Текущая база знаний: [docs/INDEX.md](docs/INDEX.md).
+Команды проверки — в [package.json](package.json). Сценарии, UI и API описаны в
+[docs/INDEX.md](docs/INDEX.md). Локальные правила: [AGENTS.md](AGENTS.md).

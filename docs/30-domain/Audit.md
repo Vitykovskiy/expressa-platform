@@ -1,12 +1,20 @@
+---
+type: domain
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/src/catalog
+  - ../../backend/test/e2e/admin-catalog.e2e-spec.ts
+---
+
 # Аудит
 
-- **BR-010.** Каждое действие сотрудника по заказу и доступности содержит автора и время.
+Аудит фиксирует изменения каталога, сделанные сотрудником: actor, request id,
+сущность, действие и состояние до/после. Command repositories вызывают
+`writeAudit` через transaction runner; runner задаёт `BEGIN`, `COMMIT` и
+`ROLLBACK`, а command repositories вставляют `audit_events` в переданном
+transaction client. [Источники: runner](../../backend/src/catalog/adapters/postgres-catalog-command.runner.ts), [category repository](../../backend/src/catalog/adapters/postgres-categories.repository.ts), [modifier repository](../../backend/src/catalog/adapters/postgres-modifiers.repository.ts).
 
-- **FR-ADM-010.** Изменения меню и цен записываются в журнал с указанием сотрудника и времени.
-- **FR-AVL-006.** Изменения доступности записываются в журнал с указанием сотрудника и времени.
-
-Команды E06 записывают в `audit_events` идентификаторы автора, запроса и
-сущности, действие, время и состояния до и после изменения. Команда каталога и
-её аудит фиксируются одной транзакцией; это относится к категориям, товарам,
-группам и вариантам добавок, их порядку, архивированию и назначениям
-категориям.
+Аудит не делает availability или очередь заказов активными возможностями сам по
+себе: их route/API-доступность определяется соответствующими контурами.
+[Источник: back-office](../../back-office/docs/INDEX.md).

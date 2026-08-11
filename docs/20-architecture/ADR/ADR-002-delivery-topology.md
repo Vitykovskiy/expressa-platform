@@ -7,6 +7,14 @@ status: accepted
 tags: [expressa, delivery, deployment, vps]
 updated: 2026-08-02
 source_mode: normative
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../../deploy/compose.yml
+  - ../../../deploy/deploy.sh
+  - ../../../deploy/staging.env
+  - ../../../.github/workflows/development-delivery.yml
+  - ../../../.github/workflows/staging-deploy.yml
 requirements: [BL-0014, BL-0018, BL-0019]
 repositories: [expressa-platform]
 related: ["[[../Repository-boundaries]]", "[[../../70-deployment/Environments]]", "[[../../70-deployment/CI-CD]]", "[[../../70-deployment/Operations-runbook]]"]

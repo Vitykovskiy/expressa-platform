@@ -1,3 +1,11 @@
+---
+type: testing
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
+---
+
 # Проверка готовности и выпуска
 
 - **Q-SMOKE.** Чистая база проходит миграции, seed и полный API-маршрут до выдачи заказа.
@@ -113,4 +121,4 @@ checkout. Browser suite содержит шесть сценариев: путь
 - тексты меню и цены;
 - политика обработки персональных данных и пользовательские тексты согласия.
 
-Связанные эпики: [[Epic-roadmap]]. Правила выпуска: [[Release-and-version-compatibility]].
+Связанные эпики: [[../10-overview/Epic-roadmap]]. Правила выпуска: [[../70-deployment/Release-and-version-compatibility]].

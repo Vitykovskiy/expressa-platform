@@ -2,6 +2,10 @@
 title: Роли и доступ
 description: Матрица прав Customer, Barista и Administrator в MVP.
 type: access
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
 area: overview
 status: current
 tags: [expressa, roles, access]

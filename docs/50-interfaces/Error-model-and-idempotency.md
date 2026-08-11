@@ -1,29 +1,20 @@
 ---
-title: Модель ошибок и идемпотентность
-sources: [Expressa_MVP_Техническое_задание.md]
+type: interface
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/src/platform/observability/unified-exception.filter.ts
+  - ../../backend/test/e2e/create-order.e2e-spec.ts
 ---
 
 # Модель ошибок и идемпотентность
 
-## Ключевые коды ошибок
+HTTP-ошибка имеет `code`, `message`, `details`, `requestId`; filter приводит
+исключения к этому формату. Front-office API client сохраняет requestId в
+`ApiError`; отображение зависит от вызывающего экрана.
+[Источники: filter](../../backend/src/platform/observability/unified-exception.filter.ts), [front client](../../front-office/src/shared/api/client.ts).
 
-| Код | Смысл |
-|---|---|
-| `VALIDATION_ERROR` | Ошибка входных данных |
-| `AUTH_CODE_INVALID` | Ошибка одноразового кода |
-| `AUTH_CODE_EXPIRED` | Завершён срок кода |
-| `AUTH_RATE_LIMITED` | Достигнут лимит запросов |
-| `ACCESS_DENIED` | Роль ограничивает действие |
-| `MENU_ITEM_UNAVAILABLE` | Позиция выключена из продажи |
-| `ORDER_TOTAL_CHANGED` | Сервер пересчитал стоимость |
-| `ORDER_INTAKE_CLOSED` | Приём новых заказов выключен |
-| `IDEMPOTENCY_KEY_REUSED` | Ключ повторно использован с другим телом запроса |
-| `RESOURCE_ARCHIVED` | Объект архивирован |
-
-## Создание заказа
-
-Для `POST /api/v1/orders` ключ идемпотентности действует в границе customer.
-Повтор с тем же телом возвращает сохранённый заказ; повтор с другим отпечатком
-запроса возвращает `IDEMPOTENCY_KEY_REUSED`. Ошибки актуализации не создают заказ:
-`ORDER_TOTAL_CHANGED` содержит новый `totalMinor`, а `MENU_ITEM_UNAVAILABLE` —
-идентификатор затронутой позиции. `ORDER_INTAKE_CLOSED` не требует деталей.
+`POST /api/v1/orders` требует `Idempotency-Key` в границе customer: одинаковый
+ключ и тело возвращают сохранённый заказ, другой body с ключом даёт conflict,
+а разные customer могут использовать один ключ. Пересчёт суммы и недоступная
+позиция заказа не создают. [Источники: unit of work](../../backend/src/orders/adapters/postgres-order-unit-of-work.ts), [multi-customer E2E](../../backend/test/e2e/create-order.e2e-spec.ts), [OpenAPI](../../backend/openapi/openapi.json).

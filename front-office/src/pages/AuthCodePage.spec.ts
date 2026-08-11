@@ -9,7 +9,7 @@ import { useSessionStore } from "../app/session.store";
 import type { SessionDependencies } from "../app/session.store.types";
 import AuthCodePage from "./AuthCodePage.vue";
 
-vi.mock("../customer/pages/auth/AuthScreen.vue", () => ({
+vi.mock("@/features/auth/AuthScreen.vue", () => ({
   default: {
     emits: ["sendCode", "verifyOtp"],
     template:

@@ -1,39 +1,42 @@
 ---
 title: API back-office
-sources: [Expressa_MVP_Техническое_задание.md]
+type: interface
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/openapi/openapi.json
+  - ../../backend/src/catalog/transport/admin-catalog.controller.ts
+  - ../../backend/src/catalog/transport/catalog-categories.controller.ts
+  - ../../backend/src/catalog/transport/catalog-products.controller.ts
+  - ../../backend/src/catalog/transport/catalog-modifiers.controller.ts
+  - ../../backend/src/catalog/transport/catalog-category-modifiers.controller.ts
 ---
 
 # API back-office
 
-| Метод и путь | Роль | Назначение |
+| Контракт | Обработчик | Источник |
 |---|---|---|
-| `GET /backoffice/catalog` | Administrator | Полный рабочий каталог |
-| `POST /backoffice/catalog/categories` | Administrator | Создание категории |
-| `PATCH /backoffice/catalog/categories/{categoryId}` | Administrator | Изменение категории |
-| `POST /backoffice/catalog/categories/reorder` | Administrator | Полная перестановка категорий |
-| `DELETE /backoffice/catalog/categories/{categoryId}` | Administrator | Архивирование категории |
-| `POST /backoffice/catalog/products` | Administrator | Создание товара с ценой или вариантами размеров |
-| `PATCH /backoffice/catalog/products/{productId}` | Administrator | Изменение товара |
-| `POST /backoffice/catalog/products/reorder` | Administrator | Полная перестановка товаров категории |
-| `DELETE /backoffice/catalog/products/{productId}` | Administrator | Архивирование товара |
-| `POST /backoffice/catalog/modifier-groups` | Administrator | Создание группы добавок |
-| `PATCH /backoffice/catalog/modifier-groups/{groupId}` | Administrator | Изменение агрегата группы и вариантов |
-| `DELETE /backoffice/catalog/modifier-groups/{groupId}` | Administrator | Архивирование группы |
-| `POST /backoffice/catalog/modifier-groups/{groupId}/options` | Administrator | Создание варианта добавки |
-| `PATCH /backoffice/catalog/modifier-groups/options/{optionId}` | Administrator | Изменение варианта добавки |
-| `POST /backoffice/catalog/modifier-groups/{groupId}/options/reorder` | Administrator | Полная перестановка вариантов |
-| `DELETE /backoffice/catalog/modifier-groups/options/{optionId}` | Administrator | Архивирование варианта |
-| `PUT /backoffice/catalog/categories/{categoryId}/modifier-groups` | Administrator | Замена упорядоченных назначений групп категории |
-| `GET /backoffice/orders` | Staff | Очередь и фильтры |
-| `GET /backoffice/orders/{id}` | Staff | Детали заказа |
-| `POST /backoffice/orders/{id}/accept` | Staff | Стадия `Принят` |
-| `POST /backoffice/orders/{id}/start-preparing` | Staff | Стадия `Готовится` |
-| `POST /backoffice/orders/{id}/mark-ready` | Staff | Стадия `Готов` |
-| `POST /backoffice/orders/{id}/issue` | Staff | Стадия `Выдан` |
-| `PATCH /backoffice/availability/{type}/{id}` | Staff | Оперативная доступность |
-| `PATCH /backoffice/service/intake` | Staff | Включение и выключение приёма новых заказов |
+| `GET /api/v1/backoffice/catalog` | `AdminCatalogController.getCatalog` → `GetAdminCatalogUseCase.execute` | [GET /api/v1/backoffice/catalog](../../backend/openapi/openapi.json), [backend/src/catalog/transport/admin-catalog.controller.ts:getCatalog](../../backend/src/catalog/transport/admin-catalog.controller.ts), [backend/src/catalog/application/get-admin-catalog.use-case.ts:execute](../../backend/src/catalog/application/get-admin-catalog.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/categories` | `CatalogCategoriesController.create` → `ManageCategoriesUseCase.create` | [POST /api/v1/backoffice/catalog/categories](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-categories.controller.ts:create](../../backend/src/catalog/transport/catalog-categories.controller.ts), [backend/src/catalog/application/manage-categories.use-case.ts:create](../../backend/src/catalog/application/manage-categories.use-case.ts) |
+| `PATCH /api/v1/backoffice/catalog/categories/{categoryId}` | `CatalogCategoriesController.update` → `ManageCategoriesUseCase.update` | [PATCH /api/v1/backoffice/catalog/categories/{categoryId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-categories.controller.ts:update](../../backend/src/catalog/transport/catalog-categories.controller.ts), [backend/src/catalog/application/manage-categories.use-case.ts:update](../../backend/src/catalog/application/manage-categories.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/categories/reorder` | `CatalogCategoriesController.reorder` → `ManageCategoriesUseCase.reorder` | [POST /api/v1/backoffice/catalog/categories/reorder](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-categories.controller.ts:reorder](../../backend/src/catalog/transport/catalog-categories.controller.ts), [backend/src/catalog/application/manage-categories.use-case.ts:reorder](../../backend/src/catalog/application/manage-categories.use-case.ts) |
+| `DELETE /api/v1/backoffice/catalog/categories/{categoryId}` | `CatalogCategoriesController.archive` → `ManageCategoriesUseCase.archive` | [DELETE /api/v1/backoffice/catalog/categories/{categoryId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-categories.controller.ts:archive](../../backend/src/catalog/transport/catalog-categories.controller.ts), [backend/src/catalog/application/manage-categories.use-case.ts:archive](../../backend/src/catalog/application/manage-categories.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/products` | `CatalogProductsController.create` → `ManageProductsUseCase.create` | [POST /api/v1/backoffice/catalog/products](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-products.controller.ts:create](../../backend/src/catalog/transport/catalog-products.controller.ts), [backend/src/catalog/application/manage-products.use-case.ts:create](../../backend/src/catalog/application/manage-products.use-case.ts) |
+| `PATCH /api/v1/backoffice/catalog/products/{productId}` | `CatalogProductsController.update` → `ManageProductsUseCase.update` | [PATCH /api/v1/backoffice/catalog/products/{productId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-products.controller.ts:update](../../backend/src/catalog/transport/catalog-products.controller.ts), [backend/src/catalog/application/manage-products.use-case.ts:update](../../backend/src/catalog/application/manage-products.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/products/reorder` | `CatalogProductsController.reorder` → `ManageProductsUseCase.reorder` | [POST /api/v1/backoffice/catalog/products/reorder](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-products.controller.ts:reorder](../../backend/src/catalog/transport/catalog-products.controller.ts), [backend/src/catalog/application/manage-products.use-case.ts:reorder](../../backend/src/catalog/application/manage-products.use-case.ts) |
+| `DELETE /api/v1/backoffice/catalog/products/{productId}` | `CatalogProductsController.archive` → `ManageProductsUseCase.archive` | [DELETE /api/v1/backoffice/catalog/products/{productId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-products.controller.ts:archive](../../backend/src/catalog/transport/catalog-products.controller.ts), [backend/src/catalog/application/manage-products.use-case.ts:archive](../../backend/src/catalog/application/manage-products.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/modifier-groups` | `CatalogModifiersController.createGroup` → `ManageModifiersUseCase.createGroup` | [POST /api/v1/backoffice/catalog/modifier-groups](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:createGroup](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:createGroup](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `PATCH /api/v1/backoffice/catalog/modifier-groups/{groupId}` | `CatalogModifiersController.updateGroup` → `ManageModifiersUseCase.updateGroup` | [PATCH /api/v1/backoffice/catalog/modifier-groups/{groupId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:updateGroup](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:updateGroup](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `DELETE /api/v1/backoffice/catalog/modifier-groups/{groupId}` | `CatalogModifiersController.archiveGroup` → `ManageModifiersUseCase.archiveGroup` | [DELETE /api/v1/backoffice/catalog/modifier-groups/{groupId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:archiveGroup](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:archiveGroup](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options` | `CatalogModifiersController.createOption` → `ManageModifiersUseCase.createOption` | [POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:createOption](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:createOption](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `PATCH /api/v1/backoffice/catalog/modifier-groups/options/{optionId}` | `CatalogModifiersController.updateOption` → `ManageModifiersUseCase.updateOption` | [PATCH /api/v1/backoffice/catalog/modifier-groups/options/{optionId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:updateOption](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:updateOption](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder` | `CatalogModifiersController.reorderOptions` → `ManageModifiersUseCase.reorderOptions` | [POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:reorderOptions](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:reorderOptions](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `DELETE /api/v1/backoffice/catalog/modifier-groups/options/{optionId}` | `CatalogModifiersController.archiveOption` → `ManageModifiersUseCase.archiveOption` | [DELETE /api/v1/backoffice/catalog/modifier-groups/options/{optionId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:archiveOption](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:archiveOption](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
+| `PUT /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups` | `CatalogCategoryModifiersController.replace` → `ManageCategoryModifiersUseCase.replace` | [PUT /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-category-modifiers.controller.ts:replace](../../backend/src/catalog/transport/catalog-category-modifiers.controller.ts), [backend/src/catalog/application/manage-category-modifiers.use-case.ts:replace](../../backend/src/catalog/application/manage-category-modifiers.use-case.ts) |
 
-Все пути таблицы имеют префикс `/api/v1`. Для ошибок правил каталога API
-возвращает `400 VALIDATION_ERROR`; `details.fields` содержит `path` и `reason`,
-а общий envelope — диагностический `requestId`. Полный контракт тел и ответов —
-[OpenAPI](../../backend/openapi/openapi.json).
+Неверное тело каталожной команды возвращает `VALIDATION_ERROR` с
+`details.fields`; эта структура описана и в OpenAPI.
+[backend/src/catalog/transport/catalog-validation-error.ts:validationError](../../backend/src/catalog/transport/catalog-validation-error.ts), [POST /api/v1/backoffice/catalog/categories](../../backend/openapi/openapi.json).
+
+Единый exception filter добавляет `requestId` к каждому HTTP error response.
+[backend/src/platform/observability/unified-exception.filter.ts:UnifiedExceptionFilter](../../backend/src/platform/observability/unified-exception.filter.ts).

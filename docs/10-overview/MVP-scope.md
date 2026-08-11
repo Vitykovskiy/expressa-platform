@@ -2,6 +2,10 @@
 title: Границы MVP
 description: Функции первого выпуска Expressa и границы продуктового решения.
 type: scope
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
 area: overview
 status: current
 tags: [expressa, mvp, scope]

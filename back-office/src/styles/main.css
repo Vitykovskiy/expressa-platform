@@ -135,8 +135,7 @@
 
 html,
 body,
-#app,
-#storybook-root {
+#app {
   min-height: 100%;
   margin: 0;
 }

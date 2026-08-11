@@ -1,38 +1,36 @@
 ---
-title: Индекс документации back-office
-description: Навигация по исходным кодам и правилам автономного рабочего приложения Expressa.
 type: index
-area: back-office
-status: current
-tags: [expressa, back-office, navigation]
-updated: 2026-08-01
+owner: back-office
+last_verified: 2026-08-11
+sources:
+  - ../src/app/router.ts
+  - ../src/pages/MenuPage.vue
 ---
 
 # Индекс документации back-office
 
-## Запуск и проверки
+Back-office — отдельное Vue-приложение сотрудников. Этот индекс — MOC: runtime обслуживает вход и меню администратора; `/queue` и `/availability` сохранены как защищённые заглушки.
 
-- [README приложения](../README.md) содержит версию Node.js, запуск и команды проверок.
-- [Точка входа](../src/main.ts) создаёт Vue-приложение и подключает плагины.
-- [plugins.ts](../src/app/plugins.ts) подключает Pinia и тему Vuetify.
-- [Корневой интерфейс](../src/app/App.vue) отображает базовую рабочую оболочку.
+## Запуск и проверка
 
-## Рабочие разделы и ответственность
+- [README приложения](../README.md) задаёт Node.js, установку и основные команды.
+- [Проверки](95-testing/README.md) перечисляют команды из `package.json` и их назначение.
+- [Покрытие](COVERAGE.md) связывает маршруты, runtime, API и тесты с нормативными нотами.
 
-- [Маршруты](../src/app/router.ts) связывают URL с оболочками входа, очереди, доступности и меню.
-- [Локальная навигация](../src/app/navigation.ts) содержит статический список рабочих разделов.
-- [Страницы](../src/pages/) содержат оболочки входа, очереди, доступности и меню до публикации предметных API и авторизации.
-- [API-клиент](../src/shared/api/client.ts) использует `/api/v1`, проверяет каждый ответ во время выполнения и возвращает единый объект ошибки.
-- [Снимок OpenAPI](../contracts/openapi.json) проверяется командой `npm run contract:check` посимвольно с `../backend/openapi/openapi.json`.
+## Текущее поведение
 
-## Ноты устройства
+- [Вход и роли](30-domains/Authentication-and-role-gates.md) — активный `/login`, восстановление сессии и доступ по ролям.
+- [Управление каталогом](30-domains/Catalog-management.md) — активный `/menu`: данные, действия, validation, диалоги и ошибки.
+- [Неактивные экраны](30-domains/Inactive-screens.md) — точные границы placeholder-маршрутов и Storybook-only компонентов.
+- [Маршруты](30-domains/working-areas-and-routes.md) — компактная карта URL и перенаправлений.
+- [API-интеграция](30-domains/api-integration-and-errors.md) — транспортная граница и OpenAPI-снимок.
+- [Архитектура UI](10-architecture/ui-ownership.md) — владельцы состояния, responsive и accessibility-границы.
 
-- [Рабочие разделы и маршруты](working-areas-and-routes.md) описывают статическую навигацию и маршруты оболочки.
-- [API-интеграция и граница ошибок](api-integration-and-errors.md) описывает HTTP-клиент, снимок OpenAPI и безопасное состояние ошибки экрана.
-- [Владение UI](ui-ownership.md) фиксирует границы оболочки, страниц, store и UI-примитивов.
-- [Admin Storybook](storybook.md) описывает перенесённые runtime UI,
-  дизайн-систему и эталонный каталог состояний.
+## Устройство и каталог UI
+
+- [Storybook](95-testing/storybook.md) документирует изолированный каталог из 96 записей, включая orphan-экраны.
+- [Размещение кода](80-conventions/code-layout.md) и [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) фиксируют границу runtime/Storybook.
 
 ## Структура исходного кода
 
-Исходный код следует направлению `app -> pages -> widgets -> features -> entities -> shared`; подробные правила размещения описаны в [Definition of Done back-office](../../docs/80-conventions/Code-Definition-of-Done-back-office.md).
+Исходный код следует направлению `app -> pages -> widgets -> features -> entities -> shared`; локальное правило — в [Размещении кода](80-conventions/code-layout.md), DoD — в [корневой конвенции](../../docs/80-conventions/Code-Definition-of-Done-back-office.md).

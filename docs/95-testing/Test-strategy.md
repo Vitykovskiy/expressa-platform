@@ -1,3 +1,11 @@
+---
+type: testing
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
+---
+
 # Требования к качеству и уровни тестирования
 
 ## Безопасность

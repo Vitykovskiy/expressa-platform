@@ -1,13 +1,12 @@
 ---
 title: Документация back-office
-description: Точка входа в документацию автономного рабочего приложения Expressa.
-type: guide
-area: back-office
-status: current
-tags: [expressa, back-office, documentation]
-updated: 2026-08-01
+type: index
+owner: back-office
+last_verified: 2026-08-11
+sources:
+  - INDEX.md
 ---
 
 # Документация back-office
 
-Эта база знаний описывает автономное рабочее приложение Expressa. Главная навигация и актуальные источники находятся в [[INDEX]].
+Документация описывает текущий runtime, API-границу и проверки back-office. Начните с [индекса](INDEX.md); полнота привязки исходников — в [COVERAGE](COVERAGE.md).

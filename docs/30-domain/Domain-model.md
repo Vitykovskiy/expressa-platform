@@ -1,59 +1,53 @@
+---
+title: Доменная модель
+type: domain
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/migrations/0002_e01_core_schema.sql
+  - ../../backend/migrations/0003_e04_auth.sql
+  - ../../backend/migrations/0004_e05_catalog.sql
+  - ../../backend/migrations/0005_e06_catalog_admin.sql
+  - ../../backend/migrations/0006_e07_orders.sql
+---
+
 # Доменная модель
 
-## 10. Доменная модель
+Пользователь хранит E.164-телефон и роль; роли ограничены `customer`,
+`barista`, `administrator`. [backend/migrations/0002_e01_core_schema.sql:users](../../backend/migrations/0002_e01_core_schema.sql).
 
-### 10.1. Основные сущности
+OTP challenge хранит хеш кода, срок, попытки и потребление.
+[backend/migrations/0003_e04_auth.sql:otp_challenges](../../backend/migrations/0003_e04_auth.sql).
 
-| Сущность | Ключевые поля |
-|---|---|
-| `User` | `id`, `phone_e164`, `role`, `created_at`, `updated_at` |
-| `OtpChallenge` | `id`, `phone_e164`, `code_hash`, `expires_at`, `attempts`, `consumed_at`, `sent_at` |
-| `Session` | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at`, `rotated_at` |
-| `Category` | `id`, `name`, `description`, `sort_order`, `is_active`, `archived_at` |
-| `Product` | `id`, `category_id`, `type`, `name`, `description`, `price_minor`, `sort_order`, `is_active`, `is_available`, `archived_at` |
-| `ProductVariant` | `id`, `product_id`, `size`, `price_minor`, `sort_order`, `is_available`, `archived_at` |
-| `ModifierGroup` | `id`, `name`, `selection_type`, `min_select`, `max_select`, `is_active`, `archived_at` |
-| `ModifierOption` | `id`, `group_id`, `name`, `price_delta_minor`, `sort_order`, `is_default`, `is_available`, `archived_at` |
-| `CategoryModifierGroup` | `category_id`, `group_id`, `sort_order` |
-| `Order` | `id`, `number`, `customer_id`, `stage`, `total_minor`, timestamps |
-| `OrderItem` | `id`, `order_id`, `product_id`, `variant_id` при наличии, snapshot-поля товара и размера напитка при наличии, `quantity`, `unit_total_minor`, `line_total_minor` |
-| `OrderItemModifier` | `id`, `order_item_id`, `modifier_option_id`, snapshot-поля добавки и цены |
-| `OrderEvent` | `id`, `order_id`, `event_type`, `actor_id`, payload, `created_at` |
-| `AuditEvent` | `id`, `actor_id`, `entity_type`, `entity_id`, `action`, payload, `created_at` |
-| `ServiceSetting` | `key`, `value`, `updated_by`, `updated_at` |
+Session хранит пользователя, хеш refresh token, срок, отзыв и ротацию.
+[backend/migrations/0003_e04_auth.sql:sessions](../../backend/migrations/0003_e04_auth.sql).
 
-Расшифровка неочевидных полей:
+Каталог хранит категории.
+[backend/migrations/0004_e05_catalog.sql:categories](../../backend/migrations/0004_e05_catalog.sql).
 
-- `selection_type` — режим выбора вариантов добавок: `single` разрешает выбрать один вариант, `multiple` — несколько;
-- `min_select` — минимальное количество вариантов, которое нужно выбрать в группе;
-- `max_select` — максимальное количество вариантов, которое можно выбрать в группе;
-- `is_default` — признак добавки, выбранной заранее;
-- `is_active` — признак публикации элемента в меню;
-- `is_available` — возможность заказать товар, размер напитка или добавку в текущий момент;
-- `sort_order` — позиция элемента при отображении;
-- поля с окончанием `_minor` хранят денежную сумму в целых копейках;
-- `archived_at` — время архивирования элемента;
-- snapshot-поля — сохранённые в заказе название, размер и цена на момент оформления;
-- `payload` — дополнительные данные события.
+Каталог хранит товары.
+[backend/migrations/0004_e05_catalog.sql:products](../../backend/migrations/0004_e05_catalog.sql).
 
-### 10.2. Целостность
+Каталог хранит варианты товаров.
+[backend/migrations/0004_e05_catalog.sql:product_variants](../../backend/migrations/0004_e05_catalog.sql).
 
-- номера телефонов уникальны после нормализации;
-- номер `User` и `OtpChallenge` хранится как российский E.164 `+7` и десять цифр;
-- роль `User` принимает значения `customer`, `barista` или `administrator`; новый пользователь после успешного OTP получает роль `customer`;
-- на номер существует не более одного неиспользованного `OtpChallenge`; его резервирование и проверка выполняются атомарно;
-- OTP состоит из шести цифр, действует 5 минут, допускает до 5 попыток, а новый запрос для номера доступен через 60 секунд;
-- `Session` принадлежит существующему `User`, хранит только хеш refresh token и действует 30 дней; ротация заменяет хеш без продления срока;
-- активная сессия не отозвана и не истекла; доступ к защищённому действию определяется её текущим пользователем и ролью;
-- порядок категории уникален среди активных категорий;
-- порядок товара уникален внутри категории;
-- тип товара принимает значения `DRINK` и `OTHER`;
-- напиток содержит один или несколько размеров из `S`, `M`, `L`, каждый размер уникален внутри напитка;
-- товар типа `OTHER` содержит одну цену и не имеет вариантов размера;
-- опубликованный напиток содержит хотя бы один доступный размер; `M` выбирается по умолчанию, если доступен;
-- минимальное количество выбранных добавок не превышает максимальное: `min_select ≤ max_select`;
-- при `selection_type = single` используется `max_select = 1`;
-- для обязательной группы требуется выбрать хотя бы одну добавку: `min_select ≥ 1`;
-- количество доступных вариантов по умолчанию в обязательной группе находится между `min_select` и `max_select`, каждый такой вариант имеет нулевое изменение цены;
-- цена товара, цена размера напитка и изменение цены добавки представлены целыми копейками;
-- создание заказа и фиксация снимков выполняются одной транзакцией;
+Группы модификаторов хранят варианты модификаторов.
+[backend/migrations/0004_e05_catalog.sql:modifier_options](../../backend/migrations/0004_e05_catalog.sql).
+
+`category_modifier_groups` назначает группы категориям.
+[backend/migrations/0004_e05_catalog.sql:category_modifier_groups](../../backend/migrations/0004_e05_catalog.sql).
+
+`audit_events` хранит автора, действие, состояния до/после и request id для
+изменений. [backend/migrations/0005_e06_catalog_admin.sql:audit_events](../../backend/migrations/0005_e06_catalog_admin.sql).
+
+Заказ хранит customer, idempotency key, итог и номер UTC-дня.
+[backend/migrations/0006_e07_orders.sql:orders](../../backend/migrations/0006_e07_orders.sql).
+
+Позиции заказа сохраняют снимки имён и цен.
+[backend/migrations/0006_e07_orders.sql:order_items](../../backend/migrations/0006_e07_orders.sql).
+
+Модификаторы заказа сохраняют снимки имени и изменения цены.
+[backend/migrations/0006_e07_orders.sql:order_item_modifiers](../../backend/migrations/0006_e07_orders.sql).
+
+`service_settings` содержит `accepts_new_orders`.
+[backend/migrations/0006_e07_orders.sql:service_settings](../../backend/migrations/0006_e07_orders.sql).

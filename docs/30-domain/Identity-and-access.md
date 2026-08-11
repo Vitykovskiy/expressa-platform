@@ -1,10 +1,20 @@
+---
+type: domain
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/src/auth/domain/otp-policy.constants.ts
+  - ../../backend/src/auth/transport/auth.controller.ts
+---
+
 # Идентификация и доступ
 
-- **BR-002.** Оформление заказа требует подтверждённого номера телефона.
-- **BR-022.** Вход сохраняет текущую корзину, явный выход из учётной записи очищает её.
+OTP нормализует телефон, принимает шесть цифр, действует пять минут, допускает
+пять попыток и повторный запрос через 60 секунд. Успешная проверка создаёт или
+находит customer и сессию. [Источники: policy](../../backend/src/auth/domain/otp-policy.constants.ts), [verify](../../backend/src/auth/application/verify-otp.use-case.ts).
 
-Телефон нормализуется к российскому E.164. OTP действует 5 минут, допускает до 5 попыток и может быть повторно запрошен через 60 секунд. Успешная проверка находит или создаёт `customer`; доступ back-office получают только `barista` и `administrator`.
-
-Access token живёт 15 минут и передаётся в Bearer-заголовке только в памяти клиента. Refresh token хранится в HttpOnly-cookie, при каждом обновлении ротируется и завершает сессию при явном выходе. Backend сверяет каждое защищённое действие с действующей сессией и актуальной ролью в БД.
-
-Front-office восстанавливает сессию после перезагрузки. Защищённый переход возвращается только на внутренний `returnTo`; корзина остаётся до успешного явного logout, после которого очищается и больше не восстанавливается. Детали обмена определяет [API аутентификации](../50-interfaces/Authentication-API.md).
+Access token живёт в памяти front- и back-office session stores и идёт в Bearer;
+refresh token — HttpOnly strict cookie, ротируется при refresh и отзывается при
+logout. Session guard проверяет сессию и актуальную роль; back-office доступен
+barista/administrator. Front-office принимает только внутренний `returnTo` и
+очищает cart store при успешном logout. [Источники: front session](../../front-office/src/app/session.store.ts), [back session](../../back-office/src/app/session.store.ts), [controller](../../backend/src/auth/transport/auth.controller.ts), [guard](../../backend/src/auth/transport/session.guard.ts), [cart](../../front-office/src/entities/customer/model/cart.store.ts).

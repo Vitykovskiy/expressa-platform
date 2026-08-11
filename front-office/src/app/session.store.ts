@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import { useCartStore } from "../customer/shared/model/cart.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
 import { ApiError } from "../shared/api/client";
 import {
   anonymousSessionState,

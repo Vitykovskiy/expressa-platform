@@ -1,23 +1,12 @@
 # Expressa back-office
 
-Автономное рабочее приложение Expressa на Vue 3, Vuetify, Pinia и Vite.
+Рабочее Vue-приложение сотрудников Expressa. В текущем runtime доступны вход по одноразовому коду и управление каталогом для администратора; очередь и доступность — защищённые экраны-заглушки.
 
-Используйте Node.js `24.15.0` из `.nvmrc`.
+Требуется Node.js `24.15.0`.
 
-```bash
+```sh
 npm ci
 npm run dev
 ```
 
-Проверки:
-
-```bash
-npm run lint
-npm run typecheck
-npm test -- --run
-npm run build
-npm audit --audit-level=high
-npm run contract:check
-```
-
-Текущая база знаний: [docs/INDEX.md](docs/INDEX.md).
+Основные проверки: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --run`, `npm run build`, `npm run contract:check`. Полный набор Storybook и E2E — в [документации](docs/INDEX.md).

@@ -3,9 +3,9 @@ import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useCartStore } from "../customer/shared/model/cart.store";
-import { setMenuStoreDependencies } from "../customer/shared/model/menu.store.dependencies";
-import { useMenuStore } from "../customer/shared/model/menu.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
+import { setMenuStoreDependencies } from "@/entities/customer/model/menu.store.dependencies";
+import { useMenuStore } from "@/entities/customer/model/menu.store";
 import MenuPage from "./MenuPage.vue";
 
 let router = createRouter({ history: createMemoryHistory(), routes: [] });

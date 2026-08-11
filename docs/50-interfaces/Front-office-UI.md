@@ -1,75 +1,60 @@
 ---
 title: Интерфейс front-office
-sources: [Expressa_MVP_Техническое_задание.md]
+type: interface
+owner: root
+implementation_status: current
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/src/app/router.ts
+  - ../../front-office/src/entities/customer/model/menu.store.ts
+  - ../../front-office/src/features/checkout/checkout.store.ts
+  - ../../front-office/src/pages/CartPage.vue
 ---
 
 # Интерфейс front-office
 
-- **TR-FO-001.** Front-office содержит локальные маршруты, stores, API-клиент, компоненты, конфигурацию и обработку ошибок.
+## Активные границы
 
-## Маршруты
+Маршрутизатор регистрирует меню, корзину, OTP, текущий заказ и `/orders`.
+[front-office/src/app/router.ts:router](../../front-office/src/app/router.ts).
 
-| Путь | Экран |
-|---|---|
-| `/` | Меню |
-| `/cart` | Корзина |
-| `/auth/phone` | Ввод телефона |
-| `/auth/code` | Ввод кода |
-| `/orders/:id` | Результат только что созданного заказа из checkout-store |
-| `/orders` | Заглушка будущей истории заказов; реализация относится к E10 |
+`customerNavigationGuard` защищает маршруты заказа и направляет анонима на
+вход. [front-office/src/app/router.ts:customerNavigationGuard](../../front-office/src/app/router.ts).
 
-## Аутентификация и сессия
+`getSafeReturnTo` принимает только внутренний путь и отбрасывает auth paths.
+[front-office/src/app/router.ts:getSafeReturnTo](../../front-office/src/app/router.ts).
 
-При запуске приложение сначала восстанавливает корзину, затем вызывает refresh и при его успехе — `/api/v1/me`; до завершения этой проверки экран не показывается. Access token хранится только в памяти, refresh-cookie браузер отправляет с credentials.
+Страница меню показывает loading, error с повтором и empty.
+[front-office/src/pages/MenuPage.vue:entry](../../front-office/src/pages/MenuPage.vue).
 
-- Экран телефона запрашивает OTP; экран кода доступен только пока в памяти есть неистёкший запрос. Иначе пользователь возвращается к телефону с понятной причиной.
-- `returnTo` принимается только как внутренний путь приложения, не ведёт на экран аутентификации и используется после успешного входа.
-- Маршруты `/orders` и `/orders/:id` требуют роль `customer`; неавторизованный пользователь направляется на телефон с исходным `returnTo`.
-- Корзина остаётся локальной при входе и обновлении страницы. Оформление гостя ведёт на телефон и возвращает в `/cart`; корзина очищается после успешного создания заказа либо успешного явного logout.
+`useMenuStore` получает публичное меню и сохраняет result/error.
+[front-office/src/entities/customer/model/menu.store.ts:useMenuStore](../../front-office/src/entities/customer/model/menu.store.ts).
 
-## Экран меню
+Корзина передаёт checkout-state в `CartScreen`; при закрытом intake, submitting
+или недоступных позициях кнопка оформления блокируется. [front-office/src/features/checkout/CartScreen.vue:entry](../../front-office/src/features/checkout/CartScreen.vue).
 
-- Меню загружается из `GET /api/v1/public/menu`; экран различает загрузку, ошибку с повтором, пустое меню и полученные категории.
-- мобильная компоновка с категориями и карточками товаров;
-- состояние приёма новых заказов в верхней части;
-- быстрый переход к корзине с количеством и суммой;
-- карточка напитка показывает цену от минимального размера, карточка остальных товаров — единую цену;
-- визуальное состояние выключенной доступности;
-- скелетон загрузки, пустое состояние и сообщение об ошибке;
-- сохранение позиции прокрутки при возврате из карточки.
+`checkout` вызывает confirm либо retry сетевой ошибки.
+[front-office/src/pages/CartPage.vue:checkout](../../front-office/src/pages/CartPage.vue).
 
-Для конфигурации напитка выбирается доступный `M`, иначе другой доступный вариант; обязательные бесплатные добавки по умолчанию выбираются до первого действия пользователя. Локальная корзина объединяет одинаковую конфигурацию, меняет количество и сохраняется в браузере. Оформление и актуализация цены используют отдельный orders API и не входят в публичный menu read-model; история пока не реализована.
+`reconfirm` отправляет явное повторное подтверждение итога.
+[front-office/src/pages/CartPage.vue:reconfirm](../../front-office/src/pages/CartPage.vue).
 
-## Карточка товара
+`finishCheckout` после успешного ответа очищает корзину и открывает
+`/orders/:id`. [front-office/src/pages/CartPage.vue:finishCheckout](../../front-office/src/pages/CartPage.vue).
 
-- у напитка заранее выбран доступный размер: `M`, если он доступен, иначе — другой доступный размер; для остальных товаров элемент выбора размера отсутствует;
-- выбор одной или нескольких добавок в зависимости от настроек группы;
-- бесплатные варианты по умолчанию заранее выбраны во всех обязательных группах;
-- пользователь может изменить размер и добавки в допустимых пределах;
-- счётчик количества;
-- динамический расчёт цены;
-- интерфейс не позволяет оставить обязательную группу без минимального количества вариантов или превысить максимум;
-- кнопка добавления в корзину доступна сразу после открытия опубликованного и доступного товара;
-- состояние длинного названия и большого количества добавок.
+Тест `CartPage` проверяет retry, reconfirm и переход после успешного заказа.
+[front-office/src/pages/CartPage.spec.ts:CartPage](../../front-office/src/pages/CartPage.spec.ts).
 
-## Корзина
+`useCheckoutStore` вызывает `ordersApi.createOrder`.
+[front-office/src/features/checkout/checkout.store.ts:useCheckoutStore](../../front-office/src/features/checkout/checkout.store.ts).
 
-- список конфигураций;
-- изменение количества;
-- удаление;
-- итоговая сумма;
-- пояснение о постоплате;
-- переход к авторизации либо оформлению;
-- сохранение корзины после входа и обновления страницы, очистка после успешного заказа либо успешного явного выхода;
-- обработка актуализации цены и доступности.
+Изменение итога переводит checkout в reconfirmation, недоступность и закрытый
+intake — в error state.
+[front-office/src/features/checkout/checkout.store.ts:handleError](../../front-office/src/features/checkout/checkout.store.ts).
 
-## Заказ и история
+`createOrdersApi` отправляет `POST /api/v1/orders` с Bearer token и
+idempotency key; API остаётся источником созданного заказа.
+[front-office/src/shared/api/orders.api.ts:createOrdersApi](../../front-office/src/shared/api/orders.api.ts).
 
-После успешного `POST /api/v1/orders` приложение сохраняет ответ checkout-store,
-очищает корзину и открывает `/orders/:id`. Страница показывает номер, текст
-`Заказ принят`, состав конфигураций и итог только из этого ответа. При прямом
-открытии или перезагрузке без сохранённого результата выводится недоступное
-состояние: endpoint чтения заказа в E07 отсутствует.
-
-История, автоматическое обновление стадии, повтор заказа и push-уведомления
-относятся к последующим эпикам.
+Повторно используемая кнопка связывает disabled/loading с `aria-busy` и
+показывает progressbar во время loading. [front-office/src/shared/ui/customer/btn/UiBtn.vue:entry](../../front-office/src/shared/ui/customer/btn/UiBtn.vue).

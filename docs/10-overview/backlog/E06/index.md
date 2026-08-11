@@ -23,13 +23,13 @@ E06 реализует управление каталогом для Administra
 
 | Карточка | Статус | Доказательство |
 | --- | --- | --- |
-| [[back-office/BL-0090]] | complete | [API-клиент](../../../../back-office/src/shared/api/catalog.api.ts) и [store](../../../../back-office/src/admin/pages/menu/catalog.store.ts) |
-| [[back-office/BL-0091]] | complete | [MenuPage](../../../../back-office/src/pages/MenuPage.vue) |
-| [[back-office/BL-0092]] | complete | [Форма категории](../../../../back-office/src/admin/pages/menu/AddCategoryDialog.vue) |
-| [[back-office/BL-0093]] | complete | [Форма товара](../../../../back-office/src/admin/pages/menu/AddProductDialog.vue) |
-| [[back-office/BL-0094]] | complete | [Редактор вариантов товара](../../../../back-office/src/admin/pages/menu/AddProductDialog.vue) |
-| [[back-office/BL-0095]] | complete | [Редактор групп и вариантов](../../../../back-office/src/admin/pages/menu/ModifierGroupEditor.vue) |
-| [[back-office/BL-0096]] | complete | [Назначения групп](../../../../back-office/src/admin/pages/menu/CategoryModifierAssignments.vue) |
+| [[back-office/BL-0090]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0091]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0092]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0093]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0094]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0095]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
+| [[back-office/BL-0096]] | complete | [Локальная документация каталога](../../../../back-office/docs/INDEX.md) |
 
 ## quality
 

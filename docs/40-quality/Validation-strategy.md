@@ -6,6 +6,11 @@ area: quality
 status: active
 tags: [quality, testing, playwright]
 updated: 2026-08-01
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../front-office/package.json
+  - ../../back-office/package.json
 ---
 
 # Стратегия проверки

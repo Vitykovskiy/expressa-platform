@@ -28,8 +28,8 @@ export const frontOfficeScreenshotOptions = {
 } as const;
 export const frontOfficeStorybookOrigin = "http://127.0.0.1:6006";
 export const frontOfficeStorybookTestMatches = {
-  a11y: "tests/e2e/storybook-a11y.spec.mjs",
-  visual: "tests/e2e/visual.spec.mjs",
+  a11y: ".storybook/tests/a11y.spec.mjs",
+  visual: ".storybook/tests/visual.spec.mjs",
 } as const;
 export const frontOfficeStorybookWebServerCommand =
   "npm run storybook:build && npx http-server /tmp/expressa-front-office-storybook -p 6006 -c-1";

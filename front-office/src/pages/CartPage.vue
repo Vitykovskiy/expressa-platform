@@ -14,15 +14,15 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
-import CartScreen from "../customer/pages/checkout/CartScreen.vue";
-import type { CartScreenProps } from "../customer/pages/checkout/CartScreen.types";
+import CartScreen from "@/features/checkout/CartScreen.vue";
+import type { CartScreenProps } from "@/features/checkout/CartScreen.types";
 import {
   checkoutErrorCodes,
   checkoutStatuses,
-} from "../customer/pages/checkout/checkout.store.constants";
-import { useCheckoutStore } from "../customer/pages/checkout/checkout.store";
-import { useCartStore } from "../customer/shared/model/cart.store";
-import { useMenuStore } from "../customer/shared/model/menu.store";
+} from "@/features/checkout/checkout.store.constants";
+import { useCheckoutStore } from "@/features/checkout/checkout.store";
+import { useCartStore } from "@/entities/customer/model/cart.store";
+import { useMenuStore } from "@/entities/customer/model/menu.store";
 import { cartPageMessages, cartPageRoute } from "./CartPage.constants";
 
 const router = useRouter();

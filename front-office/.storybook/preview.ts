@@ -3,7 +3,8 @@ import type { Preview } from "@storybook/vue3-vite";
 import { VApp, VMain } from "vuetify/components";
 import "vuetify/styles";
 import "../src/styles/main.css";
-import { vuetify } from "../src/plugins/vuetify";
+import "./preview.css";
+import { vuetify } from "../src/app/plugins/vuetify";
 
 setup((app) => {
   app.use(vuetify);

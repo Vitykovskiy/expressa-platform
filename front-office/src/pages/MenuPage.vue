@@ -49,12 +49,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import MenuFlow from "../customer/pages/menu/MenuFlow.vue";
-import { useCartStore } from "../customer/shared/model/cart.store";
-import { useMenuStore } from "../customer/shared/model/menu.store";
-import UiProgress from "../customer/shared/ui/progress/UiProgress.vue";
-import UiBtn from "../customer/shared/ui/btn/UiBtn.vue";
-import { formatMinorAmount } from "../customer/shared/model/money";
+import MenuFlow from "@/features/menu/MenuFlow.vue";
+import { useCartStore } from "@/entities/customer/model/cart.store";
+import { useMenuStore } from "@/entities/customer/model/menu.store";
+import UiProgress from "@/shared/ui/customer/progress/UiProgress.vue";
+import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import { formatMinorAmount } from "@/entities/customer/model/money";
 import { cartPageRoute } from "./CartPage.constants";
 
 const menuStore = useMenuStore();

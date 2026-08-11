@@ -21,8 +21,8 @@
 import { computed, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 
-import AuthScreen from "../admin/pages/auth/AuthScreen.vue";
-import type { AuthScreenState } from "../admin/pages/auth/AuthScreen.types";
+import AuthScreen from "./admin/auth/AuthScreen.vue";
+import type { AuthScreenState } from "./admin/auth/AuthScreen.types";
 import type { AuthOtpMetadata } from "../shared/api/auth.api.types";
 import { useSessionStore } from "../app/session.store";
 import {

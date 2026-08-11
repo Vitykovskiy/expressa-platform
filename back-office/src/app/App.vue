@@ -33,9 +33,9 @@ import { computed } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { VApp, VContainer, VMain } from "vuetify/components";
 
-import AdminShell from "../admin/shell/AdminShell.vue";
-import type { AdminSection } from "../admin/shared/ui/Admin.types";
-import { adminShellFallbackSection } from "../admin/shell/AdminShell.constants";
+import AdminShell from "../widgets/admin-shell/AdminShell.vue";
+import type { AdminSection } from "../shared/ui/admin/Admin.types";
+import { adminShellFallbackSection } from "../widgets/admin-shell/AdminShell.constants";
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
 
 import { useAppStore } from "./app.store";

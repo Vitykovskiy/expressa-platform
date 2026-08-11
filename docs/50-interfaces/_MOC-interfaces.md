@@ -1,12 +1,16 @@
-# Карта интерфейсов
+---
+type: moc
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../backend/openapi/openapi.json
+---
+# Контракты и интерфейсы
 
-- [[HTTP-API-conventions|Соглашения HTTP API]]
-- [[Authentication-API|API аутентификации]]
-- [[Menu-API|API меню]]
-- [[Orders-API|API заказов]]
-- [[Back-office-API|API back-office]]
-- [[Error-model-and-idempotency|Модель ошибок и идемпотентность]]
-- [[Front-office-UI|Интерфейс front-office]]
-- [[Back-office-UI|Интерфейс back-office]]
-- [[Storybook-gates|Барьеры Storybook]]
-- [[Push-notifications|Push-уведомления]]
+HTTP: [соглашения](HTTP-API-conventions.md), [ошибки и идемпотентность](Error-model-and-idempotency.md),
+[аутентификация](Authentication-API.md), [меню](Menu-API.md), [заказы](Orders-API.md), [back-office API](Back-office-API.md).
+[Источник: OpenAPI](../../backend/openapi/openapi.json).
+
+UI: [front-office](Front-office-UI.md), [back-office](Back-office-UI.md),
+[Storybook gates](Storybook-gates.md). [Push](Push-notifications.md) —
+unsupported, не текущий delivery contract.

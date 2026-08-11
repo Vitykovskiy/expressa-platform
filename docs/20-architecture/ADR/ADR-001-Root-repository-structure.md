@@ -7,6 +7,12 @@ status: accepted
 tags: [expressa, architecture, repository, documentation]
 updated: 2026-08-01
 source_mode: normative
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../../../backend/package.json
+  - ../../../front-office/package.json
+  - ../../../back-office/package.json
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
 related: ["[[../Repository-boundaries]]", "[[../../10-overview/Backlog]]", "[[../../00-meta/How-to-use-this-vault]]"]

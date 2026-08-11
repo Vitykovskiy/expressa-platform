@@ -1,13 +1,16 @@
+---
+type: feature
+owner: root
+implementation_status: unsupported
+last_verified: 2026-08-11
+sources:
+  - ../../back-office/src/app/router.ts
+---
 # Приготовление и выдача заказа
 
-### 6.3. Приготовление и выдача
+## 6.3. Приготовление и выдача
 
-1. Barista получает push-уведомление о новом заказе.
-2. Back-office показывает новый заказ в очереди.
-3. Barista переводит заказ в стадию `Принят`, клиент получает push-уведомление.
-4. Barista переводит заказ в стадию `Готовится`.
-5. Barista переводит заказ в стадию `Готов`, клиент получает push-уведомление.
-6. Клиент оплачивает заказ на кассе.
-7. После получения оплаты сотрудник нажимает `Выдать`.
-8. Backend переводит заказ из стадии `Готов` в стадию `Выдан`, клиент получает push-уведомление.
-9. Front-office показывает завершённый заказ в истории.
+Приготовление, очередь, смена стадии, оплата и выдача не являются активным
+runtime-сценарием: `/queue` подключает placeholder `QueuePage`, а
+`OrdersScreen` не имеет routed consumer; backend контракт публикует только
+создание заказа. [Источники: router](../../back-office/src/app/router.constants.ts), [QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [OpenAPI](../../backend/openapi/openapi.json).

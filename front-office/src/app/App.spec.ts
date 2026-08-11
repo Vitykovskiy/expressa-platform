@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import MenuPage from "../pages/MenuPage.vue";
-import { useCartStore } from "../customer/shared/model/cart.store";
-import { setMenuStoreDependencies } from "../customer/shared/model/menu.store.dependencies";
+import { useCartStore } from "@/entities/customer/model/cart.store";
+import { setMenuStoreDependencies } from "@/entities/customer/model/menu.store.dependencies";
 import App from "./App.vue";
 import { vuetify } from "./plugins";
 import { useSessionStore } from "./session.store";

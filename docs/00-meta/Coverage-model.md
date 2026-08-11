@@ -1,3 +1,12 @@
+---
+title: Карта покрытия
+type: registry
+owner: root
+last_verified: 2026-08-11
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
+---
+
 # Карта покрытия
 
 | Строки источника | Раздел | Основные ноты | Владелец |
