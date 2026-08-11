@@ -69,6 +69,6 @@ rewrite, навигация; `docs/README.md` — merge/delete в INDEX; `docs/s
 — delete, правила слиты в Runtime-and-Storybook; `00-meta/Scope.md` — rewrite,
 границы; `20-architecture/Structure.md` — rewrite, слои; `30-conventions/Runtime-and-Storybook.md`
 — update, граница каталога; `40-testing/Verification.md` — rewrite, проверки;
-`50-adr/ADR-001-runtime-and-storybook-boundaries.md` — keep/trim, решение;
+`50-adr/ADR-001-runtime-and-storybook-boundaries.md` — граница runtime и каталога;
 `_sources/README.md` — update, приоритет источников; `_journal/README.md` —
 keep, журнал. [Источник: target-map](../../.codex/tmp/tasks/docs-as-code-rework/architecture.md).

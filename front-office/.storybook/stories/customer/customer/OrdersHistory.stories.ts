@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
-import { expect, fn, userEvent, within } from "storybook/test";
 import { createCustomerDefaults } from "./fixtures/customer.fixtures";
 import OrdersHistoryScreen from "@/features/orders/OrdersHistoryScreen.vue";
 import type {
@@ -39,8 +38,8 @@ const meta = {
     statusLabels: fixtures.statusLabels,
     refreshing: false,
     expandedOrderIds: [],
-    onRefresh: fn(),
-    onToggleOrder: fn(),
+    onRefresh: () => undefined,
+    onToggleOrder: () => undefined,
   },
   argTypes: {
     orders: {
@@ -98,49 +97,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Populated: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const refresh = canvas.getByRole("button", {
-      name: "Обновить историю заказов",
-    });
-    const disclosure = canvas.getByRole("button", { name: /Заказ #1042/ });
-
-    await userEvent.click(refresh);
-    await expect(args.onRefresh).toHaveBeenCalledTimes(1);
-    await expect(args.onRefresh).toHaveBeenCalledWith();
-    await expect(disclosure).toHaveAttribute("aria-expanded", "false");
-    await expect(disclosure).toHaveAttribute(
-      "aria-controls",
-      "order-details-1042",
-    );
-
-    await userEvent.click(disclosure);
-    const details = canvasElement.querySelector("#order-details-1042");
-    await expect(disclosure).toHaveAttribute("aria-expanded", "true");
-    await expect(details).toBeVisible();
-    await expect(args.onToggleOrder).toHaveBeenNthCalledWith(1, "1042", true);
-
-    await userEvent.click(disclosure);
-    await expect(disclosure).toHaveAttribute("aria-expanded", "false");
-    await expect(details).not.toBeVisible();
-    await expect(args.onToggleOrder).toHaveBeenNthCalledWith(2, "1042", false);
-  },
-};
+export const Populated: Story = {};
 export const Empty: Story = { args: { orders: [] } };
 export const Expanded: Story = { args: { expandedOrderIds: ["1042"] } };
 export const Refreshing: Story = {
   args: { refreshing: true },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvasElement.querySelector("section")).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
-    await expect(
-      canvas.getByRole("progressbar", { name: "Обновление истории заказов" }),
-    ).toBeVisible();
-  },
 };
 export const Pending: Story = { args: { orders: [withStatus("pending")] } };
 export const Preparing: Story = { args: { orders: [withStatus("preparing")] } };

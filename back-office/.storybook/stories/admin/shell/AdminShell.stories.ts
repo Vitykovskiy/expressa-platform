@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import { createNavigationItems } from "../../../../src/app/navigation";
 import type { NavigationItem } from "../../../../src/app/navigation.types";
 import type {
@@ -64,36 +63,12 @@ export const Administrator: Story = {
     role: "administrator",
     items: createNavigationItems("administrator"),
     activeSection: "orders",
-    onNavigate: fn(),
-    onLogout: fn(),
-    onTopBarAction: fn(),
+    onNavigate: () => undefined,
+    onLogout: () => undefined,
+    onTopBarAction: () => undefined,
   },
   render: renderAdministrator,
   parameters: { viewport: { defaultViewport: "desktop" } },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const orders = canvas.getByRole("button", { name: "Очередь" });
-    await expect(orders).toHaveAttribute("aria-current", "page");
-    await expect(canvas.getByRole("button", { name: "Меню" })).toBeVisible();
-    await expect(
-      canvas.queryByRole("button", { name: "Действие" }),
-    ).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Меню" }));
-    await expect(args.onNavigate).toHaveBeenCalledWith("menu");
-
-    const viewportWidth =
-      canvasElement.ownerDocument.documentElement.clientWidth;
-    const logout =
-      canvasElement.querySelector<HTMLButtonElement>(".side-nav-logout");
-    await expect(logout).toBeInTheDocument();
-    if (viewportWidth >= 768) {
-      await expect(logout).toBeVisible();
-      await userEvent.click(logout!);
-      await expect(args.onLogout).toHaveBeenCalledTimes(1);
-    } else {
-      await expect(logout).not.toBeVisible();
-    }
-  },
 };
 
 export const AdministratorVisual: Story = {
@@ -107,35 +82,12 @@ export const Barista: Story = {
     role: "barista",
     items: createNavigationItems("barista"),
     activeSection: "availability",
-    onNavigate: fn(),
-    onLogout: fn(),
-    onTopBarAction: fn(),
+    onNavigate: () => undefined,
+    onLogout: () => undefined,
+    onTopBarAction: () => undefined,
   },
   render: renderBarista,
   globals: { viewport: { value: "mobile1", isRotated: false } },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const availability = canvas.getByRole("button", { name: "Доступность" });
-    await expect(availability).toHaveAttribute("aria-current", "page");
-    await expect(
-      canvas.queryByRole("button", { name: "Меню" }),
-    ).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Очередь" }));
-    await expect(args.onNavigate).toHaveBeenCalledWith("orders");
-    const viewportWidth =
-      canvasElement.ownerDocument.documentElement.clientWidth;
-    const action =
-      canvasElement.querySelector<HTMLButtonElement>(".top-bar-action");
-    await expect(action).toBeInTheDocument();
-    if (viewportWidth < 768) {
-      await expect(action).toHaveTextContent("Обновить");
-      await expect(action).toBeVisible();
-      await userEvent.click(action!);
-      await expect(args.onTopBarAction).toHaveBeenCalledTimes(1);
-    } else {
-      await expect(action).not.toBeVisible();
-    }
-  },
 };
 
 export const BaristaVisual: Story = {

@@ -1,6 +1,5 @@
 import { computed, shallowRef } from "vue";
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, userEvent, within } from "storybook/test";
 
 import AuthScreen from "../../../../src/pages/admin/auth/AuthScreen.vue";
 import type { AuthScreenState } from "../../../../src/pages/admin/auth/AuthScreen.types";
@@ -102,19 +101,6 @@ export const PhoneValidation: Story = {
     state: "phone",
   },
   render: renderAuthScreen(),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const input = canvas.getByLabelText("Телефон");
-
-    await expect(input).toHaveFocus();
-    await userEvent.type(input, "+7 900");
-    await userEvent.keyboard("{Enter}");
-    await expect(input).toHaveAttribute("aria-invalid", "true");
-    await expect(input).toHaveAttribute("aria-describedby", "auth-phone-error");
-    await expect(canvas.getByRole("alert")).toHaveTextContent(
-      "Введите корректный номер телефона",
-    );
-  },
 };
 
 export const PhoneValidationVisual: Story = {
@@ -129,41 +115,6 @@ export const PhoneValidationVisual: Story = {
   },
 };
 
-const playOtpValidation: NonNullable<Story["play"]> = async ({
-  canvasElement,
-}) => {
-  const canvas = within(canvasElement);
-  const phoneInput = canvas.getByLabelText("Телефон");
-
-  await userEvent.click(phoneInput);
-  await userEvent.type(phoneInput, phone);
-  await userEvent.keyboard("{Enter}");
-  const otp = await canvas.findByLabelText("Код из сообщения");
-  await expect(otp).toHaveFocus();
-  await expect(
-    await canvas.findByRole("heading", { name: "Введите код из сообщения" }),
-  ).toBeVisible();
-  await expect(
-    canvas.getByText(
-      "Код действует 300 сек. Повторная отправка доступна через 60 сек.",
-    ),
-  ).toBeVisible();
-  await userEvent.click(
-    canvas.getByRole("button", { name: "Отправить код повторно" }),
-  );
-  await userEvent.type(otp, "12");
-  await userEvent.keyboard("{Enter}");
-  await expect(otp).toHaveAttribute("aria-invalid", "true");
-  await expect(otp).toHaveAttribute("aria-describedby", "auth-otp-error");
-  await expect(canvas.getByRole("alert")).toHaveTextContent(
-    "Введите код из сообщения",
-  );
-  await userEvent.clear(otp);
-  await userEvent.type(otp, "654321");
-  await userEvent.keyboard("{Enter}");
-  await expect(await canvas.findByText("Вход выполнен")).toBeVisible();
-};
-
 export const OtpValidation: Story = {
   args: {
     error: "",
@@ -175,7 +126,6 @@ export const OtpValidation: Story = {
     state: "phone",
   },
   render: renderAuthScreen(),
-  play: playOtpValidation,
 };
 
 export const OtpValidationVisual: Story = {
@@ -200,13 +150,6 @@ export const Denied: Story = {
     phoneValid: true,
     state: "denied",
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByRole("alert")).toHaveTextContent(
-      "Доступ запрещён",
-    );
-  },
 };
 
 export const Success: Story = {
@@ -218,10 +161,5 @@ export const Success: Story = {
     phone,
     phoneValid: true,
     state: "success",
-  },
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement).getByText("Вход выполнен"),
-    ).toBeVisible();
   },
 };

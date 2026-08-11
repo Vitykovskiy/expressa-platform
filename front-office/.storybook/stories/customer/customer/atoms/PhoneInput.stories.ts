@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { fn } from "storybook/test";
 import UiPhoneInput from "@/shared/ui/customer/phone-input/UiPhoneInput.vue";
 const meta = {
   title: "Components/Atoms/PhoneInput",
@@ -10,7 +9,7 @@ const meta = {
     disabled: false,
     readonly: false,
     loading: false,
-    "onUpdate:modelValue": fn(),
+    "onUpdate:modelValue": () => undefined,
   },
   argTypes: {
     modelValue: { control: "text" },

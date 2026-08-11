@@ -12,7 +12,8 @@ sources:
 ## Решение
 
 Runtime организован слоями `app/pages/widgets/features/entities/shared`.
-Storybook вынесен в `.storybook`, импортирует runtime, но не наоборот.
+Storybook вынесен в `.storybook` как каталог UI-состояний, импортирует runtime,
+но не наоборот.
 [Источники: маршрутизатор](../../src/app/router.ts), [Storybook](../../.storybook/main.ts).
 
 ## Причина

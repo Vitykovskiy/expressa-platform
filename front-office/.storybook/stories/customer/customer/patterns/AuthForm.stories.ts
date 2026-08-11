@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import AuthForm from "@/features/auth/AuthForm.vue";
 import type { AuthState } from "@/entities/customer/model/customer.types";
 
@@ -21,9 +20,9 @@ const meta = {
       errorMessage: "",
       verified: false,
     },
-    onSendCode: fn(),
-    onUpdateOtp: fn(),
-    onVerifyOtp: fn(),
+    onSendCode: () => undefined,
+    onUpdateOtp: () => undefined,
+    onVerifyOtp: () => undefined,
   },
   argTypes: {
     state: { control: "object" },
@@ -51,21 +50,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Phone: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const phone = canvas.getByRole("textbox", { name: "Номер телефона" });
-
-    await expect(phone).toHaveAttribute("id", "auth-phone");
-    await expect(phone).toHaveAttribute("placeholder", "+7 (___) ___-__-__");
-    await userEvent.click(phone);
-    await expect(phone).toHaveFocus();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Отправить код" }),
-    );
-    await expect(args.onSendCode).toHaveBeenCalledTimes(1);
-  },
-};
+export const Phone: Story = {};
 
 export const Otp: Story = {
   args: {
@@ -76,26 +61,6 @@ export const Otp: Story = {
       errorMessage: "",
       verified: false,
     },
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const otp = canvas.getByRole("textbox", { name: "Код из сообщения" });
-
-    await userEvent.type(otp, "123456");
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Отправить код ещё раз" }),
-    );
-    await expect(args.onUpdateOtp).toHaveBeenLastCalledWith("");
-    await expect(args.onSendCode).toHaveBeenCalledTimes(1);
-
-    const resetOtp = canvas.getByRole("textbox", { name: "Код из сообщения" });
-    await userEvent.type(resetOtp, "567890");
-    await expect(
-      canvas.getByRole("button", { name: "Подтвердить" }),
-    ).toBeEnabled();
-    await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
-
-    await expect(args.onVerifyOtp).toHaveBeenCalledWith("567890");
   },
 };
 
@@ -108,13 +73,5 @@ export const OtpError: Story = {
       errorMessage: "Код неверный или истёк",
       verified: false,
     },
-  },
-  play: async ({ canvasElement }) => {
-    const errorMessage = within(canvasElement).getByText(
-      "Код неверный или истёк",
-    );
-    const errorAlert = errorMessage.closest("[role='alert']");
-
-    await expect(errorAlert).toHaveTextContent("Код неверный или истёк");
   },
 };

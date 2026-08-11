@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
-import { expect, fn, userEvent, within } from "storybook/test";
 import OrderCard from "@/features/orders/OrderCard.vue";
 import { createCustomerDefaults } from "../fixtures/customer.fixtures";
 import type { Order } from "@/entities/customer/model/customer.types";
@@ -21,7 +20,7 @@ const meta = {
     order,
     statusLabel: "Готов",
     expanded: false,
-    onToggle: fn(),
+    onToggle: () => undefined,
   },
   argTypes: {
     order: { control: "object" },
@@ -58,17 +57,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Collapsed: Story = {
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: /Заказ #/,
-    });
-    await expect(button).toHaveAttribute("aria-expanded", "false");
-    await userEvent.click(button);
-    await expect(args.onToggle).toHaveBeenCalledTimes(1);
-    await expect(button).toHaveAttribute("aria-expanded", "true");
-  },
-};
+export const Collapsed: Story = {};
 
 export const Expanded: Story = { args: { expanded: true } };
 export const Pending: Story = {

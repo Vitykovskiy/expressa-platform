@@ -28,7 +28,7 @@ Back-office — отдельное Vue-приложение сотруднико
 
 ## Устройство и каталог UI
 
-- [Storybook](95-testing/storybook.md) документирует изолированный каталог из 96 записей, включая orphan-экраны.
+- [Storybook](95-testing/storybook.md) документирует изолированный каталог UI, включая orphan-экраны.
 - [Размещение кода](80-conventions/code-layout.md) и [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) фиксируют границу runtime/Storybook.
 
 ## Структура исходного кода

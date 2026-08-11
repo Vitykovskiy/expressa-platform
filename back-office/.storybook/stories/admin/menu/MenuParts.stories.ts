@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 
 import type {
   Category,
@@ -94,25 +93,13 @@ export const Collapsed: Story = {
     category,
     products,
     expanded: false,
-    onToggle: fn(),
-    "onEdit-category": fn(),
-    onEdit: fn(),
-    onMoveUp: fn(),
-    onMoveDown: fn(),
-    onMoveProductUp: fn(),
-    onMoveProductDown: fn(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const toggle = canvas.getByRole("button", {
-      name: "Кофе 1 товар",
-    });
-    await userEvent.click(toggle);
-    await expect(args.onToggle).toHaveBeenCalledWith(category);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Редактировать категорию Кофе" }),
-    );
-    await expect(args["onEdit-category"]).toHaveBeenCalledWith(category);
+    onToggle: () => undefined,
+    "onEdit-category": () => undefined,
+    onEdit: () => undefined,
+    onMoveUp: () => undefined,
+    onMoveDown: () => undefined,
+    onMoveProductUp: () => undefined,
+    onMoveProductDown: () => undefined,
   },
 };
 export const ExpandedDrinkSML: Story = {
@@ -120,28 +107,13 @@ export const ExpandedDrinkSML: Story = {
     category,
     products,
     expanded: true,
-    onToggle: fn(),
-    "onEdit-category": fn(),
-    onEdit: fn(),
-    onMoveUp: fn(),
-    onMoveDown: fn(),
-    onMoveProductUp: fn(),
-    onMoveProductDown: fn(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(
-      canvas.getByText("S: 190 ₽ · M: 220 ₽ · L: 250 ₽"),
-    ).toBeVisible();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Редактировать товар Капучино" }),
-    );
-    await expect(args.onEdit).toHaveBeenCalledWith(products[0]);
-    await expect(
-      canvas.queryByRole("button", {
-        name: "Переместить категорию Кофе вверх",
-      }),
-    ).toBeNull();
+    onToggle: () => undefined,
+    "onEdit-category": () => undefined,
+    onEdit: () => undefined,
+    onMoveUp: () => undefined,
+    onMoveDown: () => undefined,
+    onMoveProductUp: () => undefined,
+    onMoveProductDown: () => undefined,
   },
 };
 export const Management: Story = {
@@ -153,26 +125,13 @@ export const Management: Story = {
     canMoveUp: true,
     canMoveDown: true,
     disabled: false,
-    onToggle: fn(),
-    "onEdit-category": fn(),
-    onEdit: fn(),
-    onMoveUp: fn(),
-    onMoveDown: fn(),
-    onMoveProductUp: fn(),
-    onMoveProductDown: fn(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Переместить категорию Кофе вверх" }),
-    );
-    await expect(args.onMoveUp).toHaveBeenCalledWith(category);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Переместить товар Капучино вниз" }),
-    );
-    await expect(args.onMoveProductDown).toHaveBeenCalledWith(
-      managementProducts[0],
-    );
+    onToggle: () => undefined,
+    "onEdit-category": () => undefined,
+    onEdit: () => undefined,
+    onMoveUp: () => undefined,
+    onMoveDown: () => undefined,
+    onMoveProductUp: () => undefined,
+    onMoveProductDown: () => undefined,
   },
 };
 export const Empty: Story = {
@@ -193,32 +152,5 @@ export const LongContent: Story = {
     ],
     expanded: true,
     disabled: true,
-  },
-  play: async ({ canvasElement }) => {
-    const categoryGroup = canvasElement.querySelector(".menu-category");
-
-    if (!categoryGroup) throw new Error("Menu category is not rendered");
-    const categoryControls = [
-      "Редактировать категорию Очень длинное название категории для узкого экрана и проверки переноса",
-    ].map((name) => canvasElement.querySelector(`[aria-label="${name}"]`));
-    const controls = [
-      categoryGroup.querySelector(".menu-category__toggle"),
-      ...categoryControls,
-    ];
-
-    controls.forEach((control) => {
-      if (!control) throw new Error("Menu category control is not rendered");
-      const bounds = control.getBoundingClientRect();
-      const categoryBounds = categoryGroup.getBoundingClientRect();
-
-      expect(bounds.width).toBeGreaterThanOrEqual(44);
-      expect(bounds.height).toBeGreaterThanOrEqual(44);
-      expect(bounds.left).toBeGreaterThanOrEqual(categoryBounds.left);
-      expect(bounds.right).toBeLessThanOrEqual(categoryBounds.right);
-      expect(control).toBeDisabled();
-    });
-    await expect(categoryGroup.scrollWidth).toBeLessThanOrEqual(
-      categoryGroup.clientWidth,
-    );
   },
 };

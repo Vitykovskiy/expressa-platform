@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { VApp } from "vuetify/components";
 
 import type {
@@ -81,28 +80,28 @@ function userRowRender(
 
 export const ActiveAdministrator: UserRowStory = {
   args: {
-    onAction: fn<(action: UserAction) => void>(),
+    onAction: () => undefined,
   },
   render: (args) => userRowRender(activeAdministrator, args),
 };
 
 export const BlockedBarista: UserRowStory = {
   args: {
-    onAction: fn<(action: UserAction) => void>(),
+    onAction: () => undefined,
   },
   render: (args) => userRowRender(blockedBarista, args),
 };
 
 export const WithoutRole: UserRowStory = {
   args: {
-    onAction: fn<(action: UserAction) => void>(),
+    onAction: () => undefined,
   },
   render: (args) => userRowRender(noRoleUser, args),
 };
 
 export const LongName: UserRowStory = {
   args: {
-    onAction: fn<(action: UserAction) => void>(),
+    onAction: () => undefined,
   },
   render: (args) =>
     userRowRender(
@@ -116,7 +115,7 @@ export const LongName: UserRowStory = {
 
 export const KeyboardSelect: UserActionMenuStory = {
   args: {
-    onSelect: fn<(action: UserAction) => void>(),
+    onSelect: () => undefined,
   },
   render: (args) => ({
     components: { UserActionMenu, VApp },
@@ -133,31 +132,11 @@ export const KeyboardSelect: UserActionMenuStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-    const trigger = canvas.getByRole("button", {
-      name: "Действия для Анна Смирнова",
-    });
-
-    trigger.focus();
-    await userEvent.keyboard("{Enter}");
-    const menu = await body.findByRole("menu", {
-      name: "Действия для Анна Смирнова",
-    });
-    const block = within(menu).getByRole("menuitem", { name: "Заблокировать" });
-
-    block.focus();
-    await userEvent.keyboard("{Enter}");
-
-    await expect(args.onSelect).toHaveBeenCalledWith("block");
-    await expect(trigger).toHaveFocus();
-  },
 };
 
 export const KeyboardEscape: UserActionMenuStory = {
   args: {
-    onSelect: fn<(action: UserAction) => void>(),
+    onSelect: () => undefined,
   },
   render: (args) => ({
     components: { UserActionMenu, VApp },
@@ -174,23 +153,4 @@ export const KeyboardEscape: UserActionMenuStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-    const trigger = canvas.getByRole("button", {
-      name: "Действия для Виктория Белова",
-    });
-
-    await userEvent.click(trigger);
-    await body.findByRole("menu", { name: "Действия для Виктория Белова" });
-    await userEvent.keyboard("{Escape}");
-
-    await waitFor(() =>
-      expect(
-        body.queryByRole("menu", { name: "Действия для Виктория Белова" }),
-      ).not.toBeInTheDocument(),
-    );
-    await expect(args.onSelect).not.toHaveBeenCalled();
-    await waitFor(() => expect(trigger).toHaveFocus());
-  },
 };

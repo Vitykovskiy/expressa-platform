@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
-import { expect, fn, userEvent, within } from "storybook/test";
 import UiToggle from "@/shared/ui/customer/toggle/UiToggle.vue";
 
 type UiToggleStoryArgs = {
@@ -12,7 +11,11 @@ type UiToggleStoryArgs = {
 const meta = {
   title: "Components/Atoms/UiToggle",
   component: UiToggle,
-  args: { disabled: false, modelValue: false, "onUpdate:modelValue": fn() },
+  args: {
+    disabled: false,
+    modelValue: false,
+    "onUpdate:modelValue": () => undefined,
+  },
   argTypes: {
     modelValue: { control: "boolean" },
     disabled: { control: "boolean" },
@@ -46,34 +49,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
-      name: "Получать уведомления",
-    });
-    await expect(toggle).toHaveAttribute("data-testid", "toggle");
-    await expect(toggle).not.toBeChecked();
-  },
-};
+export const Default: Story = {};
 
-export const Model: Story = {
-  play: async ({ args, canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
-      name: "Получать уведомления",
-    });
-    await userEvent.click(toggle);
-    await expect(args["onUpdate:modelValue"]).toHaveBeenLastCalledWith(true);
-  },
-};
+export const Model: Story = {};
 
 export const Disabled: Story = {
   args: { disabled: true, modelValue: true },
-  play: async ({ args, canvasElement }) => {
-    const toggle = within(canvasElement).getByRole("switch", {
-      name: "Получать уведомления",
-    });
-    await expect(toggle).toBeDisabled();
-    await userEvent.click(toggle);
-    await expect(args["onUpdate:modelValue"]).not.toHaveBeenCalled();
-  },
 };

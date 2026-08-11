@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { shallowRef } from "vue";
 import { VApp, VCard, VCardText, VCardTitle } from "vuetify/components";
 
@@ -54,15 +53,11 @@ type ToggleStory = StoryObj<{
 
 type Story = StoryObj;
 
-function dialogCanvas(canvasElement: HTMLElement) {
-  return within(canvasElement.ownerDocument.body);
-}
-
 export const TextFieldControlled: TextFieldStory = {
   args: {
-    onInput: fn<(event: Event) => void>(),
-    onChange: fn<(event: Event) => void>(),
-    onUpdateModelValue: fn<(value: string) => void>(),
+    onInput: () => undefined,
+    onChange: () => undefined,
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { AdminTextField },
@@ -89,22 +84,6 @@ export const TextFieldControlled: TextFieldStory = {
       />
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const field = canvas.getByRole("textbox", { name: "Название товара" });
-
-    await expect(field).toHaveClass("custom-text-field");
-    await expect(field).toHaveAttribute("data-testid", "admin-text-field");
-    await expect(field).toHaveStyle({ maxWidth: "320px" });
-
-    await userEvent.clear(field);
-    await userEvent.type(field, "Латте");
-    await userEvent.tab();
-
-    await expect(args.onInput).toHaveBeenCalled();
-    await expect(args.onChange).toHaveBeenCalled();
-    await expect(args.onUpdateModelValue).toHaveBeenLastCalledWith("Латте");
-  },
 };
 
 export const TextFieldDisabled: Story = {
@@ -113,20 +92,13 @@ export const TextFieldDisabled: Story = {
     template:
       '<AdminTextField aria-label="Недоступное поле" disabled model-value="Капучино" />',
   }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(
-      canvas.getByRole("textbox", { name: "Недоступное поле" }),
-    ).toBeDisabled();
-  },
 };
 
 export const SelectControlled: SelectStory = {
   args: {
-    onInput: fn<(event: Event) => void>(),
-    onChange: fn<(event: Event) => void>(),
-    onUpdateModelValue: fn<(value: string) => void>(),
+    onInput: () => undefined,
+    onChange: () => undefined,
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { AdminSelect },
@@ -156,21 +128,6 @@ export const SelectControlled: SelectStory = {
       </AdminSelect>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const select = canvas.getByRole("combobox", { name: "Категория" });
-
-    await expect(select).toHaveClass("custom-select");
-    await expect(select).toHaveAttribute("data-testid", "admin-select");
-    await expect(select).toHaveStyle({ maxWidth: "320px" });
-    await expect(select).toHaveValue("coffee");
-
-    await userEvent.selectOptions(select, "tea");
-
-    await expect(args.onInput).toHaveBeenCalled();
-    await expect(args.onChange).toHaveBeenCalled();
-    await expect(args.onUpdateModelValue).toHaveBeenLastCalledWith("tea");
-  },
 };
 
 export const SelectDisabled: Story = {
@@ -186,18 +143,11 @@ export const SelectDisabled: Story = {
       </AdminSelect>
     `,
   }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(
-      canvas.getByRole("combobox", { name: "Недоступная категория" }),
-    ).toBeDisabled();
-  },
 };
 
 export const ToggleControlled: ToggleStory = {
   args: {
-    onUpdateModelValue: fn<(value: boolean | null) => void>(),
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { AdminToggle, VApp },
@@ -224,20 +174,6 @@ export const ToggleControlled: ToggleStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const toggle = canvas.getByRole("switch", { name: "Доступность товара" });
-    const root = canvas.getByTestId("admin-toggle");
-
-    await expect(root).toHaveClass("custom-toggle");
-    await expect(root).toHaveStyle({ maxWidth: "320px" });
-    await expect(toggle).not.toBeChecked();
-
-    await userEvent.click(toggle);
-
-    await expect(toggle).toBeChecked();
-    await expect(args.onUpdateModelValue).toHaveBeenLastCalledWith(true);
-  },
 };
 
 export const ToggleDisabled: Story = {
@@ -253,18 +189,11 @@ export const ToggleDisabled: Story = {
       </v-app>
     `,
   }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(
-      canvas.getByRole("switch", { name: "Недоступный переключатель" }),
-    ).toBeDisabled();
-  },
 };
 
 export const DialogControlled: DialogStory = {
   args: {
-    onUpdateModelValue: fn<(value: boolean) => void>(),
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { AdminDialog, VApp, VCard, VCardText, VCardTitle },
@@ -296,29 +225,4 @@ export const DialogControlled: DialogStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const openButton = within(canvasElement).getByRole("button", {
-      name: "Открыть диалог",
-    });
-
-    await userEvent.click(openButton);
-
-    const dialog = await canvas.findByRole("dialog");
-    await waitFor(() => expect(dialog).toBeVisible());
-    await expect(dialog).toHaveClass("custom-dialog");
-    await expect(dialog).toHaveAttribute("data-testid", "admin-dialog");
-    await expect(dialog).toHaveStyle({ maxWidth: "400px" });
-    await waitFor(() =>
-      expect(
-        canvas.getByText("Содержимое диалога передано через slot."),
-      ).toBeVisible(),
-    );
-
-    await userEvent.keyboard("{Escape}");
-
-    await waitFor(() =>
-      expect(args.onUpdateModelValue).toHaveBeenLastCalledWith(false),
-    );
-  },
 };

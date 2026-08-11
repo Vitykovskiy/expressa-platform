@@ -9,13 +9,13 @@ sources:
 # Runtime и Storybook
 
 `src` содержит runtime и colocated unit-specs. `.storybook` содержит истории,
-fixtures, preview и проверку манифеста; runtime не импортирует Storybook.
+fixtures и preview; runtime не импортирует Storybook.
 [Источник: конфигурация](../../.storybook/main.ts).
 
 История импортирует runtime-компонент и демонстрирует наблюдаемое состояние, но
-не создаёт вторую реализацию. Стабильность ID и сборку проверяет
-`npm run storybook:build`; доступность и снимки запускают Playwright-команды.
+не создаёт вторую реализацию. Storybook — негейтирующий каталог UI-состояний;
+его сборка доступна через `npm run storybook:build`.
 [Источник: scripts](../../package.json).
 
-Исходник поведения — runtime; Storybook, unit и e2e — доказательства поведения.
+Исходник поведения — runtime; unit и e2e проверяют поведение приложения.
 Правило цитирования и приоритет источников: [источники](../_sources/README.md).

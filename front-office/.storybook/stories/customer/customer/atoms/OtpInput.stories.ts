@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { fn } from "storybook/test";
 import UiOtpInput from "@/shared/ui/customer/otp-input/UiOtpInput.vue";
 
 const meta = {
@@ -11,7 +10,7 @@ const meta = {
     disabled: false,
     readonly: false,
     loading: false,
-    "onUpdate:modelValue": fn(),
+    "onUpdate:modelValue": () => undefined,
   },
   argTypes: {
     modelValue: { control: "text" },

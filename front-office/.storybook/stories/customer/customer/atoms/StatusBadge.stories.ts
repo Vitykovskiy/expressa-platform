@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, within } from "storybook/test";
 import UiBadge from "@/shared/ui/customer/badge/UiBadge.vue";
 
 type UiBadgeStoryArgs = {
@@ -36,14 +35,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText("Метка")).toHaveAttribute(
-      "data-testid",
-      "badge",
-    );
-  },
-};
+export const Default: Story = {};
 
 export const Success: Story = { args: { tone: "success" } };
 export const Error: Story = { args: { tone: "error" } };

@@ -16,14 +16,13 @@ sources:
 # Definition of Done для UI
 
 Эта нота задаёт gate завершённости UI-задачи и применяется ко всему Vue UI-коду
-`front-office` и `back-office`, включая runtime UI и Storybook. Детальные
-правила Vue и Vuetify определяет [[Vue-code-style|стиль
+`front-office` и `back-office`. Детальные правила Vue и Vuetify определяет [[Vue-code-style|стиль
 Vue-кода]].
 
 ## Gate
 
-- Изменение сохраняет границы двух независимых продуктов, runtime и Storybook
-  по [[../20-architecture/ADR/ADR-003-local-application-documentation-and-storybook|ADR-003]].
+- Изменение сохраняет границы двух независимых продуктов по
+  [[../20-architecture/ADR/ADR-003-local-application-documentation-and-storybook|ADR-003]].
 - Изменённый Vue/Vuetify-код соответствует
   [[Vue-code-style|стилю Vue-кода]]; истории остаются отдельным
   демонстрационным слоем и импортируют готовый runtime-код.
@@ -31,7 +30,7 @@ Vue-кода]].
   [[UI-accessibility|требованиям доступности и взаимодействия]].
 - Выполнены применимые проверки из
   [[Validation-strategy|стратегии проверки]]: форматирование, lint,
-  typecheck, сборка Storybook, истории и браузерная проверка.
+  typecheck, тесты, сборка и браузерная проверка.
 - После разработки пройдена обязательная браузерная UI-приёмка по
   [[Validation-strategy#Браузерная UI-приёмка|стратегии проверки]]. Без свежего
   положительного вердикта UI-задача не завершена.

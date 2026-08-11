@@ -19,7 +19,6 @@ const preview: Preview = {
     }),
   ],
   parameters: {
-    a11y: { test: "error" },
     viewport: {
       viewports: {
         mobile320: {

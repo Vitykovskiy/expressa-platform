@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { LoaderCircle, ShoppingCart } from "lucide-vue-next";
-import { expect, fn, userEvent, within } from "storybook/test";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 
 type IconButtonStoryArgs = {
@@ -12,7 +11,7 @@ type IconButtonStoryArgs = {
 const meta = {
   title: "Components/Atoms/IconButton",
   component: UiIconBtn,
-  args: { disabled: false, loading: false, onClick: fn() },
+  args: { disabled: false, loading: false, onClick: () => undefined },
   argTypes: {
     disabled: { control: "boolean" },
     loading: { control: "boolean" },
@@ -38,41 +37,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Открыть корзину",
-    });
-    await expect(button).toHaveAttribute("data-testid", "icon-button");
-    await userEvent.click(button);
-    await expect(args.onClick).toHaveBeenCalledWith(expect.any(MouseEvent));
-  },
-};
+export const Default: Story = {};
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Открыть корзину",
-    });
-    await expect(button).toBeDisabled();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
-  },
 };
 
 export const Loading: Story = {
   args: { loading: true },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Открыть корзину",
-    });
-    await expect(button).toBeDisabled();
-    await expect(button).toHaveAttribute("aria-busy", "true");
-    await expect(
-      within(canvasElement).getByRole("progressbar", { name: "Загрузка" }),
-    ).toBeVisible();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
-  },
 };

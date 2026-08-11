@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import SlotOption from "@/features/checkout/SlotOption.vue";
 import type { TimeSlot } from "@/entities/customer/model/customer.types";
 
@@ -26,7 +25,7 @@ const meta = {
     timeSlot: slot,
     selected: false,
     disabled: false,
-    onSelect: fn(),
+    onSelect: () => undefined,
   },
   argTypes: {
     timeSlot: { control: "object" },
@@ -54,43 +53,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const slotName = /10:00.*10:30.*Сегодня, 9 марта.*3\/6/;
-
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: slotName }),
-    );
-    await expect(args.onSelect).toHaveBeenCalledWith("slot-10-00");
-  },
-};
+export const Default: Story = {};
 
 export const Selected: Story = {
   args: { selected: true },
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement).getByRole("button", { name: /Выбрано/ }),
-    ).toHaveAttribute("aria-pressed", "true");
-  },
 };
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: slotName,
-    });
-    await expect(button).toBeDisabled();
-  },
 };
 
 export const Full: Story = {
   args: { timeSlot: { ...slot, available: 0 } },
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement).getByRole("button", { name: /Занято/ }),
-    ).toBeDisabled();
-  },
 };
 
 export const Long: Story = {

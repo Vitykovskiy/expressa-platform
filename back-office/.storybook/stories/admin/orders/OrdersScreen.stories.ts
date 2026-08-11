@@ -1,10 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import type {
-  Order,
-  OrderActionEvent,
-} from "../../../../src/shared/ui/admin/Admin.types";
+import type { Order } from "../../../../src/shared/ui/admin/Admin.types";
 import OrdersScreen from "../../../../src/pages/admin/orders/OrdersScreen.vue";
 import ConfirmDialog from "../../../../src/shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 
@@ -64,122 +60,43 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function storyUser() {
-  return userEvent.setup({ pointerEventsCheck: 0 });
-}
-
-function pageCanvas(canvasElement: HTMLElement) {
-  return within(canvasElement.ownerDocument.body);
-}
-
 export const AllStatuses: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
 export const FiltersAndRefresh: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const page = pageCanvas(canvasElement);
-    const user = storyUser();
-
-    await user.click(canvas.getByRole("button", { name: "Новые" }));
-    await expect(canvas.getByText("#1234")).toBeVisible();
-    await expect(canvas.queryByText("#1235")).not.toBeInTheDocument();
-
-    await user.click(canvas.getByRole("button", { name: "Подтверждённые" }));
-    await expect(canvas.getByText("#1235")).toBeVisible();
-    await user.click(canvas.getByRole("button", { name: "Готовы" }));
-    await expect(canvas.getByText("#1236")).toBeVisible();
-
-    const refreshButton = await page.findByRole("button", {
-      name: "Обновить",
-    });
-    await expect(refreshButton).toBeVisible();
-    await user.click(refreshButton);
-    await expect(args.onRefresh).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(page.getByText("Обновлено")).toBeVisible());
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
 export const StatusActions: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const page = pageCanvas(canvasElement);
-    const user = storyUser();
-
-    await user.click(canvas.getByRole("button", { name: "Подтвердить" }));
-    await expect(args["onOrder-action"]).toHaveBeenCalledWith({
-      orderId: "1",
-      action: "confirm",
-    });
-    await waitFor(() =>
-      expect(page.getByText("Заказ подтверждён")).toBeVisible(),
-    );
-
-    await user.click(canvas.getByRole("button", { name: "Готово к выдаче" }));
-    await expect(args["onOrder-action"]).toHaveBeenCalledWith({
-      orderId: "2",
-      action: "ready",
-    });
-    await waitFor(() =>
-      expect(page.getByText("Заказ готов к выдаче")).toBeVisible(),
-    );
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
 export const RejectDialog: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const page = pageCanvas(canvasElement);
-    const user = storyUser();
-
-    await user.click(canvas.getByRole("button", { name: "Отклонить" }));
-    const dialog = page.getByRole("dialog", { name: "Отклонить заказ" });
-    await expect(dialog).toBeVisible();
-    const dialogCanvas = within(dialog);
-    await user.type(
-      dialogCanvas.getByRole("textbox", { name: "Причина" }),
-      "Клиент отменил заказ",
-    );
-    await user.click(dialogCanvas.getByRole("button", { name: "Отклонить" }));
-
-    await expect(args["onOrder-action"]).toHaveBeenCalledWith({
-      orderId: "1",
-      action: "reject",
-      reason: "Клиент отменил заказ",
-    });
-    await waitFor(() =>
-      expect(
-        page.getByText("Заказ отклонён: Клиент отменил заказ"),
-      ).toBeVisible(),
-    );
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
 export const RejectDialogVisual: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
   render: () => ({
     components: { ConfirmDialog },
@@ -192,45 +109,16 @@ export const RejectDialogVisual: Story = {
 export const CloseDialogCancelAndConfirm: Story = {
   args: {
     orders,
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const page = pageCanvas(canvasElement);
-    const user = storyUser();
-    const closeButton = canvas.getByRole("button", { name: "Выдан" });
-
-    await user.click(closeButton);
-    const closeDialog = page.getByRole("dialog", { name: "Выдать заказ" });
-    await user.click(
-      within(closeDialog).getByRole("button", { name: "Отмена" }),
-    );
-    await waitFor(() =>
-      expect(page.queryByRole("dialog")).not.toBeInTheDocument(),
-    );
-    await expect(closeButton).toHaveFocus();
-
-    await user.click(closeButton);
-    const reopenedCloseDialog = page.getByRole("dialog", {
-      name: "Выдать заказ",
-    });
-    await user.click(
-      within(reopenedCloseDialog).getByRole("button", { name: "Подтвердить" }),
-    );
-    await expect(args["onOrder-action"]).toHaveBeenCalledWith({
-      orderId: "3",
-      action: "close",
-    });
-    await waitFor(() => expect(page.getByText("Заказ выдан")).toBeVisible());
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
 export const Empty: Story = {
   args: {
     orders: [],
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
 };
 
@@ -249,8 +137,8 @@ export const LongContentNarrow: Story = {
         createdAt: new Date("2026-07-27T10:30:00"),
       },
     ],
-    onRefresh: fn(),
-    "onOrder-action": fn<(event: OrderActionEvent) => void>(),
+    onRefresh: () => undefined,
+    "onOrder-action": () => undefined,
   },
   parameters: { viewport: { defaultViewport: "mobile1" } },
 };

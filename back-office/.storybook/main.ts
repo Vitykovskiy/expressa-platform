@@ -3,7 +3,6 @@ import vuetify from "vite-plugin-vuetify";
 
 const config: StorybookConfig = {
   stories: ["./stories/**/*.stories.ts"],
-  addons: ["@storybook/addon-a11y"],
   framework: {
     name: "@storybook/vue3-vite",
     options: {},

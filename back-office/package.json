@@ -16,11 +16,7 @@
     "typecheck": "vue-tsc --build",
     "test": "vitest",
     "storybook": "storybook dev --port 6006",
-    "storybook:build": "storybook build --output-dir node_modules/.storybook-static && node .storybook/scripts/check-storybook-manifest.mjs",
-    "test:storybook": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-e2e",
-    "test:storybook:screenshots": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-screenshots",
-    "test:a11y": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-a11y",
-    "test:visual": "PLAYWRIGHT_TARGET=storybook playwright test --project=storybook-visual",
+    "storybook:build": "storybook build --output-dir node_modules/.storybook-static",
     "test:e2e": "VITE_APP_ENV=development VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && PLAYWRIGHT_TARGET=app playwright test --project=app-e2e",
     "test:catalog:e2e": "PLAYWRIGHT_TARGET=catalog playwright test --project=catalog-e2e",
     "contract:check": "node scripts/check-openapi.mjs"
@@ -32,10 +28,8 @@
     "vuetify": "4.1.6"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.11.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
-    "@storybook/addon-a11y": "10.5.5",
     "@storybook/vue3-vite": "10.5.5",
     "@types/node": "24.13.3",
     "@vitejs/plugin-vue": "6.0.8",

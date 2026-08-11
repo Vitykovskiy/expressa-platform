@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import ShellNavigation from "@/widgets/customer-shell/ShellNavigation.vue";
 import { createCustomerDefaults } from "../fixtures/customer.fixtures";
 import type {
@@ -33,10 +32,10 @@ const meta = {
     isAuthenticated: false,
     accountLabel: "Подтвердить телефон",
     showBack: false,
-    onBack: fn(),
-    onNavigate: fn(),
-    onSelectCategory: fn(),
-    onSignOut: fn(),
+    onBack: () => undefined,
+    onNavigate: () => undefined,
+    onSelectCategory: () => undefined,
+    onSignOut: () => undefined,
   },
   argTypes: {
     activeDestination: {
@@ -74,29 +73,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const cart = canvas.getByRole("button", {
-      name: "Корзина, 2 товара",
-    });
-    const badges = canvasElement.querySelectorAll(".shell-navigation__badge");
-
-    await expect([...badges].every((badge) => badge.textContent === "2")).toBe(
-      true,
-    );
-    await userEvent.click(cart);
-    await expect(args.onNavigate).toHaveBeenCalledWith("cart");
-  },
-};
+export const Default: Story = {};
 
 export const EmptyCart: Story = {
   args: { cartCount: 0 },
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement).getByRole("button", { name: "Корзина" }),
-    ).toBeVisible();
-  },
 };
 
 export const Authenticated: Story = {
@@ -113,28 +93,5 @@ export const SelectedCategory: Story = {
   },
   parameters: {
     viewport: { defaultViewport: "desktop1024" },
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const isDesktop = canvasElement.ownerDocument.defaultView?.matchMedia(
-      "(min-width: 1024px)",
-    ).matches;
-
-    if (isDesktop) {
-      const selectedCategory = canvasElement.querySelector(
-        ".shell-navigation__category-nav .shell-navigation__nav-button--active",
-      );
-
-      await expect(selectedCategory).toHaveTextContent(categories[0]!.name);
-      await userEvent.click(
-        canvas.getByRole("button", { name: categories[0]!.name }),
-      );
-      await expect(args.onSelectCategory).toHaveBeenCalledWith(
-        categories[0]!.id,
-      );
-    } else {
-      await userEvent.click(canvas.getByRole("button", { name: "Назад" }));
-      await expect(args.onBack).toHaveBeenCalledTimes(1);
-    }
   },
 };

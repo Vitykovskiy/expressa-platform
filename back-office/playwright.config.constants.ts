@@ -50,30 +50,16 @@ export const backOfficePlaywrightProjectName = {
   app: "app-e2e",
   auth: "auth-e2e",
   catalog: "catalog-e2e",
-  storybook: "storybook-e2e",
-  storybookScreenshots: "storybook-screenshots",
-  storybookA11y: "storybook-a11y",
-  storybookVisual: "storybook-visual",
 } as const;
-export const backOfficePlaywrightSnapshotPathTemplate =
-  "{testDir}/{testFilePath}-snapshots/{arg}{ext}";
 export const backOfficePlaywrightTestMatch = {
   app: /tests\/e2e\/app\.e2e\.ts/,
   auth: /tests\/e2e\/auth\.e2e\.ts/,
   catalog: /tests\/e2e\/catalog\.e2e\.ts/,
-  storybook: /\.storybook\/tests\/navigation\.e2e\.ts/,
-  storybookScreenshots: /\.storybook\/tests\/storybook-screenshots\.e2e\.ts/,
-  storybookA11y: /\.storybook\/tests\/a11y\.e2e\.ts/,
-  storybookVisual: /\.storybook\/tests\/visual\.e2e\.ts/,
 } as const;
 export const backOfficePlaywrightTestDirectory = ".";
 export const backOfficePlaywrightTrace = "on-first-retry";
-export const backOfficeStorybookUrl = "http://127.0.0.1:6006";
-export const backOfficeStorybookWebServerCommand =
-  "npm run storybook -- --ci --host 127.0.0.1";
 export const backOfficeWebServerTimeout = 120_000;
 export const playwrightTargets = {
   auth: "auth",
   catalog: "catalog",
-  storybook: "storybook",
 } as const;

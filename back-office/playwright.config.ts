@@ -16,19 +16,15 @@ import {
   backOfficeAuthWebServerCommand,
   backOfficeDesktopBrowserDeviceName,
   backOfficePlaywrightProjectName,
-  backOfficePlaywrightSnapshotPathTemplate,
   backOfficePlaywrightTestDirectory,
   backOfficePlaywrightTestMatch,
   backOfficePlaywrightTrace,
-  backOfficeStorybookUrl,
-  backOfficeStorybookWebServerCommand,
   backOfficeWebServerTimeout,
   playwrightTargets,
 } from "./playwright.config.constants";
 import type { PlaywrightTarget } from "./playwright.config.types";
 
 const target = process.env.PLAYWRIGHT_TARGET as PlaywrightTarget | undefined;
-const storybookTarget = target === playwrightTargets.storybook;
 const authTarget = target === playwrightTargets.auth;
 const catalogTarget = target === playwrightTargets.catalog;
 
@@ -37,11 +33,8 @@ export default defineConfig({
   testDir: backOfficePlaywrightTestDirectory,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  snapshotPathTemplate: backOfficePlaywrightSnapshotPathTemplate,
   use: {
-    baseURL: storybookTarget
-      ? backOfficeStorybookUrl
-      : authTarget
+    baseURL: authTarget
         ? authFrontendUrl
         : catalogTarget
           ? catalogOrigin
@@ -62,26 +55,6 @@ export default defineConfig({
     {
       name: backOfficePlaywrightProjectName.catalog,
       testMatch: backOfficePlaywrightTestMatch.catalog,
-      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
-    },
-    {
-      name: backOfficePlaywrightProjectName.storybook,
-      testMatch: backOfficePlaywrightTestMatch.storybook,
-      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
-    },
-    {
-      name: backOfficePlaywrightProjectName.storybookScreenshots,
-      testMatch: backOfficePlaywrightTestMatch.storybookScreenshots,
-      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
-    },
-    {
-      name: backOfficePlaywrightProjectName.storybookA11y,
-      testMatch: backOfficePlaywrightTestMatch.storybookA11y,
-      use: { ...devices[backOfficeDesktopBrowserDeviceName] },
-    },
-    {
-      name: backOfficePlaywrightProjectName.storybookVisual,
-      testMatch: backOfficePlaywrightTestMatch.storybookVisual,
       use: { ...devices[backOfficeDesktopBrowserDeviceName] },
     },
   ],
@@ -124,10 +97,8 @@ export default defineConfig({
           },
         ]
       : {
-          command: storybookTarget
-            ? backOfficeStorybookWebServerCommand
-            : backOfficeAppWebServerCommand,
-          url: storybookTarget ? backOfficeStorybookUrl : backOfficeAppUrl,
+          command: backOfficeAppWebServerCommand,
+          url: backOfficeAppUrl,
           reuseExistingServer: !process.env.CI,
           timeout: backOfficeWebServerTimeout,
         },

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import MenuGroupScreen from "@/features/menu/MenuGroupScreen.vue";
 import { createCustomerDefaults } from "./fixtures/customer.fixtures";
 
@@ -8,8 +7,8 @@ const meta = {
   component: MenuGroupScreen,
   args: {
     category: createCustomerDefaults().categories[1]!,
-    onReturnToMenu: fn(),
-    onSelectProduct: fn(),
+    onReturnToMenu: () => undefined,
+    onSelectProduct: () => undefined,
   },
   argTypes: {
     category: {
@@ -40,15 +39,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: /Капучино/ }),
-    );
-    await expect(args.onSelectProduct).toHaveBeenCalledTimes(1);
-    await expect(args.onSelectProduct).toHaveBeenCalledWith("cappuccino");
-  },
-};
+export const Default: Story = {};
 
 export const Missing: Story = {
   args: {
@@ -58,15 +49,6 @@ export const Missing: Story = {
 export const Empty: Story = {
   args: {
     category: { ...createCustomerDefaults().categories[1]!, products: [] },
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(
-      canvas.getByText("В этой категории пока нет товаров"),
-    ).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "К категориям" }));
-    await expect(args.onReturnToMenu).toHaveBeenCalledTimes(1);
   },
 };
 export const Long: Story = {

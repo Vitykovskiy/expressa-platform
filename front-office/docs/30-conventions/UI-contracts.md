@@ -33,6 +33,5 @@ value, перенос текста и disabled/model state; AuthForm испол�
 компоненты отвечают за own overflow/wrap, а токены — за цвет, spacing, типографику
 и breakpoint. [Источники: main CSS](../../src/styles/main.css), [tokens](../../src/styles/customer-tokens.css).
 
-`role`, `aria-*` и live region фиксируются там, где их задаёт компонент;
-Storybook a11y и Playwright проверяют каталог, но не заменяют source contract.
-[Источники: UI](../../src/shared/ui/customer), [a11y test](../../.storybook/tests/a11y.spec.mjs).
+`role`, `aria-*` и live region фиксируются там, где их задаёт компонент.
+[Источник: UI](../../src/shared/ui/customer).

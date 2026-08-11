@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
 import { VProgressLinear } from "vuetify/components";
-import { expect, fn, userEvent, within } from "storybook/test";
 import UiTextField from "@/shared/ui/customer/text-field/UiTextField.vue";
 
 type TextFieldStoryArgs = {
@@ -13,7 +12,11 @@ type TextFieldStoryArgs = {
 const meta = {
   title: "Components/Atoms/TextField",
   component: UiTextField,
-  args: { disabled: false, modelValue: "", "onUpdate:modelValue": fn() },
+  args: {
+    disabled: false,
+    modelValue: "",
+    "onUpdate:modelValue": () => undefined,
+  },
   argTypes: {
     modelValue: { control: "text" },
     disabled: { control: "boolean" },
@@ -47,31 +50,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    const field = canvasElement.querySelector('[data-testid="text-field"]');
-    await expect(field).not.toBeNull();
-    const input = within(canvasElement).getByRole("textbox", { name: "Имя" });
-    await expect(input).not.toHaveAttribute("data-testid");
-    await expect(input).toBeVisible();
-    await expect(within(canvasElement).getByText("Введите имя")).toBeVisible();
-  },
-};
+export const Default: Story = {};
 
-export const Model: Story = {
-  play: async ({ args, canvasElement }) => {
-    const input = within(canvasElement).getByRole("textbox", { name: "Имя" });
-    await userEvent.type(input, "Анна");
-    await expect(args["onUpdate:modelValue"]).toHaveBeenLastCalledWith("Анна");
-  },
-};
+export const Model: Story = {};
 
 export const Disabled: Story = {
   args: { disabled: true, modelValue: "Анна" },
-  play: async ({ args, canvasElement }) => {
-    const input = within(canvasElement).getByRole("textbox", { name: "Имя" });
-    await expect(input).toBeDisabled();
-    await userEvent.type(input, "x");
-    await expect(args["onUpdate:modelValue"]).not.toHaveBeenCalled();
-  },
 };

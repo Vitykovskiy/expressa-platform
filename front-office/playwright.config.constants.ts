@@ -10,29 +10,10 @@ export const frontOfficeE2eDatabaseUrl =
 export const frontOfficeMobileViewport = { height: 844, width: 390 };
 export const frontOfficePlaywrightOutputDirectory =
   "/tmp/expressa-front-office-playwright-results";
-export const frontOfficePlaywrightSnapshotPathTemplate =
-  "{testDir}/{testFileDir}/__screenshots__/{testFileName}/{arg}-{platform}{ext}";
 export const frontOfficePlaywrightTestDirectory = {
   root: ".",
 } as const;
 export const frontOfficePlaywrightTestMatch = "tests/e2e/**/*.spec.ts";
-export const frontOfficePlaywrightTarget = {
-  a11y: "a11y",
-  app: "app",
-  visual: "visual",
-} as const;
-export const frontOfficeScreenshotOptions = {
-  animations: "disabled",
-  caret: "hide",
-  scale: "css",
-} as const;
-export const frontOfficeStorybookOrigin = "http://127.0.0.1:6006";
-export const frontOfficeStorybookTestMatches = {
-  a11y: ".storybook/tests/a11y.spec.mjs",
-  visual: ".storybook/tests/visual.spec.mjs",
-} as const;
-export const frontOfficeStorybookWebServerCommand =
-  "npm run storybook:build && npx http-server /tmp/expressa-front-office-storybook -p 6006 -c-1";
 export const frontOfficeAppWebServerCommand =
   "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && vite preview --host 127.0.0.1 --port 4174";
 

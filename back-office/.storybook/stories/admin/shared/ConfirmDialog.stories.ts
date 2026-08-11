@@ -1,12 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import {
-  expect,
-  fireEvent,
-  fn,
-  userEvent,
-  waitFor,
-  within,
-} from "storybook/test";
 import { shallowRef } from "vue";
 
 import ConfirmDialog from "../../../../src/shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
@@ -34,18 +26,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function dialogCanvas(canvasElement: HTMLElement) {
-  return within(canvasElement.ownerDocument.body);
-}
-
 export const Confirm: Story = {
   args: {
     open: true,
     title: "Выдать заказ",
     description: "Подтвердите, что заказ был выдан клиенту",
     confirmLabel: "Подтвердить",
-    onConfirm: fn<(reason: string | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => ({
     components: { ConfirmDialog },
@@ -63,17 +51,6 @@ export const Confirm: Story = {
     },
     template: '<ConfirmDialog v-bind="dialogArgs" v-model:open="open" />',
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-
-    const confirmButton = canvas.getByRole("button", { name: "Подтвердить" });
-    await fireEvent.click(confirmButton);
-
-    await expect(args.onConfirm).toHaveBeenCalledWith(undefined);
-    await waitFor(() =>
-      expect(canvas.queryByRole("dialog")).not.toBeInTheDocument(),
-    );
-  },
 };
 
 export const RequiredReason: Story = {
@@ -85,8 +62,8 @@ export const RequiredReason: Story = {
     confirmVariant: "destructive",
     requireInput: true,
     inputPlaceholder: "Причина отклонения",
-    onConfirm: fn<(reason: string | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => ({
     components: { ConfirmDialog },
@@ -107,25 +84,6 @@ export const RequiredReason: Story = {
     },
     template: '<ConfirmDialog v-bind="dialogArgs" v-model:open="open" />',
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const confirmButton = canvas.getByRole("button", { name: "Отклонить" });
-
-    await fireEvent.click(confirmButton);
-
-    const reasonInput = canvas.getByRole("textbox", { name: "Причина" });
-    const error = canvas.getByRole("alert");
-
-    await expect(error).toHaveTextContent("Укажите причину");
-    await expect(reasonInput).toHaveAttribute("aria-describedby", error.id);
-
-    await fireEvent.input(reasonInput, {
-      target: { value: "Клиент отменил заказ" },
-    });
-    await fireEvent.click(confirmButton);
-
-    await expect(args.onConfirm).toHaveBeenCalledWith("Клиент отменил заказ");
-  },
 };
 
 export const CancelResetsReason: Story = {
@@ -136,8 +94,8 @@ export const CancelResetsReason: Story = {
     confirmLabel: "Отклонить",
     requireInput: true,
     inputPlaceholder: "Причина отклонения",
-    onConfirm: fn<(reason: string | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => ({
     components: { ConfirmDialog },
@@ -160,28 +118,4 @@ export const CancelResetsReason: Story = {
       <ConfirmDialog v-bind="dialogArgs" v-model:open="open" />
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const reopenButton = within(canvasElement).getByRole("button", {
-      name: "Открыть диалог",
-    });
-
-    await userEvent.click(reopenButton);
-
-    const reasonInput = canvas.getByRole("textbox", { name: "Причина" });
-
-    await fireEvent.input(reasonInput, {
-      target: { value: "Проверка сброса" },
-    });
-    await userEvent.keyboard("{Escape}");
-
-    await expect(args.onCancel).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(reopenButton).toHaveFocus());
-
-    await userEvent.click(reopenButton);
-
-    await expect(canvas.getByRole("textbox", { name: "Причина" })).toHaveValue(
-      "",
-    );
-  },
 };

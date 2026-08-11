@@ -29,9 +29,8 @@ supersedes: [ADR-001]
 правилами и общим бэклогом. Каждый контур владеет своим README, AGENTS,
 локальной документацией, runtime-структурой, командами и тестами.
 
-Storybook каждого клиента целиком находится в `.storybook`: истории, fixtures,
-scripts, проверки и артефакты. `.storybook` может импортировать runtime из
-`src`, но runtime не импортирует Storybook.
+Storybook каждого клиента находится в `.storybook` как каталог UI. `.storybook`
+может импортировать runtime из `src`, но runtime не импортирует Storybook.
 
 ## Последствия
 

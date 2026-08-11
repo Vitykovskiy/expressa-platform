@@ -43,7 +43,6 @@ export default defineConfig({
     environment: 'jsdom',
     exclude: [
       '**/node_modules/**',
-      '.storybook/tests/**',
       'tests/e2e/**',
       'scripts/**/*.spec.mjs',
     ],

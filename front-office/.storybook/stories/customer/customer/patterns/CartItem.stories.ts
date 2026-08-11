@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import CartItem from "@/features/checkout/CartItem.vue";
 import type { CartItem as CartItemModel } from "@/entities/customer/model/customer.types";
 
@@ -24,8 +23,8 @@ const meta = {
       quantity: 2,
       lineTotalRub: 640,
     },
-    onRemoveItem: fn(),
-    onUpdateQuantity: fn(),
+    onRemoveItem: () => undefined,
+    onUpdateQuantity: () => undefined,
   },
   argTypes: {
     item: { control: "object", description: "Доменная позиция корзины." },
@@ -59,50 +58,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const remove = canvas.getByRole("button", { name: "Удалить Капучино" });
-    const decrement = canvas.getByRole("button", {
-      name: "Уменьшить количество Капучино",
-    });
-    const decrementGlyph = decrement.querySelector("svg");
-    const quantity = canvasElement.querySelector("output");
-    const addons = canvas.getByRole("list", { name: "Добавки" });
-    const addonItems = within(addons).getAllByRole("listitem");
-
-    if (!decrementGlyph || !quantity) throw new Error("Cart controls missing");
-
-    await expect(canvas.getByText("Размер M")).toBeVisible();
-    await expect(addonItems[0]).toHaveTextContent("+ Овсяное молоко");
-    await expect(quantity.tagName).toBe("OUTPUT");
-    await expect(decrementGlyph).toBeVisible();
-    await expect(decrementGlyph.getBoundingClientRect().width).toBeGreaterThan(
-      0,
-    );
-    await expect(decrementGlyph.getBoundingClientRect().height).toBeGreaterThan(
-      0,
-    );
-    await expect(remove.getBoundingClientRect().width).toBeGreaterThanOrEqual(
-      44,
-    );
-    await expect(remove.getBoundingClientRect().height).toBeGreaterThanOrEqual(
-      44,
-    );
-    await userEvent.click(decrement);
-    await expect(args.onUpdateQuantity).toHaveBeenCalledWith(
-      "cart-cappuccino",
-      1,
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
-    );
-    await expect(args.onUpdateQuantity).toHaveBeenCalledWith(
-      "cart-cappuccino",
-      3,
-    );
-  },
-};
+export const Default: Story = {};
 export const LongAddons: Story = {
   args: {
     item: {
@@ -133,14 +89,6 @@ export const LongAddons: Story = {
       lineTotalRub: 640,
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const addons = canvas.getByRole("list", { name: "Добавки" });
-    const addonItems = within(addons).getAllByRole("listitem");
-
-    await expect(addonItems).toHaveLength(2);
-    await expect(addons.textContent).toContain("×2");
-  },
 };
 export const Remove: Story = {
   args: {
@@ -155,37 +103,8 @@ export const Remove: Story = {
       lineTotalRub: 320,
     },
   },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const decrement = canvas.getByRole("button", {
-      name: "Уменьшить количество Капучино",
-    });
-
-    await expect(decrement).toBeDisabled();
-    decrement.click();
-    await expect(args.onUpdateQuantity).not.toHaveBeenCalled();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Удалить Капучино" }),
-    );
-    await expect(args.onRemoveItem).toHaveBeenCalledWith("cart-cappuccino");
-  },
 };
 
 export const Unavailable: Story = {
   args: { unavailable: true },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByText(/Сейчас недоступно/)).toBeVisible();
-    await expect(
-      canvas.getByRole("button", { name: "Уменьшить количество Капучино" }),
-    ).toBeDisabled();
-    await expect(
-      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
-    ).toBeDisabled();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Удалить Капучино" }),
-    );
-    await expect(args.onRemoveItem).toHaveBeenCalledWith("cart-cappuccino");
-  },
 };

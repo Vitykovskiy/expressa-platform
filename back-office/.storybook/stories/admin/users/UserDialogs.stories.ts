@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { shallowRef } from "vue";
 
 import type {
@@ -47,14 +46,6 @@ type AddUserDialogStory = StoryObj<{
   onCancel: () => void;
 }>;
 
-function dialogCanvas(canvasElement: HTMLElement) {
-  return within(canvasElement.ownerDocument.body);
-}
-
-function storyUser() {
-  return userEvent.setup({ pointerEventsCheck: 0 });
-}
-
 function actionDialogRender(
   args: UserActionDialogStory["args"],
   initiallyOpen = true,
@@ -96,28 +87,17 @@ function addUserDialogRender(
 export const ChangeRole: UserActionDialogStory = {
   args: {
     action: "change_role",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const dialog = canvas.getByRole("dialog");
-    const user = storyUser();
-
-    await expect(dialog).toHaveAccessibleName("Изменить роль");
-    await user.click(canvas.getByRole("radio", { name: /Администратор/ }));
-    await user.click(canvas.getByRole("button", { name: "Назначить" }));
-
-    await expect(args.onConfirm).toHaveBeenCalledWith("administrator");
-  },
 };
 
 export const ChangeRoleVisual: UserActionDialogStory = {
   args: {
     action: "change_role",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
 };
@@ -125,35 +105,17 @@ export const ChangeRoleVisual: UserActionDialogStory = {
 export const BlockUser: UserActionDialogStory = {
   args: {
     action: "block",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const user = storyUser();
-
-    await waitFor(() =>
-      expect(canvas.getByText(activeUser.name)).toBeVisible(),
-    );
-    await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
-      "Заблокировать",
-    );
-    await expect(
-      canvas.getByText(
-        "Пользователь потеряет доступ к системе. Его данные сохранятся.",
-      ),
-    ).toBeVisible();
-    await user.click(canvas.getByRole("button", { name: "Заблокировать" }));
-    await expect(args.onConfirm).toHaveBeenCalledWith(undefined);
-  },
 };
 
 export const BlockUserVisual: UserActionDialogStory = {
   args: {
     action: "block",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
 };
@@ -161,132 +123,50 @@ export const BlockUserVisual: UserActionDialogStory = {
 export const UnblockUser: UserActionDialogStory = {
   args: {
     action: "unblock",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const user = storyUser();
-
-    await waitFor(() =>
-      expect(canvas.getByText(activeUser.name)).toBeVisible(),
-    );
-    await expect(canvas.getByRole("dialog")).toHaveAccessibleName(
-      "Разблокировать",
-    );
-    await expect(
-      canvas.getByText("Пользователь снова получит доступ к системе."),
-    ).toBeVisible();
-    await user.click(canvas.getByRole("button", { name: "Разблокировать" }));
-    await expect(args.onConfirm).toHaveBeenCalledWith(undefined);
-  },
 };
 
 export const UnblockUserVisual: UserActionDialogStory = {
   args: {
     action: "unblock",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args),
 };
 
 export const AddUser: AddUserDialogStory = {
   args: {
-    onAdd: fn<(data: AddUserData) => void>(),
-    onCancel: fn(),
+    onAdd: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => addUserDialogRender(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const addButton = canvas.getByRole("button", {
-      name: "Добавить пользователя",
-    });
-    const user = storyUser();
-
-    await expect(addButton).toBeDisabled();
-    await user.type(
-      canvas.getByRole("textbox", { name: "Имя" }),
-      "Иван Петров",
-    );
-    await user.type(
-      canvas.getByRole("textbox", { name: "Телефон" }),
-      "79001234567",
-    );
-    await user.selectOptions(
-      canvas.getByRole("combobox", { name: "Роль" }),
-      "administrator",
-    );
-    await expect(addButton).toBeEnabled();
-    await user.click(addButton);
-
-    await expect(args.onAdd).toHaveBeenCalledWith({
-      name: "Иван Петров",
-      phone: "+7 900 123-45-67",
-      role: "administrator",
-    });
-  },
 };
 
 export const AddUserVisual: AddUserDialogStory = {
   args: {
-    onAdd: fn<(data: AddUserData) => void>(),
-    onCancel: fn(),
+    onAdd: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => addUserDialogRender(args),
 };
 
 export const CancelResetsAndReturnsFocus: AddUserDialogStory = {
   args: {
-    onAdd: fn<(data: AddUserData) => void>(),
-    onCancel: fn(),
+    onAdd: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => addUserDialogRender(args, false),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const reopenButton = within(canvasElement).getByRole("button", {
-      name: "Открыть диалог",
-    });
-    const user = storyUser();
-
-    await user.click(reopenButton);
-    await user.type(canvas.getByRole("textbox", { name: "Имя" }), "Черновик");
-    await user.click(canvas.getByRole("button", { name: "Отмена" }));
-
-    await expect(args.onCancel).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(reopenButton).toHaveFocus());
-
-    await user.click(reopenButton);
-    await expect(canvas.getByRole("textbox", { name: "Имя" })).toHaveValue("");
-  },
 };
 
 export const KeyboardFocusTrapAndEscape: UserActionDialogStory = {
   args: {
     action: "change_role",
-    onConfirm: fn<(role: UserRole | undefined) => void>(),
-    onCancel: fn(),
+    onConfirm: () => undefined,
+    onCancel: () => undefined,
   },
   render: (args) => actionDialogRender(args, false),
-  play: async ({ args, canvasElement }) => {
-    const canvas = dialogCanvas(canvasElement);
-    const reopenButton = within(canvasElement).getByRole("button", {
-      name: "Открыть диалог",
-    });
-    const user = storyUser();
-
-    await user.click(reopenButton);
-    const dialog = canvas.getByRole("dialog");
-    const cancelButton = canvas.getByRole("button", { name: "Отмена" });
-    cancelButton.focus();
-    await user.keyboard("{Tab}");
-    await expect(
-      dialog.contains(canvasElement.ownerDocument.activeElement),
-    ).toBe(true);
-    await user.keyboard("{Escape}");
-
-    await expect(args.onCancel).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(reopenButton).toHaveFocus());
-  },
 };

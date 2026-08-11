@@ -14,7 +14,8 @@ Runtime-код лежит в `src`: `app` собирает приложение 
 [Исходник: слои и маршруты](src/app/router.ts).
 
 Storybook запускается `npm run storybook`; он зависит от runtime, а runtime не
-импортирует истории. Истории, fixtures и проверки лежат в `.storybook`.
+импортирует истории. Это каталог UI-состояний для разработки; истории и fixtures
+лежат в `.storybook`.
 [Источник: конфигурация Storybook](.storybook/main.ts).
 
 Команды проверки — в [package.json](package.json). Сценарии, UI и API описаны в

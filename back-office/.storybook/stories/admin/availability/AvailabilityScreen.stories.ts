@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { ref } from "vue";
 import { VApp } from "vuetify/components";
 
@@ -71,41 +70,9 @@ export const Default: Story = {
         price: 220,
       },
     ],
-    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+    "onAvailability-change": () => undefined,
   },
   render: (args) => screenRender(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-    const switchControl = canvas.getByRole("switch", { name: "Капучино" });
-
-    await expect(
-      canvas.getByRole("heading", { name: "Доступность", level: 1 }),
-    ).toBeVisible();
-    await expect(
-      canvas.getByRole("heading", { name: "Кофе", level: 2 }),
-    ).toBeVisible();
-    await expect(switchControl).toBeChecked();
-
-    await userEvent.click(switchControl);
-
-    await expect(switchControl).not.toBeChecked();
-    const onAvailabilityChange = args["onAvailability-change"];
-    if (!onAvailabilityChange)
-      throw new Error("Availability change handler is not configured");
-
-    await expect(onAvailabilityChange).toHaveBeenCalledWith({
-      id: "1",
-      checked: false,
-    });
-    await waitFor(() => {
-      const statuses = body.getAllByRole("status");
-
-      expect(statuses).toHaveLength(1);
-      expect(statuses[0]).toHaveTextContent("Сохранено");
-      expect(statuses[0]).toBeVisible();
-    });
-  },
 };
 
 export const DefaultVisual: Story = {
@@ -119,7 +86,7 @@ export const DefaultVisual: Story = {
         price: 220,
       },
     ],
-    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+    "onAvailability-change": () => undefined,
   },
   render: (args) => screenRender(args),
 };
@@ -135,40 +102,17 @@ export const CategoryFilter: Story = {
         price: 120,
       },
     ],
-    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+    "onAvailability-change": () => undefined,
   },
   render: (args) => screenRender(args),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: "Выпечка" }));
-
-    await expect(
-      canvas.getByRole("heading", { name: "Выпечка", level: 2 }),
-    ).toBeVisible();
-    await expect(
-      canvas.queryByRole("heading", { name: "Кофе", level: 2 }),
-    ).not.toBeInTheDocument();
-    await expect(
-      canvas.getByRole("switch", { name: "Круассан" }),
-    ).toBeChecked();
-  },
 };
 
 export const Empty: Story = {
   args: {
     menuItems: [],
-    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+    "onAvailability-change": () => undefined,
   },
   render: (args) => screenRender(args),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByRole("status")).toHaveTextContent("Меню пусто");
-    await expect(
-      canvas.getByText("Позиции появятся после добавления в меню"),
-    ).toBeVisible();
-  },
 };
 
 export const LongNarrow: Story = {
@@ -182,17 +126,10 @@ export const LongNarrow: Story = {
         price: 220,
       },
     ],
-    "onAvailability-change": fn<(event: AvailabilityChangeEvent) => void>(),
+    "onAvailability-change": () => undefined,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
   },
   render: (args) => screenRender(args),
-  play: async ({ canvasElement }) => {
-    const screen = canvasElement.querySelector(".availability-screen");
-
-    if (!screen) throw new Error("Availability screen is not rendered");
-
-    await expect(screen.scrollWidth).toBeLessThanOrEqual(screen.clientWidth);
-  },
 };

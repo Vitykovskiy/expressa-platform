@@ -12,5 +12,5 @@ HTTP: [соглашения](HTTP-API-conventions.md), [ошибки и идем
 [Источник: OpenAPI](../../backend/openapi/openapi.json).
 
 UI: [front-office](Front-office-UI.md), [back-office](Back-office-UI.md),
-[Storybook gates](Storybook-gates.md). [Push](Push-notifications.md) —
+[каталог Storybook](Storybook-catalog.md). [Push](Push-notifications.md) —
 unsupported, не текущий delivery contract.

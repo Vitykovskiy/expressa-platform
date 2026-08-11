@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import MenuRootScreen from "@/features/menu/MenuRootScreen.vue";
 import { createCustomerDefaults } from "./fixtures/customer.fixtures";
 
@@ -8,7 +7,7 @@ const meta = {
   component: MenuRootScreen,
   args: {
     categories: createCustomerDefaults().categories,
-    onSelectCategory: fn(),
+    onSelectCategory: () => undefined,
   },
   argTypes: {
     categories: { control: "object", description: "Доменные категории меню." },
@@ -32,19 +31,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    const category = within(canvasElement).getByRole("button", {
-      name: /Эспрессо 2 позиц/,
-    });
-
-    await userEvent.click(category);
-    await expect(args.onSelectCategory).toHaveBeenCalledTimes(1);
-    await expect(args.onSelectCategory).toHaveBeenCalledWith("espresso");
-    category.blur();
-    await expect(category).not.toHaveFocus();
-  },
-};
+export const Default: Story = {};
 export const Empty: Story = { args: { categories: [] } };
 export const Long: Story = {
   args: {

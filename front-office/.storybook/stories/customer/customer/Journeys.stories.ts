@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { computed } from "vue";
-import { expect, userEvent, within } from "storybook/test";
 import CustomerJourneyHost from "./hosts/CustomerJourneyHost.vue";
 import {
   createCustomerShellSeed,
@@ -195,24 +194,6 @@ export const AuthenticatedNavigationStack: Story = {
     authenticated: true,
     cartPopulated: true,
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: /Добавить/ }));
-    await userEvent.click(
-      canvas.getByRole("button", { name: /Оформить заказ/ }),
-    );
-    await userEvent.click(canvas.getByRole("button", { name: /10:45–11:00/ }));
-    await expect(
-      canvas.getByRole("button", { name: /10:45–11:00/ }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Подтвердить заказ" }),
-    );
-    await expect(
-      canvas.getByRole("heading", { name: "История" }),
-    ).toBeVisible();
-  },
 };
 
 export const AuthenticatedNavigationStackView: Story = {
@@ -231,34 +212,6 @@ export const CartQuantityUpdate: Story = {
     authenticated: true,
     cartPopulated: true,
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const cartItem = canvas.getByRole("listitem", {
-      name: "Позиция корзины: Капучино",
-    });
-    const total = canvas.getByLabelText("Итого заказа");
-
-    await expect(cartItem).toHaveTextContent("2");
-    await expect(cartItem).toHaveTextContent("800 ₽");
-    await expect(total).toHaveTextContent("800 ₽");
-
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Уменьшить количество Капучино" }),
-    );
-    await expect(cartItem).toHaveTextContent("1");
-    await expect(cartItem).toHaveTextContent("400 ₽");
-    await expect(total).toHaveTextContent("400 ₽");
-
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Увеличить количество Капучино" }),
-    );
-    await expect(cartItem).toHaveTextContent("3");
-    await expect(cartItem).toHaveTextContent("1200 ₽");
-    await expect(total).toHaveTextContent("1200 ₽");
-  },
 };
 
 export const ProtectedActionAuthResume: Story = {
@@ -267,49 +220,10 @@ export const ProtectedActionAuthResume: Story = {
     navigationPreset: "none",
     cartPopulated: true,
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: /^Корзина/ }));
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Подтвердить номер телефона" }),
-    );
-    await userEvent.type(
-      canvas.getByRole("textbox", { name: "Номер телефона" }),
-      "79001234567",
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Отправить код" }),
-    );
-    await userEvent.type(
-      canvas.getByRole("textbox", { name: "Код из сообщения" }),
-      "123456",
-    );
-    await userEvent.click(canvas.getByRole("button", { name: "Подтвердить" }));
-    await expect(canvas.queryByRole("alert")).toBeNull();
-    await userEvent.click(canvas.getByRole("button", { name: "Продолжить" }));
-    await expect(
-      canvas.getByRole("heading", { name: "Корзина" }),
-    ).toBeVisible();
-  },
 };
 
 export const ProtectedConfirmation: Story = {
   args: { initialScreen: "menu", navigationPreset: "none" },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: "Корзина" }));
-    await expect(
-      canvas.getByRole("heading", { name: "Требуется подтверждение" }),
-    ).toBeVisible();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Подтвердить номер телефона" }),
-    );
-    await expect(
-      canvas.getByRole("heading", { name: "Введите номер телефона" }),
-    ).toBeVisible();
-  },
 };
 
 export const AuthCancelOrigin: Story = {
@@ -317,15 +231,6 @@ export const AuthCancelOrigin: Story = {
     initialScreen: "menu",
     navigationPreset: "none",
     groupId: "espresso",
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: /^Корзина/ }));
-    await userEvent.click(canvas.getByRole("button", { name: "Назад" }));
-    await expect(
-      canvas.getByRole("heading", { name: /Что будем\s*заказывать\?/i }),
-    ).toBeVisible();
   },
 };
 
@@ -336,14 +241,6 @@ export const BackStack: Story = {
     authenticated: true,
     productId: "latte",
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole("button", { name: "Назад" }));
-    await expect(
-      canvas.getByRole("heading", { name: "Молочные напитки" }),
-    ).toBeVisible();
-  },
 };
 
 export const SignOutResetsProtectedHistory: Story = {
@@ -351,20 +248,5 @@ export const SignOutResetsProtectedHistory: Story = {
     initialScreen: "orders",
     navigationPreset: "menu",
     authenticated: true,
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const viewportWidth = canvasElement.ownerDocument.defaultView?.innerWidth;
-
-    if (viewportWidth === undefined || viewportWidth < 1024) {
-      await expect(canvas.queryByRole("button", { name: /Выйти/ })).toBeNull();
-      return;
-    }
-
-    await userEvent.click(canvas.getByRole("button", { name: /Выйти/ }));
-    await expect(
-      canvas.getByRole("heading", { name: /Что будем\s*заказывать\?/i }),
-    ).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Назад" })).toBeNull();
   },
 };

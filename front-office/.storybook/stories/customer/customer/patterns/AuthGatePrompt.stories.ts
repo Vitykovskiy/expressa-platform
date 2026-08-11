@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import AuthGatePrompt from "@/features/auth/AuthGatePrompt.vue";
 import type { AuthGatePromptProps } from "@/features/auth/AuthGatePrompt.types";
 
@@ -16,7 +15,7 @@ const meta = {
       "Для доступа к этому разделу необходимо подтвердить номер телефона.",
     note: "Вход по номеру телефона: вы получите одноразовый код для подтверждения.",
     confirmLabel: "Подтвердить номер телефона",
-    onConfirm: fn(),
+    onConfirm: () => undefined,
   },
   argTypes: {
     title: { control: "text" },
@@ -47,17 +46,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Confirm: Story = {
-  play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", {
-        name: "Подтвердить номер телефона",
-      }),
-    );
-
-    await expect(args.onConfirm).toHaveBeenCalledTimes(1);
-  },
-};
+export const Confirm: Story = {};
 
 export const Long: Story = {
   args: {

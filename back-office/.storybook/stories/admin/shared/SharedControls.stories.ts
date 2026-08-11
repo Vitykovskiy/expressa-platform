@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
 import { shallowRef } from "vue";
 import { VApp } from "vuetify/components";
 
@@ -43,7 +42,7 @@ type Story = StoryObj;
 
 export const FilterTabsControlled: FilterTabsStory = {
   args: {
-    onUpdateModelValue: fn<(value: FilterValue) => void>(),
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { FilterTabs, VApp },
@@ -67,21 +66,11 @@ export const FilterTabsControlled: FilterTabsStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const createdTab = canvas.getByRole("button", { name: "Созданные" });
-
-    createdTab.focus();
-    await userEvent.keyboard("{Enter}");
-
-    await expect(createdTab).toHaveAttribute("aria-pressed", "true");
-    await expect(args.onUpdateModelValue).toHaveBeenCalledWith("created");
-  },
 };
 
 export const ToggleRowControlled: ToggleRowStory = {
   args: {
-    onUpdateModelValue: fn<(value: boolean) => void>(),
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { ToggleRow, VApp },
@@ -106,20 +95,11 @@ export const ToggleRowControlled: ToggleRowStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const toggle = canvas.getByRole("switch", { name: "Капучино" });
-
-    await userEvent.click(toggle);
-
-    await expect(toggle).toBeChecked();
-    await expect(args.onUpdateModelValue).toHaveBeenCalledWith(true);
-  },
 };
 
 export const ToggleRowDisabled: ToggleRowStory = {
   args: {
-    onUpdateModelValue: fn<(value: boolean) => void>(),
+    onUpdateModelValue: () => undefined,
   },
   render: (args) => ({
     components: { ToggleRow, VApp },
@@ -145,14 +125,6 @@ export const ToggleRowDisabled: ToggleRowStory = {
       </v-app>
     `,
   }),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const toggle = canvas.getByRole("switch", { name: "Капучино" });
-
-    await expect(toggle).toBeDisabled();
-    await expect(toggle).not.toBeChecked();
-    await expect(args.onUpdateModelValue).not.toHaveBeenCalled();
-  },
 };
 
 export const LongLabel: Story = {

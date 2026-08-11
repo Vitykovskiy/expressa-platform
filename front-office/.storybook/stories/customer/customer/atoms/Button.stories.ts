@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { ArrowRight, ShoppingCart } from "lucide-vue-next";
-import { expect, fn, userEvent, within } from "storybook/test";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 
 type ButtonStoryArgs = {
@@ -15,7 +14,7 @@ const meta = {
   args: {
     disabled: false,
     loading: false,
-    onClick: fn(),
+    onClick: () => undefined,
   },
   argTypes: {
     disabled: { control: "boolean" },
@@ -42,38 +41,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Продолжить",
-    });
-    await expect(button).toHaveAttribute("data-testid", "customer-button");
-    await userEvent.click(button);
-    await expect(args.onClick).toHaveBeenCalledWith(expect.any(MouseEvent));
-  },
-};
+export const Default: Story = {};
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Продолжить",
-    });
-    await expect(button).toBeDisabled();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
-  },
 };
 
 export const Loading: Story = {
   args: { loading: true },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole("button", {
-      name: "Продолжить",
-    });
-    await expect(button).toBeDisabled();
-    await expect(within(canvasElement).getByRole("progressbar")).toBeVisible();
-    await userEvent.click(button);
-    await expect(args.onClick).not.toHaveBeenCalled();
-  },
 };

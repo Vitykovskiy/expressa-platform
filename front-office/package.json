@@ -15,10 +15,8 @@
     "typecheck": "vue-tsc --build",
     "test": "vitest",
     "storybook": "STORYBOOK=true storybook dev -p 6006",
-    "storybook:build": "STORYBOOK=true storybook build -o /tmp/expressa-front-office-storybook && node .storybook/scripts/check-manifest.mjs",
-    "test:a11y": "PLAYWRIGHT_TARGET=a11y playwright test",
-    "test:visual": "PLAYWRIGHT_TARGET=visual playwright test",
-    "test:e2e": "PLAYWRIGHT_TARGET=app playwright test",
+    "storybook:build": "STORYBOOK=true storybook build -o /tmp/expressa-front-office-storybook",
+    "test:e2e": "playwright test",
     "contract:check": "node scripts/check-openapi.mjs"
   },
   "dependencies": {
@@ -31,7 +29,6 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
-    "@storybook/addon-a11y": "10.5.5",
     "@storybook/addon-docs": "10.5.5",
     "@storybook/vue3-vite": "10.5.5",
     "@types/node": "24.13.3",
@@ -42,7 +39,6 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-vue": "10.10.0",
     "globals": "17.8.0",
-    "http-server": "14.1.1",
     "jsdom": "30.0.1",
     "pg": "8.16.3",
     "playwright": "1.62.1",

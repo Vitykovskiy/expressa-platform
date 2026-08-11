@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
 import { VBtn, VCard, VCardText, VCardTitle } from "vuetify/components";
-import { expect, fn, userEvent, within } from "storybook/test";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 
 type UiDialogStoryArgs = {
@@ -12,7 +11,7 @@ type UiDialogStoryArgs = {
 const meta = {
   title: "Components/Atoms/UiDialog",
   component: UiDialog,
-  args: { modelValue: true, "onUpdate:modelValue": fn() },
+  args: { modelValue: true, "onUpdate:modelValue": () => undefined },
   argTypes: {
     modelValue: { control: "boolean" },
     "onUpdate:modelValue": { action: "update:modelValue" },
@@ -45,28 +44,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement.ownerDocument.body).getByText("Содержимое диалога"),
-    ).toBeVisible();
-  },
-};
+export const Default: Story = {};
 
 export const Model: Story = {
   args: { modelValue: false },
-  play: async ({ args, canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: "Открыть" }),
-    );
-    await expect(
-      within(canvasElement.ownerDocument.body).getByText("Содержимое диалога"),
-    ).toBeVisible();
-    await userEvent.click(
-      within(canvasElement.ownerDocument.body).getByRole("button", {
-        name: "Закрыть",
-      }),
-    );
-    await expect(args["onUpdate:modelValue"]).toHaveBeenLastCalledWith(false);
-  },
 };

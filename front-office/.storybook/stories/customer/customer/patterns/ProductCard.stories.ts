@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { fn } from "storybook/test";
 import ProductCard from "@/features/menu/ProductCard.vue";
 import type { PublicMenuProduct } from "@/shared/api/public-menu.api";
 
@@ -22,7 +21,7 @@ const product: PublicMenuProduct = {
 const meta = {
   title: "Components/Patterns/ProductCard",
   component: ProductCard,
-  args: { product, onSelect: fn() },
+  args: { product, onSelect: () => undefined },
   argTypes: {
     product: {
       control: "object",

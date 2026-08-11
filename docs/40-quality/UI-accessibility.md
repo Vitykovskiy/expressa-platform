@@ -9,8 +9,8 @@ updated: 2026-08-01
 owner: root
 last_verified: 2026-08-11
 sources:
-  - ../../front-office/.storybook/tests/a11y.spec.mjs
-  - ../../back-office/.storybook/tests/a11y.e2e.ts
+  - ../../front-office/src
+  - ../../back-office/src
 ---
 
 # Доступность и взаимодействие UI

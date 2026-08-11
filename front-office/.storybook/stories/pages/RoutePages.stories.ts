@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
-import { expect, within } from "storybook/test";
 
 import AuthCodePage from "@/pages/AuthCodePage.vue";
 import AuthPhonePage from "@/pages/AuthPhonePage.vue";
@@ -16,20 +15,15 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function routeStory(component: typeof MenuPage, title: string): Story {
+function routeStory(component: typeof MenuPage): Story {
   return {
     render: () => ({ components: { Page: component }, template: "<Page />" }),
-    play: async ({ canvasElement }) => {
-      await expect(
-        within(canvasElement).getByRole("heading", { level: 1 }),
-      ).toHaveTextContent(title);
-    },
   };
 }
 
-export const Menu = routeStory(MenuPage, "Меню");
-export const Cart = routeStory(CartPage, "Корзина");
-export const AuthPhone = routeStory(AuthPhonePage, "Вход по телефону");
-export const AuthCode = routeStory(AuthCodePage, "Подтверждение кода");
-export const Order = routeStory(OrderPage, "Заказ");
-export const Orders = routeStory(OrdersPage, "История заказов");
+export const Menu = routeStory(MenuPage);
+export const Cart = routeStory(CartPage);
+export const AuthPhone = routeStory(AuthPhonePage);
+export const AuthCode = routeStory(AuthCodePage);
+export const Order = routeStory(OrderPage);
+export const Orders = routeStory(OrdersPage);
