@@ -4,6 +4,13 @@ import { describe, expect, it } from "vitest";
 import CartScreen from "./CartScreen.vue";
 
 describe("CartScreen", () => {
+  it("показывает оплату на кассе в заполненной корзине", () => {
+    const wrapper = mountCartScreen();
+
+    expect(wrapper.text()).toContain("Оплата на кассе при получении");
+    expect(wrapper.text()).not.toContain("Онлайн-оплата");
+  });
+
   it("разрешает оформление, когда признак приёма не передан", async () => {
     const wrapper = mountCartScreen();
     const checkoutButtons = wrapper.findAll(".cart-screen__checkout");

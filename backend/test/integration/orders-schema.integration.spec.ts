@@ -348,7 +348,7 @@ describe('схема заказов', () => {
             dailyNumber + 2,
           ],
         ),
-      ).rejects.toMatchObject({ code: '22P02' });
+      ).resolves.toMatchObject({ rowCount: 1 });
       await expect(
         pool.query(
           `INSERT INTO orders (

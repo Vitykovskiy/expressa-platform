@@ -19,12 +19,15 @@ PostgreSQL, запускает миграции и seed, затем провер
 `/srv/expressa/staging` с `runtime.env` и каталогом `state` для `flock`; на VPS
 должны быть Docker с Compose, локальный registry `127.0.0.1:5000`, внешние
 `expressa-<environment>-edge` и `expressa-<environment>-data`, а для CI
-настроены SSH user/key/known-hosts. В staging `runtime.env` задаёт
-`AUTH_OTP_MODE=staging_test`, шестизначный `STAGING_TEST_OTP_CODE` и
-`STAGING_TEST_PHONE_ALLOWLIST`: OTP доступен только номерам из allowlist. В
-production OTP отправляется через SMS.ru. `runtime.env` хранит
-PostgreSQL/auth/CORS и OTP-секреты, но не digest образов; секреты не попадают в
-Git или логи.
+настроены SSH user/key/known-hosts. Для staging workflow передаёт через SSH
+синтетический staff `BOOTSTRAP_ADMIN_PHONE` и auth/CORS-секреты; `deploy.sh`
+включает `staging_test` с фиксированным OTP. Allowlist содержит ровно этот staff
+и customer `+79990000001`; другие номера OTP не получают. После health-checks
+поставка автоматически запускает smoke: customer создаёт заказ, staff проверяет
+E08/E09 — запреты ролей и неверного перехода, последовательность
+`CREATED`–`ACCEPTED`–`PREPARING`–`READY`–`ISSUED` и четыре события. Smoke
+оставляет синтетический заказ и аудит. `runtime.env` хранит пароль PostgreSQL,
+но не digest образов; секреты не попадают в Git или логи.
 [Deploy preconditions](../../deploy/deploy.sh), [Compose networks](../../deploy/compose.yml),
 [workflow SSH](../../.github/workflows/staging-deploy.yml).
 

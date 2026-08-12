@@ -36,16 +36,47 @@ if [ "$has_sensitive_filename" -eq 1 ]; then
 fi
 
 has_sensitive_content=0
+queue_page_fixture='+  useSessionStore: () => ({ accessToken: "'
+queue_page_fixture="${queue_page_fixture}access-token\" }),"
+orders_constants_fixture='+export const ordersAccessTokenSecret = "'
+orders_constants_fixture="${orders_constants_fixture}orders-e2e-access-token-secret\";"
+orders_e2e_fixture='+const accessToken = "'
+orders_e2e_fixture="${orders_e2e_fixture}e2e-dummy-access-token\";"
+order_lifecycle_fixture="+      AUTH_ACCESS_TOKEN_SECRET: '"
+order_lifecycle_fixture="${order_lifecycle_fixture}order-lifecycle-access-token-secret',"
+
 while IFS= read -r staged_file; do
+  added_lines=$(git diff --cached --no-ext-diff --unified=0 -- "$staged_file" \
+    | grep '^+' \
+    | grep -Ev '^\+\+\+') || true
+
   case "$staged_file" in
-    *.md|*.mdx|*.txt|*.example|*.sample|*.template|*.spec.ts|*.test.ts|*/test/*|scripts/test-git-hooks.sh)
-      continue
+    back-office/src/pages/QueuePage.spec.ts)
+      added_lines=$(printf '%s\n' "$added_lines" \
+        | grep -Fvx "$queue_page_fixture") || true
+      ;;
+    back-office/tests/e2e/orders.e2e.constants.ts)
+      added_lines=$(printf '%s\n' "$added_lines" \
+        | grep -Fvx "$orders_constants_fixture") || true
+      ;;
+    back-office/tests/e2e/orders.e2e.ts)
+      added_lines=$(printf '%s\n' "$added_lines" \
+        | grep -Fvx "$orders_e2e_fixture") || true
+      ;;
+    backend/test/integration/order-lifecycle.integration.spec.ts)
+      added_lines=$(printf '%s\n' "$added_lines" \
+        | grep -Fvx "$order_lifecycle_fixture") || true
       ;;
   esac
 
-  if git diff --cached --no-ext-diff --unified=0 -- "$staged_file" \
-    | grep '^+' \
-    | grep -Ev '^\+\+\+' \
+  case "$staged_file" in
+    *.ts|*.tsx|*.js|*.mjs|*.cjs|*.vue)
+      added_lines=$(printf '%s\n' "$added_lines" \
+        | grep -Eiv '(api[_-]?key|password|passwd|secret|token|database[_-]?url)[[:space:]]*[:=][[:space:]]*[A-Za-z_$][A-Za-z0-9_$.]*[[:space:]]*[,;)}]') || true
+      ;;
+  esac
+
+  if printf '%s\n' "$added_lines" \
     | grep -Ei '(BEGIN([[:space:]][A-Z]+)*[[:space:]]PRIVATE[[:space:]]KEY|AKIA[0-9A-Z]{16}|github_pat_[A-Za-z0-9_=-]{16,}|gh[pousr]_[A-Za-z0-9_=-]{16,}|glpat-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|authorization[[:space:]]*:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._=-]{16,}|(api[_-]?key|password|passwd|secret|token|database[_-]?url)[[:space:]]*[:=][[:space:]]*[^[:space:]#]{12,})' \
     | grep -Eiv '(\$\{[^}]+\}|process\.env|import\.meta\.env|<[^>]+>|example|sample|template|placeholder|changeme|your[_-]?(api|token|secret|password|key)|postgres(ql)?://[^[:space:]#]*(localhost|127\.0\.0\.1|::1))' >/dev/null; then
     has_sensitive_content=1

@@ -1,13 +1,10 @@
-import type { OrderFilter } from "./OrdersScreen.types";
+import type { QueueFilter } from "./OrdersScreen.types";
 
-export const ORDER_FILTER_TABS: ReadonlyArray<{
-  value: OrderFilter;
-  label: string;
-}> = [
-  { value: "all", label: "Все" },
-  { value: "created", label: "Новые" },
-  { value: "confirmed", label: "Подтверждённые" },
-  { value: "ready", label: "Готовы" },
+export const queueFilters: readonly { label: string; value: QueueFilter }[] = [
+  { label: "Все", value: "ALL" },
+  { label: "Новые", value: "CREATED" },
+  { label: "Приняты", value: "ACCEPTED" },
+  { label: "Готовятся", value: "PREPARING" },
+  { label: "Готовы", value: "READY" },
+  { label: "Выданы", value: "ISSUED" },
 ];
-
-export const ORDERS_SNACKBAR_TIMEOUT = 4000;

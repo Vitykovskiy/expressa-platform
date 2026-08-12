@@ -34,6 +34,7 @@
       <p class="order-page__total">
         <span>Итого</span><strong>{{ formatMinor(order.totalMinor) }}</strong>
       </p>
+      <p class="order-page__payment">Оплата на кассе при получении</p>
     </template>
 
     <div v-else class="order-page__empty" role="status">
@@ -135,5 +136,10 @@ function itemKey(item: OrderPageItem): string {
   padding-top: var(--customer-space-7);
   border-top: 1px solid var(--customer-border);
   font-size: var(--customer-font-size-xl);
+}
+.order-page__payment {
+  margin: 0;
+  color: var(--customer-text-secondary-on-surface);
+  font-weight: var(--customer-font-weight-bold);
 }
 </style>

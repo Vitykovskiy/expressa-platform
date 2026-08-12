@@ -1,291 +1,162 @@
 <template>
   <section class="orders-screen" aria-labelledby="orders-title">
-    <TopBar action-label="Обновить" title="Заказы" @action="handleRefresh">
-      <template #action>
-        <svg
-          aria-hidden="true"
-          class="orders-screen__refresh-icon"
-          viewBox="0 0 24 24"
-        >
-          <path d="M21 12a9 9 0 0 0-15.34-6.34L3 8" />
-          <path d="M3 3v5h5" />
-          <path d="M3 12a9 9 0 0 0 15.34 6.34L21 16" />
-          <path d="M21 21v-5h-5" />
-        </svg>
-      </template>
-    </TopBar>
+    <header class="orders-screen__header">
+      <div>
+        <h1 id="orders-title">Очередь заказов</h1>
+        <p>Актуальные заказы сотрудников</p>
+      </div>
+      <button type="button" @click="emit('refresh')">Обновить</button>
+    </header>
 
-    <div class="orders-screen__header">
-      <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
-      <FilterTabs
-        v-model="activeFilter"
-        class="orders-screen__filters"
-        :items="filterTabs"
-        layout="responsive"
+    <div class="orders-screen__controls">
+      <label>
+        Номер заказа
+        <input :value="props.search" type="search" @input="updateSearch" />
+      </label>
+      <label>
+        Стадия
+        <select :value="props.stage" @change="updateStage">
+          <option
+            v-for="filter in queueFilters"
+            :key="filter.value"
+            :value="filter.value"
+          >
+            {{ filter.label }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <div
+      v-if="props.status === 'loading'"
+      class="orders-screen__state"
+      aria-live="polite"
+    >
+      Загрузка очереди…
+    </div>
+    <div
+      v-else-if="props.status === 'error' && props.error !== null"
+      class="orders-screen__state"
+      role="alert"
+    >
+      <strong>{{ props.error.code }}</strong
+      >: {{ props.error.message
+      }}<span v-if="props.error.requestId"
+        >. Номер запроса: {{ props.error.requestId }}</span
+      >
+    </div>
+    <div v-else-if="props.orders.length === 0" class="orders-screen__state">
+      Заказов не найдено.
+    </div>
+    <div v-else class="orders-screen__grid">
+      <OrderCard
+        v-for="order in props.orders"
+        :key="order.id"
+        :order="order"
+        :details="props.selectedOrderId === order.id ? props.details : null"
+        :details-loading="
+          props.selectedOrderId === order.id && props.detailsLoading
+        "
+        :transition-loading="
+          props.selectedOrderId === order.id && props.transitionLoading
+        "
+        @open="emit('open', $event)"
+        @transition="emit('transition')"
       />
     </div>
-
-    <div class="orders-screen__content">
-      <EmptyState
-        v-if="filteredOrders.length === 0"
-        title="Заказов нет"
-        description="Активные заказы появятся здесь"
-      >
-        <template #icon>
-          <svg
-            aria-hidden="true"
-            class="orders-screen__empty-icon"
-            viewBox="0 0 24 24"
-          >
-            <rect x="5" y="3" width="14" height="18" rx="2" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-        </template>
-      </EmptyState>
-      <div v-else class="orders-screen__grid">
-        <OrderCard
-          v-for="order in filteredOrders"
-          :key="order.id"
-          :order="order"
-          @action="handleCardAction(order, $event)"
-        />
-      </div>
-    </div>
-
-    <ConfirmDialog
-      v-model:open="rejectDialogOpen"
-      confirm-label="Отклонить"
-      confirm-variant="destructive"
-      description="Укажите причину отклонения заказа"
-      input-placeholder="Причина отклонения"
-      require-input
-      title="Отклонить заказ"
-      @cancel="clearSelection"
-      @confirm="handleRejectConfirm"
-    />
-    <ConfirmDialog
-      v-model:open="closeDialogOpen"
-      confirm-label="Подтвердить"
-      description="Подтвердите, что заказ был выдан клиенту"
-      title="Выдать заказ"
-      @cancel="clearSelection"
-      @confirm="handleCloseConfirm"
-    />
-
-    <v-snackbar
-      v-model="snackbarOpen"
-      :color="snackbarTone"
-      :timeout="ORDERS_SNACKBAR_TIMEOUT"
-      role="status"
+    <p
+      v-if="props.actionError !== null"
+      class="orders-screen__action-error"
+      role="alert"
     >
-      {{ snackbarMessage }}
-    </v-snackbar>
+      {{ props.actionError.code }}: {{ props.actionError.message
+      }}<span v-if="props.actionError.requestId"
+        >. Номер запроса: {{ props.actionError.requestId }}</span
+      >
+    </p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
-
-import type { Order, OrderAction } from "../../../shared/ui/admin/Admin.types";
-import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
-import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
-import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
-import TopBar from "../../../widgets/admin-shell/TopBar.vue";
-import {
-  ORDER_FILTER_TABS,
-  ORDERS_SNACKBAR_TIMEOUT,
-} from "./OrdersScreen.constants";
 import OrderCard from "./OrderCard.vue";
+import { queueFilters } from "./OrdersScreen.constants";
 import type {
-  OrderFilter,
-  OrderMutationAction,
   OrdersScreenEmits,
   OrdersScreenProps,
-  OrdersSnackbarTone,
+  QueueFilter,
 } from "./OrdersScreen.types";
 
 const props = defineProps<OrdersScreenProps>();
 const emit = defineEmits<OrdersScreenEmits>();
 
-const filterTabs = ORDER_FILTER_TABS;
-const activeFilter = shallowRef<OrderFilter>("all");
-const selectedOrderId = shallowRef<string | null>(null);
-const rejectDialogOpen = shallowRef(false);
-const closeDialogOpen = shallowRef(false);
-const snackbarMessage = shallowRef("");
-const snackbarOpen = shallowRef(false);
-const snackbarTone = shallowRef<OrdersSnackbarTone>("success");
-
-const filteredOrders = computed(() =>
-  props.orders.filter((order) => {
-    if (activeFilter.value === "all") {
-      return order.status !== "Closed" && order.status !== "Rejected";
-    }
-
-    if (activeFilter.value === "created") {
-      return order.status === "Created";
-    }
-
-    if (activeFilter.value === "confirmed") {
-      return order.status === "Confirmed";
-    }
-
-    return order.status === "Ready for pickup";
-  }),
-);
-
-function showSnackbar(message: string, tone: OrdersSnackbarTone = "success") {
-  snackbarMessage.value = message;
-  snackbarTone.value = tone;
-  snackbarOpen.value = true;
+function updateSearch(event: Event): void {
+  emit("update:search", (event.target as HTMLInputElement).value);
 }
 
-function clearSelection() {
-  selectedOrderId.value = null;
-}
-
-function handleRefresh() {
-  emit("refresh");
-  showSnackbar("Обновлено");
-}
-
-function emitAction(orderId: string, action: OrderMutationAction) {
-  emit("order-action", { orderId, action });
-  showSnackbar(
-    action === "confirm" ? "Заказ подтверждён" : "Заказ готов к выдаче",
+function updateStage(event: Event): void {
+  emit(
+    "update:stage",
+    (event.target as HTMLSelectElement).value as QueueFilter,
   );
-}
-
-function handleCardAction(order: Order, action: OrderAction) {
-  if (action === "reject") {
-    selectedOrderId.value = order.id;
-    rejectDialogOpen.value = true;
-    return;
-  }
-
-  if (action === "close") {
-    selectedOrderId.value = order.id;
-    closeDialogOpen.value = true;
-    return;
-  }
-
-  emitAction(order.id, action);
-}
-
-function handleRejectConfirm(reason: string | undefined) {
-  if (!selectedOrderId.value) {
-    return;
-  }
-
-  emit("order-action", {
-    orderId: selectedOrderId.value,
-    action: "reject",
-    reason,
-  });
-  showSnackbar(`Заказ отклонён${reason ? `: ${reason}` : ""}`, "error");
-  clearSelection();
-}
-
-function handleCloseConfirm() {
-  if (!selectedOrderId.value) {
-    return;
-  }
-
-  emit("order-action", { orderId: selectedOrderId.value, action: "close" });
-  showSnackbar("Заказ выдан");
-  clearSelection();
 }
 </script>
 
 <style scoped lang="scss">
 .orders-screen {
+  display: grid;
+  gap: var(--expressa-space-lg);
+  padding: var(--expressa-space-lg);
+}
+.orders-screen__header,
+.orders-screen__controls {
   display: flex;
-  min-width: 0;
-  min-height: 100%;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--expressa-color-surface-raised);
+  gap: var(--expressa-space-md);
+  align-items: end;
+  justify-content: space-between;
 }
-
-.orders-screen__header {
-  display: contents;
-}
-
-.orders-screen__title {
-  display: none;
-  min-width: 0;
+.orders-screen__header h1,
+.orders-screen__header p {
   margin: 0;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-screen-title);
-  font-weight: var(--expressa-font-weight-bold);
-  line-height: 2rem;
-  overflow-wrap: anywhere;
 }
-
-.orders-screen__filters {
-  flex: 0 0 auto;
-  background: var(--expressa-color-surface);
+.orders-screen__header p {
+  color: var(--expressa-color-text-muted);
 }
-
-.orders-screen__content {
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--expressa-space-md) var(--expressa-space-md)
-    var(--expressa-space-tab-bar-clearance);
+.orders-screen__controls {
+  justify-content: start;
 }
-
+.orders-screen__controls label {
+  display: grid;
+  gap: var(--expressa-space-xs);
+}
+.orders-screen__controls input,
+.orders-screen__controls select,
+.orders-screen__header button {
+  min-height: var(--expressa-touch-target-min);
+  padding: var(--expressa-space-sm);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-md);
+}
 .orders-screen__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--expressa-space-md);
 }
-
-.orders-screen__refresh-icon,
-.orders-screen__empty-icon {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--expressa-stroke-width-icon);
+.orders-screen__state,
+.orders-screen__action-error {
+  padding: var(--expressa-space-md);
+  margin: 0;
+  background: var(--expressa-color-surface-raised);
+  border-radius: var(--expressa-radius-md);
 }
-
-.orders-screen__refresh-icon {
-  width: 22px;
-  height: 22px;
+.orders-screen__action-error {
+  color: var(--expressa-color-error);
 }
-
-.orders-screen__empty-icon {
-  width: 48px;
-  height: 48px;
-}
-
-@media (min-width: 768px) {
-  .orders-screen {
-    background: var(--expressa-color-surface);
-  }
-
-  .orders-screen__header {
-    display: block;
-    padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
-  }
-
-  .orders-screen__title {
-    display: block;
-    margin-bottom: var(--expressa-space-md);
-  }
-
-  .orders-screen__content {
-    padding: var(--expressa-space-md) var(--expressa-space-lg)
-      var(--expressa-space-lg);
-  }
-}
-
-@media (min-width: 1024px) {
-  .orders-screen__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 767px) {
+  .orders-screen__header,
+  .orders-screen__controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

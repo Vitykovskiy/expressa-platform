@@ -1,25 +1,31 @@
-import type { AdminButtonVariant } from "../../../shared/ui/admin/admin-button/AdminButton.types";
 import type {
-  Order,
-  OrderAction,
-  OrderStatus,
-} from "../../../shared/ui/admin/Admin.types";
+  OrderDetails,
+  OrderListItem,
+  OrderStage,
+} from "../../../shared/api/orders.api.types";
 
-export interface OrderCardProps {
-  order: Order;
-}
-
-export interface OrderCardEmits {
-  action: [action: OrderAction];
-}
-
-export type OrderCardActionPresentation = {
-  action: OrderAction;
-  label: string;
-  variant?: AdminButtonVariant;
+export type OrderCardProps = {
+  order: OrderListItem;
+  details: OrderDetails | null;
+  detailsLoading: boolean;
+  transitionLoading: boolean;
 };
 
-export type OrderCardActionPresentationMap = Record<
-  OrderStatus,
-  readonly OrderCardActionPresentation[]
+export type OrderCardEmits = {
+  open: [orderId: string];
+  transition: [];
+};
+
+export type OrderActionPresentation = {
+  label: string;
+};
+
+export type OrderStagePresentation = {
+  label: string;
+  tone: "info" | "success" | "warning";
+};
+
+export type OrderStagePresentationMap = Record<
+  OrderStage,
+  OrderStagePresentation
 >;

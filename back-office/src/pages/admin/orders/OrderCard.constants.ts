@@ -1,14 +1,21 @@
-import type { OrderCardActionPresentationMap } from "./OrderCard.types";
+import type {
+  OrderActionPresentation,
+  OrderStagePresentationMap,
+} from "./OrderCard.types";
 
-export const ORDER_CARD_ACTIONS: OrderCardActionPresentationMap = {
-  Created: [
-    { action: "confirm", label: "Подтвердить" },
-    { action: "reject", label: "Отклонить", variant: "destructive" },
-  ],
-  Confirmed: [{ action: "ready", label: "Готово к выдаче" }],
-  "Ready for pickup": [
-    { action: "close", label: "Выдан", variant: "secondary" },
-  ],
-  Rejected: [],
-  Closed: [],
+export const orderStages: OrderStagePresentationMap = {
+  ACCEPTED: { label: "Принят", tone: "info" },
+  CREATED: { label: "Новый", tone: "warning" },
+  ISSUED: { label: "Выдан", tone: "success" },
+  PREPARING: { label: "Готовится", tone: "info" },
+  READY: { label: "Готов к выдаче", tone: "success" },
+};
+
+export const orderActions: Partial<
+  Record<keyof typeof orderStages, OrderActionPresentation>
+> = {
+  ACCEPTED: { label: "Начать приготовление" },
+  CREATED: { label: "Принять заказ" },
+  PREPARING: { label: "Отметить готовым" },
+  READY: { label: "Выдать заказ" },
 };

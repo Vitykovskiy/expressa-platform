@@ -50,6 +50,8 @@ describe("OrderPage", () => {
     expect(wrapper.text()).toContain("Размер M");
     expect(wrapper.text()).toContain("Овсяное молоко");
     expect(wrapper.text()).toMatch(/Итого560\s₽/u);
+    expect(wrapper.text()).toContain("Оплата на кассе при получении");
+    expect(wrapper.text()).not.toContain("Онлайн-оплата");
   });
 
   it("не показывает чужой результат заказа", async () => {

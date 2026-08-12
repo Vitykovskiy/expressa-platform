@@ -86,7 +86,7 @@ for service in backend front back; do
 done
 if [[ "$environment" == staging ]]; then
   backend_container="$(compose ps -q backend)"
-  docker exec --interactive --env SMOKE_CUSTOMER_PHONE="$smoke_customer_phone" "$backend_container" \
+  docker exec --interactive --env SMOKE_CUSTOMER_PHONE="$smoke_customer_phone" --env SMOKE_STAFF_PHONE="$BOOTSTRAP_ADMIN_PHONE" "$backend_container" \
     /nodejs/bin/node --input-type=module - < "$script_directory/smoke-staging.mjs"
   unset BOOTSTRAP_ADMIN_PHONE
 fi

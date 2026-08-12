@@ -9,6 +9,7 @@ import { CreateOrderUseCase } from './application/create-order.use-case';
 import { orderUnitOfWorkPort } from './orders.module.constants';
 import { OrdersModule } from './orders.module';
 import { OrdersController } from './transport/orders.controller';
+import { BackofficeOrdersController } from './transport/backoffice-orders.controller';
 
 describe('OrdersModule', () => {
   it('связывает создание заказа с PostgreSQL и зависимостями аутентификации', async () => {
@@ -38,7 +39,7 @@ describe('OrdersModule', () => {
   });
 
   it('регистрирует только контроллер заказов и необходимые модули', () => {
-    expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, OrdersModule)).toEqual([OrdersController]);
+    expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, OrdersModule)).toEqual([OrdersController, BackofficeOrdersController]);
     expect(Reflect.getMetadata(MODULE_METADATA.IMPORTS, OrdersModule)).toEqual([AuthModule, DatabaseModule]);
   });
 });

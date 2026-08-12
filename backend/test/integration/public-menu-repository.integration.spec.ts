@@ -33,7 +33,7 @@ function runScript(script: 'migrate' | 'seed'): void {
 async function resetCatalog(pool: Pool): Promise<void> {
   await pool.query(`UPDATE service_settings SET value = true WHERE key = 'accepts_new_orders'`);
   await pool.query(
-    `TRUNCATE order_item_modifiers, order_items, orders, category_modifier_groups, modifier_options,
+    `TRUNCATE order_item_modifiers, order_items, order_events, orders, category_modifier_groups, modifier_options,
       modifier_groups, product_variants, products, categories`,
   );
   runScript('seed');

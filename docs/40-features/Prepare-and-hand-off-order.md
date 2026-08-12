@@ -1,16 +1,19 @@
 ---
 type: feature
 owner: root
-implementation_status: unsupported
 last_verified: 2026-08-11
 sources:
-  - ../../back-office/src/app/router.ts
+  - ../../back-office/src/pages/QueuePage.vue
+  - ../../backend/src/orders/transport/backoffice-orders.controller.ts
 ---
 # Приготовление и выдача заказа
 
 ## 6.3. Приготовление и выдача
 
-Приготовление, очередь, смена стадии, оплата и выдача не являются активным
-runtime-сценарием: `/queue` подключает placeholder `QueuePage`, а
-`OrdersScreen` не имеет routed consumer; backend контракт публикует только
-создание заказа. [Источники: router](../../back-office/src/app/router.constants.ts), [QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [OpenAPI](../../backend/openapi/openapi.json).
+Сотрудник ведёт заказ в `/queue`: открывает детали, видит снимок позиций и
+историю переходов, затем выполняет доступное следующее действие. Сценарий
+последовательно переводит заказ `CREATED` → `ACCEPTED` → `PREPARING` → `READY`
+→ `ISSUED`. [QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [API](../../backend/src/orders/transport/backoffice-orders.controller.ts).
+
+Оплата выполняется на кассе при получении; выдача остаётся переходом `READY` в
+`ISSUED`, а не отдельным платёжным сценарием. [Интерфейс front-office](../50-interfaces/Front-office-UI.md).

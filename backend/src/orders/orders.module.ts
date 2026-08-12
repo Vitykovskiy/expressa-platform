@@ -4,14 +4,19 @@ import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../platform/database/database.module';
 import { DatabaseService } from '../platform/database/database.service';
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
+import { PostgresOrderLifecycleRepository } from './adapters/postgres-order-lifecycle.repository';
 import { CreateOrderUseCase } from './application/create-order.use-case';
 import type { OrderUnitOfWork } from './application/order-unit-of-work.types';
-import { orderUnitOfWorkPort } from './orders.module.constants';
+import { GetOrdersUseCase } from './application/get-orders.use-case';
+import { TransitionOrderUseCase } from './application/transition-order.use-case';
+import type { OrderReadRepository, OrderTransitionUnitOfWork } from './application/order-lifecycle.types';
+import { orderReadRepositoryPort, orderTransitionUnitOfWorkPort, orderUnitOfWorkPort } from './orders.module.constants';
 import { OrdersController } from './transport/orders.controller';
+import { BackofficeOrdersController } from './transport/backoffice-orders.controller';
 
 @Module({
   imports: [AuthModule, DatabaseModule],
-  controllers: [OrdersController],
+  controllers: [OrdersController, BackofficeOrdersController],
   providers: [
     {
       provide: orderUnitOfWorkPort,
@@ -22,6 +27,31 @@ import { OrdersController } from './transport/orders.controller';
       provide: CreateOrderUseCase,
       inject: [orderUnitOfWorkPort],
       useFactory: (unitOfWork: OrderUnitOfWork) => new CreateOrderUseCase(unitOfWork),
+    },
+    {
+      provide: PostgresOrderLifecycleRepository,
+      inject: [DatabaseService],
+      useFactory: (database: DatabaseService) => new PostgresOrderLifecycleRepository({ pool: createPoolProxy(database) }),
+    },
+    {
+      provide: orderReadRepositoryPort,
+      inject: [PostgresOrderLifecycleRepository],
+      useFactory: (repository: PostgresOrderLifecycleRepository) => repository,
+    },
+    {
+      provide: orderTransitionUnitOfWorkPort,
+      inject: [PostgresOrderLifecycleRepository],
+      useFactory: (repository: PostgresOrderLifecycleRepository) => repository,
+    },
+    {
+      provide: GetOrdersUseCase,
+      inject: [orderReadRepositoryPort],
+      useFactory: (repository: OrderReadRepository) => new GetOrdersUseCase(repository),
+    },
+    {
+      provide: TransitionOrderUseCase,
+      inject: [orderTransitionUnitOfWorkPort],
+      useFactory: (unitOfWork: OrderTransitionUnitOfWork) => new TransitionOrderUseCase(unitOfWork),
     },
   ],
 })

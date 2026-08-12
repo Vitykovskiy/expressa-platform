@@ -9,6 +9,7 @@ sources:
   - ../../back-office/src/app/router.constants.ts
   - ../../back-office/src/pages/MenuPage.vue
   - ../../back-office/src/pages/admin/menu/catalog.store.ts
+  - ../../back-office/src/pages/QueuePage.vue
 ---
 
 # Интерфейс back-office
@@ -40,15 +41,18 @@ Breakpoint мобильного диалога — не шире 767px.
 скругления от 768px и max-height 90vh.
 [back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:admin-dialog__surface](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
 
-## Placeholder и orphan
+## Очередь и неактивные экраны
 
 `/queue` и `/availability` защищены role metadata. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
 
-`/queue` показывает только сообщение до публикации orders API.
-[back-office/src/pages/QueuePage.vue:entry](../../back-office/src/pages/QueuePage.vue).
+`/queue` — активная очередь заказов. `QueuePage` владеет запросами списка и
+деталей, поиском, фильтром стадии, обновлением каждые 5 секунд и ошибками;
+`OrdersScreen` показывает loading, error и empty, а `OrderCard` показывает
+снимок, события и только следующее допустимое действие.
+[QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [OrderCard](../../back-office/src/pages/admin/orders/OrderCard.vue).
 
 `/availability` показывает только сообщение до публикации availability API.
 [back-office/src/pages/AvailabilityPage.vue:entry](../../back-office/src/pages/AvailabilityPage.vue).
 
-`OrdersScreen`, `AvailabilityScreen`, `UsersScreen`, `SettingsScreen` не
-зарегистрированы среди active routes. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
+`AvailabilityScreen`, `UsersScreen`, `SettingsScreen` не зарегистрированы среди
+active routes. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).

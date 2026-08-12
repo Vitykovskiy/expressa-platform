@@ -23,12 +23,13 @@ registry и передаются по digest в development. Staging прове�
 
 GitHub SSH-переменные остаются входами runner для соединения с VPS и не
 передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
-`compose.yml` и image manifest; stdin SSH передаёт только `BOOTSTRAP_ADMIN_PHONE`.
-`deploy.sh` читает runtime-секреты и конфигурацию из заранее созданного
-`/srv/expressa/<environment>/runtime.env`. Этот файл содержит
-`POSTGRES_PASSWORD`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER`,
-`CORS_ORIGINS` и OTP-настройку: development `AUTH_DEVELOPMENT_OTP`, staging
-`SMS_RU_API_ID`/`SMS_RU_SENDER`. Значения не печатаются и не входят в GitHub
-workflow. [Development deploy step](../../.github/workflows/development-delivery.yml),
+`compose.yml`, `smoke-staging.mjs` и image manifest. Для staging stdin SSH передаёт
+`BOOTSTRAP_ADMIN_PHONE`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER` и
+`CORS_ORIGINS`; remote script передаёт их `deploy.sh`, не записывая в
+`runtime.env`. `deploy.sh` читает из этого заранее созданного файла пароль
+PostgreSQL, а для development — `AUTH_DEVELOPMENT_OTP`. В staging он включает
+`AUTH_OTP_MODE=staging_test`, фиксированный OTP и точный allowlist из
+`BOOTSTRAP_ADMIN_PHONE` и синтетического customer `+79990000001`. Значения не
+печатаются и не входят в GitHub workflow. [Development deploy step](../../.github/workflows/development-delivery.yml),
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).

@@ -10,6 +10,7 @@ sources:
   - ../../backend/src/catalog/transport/catalog-products.controller.ts
   - ../../backend/src/catalog/transport/catalog-modifiers.controller.ts
   - ../../backend/src/catalog/transport/catalog-category-modifiers.controller.ts
+  - ../../backend/src/orders/transport/backoffice-orders.controller.ts
 ---
 
 # API back-office
@@ -33,6 +34,12 @@ sources:
 | `POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder` | `CatalogModifiersController.reorderOptions` → `ManageModifiersUseCase.reorderOptions` | [POST /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:reorderOptions](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:reorderOptions](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
 | `DELETE /api/v1/backoffice/catalog/modifier-groups/options/{optionId}` | `CatalogModifiersController.archiveOption` → `ManageModifiersUseCase.archiveOption` | [DELETE /api/v1/backoffice/catalog/modifier-groups/options/{optionId}](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-modifiers.controller.ts:archiveOption](../../backend/src/catalog/transport/catalog-modifiers.controller.ts), [backend/src/catalog/application/manage-modifiers.use-case.ts:archiveOption](../../backend/src/catalog/application/manage-modifiers.use-case.ts) |
 | `PUT /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups` | `CatalogCategoryModifiersController.replace` → `ManageCategoryModifiersUseCase.replace` | [PUT /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups](../../backend/openapi/openapi.json), [backend/src/catalog/transport/catalog-category-modifiers.controller.ts:replace](../../backend/src/catalog/transport/catalog-category-modifiers.controller.ts), [backend/src/catalog/application/manage-category-modifiers.use-case.ts:replace](../../backend/src/catalog/application/manage-category-modifiers.use-case.ts) |
+| `GET /api/v1/backoffice/orders?stage=&number=` | `BackofficeOrdersController.list` → `GetOrdersUseCase.list` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `GET /api/v1/backoffice/orders/{orderId}` | `BackofficeOrdersController.details` → `GetOrdersUseCase.details` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `POST /api/v1/backoffice/orders/{orderId}/accept` | `BackofficeOrdersController.accept` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `POST /api/v1/backoffice/orders/{orderId}/start-preparing` | `BackofficeOrdersController.startPreparing` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `POST /api/v1/backoffice/orders/{orderId}/mark-ready` | `BackofficeOrdersController.markReady` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `POST /api/v1/backoffice/orders/{orderId}/issue` | `BackofficeOrdersController.issue` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
 
 Неверное тело каталожной команды возвращает `VALIDATION_ERROR` с
 `details.fields`; эта структура описана и в OpenAPI.
@@ -40,3 +47,8 @@ sources:
 
 Единый exception filter добавляет `requestId` к каждому HTTP error response.
 [backend/src/platform/observability/unified-exception.filter.ts:UnifiedExceptionFilter](../../backend/src/platform/observability/unified-exception.filter.ts).
+
+Контракты очереди доступны только сотруднику. Список принимает фильтры `stage`
+и `number`; детали и успешный переход возвращают снимок заказа и события
+переходов. Ошибки используют единую структуру с `code`, `message`, `details` и
+`requestId`. [Контроллер заказов](../../backend/src/orders/transport/backoffice-orders.controller.ts), [OpenAPI](../../backend/openapi/openapi.json).

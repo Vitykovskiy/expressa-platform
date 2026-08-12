@@ -48,6 +48,9 @@ sources:
 `useCheckoutStore` вызывает `ordersApi.createOrder`.
 [front-office/src/features/checkout/checkout.store.ts:useCheckoutStore](../../front-office/src/features/checkout/checkout.store.ts).
 
+В заполненной корзине и деталях созданного заказа показывается точный текст
+«Оплата на кассе при получении». [CartScreen](../../front-office/src/features/checkout/CartScreen.vue), [OrderPage](../../front-office/src/pages/OrderPage.vue).
+
 Изменение итога переводит checkout в reconfirmation, недоступность и закрытый
 intake — в error state.
 [front-office/src/features/checkout/checkout.store.ts:handleError](../../front-office/src/features/checkout/checkout.store.ts).

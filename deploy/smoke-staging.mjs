@@ -1,28 +1,61 @@
 import { randomUUID } from 'node:crypto';
 
 const backendUrl = 'http://127.0.0.1:3000';
+const apiPrefix = '/api/v1';
 
-export async function runStagingSmoke(phone = process.env.SMOKE_CUSTOMER_PHONE, baseUrl = backendUrl) {
-  if (typeof phone !== 'string' || !/^\+7[0-9]{10}$/.test(phone)) {
-    throw new Error('SMOKE_CUSTOMER_PHONE is required for staging smoke');
-  }
+export async function runStagingSmoke(
+  customerPhone = process.env.SMOKE_CUSTOMER_PHONE,
+  baseUrl = backendUrl,
+  staffPhone = process.env.SMOKE_STAFF_PHONE,
+) {
+  if (!isPhone(customerPhone)) throw new Error('SMOKE_CUSTOMER_PHONE is required for staging smoke');
+  if (!isPhone(staffPhone)) throw new Error('SMOKE_STAFF_PHONE is required for staging smoke');
 
   await expectStatus(baseUrl, '/health/live', 200, 'liveness');
   await expectStatus(baseUrl, '/health/ready', 200, 'readiness');
 
-  await expectStatus(baseUrl, '/api/v1/auth/otp/request', 202, 'OTP request', {
+  const customerAccessToken = await authenticate(baseUrl, customerPhone, 'customer');
+  const staffAccessToken = await authenticate(baseUrl, staffPhone, 'staff');
+  const order = await createOrder(baseUrl, customerAccessToken);
+
+  await expectStatus(baseUrl, `${apiPrefix}/backoffice/orders/${order.id}/accept`, 403, 'customer accept denial', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${customerAccessToken}` },
+  });
+  await expectStatus(baseUrl, `${apiPrefix}/backoffice/orders/${order.id}/issue`, 409, 'early issue', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${staffAccessToken}` },
+  });
+  assertStage(await getOrder(baseUrl, order.id, staffAccessToken), 'CREATED', 'early issue');
+
+  await expectStage(baseUrl, order.id, staffAccessToken, 'accept', 200, 'ACCEPTED', 'accept');
+  await expectStage(baseUrl, order.id, staffAccessToken, 'start-preparing', 200, 'PREPARING', 'start preparing');
+  await expectStage(baseUrl, order.id, staffAccessToken, 'mark-ready', 200, 'READY', 'mark ready');
+
+  await expectStatus(baseUrl, `${apiPrefix}/backoffice/orders/${order.id}/issue`, 403, 'customer issue denial', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${customerAccessToken}` },
+  });
+  assertStage(await getOrder(baseUrl, order.id, staffAccessToken), 'READY', 'customer issue denial');
+  await expectStage(baseUrl, order.id, staffAccessToken, 'issue', 200, 'ISSUED', 'issue', true);
+}
+
+async function authenticate(baseUrl, phone, role) {
+  await expectStatus(baseUrl, `${apiPrefix}/auth/otp/request`, 202, `${role} OTP request`, {
     method: 'POST',
     body: JSON.stringify({ phone }),
   });
-  const verified = await expectJson(baseUrl, '/api/v1/auth/otp/verify', 200, 'OTP verification', {
+  const verified = await expectJson(baseUrl, `${apiPrefix}/auth/otp/verify`, 200, `${role} OTP verification`, {
     method: 'POST',
     body: JSON.stringify({ phone, code: '000000' }),
   });
-  const accessToken = readAccessToken(verified);
+  return readAccessToken(verified);
+}
 
-  const menu = await expectJson(baseUrl, '/api/v1/public/menu', 200, 'public menu');
-  const order = createOrder(menu);
-  const created = await expectJson(baseUrl, '/api/v1/orders', 201, 'order creation', {
+async function createOrder(baseUrl, accessToken) {
+  const menu = await expectJson(baseUrl, `${apiPrefix}/public/menu`, 200, 'public menu');
+  const order = createOrderRequest(menu);
+  const created = await expectJson(baseUrl, `${apiPrefix}/orders`, 201, 'order creation', {
     method: 'POST',
     headers: {
       authorization: `Bearer ${accessToken}`,
@@ -30,41 +63,31 @@ export async function runStagingSmoke(phone = process.env.SMOKE_CUSTOMER_PHONE, 
     },
     body: JSON.stringify(order),
   });
-  assertCreatedOrder(created);
-}
-
-async function expectStatus(baseUrl, path, expectedStatus, name, options = {}) {
-  const response = await request(baseUrl, path, options);
-  if (response.status !== expectedStatus) {
-    throw new Error(`${name}: expected HTTP ${expectedStatus}, received ${response.status}`);
+  assertStage(created, 'CREATED', 'order creation');
+  if (typeof created.id !== 'string' || created.id === '') {
+    throw new Error('order creation: CREATED order id is missing');
   }
-  return response;
+  return created;
 }
 
-async function expectJson(baseUrl, path, expectedStatus, name, options = {}) {
-  const response = await expectStatus(baseUrl, path, expectedStatus, name, options);
-  try {
-    return await response.json();
-  } catch {
-    throw new Error(`${name}: response is not JSON`);
-  }
+async function expectStage(baseUrl, orderId, accessToken, action, expectedStatus, expectedStage, name, verifyEvents = false) {
+  const order = await expectJson(baseUrl, `${apiPrefix}/backoffice/orders/${orderId}/${action}`, expectedStatus, name, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  assertStage(order, expectedStage, name);
+  if (verifyEvents) assertLifecycleEvents(order);
+  return order;
 }
 
-function request(baseUrl, path, { headers = {}, ...options }) {
-  return fetch(`${baseUrl}${path}`, {
-    ...options,
-    headers: { 'content-type': 'application/json', ...headers },
+async function getOrder(baseUrl, orderId, accessToken) {
+  return expectJson(baseUrl, `${apiPrefix}/backoffice/orders/${orderId}`, 200, 'order details', {
+    method: 'GET',
+    headers: { authorization: `Bearer ${accessToken}` },
   });
 }
 
-function readAccessToken(value) {
-  if (!isRecord(value) || typeof value.accessToken !== 'string' || value.accessToken === '') {
-    throw new Error('OTP verification: access token is missing');
-  }
-  return value.accessToken;
-}
-
-function createOrder(menu) {
+function createOrderRequest(menu) {
   if (!isRecord(menu) || menu.acceptsNewOrders !== true || !Array.isArray(menu.categories)) {
     throw new Error('public menu: no order intake');
   }
@@ -115,10 +138,55 @@ function createOrderItem(product) {
   return { productId: product.id, variantId, modifierOptionIds, quantity: 1, totalMinor };
 }
 
-function assertCreatedOrder(value) {
-  if (!isRecord(value) || value.stage !== 'CREATED' || typeof value.id !== 'string' || value.id === '') {
-    throw new Error('order creation: CREATED order id is missing');
+function assertLifecycleEvents(order) {
+  if (!Array.isArray(order.events)) throw new Error('order events: response is invalid');
+  if (order.events.length !== 4) throw new Error('order events: expected exactly four events');
+  for (const [from, to] of [['CREATED', 'ACCEPTED'], ['ACCEPTED', 'PREPARING'], ['PREPARING', 'READY'], ['READY', 'ISSUED']]) {
+    if (!order.events.some((event) => isRecord(event) && event.from === from && event.to === to)) {
+      throw new Error(`order events: missing ${from} to ${to}`);
+    }
   }
+}
+
+async function expectStatus(baseUrl, path, expectedStatus, name, options = {}) {
+  const response = await request(baseUrl, path, options);
+  if (response.status !== expectedStatus) {
+    throw new Error(`${name}: expected HTTP ${expectedStatus}, received ${response.status}`);
+  }
+  return response;
+}
+
+async function expectJson(baseUrl, path, expectedStatus, name, options = {}) {
+  const response = await expectStatus(baseUrl, path, expectedStatus, name, options);
+  try {
+    return await response.json();
+  } catch {
+    throw new Error(`${name}: response is not JSON`);
+  }
+}
+
+function request(baseUrl, path, { headers = {}, ...options }) {
+  return fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+}
+
+function readAccessToken(value) {
+  if (!isRecord(value) || typeof value.accessToken !== 'string' || value.accessToken === '') {
+    throw new Error('OTP verification: access token is missing');
+  }
+  return value.accessToken;
+}
+
+function assertStage(value, expectedStage, name) {
+  if (!isRecord(value) || value.stage !== expectedStage) {
+    throw new Error(`${name}: expected ${expectedStage}`);
+  }
+}
+
+function isPhone(value) {
+  return typeof value === 'string' && /^\+7[0-9]{10}$/.test(value);
 }
 
 function isRecord(value) {

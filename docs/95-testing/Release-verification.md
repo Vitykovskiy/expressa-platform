@@ -56,6 +56,15 @@ checkout. Browser suite содержит шесть сценариев: путь
 - Front-office: [checkout E2E](../../front-office/tests/e2e/checkout.e2e.spec.ts)
   и [CI](../../.github/workflows/front-office-ci.yml).
 
+## E08–E09 — очередь, выдача и оплата при получении
+
+Реальный Chromium создаёт заказ через front-office, проверяет видимость блока
+оплаты в корзине, затем сотрудник проводит заказ через `CREATED` →
+`ACCEPTED` → `PREPARING` → `READY` → `ISSUED` и видит события. Сценарий также
+проверяет отказ customer и недопустимого `issue`; после отказа заказ остаётся
+`READY`. Запуск: `cd back-office && npx playwright test --config
+playwright.orders.config.ts`. [E2E](../../back-office/tests/e2e/orders.e2e.ts), [конфигурация](../../back-office/playwright.orders.config.ts).
+
 ## Definition of Ready
 
 Задача готова к разработке, когда содержит:

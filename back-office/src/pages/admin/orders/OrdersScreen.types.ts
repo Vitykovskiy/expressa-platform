@@ -1,20 +1,29 @@
 import type {
-  Order,
-  OrderAction,
-  OrderActionEvent,
-} from "../../../shared/ui/admin/Admin.types";
+  OrderApiError,
+  OrderDetails,
+  OrderListItem,
+  OrderStage,
+} from "../../../shared/api/orders.api.types";
 
-export type OrderFilter = "all" | "created" | "confirmed" | "ready";
+export type QueueFilter = "ALL" | OrderStage;
 
-export type OrderMutationAction = Exclude<OrderAction, "reject" | "close">;
+export type OrdersScreenProps = {
+  orders: readonly OrderListItem[];
+  search: string;
+  stage: QueueFilter;
+  status: "error" | "loading" | "ready";
+  error: OrderApiError | null;
+  selectedOrderId: string | null;
+  details: OrderDetails | null;
+  detailsLoading: boolean;
+  transitionLoading: boolean;
+  actionError: OrderApiError | null;
+};
 
-export type OrdersSnackbarTone = "success" | "error";
-
-export interface OrdersScreenProps {
-  orders: readonly Order[];
-}
-
-export interface OrdersScreenEmits {
+export type OrdersScreenEmits = {
   refresh: [];
-  "order-action": [event: OrderActionEvent];
-}
+  "update:search": [search: string];
+  "update:stage": [stage: QueueFilter];
+  open: [orderId: string];
+  transition: [];
+};
