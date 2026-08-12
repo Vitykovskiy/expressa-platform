@@ -21,14 +21,6 @@ registry и передаются по digest в development. Staging прове�
 `deploy/staging.env` и развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
 [staging](../../.github/workflows/staging-deploy.yml).
 
-После staging-поставки workflow проверяет публичные health-маршруты. URL
-поступают только из секретов `STAGING_BACKEND_URL`, `STAGING_FRONT_OFFICE_URL`
-и `STAGING_BACK_OFFICE_URL`: backend проверяется по `/health/live` и
-`/health/ready`, каждый клиент — по `/health`. `curl` не выводит тело или URL;
-журнал содержит только маркеры успешных проверок `backend_live_passed`,
-`backend_ready_passed`, `front_office_health_passed` и
-`back_office_health_passed`.
-
 GitHub SSH-переменные остаются входами runner для соединения с VPS и не
 передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
 `compose.yml`, `smoke-staging.mjs` и image manifest. Для staging stdin SSH передаёт

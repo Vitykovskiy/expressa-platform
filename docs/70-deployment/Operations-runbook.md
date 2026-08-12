@@ -35,8 +35,6 @@ E08/E09 — запреты ролей и неверного перехода, п
 пишут только именные evidence-маркеры `expressa-deploy: check=… status=passed`
 или `expressa-staging-smoke: check=… status=passed`. Маркеры подтверждают
 проверку, но не содержат телефон, OTP, токен, URL или идентификатор заказа.
-Публичные health-проверки workflow используют URL-секреты, перечисленные в
-[CI/CD](CI-CD.md).
 
 Для диагностики используются backend `/health/live` и `/health/ready`, client
 `/health` и container health-checks. Значения `runtime.env` — секреты и не
