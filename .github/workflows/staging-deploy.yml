@@ -45,4 +45,5 @@ jobs:
           BOOTSTRAP_ADMIN_PHONE: ${{ secrets.BOOTSTRAP_ADMIN_PHONE }}
           AUTH_ACCESS_TOKEN_SECRET: ${{ secrets.AUTH_ACCESS_TOKEN_SECRET }}
           AUTH_OTP_PEPPER: ${{ secrets.AUTH_OTP_PEPPER }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
         run: deploy/run-remote.sh staging deploy/staging.env
