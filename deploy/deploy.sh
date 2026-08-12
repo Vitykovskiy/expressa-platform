@@ -32,8 +32,9 @@ set +a
 if [[ "$environment" == development ]]; then
   [[ "${AUTH_DEVELOPMENT_OTP:-}" =~ ^[0-9]{6}$ ]] || fail 'AUTH_DEVELOPMENT_OTP must contain six digits'
 else
-  [[ "${SMS_RU_API_ID:-}" ]] || fail 'SMS_RU_API_ID is required'
-  [[ "${SMS_RU_SENDER:-}" ]] || fail 'SMS_RU_SENDER is required'
+  [[ "${AUTH_OTP_MODE:-}" ]] || fail 'AUTH_OTP_MODE is required'
+  [[ "${STAGING_TEST_OTP_CODE:-}" ]] || fail 'STAGING_TEST_OTP_CODE is required'
+  [[ "${STAGING_TEST_PHONE_ALLOWLIST:-}" ]] || fail 'STAGING_TEST_PHONE_ALLOWLIST is required'
 fi
 [[ "${BACKEND_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACKEND_IMAGE must be an immutable digest'
 [[ "${FRONT_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'FRONT_IMAGE must be an immutable digest'

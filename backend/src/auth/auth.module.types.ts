@@ -6,6 +6,9 @@ export type AuthModuleConfiguration = {
   environment: DeliveryEnvironment;
   jwtSecret: string;
   otpPepper: string;
+  otpMode: string | undefined;
   smsRuApiId: string | undefined;
   smsRuSender: string | undefined;
+  stagingTestOtpCode: string | undefined;
+  stagingTestPhoneAllowlist: string | undefined;
 };

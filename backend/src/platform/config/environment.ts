@@ -105,6 +105,29 @@ function validateEnvironmentSpecificVariables(
     return;
   }
 
+  if (nodeEnvironment === 'staging') {
+    const otpMode = requireEnvironmentVariable(environment, 'AUTH_OTP_MODE');
+    if (otpMode !== 'staging_test') {
+      throw new Error('Invalid environment variable: AUTH_OTP_MODE');
+    }
+
+    const otp = requireEnvironmentVariable(environment, 'STAGING_TEST_OTP_CODE');
+    if (!/^\d{6}$/.test(otp)) {
+      throw new Error('Invalid environment variable: STAGING_TEST_OTP_CODE');
+    }
+
+    const allowlist = requireEnvironmentVariable(environment, 'STAGING_TEST_PHONE_ALLOWLIST');
+    const phones = allowlist.split(',');
+    if (
+      phones.some((phone) => !/^\+7\d{10}$/.test(phone)) ||
+      new Set(phones).size !== phones.length
+    ) {
+      throw new Error('Invalid environment variable: STAGING_TEST_PHONE_ALLOWLIST');
+    }
+
+    return;
+  }
+
   requireEnvironmentVariable(environment, 'SMS_RU_API_ID');
   requireEnvironmentVariable(environment, 'SMS_RU_SENDER');
 }

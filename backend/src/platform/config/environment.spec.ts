@@ -55,12 +55,36 @@ describe('validateEnvironment', () => {
     }
   });
 
-  it('требует SMS.ru настройки в staging и production', () => {
+  it('требует staging test OTP только в staging', () => {
     const staging = { ...validEnvironment, NODE_ENV: 'staging', AUTH_DEVELOPMENT_OTP: undefined };
-    const production = { ...staging, NODE_ENV: 'production' };
 
-    expectValidationError(staging, 'SMS_RU_API_ID');
-    expect(() => validateEnvironment({ ...staging, SMS_RU_API_ID: 'id', SMS_RU_SENDER: 'Expressa' })).not.toThrow();
+    expectValidationError(staging, 'AUTH_OTP_MODE');
+    expectValidationError({ ...staging, AUTH_OTP_MODE: 'sms' }, 'AUTH_OTP_MODE');
+    expectValidationError({ ...staging, AUTH_OTP_MODE: 'staging_test' }, 'STAGING_TEST_OTP_CODE');
+    expectValidationError(
+      { ...staging, AUTH_OTP_MODE: 'staging_test', STAGING_TEST_OTP_CODE: '12345' },
+      'STAGING_TEST_OTP_CODE',
+    );
+    expectValidationError(
+      {
+        ...staging,
+        AUTH_OTP_MODE: 'staging_test',
+        STAGING_TEST_OTP_CODE: '123456',
+        STAGING_TEST_PHONE_ALLOWLIST: '+79991234567,+79991234567',
+      },
+      'STAGING_TEST_PHONE_ALLOWLIST',
+    );
+    expect(() => validateEnvironment({
+      ...staging,
+      AUTH_OTP_MODE: 'staging_test',
+      STAGING_TEST_OTP_CODE: '123456',
+      STAGING_TEST_PHONE_ALLOWLIST: '+79991234567,+79876543210',
+    })).not.toThrow();
+  });
+
+  it('требует SMS.ru настройки в production', () => {
+    const production = { ...validEnvironment, NODE_ENV: 'production', AUTH_DEVELOPMENT_OTP: undefined };
+
     expectValidationError(production, 'SMS_RU_API_ID');
     expect(() => validateEnvironment({ ...production, SMS_RU_API_ID: 'id', SMS_RU_SENDER: 'Expressa' })).not.toThrow();
   });

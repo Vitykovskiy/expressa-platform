@@ -17,6 +17,7 @@ import { NodeAuthCryptoAdapter } from './adapters/node-auth-crypto.adapter';
 import { PostgresAuthRepository } from './adapters/postgres-auth.repository';
 import { SecureOtpCodeGenerator } from './adapters/secure-otp-code.generator';
 import { SmsRuSmsSender } from './adapters/sms-ru-sms.sender';
+import { StagingOtpAdapter } from './adapters/staging-otp.adapter';
 import { SystemClockAdapter } from './adapters/system-clock.adapter';
 import {
   authRepositoryPort,
@@ -125,12 +126,30 @@ function createOtpCodeGenerator(configuration: AuthModuleConfiguration) {
     return new DevelopmentOtpAdapter(configuration.environment, configuration.developmentOtp);
   }
 
+  if (configuration.environment === 'staging') {
+    return new StagingOtpAdapter(
+      configuration.environment,
+      configuration.otpMode,
+      configuration.stagingTestOtpCode,
+      configuration.stagingTestPhoneAllowlist,
+    );
+  }
+
   return new SecureOtpCodeGenerator();
 }
 
 function createSmsSender(configuration: AuthModuleConfiguration) {
   if (configuration.environment === 'local' || configuration.environment === 'development') {
     return new DevelopmentOtpAdapter(configuration.environment, configuration.developmentOtp);
+  }
+
+  if (configuration.environment === 'staging') {
+    return new StagingOtpAdapter(
+      configuration.environment,
+      configuration.otpMode,
+      configuration.stagingTestOtpCode,
+      configuration.stagingTestPhoneAllowlist,
+    );
   }
 
   return new SmsRuSmsSender({ apiId: requireConfigurationValue(configuration.smsRuApiId, 'SMS_RU_API_ID'), from: requireConfigurationValue(configuration.smsRuSender, 'SMS_RU_SENDER') });
@@ -148,8 +167,11 @@ function getAuthConfiguration(configuration: ConfigService): AuthModuleConfigura
     environment,
     jwtSecret: requireConfigurationValue(configuration.get<string>('AUTH_ACCESS_TOKEN_SECRET'), 'AUTH_ACCESS_TOKEN_SECRET'),
     otpPepper: requireConfigurationValue(configuration.get<string>('AUTH_OTP_PEPPER'), 'AUTH_OTP_PEPPER'),
+    otpMode: configuration.get<string>('AUTH_OTP_MODE'),
     smsRuApiId: configuration.get<string>('SMS_RU_API_ID'),
     smsRuSender: configuration.get<string>('SMS_RU_SENDER'),
+    stagingTestOtpCode: configuration.get<string>('STAGING_TEST_OTP_CODE'),
+    stagingTestPhoneAllowlist: configuration.get<string>('STAGING_TEST_PHONE_ALLOWLIST'),
   };
 }
 
