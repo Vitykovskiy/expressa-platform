@@ -25,6 +25,19 @@ set -a
 # shellcheck disable=SC1090
 source "$runtime_file"
 set +a
+if [[ "$environment" == staging ]]; then
+  [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
+  [[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || printf 'AUTH_ACCESS_TOKEN_SECRET=%s\n' "$(openssl rand -hex 32)" >> "$runtime_file"
+  [[ "${AUTH_OTP_PEPPER:-}" ]] || printf 'AUTH_OTP_PEPPER=%s\n' "$(openssl rand -hex 32)" >> "$runtime_file"
+  [[ "${AUTH_OTP_MODE:-}" ]] || printf '%s\n' 'AUTH_OTP_MODE=staging_test' >> "$runtime_file"
+  [[ "${STAGING_TEST_OTP_CODE:-}" ]] || printf '%s\n' 'STAGING_TEST_OTP_CODE=000000' >> "$runtime_file"
+  [[ "${STAGING_TEST_PHONE_ALLOWLIST:-}" ]] || printf 'STAGING_TEST_PHONE_ALLOWLIST=%s\n' "$BOOTSTRAP_ADMIN_PHONE" >> "$runtime_file"
+
+  set -a
+  # shellcheck disable=SC1090
+  source "$runtime_file"
+  set +a
+fi
 [[ "${POSTGRES_PASSWORD:-}" ]] || fail 'POSTGRES_PASSWORD is required'
 [[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'AUTH_ACCESS_TOKEN_SECRET is required'
 [[ "${AUTH_OTP_PEPPER:-}" ]] || fail 'AUTH_OTP_PEPPER is required'
