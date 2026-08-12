@@ -56,6 +56,12 @@ jobs:
             printf 'BACK_IMAGE=%s\n' "$(docker inspect --format '{{index .RepoDigests 0}}' "127.0.0.1:5000/expressa/back-office:$tag")"
           } > "$temporary_directory/images.env"
           cp "$temporary_directory/images.env" deploy/images.env
+      - name: Upload deploy image manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deploy-images-${{ github.sha }}
+          path: deploy/images.env
+          retention-days: 3
       - name: Deploy current checkout
         env:
           DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
