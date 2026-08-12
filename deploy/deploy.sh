@@ -27,16 +27,15 @@ source "$runtime_file"
 set +a
 if [[ "$environment" == staging ]]; then
   [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
-  [[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || printf 'AUTH_ACCESS_TOKEN_SECRET=%s\n' "$(openssl rand -hex 32)" | sudo tee -a "$runtime_file" >/dev/null
-  [[ "${AUTH_OTP_PEPPER:-}" ]] || printf 'AUTH_OTP_PEPPER=%s\n' "$(openssl rand -hex 32)" | sudo tee -a "$runtime_file" >/dev/null
-  [[ "${AUTH_OTP_MODE:-}" ]] || printf '%s\n' 'AUTH_OTP_MODE=staging_test' | sudo tee -a "$runtime_file" >/dev/null
-  [[ "${STAGING_TEST_OTP_CODE:-}" ]] || printf '%s\n' 'STAGING_TEST_OTP_CODE=000000' | sudo tee -a "$runtime_file" >/dev/null
-  [[ "${STAGING_TEST_PHONE_ALLOWLIST:-}" ]] || printf 'STAGING_TEST_PHONE_ALLOWLIST=%s\n' "$BOOTSTRAP_ADMIN_PHONE" | sudo tee -a "$runtime_file" >/dev/null
-
-  set -a
-  # shellcheck disable=SC1090
-  source "$runtime_file"
-  set +a
+  [[ "${STAGING_AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'STAGING_AUTH_ACCESS_TOKEN_SECRET is required'
+  [[ "${STAGING_AUTH_OTP_PEPPER:-}" ]] || fail 'STAGING_AUTH_OTP_PEPPER is required'
+  AUTH_ACCESS_TOKEN_SECRET="$STAGING_AUTH_ACCESS_TOKEN_SECRET"
+  AUTH_OTP_PEPPER="$STAGING_AUTH_OTP_PEPPER"
+  AUTH_OTP_MODE=staging_test
+  STAGING_TEST_OTP_CODE=000000
+  STAGING_TEST_PHONE_ALLOWLIST="$BOOTSTRAP_ADMIN_PHONE"
+  export AUTH_ACCESS_TOKEN_SECRET AUTH_OTP_PEPPER AUTH_OTP_MODE STAGING_TEST_OTP_CODE STAGING_TEST_PHONE_ALLOWLIST
+  unset STAGING_AUTH_ACCESS_TOKEN_SECRET STAGING_AUTH_OTP_PEPPER
 fi
 [[ "${POSTGRES_PASSWORD:-}" ]] || fail 'POSTGRES_PASSWORD is required'
 [[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'AUTH_ACCESS_TOKEN_SECRET is required'

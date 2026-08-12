@@ -43,4 +43,6 @@ jobs:
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
           DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
           BOOTSTRAP_ADMIN_PHONE: ${{ secrets.BOOTSTRAP_ADMIN_PHONE }}
+          AUTH_ACCESS_TOKEN_SECRET: ${{ secrets.AUTH_ACCESS_TOKEN_SECRET }}
+          AUTH_OTP_PEPPER: ${{ secrets.AUTH_OTP_PEPPER }}
         run: deploy/run-remote.sh staging deploy/staging.env
