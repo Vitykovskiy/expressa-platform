@@ -14,7 +14,7 @@ chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
 ssh_options=(-i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT")
 remote_directory="$(ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" 'mktemp -d /tmp/expressa-deploy.XXXXXX')"
 trap 'ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true; cleanup' EXIT
-scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/deploy.sh deploy/compose.yml "$image_file" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
+scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/deploy.sh deploy/compose.yml deploy/smoke-staging.mjs "$image_file" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
 if [[ "$environment" == staging ]]; then
   [[ "${BOOTSTRAP_ADMIN_PHONE:-}" && "${AUTH_ACCESS_TOKEN_SECRET:-}" && "${AUTH_OTP_PEPPER:-}" && "${CORS_ORIGINS:-}" ]] || exit 64
   printf '%s\0%s\0%s\0%s\0' "$BOOTSTRAP_ADMIN_PHONE" "$AUTH_ACCESS_TOKEN_SECRET" "$AUTH_OTP_PEPPER" "$CORS_ORIGINS" |

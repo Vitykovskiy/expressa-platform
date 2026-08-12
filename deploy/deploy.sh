@@ -26,6 +26,7 @@ set -a
 source "$runtime_file"
 set +a
 if [[ "$environment" == staging ]]; then
+  smoke_customer_phone='+79990000001'
   [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
   [[ "${STAGING_AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'STAGING_AUTH_ACCESS_TOKEN_SECRET is required'
   [[ "${STAGING_AUTH_OTP_PEPPER:-}" ]] || fail 'STAGING_AUTH_OTP_PEPPER is required'
@@ -35,7 +36,7 @@ if [[ "$environment" == staging ]]; then
   CORS_ORIGINS="$STAGING_CORS_ORIGINS"
   AUTH_OTP_MODE=staging_test
   STAGING_TEST_OTP_CODE=000000
-  STAGING_TEST_PHONE_ALLOWLIST="$BOOTSTRAP_ADMIN_PHONE"
+  STAGING_TEST_PHONE_ALLOWLIST="$BOOTSTRAP_ADMIN_PHONE,$smoke_customer_phone"
   export AUTH_ACCESS_TOKEN_SECRET AUTH_OTP_PEPPER CORS_ORIGINS AUTH_OTP_MODE STAGING_TEST_OTP_CODE STAGING_TEST_PHONE_ALLOWLIST
   unset STAGING_AUTH_ACCESS_TOKEN_SECRET STAGING_AUTH_OTP_PEPPER STAGING_CORS_ORIGINS
 fi
@@ -71,7 +72,9 @@ done
 [[ "$(docker inspect --format '{{.State.Health.Status}}' "$postgres_id")" == healthy ]] || fail 'postgres did not become healthy'
 compose run --rm --no-deps backend dist/scripts/migrate.js
 compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$BOOTSTRAP_ADMIN_PHONE" backend dist/scripts/seed.js
-unset BOOTSTRAP_ADMIN_PHONE
+if [[ "$environment" == development ]]; then
+  unset BOOTSTRAP_ADMIN_PHONE
+fi
 compose up -d
 for service in backend front back; do
   container="$(compose ps -q "$service")"
@@ -81,3 +84,9 @@ for service in backend front back; do
   done
   [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]] || fail "$service did not become healthy"
 done
+if [[ "$environment" == staging ]]; then
+  backend_container="$(compose ps -q backend)"
+  docker exec --interactive --env SMOKE_CUSTOMER_PHONE="$smoke_customer_phone" "$backend_container" \
+    /nodejs/bin/node --input-type=module - < "$script_directory/smoke-staging.mjs"
+  unset BOOTSTRAP_ADMIN_PHONE
+fi
