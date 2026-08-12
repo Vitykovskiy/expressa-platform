@@ -3,6 +3,10 @@ import { randomUUID } from 'node:crypto';
 const backendUrl = 'http://127.0.0.1:3000';
 const apiPrefix = '/api/v1';
 
+function passed(name) {
+  console.log(`expressa-staging-smoke: check=${name} status=passed`);
+}
+
 export async function runStagingSmoke(
   customerPhone = process.env.SMOKE_CUSTOMER_PHONE,
   baseUrl = backendUrl,
@@ -41,15 +45,15 @@ export async function runStagingSmoke(
 }
 
 async function authenticate(baseUrl, phone, role) {
-  await expectStatus(baseUrl, `${apiPrefix}/auth/otp/request`, 202, `${role} OTP request`, {
+  await expectStatus(baseUrl, `${apiPrefix}/auth/otp/request`, 202, `${role} authentication request`, {
     method: 'POST',
     body: JSON.stringify({ phone }),
   });
-  const verified = await expectJson(baseUrl, `${apiPrefix}/auth/otp/verify`, 200, `${role} OTP verification`, {
+  const verified = await expectJson(baseUrl, `${apiPrefix}/auth/otp/verify`, 200, `${role} authentication verification`, {
     method: 'POST',
     body: JSON.stringify({ phone, code: '000000' }),
   });
-  return readAccessToken(verified);
+  return readAccessToken(verified, role);
 }
 
 async function createOrder(baseUrl, accessToken) {
@@ -67,6 +71,7 @@ async function createOrder(baseUrl, accessToken) {
   if (typeof created.id !== 'string' || created.id === '') {
     throw new Error('order creation: CREATED order id is missing');
   }
+  passed('order creation identifier');
   return created;
 }
 
@@ -92,6 +97,7 @@ function createOrderRequest(menu) {
     throw new Error('public menu: no order intake');
   }
 
+  passed('public menu order intake');
   for (const category of menu.categories) {
     if (!isRecord(category) || !Array.isArray(category.products)) continue;
     for (const product of category.products) {
@@ -141,10 +147,12 @@ function createOrderItem(product) {
 function assertLifecycleEvents(order) {
   if (!Array.isArray(order.events)) throw new Error('order events: response is invalid');
   if (order.events.length !== 4) throw new Error('order events: expected exactly four events');
+  passed('order events count');
   for (const [from, to] of [['CREATED', 'ACCEPTED'], ['ACCEPTED', 'PREPARING'], ['PREPARING', 'READY'], ['READY', 'ISSUED']]) {
     if (!order.events.some((event) => isRecord(event) && event.from === from && event.to === to)) {
       throw new Error(`order events: missing ${from} to ${to}`);
     }
+    passed(`order event ${from} to ${to}`);
   }
 }
 
@@ -153,6 +161,7 @@ async function expectStatus(baseUrl, path, expectedStatus, name, options = {}) {
   if (response.status !== expectedStatus) {
     throw new Error(`${name}: expected HTTP ${expectedStatus}, received ${response.status}`);
   }
+  passed(`${name} HTTP ${expectedStatus}`);
   return response;
 }
 
@@ -172,10 +181,11 @@ function request(baseUrl, path, { headers = {}, ...options }) {
   });
 }
 
-function readAccessToken(value) {
+function readAccessToken(value, role) {
   if (!isRecord(value) || typeof value.accessToken !== 'string' || value.accessToken === '') {
     throw new Error('OTP verification: access token is missing');
   }
+  passed(`${role} authentication`);
   return value.accessToken;
 }
 
@@ -183,6 +193,7 @@ function assertStage(value, expectedStage, name) {
   if (!isRecord(value) || value.stage !== expectedStage) {
     throw new Error(`${name}: expected ${expectedStage}`);
   }
+  passed(`${name} stage ${expectedStage}`);
 }
 
 function isPhone(value) {

@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 usage() { printf '%s\n' 'Usage: deploy.sh --environment development|staging deploy all' >&2; exit 64; }
 fail() { printf 'deploy: %s\n' "$1" >&2; exit 1; }
+passed() { printf 'expressa-deploy: check=%s status=passed\n' "$1" >&2; }
 
 [[ "$#" == 4 && "$1" == --environment && "$3" == deploy && "$4" == all ]] || usage
 environment="$2"
@@ -71,7 +72,9 @@ for _ in {1..30}; do
 done
 [[ "$(docker inspect --format '{{.State.Health.Status}}' "$postgres_id")" == healthy ]] || fail 'postgres did not become healthy'
 compose run --rm --no-deps backend dist/scripts/migrate.js
+passed migration
 compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$BOOTSTRAP_ADMIN_PHONE" backend dist/scripts/seed.js
+passed seed
 if [[ "$environment" == development ]]; then
   unset BOOTSTRAP_ADMIN_PHONE
 fi
@@ -83,6 +86,7 @@ for service in backend front back; do
     sleep 2
   done
   [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]] || fail "$service did not become healthy"
+  passed "$service health"
 done
 if [[ "$environment" == staging ]]; then
   backend_container="$(compose ps -q backend)"

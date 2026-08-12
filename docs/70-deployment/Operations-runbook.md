@@ -31,6 +31,13 @@ E08/E09 — запреты ролей и неверного перехода, п
 [Deploy preconditions](../../deploy/deploy.sh), [Compose networks](../../deploy/compose.yml),
 [workflow SSH](../../.github/workflows/staging-deploy.yml).
 
+Автоматические migration, seed, внутренние health-проверки и staging smoke
+пишут только именные evidence-маркеры `expressa-deploy: check=… status=passed`
+или `expressa-staging-smoke: check=… status=passed`. Маркеры подтверждают
+проверку, но не содержат телефон, OTP, токен, URL или идентификатор заказа.
+Публичные health-проверки workflow используют URL-секреты, перечисленные в
+[CI/CD](CI-CD.md).
+
 Для диагностики используются backend `/health/live` и `/health/ready`, client
 `/health` и container health-checks. Значения `runtime.env` — секреты и не
 выводятся. [Compose](../../deploy/compose.yml), [backend health](../../backend/src/platform/health/health.controller.ts).

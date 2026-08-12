@@ -47,3 +47,20 @@ jobs:
           AUTH_OTP_PEPPER: ${{ secrets.AUTH_OTP_PEPPER }}
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
         run: deploy/run-remote.sh staging deploy/staging.env
+      - name: Verify public health
+        shell: bash
+        env:
+          STAGING_BACKEND_URL: ${{ secrets.STAGING_BACKEND_URL }}
+          STAGING_FRONT_OFFICE_URL: ${{ secrets.STAGING_FRONT_OFFICE_URL }}
+          STAGING_BACK_OFFICE_URL: ${{ secrets.STAGING_BACK_OFFICE_URL }}
+        run: |
+          set -Eeuo pipefail
+          [[ -n "$STAGING_BACKEND_URL" && -n "$STAGING_FRONT_OFFICE_URL" && -n "$STAGING_BACK_OFFICE_URL" ]] || exit 1
+          curl --fail --silent --output /dev/null "${STAGING_BACKEND_URL%/}/health/live"
+          printf '%s\n' 'backend_live_passed'
+          curl --fail --silent --output /dev/null "${STAGING_BACKEND_URL%/}/health/ready"
+          printf '%s\n' 'backend_ready_passed'
+          curl --fail --silent --output /dev/null "${STAGING_FRONT_OFFICE_URL%/}/health"
+          printf '%s\n' 'front_office_health_passed'
+          curl --fail --silent --output /dev/null "${STAGING_BACK_OFFICE_URL%/}/health"
+          printf '%s\n' 'back_office_health_passed'
