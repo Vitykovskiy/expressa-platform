@@ -18,8 +18,21 @@ jobs:
     uses: ./.github/workflows/front-office-ci.yml
   back:
     uses: ./.github/workflows/back-office-ci.yml
+  deploy-static:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+      - name: Validate deployment scripts
+        run: |
+          bash -n deploy/deploy.sh deploy/run-remote.sh
+          shellcheck -e SC1090 deploy/deploy.sh
+          shellcheck -e SC2029 deploy/run-remote.sh
   deploy:
-    needs: [backend, front, back]
+    needs: [backend, front, back, deploy-static]
     runs-on: ubuntu-24.04
     environment: development
     steps:

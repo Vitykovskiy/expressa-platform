@@ -32,7 +32,7 @@ E08/E09 — запреты ролей и неверного перехода, п
 [workflow SSH](../../.github/workflows/staging-deploy.yml).
 
 Автоматические migration, seed, внутренние health-проверки и staging smoke
-пишут только именные evidence-маркеры `expressa-deploy: check=… status=passed`
+пишут только именные evidence-маркеры `expressa-release-evidence: check=… status=passed`
 или `expressa-staging-smoke: check=… status=passed`. Маркеры подтверждают
 проверку, но не содержат телефон, OTP, токен, URL или идентификатор заказа.
 

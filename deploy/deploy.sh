@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 usage() { printf '%s\n' 'Usage: deploy.sh --environment development|staging deploy all' >&2; exit 64; }
 fail() { printf 'deploy: %s\n' "$1" >&2; exit 1; }
-passed() { printf 'expressa-deploy: check=%s status=passed\n' "$1" >&2; }
+passed() { printf 'expressa-release-evidence: check=%s status=passed\n' "$1" >&2; }
 
 [[ "$#" == 4 && "$1" == --environment && "$3" == deploy && "$4" == all ]] || usage
 environment="$2"
