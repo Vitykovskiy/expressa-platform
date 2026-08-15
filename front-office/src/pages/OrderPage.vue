@@ -28,6 +28,32 @@
         ><strong>{{ formatMinorAmount(order.totalMinor) }}</strong>
       </p>
       <p class="order-page__payment">Оплата на кассе при получении</p>
+      <section
+        class="order-page__notifications"
+        aria-labelledby="notifications-title"
+      >
+        <h2 id="notifications-title">Уведомления о заказе</h2>
+        <p v-if="!pushSupported">{{ orderPageMessages.pushUnsupported }}</p>
+        <template v-else>
+          <p v-if="pushMessage" role="status">{{ pushMessage }}</p>
+          <ui-btn
+            v-if="pushSubscription === null"
+            :disabled="pushOperationPending"
+            type="button"
+            @click="enablePushNotifications"
+          >
+            Включить уведомления
+          </ui-btn>
+          <ui-btn
+            v-else
+            :disabled="pushOperationPending"
+            type="button"
+            @click="disablePushNotifications"
+          >
+            Отключить уведомления
+          </ui-btn>
+        </template>
+      </section>
       <ui-btn
         v-if="order.stage === 'ISSUED'"
         color="surface"
@@ -78,6 +104,7 @@ import {
 } from "@/shared/api/public-menu.api";
 import { apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
+import { createPushApi } from "@/shared/api/push.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 import {
@@ -85,7 +112,11 @@ import {
   orderPageStageLabels,
   orderPollingIntervalMs,
 } from "./OrderPage.constants";
-import type { OrderPageItem, OrderPageOrder } from "./OrderPage.types";
+import type {
+  OrderPageItem,
+  OrderPageOrder,
+  OrderPagePushSubscription,
+} from "./OrderPage.types";
 
 const route = useRoute();
 const router = useRouter();
@@ -96,15 +127,22 @@ const order = ref<OrderPageOrder | null>(null);
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const impossibleItems = ref<string[]>([]);
+const pushMessage = ref<string | null>(null);
+const pushOperationPending = ref(false);
+const pushSubscription = ref<OrderPagePushSubscription | null>(null);
 const repeatConfirmationOpen = ref(false);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let repeatItems: Parameters<typeof cartStore.replace>[0] = [];
 const stageLabel = computed(() =>
   order.value === null ? "" : orderPageStageLabels[order.value.stage],
 );
+const pushSupported = computed(
+  () => "serviceWorker" in navigator && "PushManager" in window,
+);
 
 onMounted(() => {
   document.addEventListener("visibilitychange", syncPolling);
+  void loadPushSubscription();
   void loadOrder();
 });
 onUnmounted(() => {
@@ -175,6 +213,76 @@ async function refreshOrder(): Promise<void> {
     stopPolling();
   }
 }
+async function loadPushSubscription(): Promise<void> {
+  if (!pushSupported.value) return;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    pushSubscription.value =
+      subscription === null ? null : toPushSubscription(subscription);
+  } catch {
+    pushSubscription.value = null;
+  }
+}
+async function enablePushNotifications(): Promise<void> {
+  if (
+    !pushSupported.value ||
+    apiClient === undefined ||
+    sessionStore.accessToken === null
+  ) {
+    return;
+  }
+  pushOperationPending.value = true;
+  pushMessage.value = null;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const pushApi = createPushApi(apiClient);
+    const publicKey = await pushApi.getPublicKey(sessionStore.accessToken);
+    const subscription =
+      (await registration.pushManager.getSubscription()) ??
+      (await registration.pushManager.subscribe({
+        applicationServerKey: toApplicationServerKey(publicKey),
+        userVisibleOnly: true,
+      }));
+    const request = toPushSubscription(subscription);
+
+    await pushApi.saveSubscription(sessionStore.accessToken, request);
+    pushSubscription.value = request;
+  } catch {
+    pushMessage.value = orderPageMessages.pushFailed;
+  } finally {
+    pushOperationPending.value = false;
+  }
+}
+async function disablePushNotifications(): Promise<void> {
+  if (
+    pushSubscription.value === null ||
+    apiClient === undefined ||
+    sessionStore.accessToken === null
+  ) {
+    return;
+  }
+  pushOperationPending.value = true;
+  pushMessage.value = null;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    await createPushApi(apiClient).deleteSubscription(
+      sessionStore.accessToken,
+      pushSubscription.value,
+    );
+    if (subscription !== null) await subscription.unsubscribe();
+    pushSubscription.value = null;
+    pushMessage.value = orderPageMessages.pushDisabled;
+  } catch {
+    pushMessage.value = orderPageMessages.pushFailed;
+  } finally {
+    pushOperationPending.value = false;
+  }
+}
 async function prepareRepeat(): Promise<void> {
   impossibleItems.value = [];
   if (order.value?.stage !== "ISSUED" || apiClient === undefined) return;
@@ -243,6 +351,37 @@ function itemKey(item: OrderPageItem): string {
     ...item.modifiers.map((modifier) => modifier.modifierOptionId),
   ].join(":");
 }
+function toPushSubscription(
+  subscription: PushSubscription,
+): OrderPagePushSubscription {
+  const p256dh = subscription.getKey("p256dh");
+  const auth = subscription.getKey("auth");
+  if (p256dh === null || auth === null) {
+    throw new Error("Подписка браузера не содержит ключи.");
+  }
+
+  return {
+    endpoint: subscription.endpoint,
+    keys: {
+      auth: toBase64(auth),
+      p256dh: toBase64(p256dh),
+    },
+  };
+}
+function toApplicationServerKey(value: string): Uint8Array<ArrayBuffer> {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
+  const key = new Uint8Array(new ArrayBuffer(bytes.length));
+
+  for (const [index, character] of Array.from(bytes).entries()) {
+    key[index] = character.charCodeAt(0);
+  }
+
+  return key;
+}
+function toBase64(value: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(value)));
+}
 </script>
 
 <style scoped>
@@ -278,6 +417,10 @@ function itemKey(item: OrderPageItem): string {
   margin: 0;
   color: var(--customer-text-secondary-on-surface);
   font-weight: var(--customer-font-weight-bold);
+}
+.order-page__notifications {
+  display: grid;
+  gap: var(--customer-space-5);
 }
 .order-page__dialog {
   display: grid;
