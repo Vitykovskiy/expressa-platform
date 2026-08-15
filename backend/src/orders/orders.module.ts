@@ -3,6 +3,8 @@ import type { Pool } from 'pg';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../platform/database/database.module';
 import { DatabaseService } from '../platform/database/database.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SendOrderPushUseCase } from '../notifications/application/send-order-push.use-case';
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
 import { PostgresOrderLifecycleRepository } from './adapters/postgres-order-lifecycle.repository';
 import { CreateOrderUseCase } from './application/create-order.use-case';
@@ -15,7 +17,7 @@ import { OrdersController } from './transport/orders.controller';
 import { BackofficeOrdersController } from './transport/backoffice-orders.controller';
 
 @Module({
-  imports: [AuthModule, DatabaseModule],
+  imports: [AuthModule, DatabaseModule, NotificationsModule],
   controllers: [OrdersController, BackofficeOrdersController],
   providers: [
     {
@@ -25,8 +27,8 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: CreateOrderUseCase,
-      inject: [orderUnitOfWorkPort],
-      useFactory: (unitOfWork: OrderUnitOfWork) => new CreateOrderUseCase(unitOfWork),
+      inject: [orderUnitOfWorkPort, SendOrderPushUseCase],
+      useFactory: (unitOfWork: OrderUnitOfWork, push: SendOrderPushUseCase) => new CreateOrderUseCase(unitOfWork, push),
     },
     {
       provide: PostgresOrderLifecycleRepository,
@@ -50,8 +52,8 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: TransitionOrderUseCase,
-      inject: [orderTransitionUnitOfWorkPort],
-      useFactory: (unitOfWork: OrderTransitionUnitOfWork) => new TransitionOrderUseCase(unitOfWork),
+      inject: [orderTransitionUnitOfWorkPort, SendOrderPushUseCase],
+      useFactory: (unitOfWork: OrderTransitionUnitOfWork, push: SendOrderPushUseCase) => new TransitionOrderUseCase(unitOfWork, push),
     },
   ],
 })

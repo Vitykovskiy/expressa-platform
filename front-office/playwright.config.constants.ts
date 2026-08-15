@@ -30,6 +30,9 @@ const frontOfficeE2eBackendEnvironment = [
   "AUTH_ACCESS_TOKEN_SECRET=front-office-e2e-access-token-secret",
   "AUTH_OTP_PEPPER=front-office-e2e-otp-pepper",
   "AUTH_DEVELOPMENT_OTP=123456",
+  "VAPID_SUBJECT=mailto:push@expressa.test",
+  "VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw",
+  "VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c",
   `CORS_ORIGINS=${frontOfficeAppOrigin}`,
 ].join(" ");
 

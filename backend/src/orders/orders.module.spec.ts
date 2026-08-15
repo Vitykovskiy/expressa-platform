@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../platform/database/database.module';
 import { DatabaseService } from '../platform/database/database.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
 import { CreateOrderUseCase } from './application/create-order.use-case';
 import { orderUnitOfWorkPort } from './orders.module.constants';
@@ -24,6 +25,9 @@ describe('OrdersModule', () => {
             AUTH_OTP_PEPPER: 'otp-pepper',
             CORS_ORIGINS: 'http://localhost:5173',
             NODE_ENV: 'local',
+            VAPID_SUBJECT: 'mailto:push@expressa.test',
+            VAPID_PUBLIC_KEY: 'BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw',
+            VAPID_PRIVATE_KEY: '9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c',
           })],
         }),
         OrdersModule,
@@ -40,6 +44,6 @@ describe('OrdersModule', () => {
 
   it('регистрирует только контроллер заказов и необходимые модули', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, OrdersModule)).toEqual([OrdersController, BackofficeOrdersController]);
-    expect(Reflect.getMetadata(MODULE_METADATA.IMPORTS, OrdersModule)).toEqual([AuthModule, DatabaseModule]);
+    expect(Reflect.getMetadata(MODULE_METADATA.IMPORTS, OrdersModule)).toEqual([AuthModule, DatabaseModule, NotificationsModule]);
   });
 });

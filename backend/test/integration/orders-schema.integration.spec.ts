@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
+import { PostgresPushSubscriptionRepository } from '../../src/notifications/adapters/postgres-push-subscription.repository';
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
@@ -19,6 +20,9 @@ function runMigrations(): void {
       AUTH_OTP_PEPPER: 'orders-schema-otp-pepper',
       AUTH_DEVELOPMENT_OTP: '123456',
       CORS_ORIGINS: 'http://localhost:5173',
+      VAPID_SUBJECT: 'mailto:push@expressa.test',
+      VAPID_PUBLIC_KEY: 'BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw',
+      VAPID_PRIVATE_KEY: '9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c',
     },
     stdio: 'inherit',
   });
@@ -111,8 +115,44 @@ describe('схема заказов', () => {
         `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'orders_customer_created_at_id_desc_idx'`,
       );
       expect(indexes.rows).toEqual([{ indexname: 'orders_customer_created_at_id_desc_idx' }]);
+      const pushIndexes = await pool.query<{ indexname: string }>(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'push_subscriptions_user_id_idx'`,
+      );
+      expect(pushIndexes.rows).toEqual([{ indexname: 'push_subscriptions_user_id_idx' }]);
       await expect(pool.query(`UPDATE service_settings SET key = 'other'`)).rejects.toMatchObject({
         code: '23514',
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    'сохраняет владельца push endpoint при повторной регистрации и разрешает обновление владельцу',
+    async () => {
+      const ownerA = await createCustomer(pool);
+      const ownerB = await createCustomer(pool);
+      const endpoint = `https://push.example/${randomUUID()}`;
+      const repository = new PostgresPushSubscriptionRepository({ pool });
+
+      await repository.upsert({ userId: ownerA, endpoint, p256dh: 'owner-a-key', auth: 'owner-a-auth' });
+      await repository.upsert({ userId: ownerB, endpoint, p256dh: 'owner-b-key', auth: 'owner-b-auth' });
+
+      await expect(
+        pool.query<{ user_id: string; p256dh: string; auth: string }>(
+          'SELECT user_id, p256dh, auth FROM push_subscriptions WHERE endpoint = $1',
+          [endpoint],
+        ),
+      ).resolves.toMatchObject({ rows: [{ user_id: ownerA, p256dh: 'owner-a-key', auth: 'owner-a-auth' }] });
+
+      await repository.upsert({ userId: ownerA, endpoint, p256dh: 'owner-a-refreshed-key', auth: 'owner-a-refreshed-auth' });
+
+      await expect(
+        pool.query<{ user_id: string; p256dh: string; auth: string }>(
+          'SELECT user_id, p256dh, auth FROM push_subscriptions WHERE endpoint = $1',
+          [endpoint],
+        ),
+      ).resolves.toMatchObject({
+        rows: [{ user_id: ownerA, p256dh: 'owner-a-refreshed-key', auth: 'owner-a-refreshed-auth' }],
       });
     },
     externalProcessTimeoutMs,
