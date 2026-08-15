@@ -146,6 +146,40 @@ describe("create order E2E", () => {
     expect(await orderCount()).toBe(before);
   });
 
+  it("возвращает customer только собственные снимки без событий staff и пагинирует историю", async () => {
+    useClock("2031-02-05T13:00:00.000Z");
+    const [owner, stranger, barista] = await Promise.all([
+      accessToken("customer"),
+      accessToken("customer"),
+      accessToken("barista"),
+    ]);
+    const first = await createOrder(owner, orderBody(32_000), randomUUID(), "owner-first-request-id");
+    expect(first.status).toBe(201);
+    const firstOrder = (await first.json()) as { id: string };
+    await pool.query("UPDATE products SET name = 'Новое имя каталога' WHERE id = $1", [productId]);
+    for (let index = 0; index < 20; index += 1) {
+      const created = await createOrder(owner, orderBody(32_000), randomUUID(), `owner-page-${index}-request-id`);
+      expect(created.status).toBe(201);
+    }
+
+    const firstPage = await getOrders(owner);
+    expect(firstPage.status).toBe(200);
+    const firstPageBody = (await firstPage.json()) as { orders: Array<{ id: string; snapshot: Array<{ productName: string }> }>; nextCursor: string | null };
+    expect(firstPageBody.orders).toHaveLength(20);
+    expect(firstPageBody.nextCursor).toEqual(expect.any(String));
+    const secondPage = await getOrders(owner, firstPageBody.nextCursor!);
+    const secondPageBody = (await secondPage.json()) as { orders: Array<{ id: string }>; nextCursor: string | null };
+    expect(secondPageBody.orders).toHaveLength(1);
+    expect([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).toHaveLength(21);
+    expect(new Set([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).size).toBe(21);
+
+    const detail = await getOrder(owner, firstOrder.id, "get-order-owner-request-id");
+    await expect(detail.json()).resolves.toMatchObject({ id: firstOrder.id, snapshot: [{ productName: 'Капучино' }] });
+    await expectStructuredError(await getOrder(undefined, firstOrder.id, "get-order-guest-request-id"), 401, "UNAUTHORIZED", null, "get-order-guest-request-id");
+    await expectStructuredError(await getOrder(barista, firstOrder.id, "get-order-barista-request-id"), 403, "ACCESS_DENIED", null, "get-order-barista-request-id");
+    await expectStructuredError(await getOrder(stranger, firstOrder.id, "get-order-stranger-request-id"), 404, "ORDER_NOT_FOUND", null, "get-order-stranger-request-id");
+  });
+
   it("отклоняет изменённый итог, недоступность, неверную конфигурацию и закрытый приём без заказа", async () => {
     useClock("2031-02-06T12:00:00.000Z");
     const customer = await accessToken("customer");
@@ -483,6 +517,19 @@ describe("create order E2E", () => {
         ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
       }),
       body: JSON.stringify(body),
+    });
+  }
+
+  function getOrders(token: string, cursor?: string): Promise<Response> {
+    const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
+    return fetch(`${url}/api/v1/orders${query}`, {
+      headers: headers('get-orders-request-id', { authorization: `Bearer ${token}` }),
+    });
+  }
+
+  function getOrder(token: string | undefined, orderId: string, requestId: string): Promise<Response> {
+    return fetch(`${url}/api/v1/orders/${orderId}`, {
+      headers: headers(requestId, token === undefined ? {} : { authorization: `Bearer ${token}` }),
     });
   }
 

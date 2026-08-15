@@ -1,4 +1,4 @@
-import type { OrderReadRepository, OrderTransitionUnitOfWork, ListOrdersQuery, TransitionOrderCommand } from '../application/order-lifecycle.types';
+import type { CustomerOrder, CustomerOrdersCursor, CustomerOrdersPage, OrderReadRepository, OrderTransitionUnitOfWork, ListOrdersQuery, TransitionOrderCommand } from '../application/order-lifecycle.types';
 import { OrderNotFoundError, OrderStageConflictError } from '../domain/order-lifecycle.errors';
 import { orderTransitions } from '../domain/order-lifecycle.constants';
 import type { OrderDetails, OrderEvent, OrderQueueItem, OrderStage } from '../domain/order-lifecycle.types';
@@ -20,6 +20,37 @@ export class PostgresOrderLifecycleRepository implements OrderReadRepository, Or
 
   async findDetails(orderId: string): Promise<OrderDetails | null> {
     return readDetails(this.dependencies.pool, orderId);
+  }
+
+  async listForCustomer(customerId: string, cursor: CustomerOrdersCursor | null): Promise<CustomerOrdersPage> {
+    const result = await this.dependencies.pool.query<DatabaseRow>(
+      `SELECT id, number, created_at, created_at::text AS cursor_created_at, total_minor, stage FROM orders
+       WHERE customer_id = $1
+         AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3::uuid))
+       ORDER BY created_at DESC, id DESC
+       LIMIT 21`,
+      [customerId, cursor?.createdAt ?? null, cursor?.id ?? null],
+    );
+    const rows = result.rows.slice(0, 20);
+    const orders = await Promise.all(rows.map((row) => readCustomerOrder(this.dependencies.pool, row)));
+    const last = rows.at(-1);
+    return {
+      orders,
+      nextCursor: result.rows.length > rows.length && last !== undefined
+        ? { createdAt: readString(last, 'cursor_created_at'), id: readString(last, 'id') }
+        : null,
+    };
+  }
+
+  async findDetailsForCustomer(customerId: string, orderId: string): Promise<CustomerOrder | null> {
+    const result = await this.dependencies.pool.query<DatabaseRow>(
+      `SELECT id, number, created_at, total_minor, stage FROM orders WHERE id = $1 AND customer_id = $2`,
+      [orderId, customerId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return null;
+    if (result.rows.length !== 1) throw new Error('Invalid PostgreSQL customer order details row count');
+    return readCustomerOrder(this.dependencies.pool, row);
   }
 
   async transition(command: TransitionOrderCommand): Promise<OrderDetails> {
@@ -64,6 +95,11 @@ async function readDetails(client: Queryable, orderId: string): Promise<OrderDet
   if (order.rows.length !== 1) throw new Error('Invalid PostgreSQL order details row count');
   const [snapshot, events] = await Promise.all([readSnapshot(client, orderId), readEvents(client, orderId)]);
   return { ...toQueueItem(row), customer: { id: readString(row, 'customer_id'), phoneE164: readString(row, 'customer_phone_e164') }, snapshot, events };
+}
+
+async function readCustomerOrder(client: Queryable, row: DatabaseRow): Promise<CustomerOrder> {
+  const id = readString(row, 'id');
+  return { ...toQueueItem(row), snapshot: await readSnapshot(client, id) };
 }
 
 async function readSnapshot(client: Queryable, orderId: string): Promise<readonly OrderSnapshotItem[]> {

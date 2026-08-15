@@ -13,6 +13,7 @@ import { rolesMetadataKey } from '../../auth/transport/roles.decorator.constants
 import { RolesGuard } from '../../auth/transport/roles.guard';
 import { SessionGuard } from '../../auth/transport/session.guard';
 import { CreateOrderUseCase } from '../application/create-order.use-case';
+import { GetOrdersUseCase } from '../application/get-orders.use-case';
 import {
   MenuItemUnavailableError,
   OrderIntakeClosedError,
@@ -50,8 +51,9 @@ const order = {
 
 function createController(result: unknown = { order, replayed: false }) {
   const createOrder = { execute: jest.fn().mockResolvedValue(result) };
+  const getOrders = { listForCustomer: jest.fn(), detailsForCustomer: jest.fn() };
   const clock = { now: jest.fn(() => new Date('2030-01-02T03:04:05.000Z')) };
-  return { controller: new OrdersController(createOrder as unknown as CreateOrderUseCase, clock), createOrder, clock };
+  return { controller: new OrdersController(createOrder as unknown as CreateOrderUseCase, getOrders as unknown as GetOrdersUseCase, clock), createOrder, getOrders, clock };
 }
 
 describe('OrdersController', () => {
@@ -71,6 +73,66 @@ describe('OrdersController', () => {
     const { controller } = createController({ order, replayed: true });
 
     await expect(controller.create(body, uuid, auth)).resolves.toEqual(order);
+  });
+
+  it('возвращает customer историю со следующим непрозрачным курсором', async () => {
+    const { controller, getOrders } = createController();
+    const nextCursor = { createdAt: '2030-01-02 03:04:05.123456+00', id: uuid };
+    getOrders.listForCustomer.mockResolvedValue({ orders: [{ ...order, createdAt: new Date('2030-01-02T03:04:05.000Z'), snapshot: order.items }], nextCursor });
+
+    await expect(controller.list(undefined, auth)).resolves.toEqual({
+      orders: [{ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, totalMinor: order.totalMinor, snapshot: order.items }],
+      nextCursor: expect.any(String),
+    });
+    expect(getOrders.listForCustomer).toHaveBeenCalledWith(auth.userId, null);
+  });
+
+  it('передаёт cursor PostgreSQL без потери микросекунд', async () => {
+    const { controller, getOrders } = createController();
+    const cursor = Buffer.from(JSON.stringify({ createdAt: '2030-01-02 03:04:05.123456+00', id: uuid })).toString('base64url');
+    getOrders.listForCustomer.mockResolvedValue({ orders: [], nextCursor: null });
+
+    await controller.list(cursor, auth);
+
+    expect(getOrders.listForCustomer).toHaveBeenCalledWith(auth.userId, { createdAt: '2030-01-02 03:04:05.123456+00', id: uuid });
+  });
+
+  it('передаёт допустимый PostgreSQL offset +15:59 без изменений', async () => {
+    const { controller, getOrders } = createController();
+    const createdAt = '2030-01-02 03:04:05.123456+15:59';
+    const cursor = Buffer.from(JSON.stringify({ createdAt, id: uuid })).toString('base64url');
+    getOrders.listForCustomer.mockResolvedValue({ orders: [], nextCursor: null });
+
+    await controller.list(cursor, auth);
+
+    expect(getOrders.listForCustomer).toHaveBeenCalledWith(auth.userId, { createdAt, id: uuid });
+  });
+
+  it('читает только customer detail без телефона и событий staff', async () => {
+    const { controller, getOrders } = createController();
+    getOrders.detailsForCustomer.mockResolvedValue({ ...order, createdAt: new Date('2030-01-02T03:04:05.000Z'), snapshot: order.items });
+
+    await expect(controller.details(uuid, auth)).resolves.toEqual({ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, totalMinor: order.totalMinor, snapshot: order.items });
+  });
+
+  it('отклоняет некорректный customer cursor до чтения', async () => {
+    const { controller, getOrders } = createController();
+
+    await expect(controller.list('not-a-cursor', auth)).rejects.toMatchObject({ status: 400, response: { code: 'VALIDATION_ERROR' } });
+    expect(getOrders.listForCustomer).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '0000-01-02 03:04:05+00',
+    '2030-02-30 03:04:05.123456+00',
+    '2030-01-02 24:00:00+00',
+    '2030-01-02 03:04:05+16:00',
+  ])('отклоняет cursor с невозможной датой, временем или offset: %s', async (createdAt) => {
+    const { controller, getOrders } = createController();
+    const cursor = Buffer.from(JSON.stringify({ createdAt, id: uuid })).toString('base64url');
+
+    await expect(controller.list(cursor, auth)).rejects.toMatchObject({ status: 400, response: { code: 'VALIDATION_ERROR' } });
+    expect(getOrders.listForCustomer).not.toHaveBeenCalled();
   });
 
   it('требует SessionGuard и роль Customer', () => {
@@ -97,6 +159,7 @@ describe('OrdersController', () => {
       controllers: [OrdersController],
       providers: [
         { provide: CreateOrderUseCase, useValue: {} },
+        { provide: GetOrdersUseCase, useValue: {} },
         { provide: authRepositoryPort, useValue: {} },
         { provide: authCryptoPort, useValue: {} },
         { provide: clockPort, useValue: { now: () => new Date() } },
@@ -174,6 +237,7 @@ describe('OrdersController', () => {
   ])('преобразует доменную ошибку %s', async (error, code, details) => {
     const failingController = new OrdersController(
       { execute: jest.fn().mockRejectedValue(error) } as unknown as CreateOrderUseCase,
+      { listForCustomer: jest.fn(), detailsForCustomer: jest.fn() } as unknown as GetOrdersUseCase,
       { now: () => new Date('2030-01-02T03:04:05.000Z') },
     );
 

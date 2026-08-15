@@ -1767,6 +1767,70 @@
       }
     },
     "/api/v1/orders": {
+      "get": {
+        "operationId": "OrdersController_list",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrdersPageResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Получить историю своих заказов",
+        "tags": [
+          "orders"
+        ]
+      },
       "post": {
         "operationId": "OrdersController_create",
         "parameters": [
@@ -1859,6 +1923,93 @@
           }
         ],
         "summary": "Создать заказ",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}": {
+      "get": {
+        "operationId": "OrdersController_details",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Получить свой заказ",
         "tags": [
           "orders"
         ]
@@ -3773,62 +3924,6 @@
           "sortOrder"
         ]
       },
-      "CreateOrderItemDto": {
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "variantId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "modifierOptionIds": {
-            "uniqueItems": true,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "quantity": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "maximum": 20
-          }
-        },
-        "required": [
-          "productId",
-          "variantId",
-          "modifierOptionIds",
-          "quantity"
-        ]
-      },
-      "CreateOrderDto": {
-        "type": "object",
-        "properties": {
-          "expectedTotalMinor": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "maximum": 2147483647
-          },
-          "items": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CreateOrderItemDto"
-            }
-          }
-        },
-        "required": [
-          "expectedTotalMinor",
-          "items"
-        ]
-      },
       "OrderModifierResponseDto": {
         "type": "object",
         "properties": {
@@ -3902,6 +3997,126 @@
           "unitTotalMinor",
           "lineTotalMinor",
           "modifiers"
+        ]
+      },
+      "CustomerOrderResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string",
+            "example": "20300102-001"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "ACCEPTED",
+              "PREPARING",
+              "READY",
+              "ISSUED"
+            ]
+          },
+          "totalMinor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "snapshot": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "createdAt",
+          "stage",
+          "totalMinor",
+          "snapshot"
+        ]
+      },
+      "CustomerOrdersPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerOrderResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "orders",
+          "nextCursor"
+        ]
+      },
+      "CreateOrderItemDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "modifierOptionIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "productId",
+          "variantId",
+          "modifierOptionIds",
+          "quantity"
+        ]
+      },
+      "CreateOrderDto": {
+        "type": "object",
+        "properties": {
+          "expectedTotalMinor": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrderItemDto"
+            }
+          }
+        },
+        "required": [
+          "expectedTotalMinor",
+          "items"
         ]
       },
       "OrderDto": {

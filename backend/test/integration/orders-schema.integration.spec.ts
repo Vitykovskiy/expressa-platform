@@ -107,6 +107,10 @@ describe('схема заказов', () => {
       );
 
       expect(settings.rows).toEqual([{ key: 'accepts_new_orders', value: true }]);
+      const indexes = await pool.query<{ indexname: string }>(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'orders_customer_created_at_id_desc_idx'`,
+      );
+      expect(indexes.rows).toEqual([{ indexname: 'orders_customer_created_at_id_desc_idx' }]);
       await expect(pool.query(`UPDATE service_settings SET key = 'other'`)).rejects.toMatchObject({
         code: '23514',
       });

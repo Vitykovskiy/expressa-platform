@@ -7,6 +7,7 @@ export const idempotencyHeaderRequestKey = 'idempotency-key';
 export const idempotencyHeaderDescription = 'UUID-ключ идемпотентности запроса.';
 export const idempotencyHeaderSchema = { type: 'string', format: 'uuid' } as const;
 export const maximumOrderTotalMinor = 2_147_483_647;
+export const customerOrdersCursorParameter = 'cursor';
 
 export const orderErrorResponses = {
   intakeClosed: {
