@@ -56,7 +56,7 @@
           :key="`${event.occurredAt}-${event.actorId}`"
         >
           {{ stageLabel(event.from) }} — {{ stageLabel(event.to) }},
-          {{ formatDate(event.occurredAt) }}
+          {{ formatDate(event.occurredAt) }}, Автор: {{ event.actorId }}
         </li>
       </ol>
       <button

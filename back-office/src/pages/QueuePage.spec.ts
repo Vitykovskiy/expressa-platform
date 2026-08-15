@@ -111,4 +111,28 @@ describe("QueuePage", () => {
     expect(wrapper.text()).not.toContain("ORDER_STAGE_CONFLICT");
     wrapper.unmount();
   });
+
+  it("показывает автора перехода в деталях заказа", async () => {
+    ordersApi.details.mockResolvedValue({
+      ...order,
+      customer: { id: "customer", phoneE164: "+79991234567" },
+      events: [
+        {
+          actorId: "staff-42",
+          from: "CREATED",
+          to: "ACCEPTED",
+          occurredAt: "2030-01-02T10:01:00.000Z",
+        },
+      ],
+      snapshot: [],
+    });
+    const wrapper = mount(QueuePage);
+    await flushPromises();
+
+    await wrapper.get(".order-card__details-button").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Автор: staff-42");
+    wrapper.unmount();
+  });
 });
