@@ -106,11 +106,13 @@ describe('схема заказов', () => {
     'создаёт и повторно обновляет схему заказа с единственной настройкой приёма',
     async () => {
       runMigrations();
-      const settings = await pool.query<{ key: string; value: boolean }>(
-        'SELECT key, value FROM service_settings',
+      const settings = await pool.query<{ key: string; value: boolean; id: string; updated_by: string | null; updated_at: Date | null }>(
+        'SELECT key, value, id, updated_by, updated_at FROM service_settings',
       );
 
-      expect(settings.rows).toEqual([{ key: 'accepts_new_orders', value: true }]);
+      expect(settings.rows).toHaveLength(1);
+      expect(settings.rows[0]).toMatchObject({ key: 'accepts_new_orders', value: true, id: expect.any(String), updated_by: null });
+      expect(settings.rows[0]?.updated_at === null || settings.rows[0]?.updated_at instanceof Date).toBe(true);
       const indexes = await pool.query<{ indexname: string }>(
         `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'orders_customer_created_at_id_desc_idx'`,
       );
@@ -121,6 +123,9 @@ describe('схема заказов', () => {
       expect(pushIndexes.rows).toEqual([{ indexname: 'push_subscriptions_user_id_idx' }]);
       await expect(pool.query(`UPDATE service_settings SET key = 'other'`)).rejects.toMatchObject({
         code: '23514',
+      });
+      await expect(pool.query(`INSERT INTO service_settings (key, value) VALUES ('accepts_new_orders', true)`)).rejects.toMatchObject({
+        code: '23505',
       });
     },
     externalProcessTimeoutMs,

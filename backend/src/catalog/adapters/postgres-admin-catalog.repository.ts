@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
-import type { AdminCatalogCandidates, AdminCatalogRepository } from '../application/admin-catalog.repository.types';
+import { AvailabilityNotFoundError } from '../application/manage-availability.use-case';
+import type { AdminCatalogCandidates, AdminCatalogRepository, AvailabilityCommand, AvailabilityRepository, AvailabilityTarget, ServiceIntake, ServiceIntakeCommand } from '../application/admin-catalog.repository.types';
 import {
   modifierSelectionTypes,
   productSizes,
@@ -22,7 +23,7 @@ import {
 } from './catalog-advisory-lock.constants';
 import type { DatabaseRow } from './postgres-admin-catalog.repository.types';
 
-export class PostgresAdminCatalogRepository implements AdminCatalogRepository {
+export class PostgresAdminCatalogRepository implements AdminCatalogRepository, AvailabilityRepository {
   constructor(private readonly pool: Pool) {}
 
   async findCandidates(): Promise<AdminCatalogCandidates> {
@@ -32,8 +33,9 @@ export class PostgresAdminCatalogRepository implements AdminCatalogRepository {
       await client.query('BEGIN');
       await client.query(publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
 
-      const [categories, products, productVariants, modifierGroups, modifierOptions, categoryModifierGroups] =
+      const [settings, categories, products, productVariants, modifierGroups, modifierOptions, categoryModifierGroups] =
         await Promise.all([
+          client.query<DatabaseRow>(`SELECT value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`),
           client.query<DatabaseRow>(
             `SELECT id, name, description, sort_order, is_active, archived_at
              FROM categories
@@ -72,6 +74,7 @@ export class PostgresAdminCatalogRepository implements AdminCatalogRepository {
         ]);
 
       const candidates = {
+        intake: parseServiceIntake(settings.rows),
         categories: categories.rows.map(parseCategory),
         products: products.rows.map(parseProduct),
         productVariants: productVariants.rows.map(parseProductVariant),
@@ -89,6 +92,75 @@ export class PostgresAdminCatalogRepository implements AdminCatalogRepository {
       client.release();
     }
   }
+
+  async updateAvailability(command: AvailabilityCommand): Promise<AvailabilityTarget> {
+    const client = await this.pool.connect();
+    const table = command.type === 'product' ? 'products' : command.type === 'variant' ? 'product_variants' : 'modifier_options';
+    const entityType = command.type === 'modifier' ? 'modifier_option' : command.type;
+
+    try {
+      await client.query('BEGIN');
+      await client.query(publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
+      const before = await client.query<DatabaseRow>(`SELECT id, is_available FROM ${table} WHERE id = $1 AND archived_at IS NULL`, [command.id]);
+      if (before.rows.length !== 1) throw new AvailabilityNotFoundError();
+      const after = await client.query<DatabaseRow>(`UPDATE ${table} SET is_available = $2 WHERE id = $1 AND archived_at IS NULL RETURNING id, is_available`, [command.id, command.isAvailable]);
+      const target = parseAvailabilityTarget(command.type, after.rows);
+      await client.query(
+        `INSERT INTO audit_events (actor_id, entity_type, entity_id, action, before_state, after_state, request_id)
+         VALUES ($1, $2, $3, 'AVAILABILITY_UPDATED', $4::jsonb, $5::jsonb, $6)`,
+        [command.actorId, entityType, command.id, JSON.stringify(parseAvailabilityTarget(command.type, before.rows)), JSON.stringify(target), command.requestId],
+      );
+      await client.query('COMMIT');
+      return target;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateServiceIntake(command: ServiceIntakeCommand): Promise<ServiceIntake> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await client.query(publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
+      const before = await client.query<DatabaseRow>(`SELECT id, value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`);
+      if (before.rows.length !== 1) throw new Error('Invalid PostgreSQL service setting: accepts_new_orders');
+      const row = before.rows[0]!;
+      const after = await client.query<DatabaseRow>(
+        `UPDATE service_settings SET value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE key = 'accepts_new_orders' RETURNING id, value, updated_by, updated_at`,
+        [command.acceptsNewOrders, command.actorId],
+      );
+      const intake = parseServiceIntake(after.rows);
+      await client.query(
+        `INSERT INTO audit_events (actor_id, entity_type, entity_id, action, before_state, after_state, request_id)
+         VALUES ($1, 'service_setting', $2, 'SERVICE_INTAKE_UPDATED', $3::jsonb, $4::jsonb, $5)`,
+        [command.actorId, readString(row, 'id'), JSON.stringify(parseServiceIntake(before.rows)), JSON.stringify(intake), command.requestId],
+      );
+      await client.query('COMMIT');
+      return intake;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+}
+
+function parseServiceIntake(rows: DatabaseRow[]): ServiceIntake {
+  if (rows.length !== 1) throw new Error('Invalid PostgreSQL service setting: accepts_new_orders');
+  const row = rows[0]!;
+  return { acceptsNewOrders: readBoolean(row, 'value'), updatedBy: readNullableString(row, 'updated_by'), updatedAt: readNullableDate(row, 'updated_at') };
+}
+
+function parseAvailabilityTarget(type: AvailabilityTarget['type'], rows: DatabaseRow[]): AvailabilityTarget {
+  if (rows.length !== 1) throw new Error('Invalid PostgreSQL availability update');
+  const row = rows[0]!;
+  return { type, id: readString(row, 'id'), isAvailable: readBoolean(row, 'is_available') };
 }
 
 function parseCategory(row: DatabaseRow): CatalogCategoryCandidate {
@@ -193,4 +265,9 @@ function readNullableDate(row: DatabaseRow, key: string): Date | null {
   if (value === null) return null;
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) throw new Error('Invalid PostgreSQL row field: ' + key);
   return value;
+}
+
+function readNullableString(row: DatabaseRow, key: string): string | null {
+  const value = row[key];
+  return value === null ? null : readString(row, key);
 }

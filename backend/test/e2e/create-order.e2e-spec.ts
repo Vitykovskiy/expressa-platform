@@ -230,9 +230,8 @@ describe("create order E2E", () => {
       null,
       "configuration-request-id",
     );
-    await pool.query(
-      "UPDATE service_settings SET value = false WHERE key = 'accepts_new_orders'",
-    );
+    const barista = await accessToken('barista');
+    expect((await updateIntake(barista, false)).status).toBe(200);
     await expectStructuredError(
       await createOrder(
         customer,
@@ -501,6 +500,14 @@ describe("create order E2E", () => {
               ]),
         ],
       }),
+    });
+  }
+
+  function updateIntake(token: string, acceptsNewOrders: boolean): Promise<Response> {
+    return fetch(`${url}/api/v1/backoffice/service/intake`, {
+      method: 'PATCH',
+      headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
+      body: JSON.stringify({ acceptsNewOrders }),
     });
   }
 

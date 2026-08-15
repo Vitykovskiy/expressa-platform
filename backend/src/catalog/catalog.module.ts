@@ -16,7 +16,9 @@ import { ManageCategoriesUseCase } from './application/manage-categories.use-cas
 import { ManageCategoryModifiersUseCase } from './application/manage-category-modifiers.use-case';
 import { ManageModifiersUseCase } from './application/manage-modifiers.use-case';
 import { ManageProductsUseCase } from './application/manage-products.use-case';
-import type { AdminCatalogRepository } from './application/admin-catalog.repository.types';
+import { ManageAvailabilityUseCase } from './application/manage-availability.use-case';
+import { ManageServiceIntakeUseCase } from './application/manage-service-intake.use-case';
+import type { AdminCatalogRepository, AvailabilityRepository } from './application/admin-catalog.repository.types';
 import type { CategoriesUnitOfWork } from './application/categories.repository.types';
 import type { CategoryModifiersUnitOfWork } from './application/category-modifiers.repository.types';
 import type { ModifiersUnitOfWork } from './application/modifiers.repository.types';
@@ -36,10 +38,11 @@ import { CatalogCategoryModifiersController } from './transport/catalog-category
 import { CatalogModifiersController } from './transport/catalog-modifiers.controller';
 import { CatalogProductsController } from './transport/catalog-products.controller';
 import { PublicMenuController } from './transport/public-menu.controller';
+import { BackofficeAvailabilityController } from './transport/backoffice-availability.controller';
 
 @Module({
   imports: [AuthModule, DatabaseModule],
-  controllers: [PublicMenuController, AdminCatalogController, CatalogCategoriesController, CatalogProductsController, CatalogModifiersController, CatalogCategoryModifiersController],
+  controllers: [PublicMenuController, AdminCatalogController, CatalogCategoriesController, CatalogProductsController, CatalogModifiersController, CatalogCategoryModifiersController, BackofficeAvailabilityController],
   providers: [
     {
       provide: PostgresCatalogCommandRunner,
@@ -66,6 +69,16 @@ import { PublicMenuController } from './transport/public-menu.controller';
       provide: GetAdminCatalogUseCase,
       inject: [adminCatalogRepositoryPort],
       useFactory: (repository: AdminCatalogRepository) => new GetAdminCatalogUseCase(repository),
+    },
+    {
+      provide: ManageAvailabilityUseCase,
+      inject: [adminCatalogRepositoryPort],
+      useFactory: (repository: AvailabilityRepository) => new ManageAvailabilityUseCase(repository),
+    },
+    {
+      provide: ManageServiceIntakeUseCase,
+      inject: [adminCatalogRepositoryPort],
+      useFactory: (repository: AvailabilityRepository) => new ManageServiceIntakeUseCase(repository),
     },
     {
       provide: categoriesUnitOfWorkPort,
