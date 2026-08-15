@@ -4,6 +4,17 @@
 
     <div class="availability-screen__filters">
       <h1 class="availability-screen__title">Доступность</h1>
+      <label class="availability-screen__search" for="availability-search">
+        <span class="availability-screen__search-label">
+          {{ availabilityMessages.searchLabel }}
+        </span>
+        <AdminTextField
+          id="availability-search"
+          v-model="search"
+          :placeholder="availabilityMessages.searchPlaceholder"
+          type="search"
+        />
+      </label>
       <FilterTabs
         v-model="activeCategory"
         class="availability-screen__tabs"
@@ -13,10 +24,29 @@
     </div>
 
     <div class="availability-screen__content">
+      <p v-if="props.loading" role="status">Загружаем доступность…</p>
+      <section v-if="props.error !== null" role="alert">
+        <p>{{ props.error.message }}</p>
+        <AdminButton type="button" @click="emit('retry')"
+          >Повторить</AdminButton
+        >
+      </section>
+      <section v-if="props.intake !== null" class="availability-screen__intake">
+        <h2 class="availability-screen__intake-title">Приём заказов</h2>
+        <ToggleRow
+          :disabled="props.saving"
+          :label="availabilityMessages.intakeLabel"
+          :model-value="props.intake.acceptsNewOrders"
+          :sublabel="intakeSublabel"
+          @update:model-value="updateIntake"
+        />
+      </section>
       <EmptyState
-        v-if="groupedItems.length === 0"
-        title="Меню пусто"
-        description="Позиции появятся после добавления в меню"
+        v-if="
+          !props.loading && props.intake !== null && groupedItems.length === 0
+        "
+        :title="availabilityMessages.emptyTitle"
+        :description="availabilityMessages.emptyDescription"
       >
         <template #icon>
           <svg
@@ -35,32 +65,39 @@
           </svg>
         </template>
       </EmptyState>
-      <div v-else class="availability-screen__groups">
+      <div
+        v-else-if="!props.loading && props.intake !== null"
+        class="availability-screen__groups"
+      >
         <AvailabilityGroup
           v-for="group in groupedItems"
-          :key="group.category"
-          :category="group.category"
+          :key="group.id"
+          :category="group.name"
+          :disabled="props.saving"
           :items="group.items"
-          @availability-change="changeAvailability"
+          @availability-change="
+            (item, value) => emit('availability-change', item, value)
+          "
         />
       </div>
     </div>
-
-    <v-snackbar v-model="snackbarOpen" color="success" timeout="3000">
-      Сохранено
-    </v-snackbar>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
 
-import type { AvailabilityChangeEvent } from "../../../shared/ui/admin/Admin.types";
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
+import ToggleRow from "../../../shared/ui/admin/toggle-row/ToggleRow.vue";
 import TopBar from "../../../widgets/admin-shell/TopBar.vue";
 import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
 import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
 import AvailabilityGroup from "./AvailabilityGroup.vue";
-import { AVAILABILITY_ALL_CATEGORY } from "./AvailabilityScreen.constants";
+import {
+  AVAILABILITY_ALL_CATEGORY,
+  availabilityMessages,
+} from "./AvailabilityScreen.constants";
 import type {
   AvailabilityItemGroup,
   AvailabilityScreenEmits,
@@ -71,45 +108,66 @@ const props = defineProps<AvailabilityScreenProps>();
 const emit = defineEmits<AvailabilityScreenEmits>();
 
 const activeCategory = shallowRef<string>(AVAILABILITY_ALL_CATEGORY);
-const snackbarOpen = shallowRef(false);
+const search = shallowRef("");
 
 const categories = computed(() => [
   AVAILABILITY_ALL_CATEGORY,
-  ...Array.from(new Set(props.menuItems.map((item) => item.category))),
+  ...props.groups.map((group) => group.id),
 ]);
 
 const categoryTabs = computed(() =>
   categories.value.map((category) => ({
     value: category,
-    label: category === AVAILABILITY_ALL_CATEGORY ? "Все" : category,
+    label:
+      category === AVAILABILITY_ALL_CATEGORY
+        ? "Все"
+        : (props.groups.find((group) => group.id === category)?.name ?? ""),
   })),
 );
 
 const groupedItems = computed(() => {
-  const items = props.menuItems.filter(
-    (item) =>
-      activeCategory.value === AVAILABILITY_ALL_CATEGORY ||
-      item.category === activeCategory.value,
-  );
+  const normalizedSearch = search.value.trim().toLocaleLowerCase("ru-RU");
 
-  return items.reduce<AvailabilityItemGroup[]>((groups, item) => {
-    const group = groups.find(
-      (currentGroup) => currentGroup.category === item.category,
+  return props.groups.reduce<AvailabilityItemGroup[]>((groups, group) => {
+    if (
+      activeCategory.value !== AVAILABILITY_ALL_CATEGORY &&
+      group.id !== activeCategory.value
+    ) {
+      return groups;
+    }
+
+    const items = group.items.filter(
+      (item) =>
+        normalizedSearch === "" ||
+        `${item.label} ${item.sublabel}`
+          .toLocaleLowerCase("ru-RU")
+          .includes(normalizedSearch),
     );
-
-    if (group) {
-      group.items.push(item);
-    } else {
-      groups.push({ category: item.category, items: [item] });
+    if (items.length > 0) {
+      groups.push({ id: group.id, items, name: group.name });
     }
 
     return groups;
   }, []);
 });
 
-function changeAvailability(event: AvailabilityChangeEvent) {
-  emit("availability-change", event);
-  snackbarOpen.value = true;
+const intakeSublabel = computed(() => {
+  if (props.intake === null) return "";
+  if (props.intake.updatedBy === null || props.intake.updatedAt === null) {
+    return props.intake.acceptsNewOrders
+      ? availabilityMessages.intakeOn
+      : availabilityMessages.intakeOff;
+  }
+
+  return `Изменил ${props.intake.updatedBy} ${formatDate(props.intake.updatedAt)}`;
+});
+
+function updateIntake(value: boolean): void {
+  emit("intake-change", value);
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleString("ru-RU");
 }
 </script>
 
@@ -147,6 +205,19 @@ function changeAvailability(event: AvailabilityChangeEvent) {
   background: var(--expressa-color-surface);
 }
 
+.availability-screen__search {
+  display: grid;
+  gap: var(--expressa-space-2xs);
+  padding: var(--expressa-space-md);
+}
+
+.availability-screen__search-label,
+.availability-screen__intake-title {
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-action);
+  font-weight: var(--expressa-font-weight-semibold);
+}
+
 .availability-screen__content {
   min-width: 0;
   flex: 1;
@@ -158,6 +229,19 @@ function changeAvailability(event: AvailabilityChangeEvent) {
 .availability-screen__groups {
   display: grid;
   gap: var(--expressa-space-lg);
+}
+
+.availability-screen__intake {
+  margin-bottom: var(--expressa-space-lg);
+  overflow: hidden;
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-lg);
+  padding: var(--expressa-space-md);
+}
+
+.availability-screen__intake-title {
+  margin: 0 0 var(--expressa-space-sm);
 }
 
 @media (min-width: 768px) {
@@ -179,6 +263,10 @@ function changeAvailability(event: AvailabilityChangeEvent) {
 
   .availability-screen__tabs {
     position: static;
+  }
+
+  .availability-screen__search {
+    padding: 0 0 var(--expressa-space-md);
   }
 
   .availability-screen__content {

@@ -1,17 +1,26 @@
 import type {
-  AvailabilityChangeEvent,
-  MenuItem,
-} from "../../../shared/ui/admin/Admin.types";
+  AvailabilityGroup,
+  AvailabilityItem,
+  ServiceIntake,
+} from "../../../shared/api/availability.api.types";
+import type { ScreenError } from "../../../shared/ui/screen-error";
 
 export interface AvailabilityScreenProps {
-  menuItems: readonly MenuItem[];
+  error: ScreenError | null;
+  groups: readonly AvailabilityGroup[];
+  intake: ServiceIntake | null;
+  loading: boolean;
+  saving: boolean;
 }
 
 export interface AvailabilityScreenEmits {
-  "availability-change": [event: AvailabilityChangeEvent];
+  "availability-change": [item: AvailabilityItem, isAvailable: boolean];
+  "intake-change": [acceptsNewOrders: boolean];
+  retry: [];
 }
 
 export interface AvailabilityItemGroup {
-  category: string;
-  items: MenuItem[];
+  id: string;
+  items: readonly AvailabilityItem[];
+  name: string;
 }
