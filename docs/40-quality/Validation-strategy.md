@@ -7,7 +7,7 @@ status: active
 tags: [quality, testing, playwright]
 updated: 2026-08-01
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-15
 sources:
   - ../../front-office/package.json
   - ../../back-office/package.json
@@ -21,9 +21,8 @@ sources:
 наблюдаемого поведения, но не определяет требования и не заменяет источник
 истины.
 
-Admin и Customer независимы: каждый владеет собственными design tokens,
-runtime UI и каталогом Storybook; общих UI/npm-пакетов и импортов между
-продуктами нет.
+Admin и Customer независимы: каждый владеет собственными design tokens и
+runtime UI; общих UI/npm-пакетов и импортов между продуктами нет.
 
 ## Обязательные уровни
 

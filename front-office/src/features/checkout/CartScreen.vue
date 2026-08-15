@@ -270,6 +270,8 @@ function emitCheckout(): void {
   flex: 1;
   flex-direction: column;
   gap: var(--customer-space-9);
+  width: 100%;
+  min-width: 0;
   padding: var(--customer-space-11) var(--customer-space-9)
     var(--customer-space-13);
 }
@@ -277,6 +279,7 @@ function emitCheckout(): void {
   display: flex;
   flex-direction: column;
   gap: var(--customer-space-5);
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;

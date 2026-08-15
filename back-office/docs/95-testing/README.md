@@ -10,4 +10,4 @@ sources:
 
 # Проверки
 
-`package.json` — источник команд. `format:check`, `lint`, `typecheck`, `test -- --run` и `build` проверяют runtime; `contract:check` сверяет OpenAPI-снимок. `test:e2e` проверяет приложение, `test:catalog:e2e` — каталог с test backend. `storybook:build` собирает UI-каталог для ручного просмотра. Источники: [package.json](../../package.json), [app E2E](../../tests/e2e/app.e2e.ts), [catalog E2E](../../tests/e2e/catalog.e2e.ts).
+`package.json` — источник команд. `format:check`, `lint`, `typecheck`, `test -- --run` и `build` проверяют runtime; `contract:check` сверяет OpenAPI-снимок. `test:e2e` проверяет приложение, `test:catalog:e2e` — production-runtime E2E каталога с test backend. Источники: [package.json](../../package.json), [app E2E](../../tests/e2e/app.e2e.ts), [catalog E2E](../../tests/e2e/catalog.e2e.ts).

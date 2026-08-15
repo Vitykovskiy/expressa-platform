@@ -11,58 +11,66 @@
         Создайте новую категорию для товаров меню
       </p>
       <v-card-text class="add-dialog-fields">
-        <label :for="nameId">Название категории</label>
-        <AdminTextField
-          :id="nameId"
-          ref="nameInput"
-          v-model="name"
-          :aria-describedby="nameError ? nameErrorId : undefined"
-          :aria-invalid="Boolean(nameError)"
-          autofocus
-          class="add-dialog-input"
-          placeholder="Например: Кофе, Чай, Десерты"
-          type="text"
-          @keydown="submitOnEnter"
-          @update:model-value="dismissFieldError('name')"
-        />
-        <p
-          v-if="nameError"
-          :id="nameErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ nameError }}
-        </p>
-        <label :for="descriptionId">Описание</label>
-        <AdminTextField
-          :id="descriptionId"
-          v-model="description"
-          :aria-describedby="descriptionError ? descriptionErrorId : undefined"
-          :aria-invalid="Boolean(descriptionError)"
-          class="add-dialog-input"
-          placeholder="Например: Горячие напитки"
-          type="text"
-          @update:model-value="dismissFieldError('description')"
-        />
-        <p
-          v-if="descriptionError"
-          :id="descriptionErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ descriptionError }}
-        </p>
-        <div class="add-dialog-toggle">
-          <strong :id="activeLabelId">Категория активна</strong>
-          <AdminToggle
-            v-model="isActive"
-            :aria-labelledby="activeLabelId"
-            @update:model-value="dismissFieldError('isActive')"
+        <div class="add-dialog-field">
+          <label :for="nameId">Название категории</label>
+          <AdminTextField
+            :id="nameId"
+            ref="nameInput"
+            v-model="name"
+            :aria-describedby="nameError ? nameErrorId : undefined"
+            :aria-invalid="Boolean(nameError)"
+            autofocus
+            class="add-dialog-input"
+            placeholder="Например: Кофе, Чай, Десерты"
+            type="text"
+            @keydown="submitOnEnter"
+            @update:model-value="dismissFieldError('name')"
           />
+          <p
+            v-if="nameError"
+            :id="nameErrorId"
+            class="add-dialog-error"
+            role="alert"
+          >
+            {{ nameError }}
+          </p>
         </div>
-        <p v-if="activeError" class="add-dialog-error" role="alert">
-          {{ activeError }}
-        </p>
+        <div class="add-dialog-field">
+          <label :for="descriptionId">Описание</label>
+          <AdminTextField
+            :id="descriptionId"
+            v-model="description"
+            :aria-describedby="
+              descriptionError ? descriptionErrorId : undefined
+            "
+            :aria-invalid="Boolean(descriptionError)"
+            class="add-dialog-input"
+            placeholder="Например: Горячие напитки"
+            type="text"
+            @update:model-value="dismissFieldError('description')"
+          />
+          <p
+            v-if="descriptionError"
+            :id="descriptionErrorId"
+            class="add-dialog-error"
+            role="alert"
+          >
+            {{ descriptionError }}
+          </p>
+        </div>
+        <div class="add-dialog-field">
+          <div class="add-dialog-toggle">
+            <strong :id="activeLabelId">Категория активна</strong>
+            <AdminToggle
+              v-model="isActive"
+              :aria-labelledby="activeLabelId"
+              @update:model-value="dismissFieldError('isActive')"
+            />
+          </div>
+          <p v-if="activeError" class="add-dialog-error" role="alert">
+            {{ activeError }}
+          </p>
+        </div>
       </v-card-text>
       <v-card-actions class="add-dialog-actions admin-dialog-actions">
         <AdminButton
@@ -224,6 +232,10 @@ watch(
   display: grid;
   gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+}
+.add-dialog-field {
+  display: grid;
+  gap: var(--expressa-space-field-label);
 }
 .add-dialog-fields label {
   color: var(--expressa-color-text-secondary);

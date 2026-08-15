@@ -8,8 +8,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [
     vue(),
-    ...(process.env.STORYBOOK === 'true' ? [] : [vuetify({ autoImport: true })]),
-    ...(process.env.STORYBOOK === 'true' ? [] : [VitePWA({
+    vuetify({ autoImport: true }),
+    VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
@@ -32,7 +32,7 @@ export default defineConfig({
           },
         ],
       },
-    })]),
+    }),
   ],
   resolve: {
     alias: {

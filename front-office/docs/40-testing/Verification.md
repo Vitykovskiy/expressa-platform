@@ -10,8 +10,7 @@ sources:
 
 Команды и параметры принадлежат [package.json](../../package.json). `lint`,
 `typecheck`, `test -- --run` и `build` проверяют код; `contract:check` сверяет
-OpenAPI; `storybook:build` собирает каталог UI-состояний; `test:e2e` запускает
-приложение.
+OpenAPI; `test:e2e` запускает приложение.
 
 | Сценарий | Основные доказательства |
 |---|---|

@@ -9,8 +9,25 @@
         :aria-expanded="props.expanded"
         @click="emit('toggle', props.category)"
       >
-        <span aria-hidden="true">
-          {{ props.expanded ? "⌄" : "›" }}
+        <span aria-hidden="true" class="menu-category__toggle-icon">
+          <svg
+            v-if="props.expanded"
+            aria-hidden="true"
+            class="menu-category__icon"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+          <svg
+            v-else
+            aria-hidden="true"
+            class="menu-category__icon"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
         </span>
         <span class="menu-category__copy">
           <span class="menu-category__name">
@@ -29,8 +46,16 @@
         type="button"
         variant="ghost"
         @click="emit('moveUp', props.category)"
-        >↑</AdminButton
       >
+        <svg
+          aria-hidden="true"
+          class="menu-category__icon"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path d="M12 19V5m-7 7 7-7 7 7" />
+        </svg>
+      </AdminButton>
       <AdminButton
         v-if="props.showManagementActions"
         :disabled="props.disabled || !props.canMoveDown"
@@ -39,8 +64,16 @@
         type="button"
         variant="ghost"
         @click="emit('moveDown', props.category)"
-        >↓</AdminButton
       >
+        <svg
+          aria-hidden="true"
+          class="menu-category__icon"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path d="M12 5v14m7-7-7 7-7-7" />
+        </svg>
+      </AdminButton>
       <AdminButton
         :disabled="props.disabled"
         class="menu-category__edit"
@@ -49,7 +82,16 @@
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
       >
-        <span aria-hidden="true" class="menu-category__edit-icon">✎</span>
+        <svg
+          aria-hidden="true"
+          class="menu-category__icon"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="m14.5 5.5 4 4M4 20l4.5-1 10-10a2.8 2.8 0 0 0-4-4l-10 10L4 20Z"
+          />
+        </svg>
         <span class="menu-category__edit-label">Редактировать</span>
       </AdminButton>
     </header>
@@ -146,9 +188,10 @@ const countLabel = computed(() => {
   text-align: left;
 }
 
-.menu-category__toggle > span:first-child {
-  flex: 0 0 12px;
-  text-align: center;
+.menu-category__toggle-icon {
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
 }
 
 .menu-category__copy {
@@ -178,7 +221,16 @@ const countLabel = computed(() => {
   padding: 0;
   color: var(--expressa-color-accent);
   font: inherit;
-  font-size: var(--expressa-font-size-action);
+}
+
+.menu-category__icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .menu-category__toggle:hover,
@@ -215,10 +267,5 @@ const countLabel = computed(() => {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-.menu-category__edit-icon {
-  font-size: 18px;
-  line-height: 1;
 }
 </style>

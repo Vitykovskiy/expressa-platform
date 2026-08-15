@@ -2,7 +2,7 @@
 title: Карта покрытия
 type: registry
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-15
 sources:
   - ../_sources/Expressa_MVP_Техническое_задание.md
 ---
@@ -15,11 +15,11 @@ sources:
 | 23–38 | 2.1. Репозитории | [[../20-architecture/Repository-boundaries\|Границы репозиториев]], [[../20-architecture/Cross-repository-contracts\|Межрепозиторные контракты]], [[../20-architecture/System-context\|Контекст системы]] | DOC-01 |
 | 39–50 | 2.2. Управление пакетами | [[../10-overview/Project-overview\|Обзор проекта]] | DOC-01 |
 | 51–89 | 2.3. Документация | [[How-to-use-this-vault\|Как пользоваться базой знаний]], [[Naming-conventions\|Соглашения об именовании]], [[Source-precedence\|Приоритет источников]], [[Update-protocol\|Протокол обновления]], [[Glossary\|Словарь терминов]], [[../90-agents/Project-instructions\|Проектные инструкции]] | DOC-01 |
-| 90–100 | 2.4. Storybook как каталог UI | [[../50-interfaces/Storybook-catalog\|Каталог Storybook]] | DOC-03 |
+| 90–100 | 2.4. Снятый каталог UI | [[../20-architecture/ADR/ADR-004-remove-storybook\|Удаление Storybook]] | DOC-03 |
 | 101–105 | 2.5. Каталог инженерных требований | [[../20-architecture/Backend-architecture\|Архитектура backend]], [[../20-architecture/Client-architecture\|Архитектура клиентов]] | DOC-01 |
 | 106–106 | 2.5. Каталог инженерных требований | [[../50-interfaces/HTTP-API-conventions\|Соглашения HTTP API]] | DOC-03 |
 | 107–107 | 2.5. Каталог инженерных требований | [[../20-architecture/Backend-architecture\|Архитектура backend]] | DOC-01 |
-| 108–117 | 2.5. Каталог инженерных требований | [[../50-interfaces/Front-office-UI\|Интерфейс front-office]], [[../50-interfaces/Back-office-UI\|Интерфейс back-office]], [[../50-interfaces/Storybook-catalog\|Каталог Storybook]] | DOC-03 |
+| 108–117 | 2.5. Каталог инженерных требований | [[../50-interfaces/Front-office-UI\|Интерфейс front-office]], [[../50-interfaces/Back-office-UI\|Интерфейс back-office]] | DOC-03 |
 | 118–134 | 2.5. Каталог инженерных требований | [[../70-deployment/Environments\|Среды]], [[../70-deployment/CI-CD\|CI/CD]], [[../70-deployment/Release-and-version-compatibility\|Версионирование, выпуск и совместимость]] | DOC-04 |
 | 135–147 | 3. Состав MVP | [[../10-overview/MVP-scope\|Границы MVP]] | DOC-01 |
 | 148–161 | 4. За рамками MVP | [[../10-overview/MVP-scope\|Границы MVP]] | DOC-01 |
@@ -32,8 +32,7 @@ sources:
 | 457–522 | 11. HTTP API | [[../50-interfaces/HTTP-API-conventions\|Соглашения HTTP API]], [[../50-interfaces/Authentication-API\|API аутентификации]], [[../50-interfaces/Menu-API\|API меню]], [[../50-interfaces/Orders-API\|API заказов]], [[../50-interfaces/Back-office-API\|API back-office]], [[../50-interfaces/Error-model-and-idempotency\|Модель ошибок и идемпотентность]] | DOC-03 |
 | 523–580 | 12. Требования к front-office | [[../50-interfaces/Front-office-UI\|Интерфейс front-office]], [[../50-interfaces/Push-notifications\|Push-уведомления]] | DOC-03 |
 | 581–625 | 13. Требования к back-office | [[../50-interfaces/Back-office-UI\|Интерфейс back-office]], [[../50-interfaces/Push-notifications\|Push-уведомления]] | DOC-03 |
-| 626–664 | 14. Storybook front-office | [[../50-interfaces/Storybook-catalog\|Каталог Storybook]], [[../50-interfaces/Push-notifications\|Push-уведомления]] | DOC-03 |
-| 665–699 | 15. Storybook back-office | [[../50-interfaces/Storybook-catalog\|Каталог Storybook]], [[../50-interfaces/Push-notifications\|Push-уведомления]] | DOC-03 |
+| 626–699 | 14–15. Снятые требования к каталогу UI | [[../20-architecture/ADR/ADR-004-remove-storybook\|Удаление Storybook]], [[../50-interfaces/Push-notifications\|Push-уведомления]] | DOC-03 |
 | 700–726 | 16. Архитектура backend | [[../20-architecture/Backend-architecture\|Архитектура backend]] | DOC-01 |
 | 727–762 | 17. Архитектура front-office и back-office | [[../20-architecture/Client-architecture\|Архитектура клиентов]] | DOC-01 |
 | 763–832 | 18. Требования к качеству | [[../95-testing/Test-strategy\|Требования к качеству и уровни тестирования]], [[../95-testing/Coverage-and-quality-gates\|Покрытие и контрольные требования качества]], [[../95-testing/Release-verification\|Проверка готовности и выпуска]], [[../70-deployment/Backup-and-restore\|Надёжность, резервное копирование и восстановление]], [[../70-deployment/Observability\|Наблюдаемость]] | DOC-04 |

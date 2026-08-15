@@ -1,21 +1,21 @@
 ---
-title: Локальная документация и Storybook
-description: Граница корневых и контурных документов, а также размещение Storybook.
+title: Локальная документация и Storybook (заменён)
+description: Историческое решение о границе корневых и контурных документов и размещении Storybook.
 type: adr
 area: architecture
-status: accepted
+status: superseded
+superseded_by: ADR-004-remove-storybook.md
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-15
 sources:
-  - ../../../front-office/.storybook/main.ts
-  - ../../../back-office/.storybook/main.ts
-  - ../../../front-office/AGENTS.md
-  - ../../../back-office/AGENTS.md
+  - ADR-004-remove-storybook.md
 updated: 2026-08-11
 supersedes: [ADR-001]
 ---
 
 # ADR-003. Локальная документация и Storybook
+
+> Заменён [ADR-004](ADR-004-remove-storybook.md).
 
 ## Контекст
 

@@ -5,19 +5,24 @@ owner: back-office
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
-  - ../../.storybook/main.ts
 ---
 
 # ADR-001: runtime-слои и изоляция Storybook
 
+> Runtime-слои остаются действующим решением. Storybook-часть ниже сохранена как история и заменена [ADR-004](../../../docs/20-architecture/ADR/ADR-004-remove-storybook.md).
+
 ## Контекст
 
-Код рабочего интерфейса и каталог UI находились рядом, поэтому граница runtime была неочевидна.
+Код рабочего интерфейса находился в нескольких слоях, поэтому граница runtime была неочевидна.
 
 ## Решение
 
-Runtime следует направлению `app -> pages -> widgets -> features -> entities -> shared`. Административные экраны находятся в `src/pages/admin`, оболочка — в `src/widgets/admin-shell`, общие административные примитивы — в `src/shared/ui/admin`. Все Storybook-артефакты находятся в `.storybook`.
+Runtime следует направлению `app -> pages -> widgets -> features -> entities -> shared`. Административные экраны находятся в `src/pages/admin`, оболочка — в `src/widgets/admin-shell`, общие административные примитивы — в `src/shared/ui/admin`.
+
+## Историческая часть: Storybook
+
+До [ADR-004](../../../docs/20-architecture/ADR/ADR-004-remove-storybook.md) каталог UI находился в `.storybook`; его истории импортировали runtime-код.
 
 ## Последствия
 
-Пути импортов сохраняют границу: Storybook импортирует runtime, но не участвует в его проверках. Проверка `! rg -n 'storybook|\\.stories\\.' src` закрепляет границу.
+Пути импортов сохраняют направление между runtime-слоями. Историческая граница Storybook не участвует в текущих проверках.
