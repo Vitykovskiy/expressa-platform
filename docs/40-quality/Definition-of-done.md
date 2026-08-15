@@ -7,7 +7,7 @@ status: active
 tags: [quality, ui, vue, dod]
 updated: 2026-08-01
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-15
 sources:
   - ../../front-office/package.json
   - ../../back-office/package.json
@@ -22,10 +22,9 @@ Vue-кода]].
 ## Gate
 
 - Изменение сохраняет границы двух независимых продуктов по
-  [[../20-architecture/ADR/ADR-003-local-application-documentation-and-storybook|ADR-003]].
+  [[../20-architecture/ADR/ADR-004-remove-storybook|ADR-004]].
 - Изменённый Vue/Vuetify-код соответствует
-  [[Vue-code-style|стилю Vue-кода]]; истории остаются отдельным
-  демонстрационным слоем и импортируют готовый runtime-код.
+  [[Vue-code-style|стилю Vue-кода]].
 - Изменённое UI-поведение соответствует
   [[UI-accessibility|требованиям доступности и взаимодействия]].
 - Выполнены применимые проверки из

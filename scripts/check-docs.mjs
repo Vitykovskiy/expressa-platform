@@ -68,6 +68,14 @@ function isKnowledgeNote(file, scope) {
   return !local.includes('_journal') && !local.includes('_sources') && !local.includes('backlog');
 }
 
+function isHistoricalNote(file, scope) {
+  const local = relative(resolve(root, scope.docs), file).split(sep);
+  return local.includes('_journal')
+    || local.includes('_sources')
+    || local.includes('backlog')
+    || frontmatter(readFileSync(file, 'utf8')).status === 'superseded';
+}
+
 function localTarget(raw) {
   const target = raw.trim().replace(/^<|>$/g, '').replace(/^['"]|['"]$/g, '');
   return target && !target.startsWith('#') && !target.startsWith('/') && !/^(?:https?:|mailto:|tel:|data:)/i.test(target);
@@ -109,6 +117,7 @@ function links(text) {
 function checkLinks(scope, files) {
   const docsDirectory = resolve(root, scope.docs);
   for (const file of files) {
+    if (isHistoricalNote(file, scope)) continue;
     const text = readFileSync(file, 'utf8');
     for (const target of links(text)) {
       if (escapesWorkspace(file, target)) {
@@ -150,7 +159,7 @@ function reachableFiles(scope) {
 function checkReachability(scope, files) {
   const reachable = reachableFiles(scope);
   for (const file of files) {
-    if (!isKnowledgeNote(file, scope)) continue;
+    if (!isKnowledgeNote(file, scope) || isHistoricalNote(file, scope)) continue;
     if (!reachable.has(file)) fail(scope.name, file, `unreachable from ${scope.index}`);
   }
 }
@@ -164,13 +173,14 @@ function sourcePaths(text, file, docsDirectory) {
   return candidates
     .filter(localTarget)
     .map((target) => ({ target, resolved: resolveTarget(file, target, docsDirectory) }))
-    .filter(({ target, resolved }) => CODE_EXTENSIONS.has(extname(target)) || /(?:^|\/)(?:src|test|tests|openapi|contracts|scripts|\.storybook|config)(?:\/|$)/.test(target) || target.startsWith('.'))
+    .filter(({ target, resolved }) => CODE_EXTENSIONS.has(extname(target)) || /(?:^|\/)(?:src|test|tests|openapi|contracts|scripts|config)(?:\/|$)/.test(target) || target.startsWith('.'))
     .map(({ target, resolved }) => ({ target, resolved }));
 }
 
 function checkSources(scope, files, sampleSize) {
   const docsDirectory = resolve(root, scope.docs);
-  const sources = files.flatMap((file) => sourcePaths(readFileSync(file, 'utf8'), file, docsDirectory)
+  const sources = files.filter((file) => !isHistoricalNote(file, scope))
+    .flatMap((file) => sourcePaths(readFileSync(file, 'utf8'), file, docsDirectory)
     .map((source) => ({ ...source, file })));
   const unique = [...new Map(sources.map((source) => [`${source.file}\0${source.target}`, source])).values()]
     .sort((a, b) => `${a.file}:${a.target}`.localeCompare(`${b.file}:${b.target}`));

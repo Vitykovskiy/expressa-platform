@@ -21,15 +21,14 @@ Back-office — отдельное Vue-приложение сотруднико
 
 - [Вход и роли](30-domains/Authentication-and-role-gates.md) — активный `/login`, восстановление сессии и доступ по ролям.
 - [Управление каталогом](30-domains/Catalog-management.md) — активный `/menu`: данные, действия, validation, диалоги и ошибки.
-- [Неактивные экраны](30-domains/Inactive-screens.md) — точные границы placeholder-маршрутов и Storybook-only компонентов.
+- [Неактивные экраны](30-domains/Inactive-screens.md) — точные границы placeholder-маршрутов и неактивных компонентов.
 - [Маршруты](30-domains/working-areas-and-routes.md) — компактная карта URL и перенаправлений.
 - [API-интеграция](30-domains/api-integration-and-errors.md) — транспортная граница и OpenAPI-снимок.
 - [Архитектура UI](10-architecture/ui-ownership.md) — владельцы состояния, responsive и accessibility-границы.
 
-## Устройство и каталог UI
+## Устройство UI
 
-- [Storybook](95-testing/storybook.md) документирует изолированный каталог UI, включая orphan-экраны.
-- [Размещение кода](80-conventions/code-layout.md) и [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) фиксируют границу runtime/Storybook.
+- [Размещение кода](80-conventions/code-layout.md) фиксирует runtime-слои.
 
 ## Структура исходного кода
 

@@ -4,7 +4,6 @@ owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/app/router.ts
-  - ../../.storybook/main.ts
 ---
 
 # ADR-001: границы runtime и Storybook
@@ -12,16 +11,20 @@ sources:
 ## Решение
 
 Runtime организован слоями `app/pages/widgets/features/entities/shared`.
-Storybook вынесен в `.storybook` как каталог UI-состояний, импортирует runtime,
-но не наоборот.
-[Источники: маршрутизатор](../../src/app/router.ts), [Storybook](../../.storybook/main.ts).
+Это действующее правило front-office.
+[Источник: маршрутизатор](../../src/app/router.ts).
+
+## Историческая часть Storybook
+
+Часть решения о Storybook заменена
+[ADR-004](../../../docs/20-architecture/ADR/ADR-004-remove-storybook.md):
+активная интеграция удалена.
 
 ## Причина
 
-Маршруты, предметная модель и инструменты каталога получают разные владельцы;
-сборка приложения не включает исходники Storybook.
+Маршруты, предметная модель и слой представления получают разные владельцы;
+runtime сохраняет направленные зависимости между слоями.
 
 ## Проверка
 
-Граница и проверка историй описаны канонически в
-[Runtime и Storybook](../30-conventions/Runtime-and-Storybook.md).
+Слои runtime проверяются по [маршрутизатору](../../src/app/router.ts).

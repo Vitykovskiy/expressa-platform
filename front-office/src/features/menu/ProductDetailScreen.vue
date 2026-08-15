@@ -94,9 +94,7 @@
         @click="submit"
       >
         <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
-        <span class="product-detail__submit-label"
-          >{{ actionLabel }} · {{ formatMinorAmount(totalMinor) }}</span
-        >
+        <span class="product-detail__submit-label">{{ actionLabel }}</span>
       </ui-btn>
     </footer>
   </section>
@@ -323,16 +321,20 @@ function createInitialConfiguration(product = props.product) {
 }
 .product-detail__quantity {
   display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--customer-space-2);
   overflow: hidden;
+  padding: var(--customer-space-2);
   background: var(--customer-color-surface-subtle);
-  border-radius: var(--customer-radius-xs);
+  border-radius: var(--customer-radius);
 }
 .product-detail__quantity .ui-icon-btn,
 .product-detail__quantity output {
   display: grid;
-  min-width: calc(var(--customer-space-12) * 2);
-  width: var(--customer-size-control-lg);
-  height: var(--customer-size-control-xl);
+  width: var(--customer-size-control-md);
+  min-width: var(--customer-size-control-md);
+  height: var(--customer-size-control-md);
   place-items: center;
   color: var(--customer-text);
   background: transparent;
@@ -342,19 +344,20 @@ function createInitialConfiguration(product = props.product) {
   font-weight: var(--customer-font-weight-black);
 }
 .product-detail__quantity .ui-icon-btn {
-  min-height: calc(var(--customer-space-12) * 2);
+  min-height: var(--customer-size-control-md);
+  border-radius: var(--customer-radius-round);
   cursor: pointer;
 }
 .product-detail__quantity output {
-  width: var(--customer-space-17);
-  border-right: 1px solid var(--customer-border);
-  border-left: 1px solid var(--customer-border);
+  width: var(--customer-size-control-sm);
+  min-width: var(--customer-size-control-sm);
 }
 .product-detail__submit {
   display: inline-flex;
   flex: 1;
   align-items: center;
   justify-content: center;
+  gap: var(--customer-space-4);
   min-height: var(--customer-size-control-xl);
   padding: var(--customer-space-5) var(--customer-space-9);
   color: var(--customer-text);

@@ -93,10 +93,15 @@ function returnToMenu(): void {
 }
 .menu-group__grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--customer-space-7);
+  width: 100%;
   margin: 0;
   padding: var(--customer-space-9);
   list-style: none;
+}
+.menu-group__grid > li {
+  min-width: 0;
 }
 .menu-group__empty {
   display: grid;

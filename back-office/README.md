@@ -9,4 +9,4 @@ npm ci
 npm run dev
 ```
 
-Основные проверки: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --run`, `npm run build`, `npm run contract:check`. Storybook — каталог UI для ручного просмотра; E2E-команды — в [документации](docs/INDEX.md).
+Основные проверки: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --run`, `npm run build`, `npm run contract:check`. E2E-команды — в [документации](docs/INDEX.md).

@@ -15,8 +15,6 @@ sources:
 [router](../../src/app/router.ts).
 
 Зависимости направлены вниз: `app -> pages -> widgets -> features -> entities -> shared`.
-Storybook зависит от runtime и не участвует в production-графе.
-[Источник: ADR](../50-adr/ADR-001-runtime-and-storybook-boundaries.md).
 
 Заказ не является сущностью `entities`: его запрос и ответ принадлежат
 `features/checkout` и `shared/api/orders.api`; страница читает завершённое
