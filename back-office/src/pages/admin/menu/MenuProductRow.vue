@@ -15,7 +15,22 @@
           {{ priceLabel(props.product) }}
         </span>
       </span>
-      <span aria-hidden="true">›</span>
+      <svg
+        aria-hidden="true"
+        class="menu-product-row__chevron"
+        fill="none"
+        height="18"
+        viewBox="0 0 18 18"
+        width="18"
+      >
+        <path
+          d="m7 4.5 4.5 4.5L7 13.5"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+        />
+      </svg>
     </AdminButton>
     <AdminButton
       v-if="props.showManagementActions"
@@ -111,6 +126,11 @@ function formatPriceMinor(priceMinor: number): string {
   min-width: 0;
   flex: 1;
   gap: var(--expressa-space-2xs);
+}
+
+.menu-product-row__chevron {
+  flex: 0 0 18px;
+  align-self: center;
 }
 
 .menu-product-row__name,

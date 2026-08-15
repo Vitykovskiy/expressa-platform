@@ -29,7 +29,21 @@
         variant="ghost"
         @click="managementOpen = !managementOpen"
       >
-        <span aria-hidden="true">•••</span>
+        <svg
+          aria-hidden="true"
+          class="menu-page__management-icon"
+          fill="none"
+          focusable="false"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
+        </svg>
       </AdminButton>
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
         <div class="menu-page__toolbar">
@@ -104,9 +118,25 @@
                   variant="ghost"
                   @click="toggleModifierGroup(group)"
                 >
-                  <span aria-hidden="true">
-                    {{ expandedModifierGroupIds.has(group.id) ? "⌄" : "›" }}
-                  </span>
+                  <svg
+                    aria-hidden="true"
+                    class="menu-page__option-chevron"
+                    fill="none"
+                    focusable="false"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      :d="
+                        expandedModifierGroupIds.has(group.id)
+                          ? 'm6 9 6 6 6-6'
+                          : 'm9 18 6-6-6-6'
+                      "
+                    />
+                  </svg>
                   <span class="menu-page__option-copy">
                     <span class="menu-page__option-name">{{ group.name }}</span>
                     <span class="menu-page__option-count">
@@ -122,7 +152,20 @@
                   variant="ghost"
                   @click="openModifierGroupEditor(group)"
                 >
-                  <span aria-hidden="true">✎</span>
+                  <svg
+                    aria-hidden="true"
+                    class="menu-page__option-edit-icon"
+                    fill="none"
+                    focusable="false"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
                   <span class="menu-page__visually-hidden">Редактировать</span>
                 </AdminButton>
               </header>
@@ -152,7 +195,19 @@
                       {{ modifierOptionPrice(option.priceDeltaMinor) }}
                     </span>
                   </span>
-                  <span aria-hidden="true">›</span>
+                  <svg
+                    aria-hidden="true"
+                    class="menu-page__option-chevron"
+                    fill="none"
+                    focusable="false"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
                 </AdminButton>
               </div>
             </section>
@@ -587,7 +642,9 @@ function bySortOrder(
 
 <style scoped lang="scss">
 .menu-page__shell {
+  min-height: 100%;
   position: relative;
+  background: var(--expressa-color-surface);
 }
 
 :deep(.page-shell-description) {
@@ -614,8 +671,13 @@ function bySortOrder(
   place-items: center;
   padding: 0;
   color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-title);
-  letter-spacing: 0.08em;
+}
+
+.menu-page__management-icon,
+.menu-page__option-chevron,
+.menu-page__option-edit-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .menu-page__content,
@@ -703,9 +765,8 @@ function bySortOrder(
   gap: var(--expressa-space-2xs);
 }
 
-.menu-page__option-toggle > span:first-child {
-  flex: 0 0 12px;
-  text-align: center;
+.menu-page__option-chevron {
+  flex: 0 0 18px;
 }
 
 .menu-page__option-name {
@@ -730,7 +791,6 @@ function bySortOrder(
   place-items: center;
   padding: 0;
   color: var(--expressa-color-accent);
-  font-size: 18px;
 }
 
 .menu-page__option-row {
