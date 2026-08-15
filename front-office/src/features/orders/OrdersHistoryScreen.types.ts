@@ -1,16 +1,13 @@
-import type {
-  Order,
-  OrderStatus,
-} from "@/entities/customer/model/customer.types";
+import type { CustomerOrder } from "@/shared/api/orders.api";
 
 export interface OrdersHistoryScreenProps {
-  orders: Order[];
-  statusLabels: Record<OrderStatus, string>;
-  refreshing?: boolean;
-  expandedOrderIds?: string[];
+  errorMessage: string | null;
+  hasMore: boolean;
+  loading: boolean;
+  orders: CustomerOrder[];
 }
 
 export type OrdersHistoryScreenEmits = {
-  refresh: [];
-  toggleOrder: [orderId: string, expanded: boolean];
+  loadMore: [];
+  retry: [];
 };

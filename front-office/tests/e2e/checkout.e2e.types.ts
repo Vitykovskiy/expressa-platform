@@ -3,3 +3,5 @@ export type BrowserIssue = {
   text: string;
 };
 export type CurrentUser = { id: string };
+
+export type CheckoutOrderStage = "ISSUED";

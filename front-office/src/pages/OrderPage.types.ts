@@ -1,4 +1,4 @@
-import type { Order, OrderItem } from "../shared/api/orders.api";
+import type { CustomerOrder, OrderItem } from "../shared/api/orders.api";
 
-export type OrderPageOrder = Order;
+export type OrderPageOrder = CustomerOrder;
 export type OrderPageItem = OrderItem;

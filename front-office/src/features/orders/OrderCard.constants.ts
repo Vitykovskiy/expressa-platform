@@ -1,10 +1,9 @@
-import type { UiBadgeTone } from "@/shared/ui/customer/badge/UiBadge.types";
-import type { OrderStatus } from "@/entities/customer/model/customer.types";
+import type { CustomerOrderStage } from "@/shared/api/orders.api.types";
 
-export const ORDER_STATUS_TONES = {
-  pending: "warning",
-  preparing: "info",
-  ready: "success",
-  completed: "neutral",
-  cancelled: "neutral",
-} satisfies Record<OrderStatus, UiBadgeTone>;
+export const orderCardStageLabels = {
+  CREATED: "Заказ принят",
+  ACCEPTED: "Заказ принят бариста",
+  PREPARING: "Готовим заказ",
+  READY: "Заказ готов к выдаче",
+  ISSUED: "Заказ выдан",
+} satisfies Record<CustomerOrderStage, string>;
