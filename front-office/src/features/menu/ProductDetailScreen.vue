@@ -94,7 +94,9 @@
         @click="submit"
       >
         <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
-        <span class="product-detail__submit-label">{{ actionLabel }}</span>
+        <span class="product-detail__submit-label">
+          {{ actionLabel }} · {{ formatMinorAmount(totalMinor) }}
+        </span>
       </ui-btn>
     </footer>
   </section>

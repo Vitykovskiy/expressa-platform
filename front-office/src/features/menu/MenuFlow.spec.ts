@@ -35,7 +35,9 @@ describe("MenuFlow", () => {
       .findComponent(MenuGroupScreen)
       .vm.$emit("selectProduct", "espresso-single");
     expect(wrapper.get(".product-detail__total").text()).toBe("180 ₽");
-    expect(wrapper.get(".product-detail__submit").text()).toBe("Добавить");
+    expect(wrapper.get(".product-detail__submit").text()).toBe(
+      "Добавить · 180 ₽",
+    );
     expect(history.state.menuFlowScreen).toEqual({
       categoryId: "espresso",
       id: "product",
