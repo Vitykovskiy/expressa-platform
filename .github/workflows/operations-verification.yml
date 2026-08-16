@@ -242,18 +242,33 @@ jobs:
           YAML
           chmod 644 "$alert_directory/receiver.mjs" "$alert_directory/alertmanager.yml" "$alert_directory/prometheus.yml" "$alert_directory/rules.yml"
           docker network create "$network" >/dev/null
-          docker run --detach --rm --name "$receiver" --user "$(id -u):$(id -g)" --network "$network" --network-alias receiver --mount "type=bind,source=$alert_directory,target=/work,readonly" --mount "type=bind,source=$alert_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /nodejs/bin/node /work/receiver.mjs >/dev/null
+          docker run --detach --rm --name "$receiver" --user "$(id -u):$(id -g)" --network "$network" --network-alias receiver --mount "type=bind,source=$alert_directory,target=/work,readonly" --mount "type=bind,source=$alert_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /work/receiver.mjs >/dev/null
           docker run --detach --rm --name "$alertmanager" --network "$network" --network-alias alertmanager --mount "type=bind,source=$alert_directory/alertmanager.yml,target=/etc/alertmanager/alertmanager.yml,readonly" prom/alertmanager@sha256:d5155cfac40a6d9250ffc97c19db2c5e190c7bc57c6b67125c94903358f8c7d8 --config.file=/etc/alertmanager/alertmanager.yml >/dev/null
           docker run --detach --rm --name "$prometheus" --network "$network" --mount "type=bind,source=$alert_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$alert_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
           for container in "$receiver" "$alertmanager" "$prometheus"; do
             [[ "$(docker inspect --format '{{.State.Running}}' "$container")" == true ]] || fail "alert test container is unavailable: $container"
           done
-          for _ in {1..45}; do grep -qx firing "$alert_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
-          grep -qx firing "$alert_directory/evidence/alert-statuses.txt"
+          for _ in {1..15}; do
+            if [[ "$(docker inspect --format '{{.State.Running}}' "$receiver")" == true ]] && docker exec "$receiver" /nodejs/bin/node -e "fetch('http://127.0.0.1:8080').then(() => process.exit(0)).catch(() => process.exit(1))"; then
+              break
+            fi
+            sleep 1
+          done
+          [[ "$(docker inspect --format '{{.State.Running}}' "$receiver")" == true ]] || fail 'alert receiver is unavailable'
+          docker exec "$receiver" /nodejs/bin/node -e "fetch('http://127.0.0.1:8080').then(() => process.exit(0)).catch(() => process.exit(1))" || fail 'alert receiver HTTP is unavailable'
+          alert_diagnostics() {
+            for container in "$receiver" "$alertmanager" "$prometheus"; do
+              printf 'expressa-operations-diagnostic: container=%s\n' "$container" >&2
+              docker inspect --format 'status={{.State.Status}} exit_code={{.State.ExitCode}} error={{.State.Error}}' "$container" >&2 || true
+              docker logs --tail 100 "$container" >&2 || true
+            done
+          }
+          for _ in {1..45}; do grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" && break; sleep 1; done
+          grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" || { alert_diagnostics; fail 'alert firing delivery unavailable'; }
           sed -i 's/vector(1) == 1/vector(0) == 1/' "$alert_directory/rules.yml"
           docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
-          for _ in {1..45}; do grep -qx resolved "$alert_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
-          grep -qx resolved "$alert_directory/evidence/alert-statuses.txt"
+          for _ in {1..45}; do grep -qsx resolved "$alert_directory/evidence/alert-statuses.txt" && break; sleep 1; done
+          grep -qsx resolved "$alert_directory/evidence/alert-statuses.txt" || { alert_diagnostics; fail 'alert resolved delivery unavailable'; }
           evidence alert_delivery 'source=prometheus receiver=acknowledged resolved=acknowledged'
           REMOTE
           chmod 700 "$temporary_directory/verify-operations.sh"
