@@ -51,8 +51,8 @@ E08/E09 — запреты ролей и неверного перехода, п
 среды и проверяет непрефиксный backend `/metrics`, панель Grafana и targets
 Prometheus. При alert readiness/5xx
 сначала проверяет `/health/ready`, затем backend logs с `x-request-id`; при
-backup alert — состояние `expressa-backup.timer`, каталог копий и текстовую
-метрику node-exporter. Получатель alert настраивается вне Git. [Наблюдаемость](Observability.md),
+backup alert — последний operations artifact, каталог копий и текстовую метрику
+node-exporter. Получатель alert настраивается вне Git. [Наблюдаемость](Observability.md),
 [backup/restore](Backup-and-restore.md).
 
 Перед выпуском оператор запускает изолированную проверку восстановления только
@@ -67,12 +67,16 @@ SMS и bootstrap-секретами
 предварительно создаются на VPS; [production.env.example](../../deploy/production.env.example)
 показывает только форму manifest и не используется для поставки.
 
-Проверка операций запускается вручную только из `main` workflow
-`operations-verification.yml` с `confirm_operations_verification=true`. Она
-использует Environment `development`, не запускает staging или production
-поставку, создаёт backup, проверяет isolated restore с public-menu smoke и
-безопасный test receiver Alertmanager. Артефакт
+Проверка операций выполняется из `main` workflow
+`operations-verification.yml` ежедневно по cron `0 2 * * *` или вручную с
+`confirm_operations_verification=true`; concurrency не допускает параллельных
+запусков. Она использует Environment `development`, не запускает staging или
+production поставку, создаёт backup, проверяет isolated restore с public-menu
+smoke и безопасный test receiver Alertmanager. Артефакт
 `development-operations-evidence-<run_id>` содержит только имя копии, revision,
 фактические RPO/RTO с целями и acknowledgement test receiver; он не содержит
-секретов, URL или credentials. До успешного run этот артефакт и фактические
-значения остаются pending. [Operations workflow](../../.github/workflows/operations-verification.yml).
+секретов, URL или credentials. Run `31928673857` для
+`930e71cc06b65bb685635a60621937a97e656087` подтвердил backup
+`expressa-20260816T051813Z.sql.enc` с HMAC и метрикой, RPO `0/93600s`, RTO
+`16/900s`, delivery `firing` и `resolved`; artifact
+`development-operations-evidence-31928673857`. [Operations workflow](../../.github/workflows/operations-verification.yml).

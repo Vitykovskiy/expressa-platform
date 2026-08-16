@@ -41,10 +41,10 @@ Remote script передаёт эти значения `deploy.sh` NUL-разд�
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
 
-Отдельный ручной `operations-verification.yml` принимает только dispatch из
-`main` с `confirm_operations_verification=true`, использует Environment
-`development` и не выполняет поставку. Он запускает host backup, isolated
-restore с public-menu smoke и изолированную проверку delivery Alertmanager,
-затем сохраняет санитизированный artifact. Фактические RPO/RTO, имя копии и
-acknowledgement receiver считаются evidence только из успешного artifact этого
-workflow. [Operations verification](../../.github/workflows/operations-verification.yml).
+`operations-verification.yml` запускается из `main` по cron `0 2 * * *` или
+ручному dispatch с `confirm_operations_verification=true`; concurrency сохраняет
+один активный запуск. Он использует Environment `development`, не выполняет
+поставку, проверяет host backup, isolated restore с public-menu smoke и delivery
+Alertmanager, затем сохраняет санитизированный artifact. Фактические RPO/RTO,
+имя копии и acknowledgement receiver считаются evidence только из успешного
+artifact этого workflow. [Operations verification](../../.github/workflows/operations-verification.yml).

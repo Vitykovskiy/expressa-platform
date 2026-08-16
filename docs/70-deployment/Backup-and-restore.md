@@ -11,27 +11,26 @@ sources:
 
 # Резервное копирование и восстановление
 
-PostgreSQL использует именованный Docker volume. Ежедневная host-задача
-`expressa-backup.timer` запускает `backup.sh`: тот обращается к уже запущенному
-PostgreSQL через `docker exec` и явный `POSTGRES_CONTAINER`, создаёт `pg_dump`,
-шифрует его AES-256-CBC с PBKDF2 и хранит вне runtime volume. Для каждой копии
+PostgreSQL использует именованный Docker volume. Ежедневный GitHub Actions запуск
+`operations-verification.yml` вызывает `backup.sh` на development-host: тот
+обращается к уже запущенному PostgreSQL через `docker exec` и явный
+`POSTGRES_CONTAINER`, создаёт `pg_dump`, шифрует его AES-256-CBC с PBKDF2 и
+хранит вне runtime volume. Для каждой копии
 создаётся sibling HMAC-SHA-256 с отдельным ключом целостности; restore проверяет
 MAC до расшифровки. Копии старше
 `BACKUP_RETENTION_DAYS` удаляются. После успеха
 скрипт записывает текстовую метрику node-exporter
 `expressa_backup_last_success_timestamp_seconds`; её контролирует alert.
-[Backup script](../../deploy/backup.sh), [timer](../../deploy/expressa-backup.timer),
+[Backup script](../../deploy/backup.sh),
 [alert](../../deploy/prometheus/alerts.yml).
 
-Оператор создаёт каталог backup и каталог текстовых метрик вне `/srv/expressa/*/postgres-data`,
-даёт доступ пользователю `expressa`, кладёт ключ шифрования в отдельный файл с
-режимом `0600`, а в `/etc/expressa/backup.env` задаёт `BACKUP_DIRECTORY`,
-`BACKUP_ENCRYPTION_KEY_FILE`, `BACKUP_INTEGRITY_KEY_FILE`, `BACKUP_METRICS_DIRECTORY`,
-`BACKUP_RETENTION_DAYS`, `POSTGRES_CONTAINER`, `POSTGRES_DB` и `POSTGRES_USER`.
-`COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, образы приложений и `runtime.env` для
-backup не нужны. Затем устанавливает unit/timer и выполняет
-`systemctl enable --now expressa-backup.timer`. Значения ключа, пароля и
-`runtime.env` не попадают в логи или Git.
+Workflow использует user-owned каталоги development
+`/srv/expressa/development/state/operations/{backups,backup-metrics}` с режимом
+`0700`. Ключи backup и VAPID передаются на host только для запуска: временные
+файлы шифрования и целостности backup имеют режим `0600`, а cleanup удаляет их
+после проверки. VAPID передаётся NUL-разделённым stdin в окружение и не
+записывается во временные файлы или `runtime.env`. Значения ключей, пароля и
+`runtime.env` не попадают в логи, Git или evidence-артефакт.
 
 `restore-verify.sh` принимает путь к конкретной копии, ключи шифрования и
 целостности, `runtime.env`,
@@ -49,3 +48,9 @@ evidence-маркер с фактическими значениями и цел
 непроизводственной копии перед выпуском; фактические RPO/RTO попадают в evidence
 только после успешного запуска. [Restore script](../../deploy/restore-verify.sh),
 [проверка выпуска](../95-testing/Release-verification.md).
+
+Подтверждённая проверка: run `31928673857` для
+`930e71cc06b65bb685635a60621937a97e656087`, artifact
+`development-operations-evidence-31928673857`: backup
+`expressa-20260816T051813Z.sql.enc` с HMAC и метрикой, RPO `0/93600s`, RTO
+`16/900s` и public-menu smoke прошли.
