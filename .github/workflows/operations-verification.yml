@@ -51,6 +51,9 @@ jobs:
       DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
       BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
       BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
+      VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+      VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
@@ -126,6 +129,14 @@ jobs:
           set -a
           source "$development_root/runtime.env"
           set +a
+          [[ "${DELIVERY_VAPID_SUBJECT:-}" ]] || fail 'DELIVERY_VAPID_SUBJECT is required'
+          [[ "${DELIVERY_VAPID_PUBLIC_KEY:-}" ]] || fail 'DELIVERY_VAPID_PUBLIC_KEY is required'
+          [[ "${DELIVERY_VAPID_PRIVATE_KEY:-}" ]] || fail 'DELIVERY_VAPID_PRIVATE_KEY is required'
+          VAPID_SUBJECT="$DELIVERY_VAPID_SUBJECT"
+          VAPID_PUBLIC_KEY="$DELIVERY_VAPID_PUBLIC_KEY"
+          VAPID_PRIVATE_KEY="$DELIVERY_VAPID_PRIVATE_KEY"
+          export VAPID_SUBJECT VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY
+          unset DELIVERY_VAPID_SUBJECT DELIVERY_VAPID_PUBLIC_KEY DELIVERY_VAPID_PRIVATE_KEY
           postgres_containers="$(docker ps -q --filter label=com.docker.compose.project=expressa-development --filter label=com.docker.compose.service=postgres)"
           [[ -n "$postgres_containers" && "$(wc -w <<<"$postgres_containers")" == 1 ]] || fail 'development postgres container is unavailable'
           POSTGRES_CONTAINER="$(docker inspect --format '{{.Name}}' "$postgres_containers")"
@@ -238,7 +249,7 @@ jobs:
           REMOTE
           chmod 700 "$temporary_directory/verify-operations.sh"
           scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/backup.sh deploy/restore-verify.sh deploy/compose.yml "$temporary_directory/verify-operations.sh" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
-          printf '%s\0%s\0%s\0%s\0%s\0' "$BACKUP_ENCRYPTION_KEY" "$BACKUP_INTEGRITY_KEY" "$VERIFIED_MAIN_SHA" "$remote_directory" "$GITHUB_RUN_ID" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' BACKUP_ENCRYPTION_KEY; IFS= read -r -d '' BACKUP_INTEGRITY_KEY; IFS= read -r -d '' VERIFIED_MAIN_SHA; IFS= read -r -d '' STAGED_DEPLOY_DIRECTORY; IFS= read -r -d '' GITHUB_RUN_ID; export BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY VERIFIED_MAIN_SHA STAGED_DEPLOY_DIRECTORY GITHUB_RUN_ID; bash $(printf %q "$remote_directory/verify-operations.sh")" > "$evidence_file"
+          printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$BACKUP_ENCRYPTION_KEY" "$BACKUP_INTEGRITY_KEY" "$VAPID_SUBJECT" "$VAPID_PUBLIC_KEY" "$VAPID_PRIVATE_KEY" "$VERIFIED_MAIN_SHA" "$remote_directory" "$GITHUB_RUN_ID" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' BACKUP_ENCRYPTION_KEY; IFS= read -r -d '' BACKUP_INTEGRITY_KEY; IFS= read -r -d '' DELIVERY_VAPID_SUBJECT; IFS= read -r -d '' DELIVERY_VAPID_PUBLIC_KEY; IFS= read -r -d '' DELIVERY_VAPID_PRIVATE_KEY; IFS= read -r -d '' VERIFIED_MAIN_SHA; IFS= read -r -d '' STAGED_DEPLOY_DIRECTORY; IFS= read -r -d '' GITHUB_RUN_ID; export BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY DELIVERY_VAPID_SUBJECT DELIVERY_VAPID_PUBLIC_KEY DELIVERY_VAPID_PRIVATE_KEY VERIFIED_MAIN_SHA STAGED_DEPLOY_DIRECTORY GITHUB_RUN_ID; bash $(printf %q "$remote_directory/verify-operations.sh")" > "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=host_preflight status=passed environment=development schedule=github-actions$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=source_revision status=passed github_sha=[a-f0-9]{40} ref=refs/heads/main$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=backup status=passed artifact=expressa-[0-9]{8}T[0-9]{6}Z\.sql\.enc hmac=passed metric=passed$' "$evidence_file"
