@@ -238,13 +238,13 @@ jobs:
             - name: operations-evidence
               rules:
                 - alert: ExpressaOperationsEvidence
-                  expr: vector(1) == 1
+                  expr: vector(0) == 1
           YAML
           chmod 644 "$alert_directory/receiver.mjs" "$alert_directory/alertmanager.yml" "$alert_directory/prometheus.yml" "$alert_directory/rules.yml"
           docker network create "$network" >/dev/null
           docker run --detach --rm --name "$receiver" --user "$(id -u):$(id -g)" --network "$network" --network-alias receiver --mount "type=bind,source=$alert_directory,target=/work,readonly" --mount "type=bind,source=$alert_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /work/receiver.mjs >/dev/null
           docker run --detach --rm --name "$alertmanager" --network "$network" --network-alias alertmanager --mount "type=bind,source=$alert_directory/alertmanager.yml,target=/etc/alertmanager/alertmanager.yml,readonly" prom/alertmanager@sha256:d5155cfac40a6d9250ffc97c19db2c5e190c7bc57c6b67125c94903358f8c7d8 --config.file=/etc/alertmanager/alertmanager.yml >/dev/null
-          docker run --detach --rm --name "$prometheus" --network "$network" --mount "type=bind,source=$alert_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$alert_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
+          docker run --detach --rm --name "$prometheus" --network "$network" --network-alias prometheus --mount "type=bind,source=$alert_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$alert_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
           for container in "$receiver" "$alertmanager" "$prometheus"; do
             [[ "$(docker inspect --format '{{.State.Running}}' "$container")" == true ]] || fail "alert test container is unavailable: $container"
           done
@@ -256,6 +256,15 @@ jobs:
           done
           [[ "$(docker inspect --format '{{.State.Running}}' "$receiver")" == true ]] || fail 'alert receiver is unavailable'
           docker exec "$receiver" /nodejs/bin/node -e "fetch('http://127.0.0.1:8080').then(() => process.exit(0)).catch(() => process.exit(1))" || fail 'alert receiver HTTP is unavailable'
+          endpoint_ready() {
+            docker exec "$receiver" /nodejs/bin/node -e "fetch('$1').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+          }
+          alertmanager_discovered() {
+            docker exec "$receiver" /nodejs/bin/node -e "fetch('http://prometheus:9090/api/v1/alertmanagers').then(async (response) => { if (!response.ok) process.exit(1); const data = (await response.json()).data; const active = data?.activeAlertmanagers; const dropped = data?.droppedAlertmanagers; process.exit(Array.isArray(active) && active.length === 1 && active[0]?.url === 'http://alertmanager:9093/api/v2/alerts' && Array.isArray(dropped) && dropped.length === 0 ? 0 : 1); }).catch(() => process.exit(1))"
+          }
+          alertmanager_discovery_diagnostics() {
+            docker exec "$receiver" /nodejs/bin/node -e "fetch('http://prometheus:9090/api/v1/alertmanagers').then(async (response) => { const data = response.ok ? (await response.json()).data : {}; const active = Array.isArray(data?.activeAlertmanagers) ? data.activeAlertmanagers : []; const dropped = Array.isArray(data?.droppedAlertmanagers) ? data.droppedAlertmanagers : []; console.error('expressa-operations-diagnostic: alertmanager_api_status=' + response.status + ' active_count=' + active.length + ' expected_active=' + (active.length === 1 && active[0]?.url === 'http://alertmanager:9093/api/v2/alerts') + ' dropped_count=' + dropped.length); }).catch(() => console.error('expressa-operations-diagnostic: alertmanager_api_unavailable'))" >&2 || true
+          }
           alert_diagnostics() {
             for container in "$receiver" "$alertmanager" "$prometheus"; do
               printf 'expressa-operations-diagnostic: container=%s\n' "$container" >&2
@@ -263,6 +272,23 @@ jobs:
               docker logs --tail 100 "$container" >&2 || true
             done
           }
+          for _ in {1..45}; do
+            if endpoint_ready http://prometheus:9090/-/ready && endpoint_ready http://alertmanager:9093/-/ready; then
+              break
+            fi
+            sleep 1
+          done
+          endpoint_ready http://prometheus:9090/-/ready || { alert_diagnostics; fail 'Prometheus readiness unavailable'; }
+          endpoint_ready http://alertmanager:9093/-/ready || { alert_diagnostics; fail 'Alertmanager readiness unavailable'; }
+          for _ in {1..45}; do
+            if alertmanager_discovered; then
+              break
+            fi
+            sleep 1
+          done
+          alertmanager_discovered || { alertmanager_discovery_diagnostics; alert_diagnostics; fail 'Alertmanager discovery unavailable'; }
+          sed -i 's/vector(0) == 1/vector(1) == 1/' "$alert_directory/rules.yml"
+          docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
           for _ in {1..45}; do grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" && break; sleep 1; done
           grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" || { alert_diagnostics; fail 'alert firing delivery unavailable'; }
           sed -i 's/vector(1) == 1/vector(0) == 1/' "$alert_directory/rules.yml"
