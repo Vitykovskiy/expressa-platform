@@ -233,13 +233,16 @@ jobs:
               - static_configs:
                   - targets: [alertmanager:9093]
           YAML
-          cat > "$alert_directory/rules.yml" <<'YAML'
+          write_alert_rule() {
+          cat > "$alert_directory/rules.yml" <<YAML
           groups:
             - name: operations-evidence
               rules:
                 - alert: ExpressaOperationsEvidence
-                  expr: vector(0) == 1
+                  expr: ${1:?alert rule expression is required}
           YAML
+          }
+          write_alert_rule 'vector(0) == 1'
           chmod 644 "$alert_directory/receiver.mjs" "$alert_directory/alertmanager.yml" "$alert_directory/prometheus.yml" "$alert_directory/rules.yml"
           docker network create "$network" >/dev/null
           docker run --detach --rm --name "$receiver" --user "$(id -u):$(id -g)" --network "$network" --network-alias receiver --mount "type=bind,source=$alert_directory,target=/work,readonly" --mount "type=bind,source=$alert_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /work/receiver.mjs >/dev/null
@@ -287,11 +290,11 @@ jobs:
             sleep 1
           done
           alertmanager_discovered || { alertmanager_discovery_diagnostics; alert_diagnostics; fail 'Alertmanager discovery unavailable'; }
-          sed -i 's/vector(0) == 1/vector(1) == 1/' "$alert_directory/rules.yml"
+          write_alert_rule 'vector(1) == 1'
           docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
           for _ in {1..45}; do grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" && break; sleep 1; done
           grep -qsx firing "$alert_directory/evidence/alert-statuses.txt" || { alert_diagnostics; fail 'alert firing delivery unavailable'; }
-          sed -i 's/vector(1) == 1/vector(0) == 1/' "$alert_directory/rules.yml"
+          write_alert_rule 'vector(0) == 1'
           docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
           for _ in {1..45}; do grep -qsx resolved "$alert_directory/evidence/alert-statuses.txt" && break; sleep 1; done
           grep -qsx resolved "$alert_directory/evidence/alert-statuses.txt" || { alert_diagnostics; fail 'alert resolved delivery unavailable'; }
