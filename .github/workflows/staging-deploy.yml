@@ -46,4 +46,7 @@ jobs:
           AUTH_ACCESS_TOKEN_SECRET: ${{ secrets.AUTH_ACCESS_TOKEN_SECRET }}
           AUTH_OTP_PEPPER: ${{ secrets.AUTH_OTP_PEPPER }}
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
         run: deploy/run-remote.sh staging deploy/staging.env

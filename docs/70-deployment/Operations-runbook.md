@@ -22,7 +22,12 @@ PostgreSQL, запускает миграции и seed, затем провер
 должны быть Docker с Compose, локальный registry `127.0.0.1:5000`, внешние
 `expressa-<environment>-edge` и `expressa-<environment>-data`, а для CI
 настроены SSH user/key/known-hosts. Для staging workflow передаёт через SSH
-синтетический staff `BOOTSTRAP_ADMIN_PHONE` и auth/CORS-секреты; `deploy.sh`
+синтетический staff `BOOTSTRAP_ADMIN_PHONE` и auth/CORS-секреты. Все workflow
+передают VAPID credentials только через NUL-разделённый SSH stdin: remote
+runner именует их `DELIVERY_VAPID_*`, а `deploy.sh` после чтения `runtime.env`
+заменяет ими процессные `VAPID_*` и сразу удаляет `DELIVERY_VAPID_*`. Эти
+credentials не сохраняются в `runtime.env`, временном каталоге или логах.
+`deploy.sh`
 включает `staging_test` с фиксированным OTP. Allowlist содержит ровно этот staff
 и customer `+79990000001`; другие номера OTP не получают. После health-checks
 поставка автоматически запускает smoke: customer создаёт заказ, staff проверяет

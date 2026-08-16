@@ -26,11 +26,16 @@ GitHub SSH-переменные остаются входами runner для с
 передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
 `compose.yml`, smoke-скрипт и image manifest. Для staging stdin SSH передаёт
 `BOOTSTRAP_ADMIN_PHONE`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER` и
-`CORS_ORIGINS`; remote script передаёт их `deploy.sh`, не записывая в
-`runtime.env`. `deploy.sh` читает из этого заранее созданного файла пароль
-PostgreSQL, а для development — `AUTH_DEVELOPMENT_OTP`. В staging он включает
+`CORS_ORIGINS`; все три workflow также получают environment secrets `VAPID_*`.
+Remote script передаёт эти значения `deploy.sh` NUL-разделённым stdin как
+`DELIVERY_VAPID_*`, не записывая их в `runtime.env` или временный каталог.
+После чтения `runtime.env` `deploy.sh` экспортирует полученные `VAPID_*` только
+для compose и удаляет `DELIVERY_VAPID_*` из окружения. `deploy.sh` читает из
+этого заранее созданного файла пароль PostgreSQL, а для development —
+`AUTH_DEVELOPMENT_OTP`. В staging он включает
 `AUTH_OTP_MODE=staging_test`, фиксированный OTP и точный allowlist из
-`BOOTSTRAP_ADMIN_PHONE` и синтетического customer `+79990000001`. Значения не
-печатаются и не входят в GitHub workflow. [Development deploy step](../../.github/workflows/development-delivery.yml),
+`BOOTSTRAP_ADMIN_PHONE` и синтетического customer `+79990000001`. Значения
+хранятся в GitHub Environment Secrets, не коммитятся в YAML, не печатаются и
+не сохраняются в `runtime.env` или временном каталоге VPS. [Development deploy step](../../.github/workflows/development-delivery.yml),
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
