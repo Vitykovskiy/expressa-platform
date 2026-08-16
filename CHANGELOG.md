@@ -2,13 +2,17 @@
 
 Записи ниже фиксируют начальные выпуски E01 и их поставку на стенды.
 
-## staging v0.2.10 (подготовка поставки)
+## staging v0.2.10
 
-`deploy/staging.env` зафиксировал совместимый набор immutable digest из
-успешного Development run `31928967912` для SHA
-`fc365d8c8652bc3e2a8bbc3b8eb51ff3427bcbb8`. Набор подготовлен для тега
-`staging-v0.2.10`; версии компонентов не меняются: backend `v0.2.0`,
-front-office `v0.1.0`, back-office `v0.1.0`.
+Аннотированный тег `staging-v0.2.10` на SHA
+`de01cc3f4ed29cd61525b3ed96defd476c2d74c1` поставил совместимый набор
+immutable digest из успешного Development run `31928967912` для SHA
+`fc365d8c8652bc3e2a8bbc3b8eb51ff3427bcbb8` (manifest SHA256
+`0b58c33860aec1108d16e4ae3ca154d9142fe0d517e0eeca1e178d5241c3c6dc`).
+Staging run `31929440771` применил миграции, идемпотентный seed, health
+проверки трёх приложений, public menu и полный сценарий заказа. Версии
+компонентов не меняются: backend `v0.2.0`, front-office `v0.1.0`,
+back-office `v0.1.0`.
 
 ## staging v0.2.9 (выполненная повторная поставка доказательств)
 
