@@ -165,7 +165,7 @@
                 :aria-label="`Цена ${variant.size}, коп.`"
                 :aria-describedby="variantsError ? variantsErrorId : undefined"
                 :aria-invalid="Boolean(variantsError)"
-                :value="variant.priceMinor"
+                :model-value="variant.priceMinor"
                 class="edit-dialog-input"
                 inputmode="numeric"
                 min="0"
