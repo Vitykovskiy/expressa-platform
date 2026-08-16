@@ -16,6 +16,10 @@ export const authServerEnvironment = {
   DATABASE_URL: authDatabaseUrl,
   NODE_ENV: "local",
   PORT: "3000",
+  VAPID_SUBJECT: "mailto:push@expressa.test",
+  VAPID_PUBLIC_KEY:
+    "BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw",
+  VAPID_PRIVATE_KEY: "9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c",
 } as const;
 export const backOfficeAppUrl = "http://127.0.0.1:4173";
 export const backOfficeAppWebServerCommand = "npm run preview";
