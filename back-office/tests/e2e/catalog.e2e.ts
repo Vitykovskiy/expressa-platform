@@ -601,7 +601,12 @@ async function updateMediumPrice(page: CatalogPage): Promise<void> {
   const dialog = page
     .locator(".edit-dialog:visible")
     .filter({ hasText: "Размеры и цены, коп." });
-  await dialog.getByLabel("Цена M, коп.").fill(catalogUpdatedMediumPrice);
+  await expect(
+    dialog.getByLabel("Название товара", { exact: true }),
+  ).toBeFocused();
+  const mediumPrice = dialog.getByLabel("Цена M, коп.", { exact: true });
+  await mediumPrice.fill(catalogUpdatedMediumPrice);
+  await expect(mediumPrice).toHaveValue("28100");
   const [response] = await Promise.all([
     page.waitForResponse(
       (candidate) =>
