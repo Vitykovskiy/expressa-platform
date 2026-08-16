@@ -3,19 +3,23 @@ import type { Pool } from 'pg';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../platform/database/database.module';
 import { DatabaseService } from '../platform/database/database.service';
+import { ObservabilityMetrics } from '../platform/observability/observability-metrics.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SendOrderPushUseCase } from '../notifications/application/send-order-push.use-case';
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
 import { PostgresOrderLifecycleRepository } from './adapters/postgres-order-lifecycle.repository';
 import { CreateOrderUseCase } from './application/create-order.use-case';
 import type { OrderUnitOfWork } from './application/order-unit-of-work.types';
 import { GetOrdersUseCase } from './application/get-orders.use-case';
 import { TransitionOrderUseCase } from './application/transition-order.use-case';
+import type { OrderMetricsPort } from './application/order-metrics.types';
 import type { OrderReadRepository, OrderTransitionUnitOfWork } from './application/order-lifecycle.types';
-import { orderReadRepositoryPort, orderTransitionUnitOfWorkPort, orderUnitOfWorkPort } from './orders.module.constants';
+import { orderMetricsPort, orderReadRepositoryPort, orderTransitionUnitOfWorkPort, orderUnitOfWorkPort } from './orders.module.constants';
 import { OrdersController } from './transport/orders.controller';
 import { BackofficeOrdersController } from './transport/backoffice-orders.controller';
 
 @Module({
-  imports: [AuthModule, DatabaseModule],
+  imports: [AuthModule, DatabaseModule, NotificationsModule],
   controllers: [OrdersController, BackofficeOrdersController],
   providers: [
     {
@@ -25,8 +29,15 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: CreateOrderUseCase,
-      inject: [orderUnitOfWorkPort],
-      useFactory: (unitOfWork: OrderUnitOfWork) => new CreateOrderUseCase(unitOfWork),
+      inject: [orderUnitOfWorkPort, SendOrderPushUseCase, orderMetricsPort],
+      useFactory: (unitOfWork: OrderUnitOfWork, push: SendOrderPushUseCase, metrics: OrderMetricsPort) => new CreateOrderUseCase(unitOfWork, push, metrics),
+    },
+    {
+      provide: orderMetricsPort,
+      useFactory: (): OrderMetricsPort => ({
+        recordOrderCreated: () => ObservabilityMetrics.recordOrderCreated(),
+        recordOrderTransition: (stage) => ObservabilityMetrics.recordOrderTransition(stage),
+      }),
     },
     {
       provide: PostgresOrderLifecycleRepository,
@@ -50,8 +61,8 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: TransitionOrderUseCase,
-      inject: [orderTransitionUnitOfWorkPort],
-      useFactory: (unitOfWork: OrderTransitionUnitOfWork) => new TransitionOrderUseCase(unitOfWork),
+      inject: [orderTransitionUnitOfWorkPort, SendOrderPushUseCase, orderMetricsPort],
+      useFactory: (unitOfWork: OrderTransitionUnitOfWork, push: SendOrderPushUseCase, metrics: OrderMetricsPort) => new TransitionOrderUseCase(unitOfWork, push, metrics),
     },
   ],
 })

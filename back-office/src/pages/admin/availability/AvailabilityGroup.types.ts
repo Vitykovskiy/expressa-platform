@@ -1,13 +1,11 @@
-import type {
-  AvailabilityChangeEvent,
-  MenuItem,
-} from "../../../shared/ui/admin/Admin.types";
+import type { AvailabilityItem } from "../../../shared/api/availability.api.types";
 
 export interface AvailabilityGroupProps {
+  disabled?: boolean;
   category: string;
-  items: readonly MenuItem[];
+  items: readonly AvailabilityItem[];
 }
 
 export interface AvailabilityGroupEmits {
-  "availability-change": [event: AvailabilityChangeEvent];
+  "availability-change": [item: AvailabilityItem, isAvailable: boolean];
 }

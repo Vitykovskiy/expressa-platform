@@ -1,5 +1,6 @@
 import { CreateOrderUseCase } from './create-order.use-case';
 import type { CreateOrderCommand, OrderUnitOfWork } from './order-unit-of-work.types';
+import type { SendOrderPushUseCase } from '../../notifications/application/send-order-push.use-case';
 
 const command: CreateOrderCommand = {
   customerId: '397e9d0c-4c6f-4a5f-8ab3-4c6f4a5f8ab3',
@@ -18,9 +19,25 @@ describe('CreateOrderUseCase', () => {
       replayed: false,
     };
     const unitOfWork: OrderUnitOfWork = { createOrder: jest.fn().mockResolvedValue(result) };
-    const useCase = new CreateOrderUseCase(unitOfWork);
+    const push = { execute: jest.fn().mockResolvedValue(undefined) } as unknown as SendOrderPushUseCase;
+    const metrics = { recordOrderCreated: jest.fn(), recordOrderTransition: jest.fn() };
+    const useCase = new CreateOrderUseCase(unitOfWork, push, metrics);
 
     await expect(useCase.execute(command)).resolves.toBe(result);
     expect(unitOfWork.createOrder).toHaveBeenCalledWith(command);
+    expect(metrics.recordOrderCreated).toHaveBeenCalledTimes(1);
+    expect(push.execute).toHaveBeenCalledWith({ recipient: 'staff', orderId: 'order-id', number: '20300102-001', stage: 'CREATED', customerId: command.customerId });
+  });
+
+  it('не уведомляет staff при idempotency replay', async () => {
+    const result = { order: { id: 'order-id', number: '20300102-001', stage: 'CREATED' as const, totalMinor: 450, items: [] }, replayed: true };
+    const unitOfWork: OrderUnitOfWork = { createOrder: jest.fn().mockResolvedValue(result) };
+    const push = { execute: jest.fn().mockResolvedValue(undefined) } as unknown as SendOrderPushUseCase;
+    const metrics = { recordOrderCreated: jest.fn(), recordOrderTransition: jest.fn() };
+
+    await new CreateOrderUseCase(unitOfWork, push, metrics).execute(command);
+
+    expect(push.execute).not.toHaveBeenCalled();
+    expect(metrics.recordOrderCreated).not.toHaveBeenCalled();
   });
 });

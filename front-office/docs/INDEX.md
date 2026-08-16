@@ -16,6 +16,7 @@ HTTP-обмен и проверка сценария. Код, тесты, OpenAP
 - [Покрытие](COVERAGE.md) — полный реестр runtime-объектов и нотов.
 - [Контур](00-meta/Scope.md) — актор, маршруты и потребляемый API.
 - [Структура](20-architecture/Structure.md), [состояние и API](20-architecture/Application-state-and-API.md).
+- [ADR-001](50-adr/ADR-001-runtime-and-storybook-boundaries.md) — границы runtime и Storybook.
 - Сценарии: [меню](30-features/Menu-and-configuration.md), [корзина](30-features/Cart-and-checkout.md), [вход](30-features/Authentication-and-returnTo.md), [заказ](30-features/Orders.md).
 - [Контракты UI](30-conventions/UI-contracts.md), [проверки](40-testing/Verification.md).
 - [Источники](_sources/README.md), [журнал](_journal/README.md).

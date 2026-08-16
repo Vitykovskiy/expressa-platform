@@ -16,6 +16,7 @@ import {
   catalogDatabaseUrl,
   catalogFrontendUrl,
   catalogOrigin,
+  catalogServerEnvironment,
 } from "../../playwright.config.constants";
 import {
   catalogBackendUrl,
@@ -715,6 +716,7 @@ function createStaff(
     {
       env: {
         ...process.env,
+        ...catalogServerEnvironment,
         AUTH_ACCESS_TOKEN_SECRET:
           "changeme-back-office-catalog-e2e-access-token-secret",
         AUTH_DEVELOPMENT_OTP: developmentOtp,

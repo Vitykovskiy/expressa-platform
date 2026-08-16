@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 sources:
   - ../../.github/workflows/development-delivery.yml
   - ../../.github/workflows/staging-deploy.yml
+  - ../../.github/workflows/production-promotion.yml
 ---
 
 # CI и поставка
@@ -19,11 +20,11 @@ Docker build; client CI включает contract, UI и container провер�
 После main три проверенных образа получают SHA-tag, публикуются в локальный
 registry и передаются по digest в development. Staging проверяет manifest из
 `deploy/staging.env` и развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
-[staging](../../.github/workflows/staging-deploy.yml).
+[staging](../../.github/workflows/staging-deploy.yml). Ручной workflow production до доступа к secrets и SSH проверяет dispatch из `main`, владельца репозитория и `confirm_production=true`; затем принимает только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого тега. `environment: production` служит только меткой аудита и поставки. [Production](../../.github/workflows/production-promotion.yml).
 
 GitHub SSH-переменные остаются входами runner для соединения с VPS и не
 передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
-`compose.yml`, `smoke-staging.mjs` и image manifest. Для staging stdin SSH передаёт
+`compose.yml`, smoke-скрипт и image manifest. Для staging stdin SSH передаёт
 `BOOTSTRAP_ADMIN_PHONE`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER` и
 `CORS_ORIGINS`; remote script передаёт их `deploy.sh`, не записывая в
 `runtime.env`. `deploy.sh` читает из этого заранее созданного файла пароль

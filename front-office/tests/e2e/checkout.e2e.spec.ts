@@ -5,6 +5,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { CheckoutDatabase } from "./checkout.database";
 import {
   checkoutCategoryName,
+  checkoutRepeatPriceDeltaMinor,
   checkoutOtp,
   checkoutPhonePrefix,
   checkoutProductName,
@@ -290,6 +291,122 @@ test("checkout и заказ не ломают вёрстку на ключев�
   }
 
   expect(issues()).toEqual([]);
+});
+
+test("issued заказ показывает history, скрывает чужой snapshot и повторяет только после подтверждения", async ({
+  browser,
+  page,
+}) => {
+  const database = new CheckoutDatabase();
+  const state = await database.readState();
+  const phone = `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`;
+  let historyOrderIds: readonly string[] = [];
+  try {
+    await openCappuccinoCart(page);
+    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    const customerId = await login(page, phone);
+    let key = "";
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/orders"))
+        key = request.headers()["idempotency-key"] ?? "";
+    });
+    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
+    await expect(page.getByText("Заказ принят")).toBeVisible();
+    const order = await requireOrder(database, customerId, key);
+    const detailRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith(`/api/v1/orders/${order.id}`))
+        detailRequests.push(request.url());
+    });
+    await database.setOrderStage(order.id, "ISSUED");
+    await expect(page.getByText("Заказ выдан")).toBeVisible({
+      timeout: 15_000,
+    });
+    const requestsAfterIssue = detailRequests.length;
+    expect(requestsAfterIssue).toBeGreaterThan(0);
+    await page.waitForTimeout(11_000);
+    expect(detailRequests).toHaveLength(requestsAfterIssue);
+
+    const history = await database.createIssuedHistory(customerId, order.id);
+    historyOrderIds = history.map((historyOrder) => historyOrder.id);
+
+    await page.goto("/orders");
+    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
+      20,
+    );
+    await page.getByRole("button", { name: "Показать ещё" }).click();
+    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
+      21,
+    );
+    const historyLinks = await page
+      .getByRole("link", { name: "Открыть заказ" })
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    const historyIds = historyLinks.map((link) => {
+      if (link === null || !link.startsWith("/orders/"))
+        throw new Error("История заказа содержит некорректную ссылку.");
+      return link.slice("/orders/".length);
+    });
+    expect(historyIds).toHaveLength(new Set(historyIds).size);
+    expect(new Set(historyIds)).toEqual(
+      new Set([order.id, ...historyOrderIds]),
+    );
+
+    const stranger = await browser.newPage();
+    await stranger.goto("/");
+    await stranger.getByRole("button", { name: checkoutCategoryName }).click();
+    await stranger.getByRole("button", { name: checkoutProductName }).click();
+    await stranger.getByRole("button", { name: /M · 320 ₽/ }).click();
+    await stranger.getByRole("button", { name: /Добавить/ }).click();
+    await stranger.getByRole("link", { name: /Корзина/ }).click();
+    await stranger.getByRole("button", { name: "Оформить заказ" }).click();
+    await login(
+      stranger,
+      `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
+    );
+    await stranger.goto(`/orders/${order.id}`);
+    await expect(
+      stranger.getByText(checkoutProductName, { exact: true }),
+    ).toHaveCount(0);
+    await stranger.close();
+
+    await openCappuccinoCart(page);
+    await database.setVariantPriceMinor(
+      state.variantPriceMinor + checkoutRepeatPriceDeltaMinor,
+    );
+    await page.goto(`/orders/${order.id}`);
+    await page.getByRole("button", { name: "Повторить заказ" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Заменить корзину?" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Заменить корзину" }).click();
+    await expect(page).toHaveURL(/\/cart$/);
+    await expect(
+      page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
+    ).toContainText(
+      `${(state.variantPriceMinor + checkoutRepeatPriceDeltaMinor) / 100} ₽`,
+    );
+
+    await database.setVariantAvailable(false);
+    await page.goto(`/orders/${order.id}`);
+    await page.getByRole("button", { name: "Повторить заказ" }).click();
+    const unavailableItems = page.getByRole("alert");
+    await expect(unavailableItems).toContainText(
+      "Некоторые позиции больше недоступны:",
+    );
+    await expect(unavailableItems).toContainText(checkoutProductName);
+    await expect(page).toHaveURL(`/orders/${order.id}`);
+    await page.goto("/cart");
+    await expect(
+      page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
+    ).toContainText(
+      `${(state.variantPriceMinor + checkoutRepeatPriceDeltaMinor) / 100} ₽`,
+    );
+  } finally {
+    await database.deleteOrders(historyOrderIds);
+    await database.restore(state);
+    await database.close();
+  }
 });
 
 async function openCappuccinoCart(page: Page, menuUrl = "/"): Promise<void> {

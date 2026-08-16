@@ -62,6 +62,7 @@ export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.Proc
   validateDatabaseUrl(requireEnvironmentVariable(environment, 'DATABASE_URL'));
   requireEnvironmentVariable(environment, 'AUTH_ACCESS_TOKEN_SECRET');
   requireEnvironmentVariable(environment, 'AUTH_OTP_PEPPER');
+  validateVapidConfiguration(environment);
   getCorsOrigins(environment);
   validateEnvironmentSpecificVariables(environment, nodeEnvironment);
   const bootstrapPhone = environment.BOOTSTRAP_ADMIN_PHONE;
@@ -70,6 +71,20 @@ export function validateEnvironment(environment: NodeJS.ProcessEnv): NodeJS.Proc
   }
 
   return environment;
+}
+
+function validateVapidConfiguration(environment: NodeJS.ProcessEnv): void {
+  const subject = requireEnvironmentVariable(environment, 'VAPID_SUBJECT');
+  if (!subject.startsWith('mailto:') && !isExactOrigin(subject)) {
+    throw new Error('Invalid environment variable: VAPID_SUBJECT');
+  }
+
+  for (const [name, length] of [['VAPID_PUBLIC_KEY', 65], ['VAPID_PRIVATE_KEY', 32]] as const) {
+    const value = requireEnvironmentVariable(environment, name);
+    if (!/^[A-Za-z0-9_-]+$/.test(value) || Buffer.from(value, 'base64url').length !== length) {
+      throw new Error(`Invalid environment variable: ${name}`);
+    }
+  }
 }
 
 export function getCorsOrigins(environment: { CORS_ORIGINS?: string | undefined }): string[] {

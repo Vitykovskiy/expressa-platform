@@ -60,6 +60,19 @@ sources:
 | /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /api/v1/orders | current | [Корзина](30-features/Cart-and-checkout.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed POST |
+| /api/v1/orders/{orderId} | current | [Заказы](30-features/Orders.md) | [API](../src/shared/api/orders.api.ts) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed GET |
+| /api/v1/backoffice/availability | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/availability/{type}/{id} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/service/intake | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders/{orderId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders/{orderId}/accept | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders/{orderId}/start-preparing | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders/{orderId}/mark-ready | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/backoffice/orders/{orderId}/issue | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v1/push/public-key | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed GET |
+| /api/v1/push/subscriptions | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed PUT/DELETE |
+| /metrics | N/A reason: backend observability endpoint | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /health/live | N/A reason: no front-office caller | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /health/ready | N/A reason: no front-office caller | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 

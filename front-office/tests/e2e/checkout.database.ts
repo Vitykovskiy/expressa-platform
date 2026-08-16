@@ -6,7 +6,10 @@ import {
   checkoutSeedIds,
 } from "./checkout.database.constants";
 import type {
+  CheckoutOrderStage,
   CheckoutDatabaseState,
+  IssuedHistoryOrder,
+  IssuedHistoryOrderQuery,
   OrderRow,
   OrderRowQuery,
 } from "./checkout.database.types";
@@ -158,11 +161,87 @@ export class CheckoutDatabase {
     };
   }
 
+  async setOrderStage(
+    orderId: string,
+    stage: CheckoutOrderStage,
+  ): Promise<void> {
+    await this.#update("orders", "stage", stage, "id", orderId);
+  }
+
+  async createIssuedHistory(
+    customerId: string,
+    sourceOrderId: string,
+  ): Promise<readonly IssuedHistoryOrder[]> {
+    const result = await this.#pool.query<IssuedHistoryOrderQuery>(
+      `WITH history_orders AS (
+         INSERT INTO orders (
+           id, number, customer_id, idempotency_key, request_fingerprint,
+           stage, total_minor, order_day, daily_number, created_at
+         )
+         SELECT
+           ('00000000-0000-4000-8000-' || lpad((200 + sequence)::text, 12, '0'))::uuid,
+           to_char(DATE '2001-01-01' + sequence, 'YYYYMMDD') || '-001',
+           $1,
+           ('00000000-0000-4000-8000-' || lpad((300 + sequence)::text, 12, '0'))::uuid,
+           'checkout-e2e-issued-history',
+           'ISSUED',
+           source.total_minor,
+           DATE '2001-01-01' + sequence,
+           1,
+           (DATE '2001-01-01' + sequence)::timestamptz
+         FROM generate_series(1, 20) AS sequence
+         JOIN orders source ON source.id = $2 AND source.customer_id = $1
+         RETURNING id, number AS "orderNumber"
+       ), inserted_items AS (
+         INSERT INTO order_items (
+           id, order_id, sort_order, product_id, variant_id, product_name,
+           size, quantity, unit_total_minor, line_total_minor
+         )
+         SELECT
+           gen_random_uuid(), history_orders.id, source.sort_order,
+           source.product_id, source.variant_id, source.product_name,
+           source.size, source.quantity, source.unit_total_minor,
+           source.line_total_minor
+         FROM history_orders
+         JOIN order_items source ON source.order_id = $2
+       )
+       SELECT id, "orderNumber" FROM history_orders ORDER BY "orderNumber" DESC`,
+      [customerId, sourceOrderId],
+    );
+    if (result.rows.length !== 20)
+      throw new Error(
+        `История checkout seed: ожидалось 20 строк, получено ${result.rows.length}.`,
+      );
+    return result.rows.map((row) => ({
+      id: requireNonEmptyString(row.id, "id истории заказа"),
+      orderNumber: requireNonEmptyString(
+        row.orderNumber,
+        "номер истории заказа",
+      ),
+    }));
+  }
+
+  async deleteOrders(orderIds: readonly string[]): Promise<void> {
+    if (orderIds.length === 0) return;
+    const result = await this.#pool.query(
+      "DELETE FROM orders WHERE id = ANY($1::uuid[])",
+      [orderIds],
+    );
+    if (result.rowCount !== orderIds.length)
+      throw new Error(
+        `Очистка checkout history затронула ${result.rowCount} из ${orderIds.length} строк.`,
+      );
+  }
+
   async #update(
     table:
-      "products" | "product_variants" | "modifier_options" | "service_settings",
-    column: "is_available" | "price_minor" | "value",
-    value: boolean | number,
+      | "products"
+      | "product_variants"
+      | "modifier_options"
+      | "service_settings"
+      | "orders",
+    column: "is_available" | "price_minor" | "stage" | "value",
+    value: boolean | number | CheckoutOrderStage,
     key: "id" | "key",
     identifier: string,
   ): Promise<void> {

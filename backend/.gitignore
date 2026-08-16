@@ -1,4 +1,4 @@
 dist/
-coverage/
+/coverage/
 node_modules/
 *.tsbuildinfo

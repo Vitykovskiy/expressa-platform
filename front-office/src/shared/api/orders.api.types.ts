@@ -8,6 +8,11 @@ export type OrdersApi = {
   ): Promise<Order>;
 };
 
+export type CustomerOrdersApi = OrdersApi & {
+  getOrder(accessToken: string, orderId: string): Promise<CustomerOrder>;
+  listOrders(accessToken: string, cursor?: string): Promise<CustomerOrdersPage>;
+};
+
 export type OrdersApiClient = Pick<ApiClient, "request">;
 
 export type CreateOrderRequest = {
@@ -30,6 +35,23 @@ export type Order = {
   items: OrderItem[];
 };
 
+export type CustomerOrderStage =
+  "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "ISSUED";
+
+export type CustomerOrder = {
+  createdAt: string;
+  id: string;
+  items: OrderItem[];
+  number: string;
+  stage: CustomerOrderStage;
+  totalMinor: number;
+};
+
+export type CustomerOrdersPage = {
+  nextCursor: string | null;
+  orders: CustomerOrder[];
+};
+
 export type OrderItem = {
   productId: string;
   variantId: string | null;
@@ -45,6 +67,20 @@ export type OrderModifier = {
   modifierOptionId: string;
   modifierName: string;
   priceDeltaMinor: number;
+};
+
+export type CustomerOrderResponse = {
+  createdAt: string;
+  id: string;
+  number: string;
+  snapshot: OrderItemResponse[];
+  stage: CustomerOrderStage;
+  totalMinor: number;
+};
+
+export type CustomerOrdersPageResponse = {
+  nextCursor: string | null;
+  orders: CustomerOrderResponse[];
 };
 
 export type OrderResponse = {

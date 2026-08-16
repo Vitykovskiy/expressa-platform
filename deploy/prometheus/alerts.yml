@@ -1,0 +1,24 @@
+groups:
+  - name: expressa
+    rules:
+      - alert: ExpressaBackendReadinessUnavailable
+        expr: up{job="backend"} == 0 or absent(expressa_backend_readiness) or expressa_backend_readiness == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Expressa backend readiness is unavailable
+      - alert: ExpressaServerErrorsGrowing
+        expr: sum(increase(expressa_http_responses_total{status_class="5xx"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Expressa backend is returning 5xx responses
+      - alert: ExpressaBackupMissing
+        expr: absent(expressa_backup_last_success_timestamp_seconds) or time() - expressa_backup_last_success_timestamp_seconds > 93600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Expressa daily backup is overdue

@@ -15,14 +15,14 @@
     "migrate": "ts-node scripts/migrate.ts",
     "seed": "ts-node scripts/seed.ts",
     "staff": "ts-node scripts/staff.ts",
-    "openapi:generate": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 ts-node scripts/openapi.ts",
-    "openapi:check": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 ts-node scripts/openapi.ts --check",
+    "openapi:generate": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c ts-node scripts/openapi.ts",
+    "openapi:check": "env NODE_ENV=local PORT=3000 DATABASE_URL=postgresql://localhost:5432/expressa AUTH_ACCESS_TOKEN_SECRET=local-openapi-access-token-secret AUTH_OTP_PEPPER=local-openapi-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c ts-node scripts/openapi.ts --check",
     "openapi:sync": "npm run openapi:generate && cp openapi/openapi.json ../front-office/contracts/openapi.json && cp openapi/openapi.json ../back-office/contracts/openapi.json",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:integration": "jest --runInBand --testRegex \"test/integration/.*\\.spec\\.ts$\"",
-    "test:e2e": "env NODE_ENV=local PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-e2e-access-token-secret AUTH_OTP_PEPPER=local-e2e-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts test/e2e/auth.e2e-spec.ts test/e2e/public-menu.e2e-spec.ts test/e2e/admin-catalog.e2e-spec.ts test/e2e/create-order.e2e-spec.ts",
-    "test:production": "npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts"
+    "test:e2e": "env NODE_ENV=local PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-e2e-access-token-secret AUTH_OTP_PEPPER=local-e2e-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts test/e2e/auth.e2e-spec.ts test/e2e/public-menu.e2e-spec.ts test/e2e/admin-catalog.e2e-spec.ts test/e2e/create-order.e2e-spec.ts",
+    "test:production": "env NODE_ENV=production PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-production-test-access-token-secret AUTH_OTP_PEPPER=local-production-test-otp-pepper CORS_ORIGINS=http://localhost:5173 SMS_RU_API_ID=test-sms-ru-api-id SMS_RU_SENDER=ExpressaTest VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c sh -c 'npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts'"
   },
   "dependencies": {
     "@nestjs/common": "11.1.28",
@@ -31,8 +31,10 @@
     "@nestjs/platform-express": "11.1.28",
     "@nestjs/swagger": "11.4.6",
     "pg": "8.16.3",
+    "prom-client": "15.1.3",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "web-push": "3.6.7"
   },
   "overrides": {
     "@nestjs/swagger": {
@@ -40,13 +42,14 @@
     }
   },
   "devDependencies": {
-    "@types/pg": "8.20.3",
     "@eslint/js": "9.39.4",
     "@nestjs/cli": "11.0.24",
     "@nestjs/testing": "11.1.28",
     "@types/express": "^5.0.6",
     "@types/jest": "30.0.0",
     "@types/node": "24.13.3",
+    "@types/pg": "8.20.3",
+    "@types/web-push": "3.6.4",
     "eslint": "9.39.4",
     "globals": "17.7.0",
     "jest": "30.4.2",
@@ -62,14 +65,31 @@
       "ts"
     ],
     "rootDir": ".",
-    "testRegex": "src/.*\\.spec\\.ts$",
+    "testRegex": "(src/.*|test/coverage/.*\\.coverage)\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.ts",
+      "!src/**/*.spec.ts"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "lines": 80,
+        "statements": 80
+      },
+      "src/auth/domain/otp-policy.ts": {
+        "lines": 90
+      },
+      "src/catalog/application/manage-availability.use-case.ts": {
+        "lines": 90
+      },
+      "src/orders/domain/order-revalidation.ts": {
+        "lines": 90
+      }
+    }
   }
 }

@@ -1,11 +1,6 @@
-import type { Order } from "@/entities/customer/model/customer.types";
+import type { CustomerOrder } from "@/shared/api/orders.api";
 
 export interface OrderCardProps {
-  order: Order;
-  statusLabel: string;
-  expanded: boolean;
-}
-
-export interface OrderCardEmits {
-  toggle: [];
+  order: CustomerOrder;
+  stageLabel: string;
 }

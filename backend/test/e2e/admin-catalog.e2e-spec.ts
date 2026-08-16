@@ -15,12 +15,14 @@ describe("admin catalog E2E", () => {
   let app: INestApplication;
   let pool: Pool;
   let url: string;
+  let originalAcceptsNewOrders: boolean;
 
   beforeAll(async () => {
     if (databaseUrl === undefined)
       throw new Error("DATABASE_URL is required for e2e tests");
     pool = new Pool({ connectionString: databaseUrl });
     await migrateDatabase(pool, "migrations");
+    originalAcceptsNewOrders = await readAcceptsNewOrders(pool);
     await resetState(pool);
     const module = await Test.createTestingModule({
       imports: [AppModule],
@@ -35,12 +37,12 @@ describe("admin catalog E2E", () => {
 
   afterAll(async () => {
     await app?.close();
-    await resetState(pool);
+    await resetState(pool, originalAcceptsNewOrders);
     await pool?.end();
   });
 
   beforeEach(async () => {
-    await resetState(pool);
+    await resetState(pool, originalAcceptsNewOrders);
   });
 
   it("защищает и изменяет полный каталог, публикует меню и пишет аудит", async () => {
@@ -394,16 +396,45 @@ describe("admin catalog E2E", () => {
     });
   });
 
+  it('даёт staff атомарно менять доступность и приём заказов с аудитом', async () => {
+    const administrator = await accessToken('administrator');
+    const barista = await accessToken('barista');
+    const category = await json<{ id: string }>(await request('/backoffice/catalog/categories', administrator, 'POST', categoryBody(0)));
+    const product = await json<{ id: string; variants: Array<{ id: string }> }>(await request('/backoffice/catalog/products', administrator, 'POST', productBody(category.id)));
+    const variant = product.variants[0];
+    if (variant === undefined) throw new Error('Product response returned no variant');
+    const group = await json<{ options: Array<{ id: string }> }>(await request('/backoffice/catalog/modifier-groups', administrator, 'POST', {
+      name: 'Добавка', selectionType: 'single', minSelect: 0, maxSelect: 1, isActive: true,
+      options: [{ name: 'Сироп', priceDeltaMinor: 0, sortOrder: 0, isDefault: true, isAvailable: true }],
+    }));
+    const option = group.options[0];
+    if (option === undefined) throw new Error('Modifier response returned no option');
+
+    const aggregate = await request('/backoffice/availability', barista);
+    expect(aggregate.status).toBe(200);
+    await expect(aggregate.json()).resolves.toMatchObject({ intake: { acceptsNewOrders: true, updatedBy: null, updatedAt: expect.any(String) }, products: [expect.objectContaining({ id: product.id })] });
+    expect((await request(`/backoffice/availability/product/${product.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
+    expect((await request(`/backoffice/availability/variant/${variant.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
+    expect((await request(`/backoffice/availability/modifier/${option.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
+    const intake = await request('/backoffice/service/intake', barista, 'PATCH', { acceptsNewOrders: false });
+    await expect(intake.json()).resolves.toMatchObject({ acceptsNewOrders: false, updatedBy: expect.any(String), updatedAt: expect.any(String) });
+    expect((await request('/backoffice/availability/product/not-a-uuid', barista, 'PATCH', { isAvailable: false })).status).toBe(400);
+    expect((await request(`/backoffice/availability/product/${randomUUID()}`, barista, 'PATCH', { isAvailable: false })).status).toBe(404);
+
+    await expect(pool.query(`SELECT value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`)).resolves.toMatchObject({ rows: [expect.objectContaining({ value: false, updated_by: expect.any(String), updated_at: expect.any(Date) })] });
+    await expect(pool.query(`SELECT action FROM audit_events WHERE action IN ('AVAILABILITY_UPDATED', 'SERVICE_INTAKE_UPDATED') ORDER BY action`)).resolves.toMatchObject({ rows: [{ action: 'AVAILABILITY_UPDATED' }, { action: 'AVAILABILITY_UPDATED' }, { action: 'AVAILABILITY_UPDATED' }, { action: 'SERVICE_INTAKE_UPDATED' }] });
+  });
+
   async function accessToken(
-    role: "administrator" | "customer",
+    role: "administrator" | "barista" | "customer",
   ): Promise<string> {
     const phone = `+7999${Math.floor(Math.random() * 10_000_000)
       .toString()
       .padStart(7, "0")}`;
-    if (role === "administrator")
+    if (role === "administrator" || role === 'barista')
       await pool.query(
-        "INSERT INTO users (phone_e164, role) VALUES ($1, 'administrator')",
-        [phone],
+        "INSERT INTO users (phone_e164, role) VALUES ($1, $2)",
+        [phone, role],
       );
     await fetch(`${url}/api/v1/auth/otp/request`, {
       method: "POST",
@@ -468,7 +499,13 @@ async function json<Result>(
   return response.json() as Promise<Result>;
 }
 let urlPlaceholder = "";
-async function resetState(pool: Pool): Promise<void> {
+async function readAcceptsNewOrders(pool: Pool): Promise<boolean> {
+  const result = await pool.query<{ value: boolean }>("SELECT value FROM service_settings WHERE key = 'accepts_new_orders'");
+  const value = result.rows[0]?.value;
+  if (typeof value !== 'boolean') throw new Error('Service intake setting is missing');
+  return value;
+}
+async function resetState(pool: Pool, acceptsNewOrders = true): Promise<void> {
   await pool.query("DELETE FROM audit_events");
   await pool.query("DELETE FROM order_item_modifiers");
   await pool.query("DELETE FROM order_items");
@@ -483,4 +520,5 @@ async function resetState(pool: Pool): Promise<void> {
   await pool.query("DELETE FROM sessions");
   await pool.query("DELETE FROM otp_challenges");
   await pool.query("DELETE FROM users");
+  await pool.query("UPDATE service_settings SET value = $1 WHERE key = 'accepts_new_orders'", [acceptsNewOrders]);
 }

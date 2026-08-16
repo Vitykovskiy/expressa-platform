@@ -8,6 +8,9 @@ const validEnvironment: NodeJS.ProcessEnv = {
   AUTH_OTP_PEPPER: 'local-otp-pepper',
   AUTH_DEVELOPMENT_OTP: '123456',
   CORS_ORIGINS: 'http://localhost:5173,https://backoffice.expressa.test',
+  VAPID_SUBJECT: 'mailto:push@expressa.test',
+  VAPID_PUBLIC_KEY: 'BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw',
+  VAPID_PRIVATE_KEY: '9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c',
 };
 
 function expectValidationError(
@@ -33,6 +36,10 @@ describe('validateEnvironment', () => {
     ['DATABASE_URL', { ...validEnvironment, DATABASE_URL: 'not-a-url' }],
     ['AUTH_ACCESS_TOKEN_SECRET', { ...validEnvironment, AUTH_ACCESS_TOKEN_SECRET: undefined }],
     ['AUTH_OTP_PEPPER', { ...validEnvironment, AUTH_OTP_PEPPER: '  ' }],
+    ['VAPID_SUBJECT', { ...validEnvironment, VAPID_SUBJECT: 'invalid-subject' }],
+    ['VAPID_PUBLIC_KEY', { ...validEnvironment, VAPID_PUBLIC_KEY: 'not valid' }],
+    ['VAPID_PUBLIC_KEY', { ...validEnvironment, VAPID_PUBLIC_KEY: 'dG9vLXNob3J0' }],
+    ['VAPID_PRIVATE_KEY', { ...validEnvironment, VAPID_PRIVATE_KEY: undefined }],
     ['AUTH_DEVELOPMENT_OTP', { ...validEnvironment, AUTH_DEVELOPMENT_OTP: '12345' }],
     ['CORS_ORIGINS', { ...validEnvironment, CORS_ORIGINS: 'https://customer.expressa.test/path' }],
     ['BOOTSTRAP_ADMIN_PHONE', { ...validEnvironment, BOOTSTRAP_ADMIN_PHONE: '79991234567' }],

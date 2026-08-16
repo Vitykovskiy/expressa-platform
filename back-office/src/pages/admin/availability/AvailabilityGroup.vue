@@ -10,17 +10,18 @@
       <ToggleRow
         v-for="item in props.items"
         :key="item.id"
-        :label="item.name"
-        :sublabel="sublabel(item)"
-        :model-value="item.available"
-        @update:model-value="updateAvailability(item.id, $event)"
+        :label="item.label"
+        :sublabel="item.sublabel"
+        :disabled="props.disabled"
+        :model-value="item.isAvailable"
+        @update:model-value="updateAvailability(item, $event)"
       />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from "../../../shared/ui/admin/Admin.types";
+import type { AvailabilityItem } from "../../../shared/api/availability.api.types";
 import ToggleRow from "../../../shared/ui/admin/toggle-row/ToggleRow.vue";
 import type {
   AvailabilityGroupEmits,
@@ -30,12 +31,8 @@ import type {
 const props = defineProps<AvailabilityGroupProps>();
 const emit = defineEmits<AvailabilityGroupEmits>();
 
-function sublabel(item: MenuItem) {
-  return item.price ? `${item.price} ₽` : "Несколько размеров";
-}
-
-function updateAvailability(id: string, checked: boolean) {
-  emit("availability-change", { id, checked });
+function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
+  emit("availability-change", item, isAvailable);
 }
 </script>
 

@@ -2,10 +2,10 @@
 title: Доступность и приём заказов
 type: domain
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-16
 sources:
   - ../../backend/src/orders/domain/order-revalidation.ts
-  - ../../back-office/docs/30-domains/Inactive-screens.md
+  - ../../backend/src/catalog/transport/backoffice-availability.controller.ts
 ---
 
 # Доступность и приём заказов
@@ -19,7 +19,9 @@ Backend хранит `isAvailable` у товаров, размеров и доб
 непригодные к публикации позиции отсекаются. [Public menu](../../backend/src/catalog/adapters/postgres-public-menu.repository.ts),
 [OpenAPI](../../backend/openapi/openapi.json).
 
-Управление оперативной доступностью и приёмом заказов не опубликовано backend
-API. `/availability` back-office — защищённая заглушка, а `AvailabilityScreen`
-существует вне активного маршрута; поэтому это не staff-сценарий. [Маршрут и граница](../../back-office/docs/30-domains/Inactive-screens.md),
-[coverage](../../back-office/docs/COVERAGE.md).
+Staff читает `GET /api/v1/backoffice/availability`, изменяет product, variant или
+modifier через `PATCH /api/v1/backoffice/availability/{type}/{id}` и приём через
+`PATCH /api/v1/backoffice/service/intake`. Изменения записывают автора, время и
+аудит; ответ сервера остаётся источником истины для back-office.
+[Контроллер](../../backend/src/catalog/transport/backoffice-availability.controller.ts),
+[OpenAPI](../../backend/openapi/openapi.json).

@@ -11,6 +11,7 @@ import {
   authComposeProjectName,
   authDatabaseUrl,
   authOrigin,
+  authServerEnvironment,
 } from "../../playwright.config.constants";
 import {
   authApiPath,
@@ -199,6 +200,9 @@ function createStaff(phone: string, role: StaffRole): void {
         DATABASE_URL: authDatabaseUrl,
         NODE_ENV: "local",
         PORT: "3000",
+        VAPID_PRIVATE_KEY: authServerEnvironment.VAPID_PRIVATE_KEY,
+        VAPID_PUBLIC_KEY: authServerEnvironment.VAPID_PUBLIC_KEY,
+        VAPID_SUBJECT: authServerEnvironment.VAPID_SUBJECT,
       },
       stdio: "inherit",
     },

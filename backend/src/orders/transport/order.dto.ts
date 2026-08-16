@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { OrderItemDto, OrderModifierDto, OrderStageDto } from './order.dto.types';
+import type { CustomerOrderDto, CustomerOrdersPageDto, OrderItemDto, OrderModifierDto, OrderStageDto } from './order.dto.types';
 
 export class OrderModifierResponseDto implements OrderModifierDto {
   @ApiProperty({ format: 'uuid' })
@@ -53,4 +53,32 @@ export class OrderDto {
 
   @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
   items!: OrderItemResponseDto[];
+}
+
+export class CustomerOrderResponseDto implements CustomerOrderDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: '20300102-001' })
+  number!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+
+  @ApiProperty({ enum: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'] })
+  stage!: OrderStageDto;
+
+  @ApiProperty({ format: 'int32', type: 'integer' })
+  totalMinor!: number;
+
+  @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
+  snapshot!: OrderItemDto[];
+}
+
+export class CustomerOrdersPageResponseDto implements CustomerOrdersPageDto {
+  @ApiProperty({ isArray: true, type: () => CustomerOrderResponseDto })
+  orders!: CustomerOrderDto[];
+
+  @ApiProperty({ nullable: true, type: 'string' })
+  nextCursor!: string | null;
 }

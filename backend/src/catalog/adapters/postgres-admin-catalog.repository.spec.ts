@@ -24,6 +24,7 @@ describe('PostgresAdminCatalogRepository', () => {
     query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ value: true, updated_by: null, updated_at: null }] })
       .mockResolvedValueOnce({ rows: [{ id: 'category', name: 'Кофе', description: 'Напитки', sort_order: 20, is_active: false, archived_at: null }] })
       .mockResolvedValueOnce({ rows: [{ id: 'product', category_id: 'category', type: 'OTHER', name: 'Круассан', description: 'Выпечка', price_minor: 22000, sort_order: 30, is_active: false, is_available: false, archived_at: null }] })
       .mockResolvedValueOnce({ rows: [{ id: 'variant', product_id: 'product', size: 'M', price_minor: 32000, sort_order: 40, is_available: false, archived_at: null }] })
@@ -32,6 +33,7 @@ describe('PostgresAdminCatalogRepository', () => {
       .mockResolvedValueOnce({ rows: [{ category_id: 'category', group_id: 'group', sort_order: 60 }] });
 
     await expect(repository.findCandidates()).resolves.toEqual({
+      intake: { acceptsNewOrders: true, updatedBy: null, updatedAt: null },
       categories: [{ id: 'category', name: 'Кофе', description: 'Напитки', sortOrder: 20, isActive: false, archivedAt: null }],
       products: [{ id: 'product', categoryId: 'category', type: 'OTHER', name: 'Круассан', description: 'Выпечка', priceMinor: 22000, sortOrder: 30, isActive: false, isAvailable: false, archivedAt: null }],
       productVariants: [{ id: 'variant', productId: 'product', size: 'M', priceMinor: 32000, sortOrder: 40, isAvailable: false, archivedAt: null }],
@@ -43,16 +45,16 @@ describe('PostgresAdminCatalogRepository', () => {
     expect(pool.connect).toHaveBeenCalledTimes(1);
     expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
     expect(client.query).toHaveBeenNthCalledWith(2, publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
-    expect(client.query).toHaveBeenNthCalledWith(9, 'COMMIT');
+    expect(client.query).toHaveBeenNthCalledWith(10, 'COMMIT');
     expect(client.release).toHaveBeenCalledTimes(1);
-    for (const call of [3, 4, 5, 6, 7] as const) {
+    for (const call of [4, 5, 6, 7, 8] as const) {
       expect(client.query.mock.calls[call - 1]?.[0]).toContain('WHERE archived_at IS NULL');
     }
-    expect(client.query.mock.calls[3 - 1]?.[0]).toContain('ORDER BY sort_order');
-    expect(client.query.mock.calls[4 - 1]?.[0]).toContain('ORDER BY category_id, sort_order');
-    expect(client.query.mock.calls[5 - 1]?.[0]).toContain('ORDER BY product_id, sort_order');
-    expect(client.query.mock.calls[7 - 1]?.[0]).toContain('ORDER BY group_id, sort_order');
-    expect(client.query.mock.calls[8 - 1]?.[0]).toContain('ORDER BY category_id, sort_order');
+    expect(client.query.mock.calls[4 - 1]?.[0]).toContain('ORDER BY sort_order');
+    expect(client.query.mock.calls[5 - 1]?.[0]).toContain('ORDER BY category_id, sort_order');
+    expect(client.query.mock.calls[6 - 1]?.[0]).toContain('ORDER BY product_id, sort_order');
+    expect(client.query.mock.calls[8 - 1]?.[0]).toContain('ORDER BY group_id, sort_order');
+    expect(client.query.mock.calls[9 - 1]?.[0]).toContain('ORDER BY category_id, sort_order');
   });
 
   it('откатывает транзакцию и освобождает клиент при ошибке запроса', async () => {
@@ -61,7 +63,7 @@ describe('PostgresAdminCatalogRepository', () => {
     query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] }).mockRejectedValueOnce(error);
 
     await expect(repository.findCandidates()).rejects.toThrow(error);
-    expect(client.query).toHaveBeenNthCalledWith(9, 'ROLLBACK');
+    expect(client.query).toHaveBeenNthCalledWith(10, 'ROLLBACK');
     expect(client.query).not.toHaveBeenCalledWith('COMMIT');
     expect(client.release).toHaveBeenCalledTimes(1);
   });
@@ -71,10 +73,11 @@ describe('PostgresAdminCatalogRepository', () => {
     query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ value: true, updated_by: null, updated_at: null }] })
       .mockResolvedValueOnce({ rows: [{ id: null }] });
 
     await expect(repository.findCandidates()).rejects.toThrow('Invalid PostgreSQL row field: id');
-    expect(client.query).toHaveBeenNthCalledWith(9, 'ROLLBACK');
+    expect(client.query).toHaveBeenNthCalledWith(10, 'ROLLBACK');
     expect(client.query).not.toHaveBeenCalledWith('COMMIT');
     expect(client.release).toHaveBeenCalledTimes(1);
   });

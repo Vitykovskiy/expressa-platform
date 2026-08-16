@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
@@ -12,6 +13,9 @@ import { configureObservability } from "../../src/platform/observability/observa
 
 const databaseUrl = process.env.DATABASE_URL;
 const otp = process.env.AUTH_DEVELOPMENT_OTP ?? "123456";
+const seededCappuccinoId = "00000000-0000-4000-8000-000000000010";
+const seededMediumVariantId = "00000000-0000-4000-8000-000000000012";
+const seededMilkOptionId = "00000000-0000-4000-8000-000000000101";
 
 describe("create order E2E", () => {
   let app: INestApplication;
@@ -112,6 +116,48 @@ describe("create order E2E", () => {
     });
   });
 
+  it("Q-SMOKE: на чистом состоянии после миграций и idempotent seed проводит API-заказ до ISSUED", async () => {
+    await resetState();
+    runSeed();
+    runSeed();
+
+    const [customer, barista] = await Promise.all([
+      accessToken("customer"),
+      accessToken("barista"),
+    ]);
+    const created = await createOrder(
+      customer,
+      {
+        expectedTotalMinor: 32_000,
+        items: [
+          {
+            productId: seededCappuccinoId,
+            variantId: seededMediumVariantId,
+            modifierOptionIds: [seededMilkOptionId],
+            quantity: 1,
+          },
+        ],
+      },
+      randomUUID(),
+      "q-smoke-create-request-id",
+    );
+
+    expect(created.status).toBe(201);
+    const { id: orderId } = (await created.json()) as { id: string };
+    for (const action of ["accept", "start-preparing", "mark-ready", "issue"] as const) {
+      const transition = await transitionOrder(barista, orderId, action);
+      expect(transition.status).toBe(200);
+    }
+
+    const detail = await getOrder(customer, orderId, "q-smoke-history-request-id");
+    expect(detail.status).toBe(200);
+    await expect(detail.json()).resolves.toMatchObject({
+      id: orderId,
+      stage: "ISSUED",
+      snapshot: [{ productId: seededCappuccinoId, variantId: seededMediumVariantId }],
+    });
+  });
+
   it("не создаёт заказ для guest, barista или administrator", async () => {
     useClock("2031-02-05T12:00:00.000Z");
     const barista = await accessToken("barista");
@@ -144,6 +190,40 @@ describe("create order E2E", () => {
     }
 
     expect(await orderCount()).toBe(before);
+  });
+
+  it("возвращает customer только собственные снимки без событий staff и пагинирует историю", async () => {
+    useClock("2031-02-05T13:00:00.000Z");
+    const [owner, stranger, barista] = await Promise.all([
+      accessToken("customer"),
+      accessToken("customer"),
+      accessToken("barista"),
+    ]);
+    const first = await createOrder(owner, orderBody(32_000), randomUUID(), "owner-first-request-id");
+    expect(first.status).toBe(201);
+    const firstOrder = (await first.json()) as { id: string };
+    await pool.query("UPDATE products SET name = 'Новое имя каталога' WHERE id = $1", [productId]);
+    for (let index = 0; index < 20; index += 1) {
+      const created = await createOrder(owner, orderBody(32_000), randomUUID(), `owner-page-${index}-request-id`);
+      expect(created.status).toBe(201);
+    }
+
+    const firstPage = await getOrders(owner);
+    expect(firstPage.status).toBe(200);
+    const firstPageBody = (await firstPage.json()) as { orders: Array<{ id: string; snapshot: Array<{ productName: string }> }>; nextCursor: string | null };
+    expect(firstPageBody.orders).toHaveLength(20);
+    expect(firstPageBody.nextCursor).toEqual(expect.any(String));
+    const secondPage = await getOrders(owner, firstPageBody.nextCursor!);
+    const secondPageBody = (await secondPage.json()) as { orders: Array<{ id: string }>; nextCursor: string | null };
+    expect(secondPageBody.orders).toHaveLength(1);
+    expect([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).toHaveLength(21);
+    expect(new Set([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).size).toBe(21);
+
+    const detail = await getOrder(owner, firstOrder.id, "get-order-owner-request-id");
+    await expect(detail.json()).resolves.toMatchObject({ id: firstOrder.id, snapshot: [{ productName: 'Капучино' }] });
+    await expectStructuredError(await getOrder(undefined, firstOrder.id, "get-order-guest-request-id"), 401, "UNAUTHORIZED", null, "get-order-guest-request-id");
+    await expectStructuredError(await getOrder(barista, firstOrder.id, "get-order-barista-request-id"), 403, "ACCESS_DENIED", null, "get-order-barista-request-id");
+    await expectStructuredError(await getOrder(stranger, firstOrder.id, "get-order-stranger-request-id"), 404, "ORDER_NOT_FOUND", null, "get-order-stranger-request-id");
   });
 
   it("отклоняет изменённый итог, недоступность, неверную конфигурацию и закрытый приём без заказа", async () => {
@@ -196,9 +276,8 @@ describe("create order E2E", () => {
       null,
       "configuration-request-id",
     );
-    await pool.query(
-      "UPDATE service_settings SET value = false WHERE key = 'accepts_new_orders'",
-    );
+    const barista = await accessToken('barista');
+    expect((await updateIntake(barista, false)).status).toBe(200);
     await expectStructuredError(
       await createOrder(
         customer,
@@ -470,6 +549,25 @@ describe("create order E2E", () => {
     });
   }
 
+  function updateIntake(token: string, acceptsNewOrders: boolean): Promise<Response> {
+    return fetch(`${url}/api/v1/backoffice/service/intake`, {
+      method: 'PATCH',
+      headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
+      body: JSON.stringify({ acceptsNewOrders }),
+    });
+  }
+
+  function transitionOrder(
+    token: string,
+    orderId: string,
+    action: "accept" | "start-preparing" | "mark-ready" | "issue",
+  ): Promise<Response> {
+    return fetch(`${url}/api/v1/backoffice/orders/${orderId}/${action}`, {
+      method: "POST",
+      headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
+    });
+  }
+
   function createOrder(
     token: string | undefined,
     body: ReturnType<typeof orderBody>,
@@ -483,6 +581,19 @@ describe("create order E2E", () => {
         ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
       }),
       body: JSON.stringify(body),
+    });
+  }
+
+  function getOrders(token: string, cursor?: string): Promise<Response> {
+    const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
+    return fetch(`${url}/api/v1/orders${query}`, {
+      headers: headers('get-orders-request-id', { authorization: `Bearer ${token}` }),
+    });
+  }
+
+  function getOrder(token: string | undefined, orderId: string, requestId: string): Promise<Response> {
+    return fetch(`${url}/api/v1/orders/${orderId}`, {
+      headers: headers(requestId, token === undefined ? {} : { authorization: `Bearer ${token}` }),
     });
   }
 
@@ -540,6 +651,14 @@ describe("create order E2E", () => {
     await pool.query("DELETE FROM otp_challenges");
     await pool.query("DELETE FROM users");
     phones.clear();
+  }
+
+  function runSeed(): void {
+    execFileSync("npm", ["run", "seed"], {
+      cwd: "./",
+      env: process.env,
+      stdio: "inherit",
+    });
   }
 });
 

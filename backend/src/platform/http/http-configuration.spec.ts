@@ -38,11 +38,19 @@ class HealthProbeController {
   }
 }
 
+@Controller('metrics')
+class MetricsProbeController {
+  @Get()
+  getMetrics(): { status: string } {
+    return { status: 'ok' };
+  }
+}
+
 async function createApplication(environment: string, withAuth = false) {
   const module: TestingModule = await Test.createTestingModule({
     controllers: withAuth
-      ? [ProbeController, HealthProbeController, AuthController, MeController]
-      : [ProbeController, HealthProbeController],
+      ? [ProbeController, HealthProbeController, MetricsProbeController, AuthController, MeController]
+      : [ProbeController, HealthProbeController, MetricsProbeController],
     providers: withAuth
       ? [
           { provide: RequestOtpUseCase, useValue: {} },
@@ -137,18 +145,22 @@ describe('HTTP configuration', () => {
     expect(isApiDocumentationEnabled('production')).toBe(false);
   });
 
-  it('оставляет health вне префикса API', async () => {
+  it('оставляет health и metrics вне префикса API', async () => {
     const { app, url } = await createApplication('production');
 
     try {
-      const [health, prefixedHealth, probe] = await Promise.all([
+      const [health, prefixedHealth, metrics, prefixedMetrics, probe] = await Promise.all([
         fetch(`${url}/health/live`),
         fetch(`${url}/${apiPrefix}/health/live`),
+        fetch(`${url}/metrics`),
+        fetch(`${url}/${apiPrefix}/metrics`),
         fetch(`${url}/${apiPrefix}/probe`),
       ]);
 
       expect(health.status).toBe(200);
       expect(prefixedHealth.status).toBe(404);
+      expect(metrics.status).toBe(200);
+      expect(prefixedMetrics.status).toBe(404);
       expect(probe.status).toBe(200);
     } finally {
       await app.close();

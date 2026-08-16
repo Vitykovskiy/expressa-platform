@@ -33,6 +33,13 @@ function isStructuredErrorResponse(
   );
 }
 
+function isOtpFailurePath(path: string): boolean {
+  return (
+    path === '/api/v1/auth/otp/request' ||
+    path === '/api/v1/auth/otp/verify'
+  );
+}
+
 @Catch()
 export class UnifiedExceptionFilter implements ExceptionFilter {
   constructor(
@@ -66,14 +73,18 @@ export class UnifiedExceptionFilter implements ExceptionFilter {
           details: null,
         };
     const requestId = request.requestId ?? 'unknown';
+    const requestPath = getRequestPath(httpAdapter.getRequestUrl(request));
 
     this.metrics.recordApiError();
+    if (isOtpFailurePath(requestPath)) {
+      this.metrics.recordOtpFailure();
+    }
 
     this.logger.log({
       event: 'http_error',
       level: statusCode >= HttpStatus.INTERNAL_SERVER_ERROR ? 'error' : 'info',
       method: request.method ?? 'UNKNOWN',
-      path: getRequestPath(httpAdapter.getRequestUrl(request)),
+      path: requestPath,
       requestId,
       statusCode,
     });

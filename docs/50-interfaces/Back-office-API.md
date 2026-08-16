@@ -2,7 +2,7 @@
 title: API back-office
 type: interface
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-16
 sources:
   - ../../backend/openapi/openapi.json
   - ../../backend/src/catalog/transport/admin-catalog.controller.ts
@@ -40,6 +40,9 @@ sources:
 | `POST /api/v1/backoffice/orders/{orderId}/start-preparing` | `BackofficeOrdersController.startPreparing` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
 | `POST /api/v1/backoffice/orders/{orderId}/mark-ready` | `BackofficeOrdersController.markReady` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
 | `POST /api/v1/backoffice/orders/{orderId}/issue` | `BackofficeOrdersController.issue` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/backoffice-orders.controller.ts) |
+| `GET /api/v1/backoffice/availability` | `BackofficeAvailabilityController.getAvailability` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/catalog/transport/backoffice-availability.controller.ts) |
+| `PATCH /api/v1/backoffice/availability/{type}/{id}` | `BackofficeAvailabilityController.updateAvailability` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/catalog/transport/backoffice-availability.controller.ts) |
+| `PATCH /api/v1/backoffice/service/intake` | `BackofficeAvailabilityController.updateIntake` | [OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/catalog/transport/backoffice-availability.controller.ts) |
 
 Неверное тело каталожной команды возвращает `VALIDATION_ERROR` с
 `details.fields`; эта структура описана и в OpenAPI.

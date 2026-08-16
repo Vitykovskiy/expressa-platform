@@ -2,6 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
+import { PostgresPushSubscriptionRepository } from '../../src/notifications/adapters/postgres-push-subscription.repository';
+import { PostgresOrderLifecycleRepository } from '../../src/orders/adapters/postgres-order-lifecycle.repository';
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
@@ -19,6 +21,9 @@ function runMigrations(): void {
       AUTH_OTP_PEPPER: 'orders-schema-otp-pepper',
       AUTH_DEVELOPMENT_OTP: '123456',
       CORS_ORIGINS: 'http://localhost:5173',
+      VAPID_SUBJECT: 'mailto:push@expressa.test',
+      VAPID_PUBLIC_KEY: 'BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw',
+      VAPID_PRIVATE_KEY: '9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c',
     },
     stdio: 'inherit',
   });
@@ -102,13 +107,58 @@ describe('схема заказов', () => {
     'создаёт и повторно обновляет схему заказа с единственной настройкой приёма',
     async () => {
       runMigrations();
-      const settings = await pool.query<{ key: string; value: boolean }>(
-        'SELECT key, value FROM service_settings',
+      const settings = await pool.query<{ key: string; value: boolean; id: string; updated_by: string | null; updated_at: Date | null }>(
+        'SELECT key, value, id, updated_by, updated_at FROM service_settings',
       );
 
-      expect(settings.rows).toEqual([{ key: 'accepts_new_orders', value: true }]);
+      expect(settings.rows).toHaveLength(1);
+      expect(settings.rows[0]).toMatchObject({ key: 'accepts_new_orders', value: true, id: expect.any(String), updated_by: null });
+      expect(settings.rows[0]?.updated_at === null || settings.rows[0]?.updated_at instanceof Date).toBe(true);
+      const indexes = await pool.query<{ indexname: string }>(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'orders_customer_created_at_id_desc_idx'`,
+      );
+      expect(indexes.rows).toEqual([{ indexname: 'orders_customer_created_at_id_desc_idx' }]);
+      const pushIndexes = await pool.query<{ indexname: string }>(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'push_subscriptions_user_id_idx'`,
+      );
+      expect(pushIndexes.rows).toEqual([{ indexname: 'push_subscriptions_user_id_idx' }]);
       await expect(pool.query(`UPDATE service_settings SET key = 'other'`)).rejects.toMatchObject({
         code: '23514',
+      });
+      await expect(pool.query(`INSERT INTO service_settings (key, value) VALUES ('accepts_new_orders', true)`)).rejects.toMatchObject({
+        code: '23505',
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    'сохраняет владельца push endpoint при повторной регистрации и разрешает обновление владельцу',
+    async () => {
+      const ownerA = await createCustomer(pool);
+      const ownerB = await createCustomer(pool);
+      const endpoint = `https://push.example/${randomUUID()}`;
+      const repository = new PostgresPushSubscriptionRepository({ pool });
+
+      await repository.upsert({ userId: ownerA, endpoint, p256dh: 'owner-a-key', auth: 'owner-a-auth' });
+      await repository.upsert({ userId: ownerB, endpoint, p256dh: 'owner-b-key', auth: 'owner-b-auth' });
+
+      await expect(
+        pool.query<{ user_id: string; p256dh: string; auth: string }>(
+          'SELECT user_id, p256dh, auth FROM push_subscriptions WHERE endpoint = $1',
+          [endpoint],
+        ),
+      ).resolves.toMatchObject({ rows: [{ user_id: ownerA, p256dh: 'owner-a-key', auth: 'owner-a-auth' }] });
+
+      await repository.upsert({ userId: ownerA, endpoint, p256dh: 'owner-a-refreshed-key', auth: 'owner-a-refreshed-auth' });
+
+      await expect(
+        pool.query<{ user_id: string; p256dh: string; auth: string }>(
+          'SELECT user_id, p256dh, auth FROM push_subscriptions WHERE endpoint = $1',
+          [endpoint],
+        ),
+      ).resolves.toMatchObject({
+        rows: [{ user_id: ownerA, p256dh: 'owner-a-refreshed-key', auth: 'owner-a-refreshed-auth' }],
       });
     },
     externalProcessTimeoutMs,
@@ -408,6 +458,64 @@ describe('схема заказов', () => {
       await expect(pool.query('SELECT id FROM orders WHERE id = $1', [orderId])).resolves.toMatchObject({
         rows: [],
       });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    'читает страницу customer истории batched запросами без N+1',
+    async () => {
+      const customerId = await createCustomer(pool);
+      const catalogItem = await createCatalogItem(pool);
+      const orderDay = createOrderDay('05');
+      const orderIds = Array.from({ length: 21 }, () => randomUUID());
+
+      for (const [index, orderId] of orderIds.entries()) {
+        const itemId = randomUUID();
+        await pool.query(
+          `INSERT INTO orders (
+            id, number, customer_id, idempotency_key, request_fingerprint, total_minor, order_day, daily_number, created_at
+          ) VALUES ($1, $2, $3, $4, $5, 24900, $6, $7, $8)`,
+          [
+            orderId,
+            createOrderNumber(orderDay, index + 1),
+            customerId,
+            randomUUID(),
+            randomUUID(),
+            orderDay,
+            index + 1,
+            new Date(Date.UTC(2035, 0, 1, 0, 0, index)),
+          ],
+        );
+        await pool.query(
+          `INSERT INTO order_items (
+            id, order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor
+          ) VALUES ($1, $2, 0, $3, $4, 'Снимок', 'M', 1, 24900, 24900)`,
+          [itemId, orderId, catalogItem.productId, catalogItem.variantId],
+        );
+        await pool.query(
+          `INSERT INTO order_item_modifiers (
+            order_item_id, sort_order, modifier_option_id, modifier_name, price_delta_minor
+          ) VALUES ($1, 0, $2, 'Добавка снимка', 5000)`,
+          [itemId, catalogItem.modifierOptionId],
+        );
+      }
+
+      const query = jest.fn(pool.query.bind(pool));
+      const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
+      const page = await repository.listForCustomer(customerId, null);
+
+      expect(page.orders).toHaveLength(20);
+      expect(page.orders.map((order) => order.id)).toEqual([...orderIds].reverse().slice(0, 20));
+      expect(page.orders.every((order) => {
+        const snapshot = order.snapshot[0];
+        return snapshot?.productName === 'Снимок' && snapshot.modifiers[0]?.modifierName === 'Добавка снимка';
+      })).toBe(true);
+      expect(page.nextCursor).toEqual({ createdAt: expect.any(String), id: orderIds[1] });
+      expect(query).toHaveBeenCalledTimes(3);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('FROM orders')).length).toBe(1);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('SELECT id, order_id, product_id')).length).toBe(1);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('FROM order_item_modifiers')).length).toBe(1);
     },
     externalProcessTimeoutMs,
   );

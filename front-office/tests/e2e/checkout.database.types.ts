@@ -21,3 +21,15 @@ export type OrderRowQuery = {
   quantity: unknown;
   totalMinor: unknown;
 };
+
+export type IssuedHistoryOrder = {
+  id: string;
+  orderNumber: string;
+};
+
+export type IssuedHistoryOrderQuery = {
+  id: unknown;
+  orderNumber: unknown;
+};
+
+export type CheckoutOrderStage = "CREATED" | "ISSUED";

@@ -7,3 +7,4 @@ export const checkoutResponsiveWidths = [
 export const checkoutViewportHeight = 844;
 export const checkoutProductName = "Капучино";
 export const checkoutCategoryName = "Кофе";
+export const checkoutRepeatPriceDeltaMinor = 100;

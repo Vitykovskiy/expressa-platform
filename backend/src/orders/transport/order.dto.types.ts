@@ -1,4 +1,4 @@
-export type OrderStageDto = 'CREATED';
+export type OrderStageDto = 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'ISSUED';
 
 export type OrderModifierDto = {
   modifierOptionId: string;
@@ -15,4 +15,18 @@ export type OrderItemDto = {
   unitTotalMinor: number;
   lineTotalMinor: number;
   modifiers: OrderModifierDto[];
+};
+
+export type CustomerOrderDto = {
+  id: string;
+  number: string;
+  createdAt: string;
+  stage: OrderStageDto;
+  totalMinor: number;
+  snapshot: readonly OrderItemDto[];
+};
+
+export type CustomerOrdersPageDto = {
+  orders: readonly CustomerOrderDto[];
+  nextCursor: string | null;
 };

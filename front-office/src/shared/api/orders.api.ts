@@ -1,4 +1,5 @@
 import {
+  customerOrderStages,
   ordersPaths,
   ordersSizes,
   ordersStages,
@@ -6,13 +7,17 @@ import {
   ordersUuidPattern,
 } from "./orders.api.constants";
 import type {
+  CustomerOrder,
+  CustomerOrderResponse,
+  CustomerOrdersApi,
+  CustomerOrdersPage,
+  CustomerOrdersPageResponse,
   Order,
   OrderItem,
   OrderItemResponse,
   OrderModifier,
   OrderModifierResponse,
   OrderResponse,
-  OrdersApi,
   OrdersApiClient,
 } from "./orders.api.types";
 
@@ -20,12 +25,14 @@ export type {
   CreateOrderItem,
   CreateOrderRequest,
   Order,
+  CustomerOrder,
+  CustomerOrdersPage,
   OrderItem,
   OrderModifier,
   OrdersApi,
 } from "./orders.api.types";
 
-export function createOrdersApi(client: OrdersApiClient): OrdersApi {
+export function createOrdersApi(client: OrdersApiClient): CustomerOrdersApi {
   return {
     async createOrder(accessToken, request, idempotencyKey): Promise<Order> {
       const response = await client.request(
@@ -44,7 +51,44 @@ export function createOrdersApi(client: OrdersApiClient): OrdersApi {
 
       return toOrder(response);
     },
+    async getOrder(accessToken, orderId): Promise<CustomerOrder> {
+      const response = await client.request(
+        ordersPaths.details(orderId),
+        isCustomerOrderResponse,
+        {
+          expectedStatus: ordersStatuses.success,
+          headers: bearer(accessToken),
+          method: "GET",
+        },
+      );
+
+      return toCustomerOrder(response);
+    },
+    async listOrders(accessToken, cursor): Promise<CustomerOrdersPage> {
+      const path =
+        cursor === undefined
+          ? ordersPaths.list
+          : `${ordersPaths.list}?cursor=${encodeURIComponent(cursor)}`;
+      const response = await client.request(
+        path,
+        isCustomerOrdersPageResponse,
+        {
+          expectedStatus: ordersStatuses.success,
+          headers: bearer(accessToken),
+          method: "GET",
+        },
+      );
+
+      return {
+        nextCursor: response.nextCursor,
+        orders: response.orders.map(toCustomerOrder),
+      };
+    },
   };
+}
+
+function bearer(accessToken: string): Record<string, string> {
+  return { authorization: `Bearer ${accessToken}` };
 }
 
 function isOrderResponse(value: unknown): value is OrderResponse {
@@ -55,6 +99,31 @@ function isOrderResponse(value: unknown): value is OrderResponse {
     ordersStages.some((stage) => stage === value.stage) &&
     isInteger(value.totalMinor) &&
     isArrayOf(value.items, isOrderItemResponse)
+  );
+}
+
+function isCustomerOrdersPageResponse(
+  value: unknown,
+): value is CustomerOrdersPageResponse {
+  return (
+    isRecord(value) &&
+    (value.nextCursor === null || typeof value.nextCursor === "string") &&
+    isArrayOf(value.orders, isCustomerOrderResponse)
+  );
+}
+
+function isCustomerOrderResponse(
+  value: unknown,
+): value is CustomerOrderResponse {
+  return (
+    isRecord(value) &&
+    isUuid(value.id) &&
+    typeof value.number === "string" &&
+    typeof value.createdAt === "string" &&
+    !Number.isNaN(Date.parse(value.createdAt)) &&
+    customerOrderStages.some((stage) => stage === value.stage) &&
+    isInteger(value.totalMinor) &&
+    isArrayOf(value.snapshot, isOrderItemResponse)
   );
 }
 
@@ -90,6 +159,17 @@ function toOrder(response: OrderResponse): Order {
     stage: response.stage,
     totalMinor: response.totalMinor,
     items: response.items.map(toOrderItem),
+  };
+}
+
+function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
+  return {
+    createdAt: response.createdAt,
+    id: response.id,
+    items: response.snapshot.map(toOrderItem),
+    number: response.number,
+    stage: response.stage,
+    totalMinor: response.totalMinor,
   };
 }
 

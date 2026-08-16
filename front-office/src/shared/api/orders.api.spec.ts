@@ -4,6 +4,19 @@ import { ApiClient, ApiError } from "./client";
 import { createOrdersApi } from "./orders.api";
 
 describe("OrdersApi", () => {
+  it("читает историю с cursor и преобразует immutable snapshot", async () => {
+    const calls: RequestInit[] = [];
+    const page = await createOrdersApi(
+      client(customerOrdersResponse, calls, 200),
+    ).listOrders("access-token", "cursor value");
+
+    expect(calls[0]).toMatchObject({
+      headers: { authorization: "Bearer access-token" },
+      method: "GET",
+    });
+    expect(page.nextCursor).toBe("next-cursor");
+    expect(page.orders[0]?.items[0]?.productName).toBe("Капучино");
+  });
   it("отправляет exact POST 201 с bearer, UUID-ключом и телом заказа", async () => {
     const calls: RequestInit[] = [];
     const order = await createOrdersApi(
@@ -145,6 +158,18 @@ const orderResponse = {
           priceDeltaMinor: 5000,
         },
       ],
+    },
+  ],
+};
+
+const customerOrdersResponse = {
+  nextCursor: "next-cursor",
+  orders: [
+    {
+      ...orderResponse,
+      createdAt: "2026-08-16T12:00:00.000Z",
+      snapshot: orderResponse.items,
+      stage: "ISSUED",
     },
   ],
 };

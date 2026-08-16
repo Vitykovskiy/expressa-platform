@@ -25,6 +25,7 @@ Back-office — отдельное Vue-приложение сотруднико
 - [Маршруты](30-domains/working-areas-and-routes.md) — компактная карта URL и перенаправлений.
 - [API-интеграция](30-domains/api-integration-and-errors.md) — транспортная граница и OpenAPI-снимок.
 - [Архитектура UI](10-architecture/ui-ownership.md) — владельцы состояния, responsive и accessibility-границы.
+- [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) — границы feature-sliced runtime.
 
 ## Устройство UI
 
