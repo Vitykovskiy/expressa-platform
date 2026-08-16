@@ -66,3 +66,13 @@ workflow проверяет эти условия; `environment: production` о�
 SMS и bootstrap-секретами
 предварительно создаются на VPS; [production.env.example](../../deploy/production.env.example)
 показывает только форму manifest и не используется для поставки.
+
+Проверка операций запускается вручную только из `main` workflow
+`operations-verification.yml` с `confirm_operations_verification=true`. Она
+использует Environment `development`, не запускает staging или production
+поставку, создаёт backup, проверяет isolated restore с public-menu smoke и
+безопасный test receiver Alertmanager. Артефакт
+`development-operations-evidence-<run_id>` содержит только имя копии, revision,
+фактические RPO/RTO с целями и acknowledgement test receiver; он не содержит
+секретов, URL или credentials. До успешного run этот артефакт и фактические
+значения остаются pending. [Operations workflow](../../.github/workflows/operations-verification.yml).

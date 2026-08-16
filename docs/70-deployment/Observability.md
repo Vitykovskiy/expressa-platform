@@ -32,8 +32,13 @@ filter добавляет requestId в безопасный error envelope. Ме
 заказов и резервных копий. Prometheus вызывает alerts при недоступности backend,
 росте 5xx и отсутствии суточной копии. Alert readiness срабатывает при backend
 down, отсутствии gauge либо значении `0`. Перед запуском оператор задаёт
-`DEPLOY_ENV`, `GRAFANA_ADMIN_PASSWORD` и `BACKUP_METRICS_DIRECTORY`; адрес
-получателя Alertmanager настраивает в защищённой operational-копии
-`alertmanager.yml`. [Ops compose](../../deploy/ops-compose.yml),
+`DEPLOY_ENV`, `GRAFANA_ADMIN_PASSWORD`, `BACKUP_METRICS_DIRECTORY` и
+`ALERTMANAGER_CONFIG_FILE`. Политика оператора требует, чтобы последний указывал
+на абсолютный обычный файл
+`/etc/expressa/alertmanager/alertmanager.yml`, принадлежащий `expressa` с
+режимом `0600`; symlink не допускается. Compose лишь потребляет указанный путь,
+монтирует его в Alertmanager только для чтения и не создаёт его. Live preflight
+и evidence обязаны проверить эту policy на host. Адрес получателя и credentials
+остаются только в этом host-owned файле, не в Git или workflow-логах. [Ops compose](../../deploy/ops-compose.yml),
 [alerts](../../deploy/prometheus/alerts.yml),
 [dashboard](../../deploy/grafana/dashboards/expressa-operations.json).
