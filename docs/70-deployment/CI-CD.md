@@ -2,11 +2,12 @@
 title: CI и поставка
 type: operations
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-16
 sources:
   - ../../.github/workflows/development-delivery.yml
   - ../../.github/workflows/staging-deploy.yml
   - ../../.github/workflows/production-promotion.yml
+  - ../../.github/workflows/operations-verification.yml
 ---
 
 # CI и поставка
@@ -39,3 +40,11 @@ Remote script передаёт эти значения `deploy.sh` NUL-разд�
 не сохраняются в `runtime.env` или временном каталоге VPS. [Development deploy step](../../.github/workflows/development-delivery.yml),
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
+
+Отдельный ручной `operations-verification.yml` принимает только dispatch из
+`main` с `confirm_operations_verification=true`, использует Environment
+`development` и не выполняет поставку. Он запускает host backup, isolated
+restore с public-menu smoke и изолированную проверку delivery Alertmanager,
+затем сохраняет санитизированный artifact. Фактические RPO/RTO, имя копии и
+acknowledgement receiver считаются evidence только из успешного artifact этого
+workflow. [Operations verification](../../.github/workflows/operations-verification.yml).
