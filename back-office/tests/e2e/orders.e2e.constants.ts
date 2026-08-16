@@ -16,6 +16,11 @@ export const ordersCategoryName = "Кофе";
 export const ordersProductName = "Капучино";
 export const ordersAccessTokenSecret = "orders-e2e-access-token-secret";
 export const ordersOtpPepper = "orders-e2e-otp-pepper";
+export const ordersVapidSubject = "mailto:push@expressa.test";
+export const ordersVapidPublicKey =
+  "BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw";
+export const ordersVapidPrivateKey =
+  "9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c";
 
 const ordersBackendEnvironment = [
   "NODE_ENV=local",
@@ -24,6 +29,9 @@ const ordersBackendEnvironment = [
   `AUTH_ACCESS_TOKEN_SECRET=${ordersAccessTokenSecret}`,
   `AUTH_OTP_PEPPER=${ordersOtpPepper}`,
   `AUTH_DEVELOPMENT_OTP=${ordersDevelopmentOtp}`,
+  `VAPID_SUBJECT=${ordersVapidSubject}`,
+  `VAPID_PUBLIC_KEY=${ordersVapidPublicKey}`,
+  `VAPID_PRIVATE_KEY=${ordersVapidPrivateKey}`,
   `CORS_ORIGINS=${ordersFrontendOrigin},${ordersBackOfficeOrigin}`,
 ].join(" ");
 const ordersComposeCommand = `docker compose -p ${ordersComposeProjectName} -f ../backend/compose.local.yml`;

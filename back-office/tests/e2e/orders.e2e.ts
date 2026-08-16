@@ -16,6 +16,9 @@ import {
   ordersOtpPepper,
   ordersProductName,
   ordersStaffPhonePrefix,
+  ordersVapidPrivateKey,
+  ordersVapidPublicKey,
+  ordersVapidSubject,
 } from "./orders.e2e.constants";
 import type { AuthAccess, OrdersPage } from "./orders.e2e.types";
 
@@ -84,6 +87,71 @@ test("Chromium подтверждает полный жизненный цикл
   }
 });
 
+test("закрытый intake сохраняет меню и выдачу существующего заказа", async ({
+  browser,
+}) => {
+  const customerContext = await browser.newContext();
+  const staffContext = await browser.newContext();
+  const customerPage = await customerContext.newPage();
+  const menuPage = await customerContext.newPage();
+  const staffPage = await staffContext.newPage();
+  const staffPhone = phone(ordersStaffPhonePrefix);
+
+  try {
+    await proxyBackOfficeApi(staffPage);
+    createStaff(staffPhone);
+    const { orderId } = await createCustomerOrder(customerPage);
+    await openCustomerCart(customerPage);
+
+    const staffToken = await loginStaff(staffPage, staffPhone);
+    await setIntake(staffPage, false);
+
+    await menuPage.goto(ordersFrontendOrigin);
+    await menuPage.getByRole("button", { name: ordersCategoryName }).click();
+    await expect(
+      menuPage.getByRole("button", { name: ordersProductName }),
+    ).toBeVisible();
+
+    const closedOrder = customerPage.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/v1/orders",
+    );
+    await customerPage.getByRole("button", { name: "Оформить заказ" }).click();
+    const closedResponse = await closedOrder;
+    expect(closedResponse.status()).toBe(400);
+    await expect(closedResponse.json()).resolves.toMatchObject({
+      code: "ORDER_INTAKE_CLOSED",
+    });
+    await expect(
+      customerPage.getByText("Приём новых заказов сейчас закрыт."),
+    ).toBeVisible();
+
+    await transitionRequest(staffPage, staffToken, orderId, "accept");
+    await transitionRequest(staffPage, staffToken, orderId, "start-preparing");
+    await transitionRequest(staffPage, staffToken, orderId, "mark-ready");
+    await transitionRequest(staffPage, staffToken, orderId, "issue");
+
+    await setIntake(staffPage, true);
+    await customerPage.reload();
+    await expect(
+      customerPage.getByRole("heading", { name: "Корзина" }),
+    ).toBeVisible();
+    const reopenedOrder = customerPage.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/v1/orders",
+    );
+    await customerPage.getByRole("button", { name: "Оформить заказ" }).click();
+    expect((await reopenedOrder).status()).toBe(201);
+    await expect(customerPage).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
+    await expect(customerPage).not.toHaveURL(new RegExp(`/orders/${orderId}$`));
+  } finally {
+    await customerContext.close();
+    await staffContext.close();
+  }
+});
+
 async function createCustomerOrder(page: OrdersPage): Promise<{
   accessToken: string;
   orderId: string;
@@ -112,6 +180,15 @@ async function createCustomerOrder(page: OrdersPage): Promise<{
     throw new Error("Заказ не содержит номера или идентификатора.");
 
   return { accessToken, orderId, orderNumber };
+}
+
+async function openCustomerCart(page: OrdersPage): Promise<void> {
+  await page.goto(ordersFrontendOrigin);
+  await page.getByRole("button", { name: ordersCategoryName }).click();
+  await page.getByRole("button", { name: ordersProductName }).click();
+  await page.getByRole("button", { name: /M · 320 ₽/ }).click();
+  await page.getByRole("button", { name: "Добавить" }).click();
+  await page.getByRole("link", { name: /Корзина/ }).click();
 }
 
 async function loginCustomer(
@@ -197,6 +274,46 @@ async function transition(
   await expect(card.locator(".order-card__events li")).toHaveCount(eventCount);
 }
 
+async function setIntake(
+  page: OrdersPage,
+  acceptsNewOrders: boolean,
+): Promise<void> {
+  const intake = page.getByRole("switch", { name: "Приём новых заказов" });
+  if (!(await intake.isVisible())) {
+    await page.getByRole("button", { name: "Доступность" }).click();
+  }
+  await expect(intake).toHaveAttribute(
+    "aria-checked",
+    String(!acceptsNewOrders),
+  );
+  const response = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === "PATCH" &&
+      new URL(candidate.url()).pathname === "/api/v1/backoffice/service/intake",
+  );
+  await intake.click();
+  const confirmed = await response;
+  expect(confirmed.status()).toBe(200);
+  await expect(confirmed.json()).resolves.toMatchObject({ acceptsNewOrders });
+  await expect(intake).toHaveAttribute(
+    "aria-checked",
+    String(acceptsNewOrders),
+  );
+}
+
+async function transitionRequest(
+  page: OrdersPage,
+  accessToken: string,
+  orderId: string,
+  transition: "accept" | "start-preparing" | "mark-ready" | "issue",
+): Promise<void> {
+  const response = await page.request.post(
+    `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/${transition}`,
+    { headers: { authorization: `Bearer ${accessToken}` } },
+  );
+  expect(response.status()).toBe(200);
+}
+
 function createStaff(phoneNumber: string): void {
   execFileSync(
     "npm",
@@ -222,6 +339,9 @@ function createStaff(phoneNumber: string): void {
         DATABASE_URL: ordersDatabaseUrl,
         NODE_ENV: "local",
         PORT: "3002",
+        VAPID_PRIVATE_KEY: ordersVapidPrivateKey,
+        VAPID_PUBLIC_KEY: ordersVapidPublicKey,
+        VAPID_SUBJECT: ordersVapidSubject,
       },
       stdio: "inherit",
     },
