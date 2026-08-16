@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
@@ -12,6 +13,9 @@ import { configureObservability } from "../../src/platform/observability/observa
 
 const databaseUrl = process.env.DATABASE_URL;
 const otp = process.env.AUTH_DEVELOPMENT_OTP ?? "123456";
+const seededCappuccinoId = "00000000-0000-4000-8000-000000000010";
+const seededMediumVariantId = "00000000-0000-4000-8000-000000000012";
+const seededMilkOptionId = "00000000-0000-4000-8000-000000000101";
 
 describe("create order E2E", () => {
   let app: INestApplication;
@@ -109,6 +113,48 @@ describe("create order E2E", () => {
     expect(next.status).toBe(201);
     await expect(next.json()).resolves.toMatchObject({
       number: "20310204-001",
+    });
+  });
+
+  it("Q-SMOKE: на чистом состоянии после миграций и idempotent seed проводит API-заказ до ISSUED", async () => {
+    await resetState();
+    runSeed();
+    runSeed();
+
+    const [customer, barista] = await Promise.all([
+      accessToken("customer"),
+      accessToken("barista"),
+    ]);
+    const created = await createOrder(
+      customer,
+      {
+        expectedTotalMinor: 32_000,
+        items: [
+          {
+            productId: seededCappuccinoId,
+            variantId: seededMediumVariantId,
+            modifierOptionIds: [seededMilkOptionId],
+            quantity: 1,
+          },
+        ],
+      },
+      randomUUID(),
+      "q-smoke-create-request-id",
+    );
+
+    expect(created.status).toBe(201);
+    const { id: orderId } = (await created.json()) as { id: string };
+    for (const action of ["accept", "start-preparing", "mark-ready", "issue"] as const) {
+      const transition = await transitionOrder(barista, orderId, action);
+      expect(transition.status).toBe(200);
+    }
+
+    const detail = await getOrder(customer, orderId, "q-smoke-history-request-id");
+    expect(detail.status).toBe(200);
+    await expect(detail.json()).resolves.toMatchObject({
+      id: orderId,
+      stage: "ISSUED",
+      snapshot: [{ productId: seededCappuccinoId, variantId: seededMediumVariantId }],
     });
   });
 
@@ -511,6 +557,17 @@ describe("create order E2E", () => {
     });
   }
 
+  function transitionOrder(
+    token: string,
+    orderId: string,
+    action: "accept" | "start-preparing" | "mark-ready" | "issue",
+  ): Promise<Response> {
+    return fetch(`${url}/api/v1/backoffice/orders/${orderId}/${action}`, {
+      method: "POST",
+      headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
+    });
+  }
+
   function createOrder(
     token: string | undefined,
     body: ReturnType<typeof orderBody>,
@@ -594,6 +651,14 @@ describe("create order E2E", () => {
     await pool.query("DELETE FROM otp_challenges");
     await pool.query("DELETE FROM users");
     phones.clear();
+  }
+
+  function runSeed(): void {
+    execFileSync("npm", ["run", "seed"], {
+      cwd: "./",
+      env: process.env,
+      stdio: "inherit",
+    });
   }
 });
 

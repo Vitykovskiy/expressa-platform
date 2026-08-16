@@ -9,6 +9,21 @@ test("анонимный пользователь перенаправляетс
   await expect(
     page.getByRole("heading", { name: "Вход в backoffice" }),
   ).toBeVisible();
+  const phoneInput = page.getByRole("textbox", { name: "Телефон" });
+
+  await expect(phoneInput).toBeFocused();
+  await expect(phoneInput).toHaveAttribute(
+    "aria-describedby",
+    /^auth-phone-(hint|error)$/,
+  );
+  await phoneInput.fill("+79990000000");
+  await expect(
+    page.getByRole("button", { name: "Отправить код" }),
+  ).toBeEnabled();
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "Отправить код" }),
+  ).toBeFocused();
   await expect(page.getByRole("button", { name: "Очередь" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Меню" })).toHaveCount(0);
 });

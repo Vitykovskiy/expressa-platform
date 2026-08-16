@@ -1,4 +1,4 @@
-import { fork, spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, fork, spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { createServer, type AddressInfo } from 'node:net';
@@ -11,6 +11,16 @@ const livenessWaitTimeoutMs = 25_000;
 const livenessPollIntervalMs = 100;
 const childOutputLimit = 4_000;
 const shutdownTimeoutMs = 5_000;
+
+function rehearseMigrationsAndSeed(): void {
+  for (const script of ['migrate', 'seed', 'seed'] as const) {
+    execFileSync('npm', ['run', script], {
+      cwd: resolve(__dirname, '../..'),
+      env: process.env,
+      stdio: 'pipe',
+    });
+  }
+}
 
 function sanitizeOutput(output: string): string {
   return output
@@ -334,6 +344,8 @@ describe('production startup', () => {
       throw new Error('DATABASE_URL is required for production e2e tests');
     }
 
+    rehearseMigrationsAndSeed();
+
     const port = await getAvailablePort();
     const url = `http://127.0.0.1:${port}`;
     const { output, server } = startProductionServer(port);
@@ -344,6 +356,9 @@ describe('production startup', () => {
       expect(response.status).toBe(200);
       expect(server.exitCode).toBeNull();
       await expect(fetch(`http://localhost:${port}/health/live`)).resolves.toMatchObject({
+        status: 200,
+      });
+      await expect(fetch(`${url}/health/ready`)).resolves.toMatchObject({
         status: 200,
       });
 
@@ -357,6 +372,43 @@ describe('production startup', () => {
       }
     }
   }, coldProductionStartupTimeoutMs);
+
+  it(
+    'фиксирует local baseline health API без ошибок',
+    async () => {
+      if (databaseUrl === undefined) {
+        throw new Error('DATABASE_URL is required for production e2e tests');
+      }
+
+      const port = await getAvailablePort();
+      const url = `http://127.0.0.1:${port}`;
+      const { output, server } = startProductionServer(port);
+
+      try {
+        await waitForLiveness(server, url, output);
+        const timingsMs: number[] = [];
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          const startedAt = performance.now();
+          const response = await fetch(`${url}/health/ready`);
+
+          timingsMs.push(Math.round(performance.now() - startedAt));
+          expect(response.status).toBe(200);
+        }
+
+        expect(timingsMs).toHaveLength(5);
+        expect(timingsMs.every((timingMs) => Number.isFinite(timingMs) && timingMs >= 0)).toBe(
+          true,
+        );
+        console.info('local health API baseline', JSON.stringify({ errorRate: 0, timingsMs }));
+      } finally {
+        if (server.exitCode === null && server.signalCode === null) {
+          await stopProductionServer(server);
+        }
+      }
+    },
+    coldProductionStartupTimeoutMs,
+  );
 
   it('завершает начатую DB-запись до остановки SIGTERM и отвергает новые запросы', async () => {
     if (databaseUrl === undefined) {

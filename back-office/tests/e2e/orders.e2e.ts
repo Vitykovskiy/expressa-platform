@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   ordersAccessTokenSecret,
+  ordersAdministratorPhonePrefix,
   ordersBackendOrigin,
   ordersBackendReadyUrl,
   ordersBackOfficeOrigin,
@@ -16,11 +17,95 @@ import {
   ordersOtpPepper,
   ordersProductName,
   ordersStaffPhonePrefix,
+  ordersUnifiedProductName,
   ordersVapidPrivateKey,
   ordersVapidPublicKey,
   ordersVapidSubject,
 } from "./orders.e2e.constants";
 import type { AuthAccess, OrdersPage } from "./orders.e2e.types";
+
+test("administrator создаёт меню, customer получает issued заказ в history", async ({
+  browser,
+}) => {
+  test.setTimeout(60_000);
+  const administratorContext = await browser.newContext();
+  const customerContext = await browser.newContext();
+  const staffContext = await browser.newContext();
+  const administratorPage = await administratorContext.newPage();
+  const customerPage = await customerContext.newPage();
+  const staffPage = await staffContext.newPage();
+  const administratorPhone = phone(ordersAdministratorPhonePrefix);
+  const staffPhone = phone(ordersStaffPhonePrefix);
+
+  try {
+    await proxyBackOfficeApi(administratorPage);
+    await proxyBackOfficeApi(staffPage);
+    createStaff(administratorPhone, "administrator");
+    createStaff(staffPhone, "barista");
+
+    await test.step("administrator создаёт меню", async () => {
+      await loginStaff(administratorPage, administratorPhone);
+      await createCatalogProduct(administratorPage);
+    });
+    const { orderId, orderNumber } =
+      await test.step("customer оформляет заказ", async () =>
+        createCustomerOrder(
+          customerPage,
+          ordersCategoryName,
+          ordersUnifiedProductName,
+        ));
+
+    await test.step("barista выдаёт заказ", async () => {
+      await loginStaff(staffPage, staffPhone);
+      const card = staffPage.locator(".order-card", { hasText: orderNumber });
+      await expect(card).toBeVisible();
+      await card.getByRole("button", { name: "Открыть детали" }).click();
+      await expect(
+        card.getByLabel(`Детали заказа ${orderNumber}`),
+      ).toContainText(ordersUnifiedProductName);
+      await transition(staffPage, card, "Принять заказ", "Принят", 1);
+      await transition(staffPage, card, "Начать приготовление", "Готовится", 2);
+      await transition(
+        staffPage,
+        card,
+        "Отметить готовым",
+        "Готов к выдаче",
+        3,
+      );
+      await transition(staffPage, card, "Выдать заказ", "Выдан", 4);
+    });
+
+    await test.step("customer видит immutable snapshot в history", async () => {
+      await customerPage.goto(`${ordersFrontendOrigin}/orders`);
+      await expect(
+        customerPage.getByRole("heading", { name: "История заказов" }),
+      ).toBeVisible();
+      const historyOrder = customerPage
+        .getByRole("list", { name: "История заказов" })
+        .getByRole("listitem", { hasText: orderNumber });
+      await expect(historyOrder).toContainText("Заказ выдан");
+      await expect(historyOrder).toContainText("320 ₽");
+      await historyOrder.getByRole("link", { name: "Открыть заказ" }).click();
+      await expect(customerPage).toHaveURL(new RegExp(`/orders/${orderId}$`));
+      await expect(
+        customerPage.getByRole("heading", { name: `Заказ №${orderNumber}` }),
+      ).toBeVisible();
+      await expect(customerPage.getByLabel("Состав заказа")).toContainText(
+        ordersUnifiedProductName,
+      );
+      await expect(
+        customerPage.getByText("Размер M", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        customerPage.getByText("320 ₽", { exact: true }),
+      ).toHaveCount(2);
+    });
+  } finally {
+    await administratorContext.close();
+    await customerContext.close();
+    await staffContext.close();
+  }
+});
 
 test("Chromium подтверждает полный жизненный цикл заказа", async ({
   browser,
@@ -109,7 +194,9 @@ test("закрытый intake сохраняет меню и выдачу сущ
     await menuPage.goto(ordersFrontendOrigin);
     await menuPage.getByRole("button", { name: ordersCategoryName }).click();
     await expect(
-      menuPage.getByRole("button", { name: ordersProductName }),
+      menuPage.getByRole("button", {
+        name: new RegExp(`^${ordersProductName}(?:\\s|$)`),
+      }),
     ).toBeVisible();
 
     const closedOrder = customerPage.waitForResponse(
@@ -152,15 +239,25 @@ test("закрытый intake сохраняет меню и выдачу сущ
   }
 });
 
-async function createCustomerOrder(page: OrdersPage): Promise<{
+async function createCustomerOrder(
+  page: OrdersPage,
+  categoryName = ordersCategoryName,
+  productName = ordersProductName,
+): Promise<{
   accessToken: string;
   orderId: string;
   orderNumber: string;
 }> {
   await expect((await page.request.get(ordersBackendReadyUrl)).ok()).toBe(true);
   await page.goto(ordersFrontendOrigin);
-  await page.getByRole("button", { name: ordersCategoryName }).click();
-  await page.getByRole("button", { name: ordersProductName }).click();
+  const category = page.getByRole("button", { name: categoryName });
+  await expect(category).toBeVisible({ timeout: 10_000 });
+  await category.click();
+  const product = page.getByRole("button", {
+    name: new RegExp(`^${productName}(?:\\s|$)`),
+  });
+  await expect(product).toBeVisible({ timeout: 10_000 });
+  await product.click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: /Добавить/ }).click();
   await page.getByRole("link", { name: /Корзина/ }).click();
@@ -182,10 +279,42 @@ async function createCustomerOrder(page: OrdersPage): Promise<{
   return { accessToken, orderId, orderNumber };
 }
 
+async function createCatalogProduct(page: OrdersPage): Promise<void> {
+  await page.getByRole("button", { name: "Меню" }).click();
+  await page
+    .locator(".menu-page__actions")
+    .getByRole("button", { name: "Добавить товар" })
+    .click();
+  const productDialog = page.locator(".add-dialog:visible");
+  await productDialog
+    .getByLabel("Категория", { exact: true })
+    .selectOption({ label: ordersCategoryName });
+  await productDialog.getByLabel("Тип товара").selectOption("DRINK");
+  await productDialog
+    .getByLabel("Название товара")
+    .fill(ordersUnifiedProductName);
+  await productDialog.getByLabel("Цена S, коп.").fill("30000");
+  await productDialog.getByLabel("Цена M, коп.").fill("32000");
+  await productDialog.getByLabel("Цена L, коп.").fill("34000");
+  const [productResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        response.url().endsWith("/api/v1/backoffice/catalog/products"),
+    ),
+    productDialog.getByRole("button", { name: "Добавить товар" }).click(),
+  ]);
+  expect(productResponse.status()).toBe(201);
+}
+
 async function openCustomerCart(page: OrdersPage): Promise<void> {
   await page.goto(ordersFrontendOrigin);
   await page.getByRole("button", { name: ordersCategoryName }).click();
-  await page.getByRole("button", { name: ordersProductName }).click();
+  await page
+    .getByRole("button", {
+      name: new RegExp(`^${ordersProductName}(?:\\s|$)`),
+    })
+    .click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: "Добавить" }).click();
   await page.getByRole("link", { name: /Корзина/ }).click();
@@ -266,6 +395,7 @@ async function transition(
         /\/api\/v1\/backoffice\/orders\/.+\/(accept|start-preparing|mark-ready|issue)$/.test(
           new URL(candidate.url()).pathname,
         ),
+      { timeout: 10_000 },
     ),
     card.getByRole("button", { name: action }).click(),
   ]);
@@ -314,7 +444,10 @@ async function transitionRequest(
   expect(response.status()).toBe(200);
 }
 
-function createStaff(phoneNumber: string): void {
+function createStaff(
+  phoneNumber: string,
+  role: "administrator" | "barista" = "barista",
+): void {
   execFileSync(
     "npm",
     [
@@ -327,7 +460,7 @@ function createStaff(phoneNumber: string): void {
       "--phone",
       phoneNumber,
       "--role",
-      "barista",
+      role,
     ],
     {
       env: {

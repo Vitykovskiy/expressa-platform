@@ -14,6 +14,7 @@ test("открывает канонические маршруты без усп
 
   await page.goto("/");
   await expect(page).toHaveTitle("Expressa");
+  await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Меню" })).toBeVisible();
 
   for (const [path, title] of [
@@ -61,6 +62,11 @@ test("собранное приложение публикует PWA manifest", 
   await expect(
     page.getByRole("heading", { name: "Что будем заказывать?" }),
   ).toBeVisible();
+  const cartLink = page.getByRole("link", { name: /^Корзина/ });
+
+  await cartLink.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/cart$/);
 });
 
 test("сохраняет рабочую ширину на контрольных viewport", async ({ page }) => {
