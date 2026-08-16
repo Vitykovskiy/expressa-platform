@@ -1,8 +1,0 @@
-[Unit]
-Description=Expressa encrypted PostgreSQL backup
-
-[Service]
-Type=oneshot
-User=expressa
-EnvironmentFile=/etc/expressa/backup.env
-ExecStart=/srv/expressa/deploy/backup.sh

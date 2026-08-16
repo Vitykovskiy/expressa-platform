@@ -1,9 +1,0 @@
-[Unit]
-Description=Run Expressa encrypted PostgreSQL backup daily
-
-[Timer]
-OnCalendar=*-*-* 02:00:00 UTC
-Persistent=true
-
-[Install]
-WantedBy=timers.target
