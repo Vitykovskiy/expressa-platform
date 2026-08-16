@@ -8,6 +8,8 @@ import { UnifiedExceptionFilter } from './unified-exception.filter';
 describe('UnifiedExceptionFilter', () => {
   it('сохраняет безопасный структурированный auth-ответ', () => {
     const reply = jest.fn();
+    const recordApiError = jest.fn();
+    const recordOtpFailure = jest.fn();
     const filter = new UnifiedExceptionFilter(
       {
         httpAdapter: {
@@ -16,7 +18,7 @@ describe('UnifiedExceptionFilter', () => {
         },
       } as never,
       { log: jest.fn() } as never,
-      { recordApiError: jest.fn() } as never,
+      { recordApiError, recordOtpFailure } as never,
     );
 
     filter.catch(
@@ -46,6 +48,31 @@ describe('UnifiedExceptionFilter', () => {
       },
       HttpStatus.UNAUTHORIZED,
     );
+    expect(recordApiError).toHaveBeenCalledTimes(1);
+    expect(recordOtpFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('не считает OTP failure для ошибок других маршрутов', () => {
+    const recordOtpFailure = jest.fn();
+    const filter = new UnifiedExceptionFilter(
+      {
+        httpAdapter: {
+          getRequestUrl: () => '/api/v1/auth/refresh',
+          reply: jest.fn(),
+        },
+      } as never,
+      { log: jest.fn() } as never,
+      { recordApiError: jest.fn(), recordOtpFailure } as never,
+    );
+
+    filter.catch(new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED), {
+      switchToHttp: () => ({
+        getRequest: () => ({ requestId: 'refresh-request-id' }),
+        getResponse: () => ({}),
+      }),
+    } as never);
+
+    expect(recordOtpFailure).not.toHaveBeenCalled();
   });
 
   it('не раскрывает structured данные server error', () => {
@@ -58,7 +85,7 @@ describe('UnifiedExceptionFilter', () => {
         },
       } as never,
       { log: jest.fn() } as never,
-      { recordApiError: jest.fn() } as never,
+      { recordApiError: jest.fn(), recordOtpFailure: jest.fn() } as never,
     );
 
     filter.catch(
@@ -109,7 +136,7 @@ describe('UnifiedExceptionFilter', () => {
         },
       } as never,
       { log } as never,
-      { recordApiError } as never,
+      { recordApiError, recordOtpFailure: jest.fn() } as never,
     );
 
     filter.catch(new ServiceUnavailableException(), {

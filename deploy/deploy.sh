@@ -57,7 +57,7 @@ fi
 [[ "${BACK_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACK_IMAGE must be an immutable digest'
 [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
 
-export DEPLOY_ENV="$environment" COMPOSE_PROJECT_NAME="expressa-$environment"
+export DEPLOY_ENV="$environment" NODE_ENV="$environment" COMPOSE_PROJECT_NAME="expressa-$environment"
 export POSTGRES_DB="${POSTGRES_DB:-expressa}" POSTGRES_USER="${POSTGRES_USER:-expressa}"
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 compose() { docker compose --file "$compose_file" "$@"; }

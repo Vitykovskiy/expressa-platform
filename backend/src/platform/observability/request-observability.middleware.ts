@@ -5,7 +5,11 @@ import { ObservabilityLogger } from './observability-logger.service';
 import { ObservabilityMetrics } from './observability-metrics.service';
 import { getRequestPath } from './request-path';
 
-type RequestWithId = IncomingMessage & { requestId?: string };
+type RequestWithId = IncomingMessage & {
+  baseUrl?: string;
+  requestId?: string;
+  route?: { path?: string };
+};
 
 function isValidRequestId(value: string | undefined): value is string {
   return value !== undefined && /^[A-Za-z0-9._-]{1,128}$/.test(value);
@@ -39,9 +43,22 @@ export class RequestObservabilityMiddleware implements NestMiddleware {
         statusCode: response.statusCode,
         durationMs: Math.round(performance.now() - startedAt),
       });
-      this.metrics.recordHttpResponse(response.statusCode);
+      this.metrics.recordHttpResponse(
+        response.statusCode,
+        getMetricPath(request),
+      );
     });
 
     next();
   }
+}
+
+function getMetricPath(request: RequestWithId): string {
+  const routePath = request.route?.path;
+
+  if (typeof routePath !== 'string') {
+    return '/unmatched';
+  }
+
+  return `${request.baseUrl ?? ''}${routePath}`;
 }

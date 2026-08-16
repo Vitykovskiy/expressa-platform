@@ -2,7 +2,7 @@
 title: Операционный запуск
 type: operations
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-16
 sources:
   - ../../deploy/deploy.sh
   - ../../deploy/compose.yml
@@ -40,6 +40,14 @@ E08/E09 — запреты ролей и неверного перехода, п
 `/health` и container health-checks. Значения `runtime.env` — секреты и не
 выводятся. [Compose](../../deploy/compose.yml), [backend health](../../backend/src/platform/health/health.controller.ts).
 
-Manual production rollout, backup/restore и alert response не определены как
-поддерживаемые операции. [Environments](Environments.md), [Backup](Backup-and-restore.md),
-[Observability](Observability.md).
+Для наблюдаемости оператор запускает отдельный `ops-compose.yml` в edge-сети
+среды и проверяет непрефиксный backend `/metrics`, панель Grafana и targets
+Prometheus. При alert readiness/5xx
+сначала проверяет `/health/ready`, затем backend logs с `x-request-id`; при
+backup alert — состояние `expressa-backup.timer`, каталог копий и текстовую
+метрику node-exporter. Получатель alert настраивается вне Git. [Наблюдаемость](Observability.md),
+[backup/restore](Backup-and-restore.md).
+
+Перед выпуском оператор запускает изолированную проверку восстановления только
+на тестовой копии и сохраняет её безопасный evidence-маркер с RPO/RTO. Ручное
+production-развёртывание определяется отдельным delivery workflow.

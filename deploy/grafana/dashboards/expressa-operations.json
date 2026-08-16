@@ -1,0 +1,15 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "panels": [
+    { "datasource": "Prometheus", "targets": [{ "expr": "expressa_backend_readiness", "refId": "A" }], "title": "PostgreSQL readiness", "type": "stat" },
+    { "datasource": "Prometheus", "targets": [{ "expr": "sum(rate(expressa_http_responses_total{status_class=\"5xx\"}[5m]))", "refId": "A" }], "title": "5xx responses", "type": "timeseries" },
+    { "datasource": "Prometheus", "targets": [{ "expr": "expressa_otp_failures_total", "refId": "A" }], "title": "OTP failures", "type": "timeseries" },
+    { "datasource": "Prometheus", "targets": [{ "expr": "expressa_orders_created_total", "refId": "A" }], "title": "Created orders", "type": "timeseries" },
+    { "datasource": "Prometheus", "targets": [{ "expr": "sum by (stage) (expressa_order_transitions_total)", "refId": "A" }], "title": "Order transitions", "type": "timeseries" },
+    { "datasource": "Prometheus", "targets": [{ "expr": "time() - expressa_backup_last_success_timestamp_seconds", "refId": "A" }], "title": "Last backup age", "type": "stat" }
+  ],
+  "schemaVersion": 39,
+  "title": "Expressa operations",
+  "version": 1
+}

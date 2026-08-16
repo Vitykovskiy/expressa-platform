@@ -33,7 +33,7 @@ services:
   backend:
     image: "${BACKEND_IMAGE:?BACKEND_IMAGE must be a digest reference}"
     environment:
-      NODE_ENV: "${DEPLOY_ENV:?DEPLOY_ENV is required}"
+      NODE_ENV: "${NODE_ENV:?NODE_ENV is required}"
       PORT: '3000'
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       AUTH_ACCESS_TOKEN_SECRET: "${AUTH_ACCESS_TOKEN_SECRET:?AUTH_ACCESS_TOKEN_SECRET is required}"
