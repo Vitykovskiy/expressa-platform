@@ -2,21 +2,22 @@
 title: Push-уведомления
 type: interface
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-16
 sources:
-  - ../../backend/src/app.module.ts
-  - ../../front-office/src/app/pwa.ts
+  - ../../backend/src/notifications/notifications.module.ts
+  - ../../front-office/src/app/push-notifications.ts
 ---
 
 # Push-уведомления
 
-Текущая backend composition регистрирует auth, catalog, orders, database,
-health и observability modules; push module в этой границе отсутствует.
-[backend/src/app.module.ts:AppModule](../../backend/src/app.module.ts).
+Backend публикует public VAPID key и customer-only upsert/delete подписки через
+`/api/v1/push/*`. Новый заказ уведомляет staff; переходы `ACCEPTED`, `READY` и
+`ISSUED` уведомляют customer после core transaction. Ошибка доставки не
+откатывает заказ, а недействительная подписка удаляется.
+[Notifications module](../../backend/src/notifications/notifications.module.ts),
+[OpenAPI](../../backend/openapi/openapi.json).
 
-Front-office в production регистрирует PWA service worker через `registerSW`;
-регистрации permission, subscription или push handler в этой точке нет.
-[front-office/src/app/pwa.ts:registerPwa](../../front-office/src/app/pwa.ts).
-
-Push-уведомления поэтому не являются действующим межконтурным контрактом.
-[backend/src/app.module.ts:AppModule](../../backend/src/app.module.ts), [front-office/src/app/pwa.ts:registerPwa](../../front-office/src/app/pwa.ts).
+Front-office запрашивает permission только по явному действию customer,
+сохраняет подписку через API и открывает заказ по click уведомления.
+[Push handler](../../front-office/src/app/push-notifications.ts),
+[страница заказа](../../front-office/src/pages/OrderPage.vue).

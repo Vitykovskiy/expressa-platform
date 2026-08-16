@@ -18,6 +18,7 @@ sources:
 - [Реестр покрытия](COVERAGE.md) — маршруты, объекты runtime и статус всех нот.
 - [Архитектура](10-architecture/_MOC-architecture.md) — контроллеры, сценарии,
   порты и адаптеры.
+- [ADR-001](10-architecture/ADR/ADR-001-layered-modules.md) — слоистая организация модулей.
 - [Предметные области](30-domains/_MOC-domains.md) — авторизация, каталог,
   заказы и `/me`.
 - [Данные](40-data/_MOC-data.md), [HTTP API](50-api/_MOC-api.md),
