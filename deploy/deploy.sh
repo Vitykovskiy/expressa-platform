@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-usage() { printf '%s\n' 'Usage: deploy.sh --environment development|staging deploy all' >&2; exit 64; }
+usage() { printf '%s\n' 'Usage: deploy.sh --environment development|staging|production deploy all' >&2; exit 64; }
 fail() { printf 'deploy: %s\n' "$1" >&2; exit 1; }
 passed() { printf 'expressa-release-evidence: check=%s status=passed\n' "$1" >&2; }
 
 [[ "$#" == 4 && "$1" == --environment && "$3" == deploy && "$4" == all ]] || usage
 environment="$2"
-case "$environment" in development|staging) ;; *) usage ;; esac
+case "$environment" in development|staging|production) ;; *) usage ;; esac
 
 script_directory="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 deploy_root="${DEPLOY_ROOT:-/srv/expressa}/$environment"
@@ -47,7 +47,7 @@ fi
 [[ "${CORS_ORIGINS:-}" ]] || fail 'CORS_ORIGINS is required'
 if [[ "$environment" == development ]]; then
   [[ "${AUTH_DEVELOPMENT_OTP:-}" =~ ^[0-9]{6}$ ]] || fail 'AUTH_DEVELOPMENT_OTP must contain six digits'
-else
+elif [[ "$environment" == staging ]]; then
   [[ "${AUTH_OTP_MODE:-}" ]] || fail 'AUTH_OTP_MODE is required'
   [[ "${STAGING_TEST_OTP_CODE:-}" ]] || fail 'STAGING_TEST_OTP_CODE is required'
   [[ "${STAGING_TEST_PHONE_ALLOWLIST:-}" ]] || fail 'STAGING_TEST_PHONE_ALLOWLIST is required'
@@ -93,4 +93,7 @@ if [[ "$environment" == staging ]]; then
   docker exec --interactive --env SMOKE_CUSTOMER_PHONE="$smoke_customer_phone" --env SMOKE_STAFF_PHONE="$BOOTSTRAP_ADMIN_PHONE" "$backend_container" \
     /nodejs/bin/node --input-type=module - < "$script_directory/smoke-staging.mjs"
   unset BOOTSTRAP_ADMIN_PHONE
+elif [[ "$environment" == production ]]; then
+  backend_container="$(compose ps -q backend)"
+  docker exec --interactive "$backend_container" /nodejs/bin/node --input-type=module - < "$script_directory/smoke-production.mjs"
 fi

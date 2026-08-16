@@ -7,12 +7,12 @@ sources:
   - ../../deploy/compose.yml
   - ../../.github/workflows/development-delivery.yml
   - ../../.github/workflows/staging-deploy.yml
+  - ../../.github/workflows/production-promotion.yml
 ---
 
 # Среды поставки
 
-`development` поставляется после main, `staging` — по тегу `staging-v*`; обе
-используют отдельные Compose project, сети и volume PostgreSQL на одном VPS.
+`development` поставляется после main, `staging` — по тегу `staging-v*`, production — вручную из принятого `staging-v*`; все среды используют отдельные Compose project, сети и volume PostgreSQL на одном VPS.
 [Development workflow](../../.github/workflows/development-delivery.yml),
 [staging workflow](../../.github/workflows/staging-deploy.yml), [Compose](../../deploy/compose.yml).
 
@@ -38,5 +38,4 @@ Swagger и OpenAPI публикуются только в `development` по `/d
 Адреса выше — операционная карта DNS и проверяются запросом к живым endpoint;
 источник поставки — workflows и Compose, а не локальные настройки разработчика.
 
-Production-среда не реализована и не является поддерживаемым путём поставки.
-[ADR-002](../20-architecture/ADR/ADR-002-delivery-topology.md).
+Production использует `/srv/expressa/production`, `expressa-production-*` сети и volume PostgreSQL; его `runtime.env` существует только на VPS. В репозитории нет production-переменных адресов: допустимые браузерные origin задаёт `CORS_ORIGINS` в этом VPS-файле, а внешний API URL проверяется оператором по DNS после promotion. `environment: production` в workflow служит только меткой аудита и поставки. Ручное продвижение переносит точный manifest принятого staging-тега без пересборки. [Production workflow](../../.github/workflows/production-promotion.yml), [Compose](../../deploy/compose.yml).

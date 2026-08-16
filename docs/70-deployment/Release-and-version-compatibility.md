@@ -5,6 +5,7 @@ owner: root
 last_verified: 2026-08-11
 sources:
   - ../../.github/workflows/staging-deploy.yml
+  - ../../.github/workflows/production-promotion.yml
   - ../../deploy/staging.env
 ---
 
@@ -21,5 +22,4 @@ back-office. Development формирует набор для SHA main; staging 
 те же digest для сбора доказательств; он также не меняет версии компонентов.
 
 Совместимость приложения определяется проверенным набором CI и HTTP/OpenAPI
-контрактом, а не отдельной политикой версий API. Правила production-выпуска отсутствуют.
-[CI/CD](CI-CD.md), [контракты](../20-architecture/Cross-repository-contracts.md).
+контрактом, а не отдельной политикой версий API. Production вручную принимает только `staging-v*` с успешной staging-приёмкой и использует ровно его manifest из трёх digest; rebuild, `latest` и произвольный manifest не являются путём поставки. [Production workflow](../../.github/workflows/production-promotion.yml), [CI/CD](CI-CD.md), [контракты](../20-architecture/Cross-repository-contracts.md).
