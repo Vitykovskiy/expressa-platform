@@ -22,7 +22,7 @@
     "test": "jest",
     "test:integration": "jest --runInBand --testRegex \"test/integration/.*\\.spec\\.ts$\"",
     "test:e2e": "env NODE_ENV=local PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-e2e-access-token-secret AUTH_OTP_PEPPER=local-e2e-otp-pepper AUTH_DEVELOPMENT_OTP=123456 CORS_ORIGINS=http://localhost:5173 VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c jest --config test/e2e/jest-e2e.json --runInBand test/e2e/health.e2e-spec.ts test/e2e/auth.e2e-spec.ts test/e2e/public-menu.e2e-spec.ts test/e2e/admin-catalog.e2e-spec.ts test/e2e/create-order.e2e-spec.ts",
-    "test:production": "npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts"
+    "test:production": "env NODE_ENV=production PORT=3000 DATABASE_URL=${DATABASE_URL:-postgresql://expressa:expressa@localhost:5432/expressa} AUTH_ACCESS_TOKEN_SECRET=local-production-test-access-token-secret AUTH_OTP_PEPPER=local-production-test-otp-pepper CORS_ORIGINS=http://localhost:5173 SMS_RU_API_ID=test-sms-ru-api-id SMS_RU_SENDER=ExpressaTest VAPID_SUBJECT=mailto:push@expressa.test VAPID_PUBLIC_KEY=BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw VAPID_PRIVATE_KEY=9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c sh -c 'npm run build && jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts'"
   },
   "dependencies": {
     "@nestjs/common": "11.1.28",
@@ -65,14 +65,31 @@
       "ts"
     ],
     "rootDir": ".",
-    "testRegex": "src/.*\\.spec\\.ts$",
+    "testRegex": "(src/.*|test/coverage/.*\\.coverage)\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.ts",
+      "!src/**/*.spec.ts"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "lines": 80,
+        "statements": 80
+      },
+      "src/auth/domain/otp-policy.ts": {
+        "lines": 90
+      },
+      "src/catalog/application/manage-availability.use-case.ts": {
+        "lines": 90
+      },
+      "src/orders/domain/order-revalidation.ts": {
+        "lines": 90
+      }
+    }
   }
 }

@@ -101,4 +101,62 @@ describe('revalidateOrder', () => {
     };
     expect(() => revalidateOrder(request, duplicateOption)).toThrow(OrderValidationError);
   });
+
+  it('проверяет товары без вариантов и неизвестные позиции', () => {
+    const catalog: OrderCatalog = {
+      acceptsNewOrders: true,
+      products: [{
+      id: 'cake', type: 'OTHER', name: 'Пирог', priceMinor: 120, isAvailable: true,
+      variants: [], modifierGroups: [],
+      }],
+    };
+    const otherRequest: OrderRequest = {
+      totalMinor: 240,
+      items: [{ productId: 'cake', variantId: null, modifierOptionIds: [], quantity: 2 }],
+    };
+    expect(revalidateOrder(otherRequest, catalog).items[0]).toMatchObject({
+      variantId: null, size: null, unitTotalMinor: 120, lineTotalMinor: 240, modifiers: [],
+    });
+    expect(() => revalidateOrder({ ...otherRequest, items: [{ ...otherRequest.items[0]!, variantId: 'x' }] }, catalog))
+      .toThrow(OrderValidationError);
+    expect(() => revalidateOrder({ ...otherRequest, items: [{ ...otherRequest.items[0]!, productId: 'missing' }] }, catalog))
+      .toThrow(OrderValidationError);
+  });
+
+  it('отклоняет ошибки конфигурации групп, опций и выбора модификаторов', () => {
+    const invalidGroup = createCatalog();
+    invalidGroup.products[0]!.modifierGroups[0]!.maxSelect = 2;
+    expect(() => revalidateOrder(request, invalidGroup)).toThrow(OrderValidationError);
+
+    const invalidOption = createCatalog();
+    invalidOption.products[0]!.modifierGroups[0]!.options[0]!.name = ' ';
+    expect(() => revalidateOrder(request, invalidOption)).toThrow(OrderValidationError);
+
+    const unknownOption = createCatalog();
+    expect(() => revalidateOrder({ ...request, items: [{ ...request.items[0]!, modifierOptionIds: ['unknown'] }] }, unknownOption))
+      .toThrow(OrderValidationError);
+
+    const invalidSelection = createCatalog();
+    invalidSelection.products[0]!.modifierGroups[0]!.minSelect = 0;
+    invalidSelection.products[0]!.modifierGroups[0]!.maxSelect = 0;
+    expect(() => revalidateOrder({ ...request, items: [{ ...request.items[0]!, modifierOptionIds: ['oat'] }] }, invalidSelection))
+      .toThrow(OrderValidationError);
+  });
+
+  it('отклоняет недоступный модификатор и некорректные цены', () => {
+    const unavailable = createCatalog();
+    unavailable.products[0]!.modifierGroups[0]!.options[0]!.isAvailable = false;
+    expect(() => revalidateOrder(request, unavailable)).toThrow(MenuItemUnavailableError);
+
+    const negative = createCatalog();
+    negative.products[0]!.variants[0]!.priceMinor = -1;
+    expect(() => revalidateOrder(request, negative)).toThrow(OrderValidationError);
+
+    const nullPrice: OrderCatalog = {
+      acceptsNewOrders: true,
+      products: [{ id: 'cake', type: 'OTHER', name: 'Пирог', priceMinor: null, isAvailable: true, variants: [], modifierGroups: [] }],
+    };
+    expect(() => revalidateOrder({ totalMinor: 0, items: [{ productId: 'cake', variantId: null, modifierOptionIds: [], quantity: 1 }] }, nullPrice))
+      .toThrow(OrderValidationError);
+  });
 });
