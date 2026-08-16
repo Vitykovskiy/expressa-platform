@@ -1,0 +1,204 @@
+name: Development operations verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_operations_verification:
+        description: Run backup, isolated restore and alert delivery verification on development
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-operations-verification
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_operations_verification }}
+    runs-on: ubuntu-24.04
+    outputs:
+      main_sha: ${{ steps.main_sha.outputs.value }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: refs/heads/main
+          fetch-depth: 1
+          persist-credentials: false
+      - id: main_sha
+        name: Verify immutable main revision
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          main_sha="$(git rev-parse HEAD)"
+          [[ "$main_sha" =~ ^[a-f0-9]{40}$ && "$GITHUB_SHA" == "$main_sha" ]] || exit 1
+          printf 'value=%s\n' "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+  verify:
+    needs: guard
+    runs-on: ubuntu-24.04
+    environment: development
+    env:
+      VERIFIED_MAIN_SHA: ${{ needs.guard.outputs.main_sha }}
+      DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+      DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+      DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+      DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+    steps:
+      - name: Verify development operations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          temporary_directory="$(mktemp -d)"
+          evidence_file="$RUNNER_TEMP/operations-evidence.txt"
+          cleanup() { rm -rf -- "$temporary_directory"; }
+          trap cleanup EXIT
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
+          chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
+          ssh_options=(
+            -i "$temporary_directory/key"
+            -o UserKnownHostsFile="$temporary_directory/known_hosts"
+            -o StrictHostKeyChecking=yes
+            -o BatchMode=yes
+            -p "$DEPLOY_PORT"
+          )
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "VERIFIED_MAIN_SHA=$(printf %q "$VERIFIED_MAIN_SHA") bash -s" > "$evidence_file" <<'REMOTE'
+          set -Eeuo pipefail
+
+          fail() { printf '%s\n' "operations verification: $1" >&2; exit 1; }
+          evidence() { printf 'expressa-operations-evidence: check=%s status=passed%s\n' "$1" "${2:+ $2}"; }
+          development_root=/srv/expressa/development
+          deploy_root=/srv/expressa/deploy
+          backup_environment=/etc/expressa/backup.env
+          [[ "$VERIFIED_MAIN_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'verified main revision is unavailable'
+          [[ -d "$development_root" && -d "$deploy_root" ]] || fail 'development host layout is unavailable'
+          [[ -x "$deploy_root/backup.sh" && -x "$deploy_root/restore-verify.sh" && -f "$deploy_root/compose.yml" ]] || fail 'development operations scripts are unavailable'
+          [[ -r "$backup_environment" && -f "$development_root/runtime.env" ]] || fail 'development operations environment is unavailable'
+          systemctl is-enabled --quiet expressa-backup.timer
+          systemctl is-active --quiet expressa-backup.timer
+          evidence host_preflight 'environment=development timer=active'
+          evidence source_revision "github_sha=$VERIFIED_MAIN_SHA ref=refs/heads/main"
+
+          set -a
+          # Host-owned file supplies backup paths and database identifiers without printing them.
+          source "$backup_environment"
+          set +a
+          "$deploy_root/backup.sh" >/dev/null
+          shopt -s nullglob
+          backups=("$BACKUP_DIRECTORY"/expressa-*.sql.enc)
+          shopt -u nullglob
+          (( ${#backups[@]} > 0 )) || fail 'backup artifact is missing'
+          newest_backup=''
+          for backup in "${backups[@]}"; do
+            name="${backup##*/}"
+            [[ "$name" =~ ^expressa-[0-9]{8}T[0-9]{6}Z\.sql\.enc$ && -f "$backup" && ! -L "$backup" ]] || fail 'backup artifact is malformed'
+            [[ -z "$newest_backup" || "$name" > "${newest_backup##*/}" ]] && newest_backup="$backup"
+          done
+          [[ -s "$newest_backup.sha256" && ! -L "$newest_backup.sha256" ]] || fail 'backup integrity MAC is missing'
+          metric_file="$BACKUP_METRICS_DIRECTORY/expressa_backup.prom"
+          [[ -f "$metric_file" && ! -L "$metric_file" ]] || fail 'backup metric is missing'
+          grep -qx 'expressa_backup_last_success 1' "$metric_file"
+          grep -Eq '^expressa_backup_last_success_timestamp_seconds [1-9][0-9]*$' "$metric_file"
+          evidence backup "artifact=${newest_backup##*/} hmac=passed metric=passed"
+
+          project=expressa-development
+          image_for_service() {
+            local container
+            container="$(docker ps -q --filter "label=com.docker.compose.project=$project" --filter "label=com.docker.compose.service=$1")"
+            [[ -n "$container" && "$(wc -w <<<"$container")" == 1 ]] || fail "development $1 container is unavailable"
+            docker inspect --format '{{.Config.Image}}' "$container"
+          }
+          BACKEND_IMAGE="$(image_for_service backend)"
+          FRONT_IMAGE="$(image_for_service front)"
+          BACK_IMAGE="$(image_for_service back)"
+          [[ "$BACKEND_IMAGE" == *@sha256:* && "$FRONT_IMAGE" == *@sha256:* && "$BACK_IMAGE" == *@sha256:* ]] || fail 'development images are not immutable digests'
+          export BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE
+          restore_evidence="$({ BACKUP_FILE="$newest_backup" BACKUP_ENCRYPTION_KEY_FILE="$BACKUP_ENCRYPTION_KEY_FILE" BACKUP_INTEGRITY_KEY_FILE="$BACKUP_INTEGRITY_KEY_FILE" RUNTIME_ENV_FILE="$development_root/runtime.env" COMPOSE_FILE="$deploy_root/compose.yml" "$deploy_root/restore-verify.sh"; } 2>&1)" || fail 'isolated restore verification failed'
+          [[ "$restore_evidence" =~ ^expressa-restore-verify:\ status=passed\ rpo_seconds=[0-9]+\ rpo_target_seconds=93600\ rpo_target_passed=true\ rto_seconds=[0-9]+\ rto_target_seconds=900\ rto_target_passed=true$ ]] || fail 'restore evidence is incomplete'
+          evidence restore "public_menu=passed ${restore_evidence#expressa-restore-verify: status=passed }"
+
+          temporary_directory="$(mktemp -d /tmp/expressa-operations-evidence.XXXXXX)"
+          network="expressa-operations-evidence-$RANDOM-$$"
+          receiver="expressa-operations-receiver-$RANDOM-$$"
+          prometheus="expressa-operations-prometheus-$RANDOM-$$"
+          alertmanager="expressa-operations-alertmanager-$RANDOM-$$"
+          cleanup_alert_test() {
+            docker rm --force "$receiver" "$prometheus" "$alertmanager" >/dev/null 2>&1 || true
+            docker network rm "$network" >/dev/null 2>&1 || true
+            rm -rf -- "$temporary_directory"
+          }
+          trap cleanup_alert_test EXIT
+          mkdir -p "$temporary_directory/evidence"
+          cat > "$temporary_directory/receiver.mjs" <<'NODE'
+          import { createServer } from 'node:http';
+          import { appendFileSync } from 'node:fs';
+          createServer((request, response) => {
+            let body = '';
+            request.on('data', (chunk) => { body += chunk; });
+            request.on('end', () => {
+              try {
+                const statuses = JSON.parse(body).alerts.map((alert) => alert.status).sort().join(',');
+                appendFileSync('/evidence/alert-statuses.txt', `${statuses}\n`);
+                response.writeHead(200).end();
+              } catch { response.writeHead(400).end(); }
+            });
+          }).listen(8080);
+          NODE
+          cat > "$temporary_directory/alertmanager.yml" <<'YAML'
+          global:
+            resolve_timeout: 5s
+          route:
+            receiver: evidence
+            group_wait: 0s
+            group_interval: 1s
+            repeat_interval: 1h
+          receivers:
+            - name: evidence
+              webhook_configs:
+                - url: http://receiver:8080/alert
+          YAML
+          cat > "$temporary_directory/prometheus.yml" <<'YAML'
+          global:
+            evaluation_interval: 1s
+          rule_files: [/etc/prometheus/rules.yml]
+          alerting:
+            alertmanagers:
+              - static_configs:
+                  - targets: [alertmanager:9093]
+          YAML
+          cat > "$temporary_directory/rules.yml" <<'YAML'
+          groups:
+            - name: operations-evidence
+              rules:
+                - alert: ExpressaOperationsEvidence
+                  expr: vector(1) == 1
+          YAML
+          docker network create "$network" >/dev/null
+          docker run --detach --rm --name "$receiver" --network "$network" --network-alias receiver --mount "type=bind,source=$temporary_directory,target=/work,readonly" --mount "type=bind,source=$temporary_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /nodejs/bin/node /work/receiver.mjs >/dev/null
+          docker run --detach --rm --name "$alertmanager" --network "$network" --network-alias alertmanager --mount "type=bind,source=$temporary_directory/alertmanager.yml,target=/etc/alertmanager/alertmanager.yml,readonly" prom/alertmanager@sha256:d5155cfac40a6d9250ffc97c19db2c5e190c7bc57c6b67125c94903358f8c7d8 --config.file=/etc/alertmanager/alertmanager.yml >/dev/null
+          docker run --detach --rm --name "$prometheus" --network "$network" --mount "type=bind,source=$temporary_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$temporary_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
+          for _ in {1..45}; do grep -qx firing "$temporary_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
+          grep -qx firing "$temporary_directory/evidence/alert-statuses.txt"
+          sed -i 's/vector(1) == 1/vector(0) == 1/' "$temporary_directory/rules.yml"
+          docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
+          for _ in {1..45}; do grep -qx resolved "$temporary_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
+          grep -qx resolved "$temporary_directory/evidence/alert-statuses.txt"
+          evidence alert_delivery 'source=prometheus receiver=acknowledged resolved=acknowledged'
+          REMOTE
+          grep -Eq '^expressa-operations-evidence: check=host_preflight status=passed environment=development timer=active$' "$evidence_file"
+          grep -Eq '^expressa-operations-evidence: check=source_revision status=passed github_sha=[a-f0-9]{40} ref=refs/heads/main$' "$evidence_file"
+          grep -Eq '^expressa-operations-evidence: check=backup status=passed artifact=expressa-[0-9]{8}T[0-9]{6}Z\.sql\.enc hmac=passed metric=passed$' "$evidence_file"
+          grep -Eq '^expressa-operations-evidence: check=restore status=passed public_menu=passed rpo_seconds=[0-9]+ rpo_target_seconds=93600 rpo_target_passed=true rto_seconds=[0-9]+ rto_target_seconds=900 rto_target_passed=true$' "$evidence_file"
+          grep -Eq '^expressa-operations-evidence: check=alert_delivery status=passed source=prometheus receiver=acknowledged resolved=acknowledged$' "$evidence_file"
+      - name: Upload sanitized operations evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: development-operations-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/operations-evidence.txt
+          if-no-files-found: error
+          retention-days: 30

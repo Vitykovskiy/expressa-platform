@@ -28,7 +28,12 @@ services:
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
     volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - type: bind
+        source: "${ALERTMANAGER_CONFIG_FILE:?ALERTMANAGER_CONFIG_FILE is required}"
+        target: /etc/alertmanager/alertmanager.yml
+        read_only: true
+        bind:
+          create_host_path: false
     networks: [operations]
     restart: unless-stopped
 
