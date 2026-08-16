@@ -47,6 +47,8 @@ jobs:
       DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
       DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
       DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
+      BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
@@ -78,15 +80,68 @@ jobs:
             -o BatchMode=yes
             -p "$DEPLOY_PORT"
           )
-          remote_directory="$(ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" 'mktemp -d /tmp/expressa-operations.XXXXXX')"
-          [[ "$remote_directory" =~ ^/tmp/expressa-operations\.[A-Za-z0-9]+$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
+          remote_directory="/tmp/expressa-ops-verify-$GITHUB_RUN_ID"
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test ! -e $(printf %q "$remote_directory") && mkdir -m 700 -- $(printf %q "$remote_directory")"
+          [[ "$remote_directory" == "/tmp/expressa-ops-verify-$GITHUB_RUN_ID" ]]
           remote_cleanup() {
-            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true
+            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test -n $(printf %q "$remote_directory") && test $(printf %q "$remote_directory") = $(printf %q "/tmp/expressa-ops-verify-$GITHUB_RUN_ID") && rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true
             cleanup
           }
           trap remote_cleanup EXIT
-          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/backup.sh deploy/restore-verify.sh deploy/compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
-          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "VERIFIED_MAIN_SHA=$(printf %q "$VERIFIED_MAIN_SHA") STAGED_DEPLOY_DIRECTORY=$(printf %q "$remote_directory") bash -s" > "$evidence_file" <<'REMOTE'
+          cat > "$temporary_directory/provision-backup.sh" <<'PROVISION'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+
+          fail() { printf '%s\n' "backup provision: $1" >&2; exit 1; }
+          environment_line() { printf '%s=%q\n' "$1" "$2"; }
+          [[ "$VERIFIED_MAIN_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'verified main revision is unavailable'
+          [[ "$STAGED_DEPLOY_DIRECTORY" == "/tmp/expressa-ops-verify-$GITHUB_RUN_ID" && -d "$STAGED_DEPLOY_DIRECTORY" ]] || fail 'staged directory is unavailable'
+          [[ -n "$BACKUP_ENCRYPTION_KEY" && -n "$BACKUP_INTEGRITY_KEY" ]] || fail 'backup key is unavailable'
+          runtime_file=/srv/expressa/development/runtime.env
+          [[ -f "$runtime_file" && ! -L "$runtime_file" ]] || fail 'development runtime environment is unavailable'
+          set -a
+          source "$runtime_file"
+          set +a
+          postgres_containers="$(docker ps -q --filter label=com.docker.compose.project=expressa-development --filter label=com.docker.compose.service=postgres)"
+          [[ -n "$postgres_containers" && "$(wc -w <<<"$postgres_containers")" == 1 ]] || fail 'development postgres container is unavailable'
+          POSTGRES_CONTAINER="$(docker inspect --format '{{.Name}}' "$postgres_containers")"
+          POSTGRES_CONTAINER="${POSTGRES_CONTAINER#/}"
+          POSTGRES_DB="${POSTGRES_DB:-expressa}"
+          POSTGRES_USER="${POSTGRES_USER:-expressa}"
+          sudo install -d -m 0755 -o root -g root /etc/expressa /srv/expressa/deploy
+          sudo install -d -m 0700 -o expressa -g expressa /etc/expressa/keys /var/lib/expressa/backups /var/lib/expressa/backup-metrics
+          printf '%s' "$BACKUP_ENCRYPTION_KEY" | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/keys/backup-encryption.key
+          printf '%s' "$BACKUP_INTEGRITY_KEY" | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/keys/backup-integrity.key
+          {
+            environment_line BACKUP_DIRECTORY /var/lib/expressa/backups
+            environment_line BACKUP_ENCRYPTION_KEY_FILE /etc/expressa/keys/backup-encryption.key
+            environment_line BACKUP_INTEGRITY_KEY_FILE /etc/expressa/keys/backup-integrity.key
+            environment_line BACKUP_METRICS_DIRECTORY /var/lib/expressa/backup-metrics
+            environment_line BACKUP_RETENTION_DAYS 7
+            environment_line POSTGRES_CONTAINER "$POSTGRES_CONTAINER"
+            environment_line POSTGRES_DB "$POSTGRES_DB"
+            environment_line POSTGRES_USER "$POSTGRES_USER"
+          } | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/backup.env
+          sudo install -m 0755 -o root -g root "$STAGED_DEPLOY_DIRECTORY/backup.sh" /srv/expressa/deploy/backup.sh
+          sudo install -m 0644 -o root -g root "$STAGED_DEPLOY_DIRECTORY/expressa-backup.service" /etc/systemd/system/expressa-backup.service
+          sudo install -m 0644 -o root -g root "$STAGED_DEPLOY_DIRECTORY/expressa-backup.timer" /etc/systemd/system/expressa-backup.timer
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now expressa-backup.timer
+          sudo systemctl start expressa-backup.service
+          [[ "$(stat -c '%U:%G %a' /etc/expressa/backup.env)" == expressa:expressa\ 600 ]] || fail 'backup environment permissions are invalid'
+          [[ "$(stat -c '%U:%G %a' /etc/expressa/keys/backup-encryption.key)" == expressa:expressa\ 600 ]] || fail 'encryption key permissions are invalid'
+          [[ "$(stat -c '%U:%G %a' /etc/expressa/keys/backup-integrity.key)" == expressa:expressa\ 600 ]] || fail 'integrity key permissions are invalid'
+          [[ "$(stat -c '%U:%G %a' /var/lib/expressa/backups)" == expressa:expressa\ 700 ]] || fail 'backup directory permissions are invalid'
+          [[ "$(stat -c '%U:%G %a' /var/lib/expressa/backup-metrics)" == expressa:expressa\ 700 ]] || fail 'metric directory permissions are invalid'
+          systemctl is-enabled --quiet expressa-backup.timer
+          systemctl is-active --quiet expressa-backup.timer
+          printf 'expressa-operations-evidence: check=backup_provision status=passed environment=development timer=active\n'
+          PROVISION
+          chmod 700 "$temporary_directory/provision-backup.sh"
+          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/backup.sh deploy/restore-verify.sh deploy/compose.yml deploy/expressa-backup.service deploy/expressa-backup.timer "$temporary_directory/provision-backup.sh" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
+          printf '%s\0%s\0%s\0%s\0%s\0' "$BACKUP_ENCRYPTION_KEY" "$BACKUP_INTEGRITY_KEY" "$VERIFIED_MAIN_SHA" "$remote_directory" "$GITHUB_RUN_ID" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' BACKUP_ENCRYPTION_KEY; IFS= read -r -d '' BACKUP_INTEGRITY_KEY; IFS= read -r -d '' VERIFIED_MAIN_SHA; IFS= read -r -d '' STAGED_DEPLOY_DIRECTORY; IFS= read -r -d '' GITHUB_RUN_ID; export BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY VERIFIED_MAIN_SHA STAGED_DEPLOY_DIRECTORY GITHUB_RUN_ID; bash $(printf %q "$remote_directory/provision-backup.sh")" > "$evidence_file"
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "VERIFIED_MAIN_SHA=$(printf %q "$VERIFIED_MAIN_SHA") STAGED_DEPLOY_DIRECTORY=$(printf %q "$remote_directory") bash -s" >> "$evidence_file" <<'REMOTE'
           set -Eeuo pipefail
 
           fail() { printf '%s\n' "operations verification: $1" >&2; exit 1; }
@@ -95,7 +150,7 @@ jobs:
           deploy_root="$STAGED_DEPLOY_DIRECTORY"
           backup_environment=/etc/expressa/backup.env
           [[ "$VERIFIED_MAIN_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'verified main revision is unavailable'
-          [[ "$deploy_root" =~ ^/tmp/expressa-operations\.[A-Za-z0-9]+$ && -d "$development_root" && -d "$deploy_root" ]] || fail 'development host layout is unavailable'
+          [[ "$deploy_root" =~ ^/tmp/expressa-ops-verify-[0-9]+$ && -d "$development_root" && -d "$deploy_root" ]] || fail 'development host layout is unavailable'
           [[ -x "$deploy_root/backup.sh" && -x "$deploy_root/restore-verify.sh" && -f "$deploy_root/compose.yml" ]] || fail 'development operations scripts are unavailable'
           [[ -r "$backup_environment" && -f "$development_root/runtime.env" ]] || fail 'development operations environment is unavailable'
           systemctl is-enabled --quiet expressa-backup.timer
@@ -209,6 +264,7 @@ jobs:
           grep -qx resolved "$temporary_directory/evidence/alert-statuses.txt"
           evidence alert_delivery 'source=prometheus receiver=acknowledged resolved=acknowledged'
           REMOTE
+          grep -Eq '^expressa-operations-evidence: check=backup_provision status=passed environment=development timer=active$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=host_preflight status=passed environment=development timer=active$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=source_revision status=passed github_sha=[a-f0-9]{40} ref=refs/heads/main$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=backup status=passed artifact=expressa-[0-9]{8}T[0-9]{6}Z\.sql\.enc hmac=passed metric=passed$' "$evidence_file"
