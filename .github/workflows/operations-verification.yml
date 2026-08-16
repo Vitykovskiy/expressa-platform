@@ -95,18 +95,21 @@ jobs:
           [[ "$STAGED_DEPLOY_DIRECTORY" == "/tmp/expressa-ops-verify-$GITHUB_RUN_ID" && -d "$STAGED_DEPLOY_DIRECTORY" ]] || fail 'staged directory is unavailable'
           [[ -n "$BACKUP_ENCRYPTION_KEY" && -n "$BACKUP_INTEGRITY_KEY" ]] || fail 'backup key is unavailable'
           development_root=/srv/expressa/development
-          operations_root="$development_root/operations"
+          state_root="$development_root/state"
+          operations_root="$state_root/operations"
           backup_directory="$operations_root/backups"
           metrics_directory="$operations_root/backup-metrics"
           deploy_root="$STAGED_DEPLOY_DIRECTORY"
           [[ -d "$development_root" && -f "$development_root/runtime.env" && ! -L "$development_root/runtime.env" ]] || fail 'development runtime environment is unavailable'
+          [[ -d "$state_root" && ! -L "$state_root" && -w "$state_root" ]] || fail 'development state directory is unavailable'
           for path in "$operations_root" "$backup_directory" "$metrics_directory"; do
             [[ ! -e "$path" || ( -d "$path" && ! -L "$path" ) ]] || fail 'operations path is invalid'
           done
           mkdir -p -- "$backup_directory" "$metrics_directory"
           [[ -d "$operations_root" && ! -L "$operations_root" && -d "$backup_directory" && ! -L "$backup_directory" && -d "$metrics_directory" && ! -L "$metrics_directory" ]] || fail 'operations directories are unavailable'
-          chmod 700 "$backup_directory" "$metrics_directory"
+          chmod 700 "$operations_root" "$backup_directory" "$metrics_directory"
           owner_uid="$(id -u)"
+          [[ "$(stat -c '%u %a' "$operations_root")" == "$owner_uid 700" ]] || fail 'operations directory permissions are invalid'
           [[ "$(stat -c '%u %a' "$backup_directory")" == "$owner_uid 700" ]] || fail 'backup directory permissions are invalid'
           [[ "$(stat -c '%u %a' "$metrics_directory")" == "$owner_uid 700" ]] || fail 'metric directory permissions are invalid'
           temporary_directory="$(mktemp -d "$deploy_root/.operations-verify.XXXXXX")"
