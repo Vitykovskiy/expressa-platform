@@ -32,7 +32,7 @@ export class PostgresOrderLifecycleRepository implements OrderReadRepository, Or
       [customerId, cursor?.createdAt ?? null, cursor?.id ?? null],
     );
     const rows = result.rows.slice(0, 20);
-    const orders = await Promise.all(rows.map((row) => readCustomerOrder(this.dependencies.pool, row)));
+    const orders = await readCustomerOrders(this.dependencies.pool, rows);
     const last = rows.at(-1);
     return {
       orders,
@@ -102,14 +102,59 @@ async function readCustomerOrder(client: Queryable, row: DatabaseRow): Promise<C
   return { ...toQueueItem(row), snapshot: await readSnapshot(client, id) };
 }
 
+/** Customer history keeps page order while loading every immutable snapshot in two bounded queries. */
+async function readCustomerOrders(client: Queryable, rows: readonly DatabaseRow[]): Promise<readonly CustomerOrder[]> {
+  if (rows.length === 0) return [];
+
+  const orderIds = rows.map((row) => readString(row, 'id'));
+  const [items, modifiers] = await Promise.all([
+    client.query<DatabaseRow>(
+      `SELECT id, order_id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor
+       FROM order_items WHERE order_id = ANY($1::uuid[]) ORDER BY order_id, sort_order`,
+      [orderIds],
+    ),
+    client.query<DatabaseRow>(
+      `SELECT order_item_id, modifier_option_id, modifier_name, price_delta_minor FROM order_item_modifiers
+       WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ANY($1::uuid[]))
+       ORDER BY order_item_id, sort_order`,
+      [orderIds],
+    ),
+  ]);
+  const snapshots = snapshotsByOrder(items.rows, modifiers.rows);
+  return rows.map((row) => {
+    const id = readString(row, 'id');
+    return { ...toQueueItem(row), snapshot: snapshots.get(id) ?? [] };
+  });
+}
+
 async function readSnapshot(client: Queryable, orderId: string): Promise<readonly OrderSnapshotItem[]> {
   const [items, modifiers] = await Promise.all([
     client.query<DatabaseRow>(`SELECT id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor FROM order_items WHERE order_id = $1 ORDER BY sort_order`, [orderId]),
     client.query<DatabaseRow>(`SELECT order_item_id, modifier_option_id, modifier_name, price_delta_minor FROM order_item_modifiers WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) ORDER BY order_item_id, sort_order`, [orderId]),
   ]);
+  return snapshotItems(items.rows, modifiers.rows);
+}
+
+function snapshotsByOrder(items: readonly DatabaseRow[], modifiers: readonly DatabaseRow[]): ReadonlyMap<string, readonly OrderSnapshotItem[]> {
+  const byOrder = new Map<string, DatabaseRow[]>();
+  for (const item of items) {
+    const orderId = readString(item, 'order_id');
+    const values = byOrder.get(orderId) ?? [];
+    values.push(item);
+    byOrder.set(orderId, values);
+  }
+  return new Map([...byOrder].map(([orderId, orderItems]) => [orderId, snapshotItems(orderItems, modifiers)]));
+}
+
+function snapshotItems(items: readonly DatabaseRow[], modifiers: readonly DatabaseRow[]): readonly OrderSnapshotItem[] {
   const byItem = new Map<string, OrderSnapshotModifier[]>();
-  for (const row of modifiers.rows) { const id = readString(row, 'order_item_id'); const values = byItem.get(id) ?? []; values.push({ modifierOptionId: readString(row, 'modifier_option_id'), modifierName: readString(row, 'modifier_name'), priceDeltaMinor: readInteger(row, 'price_delta_minor') }); byItem.set(id, values); }
-  return items.rows.map((row) => ({ productId: readString(row, 'product_id'), variantId: readNullableString(row, 'variant_id'), productName: readString(row, 'product_name'), size: readNullableSize(row, 'size'), quantity: readPositiveInteger(row, 'quantity'), unitTotalMinor: readNonNegativeInteger(row, 'unit_total_minor'), lineTotalMinor: readNonNegativeInteger(row, 'line_total_minor'), modifiers: byItem.get(readString(row, 'id')) ?? [] }));
+  for (const row of modifiers) {
+    const id = readString(row, 'order_item_id');
+    const values = byItem.get(id) ?? [];
+    values.push({ modifierOptionId: readString(row, 'modifier_option_id'), modifierName: readString(row, 'modifier_name'), priceDeltaMinor: readInteger(row, 'price_delta_minor') });
+    byItem.set(id, values);
+  }
+  return items.map((row) => ({ productId: readString(row, 'product_id'), variantId: readNullableString(row, 'variant_id'), productName: readString(row, 'product_name'), size: readNullableSize(row, 'size'), quantity: readPositiveInteger(row, 'quantity'), unitTotalMinor: readNonNegativeInteger(row, 'unit_total_minor'), lineTotalMinor: readNonNegativeInteger(row, 'line_total_minor'), modifiers: byItem.get(readString(row, 'id')) ?? [] }));
 }
 
 async function readEvents(client: Queryable, orderId: string): Promise<readonly OrderEvent[]> {

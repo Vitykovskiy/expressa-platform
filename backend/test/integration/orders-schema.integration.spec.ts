@@ -3,6 +3,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import { PostgresPushSubscriptionRepository } from '../../src/notifications/adapters/postgres-push-subscription.repository';
+import { PostgresOrderLifecycleRepository } from '../../src/orders/adapters/postgres-order-lifecycle.repository';
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
@@ -457,6 +458,64 @@ describe('схема заказов', () => {
       await expect(pool.query('SELECT id FROM orders WHERE id = $1', [orderId])).resolves.toMatchObject({
         rows: [],
       });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    'читает страницу customer истории batched запросами без N+1',
+    async () => {
+      const customerId = await createCustomer(pool);
+      const catalogItem = await createCatalogItem(pool);
+      const orderDay = createOrderDay('05');
+      const orderIds = Array.from({ length: 21 }, () => randomUUID());
+
+      for (const [index, orderId] of orderIds.entries()) {
+        const itemId = randomUUID();
+        await pool.query(
+          `INSERT INTO orders (
+            id, number, customer_id, idempotency_key, request_fingerprint, total_minor, order_day, daily_number, created_at
+          ) VALUES ($1, $2, $3, $4, $5, 24900, $6, $7, $8)`,
+          [
+            orderId,
+            createOrderNumber(orderDay, index + 1),
+            customerId,
+            randomUUID(),
+            randomUUID(),
+            orderDay,
+            index + 1,
+            new Date(Date.UTC(2035, 0, 1, 0, 0, index)),
+          ],
+        );
+        await pool.query(
+          `INSERT INTO order_items (
+            id, order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor
+          ) VALUES ($1, $2, 0, $3, $4, 'Снимок', 'M', 1, 24900, 24900)`,
+          [itemId, orderId, catalogItem.productId, catalogItem.variantId],
+        );
+        await pool.query(
+          `INSERT INTO order_item_modifiers (
+            order_item_id, sort_order, modifier_option_id, modifier_name, price_delta_minor
+          ) VALUES ($1, 0, $2, 'Добавка снимка', 5000)`,
+          [itemId, catalogItem.modifierOptionId],
+        );
+      }
+
+      const query = jest.fn(pool.query.bind(pool));
+      const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
+      const page = await repository.listForCustomer(customerId, null);
+
+      expect(page.orders).toHaveLength(20);
+      expect(page.orders.map((order) => order.id)).toEqual([...orderIds].reverse().slice(0, 20));
+      expect(page.orders.every((order) => {
+        const snapshot = order.snapshot[0];
+        return snapshot?.productName === 'Снимок' && snapshot.modifiers[0]?.modifierName === 'Добавка снимка';
+      })).toBe(true);
+      expect(page.nextCursor).toEqual({ createdAt: expect.any(String), id: orderIds[1] });
+      expect(query).toHaveBeenCalledTimes(3);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('FROM orders')).length).toBe(1);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('SELECT id, order_id, product_id')).length).toBe(1);
+      expect(query.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('FROM order_item_modifiers')).length).toBe(1);
     },
     externalProcessTimeoutMs,
   );

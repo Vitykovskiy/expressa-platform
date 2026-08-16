@@ -48,29 +48,50 @@ describe('PostgresOrderLifecycleRepository', () => {
 
   it('читает customer историю по снимку и следующему курсору', async () => {
     const customerId = 'ccca6117-9fa5-4d9a-986d-8d02747cc6d5';
-    const nextOrderId = 'fe3a8d7b-d983-4b4a-a4f0-977f94b91f7e';
     const createdAt = new Date('2030-01-02T03:04:05.000Z');
+    const itemId = '77777777-7777-4777-8777-777777777777';
     const query = jest.fn((sql: string) => {
       if (sql.includes('FROM orders') && sql.includes('customer_id = $1')) {
         return Promise.resolve({ rows: [
           { id: orderId, number: '20300102-002', created_at: createdAt, cursor_created_at: '2030-01-02 03:04:05+00', total_minor: 450, stage: 'ISSUED' },
-          { id: nextOrderId, number: '20300102-001', created_at: new Date('2030-01-02T03:04:04.000Z'), cursor_created_at: '2030-01-02 03:04:04+00', total_minor: 400, stage: 'CREATED' },
         ] });
       }
-      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [] });
-      if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
+      if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [{ order_item_id: itemId, modifier_option_id: '88888888-8888-4888-8888-888888888888', modifier_name: 'Овсяное молоко', price_delta_minor: 50 }] });
+      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [{ id: itemId, order_id: orderId, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Капучино', size: null, quantity: 1, unit_total_minor: 450, line_total_minor: 450 }] });
       return Promise.resolve({ rows: [] });
     });
     const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
 
     await expect(repository.listForCustomer(customerId, null)).resolves.toEqual({
       orders: [
-        { id: orderId, number: '20300102-002', createdAt, totalMinor: 450, stage: 'ISSUED', snapshot: [] },
-        { id: nextOrderId, number: '20300102-001', createdAt: new Date('2030-01-02T03:04:04.000Z'), totalMinor: 400, stage: 'CREATED', snapshot: [] },
+        { id: orderId, number: '20300102-002', createdAt, totalMinor: 450, stage: 'ISSUED', snapshot: [{ productId: '99999999-9999-4999-8999-999999999999', variantId: null, productName: 'Капучино', size: null, quantity: 1, unitTotalMinor: 450, lineTotalMinor: 450, modifiers: [{ modifierOptionId: '88888888-8888-4888-8888-888888888888', modifierName: 'Овсяное молоко', priceDeltaMinor: 50 }] }] },
       ],
       nextCursor: null,
     });
     expect(query).toHaveBeenCalledWith(expect.stringContaining('ORDER BY created_at DESC, id DESC'), [customerId, null, null]);
+    expect(query).toHaveBeenCalledTimes(3);
+  });
+
+  it('читает 20 customer снимков тремя bounded запросами', async () => {
+    const customerId = 'ccca6117-9fa5-4d9a-986d-8d02747cc6d5';
+    const ids = Array.from({ length: 20 }, (_value, index) => `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`);
+    const query = jest.fn((sql: string) => {
+      if (sql.includes('FROM orders') && sql.includes('customer_id = $1')) {
+        return Promise.resolve({ rows: ids.map((id, index) => ({ id, number: `20310205-${String(index + 1).padStart(3, '0')}`, created_at: new Date(`2031-02-05T13:00:${String(index).padStart(2, '0')}.000Z`), cursor_created_at: `2031-02-05 13:00:${String(index).padStart(2, '0')}+00`, total_minor: 100, stage: 'CREATED' })) });
+      }
+      if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
+      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: ids.map((id) => ({ id: `${id.slice(0, -1)}1`, order_id: id, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Американо', size: null, quantity: 1, unit_total_minor: 100, line_total_minor: 100 })) });
+      return Promise.resolve({ rows: [] });
+    });
+    const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
+
+    const page = await repository.listForCustomer(customerId, null);
+
+    expect(page.orders.map((order) => order.id)).toEqual(ids);
+    expect(page.orders.every((order) => order.snapshot[0]?.productName === 'Американо')).toBe(true);
+    expect(page.nextCursor).toBeNull();
+    expect(query).toHaveBeenCalledTimes(3);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE order_id = ANY($1::uuid[])'), [ids]);
   });
 
   it('сохраняет микросекунды cursor при одинаковой миллисекунде', async () => {
