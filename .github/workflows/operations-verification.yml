@@ -174,10 +174,13 @@ jobs:
           BACK_IMAGE="$(image_for_service back)"
           [[ "$BACKEND_IMAGE" == *@sha256:* && "$FRONT_IMAGE" == *@sha256:* && "$BACK_IMAGE" == *@sha256:* ]] || fail 'development images are not immutable digests'
           export BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE
-          if ! restore_evidence="$({ BACKUP_FILE="$newest_backup" BACKUP_ENCRYPTION_KEY_FILE="$encryption_key_file" BACKUP_INTEGRITY_KEY_FILE="$integrity_key_file" RUNTIME_ENV_FILE="$development_root/runtime.env" COMPOSE_FILE="$deploy_root/compose.yml" "$deploy_root/restore-verify.sh"; } 2>&1)"; then
-            printf '%s\n' "$restore_evidence" >&2
+          if ! restore_output="$({ BACKUP_FILE="$newest_backup" BACKUP_ENCRYPTION_KEY_FILE="$encryption_key_file" BACKUP_INTEGRITY_KEY_FILE="$integrity_key_file" RUNTIME_ENV_FILE="$development_root/runtime.env" COMPOSE_FILE="$deploy_root/compose.yml" "$deploy_root/restore-verify.sh"; } 2>&1)"; then
+            printf '%s\n' "$restore_output" >&2
             fail 'isolated restore verification failed'
           fi
+          mapfile -t restore_markers < <(grep -E '^expressa-restore-verify: status=passed' <<<"$restore_output" || true)
+          (( ${#restore_markers[@]} == 1 )) || fail 'restore evidence is incomplete'
+          restore_evidence="${restore_markers[0]}"
           [[ "$restore_evidence" =~ ^expressa-restore-verify:\ status=passed\ rpo_seconds=[0-9]+\ rpo_target_seconds=93600\ rpo_target_passed=true\ rto_seconds=[0-9]+\ rto_target_seconds=900\ rto_target_passed=true$ ]] || fail 'restore evidence is incomplete'
           evidence restore "public_menu=passed ${restore_evidence#expressa-restore-verify: status=passed }"
           alert_directory="$temporary_directory/alert"
