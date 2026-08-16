@@ -37,9 +37,10 @@ npm run staff -- upsert --phone +79991234567 --role administrator
 `administrator`; телефон — `+7XXXXXXXXXX`.
 
 Перед запуском обязательны `NODE_ENV`, `PORT`, `DATABASE_URL`,
-`AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER` и `CORS_ORIGINS`. В `local` и
-`development` также нужен `AUTH_DEVELOPMENT_OTP`; в `staging` и `production` —
-`SMS_RU_API_ID` и `SMS_RU_SENDER`. Пример без секретов: [.env.example](.env.example).
+`AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER`, VAPID subject/public/private keys
+и `CORS_ORIGINS`. В `local` и `development` также нужен `AUTH_DEVELOPMENT_OTP`;
+в `staging` и `production` — `SMS_RU_API_ID` и `SMS_RU_SENDER`. Пример без
+секретов: [.env.example](.env.example).
 
 ## Документация и правила
 
