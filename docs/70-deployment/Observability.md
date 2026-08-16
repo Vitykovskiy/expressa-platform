@@ -37,8 +37,14 @@ down, отсутствии gauge либо значении `0`. Перед за�
 на абсолютный обычный файл
 `/etc/expressa/alertmanager/alertmanager.yml`, принадлежащий `expressa` с
 режимом `0600`; symlink не допускается. Compose лишь потребляет указанный путь,
-монтирует его в Alertmanager только для чтения и не создаёт его. Live preflight
-и evidence обязаны проверить эту policy на host. Адрес получателя и credentials
+монтирует его в Alertmanager только для чтения и не создаёт его. Эта policy
+относится к запуску `ops-compose.yml` на host. Адрес получателя и credentials
 остаются только в этом host-owned файле, не в Git или workflow-логах. [Ops compose](../../deploy/ops-compose.yml),
 [alerts](../../deploy/prometheus/alerts.yml),
 [dashboard](../../deploy/grafana/dashboards/expressa-operations.json).
+
+`operations-verification.yml` проверяет delivery Alertmanager изолированно:
+Prometheus передаёт test alert временному receiver, который подтверждает
+состояния `firing` и `resolved`. Получатель и evidence удаляются cleanup;
+санитизированный artifact хранит только acknowledgement; host
+`ALERTMANAGER_CONFIG_FILE` этот workflow не использует.
