@@ -1,6 +1,8 @@
 name: Development operations verification
 
 on:
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       confirm_operations_verification:
@@ -17,7 +19,7 @@ concurrency:
 
 jobs:
   guard:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_operations_verification }}
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.confirm_operations_verification)) }}
     runs-on: ubuntu-24.04
     outputs:
       main_sha: ${{ steps.main_sha.outputs.value }}
@@ -73,35 +75,53 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
           printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
           chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
-          ssh_options=(
-            -i "$temporary_directory/key"
-            -o UserKnownHostsFile="$temporary_directory/known_hosts"
-            -o StrictHostKeyChecking=yes
-            -o BatchMode=yes
-            -p "$DEPLOY_PORT"
-          )
+          ssh_options=(-i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT")
           [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
           remote_directory="/tmp/expressa-ops-verify-$GITHUB_RUN_ID"
-          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test ! -e $(printf %q "$remote_directory") && mkdir -m 700 -- $(printf %q "$remote_directory")"
           [[ "$remote_directory" == "/tmp/expressa-ops-verify-$GITHUB_RUN_ID" ]]
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test ! -e $(printf %q "$remote_directory") && mkdir -m 700 -- $(printf %q "$remote_directory")"
           remote_cleanup() {
-            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test -n $(printf %q "$remote_directory") && test $(printf %q "$remote_directory") = $(printf %q "/tmp/expressa-ops-verify-$GITHUB_RUN_ID") && rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true
+            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "test $(printf %q "$remote_directory") = $(printf %q "/tmp/expressa-ops-verify-$GITHUB_RUN_ID") && rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true
             cleanup
           }
           trap remote_cleanup EXIT
-          cat > "$temporary_directory/provision-backup.sh" <<'PROVISION'
+          cat > "$temporary_directory/verify-operations.sh" <<'REMOTE'
           #!/usr/bin/env bash
           set -Eeuo pipefail
-
-          fail() { printf '%s\n' "backup provision: $1" >&2; exit 1; }
-          environment_line() { printf '%s=%q\n' "$1" "$2"; }
+          umask 077
+          fail() { printf '%s\n' "operations verification: $1" >&2; exit 1; }
+          evidence() { printf 'expressa-operations-evidence: check=%s status=passed%s\n' "$1" "${2:+ $2}"; }
           [[ "$VERIFIED_MAIN_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'verified main revision is unavailable'
           [[ "$STAGED_DEPLOY_DIRECTORY" == "/tmp/expressa-ops-verify-$GITHUB_RUN_ID" && -d "$STAGED_DEPLOY_DIRECTORY" ]] || fail 'staged directory is unavailable'
           [[ -n "$BACKUP_ENCRYPTION_KEY" && -n "$BACKUP_INTEGRITY_KEY" ]] || fail 'backup key is unavailable'
-          runtime_file=/srv/expressa/development/runtime.env
-          [[ -f "$runtime_file" && ! -L "$runtime_file" ]] || fail 'development runtime environment is unavailable'
+          development_root=/srv/expressa/development
+          operations_root="$development_root/operations"
+          backup_directory="$operations_root/backups"
+          metrics_directory="$operations_root/backup-metrics"
+          deploy_root="$STAGED_DEPLOY_DIRECTORY"
+          [[ -d "$development_root" && -f "$development_root/runtime.env" && ! -L "$development_root/runtime.env" ]] || fail 'development runtime environment is unavailable'
+          for path in "$operations_root" "$backup_directory" "$metrics_directory"; do
+            [[ ! -e "$path" || ( -d "$path" && ! -L "$path" ) ]] || fail 'operations path is invalid'
+          done
+          mkdir -p -- "$backup_directory" "$metrics_directory"
+          [[ -d "$operations_root" && ! -L "$operations_root" && -d "$backup_directory" && ! -L "$backup_directory" && -d "$metrics_directory" && ! -L "$metrics_directory" ]] || fail 'operations directories are unavailable'
+          chmod 700 "$backup_directory" "$metrics_directory"
+          owner_uid="$(id -u)"
+          [[ "$(stat -c '%u %a' "$backup_directory")" == "$owner_uid 700" ]] || fail 'backup directory permissions are invalid'
+          [[ "$(stat -c '%u %a' "$metrics_directory")" == "$owner_uid 700" ]] || fail 'metric directory permissions are invalid'
+          temporary_directory="$(mktemp -d "$deploy_root/.operations-verify.XXXXXX")"
+          cleanup() { rm -rf -- "$temporary_directory"; }
+          trap cleanup EXIT
+          encryption_key_file="$temporary_directory/backup-encryption.key"
+          integrity_key_file="$temporary_directory/backup-integrity.key"
+          printf '%s' "$BACKUP_ENCRYPTION_KEY" > "$encryption_key_file"
+          printf '%s' "$BACKUP_INTEGRITY_KEY" > "$integrity_key_file"
+          chmod 600 "$encryption_key_file" "$integrity_key_file"
+          [[ -f "$encryption_key_file" && ! -L "$encryption_key_file" && -f "$integrity_key_file" && ! -L "$integrity_key_file" ]] || fail 'temporary backup keys are unavailable'
+          [[ "$(stat -c '%u %a' "$encryption_key_file")" == "$owner_uid 600" && "$(stat -c '%u %a' "$integrity_key_file")" == "$owner_uid 600" ]] || fail 'temporary backup key permissions are invalid'
+          [[ -x "$deploy_root/backup.sh" && -x "$deploy_root/restore-verify.sh" && -f "$deploy_root/compose.yml" && ! -L "$deploy_root/backup.sh" && ! -L "$deploy_root/restore-verify.sh" && ! -L "$deploy_root/compose.yml" ]] || fail 'development operations scripts are unavailable'
           set -a
-          source "$runtime_file"
+          source "$development_root/runtime.env"
           set +a
           postgres_containers="$(docker ps -q --filter label=com.docker.compose.project=expressa-development --filter label=com.docker.compose.service=postgres)"
           [[ -n "$postgres_containers" && "$(wc -w <<<"$postgres_containers")" == 1 ]] || fail 'development postgres container is unavailable'
@@ -109,62 +129,9 @@ jobs:
           POSTGRES_CONTAINER="${POSTGRES_CONTAINER#/}"
           POSTGRES_DB="${POSTGRES_DB:-expressa}"
           POSTGRES_USER="${POSTGRES_USER:-expressa}"
-          sudo install -d -m 0755 -o root -g root /etc/expressa /srv/expressa/deploy
-          sudo install -d -m 0700 -o expressa -g expressa /etc/expressa/keys /var/lib/expressa/backups /var/lib/expressa/backup-metrics
-          printf '%s' "$BACKUP_ENCRYPTION_KEY" | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/keys/backup-encryption.key
-          printf '%s' "$BACKUP_INTEGRITY_KEY" | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/keys/backup-integrity.key
-          {
-            environment_line BACKUP_DIRECTORY /var/lib/expressa/backups
-            environment_line BACKUP_ENCRYPTION_KEY_FILE /etc/expressa/keys/backup-encryption.key
-            environment_line BACKUP_INTEGRITY_KEY_FILE /etc/expressa/keys/backup-integrity.key
-            environment_line BACKUP_METRICS_DIRECTORY /var/lib/expressa/backup-metrics
-            environment_line BACKUP_RETENTION_DAYS 7
-            environment_line POSTGRES_CONTAINER "$POSTGRES_CONTAINER"
-            environment_line POSTGRES_DB "$POSTGRES_DB"
-            environment_line POSTGRES_USER "$POSTGRES_USER"
-          } | sudo install -m 0600 -o expressa -g expressa /dev/stdin /etc/expressa/backup.env
-          sudo install -m 0755 -o root -g root "$STAGED_DEPLOY_DIRECTORY/backup.sh" /srv/expressa/deploy/backup.sh
-          sudo install -m 0644 -o root -g root "$STAGED_DEPLOY_DIRECTORY/expressa-backup.service" /etc/systemd/system/expressa-backup.service
-          sudo install -m 0644 -o root -g root "$STAGED_DEPLOY_DIRECTORY/expressa-backup.timer" /etc/systemd/system/expressa-backup.timer
-          sudo systemctl daemon-reload
-          sudo systemctl enable --now expressa-backup.timer
-          sudo systemctl start expressa-backup.service
-          [[ "$(stat -c '%U:%G %a' /etc/expressa/backup.env)" == expressa:expressa\ 600 ]] || fail 'backup environment permissions are invalid'
-          [[ "$(stat -c '%U:%G %a' /etc/expressa/keys/backup-encryption.key)" == expressa:expressa\ 600 ]] || fail 'encryption key permissions are invalid'
-          [[ "$(stat -c '%U:%G %a' /etc/expressa/keys/backup-integrity.key)" == expressa:expressa\ 600 ]] || fail 'integrity key permissions are invalid'
-          [[ "$(stat -c '%U:%G %a' /var/lib/expressa/backups)" == expressa:expressa\ 700 ]] || fail 'backup directory permissions are invalid'
-          [[ "$(stat -c '%U:%G %a' /var/lib/expressa/backup-metrics)" == expressa:expressa\ 700 ]] || fail 'metric directory permissions are invalid'
-          systemctl is-enabled --quiet expressa-backup.timer
-          systemctl is-active --quiet expressa-backup.timer
-          printf 'expressa-operations-evidence: check=backup_provision status=passed environment=development timer=active\n'
-          PROVISION
-          chmod 700 "$temporary_directory/provision-backup.sh"
-          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/backup.sh deploy/restore-verify.sh deploy/compose.yml deploy/expressa-backup.service deploy/expressa-backup.timer "$temporary_directory/provision-backup.sh" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
-          printf '%s\0%s\0%s\0%s\0%s\0' "$BACKUP_ENCRYPTION_KEY" "$BACKUP_INTEGRITY_KEY" "$VERIFIED_MAIN_SHA" "$remote_directory" "$GITHUB_RUN_ID" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' BACKUP_ENCRYPTION_KEY; IFS= read -r -d '' BACKUP_INTEGRITY_KEY; IFS= read -r -d '' VERIFIED_MAIN_SHA; IFS= read -r -d '' STAGED_DEPLOY_DIRECTORY; IFS= read -r -d '' GITHUB_RUN_ID; export BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY VERIFIED_MAIN_SHA STAGED_DEPLOY_DIRECTORY GITHUB_RUN_ID; bash $(printf %q "$remote_directory/provision-backup.sh")" > "$evidence_file"
-          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "VERIFIED_MAIN_SHA=$(printf %q "$VERIFIED_MAIN_SHA") STAGED_DEPLOY_DIRECTORY=$(printf %q "$remote_directory") bash -s" >> "$evidence_file" <<'REMOTE'
-          set -Eeuo pipefail
-
-          fail() { printf '%s\n' "operations verification: $1" >&2; exit 1; }
-          evidence() { printf 'expressa-operations-evidence: check=%s status=passed%s\n' "$1" "${2:+ $2}"; }
-          development_root=/srv/expressa/development
-          deploy_root="$STAGED_DEPLOY_DIRECTORY"
-          backup_environment=/etc/expressa/backup.env
-          [[ "$VERIFIED_MAIN_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'verified main revision is unavailable'
-          [[ "$deploy_root" =~ ^/tmp/expressa-ops-verify-[0-9]+$ && -d "$development_root" && -d "$deploy_root" ]] || fail 'development host layout is unavailable'
-          [[ -x "$deploy_root/backup.sh" && -x "$deploy_root/restore-verify.sh" && -f "$deploy_root/compose.yml" ]] || fail 'development operations scripts are unavailable'
-          [[ -r "$backup_environment" && -f "$development_root/runtime.env" ]] || fail 'development operations environment is unavailable'
-          systemctl is-enabled --quiet expressa-backup.timer
-          systemctl is-active --quiet expressa-backup.timer
-          evidence host_preflight 'environment=development timer=active'
-          evidence source_revision "github_sha=$VERIFIED_MAIN_SHA ref=refs/heads/main"
-
-          set -a
-          # Host-owned file supplies backup paths and database identifiers without printing them.
-          source "$backup_environment"
-          set +a
-          "$deploy_root/backup.sh" >/dev/null
+          BACKUP_DIRECTORY="$backup_directory" BACKUP_ENCRYPTION_KEY_FILE="$encryption_key_file" BACKUP_INTEGRITY_KEY_FILE="$integrity_key_file" BACKUP_METRICS_DIRECTORY="$metrics_directory" BACKUP_RETENTION_DAYS=7 POSTGRES_CONTAINER="$POSTGRES_CONTAINER" POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" "$deploy_root/backup.sh" >/dev/null
           shopt -s nullglob
-          backups=("$BACKUP_DIRECTORY"/expressa-*.sql.enc)
+          backups=("$backup_directory"/expressa-*.sql.enc)
           shopt -u nullglob
           (( ${#backups[@]} > 0 )) || fail 'backup artifact is missing'
           newest_backup=''
@@ -174,12 +141,13 @@ jobs:
             [[ -z "$newest_backup" || "$name" > "${newest_backup##*/}" ]] && newest_backup="$backup"
           done
           [[ -s "$newest_backup.sha256" && ! -L "$newest_backup.sha256" ]] || fail 'backup integrity MAC is missing'
-          metric_file="$BACKUP_METRICS_DIRECTORY/expressa_backup.prom"
+          metric_file="$metrics_directory/expressa_backup.prom"
           [[ -f "$metric_file" && ! -L "$metric_file" ]] || fail 'backup metric is missing'
           grep -qx 'expressa_backup_last_success 1' "$metric_file"
           grep -Eq '^expressa_backup_last_success_timestamp_seconds [1-9][0-9]*$' "$metric_file"
+          evidence host_preflight 'environment=development schedule=github-actions'
+          evidence source_revision "github_sha=$VERIFIED_MAIN_SHA ref=refs/heads/main"
           evidence backup "artifact=${newest_backup##*/} hmac=passed metric=passed"
-
           project=expressa-development
           image_for_service() {
             local container
@@ -192,11 +160,10 @@ jobs:
           BACK_IMAGE="$(image_for_service back)"
           [[ "$BACKEND_IMAGE" == *@sha256:* && "$FRONT_IMAGE" == *@sha256:* && "$BACK_IMAGE" == *@sha256:* ]] || fail 'development images are not immutable digests'
           export BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE
-          restore_evidence="$({ BACKUP_FILE="$newest_backup" BACKUP_ENCRYPTION_KEY_FILE="$BACKUP_ENCRYPTION_KEY_FILE" BACKUP_INTEGRITY_KEY_FILE="$BACKUP_INTEGRITY_KEY_FILE" RUNTIME_ENV_FILE="$development_root/runtime.env" COMPOSE_FILE="$deploy_root/compose.yml" "$deploy_root/restore-verify.sh"; } 2>&1)" || fail 'isolated restore verification failed'
+          restore_evidence="$({ BACKUP_FILE="$newest_backup" BACKUP_ENCRYPTION_KEY_FILE="$encryption_key_file" BACKUP_INTEGRITY_KEY_FILE="$integrity_key_file" RUNTIME_ENV_FILE="$development_root/runtime.env" COMPOSE_FILE="$deploy_root/compose.yml" "$deploy_root/restore-verify.sh"; } 2>&1)" || fail 'isolated restore verification failed'
           [[ "$restore_evidence" =~ ^expressa-restore-verify:\ status=passed\ rpo_seconds=[0-9]+\ rpo_target_seconds=93600\ rpo_target_passed=true\ rto_seconds=[0-9]+\ rto_target_seconds=900\ rto_target_passed=true$ ]] || fail 'restore evidence is incomplete'
           evidence restore "public_menu=passed ${restore_evidence#expressa-restore-verify: status=passed }"
-
-          temporary_directory="$(mktemp -d /tmp/expressa-operations-evidence.XXXXXX)"
+          alert_directory="$temporary_directory/alert"
           network="expressa-operations-evidence-$RANDOM-$$"
           receiver="expressa-operations-receiver-$RANDOM-$$"
           prometheus="expressa-operations-prometheus-$RANDOM-$$"
@@ -204,11 +171,10 @@ jobs:
           cleanup_alert_test() {
             docker rm --force "$receiver" "$prometheus" "$alertmanager" >/dev/null 2>&1 || true
             docker network rm "$network" >/dev/null 2>&1 || true
-            rm -rf -- "$temporary_directory"
           }
-          trap cleanup_alert_test EXIT
-          mkdir -p "$temporary_directory/evidence"
-          cat > "$temporary_directory/receiver.mjs" <<'NODE'
+          trap 'cleanup_alert_test; cleanup' EXIT
+          mkdir -p "$alert_directory/evidence"
+          cat > "$alert_directory/receiver.mjs" <<'NODE'
           import { createServer } from 'node:http';
           import { appendFileSync } from 'node:fs';
           createServer((request, response) => {
@@ -223,7 +189,7 @@ jobs:
             });
           }).listen(8080);
           NODE
-          cat > "$temporary_directory/alertmanager.yml" <<'YAML'
+          cat > "$alert_directory/alertmanager.yml" <<'YAML'
           global:
             resolve_timeout: 5s
           route:
@@ -236,7 +202,7 @@ jobs:
               webhook_configs:
                 - url: http://receiver:8080/alert
           YAML
-          cat > "$temporary_directory/prometheus.yml" <<'YAML'
+          cat > "$alert_directory/prometheus.yml" <<'YAML'
           global:
             evaluation_interval: 1s
           rule_files: [/etc/prometheus/rules.yml]
@@ -245,7 +211,7 @@ jobs:
               - static_configs:
                   - targets: [alertmanager:9093]
           YAML
-          cat > "$temporary_directory/rules.yml" <<'YAML'
+          cat > "$alert_directory/rules.yml" <<'YAML'
           groups:
             - name: operations-evidence
               rules:
@@ -253,19 +219,21 @@ jobs:
                   expr: vector(1) == 1
           YAML
           docker network create "$network" >/dev/null
-          docker run --detach --rm --name "$receiver" --network "$network" --network-alias receiver --mount "type=bind,source=$temporary_directory,target=/work,readonly" --mount "type=bind,source=$temporary_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /nodejs/bin/node /work/receiver.mjs >/dev/null
-          docker run --detach --rm --name "$alertmanager" --network "$network" --network-alias alertmanager --mount "type=bind,source=$temporary_directory/alertmanager.yml,target=/etc/alertmanager/alertmanager.yml,readonly" prom/alertmanager@sha256:d5155cfac40a6d9250ffc97c19db2c5e190c7bc57c6b67125c94903358f8c7d8 --config.file=/etc/alertmanager/alertmanager.yml >/dev/null
-          docker run --detach --rm --name "$prometheus" --network "$network" --mount "type=bind,source=$temporary_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$temporary_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
-          for _ in {1..45}; do grep -qx firing "$temporary_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
-          grep -qx firing "$temporary_directory/evidence/alert-statuses.txt"
-          sed -i 's/vector(1) == 1/vector(0) == 1/' "$temporary_directory/rules.yml"
+          docker run --detach --rm --name "$receiver" --network "$network" --network-alias receiver --mount "type=bind,source=$alert_directory,target=/work,readonly" --mount "type=bind,source=$alert_directory/evidence,target=/evidence" "$BACKEND_IMAGE" /nodejs/bin/node /work/receiver.mjs >/dev/null
+          docker run --detach --rm --name "$alertmanager" --network "$network" --network-alias alertmanager --mount "type=bind,source=$alert_directory/alertmanager.yml,target=/etc/alertmanager/alertmanager.yml,readonly" prom/alertmanager@sha256:d5155cfac40a6d9250ffc97c19db2c5e190c7bc57c6b67125c94903358f8c7d8 --config.file=/etc/alertmanager/alertmanager.yml >/dev/null
+          docker run --detach --rm --name "$prometheus" --network "$network" --mount "type=bind,source=$alert_directory/prometheus.yml,target=/etc/prometheus/prometheus.yml,readonly" --mount "type=bind,source=$alert_directory/rules.yml,target=/etc/prometheus/rules.yml" prom/prometheus@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62 --config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle >/dev/null
+          for _ in {1..45}; do grep -qx firing "$alert_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
+          grep -qx firing "$alert_directory/evidence/alert-statuses.txt"
+          sed -i 's/vector(1) == 1/vector(0) == 1/' "$alert_directory/rules.yml"
           docker exec "$prometheus" wget -qO- --post-data='' http://127.0.0.1:9090/-/reload >/dev/null
-          for _ in {1..45}; do grep -qx resolved "$temporary_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
-          grep -qx resolved "$temporary_directory/evidence/alert-statuses.txt"
+          for _ in {1..45}; do grep -qx resolved "$alert_directory/evidence/alert-statuses.txt" 2>/dev/null && break; sleep 1; done
+          grep -qx resolved "$alert_directory/evidence/alert-statuses.txt"
           evidence alert_delivery 'source=prometheus receiver=acknowledged resolved=acknowledged'
           REMOTE
-          grep -Eq '^expressa-operations-evidence: check=backup_provision status=passed environment=development timer=active$' "$evidence_file"
-          grep -Eq '^expressa-operations-evidence: check=host_preflight status=passed environment=development timer=active$' "$evidence_file"
+          chmod 700 "$temporary_directory/verify-operations.sh"
+          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/backup.sh deploy/restore-verify.sh deploy/compose.yml "$temporary_directory/verify-operations.sh" "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
+          printf '%s\0%s\0%s\0%s\0%s\0' "$BACKUP_ENCRYPTION_KEY" "$BACKUP_INTEGRITY_KEY" "$VERIFIED_MAIN_SHA" "$remote_directory" "$GITHUB_RUN_ID" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' BACKUP_ENCRYPTION_KEY; IFS= read -r -d '' BACKUP_INTEGRITY_KEY; IFS= read -r -d '' VERIFIED_MAIN_SHA; IFS= read -r -d '' STAGED_DEPLOY_DIRECTORY; IFS= read -r -d '' GITHUB_RUN_ID; export BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY VERIFIED_MAIN_SHA STAGED_DEPLOY_DIRECTORY GITHUB_RUN_ID; bash $(printf %q "$remote_directory/verify-operations.sh")" > "$evidence_file"
+          grep -Eq '^expressa-operations-evidence: check=host_preflight status=passed environment=development schedule=github-actions$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=source_revision status=passed github_sha=[a-f0-9]{40} ref=refs/heads/main$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=backup status=passed artifact=expressa-[0-9]{8}T[0-9]{6}Z\.sql\.enc hmac=passed metric=passed$' "$evidence_file"
           grep -Eq '^expressa-operations-evidence: check=restore status=passed public_menu=passed rpo_seconds=[0-9]+ rpo_target_seconds=93600 rpo_target_passed=true rto_seconds=[0-9]+ rto_target_seconds=900 rto_target_passed=true$' "$evidence_file"
