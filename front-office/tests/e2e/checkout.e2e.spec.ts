@@ -409,9 +409,144 @@ test("issued заказ показывает history, скрывает чужо�
   }
 });
 
+test("history visual evidence на 390 и 700", async ({ page }) => {
+  const database = new CheckoutDatabase();
+  const phone = `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`;
+  let historyOrderIds: readonly string[] = [];
+  try {
+    await openCappuccinoCart(page);
+    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    const customerId = await login(page, phone);
+    const orderRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/api/v1/orders"),
+    );
+    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
+    const key = (await orderRequest).headers()["idempotency-key"] ?? "";
+    const order = await requireOrder(database, customerId, key);
+    const history = await database.createIssuedHistory(customerId, order.id);
+    historyOrderIds = history.map((historyOrder) => historyOrder.id);
+
+    for (const width of [...checkoutResponsiveWidths, 700]) {
+      await page.setViewportSize({ height: checkoutViewportHeight, width });
+      await page.goto("/orders");
+      await expect(
+        page.getByRole("heading", { name: "История" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Открыть заказ" }),
+      ).toHaveCount(20);
+      await expectNoOverflow(page, width);
+
+      if (width === 390 || width === 700) {
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur();
+        });
+        await expect(page).toHaveScreenshot(`orders-history-${width}.png`, {
+          animations: "disabled",
+          maxDiffPixelRatio: 0.01,
+        });
+      }
+    }
+
+    const lastHistoryLink = page
+      .getByRole("link", { name: "Открыть заказ" })
+      .last();
+    const loadMore = page.getByRole("button", { name: "Показать ещё" });
+    await lastHistoryLink.focus();
+    await page.keyboard.press("Tab");
+    await expect(loadMore).toBeFocused();
+    await expect
+      .poll(() =>
+        loadMore.evaluate((element) => element.matches(":focus-visible")),
+      )
+      .toBe(true);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
+      21,
+    );
+    await expectNoOverflow(page, 700);
+  } finally {
+    await database.deleteOrders(historyOrderIds);
+    await database.close();
+  }
+});
+
+test("cart empty and filled match visual baselines", async ({ page }) => {
+  await page.setViewportSize({
+    width: 390,
+    height: checkoutViewportHeight,
+  });
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/cart");
+  await expect(page.getByText("Пока ничего не добавлено")).toBeVisible();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+  });
+  await expect(page).toHaveScreenshot("cart-empty-390.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01,
+  });
+
+  await openCappuccinoCart(page);
+  await expect(
+    page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
+  ).toBeVisible();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+  });
+  await expect(page).toHaveScreenshot("cart-filled-390.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01,
+  });
+
+  await page.setViewportSize({
+    width: 700,
+    height: checkoutViewportHeight,
+  });
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/cart");
+  await expect(page.getByText("Пока ничего не добавлено")).toBeVisible();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+  });
+  await expect(page).toHaveScreenshot("cart-empty-700.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01,
+  });
+
+  await openCappuccinoCart(page);
+  await expect(
+    page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
+  ).toBeVisible();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+  });
+  await expect(page).toHaveScreenshot("cart-filled-700.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01,
+  });
+});
+
 async function openCappuccinoCart(page: Page, menuUrl = "/"): Promise<void> {
   await page.goto(menuUrl);
-  await page.getByRole("button", { name: checkoutCategoryName }).click();
+  await page
+    .locator(".menu-root__grid > li")
+    .filter({ has: page.getByText(checkoutCategoryName, { exact: true }) })
+    .getByRole("button")
+    .click();
   await page.getByRole("button", { name: checkoutProductName }).click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: /Добавить/ }).click();
@@ -453,7 +588,10 @@ async function login(page: Page, phone: string): Promise<string> {
     (response) => response.url().endsWith("/me") && response.status() === 200,
   );
   await page.getByLabel("Код из сообщения").fill(checkoutOtp);
-  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page
+    .locator(".auth-form:visible")
+    .getByRole("button", { name: "Подтвердить", exact: true })
+    .click();
   const value: unknown = await (await currentUser).json();
   if (!isCurrentUser(value))
     throw new Error("Ответ /me не содержит customer id.");

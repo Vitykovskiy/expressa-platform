@@ -93,7 +93,7 @@ const isLoading = computed(() => presentation.value.content === "loading");
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 100%;
+  min-height: 0;
   padding: var(--customer-space-17) var(--customer-space-9);
   background: var(--customer-background);
 }
@@ -116,8 +116,7 @@ const isLoading = computed(() => presentation.value.content === "loading");
   background: var(--customer-surface);
   box-shadow: var(--customer-shadow-state);
   color: var(--customer-background);
-  font-size: var(--customer-font-size-7xl);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-6xl);
 }
 
 .state-icon--success {
@@ -129,8 +128,13 @@ const isLoading = computed(() => presentation.value.content === "loading");
 }
 
 .state-icon-icon {
-  width: var(--customer-font-size-7xl);
-  height: var(--customer-font-size-7xl);
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.state-icon--success .state-icon-icon {
+  width: var(--customer-font-size-6xl);
+  height: var(--customer-font-size-6xl);
 }
 
 .auth-heading {
@@ -142,12 +146,13 @@ const isLoading = computed(() => presentation.value.content === "loading");
   color: var(--customer-text);
   font-size: var(--customer-font-size-6xl);
   font-weight: var(--customer-font-weight-black);
+  letter-spacing: var(--customer-letter-spacing-tight);
   line-height: var(--customer-line-height-tight);
 }
 
 .auth-description {
   margin: var(--customer-space-4) 0 0;
-  color: var(--customer-color-text-muted-on-brand);
+  color: var(--customer-color-white-65);
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-semibold);
   line-height: var(--customer-line-height-body);

@@ -112,7 +112,7 @@
   --expressa-size-settings-content-max-width: 560px;
   --expressa-size-users-content-max-width: 720px;
 
-  --expressa-shadow-card: none;
+  --expressa-shadow-card: 0 1px 4px rgb(0 0 0 / 8%);
   --expressa-shadow-menu: 0 8px 20px rgb(17 17 17 / 12%);
 
   --expressa-state-disabled-opacity: 0.4;

@@ -40,7 +40,6 @@
       @click="emit('removeItem', props.item.id)"
     >
       <Trash2 class="cart-item__remove-icon" aria-hidden="true" />
-      <span>Удалить</span>
     </button>
     <footer class="cart-item__footer">
       <p class="cart-item__price">
@@ -157,14 +156,17 @@ const addonRows = computed(() => {
   margin: 0;
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-extrabold);
-  line-height: var(--customer-line-height-label);
+  line-height: 1.5rem;
   overflow-wrap: anywhere;
 }
 
 .cart-item__size {
-  color: var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
+  padding: 0.125rem var(--customer-space-5);
+  color: var(--customer-color-blue-500);
+  background: var(--customer-color-blue-500-10);
+  border-radius: var(--customer-radius-pill);
+  font-size: var(--customer-font-size-2xs);
+  font-weight: var(--customer-font-weight-bold);
 }
 
 .cart-item__price {
@@ -184,7 +186,7 @@ const addonRows = computed(() => {
 
 .cart-item__addon {
   color: var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-sm);
+  font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-semibold);
 }
 
@@ -266,21 +268,36 @@ const addonRows = computed(() => {
   grid-area: remove;
   align-items: center;
   justify-content: center;
-  gap: var(--customer-space-3);
+  position: relative;
+  width: calc(var(--customer-space-12) * 2);
   min-width: calc(var(--customer-space-12) * 2);
+  height: calc(var(--customer-space-12) * 2);
   min-height: calc(var(--customer-space-12) * 2);
-  padding: 0 var(--customer-space-6);
+  padding: 0;
   color: var(--customer-danger);
-  background: var(--customer-danger-10);
+  background: transparent;
   border: 0;
-  border-radius: var(--customer-radius-pill);
   font: inherit;
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
   cursor: pointer;
 }
 
+.cart-item__remove::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--customer-size-control-sm);
+  height: var(--customer-size-control-sm);
+  content: "";
+  background: var(--customer-danger-10);
+  border-radius: var(--customer-radius-round);
+}
+
 .cart-item__remove-icon {
+  position: absolute;
+  top: var(--customer-space-5);
+  right: var(--customer-space-5);
   width: var(--customer-size-icon-sm);
   height: var(--customer-size-icon-sm);
 }
@@ -291,20 +308,6 @@ const addonRows = computed(() => {
 }
 
 @media (max-width: 479px) {
-  .cart-item {
-    grid-template-areas:
-      "details"
-      "footer"
-      "remove";
-    grid-template-columns: minmax(0, 1fr);
-    padding: var(--customer-space-9);
-  }
-
-  .cart-item__remove {
-    grid-area: remove;
-    justify-self: start;
-  }
-
   .cart-item__footer {
     flex-wrap: wrap;
   }

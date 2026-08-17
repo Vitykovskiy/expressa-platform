@@ -98,7 +98,7 @@ function selectCategory(categoryId: string): void {
   gap: var(--customer-space-7);
   width: 100%;
   margin: 0;
-  padding: var(--customer-space-9);
+  padding: 0 var(--customer-space-9) var(--customer-space-9);
   list-style: none;
 }
 .menu-root__grid > li {
@@ -161,28 +161,16 @@ function selectCategory(categoryId: string): void {
   background: var(--customer-background);
   border-radius: var(--customer-radius-round);
 }
-@media (min-width: 768px) {
-  .menu-root__header {
-    width: 100%;
-    max-width: var(--customer-size-content-detail);
-    margin: 0 auto;
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
-  }
-  .menu-root__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-    max-width: var(--customer-size-content-detail);
-    margin: 0 auto;
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
-  }
-}
 @media (min-width: 1024px) {
   .menu-root__header,
   .menu-root__grid {
     max-width: none;
     margin: 0;
+    padding-right: 0;
+    padding-left: 0;
+  }
+  .menu-root__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1280px) {

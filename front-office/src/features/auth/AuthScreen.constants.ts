@@ -1,4 +1,4 @@
-import { Check, Phone, UserRound } from "lucide-vue-next";
+import { CircleCheck, Phone, UserRound } from "lucide-vue-next";
 import type { AuthScreenPresentation } from "./AuthScreen.types";
 
 export const AUTH_SCREEN_PRESENTATION = {
@@ -31,7 +31,7 @@ export const AUTH_SCREEN_PRESENTATION = {
     description: () => "Обрабатываем запрос...",
   },
   success: {
-    icon: Check,
+    icon: CircleCheck,
     iconTone: "success",
     content: "success",
     title: "Телефон подтверждён",

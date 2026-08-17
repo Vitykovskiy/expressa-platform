@@ -52,7 +52,7 @@ test("меню добавляет M, only-S и OTHER на реальном seede
       configuredProductPrices.cappuccino,
     );
 
-    await page.getByRole("button", { name: "Назад" }).click();
+    await page.getByRole("button", { exact: true, name: "Назад" }).click();
     await expect(
       page.getByRole("heading", { name: screenNames.menu }),
     ).toBeVisible();
@@ -77,7 +77,7 @@ test("меню добавляет M, only-S и OTHER на реальном seede
       configuredProductPrices.espresso,
     );
 
-    await page.getByRole("button", { name: "Назад" }).click();
+    await page.getByRole("button", { exact: true, name: "Назад" }).click();
     const croissantScrollY = await openProduct(
       page,
       screenNames.bakery,
@@ -108,6 +108,41 @@ test("menu не получает horizontal overflow на declared breakpoints",
   for (const width of customerBreakpointWidths) {
     await openCleanMenu(page, width);
     await expectNoHorizontalOverflow(page, width);
+  }
+});
+
+test("menu root, category and detail match visual baselines", async ({
+  page,
+}) => {
+  for (const width of [390, 700]) {
+    await openCleanMenu(page, width);
+    await waitForFonts(page);
+    await expect(page).toHaveScreenshot(`menu-root-${width}.png`, {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.01,
+    });
+
+    await page
+      .locator(".menu-root__grid > li")
+      .filter({ has: page.getByText(screenNames.coffee, { exact: true }) })
+      .getByRole("button")
+      .click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.coffee }),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot(`menu-group-${width}.png`, {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.01,
+    });
+
+    await page.getByRole("button", { name: productNames.cappuccino }).click();
+    await expect(
+      page.getByRole("heading", { name: productNames.cappuccino }),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot(`menu-detail-${width}.png`, {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.01,
+    });
   }
 });
 
@@ -142,7 +177,11 @@ async function openProduct(
   categoryName: string,
   productName: string,
 ): Promise<number> {
-  await page.getByRole("button", { name: categoryName }).click();
+  await page
+    .locator(".menu-root__grid > li")
+    .filter({ has: page.getByText(categoryName, { exact: true }) })
+    .getByRole("button")
+    .click();
   await expect(page.getByRole("heading", { name: categoryName })).toBeVisible();
   const scrollY = await page.evaluate(() => window.scrollY);
   await page.getByRole("button", { name: new RegExp(productName) }).click();
@@ -239,6 +278,10 @@ async function expectNoHorizontalOverflow(
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(width);
+}
+
+async function waitForFonts(page: Page): Promise<void> {
+  await page.evaluate(async () => document.fonts.ready);
 }
 
 function collectBrowserIssues(page: Page): () => BrowserIssue[] {

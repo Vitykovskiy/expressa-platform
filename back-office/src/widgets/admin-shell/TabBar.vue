@@ -1,9 +1,5 @@
 <template>
-  <nav
-    aria-label="Разделы администратора"
-    class="tab-bar"
-    :class="{ 'tab-bar--with-reserved-slots': props.sections.length === 3 }"
-  >
+  <nav aria-label="Разделы администратора" class="tab-bar">
     <AdminButton
       v-for="section in props.sections"
       :key="section.id"
@@ -80,10 +76,6 @@ const emit = defineEmits<TabBarEmits>();
   line-height: var(--expressa-line-height-caption-compact);
   text-overflow: ellipsis;
 }
-.tab-bar--with-reserved-slots {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
 @media (min-width: 768px) {
   .tab-bar {
     display: none;

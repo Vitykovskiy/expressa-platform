@@ -38,6 +38,7 @@ describe("MenuFlow", () => {
     expect(wrapper.get(".product-detail__submit").text()).toBe(
       "Добавить · 180 ₽",
     );
+    expect(wrapper.find(".menu-flow__back").exists()).toBe(false);
     expect(history.state.menuFlowScreen).toEqual({
       categoryId: "espresso",
       id: "product",
@@ -92,6 +93,62 @@ describe("MenuFlow", () => {
     await wrapper.get("button").trigger("click");
     await nextTick();
     expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
+  });
+
+  it("подтверждает каждую свежую shell-команду и не создаёт дублирующую history", async () => {
+    const pushState = vi.spyOn(history, "pushState");
+    const wrapper = mount(MenuFlow, {
+      props: {
+        menu: createMenu(),
+        menuShellCommand: {
+          requestId: 1,
+          target: { id: "category", categoryId: "espresso" },
+        },
+      },
+      global: { plugins: [vuetify] },
+    });
+
+    await nextTick();
+    expect(wrapper.findComponent(MenuGroupScreen).exists()).toBe(true);
+    expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1]]);
+    expect(wrapper.emitted("menuScreenChange")?.at(-1)).toEqual([
+      { categoryId: "espresso", id: "category" },
+    ]);
+    const pushCount = pushState.mock.calls.length;
+
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 2,
+        target: { id: "category", categoryId: "espresso" },
+      },
+    });
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 2,
+        target: { id: "category", categoryId: "espresso" },
+      },
+    });
+
+    expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1], [2]]);
+    expect(pushState.mock.calls).toHaveLength(pushCount);
+  });
+
+  it("поглощает отсутствующую категорию без перехода", async () => {
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 1,
+        target: { id: "category", categoryId: "missing" },
+      },
+    });
+
+    expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
+    expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1]]);
+    expect(wrapper.emitted("menuScreenChange")).toEqual([[{ id: "root" }]]);
   });
 });
 

@@ -1,10 +1,7 @@
 <template>
   <section class="auth-denied" role="alert">
     <div class="auth-denied__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 3 4 6v5c0 5 3.4 8.8 8 10 4.6-1.2 8-5 8-10V6l-8-3Z" />
-        <path d="m9 9 6 6m0-6-6 6" />
-      </svg>
+      <ShieldX :size="24" :stroke-width="2" />
     </div>
     <h2>Доступ запрещён</h2>
     <p>
@@ -22,8 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import type { DeniedStateEmits } from "./DeniedState.types";
+import { ShieldX } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import type { DeniedStateEmits } from "./DeniedState.types";
 
 const emit = defineEmits<DeniedStateEmits>();
 </script>
@@ -43,15 +41,6 @@ const emit = defineEmits<DeniedStateEmits>();
   background: var(--expressa-color-status-error-surface);
   border-radius: var(--expressa-radius-pill);
 }
-.auth-denied__icon svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--expressa-stroke-width-icon);
-}
 .auth-denied h2,
 .auth-denied p {
   margin: 0;
@@ -67,7 +56,7 @@ const emit = defineEmits<DeniedStateEmits>();
   color: #777;
   font-size: 13px;
   line-height: 1.625;
-  margin-bottom: var(--expressa-space-lg);
+  margin-bottom: var(--expressa-space-button-inline);
 }
 .auth-denied__button {
   display: flex;

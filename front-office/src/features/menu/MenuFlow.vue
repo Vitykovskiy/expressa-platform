@@ -5,14 +5,6 @@
     @select-category="openCategory"
   />
   <template v-else-if="screen.id === 'category'">
-    <ui-btn
-      v-if="selectedCategory?.products.length !== 0"
-      type="button"
-      variant="text"
-      class="menu-flow__back"
-      @click="openRoot"
-      >Назад</ui-btn
-    >
     <menu-group-screen
       :category="selectedCategory"
       @return-to-menu="openRoot"
@@ -20,13 +12,6 @@
     />
   </template>
   <template v-else>
-    <ui-btn
-      type="button"
-      variant="text"
-      class="menu-flow__back"
-      @click="closeProduct"
-      >Назад</ui-btn
-    >
     <product-detail-screen
       v-if="selectedCategory && selectedProduct"
       :category="selectedCategory"
@@ -45,7 +30,6 @@ import {
   ref,
   watch,
 } from "vue";
-import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import MenuGroupScreen from "./MenuGroupScreen.vue";
 import MenuRootScreen from "./MenuRootScreen.vue";
 import ProductDetailScreen from "./ProductDetailScreen.vue";
@@ -60,13 +44,27 @@ const props = defineProps<MenuFlowProps>();
 const emit = defineEmits<MenuFlowEmits>();
 const screen = ref<MenuFlowScreen>({ id: "root" });
 const productScrollY = ref(0);
-watch(screen, (value) => emit("changeLevel", value.id), { immediate: true });
+let lastConsumedMenuShellCommandId = 0;
+watch(
+  screen,
+  (value) => {
+    const nextScreen = cloneScreen(value);
+    emit("changeLevel", nextScreen.id);
+    emit("menuScreenChange", nextScreen);
+  },
+  { immediate: true },
+);
+watch(
+  () => props.menuShellCommand,
+  (command) => consumeMenuShellCommand(command),
+);
 onMounted(() => {
   history.replaceState(
     { ...history.state, menuFlowScreen: toHistoryScreen({ id: "root" }) },
     "",
   );
   window.addEventListener("popstate", restoreHistoryScreen);
+  consumeMenuShellCommand(props.menuShellCommand);
 });
 onBeforeUnmount(() =>
   window.removeEventListener("popstate", restoreHistoryScreen),
@@ -91,6 +89,50 @@ function openCategory(categoryId: string): void {
   history.pushState(
     { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
     "",
+  );
+}
+
+function consumeMenuShellCommand(
+  command: MenuFlowProps["menuShellCommand"],
+): void {
+  if (!isMenuShellCommand(command)) return;
+  if (command.requestId <= lastConsumedMenuShellCommandId) return;
+
+  lastConsumedMenuShellCommandId = command.requestId;
+  if (command.target.id === "root") {
+    if (screen.value.id !== "root") openRoot();
+    emit("menuShellCommandAck", command.requestId);
+    return;
+  }
+
+  const categoryId = command.target.categoryId;
+  if (
+    props.menu.categories.some((category) => category.id === categoryId) &&
+    !(screen.value.id === "category" && screen.value.categoryId === categoryId)
+  ) {
+    openCategory(categoryId);
+  }
+
+  emit("menuShellCommandAck", command.requestId);
+}
+
+function isMenuShellCommand(
+  value: MenuFlowProps["menuShellCommand"],
+): value is NonNullable<MenuFlowProps["menuShellCommand"]> {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !Number.isSafeInteger(value.requestId) ||
+    value.requestId <= 0 ||
+    typeof value.target !== "object" ||
+    value.target === null
+  )
+    return false;
+
+  return (
+    value.target.id === "root" ||
+    (value.target.id === "category" &&
+      typeof value.target.categoryId === "string")
   );
 }
 function openRoot(): void {
@@ -140,6 +182,9 @@ function hasCurrentManagedEntry(): boolean {
   return historyScreen?.id === screen.value.id;
 }
 function toHistoryScreen(value: MenuFlowScreen): MenuFlowScreen {
+  return cloneScreen(value);
+}
+function cloneScreen(value: MenuFlowScreen): MenuFlowScreen {
   if (value.id === "root") return { id: "root" };
   if (value.id === "category")
     return { id: "category", categoryId: value.categoryId };
@@ -189,9 +234,3 @@ function addConfigured(item: ConfiguredCartItemDraft): void {
   closeProduct();
 }
 </script>
-
-<style scoped lang="scss">
-.menu-flow__back {
-  margin: var(--customer-space-7) var(--customer-space-9) 0;
-}
-</style>

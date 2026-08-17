@@ -97,7 +97,7 @@ function returnToMenu(): void {
   gap: var(--customer-space-7);
   width: 100%;
   margin: 0;
-  padding: var(--customer-space-9);
+  padding: 0 var(--customer-space-9) var(--customer-space-17);
   list-style: none;
 }
 .menu-group__grid > li {
@@ -150,13 +150,13 @@ function returnToMenu(): void {
     padding-bottom: var(--customer-space-17);
   }
   .menu-group__header {
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
+    padding-right: 0;
+    padding-left: 0;
   }
   .menu-group__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
+    padding-right: 0;
+    padding-left: 0;
   }
 }
 @media (min-width: 1280px) {

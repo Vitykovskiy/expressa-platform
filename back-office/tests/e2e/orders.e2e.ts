@@ -10,6 +10,7 @@ import {
   ordersBackendReadyUrl,
   ordersBackOfficeOrigin,
   ordersCategoryName,
+  ordersComposeProjectName,
   ordersCustomerPhonePrefix,
   ordersDatabaseUrl,
   ordersDevelopmentOtp,
@@ -23,6 +24,35 @@ import {
   ordersVapidSubject,
 } from "./orders.e2e.constants";
 import type { AuthAccess, OrdersPage } from "./orders.e2e.types";
+
+const createdOrderIds = new Set<string>();
+
+test.afterEach(() => {
+  for (const orderId of createdOrderIds) {
+    execFileSync(
+      "docker",
+      [
+        "compose",
+        "-p",
+        ordersComposeProjectName,
+        "-f",
+        "../backend/compose.local.yml",
+        "exec",
+        "-T",
+        "postgres",
+        "psql",
+        "-U",
+        "expressa",
+        "-d",
+        "expressa",
+        "-c",
+        `DELETE FROM orders WHERE id = '${orderId}';`,
+      ],
+      { stdio: "inherit" },
+    );
+    createdOrderIds.delete(orderId);
+  }
+});
 
 test("administrator создаёт меню, customer получает issued заказ в history", async ({
   browser,
@@ -78,7 +108,7 @@ test("administrator создаёт меню, customer получает issued з
     await test.step("customer видит immutable snapshot в history", async () => {
       await customerPage.goto(`${ordersFrontendOrigin}/orders`);
       await expect(
-        customerPage.getByRole("heading", { name: "История заказов" }),
+        customerPage.getByRole("heading", { name: "История" }),
       ).toBeVisible();
       const historyOrder = customerPage
         .getByRole("list", { name: "История заказов" })
@@ -117,6 +147,10 @@ test("Chromium подтверждает полный жизненный цикл
   const staffPhone = phone(ordersStaffPhonePrefix);
 
   try {
+    await staffPage.clock.install({
+      time: new Date("2100-01-02T10:00:00.000Z"),
+    });
+    await staffPage.clock.pauseAt(new Date("2100-01-02T10:00:00.000Z"));
     await proxyBackOfficeApi(staffPage);
     createStaff(staffPhone);
     const {
@@ -133,12 +167,20 @@ test("Chromium подтверждает полный жизненный цикл
 
     const staffToken = await loginStaff(staffPage, staffPhone);
     const card = staffPage.locator(".order-card", { hasText: orderNumber });
+    await expect(staffPage.locator(".order-card")).toHaveCount(1);
     await expect(card).toBeVisible();
+    await expect(card.locator(".order-card__number")).toHaveText(orderNumber);
+    await expect(card.locator(".order-card__stage")).toHaveText("Новый");
     await card.getByRole("button", { name: "Открыть детали" }).click();
     await expect(card.getByLabel(`Детали заказа ${orderNumber}`)).toContainText(
       ordersProductName,
     );
     await expect(card.locator(".order-card__events li")).toHaveCount(0);
+
+    await staffPage.setViewportSize({ width: 390, height: 844 });
+    await assertStableQueueScreenshot(staffPage, "queue-ready-mobile.png");
+    await staffPage.setViewportSize({ width: 768, height: 844 });
+    await assertStableQueueScreenshot(staffPage, "queue-ready-tablet.png");
 
     const invalidIssue = await staffPage.request.post(
       `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/issue`,
@@ -156,7 +198,8 @@ test("Chromium подтверждает полный жизненный цикл
       { headers: { authorization: `Bearer ${customerToken}` } },
     );
     expect(deniedIssue.status()).toBe(403);
-    await staffPage.getByRole("button", { name: "Обновить" }).click();
+    await staffPage.setViewportSize({ width: 390, height: 844 });
+    await staffPage.getByRole("button", { name: "Обновить очередь" }).click();
     await expect(card.locator(".order-card__stage")).toHaveText(
       "Готов к выдаче",
     );
@@ -192,7 +235,10 @@ test("закрытый intake сохраняет меню и выдачу сущ
     await setIntake(staffPage, false);
 
     await menuPage.goto(ordersFrontendOrigin);
-    await menuPage.getByRole("button", { name: ordersCategoryName }).click();
+    await menuPage
+      .getByRole("list", { name: "Категории меню" })
+      .getByRole("button", { name: ordersCategoryName })
+      .click();
     await expect(
       menuPage.getByRole("button", {
         name: new RegExp(`^${ordersProductName}(?:\\s|$)`),
@@ -250,7 +296,9 @@ async function createCustomerOrder(
 }> {
   await expect((await page.request.get(ordersBackendReadyUrl)).ok()).toBe(true);
   await page.goto(ordersFrontendOrigin);
-  const category = page.getByRole("button", { name: categoryName });
+  const category = page
+    .getByRole("list", { name: "Категории меню" })
+    .getByRole("button", { name: categoryName });
   await expect(category).toBeVisible({ timeout: 10_000 });
   await category.click();
   const product = page.getByRole("button", {
@@ -276,6 +324,7 @@ async function createCustomerOrder(
   if (orderNumber === undefined || orderNumber === "" || orderId === undefined)
     throw new Error("Заказ не содержит номера или идентификатора.");
 
+  createdOrderIds.add(orderId);
   return { accessToken, orderId, orderNumber };
 }
 
@@ -309,7 +358,10 @@ async function createCatalogProduct(page: OrdersPage): Promise<void> {
 
 async function openCustomerCart(page: OrdersPage): Promise<void> {
   await page.goto(ordersFrontendOrigin);
-  await page.getByRole("button", { name: ordersCategoryName }).click();
+  await page
+    .getByRole("list", { name: "Категории меню" })
+    .getByRole("button", { name: ordersCategoryName })
+    .click();
   await page
     .getByRole("button", {
       name: new RegExp(`^${ordersProductName}(?:\\s|$)`),
@@ -332,7 +384,7 @@ async function loginCustomer(
       response.status() === 200,
   );
   await page.getByLabel("Код из сообщения").fill(ordersDevelopmentOtp);
-  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page.getByRole("button", { name: "Подтвердить", exact: true }).click();
   return accessToken(await verified);
 }
 
@@ -350,9 +402,7 @@ async function loginStaff(
   );
   await page.getByLabel("Код из сообщения").fill(ordersDevelopmentOtp);
   await page.getByRole("button", { name: "Подтвердить" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Очередь заказов" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Заказы" })).toBeVisible();
   return accessToken(await verified);
 }
 
@@ -402,6 +452,45 @@ async function transition(
   expect(response.status()).toBe(200);
   await expect(card.locator(".order-card__stage")).toHaveText(stage);
   await expect(card.locator(".order-card__events li")).toHaveCount(eventCount);
+}
+
+async function assertStableQueueScreenshot(
+  page: OrdersPage,
+  name: string,
+): Promise<void> {
+  await page.evaluate(async () => document.fonts.ready);
+  await page
+    .locator(".admin-shell-content")
+    .evaluate((element) => element.scrollTo({ left: 0, top: 0 }));
+  const queue = page.locator(".orders-screen");
+  const dynamicValues = [
+    queue.locator(".order-card__number"),
+    queue.locator(".order-card__time-value"),
+    queue.locator(".order-card__customer-phone"),
+  ];
+  await expect(queue).toBeVisible();
+
+  await expect(queue).toHaveScreenshot(name, {
+    animations: "disabled",
+    caret: "hide",
+    mask: dynamicValues,
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(queue).toHaveScreenshot(name, {
+    animations: "disabled",
+    caret: "hide",
+    mask: dynamicValues,
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(queue).toHaveScreenshot(name, {
+    animations: "disabled",
+    caret: "hide",
+    mask: dynamicValues,
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
 }
 
 async function setIntake(

@@ -20,6 +20,7 @@
     "contract:check": "node scripts/check-openapi.mjs"
   },
   "dependencies": {
+    "lucide-vue-next": "1.0.0",
     "pinia": "3.0.4",
     "vue": "3.5.40",
     "vue-router": "4.5.1",

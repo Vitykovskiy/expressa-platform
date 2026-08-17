@@ -63,12 +63,18 @@ const productKind = computed(() =>
 .product-card__name {
   font-size: var(--customer-font-size-xl);
   font-weight: var(--customer-font-weight-extrabold);
+  line-height: var(--customer-line-height-compact);
 }
 .product-card__type {
   color: var(--customer-color-text-muted-on-surface);
+  margin-bottom: var(--customer-space-7);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+  line-height: 1.5;
 }
 .product-card__prices {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--customer-space-4);
   justify-content: flex-start;
@@ -79,6 +85,9 @@ const productKind = computed(() =>
   color: var(--customer-background);
   background: var(--customer-color-info-surface);
   border-radius: var(--customer-radius-pill);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-bold);
+  line-height: 1.5;
 }
 .product-card__price--unavailable {
   opacity: 0.45;

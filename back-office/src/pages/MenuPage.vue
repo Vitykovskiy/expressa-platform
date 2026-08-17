@@ -29,21 +29,11 @@
         variant="ghost"
         @click="managementOpen = !managementOpen"
       >
-        <svg
+        <Ellipsis
           aria-hidden="true"
           class="menu-page__management-icon"
-          fill="none"
-          focusable="false"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
-          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-          <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
-        </svg>
+          :size="18"
+        />
       </AdminButton>
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
         <div class="menu-page__toolbar">
@@ -118,25 +108,18 @@
                   variant="ghost"
                   @click="toggleModifierGroup(group)"
                 >
-                  <svg
+                  <ChevronDown
+                    v-if="expandedModifierGroupIds.has(group.id)"
                     aria-hidden="true"
                     class="menu-page__option-chevron"
-                    fill="none"
-                    focusable="false"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      :d="
-                        expandedModifierGroupIds.has(group.id)
-                          ? 'm6 9 6 6 6-6'
-                          : 'm9 18 6-6-6-6'
-                      "
-                    />
-                  </svg>
+                    :size="18"
+                  />
+                  <ChevronRight
+                    v-else
+                    aria-hidden="true"
+                    class="menu-page__option-chevron"
+                    :size="18"
+                  />
                   <span class="menu-page__option-copy">
                     <span class="menu-page__option-name">{{ group.name }}</span>
                     <span class="menu-page__option-count">
@@ -152,20 +135,11 @@
                   variant="ghost"
                   @click="openModifierGroupEditor(group)"
                 >
-                  <svg
+                  <Pencil
                     aria-hidden="true"
                     class="menu-page__option-edit-icon"
-                    fill="none"
-                    focusable="false"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
+                    :size="18"
+                  />
                   <span class="menu-page__visually-hidden">Редактировать</span>
                 </AdminButton>
               </header>
@@ -195,19 +169,11 @@
                       {{ modifierOptionPrice(option.priceDeltaMinor) }}
                     </span>
                   </span>
-                  <svg
+                  <ChevronRight
                     aria-hidden="true"
                     class="menu-page__option-chevron"
-                    fill="none"
-                    focusable="false"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                    :size="18"
+                  />
                 </AdminButton>
               </div>
             </section>
@@ -323,6 +289,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from "vue";
+import { ChevronDown, ChevronRight, Ellipsis, Pencil } from "lucide-vue-next";
 
 import { useSessionStore } from "../app/session.store";
 import AddCategoryDialog from "./admin/menu/AddCategoryDialog.vue";
@@ -644,7 +611,7 @@ function bySortOrder(
 .menu-page__shell {
   min-height: 100%;
   position: relative;
-  background: var(--expressa-color-surface);
+  background: var(--expressa-color-surface-raised);
 }
 
 :deep(.page-shell-description) {
@@ -928,6 +895,7 @@ function bySortOrder(
 @media (min-width: 768px) {
   .menu-page__shell {
     padding: 21px var(--expressa-space-lg) var(--expressa-space-lg);
+    background: var(--expressa-color-surface);
   }
 
   :deep(.page-shell-title) {

@@ -3,27 +3,26 @@
     <p class="auth-step__description">
       Код отправлен на <strong>{{ props.phone }}</strong>
     </p>
-    <label class="auth-step__label" for="auth-otp">Код из сообщения</label>
-    <AdminTextField
-      id="auth-otp"
-      ref="otpInput"
-      v-model="otpModel"
-      class="auth-step__input auth-step__input--otp"
-      :aria-describedby="error ? 'auth-otp-error' : 'auth-otp-hint'"
-      :aria-invalid="Boolean(error)"
-      autocomplete="one-time-code"
-      autofocus
-      inputmode="numeric"
-      maxlength="6"
-      name="otp"
-      placeholder="• • • •"
-      @keydown.enter.prevent="emit('submit')"
-    />
+    <div class="auth-step__control">
+      <label class="auth-step__label" for="auth-otp">Код из сообщения</label>
+      <AdminTextField
+        id="auth-otp"
+        ref="otpInput"
+        v-model="otpModel"
+        class="auth-step__input auth-step__input--otp"
+        :aria-describedby="error ? 'auth-otp-error' : 'auth-otp-hint'"
+        :aria-invalid="Boolean(error)"
+        autocomplete="one-time-code"
+        autofocus
+        inputmode="numeric"
+        maxlength="6"
+        name="otp"
+        placeholder="• • • •"
+        @keydown.enter.prevent="emit('submit')"
+      />
+    </div>
     <p v-if="error" id="auth-otp-error" class="auth-step__error" role="alert">
-      <svg aria-hidden="true" class="auth-step__error-icon" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 8v4m0 4h.01" />
-      </svg>
+      <CircleAlert aria-hidden="true" class="auth-step__error-icon" />
       <span>{{ error }}</span>
     </p>
     <p v-else id="auth-otp-hint" class="auth-step__hint">
@@ -45,15 +44,14 @@
       variant="ghost"
       @click="emit('changePhone')"
     >
-      <svg aria-hidden="true" class="auth-step__back-icon" viewBox="0 0 24 24">
-        <path d="m19 12-7-7-7 7m7-7v14" />
-      </svg>
+      <ArrowLeft aria-hidden="true" class="auth-step__back-icon" />
       Изменить номер
     </AdminButton>
   </form>
 </template>
 
 <script setup lang="ts">
+import { ArrowLeft, CircleAlert } from "lucide-vue-next";
 import { computed, onMounted, useTemplateRef } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
@@ -75,7 +73,12 @@ const emit = defineEmits<OtpStepEmits>();
 
 <style scoped lang="scss">
 .auth-step {
-  display: block;
+  display: grid;
+  gap: var(--expressa-space-button-inline);
+}
+.auth-step__control {
+  display: grid;
+  gap: var(--expressa-space-field-label);
 }
 .auth-step__description,
 .auth-step__error,
@@ -84,7 +87,6 @@ const emit = defineEmits<OtpStepEmits>();
 }
 .auth-step__description {
   color: var(--expressa-color-text-secondary);
-  margin-bottom: var(--expressa-space-button-inline);
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-body);
 }
@@ -94,7 +96,6 @@ const emit = defineEmits<OtpStepEmits>();
 }
 .auth-step__label {
   display: block;
-  margin-bottom: var(--expressa-space-field-label);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
@@ -114,6 +115,11 @@ const emit = defineEmits<OtpStepEmits>();
 .auth-step__input[aria-invalid="true"] {
   border-color: var(--expressa-color-border);
 }
+.auth-step__input:focus-visible {
+  outline: var(--expressa-border-width-strong) solid rgb(26 26 255 / 10%);
+  outline-offset: 0;
+  border-color: var(--expressa-color-accent);
+}
 .auth-step__input--otp {
   font-size: var(--expressa-font-size-title);
   letter-spacing: var(--expressa-letter-spacing-otp);
@@ -121,7 +127,6 @@ const emit = defineEmits<OtpStepEmits>();
 }
 .auth-step__error {
   display: flex;
-  margin-top: var(--expressa-space-button-inline);
   align-items: flex-start;
   gap: var(--expressa-space-sm);
   color: var(--expressa-color-status-error);
@@ -129,7 +134,6 @@ const emit = defineEmits<OtpStepEmits>();
   line-height: var(--expressa-line-height-body);
 }
 .auth-step__hint {
-  margin-top: var(--expressa-space-button-inline);
   color: #bbb;
   font-size: 11px;
   line-height: 1.5;
@@ -140,17 +144,11 @@ const emit = defineEmits<OtpStepEmits>();
   width: 13px;
   height: 13px;
   margin-top: var(--expressa-space-2xs);
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--expressa-stroke-width-icon);
 }
 .auth-step__button {
   display: flex;
   width: 100%;
   padding: 12px 0;
-  margin-top: var(--expressa-space-button-inline);
   align-items: center;
   justify-content: center;
   gap: var(--expressa-space-sm);
@@ -162,10 +160,5 @@ const emit = defineEmits<OtpStepEmits>();
   flex: 0 0 auto;
   width: 14px;
   height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--expressa-stroke-width-icon);
 }
 </style>

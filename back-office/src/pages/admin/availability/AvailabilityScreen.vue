@@ -24,67 +24,73 @@
     </div>
 
     <div class="availability-screen__content">
-      <p v-if="props.loading" role="status">Загружаем доступность…</p>
-      <section v-if="props.error !== null" role="alert">
-        <p>{{ props.error.message }}</p>
-        <AdminButton type="button" @click="emit('retry')"
-          >Повторить</AdminButton
+      <section
+        v-if="props.loading"
+        aria-label="Загружаем доступность"
+        class="availability-screen__loading"
+        role="status"
+      >
+        <span class="availability-screen__loading-row" />
+        <span class="availability-screen__loading-row" />
+        <span class="availability-screen__loading-row" />
+        <span class="availability-screen__loading-row" />
+      </section>
+      <template v-else>
+        <section
+          v-if="props.error !== null"
+          class="availability-screen__error"
+          role="alert"
         >
-      </section>
-      <section v-if="props.intake !== null" class="availability-screen__intake">
-        <h2 class="availability-screen__intake-title">Приём заказов</h2>
-        <ToggleRow
-          :disabled="props.saving"
-          :label="availabilityMessages.intakeLabel"
-          :model-value="props.intake.acceptsNewOrders"
-          :sublabel="intakeSublabel"
-          @update:model-value="updateIntake"
-        />
-      </section>
-      <EmptyState
-        v-if="
-          !props.loading && props.intake !== null && groupedItems.length === 0
-        "
-        :title="availabilityMessages.emptyTitle"
-        :description="availabilityMessages.emptyDescription"
-      >
-        <template #icon>
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="48"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            viewBox="0 0 24 24"
-            width="48"
+          <p class="availability-screen__error-message">
+            {{ props.error.message }}
+          </p>
+          <AdminButton type="button" @click="emit('retry')">
+            Повторить
+          </AdminButton>
+        </section>
+        <section
+          v-if="props.intake !== null"
+          class="availability-screen__ready"
+        >
+          <section class="availability-screen__intake">
+            <h2 class="availability-screen__intake-title">Приём заказов</h2>
+            <ToggleRow
+              :disabled="props.saving"
+              :label="availabilityMessages.intakeLabel"
+              :model-value="props.intake.acceptsNewOrders"
+              :sublabel="intakeSublabel"
+              @update:model-value="updateIntake"
+            />
+          </section>
+          <EmptyState
+            v-if="groupedItems.length === 0"
+            :title="availabilityMessages.emptyTitle"
+            :description="availabilityMessages.emptyDescription"
           >
-            <path d="M7 6h10a5 5 0 1 1 0 10H7a5 5 0 1 1 0-10Z" />
-            <path d="M7 11a1 1 0 1 0 0 .01" />
-          </svg>
-        </template>
-      </EmptyState>
-      <div
-        v-else-if="!props.loading && props.intake !== null"
-        class="availability-screen__groups"
-      >
-        <AvailabilityGroup
-          v-for="group in groupedItems"
-          :key="group.id"
-          :category="group.name"
-          :disabled="props.saving"
-          :items="group.items"
-          @availability-change="
-            (item, value) => emit('availability-change', item, value)
-          "
-        />
-      </div>
+            <template #icon>
+              <ToggleRight :size="48" :stroke-width="1.5" />
+            </template>
+          </EmptyState>
+          <div v-else class="availability-screen__groups">
+            <AvailabilityGroup
+              v-for="group in groupedItems"
+              :key="group.id"
+              :category="group.name"
+              :disabled="props.saving"
+              :items="group.items"
+              @availability-change="
+                (item, value) => emit('availability-change', item, value)
+              "
+            />
+          </div>
+        </section>
+      </template>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
+import { ToggleRight } from "lucide-vue-next";
 import { computed, shallowRef } from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
@@ -226,6 +232,31 @@ function formatDate(value: string): string {
     var(--expressa-space-tab-bar-clearance);
 }
 
+.availability-screen__loading,
+.availability-screen__error {
+  display: grid;
+  gap: var(--expressa-space-sm);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-lg);
+  padding: var(--expressa-space-md);
+  background: var(--expressa-color-surface);
+}
+
+.availability-screen__loading-row {
+  display: block;
+  block-size: var(--expressa-size-row-min);
+  border-radius: var(--expressa-radius-md);
+  background: var(--expressa-color-surface-raised);
+}
+
+.availability-screen__error-message {
+  margin: 0;
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-body);
+  line-height: var(--expressa-line-height-body);
+}
+
 .availability-screen__groups {
   display: grid;
   gap: var(--expressa-space-lg);
@@ -247,8 +278,8 @@ function formatDate(value: string): string {
 @media (min-width: 768px) {
   .availability-screen {
     inline-size: 100%;
-    min-inline-size: max-content;
-    max-inline-size: none;
+    min-inline-size: 0;
+    max-inline-size: 100%;
     background: var(--expressa-color-surface);
   }
 

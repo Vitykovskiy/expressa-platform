@@ -15,22 +15,11 @@
           {{ priceLabel(props.product) }}
         </span>
       </span>
-      <svg
+      <ChevronRight
         aria-hidden="true"
         class="menu-product-row__chevron"
-        fill="none"
-        height="18"
-        viewBox="0 0 18 18"
-        width="18"
-      >
-        <path
-          d="m7 4.5 4.5 4.5L7 13.5"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="1.5"
-        />
-      </svg>
+        :size="18"
+      />
     </AdminButton>
     <AdminButton
       v-if="props.showManagementActions"
@@ -40,8 +29,9 @@
       type="button"
       variant="ghost"
       @click="emit('moveUp', props.product)"
-      >↑</AdminButton
     >
+      <ArrowUp :size="18" aria-hidden="true" />
+    </AdminButton>
     <AdminButton
       v-if="props.showManagementActions"
       :disabled="props.disabled || !props.canMoveDown"
@@ -50,12 +40,15 @@
       type="button"
       variant="ghost"
       @click="emit('moveDown', props.product)"
-      >↓</AdminButton
     >
+      <ArrowDown :size="18" aria-hidden="true" />
+    </AdminButton>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ArrowDown, ArrowUp, ChevronRight } from "lucide-vue-next";
+
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import type { Product } from "./catalog.types";
 import type {

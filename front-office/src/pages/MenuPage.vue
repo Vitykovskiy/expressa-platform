@@ -32,8 +32,11 @@
       </p>
       <menu-flow
         :menu="menuStore.menu"
+        :menu-shell-command="props.menuShellCommand"
         @add="addConfigured"
         @change-level="menuLevel = $event"
+        @menu-screen-change="emit('menuScreenChange', $event)"
+        @menu-shell-command-ack="emit('menuShellCommandAck', $event)"
       />
       <ui-btn
         v-if="menuLevel !== 'product'"
@@ -50,6 +53,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import MenuFlow from "@/features/menu/MenuFlow.vue";
+import type { MenuShellCommand } from "@/features/menu/MenuFlow.types";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import UiProgress from "@/shared/ui/customer/progress/UiProgress.vue";
@@ -59,6 +63,15 @@ import { cartPageRoute } from "./CartPage.constants";
 
 const menuStore = useMenuStore();
 const cartStore = useCartStore();
+const props = defineProps<{
+  menuShellCommand?: MenuShellCommand | null;
+}>();
+const emit = defineEmits<{
+  menuScreenChange: [
+    screen: import("@/features/menu/MenuFlow.types").MenuFlowScreen,
+  ];
+  menuShellCommandAck: [requestId: number];
+}>();
 const isLoading = computed(
   () => menuStore.status === "idle" || menuStore.status === "loading",
 );
@@ -102,5 +115,17 @@ function addConfigured(
   right: var(--customer-space-9);
   bottom: var(--customer-space-9);
   z-index: 1;
+  max-width: calc(100vw - var(--customer-space-9) * 2);
+  box-sizing: border-box;
+}
+@media (min-width: 480px) and (max-width: 1023px) {
+  .menu-page__cart {
+    right: max(
+      var(--customer-space-9),
+      calc(
+        (100vw - var(--customer-content-width)) / 2 + var(--customer-space-9)
+      )
+    );
+  }
 }
 </style>

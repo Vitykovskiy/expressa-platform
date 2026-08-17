@@ -102,7 +102,7 @@ test("auth и роли back-office работают через backend", async (
 
   await page.getByRole("button", { name: "Попробовать снова" }).click();
   const firstRefresh = await login(page, barista, evidence);
-  await expect(page.getByRole("heading", { name: "Очередь" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Заказы" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Доступность" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Меню" })).toHaveCount(0);
   await page.goto("/menu");
@@ -110,7 +110,7 @@ test("auth и роли back-office работают через backend", async (
 
   const refreshResponsesBeforeReload = countResponses(evidence, refreshPath);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Очередь" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Заказы" })).toBeVisible();
   const refreshed = await findResponse(
     evidence,
     refreshPath,

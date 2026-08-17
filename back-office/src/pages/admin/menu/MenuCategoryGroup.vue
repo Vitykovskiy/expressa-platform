@@ -10,24 +10,18 @@
         @click="emit('toggle', props.category)"
       >
         <span aria-hidden="true" class="menu-category__toggle-icon">
-          <svg
+          <ChevronDown
             v-if="props.expanded"
             aria-hidden="true"
             class="menu-category__icon"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-          <svg
+            :size="18"
+          />
+          <ChevronRight
             v-else
             aria-hidden="true"
             class="menu-category__icon"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+            :size="18"
+          />
         </span>
         <span class="menu-category__copy">
           <span class="menu-category__name">
@@ -47,14 +41,7 @@
         variant="ghost"
         @click="emit('moveUp', props.category)"
       >
-        <svg
-          aria-hidden="true"
-          class="menu-category__icon"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 19V5m-7 7 7-7 7 7" />
-        </svg>
+        <ArrowUp aria-hidden="true" class="menu-category__icon" :size="18" />
       </AdminButton>
       <AdminButton
         v-if="props.showManagementActions"
@@ -65,14 +52,7 @@
         variant="ghost"
         @click="emit('moveDown', props.category)"
       >
-        <svg
-          aria-hidden="true"
-          class="menu-category__icon"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 5v14m7-7-7 7-7-7" />
-        </svg>
+        <ArrowDown aria-hidden="true" class="menu-category__icon" :size="18" />
       </AdminButton>
       <AdminButton
         :disabled="props.disabled"
@@ -82,16 +62,7 @@
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
       >
-        <svg
-          aria-hidden="true"
-          class="menu-category__icon"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="m14.5 5.5 4 4M4 20l4.5-1 10-10a2.8 2.8 0 0 0-4-4l-10 10L4 20Z"
-          />
-        </svg>
+        <Pencil aria-hidden="true" class="menu-category__icon" :size="18" />
         <span class="menu-category__edit-label">Редактировать</span>
       </AdminButton>
     </header>
@@ -119,6 +90,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+} from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import MenuProductRow from "./MenuProductRow.vue";

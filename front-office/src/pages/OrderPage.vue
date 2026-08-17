@@ -1,6 +1,8 @@
 <template>
   <section class="order-page" aria-labelledby="order-title">
-    <p v-if="loading" role="status">Загружаем заказ</p>
+    <div v-if="loading" class="order-page__state" role="status">
+      Загружаем заказ
+    </div>
     <template v-else-if="order">
       <header class="order-page__header">
         <p class="order-page__stage">{{ stageLabel }}</p>
@@ -8,19 +10,23 @@
       </header>
       <ul class="order-page__items" aria-label="Состав заказа">
         <li v-for="item in order.items" :key="itemKey(item)">
-          <strong>{{ item.productName }}</strong>
-          <span
-            >{{ item.quantity }} ×
-            {{ formatMinorAmount(item.unitTotalMinor) }}</span
-          >
-          <p v-if="item.size">Размер {{ item.size }}</p>
-          <p
-            v-for="modifier in item.modifiers"
-            :key="modifier.modifierOptionId"
-          >
-            + {{ modifier.modifierName }}
-          </p>
-          <strong>{{ formatMinorAmount(item.lineTotalMinor) }}</strong>
+          <div class="order-page__item-main">
+            <strong>{{ item.productName }}</strong>
+            <span
+              >{{ item.quantity }} ×
+              {{ formatMinorAmount(item.unitTotalMinor) }}</span
+            >
+            <p v-if="item.size">Размер {{ item.size }}</p>
+            <p
+              v-for="modifier in item.modifiers"
+              :key="modifier.modifierOptionId"
+            >
+              + {{ modifier.modifierName }}
+            </p>
+          </div>
+          <strong class="order-page__item-total">{{
+            formatMinorAmount(item.lineTotalMinor)
+          }}</strong>
         </li>
       </ul>
       <p class="order-page__total">
@@ -56,20 +62,21 @@
       </section>
       <ui-btn
         v-if="order.stage === 'ISSUED'"
+        class="order-page__repeat"
         color="surface"
         type="button"
         @click="prepareRepeat"
       >
         Повторить заказ
       </ui-btn>
-      <div v-if="impossibleItems.length" role="alert">
+      <div v-if="impossibleItems.length" class="order-page__alert" role="alert">
         <p>{{ orderPageMessages.repeatImpossible }}</p>
         <ul>
           <li v-for="item in impossibleItems" :key="item">{{ item }}</li>
         </ul>
       </div>
     </template>
-    <div v-else class="order-page__empty" role="status">
+    <div v-else class="order-page__state" role="status">
       <h1 id="order-title">Заказ</h1>
       <p>{{ errorMessage ?? orderPageMessages.unavailable }}</p>
     </div>
@@ -384,48 +391,169 @@ function toBase64(value: ArrayBuffer): string {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .order-page {
   display: grid;
   gap: var(--customer-space-9);
-  max-width: 48rem;
+  width: 100%;
+  max-width: var(--customer-size-content-detail);
   margin: 0 auto;
-  padding: var(--customer-space-9);
+  padding: var(--customer-space-13) var(--customer-space-9)
+    var(--customer-space-17);
+}
+.order-page__header {
+  display: grid;
+  gap: var(--customer-space-4);
+}
+.order-page__header h1,
+.order-page__stage,
+.order-page__payment,
+.order-page__notifications h2,
+.order-page__alert p,
+.order-page__alert ul {
+  margin: 0;
+}
+.order-page__header h1 {
+  font-size: var(--customer-font-size-display);
+  font-weight: var(--customer-font-weight-black);
+  letter-spacing: var(--customer-letter-spacing-tight);
+  line-height: var(--customer-line-height-tight);
+}
+.order-page__stage {
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-bold);
+  letter-spacing: var(--customer-letter-spacing-overline);
+  text-transform: uppercase;
+}
+.order-page__state {
+  display: grid;
+  min-height: 15rem;
+  place-items: center;
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-bold);
+  text-align: center;
 }
 .order-page__items {
   display: grid;
-  gap: var(--customer-space-5);
+  gap: var(--customer-space-6);
   padding: 0;
   margin: 0;
   list-style: none;
 }
 .order-page__items li {
-  display: grid;
-  gap: var(--customer-space-3);
-  padding: var(--customer-space-7);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--customer-space-9);
+  padding: var(--customer-space-9) var(--customer-space-10);
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);
-  border-radius: var(--customer-radius);
+  border-radius: var(--customer-radius-lg);
+  box-shadow: var(--customer-shadow-card);
+}
+.order-page__item-main {
+  display: grid;
+  min-width: 0;
+  gap: var(--customer-space-3);
+}
+.order-page__item-main strong {
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-extrabold);
+  overflow-wrap: anywhere;
+}
+.order-page__item-main span,
+.order-page__item-main p {
+  margin: 0;
+  color: var(--customer-color-text-muted-on-surface);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
+.order-page__item-main p {
+  font-size: var(--customer-font-size-xs);
+}
+.order-page__item-total {
+  flex: 0 0 auto;
+  color: var(--customer-color-blue-500);
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-black);
+  white-space: nowrap;
 }
 .order-page__total {
   display: flex;
   justify-content: space-between;
-  padding-top: var(--customer-space-7);
-  border-top: 1px solid var(--customer-border);
+  margin: 0;
+  padding: var(--customer-space-9) var(--customer-space-10);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-lg);
+  box-shadow: var(--customer-shadow-card);
+  font-size: var(--customer-font-size-lg);
+}
+.order-page__total strong {
+  color: var(--customer-color-blue-500);
+  font-weight: var(--customer-font-weight-black);
 }
 .order-page__payment {
-  margin: 0;
-  color: var(--customer-text-secondary-on-surface);
+  padding: 0 var(--customer-space-10);
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
 .order-page__notifications {
   display: grid;
   gap: var(--customer-space-5);
+  padding: var(--customer-space-9) var(--customer-space-10);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-lg);
+  box-shadow: var(--customer-shadow-card);
+}
+.order-page__notifications h2 {
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.order-page__notifications p {
+  margin: 0;
+  color: var(--customer-color-text-muted-on-surface);
+  font-size: var(--customer-font-size-sm);
+}
+.order-page__notifications .ui-btn,
+.order-page__repeat {
+  justify-self: start;
+  padding: 0 var(--customer-space-10);
+  color: var(--customer-text);
+  background: var(--customer-primary);
+  border-radius: var(--customer-radius-pill);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.order-page__repeat[color="surface"] {
+  color: var(--customer-background);
+  background: var(--customer-surface);
+}
+.order-page__alert {
+  display: grid;
+  gap: var(--customer-space-5);
+  padding: var(--customer-space-9) var(--customer-space-10);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-color-warning-surface);
+  border-radius: var(--customer-radius-lg);
+}
+.order-page__alert ul {
+  padding-left: var(--customer-space-10);
 }
 .order-page__dialog {
   display: grid;
   gap: var(--customer-space-5);
   padding: var(--customer-space-9);
   background: var(--customer-background);
+}
+@media (min-width: 1024px) {
+  .order-page {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }
 </style>

@@ -132,7 +132,10 @@ async function openCustomerOrder(page: Page): Promise<void> {
     );
   await page.getByRole("button", { name: "Отправить код" }).click();
   await page.getByLabel("Код из сообщения").fill(pushOtp);
-  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page
+    .locator(".auth-form:visible")
+    .getByRole("button", { name: "Подтвердить", exact: true })
+    .click();
   await page.getByRole("button", { name: "Оформить заказ" }).click();
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: /Заказ №/ })).toBeVisible();

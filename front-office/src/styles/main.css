@@ -14,7 +14,15 @@ body {
 
 #app {
   display: flex;
+  width: 100%;
   min-height: 100dvh;
+  min-width: 0;
+}
+
+#app > .v-application {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 body {

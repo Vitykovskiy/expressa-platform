@@ -12,7 +12,12 @@
         <ShoppingCart class="cart-screen__empty-icon-glyph" />
       </div>
       <p class="cart-screen__empty-message">Пока ничего не добавлено</p>
-      <ui-btn color="surface" size="large" @click="emit('continueShopping')">
+      <ui-btn
+        class="cart-screen__empty-action"
+        color="surface"
+        size="large"
+        @click="emit('continueShopping')"
+      >
         Перейти в меню
       </ui-btn>
     </div>
@@ -38,7 +43,7 @@
         v-if="hasCheckoutMessage"
         class="cart-screen__notice"
         :class="noticeClass"
-        role="status"
+        :role="needsReconfirmation ? 'status' : 'alert'"
       >
         <strong>{{ noticeTitle }}</strong>
         <span>{{ noticeMessage }}</span>
@@ -265,6 +270,13 @@ function emitCheckout(): void {
   color: var(--customer-color-text-muted-on-brand);
   font-weight: var(--customer-font-weight-bold);
 }
+.cart-screen__empty-action {
+  padding: var(--customer-space-7) var(--customer-space-15);
+  border-radius: var(--customer-radius-md);
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-extrabold);
+  line-height: 1.5;
+}
 .cart-screen__content {
   display: flex;
   flex: 1;
@@ -272,8 +284,7 @@ function emitCheckout(): void {
   gap: var(--customer-space-9);
   width: 100%;
   min-width: 0;
-  padding: var(--customer-space-11) var(--customer-space-9)
-    var(--customer-space-13);
+  padding: 0 var(--customer-space-9) var(--customer-space-13);
 }
 .cart-screen__items {
   display: flex;
@@ -291,7 +302,7 @@ function emitCheckout(): void {
   justify-content: space-between;
   padding: var(--customer-space-9) var(--customer-space-11);
   background: var(--customer-color-surface-subtle);
-  border-radius: var(--customer-radius);
+  border-radius: 1rem;
   font-size: var(--customer-font-size-md);
   font-weight: var(--customer-font-weight-bold);
 }
@@ -299,6 +310,9 @@ function emitCheckout(): void {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--customer-space-4) var(--customer-space-7);
+}
+.cart-screen__mobile-total:not(.cart-screen__mobile-total--changed) > span {
+  color: rgb(255 255 255 / 75%);
 }
 .cart-screen__mobile-total s {
   color: var(--customer-color-text-muted-on-brand);
@@ -403,8 +417,7 @@ function emitCheckout(): void {
 }
 @media (min-width: 1024px) {
   .cart-screen__header {
-    padding: var(--customer-space-13) var(--customer-space-16)
-      var(--customer-space-15);
+    padding: var(--customer-space-13) 0 var(--customer-space-15);
   }
   .cart-screen__content {
     display: grid;
@@ -415,7 +428,7 @@ function emitCheckout(): void {
     align-items: start;
     align-content: start;
     gap: var(--customer-space-16);
-    padding: 0 var(--customer-space-16) var(--customer-space-16);
+    padding: 0 0 var(--customer-space-16);
   }
   .cart-screen__items {
     grid-area: items;

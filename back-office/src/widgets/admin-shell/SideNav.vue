@@ -26,19 +26,7 @@
       @click="emit('logout')"
     >
       <span class="side-nav-logout__content">
-        <svg
-          aria-hidden="true"
-          fill="none"
-          height="18"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-          width="18"
-        >
-          <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6" />
-        </svg>
+        <LogOut aria-hidden="true" :size="18" />
         <span>Выйти</span>
       </span>
     </AdminButton>
@@ -46,6 +34,8 @@
 </template>
 
 <script setup lang="ts">
+import { LogOut } from "lucide-vue-next";
+
 import AdminButton from "../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { SideNavEmits, SideNavProps } from "./SideNav.types";
@@ -94,7 +84,7 @@ const emit = defineEmits<SideNavEmits>();
   gap: var(--expressa-space-control-inline);
   width: 100%;
   min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-control-block) var(--expressa-space-md);
+  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
   border: var(--expressa-border-width-none);
   border-radius: var(--expressa-radius-md);
   color: var(--expressa-color-text-secondary);

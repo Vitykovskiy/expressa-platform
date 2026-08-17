@@ -374,11 +374,15 @@ function createInitialConfiguration(product = props.product) {
 @media (min-width: 1024px) {
   .product-detail__header,
   .product-detail__content {
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
+    padding-right: 0;
+    padding-left: 0;
+  }
+  .product-detail__header {
+    margin-right: 0;
+    margin-left: 0;
   }
   .product-detail__footer {
-    margin: 0 var(--customer-space-16) var(--customer-space-9);
+    margin: 0 0 var(--customer-space-9);
     padding: var(--customer-space-9) 0;
   }
 }

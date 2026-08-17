@@ -90,7 +90,7 @@ function handleNavigate(destination: ShellNavigationDestination): void {
 
   .customer-shell__content {
     width: auto;
-    max-width: calc(var(--customer-content-width) * 2.5);
+    max-width: var(--customer-size-shell-content);
     margin: 0 auto;
     padding: var(--customer-space-5) var(--customer-space-17);
   }

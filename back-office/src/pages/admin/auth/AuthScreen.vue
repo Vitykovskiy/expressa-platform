@@ -9,13 +9,7 @@
       class="auth-screen__success"
       role="status"
     >
-      <svg
-        aria-hidden="true"
-        class="auth-screen__success-icon"
-        viewBox="0 0 24 24"
-      >
-        <path d="m5 12 4 4L19 6" />
-      </svg>
+      <CircleCheckBig aria-hidden="true" class="auth-screen__success-icon" />
       <span>Вход выполнен</span>
     </p>
     <section v-else class="auth-screen__card">
@@ -49,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { CircleCheckBig } from "lucide-vue-next";
 import { computed } from "vue";
 import { AUTH_SCREEN_PRESENTATION } from "./AuthScreen.constants";
 import type { AuthScreenEmits, AuthScreenProps } from "./AuthScreen.types";
@@ -75,14 +70,13 @@ const emit = defineEmits<AuthScreenEmits>();
 
 .auth-screen__card {
   width: min(100%, var(--expressa-size-auth-card-max-width));
+  min-height: 334px;
   padding: var(--expressa-space-xl);
   background: var(--expressa-color-surface);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-lg);
-  box-shadow:
-    0 1px 3px 0 rgb(0 0 0 / 10%),
-    0 1px 2px -1px rgb(0 0 0 / 10%);
+  box-shadow: var(--expressa-shadow-card);
 }
 
 .auth-screen__header {
@@ -107,7 +101,8 @@ const emit = defineEmits<AuthScreenEmits>();
 .auth-screen__header h1 {
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-heading);
-  line-height: var(--expressa-line-height-body);
+  font-weight: var(--expressa-font-weight-bold);
+  line-height: var(--expressa-line-height-heading);
 }
 
 .auth-screen__success {
@@ -122,11 +117,6 @@ const emit = defineEmits<AuthScreenEmits>();
 .auth-screen__success-icon {
   width: 32px;
   height: 32px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--expressa-stroke-width-icon);
 }
 
 .auth-screen__success span {

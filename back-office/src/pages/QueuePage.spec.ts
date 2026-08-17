@@ -47,7 +47,10 @@ describe("QueuePage", () => {
     const wrapper = mount(QueuePage);
     await flushPromises();
     await wrapper.get('input[type="search"]').setValue("20300102-001");
-    await wrapper.get("select").setValue("CREATED");
+    await wrapper
+      .findAll(".filter-tab")
+      .find((tab) => tab.text() === "Новые")!
+      .trigger("click");
     await flushPromises();
 
     await vi.advanceTimersByTimeAsync(5000);

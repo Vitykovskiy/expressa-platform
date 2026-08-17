@@ -20,20 +20,7 @@
           type="button"
           @click="closeAsCancelled"
         >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="20"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-            width="20"
-          >
-            <path d="m6 6 12 12" />
-            <path d="m18 6-12 12" />
-          </svg>
+          <X aria-hidden="true" :size="20" />
         </button>
       </v-card-title>
       <v-card-text :id="`edit-category-description-${nameId}`"
@@ -129,6 +116,7 @@
 
 <script setup lang="ts">
 import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
+import { X } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";

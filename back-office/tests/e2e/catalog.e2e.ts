@@ -96,6 +96,8 @@ test("administrator создаёт и публикует каталог для p
 }) => {
   const administrator = phone();
   const barista = phone();
+  const visualCategoryName = "Сезонные десерты";
+  const visualModifierGroupName = "Выберите сироп";
   createStaff(administrator, "administrator");
   createStaff(barista, "barista");
 
@@ -146,6 +148,260 @@ test("administrator создаёт и публикует каталог для p
   await prepareStaleCart(frontPage);
   await updateMediumPrice(adminPage);
   await confirmUpdatedTotal(frontPage);
+  await createCategory(adminPage, visualCategoryName);
+  await createProduct(
+    adminPage,
+    "Десерт для визуальной сверки",
+    "OTHER",
+    ["22000"],
+    ["S"],
+    visualCategoryName,
+  );
+  await openMenuManagement(adminPage);
+  await adminPage.getByRole("button", { name: "Новая группа опций" }).click();
+  const visualModifierEditor = adminPage.locator(".modifier-group-editor");
+  await visualModifierEditor
+    .getByLabel("Название", { exact: true })
+    .fill(visualModifierGroupName);
+  await visualModifierEditor
+    .getByRole("button", { name: "Добавить вариант" })
+    .click();
+  const visualModifierOption = visualModifierEditor
+    .locator(".modifier-option-editor")
+    .nth(0);
+  await visualModifierOption
+    .getByLabel("Название", { exact: true })
+    .fill("Ванильный сироп");
+  await visualModifierOption.getByLabel("Изменение цены, коп.").fill("0");
+  await visualModifierEditor
+    .getByRole("button", { name: "Сохранить группу" })
+    .click();
+  await expect(
+    adminPage.getByRole("button", {
+      name: `Редактировать группу опций ${visualModifierGroupName}`,
+    }),
+  ).toBeVisible();
+
+  const managementToggle = adminPage.getByRole("button", {
+    name: "Управление меню",
+  });
+  if ((await managementToggle.getAttribute("aria-expanded")) === "true")
+    await managementToggle.click();
+  await expect(adminPage.locator(".menu-page__management")).toHaveCount(0);
+  await expect(managementToggle).toHaveAttribute("aria-expanded", "false");
+  const categoryToggles = adminPage.locator(".menu-category__toggle");
+  await expect(categoryToggles).toHaveCount(3);
+  for (const categoryToggle of await categoryToggles.all()) {
+    if ((await categoryToggle.getAttribute("aria-expanded")) === "true")
+      await categoryToggle.click();
+    await expect(categoryToggle).toHaveAttribute("aria-expanded", "false");
+  }
+  const optionToggles = adminPage.locator(".menu-page__option-toggle");
+  await expect(optionToggles).toHaveCount(2);
+  for (const optionToggle of await optionToggles.all())
+    await expect(optionToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(adminPage.locator(".menu-product-row:visible")).toHaveCount(0);
+  await adminPage.evaluate(() => {
+    globalThis.scrollTo(0, 0);
+    globalThis.document.documentElement.scrollTo(0, 0);
+  });
+  await expect
+    .poll(() =>
+      adminPage.evaluate(() => ({
+        document: globalThis.document.documentElement.scrollLeft,
+        page: globalThis.scrollX,
+        width: globalThis.document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ document: 0, page: 0, width: 1280 });
+  await adminPage.setViewportSize({
+    height: catalogViewportHeight,
+    width: 390,
+  });
+  await expect(adminPage.locator(".menu-page__management")).toHaveCount(0);
+  await expect(managementToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(categoryToggles).toHaveCount(3);
+  for (const categoryToggle of await categoryToggles.all())
+    await expect(categoryToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(optionToggles).toHaveCount(2);
+  for (const optionToggle of await optionToggles.all())
+    await expect(optionToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(adminPage.locator(".menu-product-row:visible")).toHaveCount(0);
+  await adminPage.evaluate(async () => {
+    await globalThis.document.fonts.ready;
+  });
+  await adminPage.evaluate(() => {
+    globalThis.scrollTo(0, 0);
+    globalThis.document.documentElement.scrollTo(0, 0);
+    const shellContent = globalThis.document.querySelector<HTMLElement>(
+      ".admin-shell-content",
+    );
+    if (shellContent === null) throw new Error("Не найден контент shell");
+    shellContent.scrollTo(0, 0);
+  });
+  await expect
+    .poll(() =>
+      adminPage.evaluate(() => {
+        const shellContent = globalThis.document.querySelector<HTMLElement>(
+          ".admin-shell-content",
+        );
+        if (shellContent === null) return null;
+        return {
+          document: {
+            left: globalThis.document.documentElement.scrollLeft,
+            top: globalThis.document.documentElement.scrollTop,
+          },
+          page: { left: globalThis.scrollX, top: globalThis.scrollY },
+          shell: { left: shellContent.scrollLeft, top: shellContent.scrollTop },
+        };
+      }),
+    )
+    .toEqual({
+      document: { left: 0, top: 0 },
+      page: { left: 0, top: 0 },
+      shell: { left: 0, top: 0 },
+    });
+  await adminPage.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    path: "test-results/a3-menu-visual/vue-menu-390.png",
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-mobile-first.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-mobile-second.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-mobile-third.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect
+    .poll(() =>
+      adminPage.evaluate(() => {
+        const shellContent = globalThis.document.querySelector<HTMLElement>(
+          ".admin-shell-content",
+        );
+        if (shellContent === null) return null;
+        return {
+          document: {
+            left: globalThis.document.documentElement.scrollLeft,
+            top: globalThis.document.documentElement.scrollTop,
+          },
+          shell: { left: shellContent.scrollLeft, top: shellContent.scrollTop },
+        };
+      }),
+    )
+    .toEqual({ document: { left: 0, top: 0 }, shell: { left: 0, top: 0 } });
+  await adminPage.setViewportSize({
+    height: catalogViewportHeight,
+    width: 768,
+  });
+  await expect(adminPage.locator(".menu-page__management")).toHaveCount(0);
+  await expect(managementToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(categoryToggles).toHaveCount(3);
+  for (const categoryToggle of await categoryToggles.all())
+    await expect(categoryToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(optionToggles).toHaveCount(2);
+  for (const optionToggle of await optionToggles.all())
+    await expect(optionToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(adminPage.locator(".menu-product-row:visible")).toHaveCount(0);
+  await adminPage.evaluate(async () => {
+    await globalThis.document.fonts.ready;
+  });
+  await adminPage.evaluate(() => {
+    globalThis.scrollTo(0, 0);
+    globalThis.document.documentElement.scrollTo(0, 0);
+    const shellContent = globalThis.document.querySelector<HTMLElement>(
+      ".admin-shell-content",
+    );
+    if (shellContent === null) throw new Error("Не найден контент shell");
+    shellContent.scrollTo(0, 0);
+  });
+  await expect
+    .poll(() =>
+      adminPage.evaluate(() => {
+        const shellContent = globalThis.document.querySelector<HTMLElement>(
+          ".admin-shell-content",
+        );
+        if (shellContent === null) return null;
+        return {
+          document: {
+            left: globalThis.document.documentElement.scrollLeft,
+            top: globalThis.document.documentElement.scrollTop,
+          },
+          page: { left: globalThis.scrollX, top: globalThis.scrollY },
+          shell: { left: shellContent.scrollLeft, top: shellContent.scrollTop },
+        };
+      }),
+    )
+    .toEqual({
+      document: { left: 0, top: 0 },
+      page: { left: 0, top: 0 },
+      shell: { left: 0, top: 0 },
+    });
+  await expect(adminPage.getByText("Expressa", { exact: true })).toBeVisible();
+  await expect(
+    adminPage.getByRole("heading", { name: "Меню", exact: true }),
+  ).toBeVisible();
+  await adminPage.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    path: "test-results/a3-menu-visual/vue-menu-768.png",
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-tablet-first.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-tablet-second.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect(adminPage).toHaveScreenshot("menu-ready-tablet-third.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixelRatio: 0.01,
+    scale: "css",
+  });
+  await expect
+    .poll(() =>
+      adminPage.evaluate(() => {
+        const shellContent = globalThis.document.querySelector<HTMLElement>(
+          ".admin-shell-content",
+        );
+        if (shellContent === null) return null;
+        return {
+          document: {
+            left: globalThis.document.documentElement.scrollLeft,
+            top: globalThis.document.documentElement.scrollTop,
+          },
+          shell: { left: shellContent.scrollLeft, top: shellContent.scrollTop },
+        };
+      }),
+    )
+    .toEqual({ document: { left: 0, top: 0 }, shell: { left: 0, top: 0 } });
+  await adminPage.setViewportSize({
+    height: catalogViewportHeight,
+    width: 1280,
+  });
+  await expectNoHorizontalOverflow(adminPage, 1280);
+  await categoryToggles.nth(0).click();
+  await expect(categoryToggles.nth(0)).toHaveAttribute("aria-expanded", "true");
+  await expect(adminPage.locator(".menu-product-row:visible")).toHaveCount(1);
   for (const width of catalogViewportWidths) {
     await adminPage.setViewportSize({ height: catalogViewportHeight, width });
     await expectNoHorizontalOverflow(adminPage, width);
@@ -167,7 +423,10 @@ test("administrator создаёт и публикует каталог для p
     await expect(
       frontPage.getByRole("heading", { name: /Что будем заказывать/ }),
     ).toBeVisible();
-    await frontPage.getByRole("button", { name: catalogCategoryName }).click();
+    await frontPage
+      .getByRole("list", { name: "Категории меню" })
+      .getByRole("button", { name: catalogCategoryName })
+      .click();
     await expect(
       frontPage.getByRole("button", { name: catalogProductNames.drinkSizes }),
     ).toContainText("S · 240 ₽");
@@ -197,6 +456,7 @@ test("administrator создаёт и публикует каталог для p
       frontPage.getByRole("heading", { name: /Что будем заказывать/ }),
     ).toBeVisible();
     await frontPage
+      .getByRole("list", { name: "Категории меню" })
       .getByRole("button", { name: catalogSecondCategoryName })
       .click();
     const editableDrink = frontPage.getByRole("button", {
@@ -214,7 +474,10 @@ test("administrator создаёт и публикует каталог для p
     await expectNoHorizontalOverflow(frontPage, width);
   }
   await frontPage.goto(catalogFrontendUrl);
-  await frontPage.getByRole("button", { name: catalogCategoryName }).click();
+  await frontPage
+    .getByRole("list", { name: "Категории меню" })
+    .getByRole("button", { name: catalogCategoryName })
+    .click();
   await frontPage
     .getByRole("button", { name: catalogProductNames.drinkSizes })
     .press("Enter");
@@ -240,7 +503,7 @@ async function login(page: CatalogPage, phoneNumber: string): Promise<void> {
   await page.getByRole("button", { name: "Отправить код" }).click();
   await page.getByLabel("Код из сообщения").fill(developmentOtp);
   await page.getByRole("button", { name: "Подтвердить" }).click();
-  await expect(page.getByRole("heading", { name: "Очередь" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Заказы" })).toBeVisible();
 }
 
 async function createCategory(
@@ -627,7 +890,10 @@ async function updateMediumPrice(page: CatalogPage): Promise<void> {
 
 async function prepareStaleCart(page: CatalogPage): Promise<void> {
   await page.goto(catalogFrontendUrl);
-  await page.getByRole("button", { name: catalogCategoryName }).click();
+  await page
+    .getByRole("list", { name: "Категории меню" })
+    .getByRole("button", { name: catalogCategoryName })
+    .click();
   await page
     .getByRole("button", { name: catalogProductNames.drinkSizes })
     .click();
@@ -642,7 +908,7 @@ async function prepareStaleCart(page: CatalogPage): Promise<void> {
   await page.getByLabel("Номер телефона").fill(phone());
   await page.getByRole("button", { name: "Отправить код" }).click();
   await page.getByLabel("Код из сообщения").fill(developmentOtp);
-  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page.getByRole("button", { name: "Подтвердить", exact: true }).click();
   await expect(page).toHaveURL(/\/cart$/);
 }
 

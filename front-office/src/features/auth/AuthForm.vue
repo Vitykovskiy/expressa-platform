@@ -7,16 +7,16 @@
     <ui-text-field
       id="auth-phone"
       autocomplete="tel"
+      aria-label="Номер телефона"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
-      hint="Формат: +7 (___) ___-__-__"
+      hide-details
       inputmode="tel"
-      label="Номер телефона"
       placeholder="+7 (___) ___-__-__"
-      persistent-hint
       variant="outlined"
+      class="auth-form__field"
       :disabled="isLoading"
       :model-value="props.state.phone"
       @update:model-value="updatePhone"
@@ -28,6 +28,7 @@
     <UiFieldMessage :message="props.state.errorMessage" tone="error" />
     <ui-btn
       block
+      class="auth-form__primary-button"
       color="surface"
       :disabled="!canSendCode || isLoading"
       size="x-large"
@@ -48,17 +49,17 @@
   >
     <ui-text-field
       autocomplete="one-time-code"
+      aria-label="Код из сообщения"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
-      hint="Введите код из сообщения"
+      hide-details
       inputmode="numeric"
-      label="Код из сообщения"
       maxlength="6"
-      placeholder="______"
-      persistent-hint
+      placeholder="——"
       variant="outlined"
+      class="auth-form__field"
       :disabled="isLoading"
       :model-value="otp"
       @update:model-value="updateOtp"
@@ -66,6 +67,7 @@
     <UiFieldMessage :message="props.state.errorMessage" tone="error" />
     <ui-btn
       block
+      class="auth-form__primary-button"
       color="surface"
       :disabled="!canVerifyOtp || isLoading"
       size="x-large"
@@ -100,15 +102,15 @@
     <ui-text-field
       id="auth-name"
       autocomplete="name"
+      aria-label="Ваше имя"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
-      hint="Имя появится в заказах и истории"
-      label="Ваше имя"
+      hide-details
       placeholder="Ваше имя"
-      persistent-hint
       variant="outlined"
+      class="auth-form__field"
       :disabled="isLoading"
       :model-value="props.state.name"
       @update:model-value="updateName"
@@ -119,6 +121,7 @@
     </ui-text-field>
     <ui-btn
       block
+      class="auth-form__primary-button"
       color="surface"
       :disabled="!canSubmitName || isLoading"
       size="x-large"
@@ -220,15 +223,29 @@ function submitName() {
 }
 
 .auth-form__field-icon {
-  width: var(--customer-size-icon-sm);
-  height: var(--customer-size-icon-sm);
+  width: 1.0625rem;
+  height: 1.0625rem;
   color: var(--customer-color-text-muted-on-brand);
+}
+
+.auth-form__field :deep(.v-field) {
+  --v-input-padding-top: 0;
+  --v-field-padding-bottom: 0;
+  --v-field-padding-start: var(--customer-space-9);
+  --v-field-padding-end: var(--customer-space-9);
+}
+
+.auth-form__primary-button {
+  min-height: var(--customer-size-control-xl);
+  border-radius: var(--customer-radius-sm);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-black);
 }
 
 .auth-form__ghost-button {
   align-self: center;
   gap: var(--customer-space-3);
-  color: var(--customer-color-text-muted-on-brand);
+  color: var(--customer-color-white-55);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
@@ -236,10 +253,10 @@ function submitName() {
 .auth-form__info {
   margin: 0;
   padding: var(--customer-space-9) var(--customer-space-11);
-  border: 1px solid var(--customer-border);
+  border: 1px solid var(--customer-color-white-12);
   border-radius: 1rem;
-  background: var(--customer-color-surface-subtle);
-  color: var(--customer-color-text-muted-on-brand);
+  background: var(--customer-color-white-9);
+  color: var(--customer-color-white-65);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-semibold);
   line-height: var(--customer-line-height-relaxed);

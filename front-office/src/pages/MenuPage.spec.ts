@@ -73,22 +73,54 @@ describe("MenuPage", () => {
 
     expect(wrapper.text()).toContain("Меню пока пустое");
   });
+
+  it("прозрачно передаёт shell command, screen и ack", async () => {
+    setMenuStoreDependencies({
+      publicMenuApi: { getMenu: vi.fn().mockResolvedValue(createReadyMenu()) },
+    });
+    const command = {
+      requestId: 1,
+      target: { id: "category" as const, categoryId: "coffee" },
+    };
+    const wrapper = await mountPage(command);
+    await flushPromises();
+
+    await wrapper.get('[data-test="screen"]').trigger("click");
+    await wrapper.get('[data-test="ack"]').trigger("click");
+
+    expect(wrapper.emitted("menuScreenChange")).toEqual([
+      [{ id: "category", categoryId: "coffee" }],
+    ]);
+    expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1]]);
+  });
 });
 
-async function mountPage() {
+async function mountPage(menuShellCommand?: {
+  requestId: number;
+  target: { id: "category"; categoryId: string };
+}) {
   await router.push("/");
   await router.isReady();
 
   return mount(MenuPage, {
+    props: { menuShellCommand },
     global: {
       plugins: [router],
       stubs: {
         MenuFlow: {
-          emits: ["add", "changeLevel"],
+          props: ["menuShellCommand"],
+          emits: [
+            "add",
+            "changeLevel",
+            "menuScreenChange",
+            "menuShellCommandAck",
+          ],
           template: `<div>
             <button data-test="category" @click='$emit("changeLevel", "category")' />
             <button data-test="add" @click='$emit("add", { addons: [], lineTotalMinor: 25000, lineTotalRub: 250, productId: "cookie", productName: "Печенье", quantity: 1, selectedModifierOptions: [], type: "OTHER", unitTotalMinor: 25000 })' />
             <button data-test="product" @click='$emit("changeLevel", "product")' />
+            <button data-test="screen" @click='$emit("menuScreenChange", { id: "category", categoryId: "coffee" })' />
+            <button data-test="ack" @click='$emit("menuShellCommandAck", menuShellCommand.requestId)' />
           </div>`,
         },
         UiBtn: {

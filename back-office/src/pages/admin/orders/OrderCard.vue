@@ -1,24 +1,35 @@
 <template>
   <article class="order-card">
     <div class="order-card__heading">
-      <div>
-        <p class="order-card__number">№ {{ props.order.number }}</p>
-        <p class="order-card__date">{{ formatDate(props.order.createdAt) }}</p>
-      </div>
+      <span class="order-card__number">{{ props.order.number }}</span>
       <span class="order-card__stage" :data-tone="stage.tone">{{
         stage.label
       }}</span>
     </div>
 
+    <div class="order-card__time">
+      <Clock :size="14" aria-hidden="true" />
+      <span class="order-card__time-value">{{
+        formatDate(props.order.createdAt)
+      }}</span>
+    </div>
+
+    <p class="order-card__summary">
+      {{
+        props.details === null
+          ? "Откройте детали, чтобы увидеть состав заказа"
+          : itemsSummary
+      }}
+    </p>
     <p class="order-card__total">{{ formatMoney(props.order.totalMinor) }}</p>
 
-    <button
+    <AdminButton
       class="order-card__details-button"
-      type="button"
+      variant="secondary"
       @click="emit('open', props.order.id)"
     >
       {{ props.details === null ? "Открыть детали" : "Скрыть детали" }}
-    </button>
+    </AdminButton>
 
     <div
       v-if="props.detailsLoading"
@@ -32,8 +43,13 @@
       class="order-card__details"
       :aria-label="`Детали заказа ${props.order.number}`"
     >
-      <p>Клиент: {{ props.details.customer.phoneE164 }}</p>
-      <ul class="order-card__items">
+      <p class="order-card__customer">
+        Клиент:
+        <span class="order-card__customer-phone">{{
+          props.details.customer.phoneE164
+        }}</span>
+      </p>
+      <ul class="order-card__items" aria-label="Состав заказа">
         <li
           v-for="item in props.details.snapshot"
           :key="item.productId"
@@ -41,8 +57,8 @@
         >
           {{ item.productName }}{{ item.size ? `, ${item.size}` : "" }} ×
           {{ item.quantity }} — {{ formatMoney(item.lineTotalMinor) }}
-          <span v-if="item.modifiers.length">
-            ({{
+          <span v-if="item.modifiers.length"
+            >({{
               item.modifiers
                 .map((modifier) => modifier.modifierName)
                 .join(", ")
@@ -59,22 +75,23 @@
           {{ formatDate(event.occurredAt) }}, Автор: {{ event.actorId }}
         </li>
       </ol>
-      <button
+      <AdminButton
         v-if="action !== undefined"
         class="order-card__action"
-        type="button"
         :disabled="props.transitionLoading"
         @click="emit('transition')"
       >
         {{ props.transitionLoading ? "Обновление…" : action.label }}
-      </button>
+      </AdminButton>
     </section>
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { Clock } from "lucide-vue-next";
 
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import { orderActions, orderStages } from "./OrderCard.constants";
 import type { OrderCardEmits, OrderCardProps } from "./OrderCard.types";
 
@@ -83,6 +100,12 @@ const emit = defineEmits<OrderCardEmits>();
 const stage = computed(() => orderStages[props.order.stage]);
 const action = computed(
   () => orderActions[props.details?.stage ?? props.order.stage],
+);
+const itemsSummary = computed(
+  () =>
+    props.details?.snapshot
+      .map((item) => `${item.productName} × ${item.quantity}`)
+      .join(", ") ?? "",
 );
 
 function stageLabel(value: keyof typeof orderStages): string {
@@ -107,76 +130,116 @@ function formatMoney(value: number): string {
 <style scoped lang="scss">
 .order-card {
   display: grid;
+  min-width: 0;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-md);
-  background: var(--expressa-color-surface);
+  padding: var(--expressa-space-row-block) var(--expressa-space-md);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-lg);
+  background: var(--expressa-color-surface);
+  box-shadow: var(--expressa-shadow-card);
 }
-.order-card__heading {
+.order-card__heading,
+.order-card__time {
   display: flex;
+  min-width: 0;
+  align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
 }
 .order-card__number,
-.order-card__date,
-.order-card__total,
-.order-card__details p {
-  margin: 0;
+.order-card__time {
+  color: var(--expressa-color-text-muted);
 }
 .order-card__number {
-  font-weight: var(--expressa-font-weight-bold);
-}
-.order-card__date {
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--expressa-font-size-action);
+  font-weight: var(--expressa-font-weight-medium);
+  overflow-wrap: anywhere;
 }
 .order-card__stage {
-  padding: var(--expressa-space-xs) var(--expressa-space-sm);
-  border-radius: var(--expressa-radius-md);
-  background: var(--expressa-color-surface-raised);
+  flex: 0 0 auto;
+  padding: var(--expressa-space-badge-block) var(--expressa-space-control-block);
+  border-radius: var(--expressa-radius-pill);
+  font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-caption-compact);
+  white-space: nowrap;
 }
 .order-card__stage[data-tone="success"] {
-  color: var(--expressa-color-success);
+  color: var(--expressa-color-status-success);
+  background: var(--expressa-color-status-success-surface);
 }
 .order-card__stage[data-tone="warning"] {
-  color: var(--expressa-color-warning);
+  color: var(--expressa-color-status-warning);
+  background: var(--expressa-color-status-warning-surface);
+}
+.order-card__stage[data-tone="info"] {
+  color: var(--expressa-color-accent);
+  background: var(--expressa-color-status-info-surface);
+}
+.order-card__time {
+  justify-content: flex-start;
+  font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-caption);
+}
+.order-card__summary,
+.order-card__total,
+.order-card__customer {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.order-card__summary {
+  display: -webkit-box;
+  min-height: calc(
+    var(--expressa-font-size-body) * var(--expressa-line-height-body) * 2
+  );
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-body);
+  line-height: var(--expressa-line-height-body);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 .order-card__total {
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body-strong);
   font-weight: var(--expressa-font-weight-semibold);
+  line-height: var(--expressa-line-height-emphasis);
 }
 .order-card__details-button,
 .order-card__action {
-  min-height: var(--expressa-touch-target-min);
-  padding: var(--expressa-space-sm);
-  color: inherit;
-  background: transparent;
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
-  cursor: pointer;
+  width: 100%;
 }
-.order-card__action {
-  color: var(--expressa-color-on-primary);
-  background: var(--expressa-color-primary);
-  border-color: var(--expressa-color-primary);
+.order-card__loading {
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-body);
 }
 .order-card__details {
   display: grid;
+  min-width: 0;
   gap: var(--expressa-space-sm);
   padding-top: var(--expressa-space-sm);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
+.order-card__customer {
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body);
+}
 .order-card__items,
 .order-card__events {
   display: grid;
+  min-width: 0;
   gap: var(--expressa-space-xs);
-  padding-left: var(--expressa-space-lg);
   margin: 0;
+  padding-left: var(--expressa-space-lg);
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-body);
 }
-.order-card__loading {
-  color: var(--expressa-color-text-muted);
+.order-card__item {
+  overflow-wrap: anywhere;
 }
 </style>

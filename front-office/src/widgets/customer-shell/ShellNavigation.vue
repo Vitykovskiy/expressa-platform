@@ -8,7 +8,7 @@
           aria-label="Назад"
           @click="emit('back')"
         >
-          <ArrowLeft aria-hidden="true" />
+          <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
         </ui-icon-btn>
         <ui-icon-btn
           v-if="props.showBack"
@@ -16,10 +16,10 @@
           aria-label="В меню"
           @click="emit('navigate', 'menu')"
         >
-          <House aria-hidden="true" />
+          <House aria-hidden="true" :size="17" :stroke-width="2.5" />
         </ui-icon-btn>
       </div>
-      <span class="shell-navigation__brand"> Ex-pressa ☕ </span>
+      <span class="shell-navigation__brand">Ex-pressa ☕</span>
       <div
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
@@ -28,7 +28,12 @@
           :aria-label="accountControl.ariaLabel"
           @click="emit('navigate', accountControl.destination)"
         >
-          <component :is="accountControl.icon" aria-hidden="true" />
+          <component
+            :is="accountControl.mobileIcon"
+            aria-hidden="true"
+            :size="17"
+            :stroke-width="2.5"
+          />
         </ui-icon-btn>
         <ui-icon-btn
           type="button"
@@ -36,7 +41,7 @@
           aria-label="Корзина"
           @click="emit('navigate', 'cart')"
         >
-          <ShoppingCart aria-hidden="true" />
+          <ShoppingCart aria-hidden="true" :size="17" :stroke-width="2.5" />
           <ui-badge
             v-if="props.cartCount"
             class="shell-navigation__badge"
@@ -101,9 +106,13 @@
       <ui-btn
         type="button"
         class="shell-navigation__account"
+        :class="{
+          'shell-navigation__account--authenticated':
+            accountControl.isAuthenticated,
+        }"
         @click="accountControl.action()"
       >
-        <component :is="accountControl.icon" aria-hidden="true" />
+        <component :is="accountControl.sidebarIcon" aria-hidden="true" />
         {{ accountControl.label }}
         <span
           v-if="accountControl.actionLabel"
@@ -125,6 +134,7 @@ import {
   History,
   House,
   LogIn,
+  Phone,
   ShoppingCart,
 } from "lucide-vue-next";
 import UiBadge from "@/shared/ui/customer/badge/UiBadge.vue";
@@ -152,7 +162,9 @@ const accountControl = computed(() => {
     return {
       ariaLabel: "История заказов",
       destination: "orders" as const,
-      icon: History,
+      mobileIcon: History,
+      sidebarIcon: Phone,
+      isAuthenticated: true,
       label: props.accountLabel,
       actionLabel: "Выйти",
       action: () => emit("signOut"),
@@ -162,7 +174,9 @@ const accountControl = computed(() => {
   return {
     ariaLabel: "Подтвердить телефон",
     destination: "auth" as const,
-    icon: LogIn,
+    mobileIcon: LogIn,
+    sidebarIcon: LogIn,
+    isAuthenticated: false,
     label: "Подтвердить телефон",
     actionLabel: "",
     action: () => emit("navigate", "auth"),
@@ -176,11 +190,12 @@ const accountControl = computed(() => {
 }
 
 .shell-navigation__mobile-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 2;
   display: flex;
-  flex: 0 0 calc(var(--customer-space-17) + var(--customer-space-9));
-  height: calc(var(--customer-space-17) + var(--customer-space-9));
+  flex: 0 0 var(--customer-size-shell-header);
+  height: var(--customer-size-shell-header);
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--customer-space-9);
@@ -201,7 +216,9 @@ const accountControl = computed(() => {
   position: relative;
   display: grid;
   width: calc(var(--customer-space-16) + var(--customer-space-3));
+  min-width: calc(var(--customer-space-16) + var(--customer-space-3));
   height: calc(var(--customer-space-16) + var(--customer-space-3));
+  min-height: calc(var(--customer-space-16) + var(--customer-space-3));
   place-items: center;
   color: var(--customer-text);
   background: var(--customer-surface-control);
@@ -217,6 +234,7 @@ const accountControl = computed(() => {
   color: var(--customer-text);
   font-size: var(--customer-font-size-2xl);
   font-weight: var(--customer-font-weight-black);
+  letter-spacing: var(--customer-letter-spacing-slight);
 }
 
 .shell-navigation__brand-icon {
@@ -266,7 +284,7 @@ const accountControl = computed(() => {
     position: sticky;
     top: 0;
     display: flex;
-    width: calc(var(--customer-space-21) * 3 + var(--customer-space-17));
+    width: var(--customer-size-shell-sidebar);
     height: 100dvh;
     flex: 0 0 auto;
     flex-direction: column;
@@ -353,6 +371,16 @@ const accountControl = computed(() => {
   .shell-navigation__account > svg {
     width: var(--customer-font-size-body);
     height: var(--customer-font-size-body);
+  }
+
+  .shell-navigation__account--authenticated {
+    color: var(--customer-success);
+    background: var(--customer-color-success-18);
+    border-color: var(--customer-color-success-35);
+  }
+
+  .shell-navigation__account--authenticated .shell-navigation__account-action {
+    color: var(--customer-color-success-70);
   }
 
   .shell-navigation__account-action {
