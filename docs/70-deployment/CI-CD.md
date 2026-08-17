@@ -31,15 +31,31 @@ GitHub SSH-переменные остаются входами runner для с
 Remote script передаёт эти значения `deploy.sh` NUL-разделённым stdin как
 `DELIVERY_VAPID_*`, не записывая их в `runtime.env` или временный каталог.
 После чтения `runtime.env` `deploy.sh` экспортирует полученные `VAPID_*` только
-для compose и удаляет `DELIVERY_VAPID_*` из окружения. `deploy.sh` читает из
-этого заранее созданного файла пароль PostgreSQL, а для development —
-`AUTH_DEVELOPMENT_OTP`. В staging он включает
-`AUTH_OTP_MODE=staging_test`, фиксированный OTP и точный allowlist из
+для compose и удаляет `DELIVERY_VAPID_*` из окружения. Development workflow
+передаёт `AUTH_DEVELOPMENT_OTP` из GitHub Environment `development`
+NUL-разделённым stdin; `deploy.sh` использует его только для текущего процесса
+поставки. Значение не сохраняется в `runtime.env`, временном каталоге или
+логах. В staging он включает
+`AUTH_OTP_MODE=staging_test`, OTP `000000` и allowlist из
 `BOOTSTRAP_ADMIN_PHONE` и синтетического customer `+79990000001`. Значения
 хранятся в GitHub Environment Secrets, не коммитятся в YAML, не печатаются и
 не сохраняются в `runtime.env` или временном каталоге VPS. [Development deploy step](../../.github/workflows/development-delivery.yml),
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
+
+## Публичные тестовые доступы
+
+| Среда | Роль | Телефон | OTP | Источник конфигурации |
+| --- | --- | --- | --- | --- |
+| development | customer | `+79990000001` | `000000` | GitHub Environment `development`: `AUTH_DEVELOPMENT_OTP` |
+| development | administrator | `+79990000002` | `000000` | GitHub Environment `development`: `BOOTSTRAP_ADMIN_PHONE`, `AUTH_DEVELOPMENT_OTP` |
+| staging | customer | `+79990000001` | `000000` | фиксированный контракт `staging_test` |
+| staging | administrator | `+79990000002` | `000000` | GitHub Environment `staging`: `BOOTSTRAP_ADMIN_PHONE`; фиксированный контракт `staging_test` |
+
+`BOOTSTRAP_ADMIN_PHONE` в GitHub Environments `development` и `staging`
+создаёт или обновляет administrator при каждом seed. В staging OTP выдаётся
+только двум номерам таблицы; другие номера не входят в allowlist. Полный
+порядок ротации и проверки приведён в [операционном запуске](Operations-runbook.md).
 
 `operations-verification.yml` запускается из `main` по cron `0 2 * * *` или
 ручному dispatch с `confirm_operations_verification=true`; concurrency сохраняет

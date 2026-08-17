@@ -18,21 +18,15 @@ sources:
 
 ## Адреса стендов
 
-Локальная карта адресов стендов хранится в игнорируемом файле
-[`deploy/stand-urls.env`](../../deploy/stand-urls.env). Имена переменных:
-`DEVELOPMENT_FRONT_URL`, `DEVELOPMENT_BACK_URL`,
-`STAGING_FRONT_URL`, `STAGING_BACK_URL`, `EXPRESSA_DEVELOPMENT_API_URL`,
-`EXPRESSA_STAGING_API_URL`.
-
-| Среда | Front-office | Back-office | API |
+| Среда | Customer | Admin | API |
 | --- | --- | --- | --- |
-| development | `DEVELOPMENT_FRONT_URL` | `DEVELOPMENT_BACK_URL` | `EXPRESSA_DEVELOPMENT_API_URL` |
-| staging | `STAGING_FRONT_URL` | `STAGING_BACK_URL` | `EXPRESSA_STAGING_API_URL` |
+| development | <https://dev.expressa.vitykovskiy.ru/> | <https://admin.dev.expressa.vitykovskiy.ru/> | <https://api.dev.expressa.vitykovskiy.ru> |
+| staging | <https://staging.expressa.vitykovskiy.ru/> | <https://admin.staging.expressa.vitykovskiy.ru/> | <https://api.staging.expressa.vitykovskiy.ru> |
 
-Для API проверка доступности выполняется по значению соответствующей переменной
-с суффиксами `/health/live` и `/health/ready`.
-Swagger и OpenAPI публикуются только в `development` по `/docs` и
-`/docs/openapi.json`.
+Для обоих API проверка доступности выполняется по `/health/live` и
+`/health/ready`. Swagger и OpenAPI публикуются только в `development`:
+<https://api.dev.expressa.vitykovskiy.ru/docs> и
+<https://api.dev.expressa.vitykovskiy.ru/docs/openapi.json>.
 В `staging` документация API отключена конфигурацией приложения.
 
 Адреса выше — операционная карта DNS и проверяются запросом к живым endpoint;

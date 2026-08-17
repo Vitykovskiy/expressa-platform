@@ -7,6 +7,8 @@ sources:
   - ../../deploy/deploy.sh
   - ../../deploy/compose.yml
   - ../../deploy/smoke-production.mjs
+  - ../../.github/workflows/development-delivery.yml
+  - ../../.github/workflows/staging-deploy.yml
   - ../../.github/workflows/production-promotion.yml
 ---
 
@@ -23,10 +25,10 @@ PostgreSQL, запускает миграции и seed, затем провер
 `expressa-<environment>-edge` и `expressa-<environment>-data`, а для CI
 настроены SSH user/key/known-hosts. Для staging workflow передаёт через SSH
 синтетический staff `BOOTSTRAP_ADMIN_PHONE` и auth/CORS-секреты. Все workflow
-передают VAPID credentials только через NUL-разделённый SSH stdin: remote
-runner именует их `DELIVERY_VAPID_*`, а `deploy.sh` после чтения `runtime.env`
-заменяет ими процессные `VAPID_*` и сразу удаляет `DELIVERY_VAPID_*`. Эти
-credentials не сохраняются в `runtime.env`, временном каталоге или логах.
+передают VAPID credentials, а development также `AUTH_DEVELOPMENT_OTP`, только
+через NUL-разделённый SSH stdin. Remote runner передаёт их `deploy.sh` для
+текущего процесса поставки; эти значения не сохраняются в `runtime.env`,
+временном каталоге или логах.
 `deploy.sh`
 включает `staging_test` с фиксированным OTP. Allowlist содержит ровно этот staff
 и customer `+79990000001`; другие номера OTP не получают. После health-checks
@@ -46,6 +48,31 @@ E08/E09 — запреты ролей и неверного перехода, п
 Для диагностики используются backend `/health/live` и `/health/ready`, client
 `/health` и container health-checks. Значения `runtime.env` — секреты и не
 выводятся. [Compose](../../deploy/compose.yml), [backend health](../../backend/src/platform/health/health.controller.ts).
+
+## Тестовые доступы и ротация
+
+Публичные тестовые пользователи development и staging: customer
+`+79990000001` и administrator `+79990000002`; OTP для обоих — `000000`.
+Адреса Customer, Admin и API приведены в [средах](Environments.md).
+
+Для ротации administrator оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
+номер формата `+7XXXXXXXXXX` в GitHub Environments `development` и `staging`.
+Значение вводится только в интерфейсе GitHub Secrets и не помещается в команду,
+Git, логи или `runtime.env`. Следующая поставка seed-ом создаёт либо обновляет
+пользователя с ролью `administrator`.
+
+Для восстановления development OTP оператор заменяет
+`AUTH_DEVELOPMENT_OTP` в GitHub Environment `development`. Значение вводится
+только в интерфейсе GitHub Secrets; workflow передаёт его NUL-разделённым stdin
+только на время поставки, без записи в `runtime.env`, временный каталог или
+логи.
+
+После изменения GitHub Secret оператор запускает development
+delivery из `main`; для staging повторно запускает deployment существующего
+тега. Production не меняется. После успешной поставки проверяет оба API по
+`/health/live` и `/health/ready`, вход customer и administrator с OTP `000000`,
+роль `administrator` в Admin и staging smoke. Если ротация меняет номер,
+обновляет таблицу [CI/CD](CI-CD.md) тем же change.
 
 Для наблюдаемости оператор запускает отдельный `ops-compose.yml` в edge-сети
 среды и проверяет непрефиксный backend `/metrics`, панель Grafana и targets
