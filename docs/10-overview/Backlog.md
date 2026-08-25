@@ -2,7 +2,7 @@
 title: Бэклог разработки
 type: planning
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-08-25
 sources:
   - backlog/E01/index.md
 ---
@@ -25,3 +25,4 @@ sources:
 - [[backlog/E10/index|E10 — Текущий заказ, история, повтор и уведомления]]
 - [[backlog/E11/index|E11 — Оперативная доступность]]
 - [[backlog/E12/index|E12 — Приёмка и выпуск]]
+- [[backlog/E13/index|E13 — Standalone E2E-система]]

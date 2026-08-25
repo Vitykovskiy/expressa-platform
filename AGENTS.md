@@ -18,7 +18,7 @@
 
 ## Definition of Done к коду
 
-- Перед реализацией определить затронутые приложения и применять при реализации и приёмке соответствующий DoD: [front-office](docs/80-conventions/Code-Definition-of-Done-front-office.md), [back-office](docs/80-conventions/Code-Definition-of-Done-back-office.md), [backend](docs/80-conventions/Code-Definition-of-Done-backend.md).
+- Перед реализацией определить затронутые контуры и применять при реализации и приёмке соответствующий DoD: [front-office](docs/80-conventions/Code-Definition-of-Done-front-office.md), [back-office](docs/80-conventions/Code-Definition-of-Done-back-office.md), [backend](docs/80-conventions/Code-Definition-of-Done-backend.md), [e2e](e2e/docs/80-conventions/Definition-of-Done.md).
 - Для межконтурной задачи применять DoD всех затронутых приложений. Задача принимается только после выполнения применимых критериев.
 
 ## Входы контуров
@@ -26,6 +26,7 @@
 - Backend: [README](backend/README.md), [AGENTS](backend/AGENTS.md), [docs](backend/docs/INDEX.md).
 - Front-office: [README](front-office/README.md), [AGENTS](front-office/AGENTS.md), [docs](front-office/docs/INDEX.md).
 - Back-office: [README](back-office/README.md), [AGENTS](back-office/AGENTS.md), [docs](back-office/docs/INDEX.md).
+- E2E: [README](e2e/README.md), [AGENTS](e2e/AGENTS.md), [docs](e2e/docs/INDEX.md). Пакет тестирует подготовленные front-office и back-office только через браузерный UI.
 - Корневой `docs/` владеет системой, поставкой и межконтурными контрактами; детали контура живут в его `docs/`.
 
 ## Приоритеты принципов

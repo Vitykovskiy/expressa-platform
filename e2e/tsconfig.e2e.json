@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "playwright.config.ts",
+    "components/**/*.ts",
+    "pages/**/*.ts",
+    "fixtures/**/*.ts",
+    "specs/**/*.ts",
+    "support/**/*.ts"
+  ]
+}

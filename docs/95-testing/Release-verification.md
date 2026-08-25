@@ -1,7 +1,7 @@
 ---
 type: testing
 owner: root
-last_verified: 2026-08-16
+last_verified: 2026-08-25
 sources:
   - ../_sources/Expressa_MVP_Техническое_задание.md
 ---
@@ -9,7 +9,7 @@ sources:
 # Проверка готовности и выпуска
 
 - **Q-SMOKE.** Чистая база проходит миграции, seed и полный API-маршрут до выдачи заказа.
-- **Q-E2E.** Сквозной браузерный сценарий связывает создание меню, клиентский заказ, приготовление, оплату, выдачу и историю.
+- **Q-E2E.** Эпик [[../10-overview/backlog/E13/index|E13]] создаёт standalone-набор [`e2e`](../../e2e/README.md), который связывает создание меню, клиентский заказ, приготовление, оплату, выдачу и историю через UI подготовленных front-office и back-office.
 - **Q-RELEASE.** Выпуск компонента фиксирует совпадающие версию пакета, Git-тег
   и запись `CHANGELOG.md`; составной staging-тег фиксирует совместимый набор
   трёх digest и результаты обязательных проверок.
@@ -75,11 +75,19 @@ front-office проверяет polling, pagination и повтор по акт�
 Barista управляет доступностью и приёмом новых заказов через защищённый API.
 [Orders E2E](../../backend/test/e2e/create-order.e2e-spec.ts), [checkout E2E](../../front-office/tests/e2e/checkout.e2e.spec.ts), [availability E2E](../../back-office/tests/e2e/orders.e2e.ts).
 
+## E13 — standalone Q-E2E
+
+E13 создаёт POM, fixtures, тестовые данные и независимые браузерные сценарии
+standalone-набора [`e2e`](../../e2e/README.md). Итоговый
+[[../10-overview/backlog/E13/quality/BL-0170|Q-E2E]] связывает administrator,
+customer и staff только через UI подготовленных клиентов; customer после выдачи
+читает неизменяемый снимок в истории.
+
 ## E12 — нормативная приёмка
 
 Q-SMOKE запускает миграции, дважды выполняет идемпотентный seed и проводит
-заказ API до `ISSUED`. Q-E2E связывает administrator, customer и barista в
-реальном Chromium; customer после выдачи читает неизменяемый снимок в истории.
+заказ API до `ISSUED`. E12 принимает успешный Q-E2E из E13 как доказательство
+для совместимого набора версий.
 Внешние проверки backup/restore, alert delivery, staging и production не
 подменяются локальными тестами: их статус фиксируется в карте доказательств.
 

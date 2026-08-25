@@ -1,0 +1,22 @@
+# Dependencies
+/node_modules
+
+# Environment and local agent context
+/.env.e2e.local
+/.codex/
+/.agents/
+
+# Playwright artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+
+# IDE and system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-error.log*
