@@ -74,19 +74,16 @@ test("production runtime компилирует Vuetify-диалог катег�
     .getByRole("button", { name: "Добавить группу" })
     .click();
 
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.locator(".v-overlay--active .add-dialog")).toBeVisible();
-  await expect
-    .poll(() =>
-      page
-        .locator("*")
-        .evaluateAll((elements) =>
-          elements
-            .map((element) => element.localName)
-            .filter((name) => name.startsWith("v-")),
-        ),
-    )
-    .toEqual([]);
+  const categoryDialog = page.getByRole("dialog");
+  await expect(categoryDialog).toBeVisible();
+  await expect(
+    categoryDialog.getByRole("heading", { name: "Новая категория" }),
+  ).toBeVisible();
+  await expect(
+    categoryDialog.getByRole("button", { name: "Добавить категорию" }),
+  ).toBeVisible();
+  await categoryDialog.getByRole("button", { name: "Отмена" }).click();
+  await expect(categoryDialog).toBeHidden();
   await expect(issues()).toEqual([]);
   await context.close();
 });

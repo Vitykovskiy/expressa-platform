@@ -7,8 +7,10 @@ import { DatabaseService } from '../platform/database/database.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
 import { CreateOrderUseCase } from './application/create-order.use-case';
+import { orderNotificationPort } from './application/order-notification-port.types';
 import { orderUnitOfWorkPort } from './orders.module.constants';
 import { OrdersModule } from './orders.module';
+import { SendOrderPushUseCase } from '../notifications/application/send-order-push.use-case';
 import { OrdersController } from './transport/orders.controller';
 import { BackofficeOrdersController } from './transport/backoffice-orders.controller';
 
@@ -40,6 +42,7 @@ describe('OrdersModule', () => {
     expect(module.get(OrdersController)).toBeInstanceOf(OrdersController);
     expect(module.get(CreateOrderUseCase)).toBeInstanceOf(CreateOrderUseCase);
     expect(module.get(orderUnitOfWorkPort)).toBeInstanceOf(PostgresOrderUnitOfWork);
+    expect(module.get(orderNotificationPort)).toBe(module.get(SendOrderPushUseCase));
   });
 
   it('регистрирует только контроллер заказов и необходимые модули', () => {

@@ -32,10 +32,10 @@ feature переводит её в видимое состояние, а не р
 
 `App` восстанавливает корзину и сессию до показа маршрута. `ErrorNotice` читает
 `appStore.screenError`, который изначально `null`; при non-null выводит message,
-optional request id и по «Закрыть» очищает store. `mapApiErrorToScreenError` есть
-и тестируется, но runtime consumer не найден: он не создаёт этот поток.
+optional request id и по «Закрыть» очищает store. Текущие session и feature
+stores сохраняют сообщения ошибок в собственном состоянии.
 [Источники: App](../../src/app/App.vue), [store](../../src/app/app.store.ts),
-[mapper](../../src/app/api-error.mapper.ts), [notice](../../src/shared/ui/ErrorNotice.vue).
+[notice](../../src/shared/ui/ErrorNotice.vue).
 
 В production регистрируется service worker; development его не регистрирует.
 [Источник: PWA](../../src/app/pwa.ts).

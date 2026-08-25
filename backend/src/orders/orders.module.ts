@@ -9,6 +9,7 @@ import { SendOrderPushUseCase } from '../notifications/application/send-order-pu
 import { PostgresOrderUnitOfWork } from './adapters/postgres-order-unit-of-work';
 import { PostgresOrderLifecycleRepository } from './adapters/postgres-order-lifecycle.repository';
 import { CreateOrderUseCase } from './application/create-order.use-case';
+import { orderNotificationPort, type OrderNotificationPort } from './application/order-notification-port.types';
 import type { OrderUnitOfWork } from './application/order-unit-of-work.types';
 import { GetOrdersUseCase } from './application/get-orders.use-case';
 import { TransitionOrderUseCase } from './application/transition-order.use-case';
@@ -29,9 +30,10 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: CreateOrderUseCase,
-      inject: [orderUnitOfWorkPort, SendOrderPushUseCase, orderMetricsPort],
-      useFactory: (unitOfWork: OrderUnitOfWork, push: SendOrderPushUseCase, metrics: OrderMetricsPort) => new CreateOrderUseCase(unitOfWork, push, metrics),
+      inject: [orderUnitOfWorkPort, orderNotificationPort, orderMetricsPort],
+      useFactory: (unitOfWork: OrderUnitOfWork, push: OrderNotificationPort, metrics: OrderMetricsPort) => new CreateOrderUseCase(unitOfWork, push, metrics),
     },
+    { provide: orderNotificationPort, useExisting: SendOrderPushUseCase },
     {
       provide: orderMetricsPort,
       useFactory: (): OrderMetricsPort => ({
@@ -61,8 +63,8 @@ import { BackofficeOrdersController } from './transport/backoffice-orders.contro
     },
     {
       provide: TransitionOrderUseCase,
-      inject: [orderTransitionUnitOfWorkPort, SendOrderPushUseCase, orderMetricsPort],
-      useFactory: (unitOfWork: OrderTransitionUnitOfWork, push: SendOrderPushUseCase, metrics: OrderMetricsPort) => new TransitionOrderUseCase(unitOfWork, push, metrics),
+      inject: [orderTransitionUnitOfWorkPort, orderNotificationPort, orderMetricsPort],
+      useFactory: (unitOfWork: OrderTransitionUnitOfWork, push: OrderNotificationPort, metrics: OrderMetricsPort) => new TransitionOrderUseCase(unitOfWork, push, metrics),
     },
   ],
 })

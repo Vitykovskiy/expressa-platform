@@ -1,12 +1,12 @@
 import type { OrderTransitionUnitOfWork, TransitionOrderCommand } from './order-lifecycle.types';
 import type { OrderMetricsPort } from './order-metrics.types';
 import type { OrderDetails } from '../domain/order-lifecycle.types';
-import { SendOrderPushUseCase } from '../../notifications/application/send-order-push.use-case';
+import type { OrderNotificationPort } from './order-notification-port.types';
 
 export class TransitionOrderUseCase {
   constructor(
     private readonly unitOfWork: OrderTransitionUnitOfWork,
-    private readonly push: SendOrderPushUseCase,
+    private readonly push: OrderNotificationPort,
     private readonly metrics: OrderMetricsPort,
   ) {}
   async execute(command: TransitionOrderCommand): Promise<OrderDetails> {

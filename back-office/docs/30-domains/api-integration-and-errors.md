@@ -11,7 +11,7 @@ sources:
 
 # API-интеграция и граница ошибок back-office
 
-`ApiClient` формирует запросы относительно заданной базы, передаёт JSON и заголовки, проверяет ожидаемый статус и форму ответа во время выполнения. Сетевой сбой, ошибка API и несовпадение формы становятся `ApiError`; `CatalogApi` преобразует их в `CatalogApiError` с безопасными ошибками полей. Экран передаёт пользователю сообщение и request ID, но не детали HTTP. Источники: [client.ts](../../src/shared/api/client.ts), [catalog.api.ts](../../src/shared/api/catalog.api.ts), [api-error.mapper.ts](../../src/app/api-error.mapper.ts).
+`ApiClient` формирует запросы относительно заданной базы, передаёт JSON и заголовки, проверяет ожидаемый статус и форму ответа во время выполнения. Сетевой сбой, ошибка API и несовпадение формы становятся `ApiError`; `CatalogApi` преобразует их в `CatalogApiError` с безопасными ошибками полей. Экран передаёт пользователю сообщение и request ID, но не детали HTTP. Источники: [client.ts](../../src/shared/api/client.ts), [catalog.api.ts](../../src/shared/api/catalog.api.ts), [session.store.ts](../../src/app/session.store.ts).
 
 Вход вызывает `POST /api/v1/auth/otp/request`, `POST /api/v1/auth/otp/verify`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` и `GET /api/v1/me`; access token хранится только в session store и передаётся как Bearer на `GET /api/v1/backoffice/catalog` и операции каталога. Клиент проверяет телефон `+7` и десять цифр, роли и положительные метаданные токена. Источники: [auth.api.ts](../../src/shared/api/auth.api.ts), [session.store.ts](../../src/app/session.store.ts), [OpenAPI](../../contracts/openapi.json).
 

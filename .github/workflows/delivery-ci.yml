@@ -4,6 +4,19 @@ on:
   pull_request:
     paths:
       - 'deploy/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'backend/docs/**'
+      - 'backend/**/README.md'
+      - 'backend/**/AGENTS.md'
+      - 'front-office/docs/**'
+      - 'front-office/**/README.md'
+      - 'front-office/**/AGENTS.md'
+      - 'back-office/docs/**'
+      - 'back-office/**/README.md'
+      - 'back-office/**/AGENTS.md'
+      - 'scripts/**'
       - '.github/workflows/**'
 
 permissions:
@@ -14,6 +27,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Check documentation
+        run: node scripts/check-docs.mjs
       - run: |
           sudo apt-get update
           sudo apt-get install --yes shellcheck

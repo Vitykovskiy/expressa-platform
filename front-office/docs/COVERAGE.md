@@ -26,7 +26,6 @@ sources:
 | UiSurfaceCard | orphan | [Контракты UI](30-conventions/UI-contracts.md) | [surface](../src/shared/ui/customer/surface-card/UiSurfaceCard.vue) | N/A | no runtime consumer |
 | UiToggle | orphan | [Контракты UI](30-conventions/UI-contracts.md) | [toggle](../src/shared/ui/customer/toggle/UiToggle.vue) | N/A | no runtime consumer |
 | App and ErrorNotice | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [App](../src/app/App.vue) | [spec](../src/app/App.spec.ts) | active global error display |
-| API error mapper | orphan | [Состояние и API](20-architecture/Application-state-and-API.md) | [mapper](../src/app/api-error.mapper.ts) | [spec](../src/app/api-error.mapper.spec.ts) | tested only; no runtime consumer |
 | app store | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [store](../src/app/app.store.ts) | [spec](../src/app/App.spec.ts) | covered in state note |
 | session store | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [store](../src/app/session.store.ts) | [spec](../src/app/session.store.spec.ts) | covered in state note |
 | menu store | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [store](../src/entities/customer/model/menu.store.ts) | [spec](../src/entities/customer/model/menu.store.spec.ts) | covered in state note |

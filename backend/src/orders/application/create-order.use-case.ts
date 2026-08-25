@@ -1,11 +1,11 @@
 import type { CreateOrderCommand, CreateOrderResult, OrderUnitOfWork } from './order-unit-of-work.types';
 import type { OrderMetricsPort } from './order-metrics.types';
-import { SendOrderPushUseCase } from '../../notifications/application/send-order-push.use-case';
+import type { OrderNotificationPort } from './order-notification-port.types';
 
 export class CreateOrderUseCase {
   constructor(
     private readonly unitOfWork: OrderUnitOfWork,
-    private readonly push: SendOrderPushUseCase,
+    private readonly push: OrderNotificationPort,
     private readonly metrics: OrderMetricsPort,
   ) {}
 

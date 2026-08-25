@@ -119,3 +119,11 @@ jobs:
         run: >-
           VITE_APP_ENV=development VITE_API_BASE_URL=http://127.0.0.1:3000
           npm run build && PLAYWRIGHT_TARGET=auth npx playwright test --project=auth-e2e
+
+      - name: Run catalog E2E
+        working-directory: back-office
+        run: npm run test:catalog:e2e
+
+      - name: Run orders E2E
+        working-directory: back-office
+        run: npx playwright test --config=playwright.orders.config.ts
