@@ -55,8 +55,8 @@ containers, networks, volume PostgreSQL и временные test data. HTML-а
 GitHub Environment `development` хранит `EXPRESSA_VPS_*` для SSH,
 `BOOTSTRAP_ADMIN_PHONE` для administrator, `AUTH_DEVELOPMENT_OTP` для всех
 трёх ролей и единственный новый E2E secret `E2E_REPORT_ALLOWLIST`. Временный
-стенд создаёт administrator из `BOOTSTRAP_ADMIN_PHONE`, upsert-ит staff
-`+79990000002` и использует customer `+79990000003`; workflow до запуска
+стенд создаёт administrator из `BOOTSTRAP_ADMIN_PHONE`, а staff и customer
+выбирает из пула `+79990000002…+79990000004`, исключая administrator; workflow до запуска
 и VPS runtime до seed проверяют, что все три роли различаются. На VPS должны
 быть доступные `/srv/expressa/development/runtime.env`, локальный container registry и
 достаточная ёмкость для одного временного Compose-стенда. Remote runtime также

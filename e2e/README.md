@@ -15,7 +15,7 @@ npm run e2e
 Сквозные сценарии дополнительно используют `E2E_ADMIN_PHONE`, `E2E_ADMIN_OTP`,
 `E2E_STAFF_PHONE`, `E2E_STAFF_OTP`, `E2E_CUSTOMER_PHONE` и
 `E2E_CUSTOMER_OTP`. Для VPS administrator и OTP остаются секретами, а
-синтетические staff `+79990000002` и customer `+79990000003` — часть
+синтетические staff и customer из пула `+79990000002…+79990000004` — часть
 зафиксированного E2E-контракта.
 
 ## Команды
@@ -38,6 +38,6 @@ npm run format:check
 `http://<IP_VPS>:8088/` только для CIDR из GitHub Environment Secret
 `E2E_REPORT_ALLOWLIST`; administrator и OTP берутся из существующих
 `BOOTSTRAP_ADMIN_PHONE` и `AUTH_DEVELOPMENT_OTP`, а staff и customer — из
-фиксированного E2E-контракта. Все три роли должны различаться. Порядок запуска,
+резервного пула с исключением administrator. Все три роли должны различаться. Порядок запуска,
 секреты и очистка описаны в
 [E2E-on-VPS](../docs/70-deployment/E2E-on-VPS.md).

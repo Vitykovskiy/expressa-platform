@@ -67,8 +67,8 @@ E08/E09 — запреты ролей и неверного перехода, п
 ## Тестовые доступы и ротация
 
 Standalone E2E запускается только в development. Он использует administrator
-из `BOOTSTRAP_ADMIN_PHONE`, OTP из `AUTH_DEVELOPMENT_OTP`, фиксированные staff
-`+79990000002` и customer `+79990000003`. До seed и staff upsert runner и VPS
+из `BOOTSTRAP_ADMIN_PHONE`, OTP из `AUTH_DEVELOPMENT_OTP`, а staff и customer —
+два свободных номера из пула `+79990000002…+79990000004`. До seed и staff upsert runner и VPS
 runtime отклоняют совпадение любой пары этих ролей. `E2E_REPORT_ALLOWLIST` —
 единственный новый E2E secret; порядок запуска описан в
 [E2E на VPS](E2E-on-VPS.md). Адреса Customer, Admin и API приведены в

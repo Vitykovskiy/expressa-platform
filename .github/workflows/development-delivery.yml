@@ -186,9 +186,12 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          E2E_STAFF_PHONE='+79990000002'
-          E2E_CUSTOMER_PHONE='+79990000003'
-          [[ "$BOOTSTRAP_ADMIN_PHONE" != "$E2E_STAFF_PHONE" && "$BOOTSTRAP_ADMIN_PHONE" != "$E2E_CUSTOMER_PHONE" && "$E2E_STAFF_PHONE" != "$E2E_CUSTOMER_PHONE" ]] || { printf '%s\n' 'E2E role phones must be distinct' >&2; exit 1; }
+          role_phones=()
+          for candidate in +79990000002 +79990000003 +79990000004; do
+            [[ "$candidate" == "$BOOTSTRAP_ADMIN_PHONE" ]] || role_phones+=("$candidate")
+          done
+          E2E_STAFF_PHONE="${role_phones[0]}"
+          E2E_CUSTOMER_PHONE="${role_phones[1]}"
           temporary_directory="$(mktemp -d)"
           trap 'rm -rf -- "$temporary_directory"' EXIT
           printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"

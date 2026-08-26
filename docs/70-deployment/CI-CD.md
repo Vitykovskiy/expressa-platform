@@ -55,8 +55,8 @@ NUL-разделённым stdin; `deploy.sh` использует его тол
 E2E job передаёт во временный VPS-каталог `e2e-compose.yml`, конфигурации
 gateway и report host, remote runtime и, при успешной сборке, оба image manifest.
 Administrator берётся из `BOOTSTRAP_ADMIN_PHONE`, OTP — из
-`AUTH_DEVELOPMENT_OTP`, а staff и customer имеют фиксированные номера
-`+79990000002` и `+79990000003`. Runner и VPS runtime проверяют, что все три
+`AUTH_DEVELOPMENT_OTP`, а staff и customer получают два свободных номера из
+резервного пула `+79990000002…+79990000004`. Runner и VPS runtime проверяют, что все три
 роли различаются, до seed и staff upsert. Единственный новый E2E secret —
 `E2E_REPORT_ALLOWLIST`; он, существующие значения доступа и `VAPID_*` приходят
 из GitHub Environment `development` process-scoped через NUL-разделённый stdin
@@ -76,14 +76,14 @@ workflow, `runtime.env` и `deploy.sh`; последний задаёт един
 | Среда       | Роль              | Телефон                         | OTP                    | Источник конфигурации                                                |
 | ----------- | ----------------- | ------------------------------- | ---------------------- | -------------------------------------------------------------------- |
 | development | E2E administrator | значение `BOOTSTRAP_ADMIN_PHONE` | `AUTH_DEVELOPMENT_OTP` | GitHub Environment `development`                                    |
-| development | E2E staff         | `+79990000002`                  | `AUTH_DEVELOPMENT_OTP` | фиксированный E2E-контракт                                          |
-| development | E2E customer      | `+79990000003`                  | `AUTH_DEVELOPMENT_OTP` | фиксированный E2E-контракт                                          |
+| development | E2E staff         | первый свободный номер резервного пула | `AUTH_DEVELOPMENT_OTP` | выбирается с исключением administrator                              |
+| development | E2E customer      | второй свободный номер резервного пула | `AUTH_DEVELOPMENT_OTP` | выбирается с исключением administrator                              |
 | staging     | customer          | `+79990000001`                  | `000000`               | фиксированный контракт `staging_test`                                |
 | staging     | administrator     | значение `BOOTSTRAP_ADMIN_PHONE` | `000000`               | GitHub Environment `staging`; фиксированный контракт `staging_test` |
 
 `BOOTSTRAP_ADMIN_PHONE` в GitHub Environments `development` и `staging`
 создаёт или обновляет administrator при каждом seed. Временный E2E-стенд затем
-upsert-ит staff по фиксированному номеру; runner и VPS runtime не запускают его
+upsert-ит staff по выбранному номеру; runner и VPS runtime не запускают его
 при совпадении любой пары ролей. В staging OTP выдаётся только двум номерам
 таблицы; другие номера не входят в allowlist. Полный
 порядок ротации и проверки приведён в [операционном запуске](Operations-runbook.md).
