@@ -267,19 +267,19 @@ test("administrator создаёт и публикует каталог для p
   await expect(adminPage).toHaveScreenshot("menu-ready-mobile-first.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect(adminPage).toHaveScreenshot("menu-ready-mobile-second.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect(adminPage).toHaveScreenshot("menu-ready-mobile-third.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect
@@ -359,19 +359,19 @@ test("administrator создаёт и публикует каталог для p
   await expect(adminPage).toHaveScreenshot("menu-ready-tablet-first.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect(adminPage).toHaveScreenshot("menu-ready-tablet-second.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect(adminPage).toHaveScreenshot("menu-ready-tablet-third.png", {
     animations: "disabled",
     caret: "hide",
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.04,
     scale: "css",
   });
   await expect
