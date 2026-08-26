@@ -1,6 +1,6 @@
 ---
 title: Карта standalone E2E-сценариев
-description: Реестр сквозных браузерных сценариев Expressa.
+description: Канонический реестр пользовательских браузерных сценариев Expressa.
 type: testing
 area: e2e
 status: active
@@ -8,41 +8,114 @@ tags: [e2e, scenarios]
 related:
   - ../20-architecture/ADR/ADR-001-standalone-e2e-architecture.md
   - ../80-conventions/Definition-of-Done.md
-  - ../../../docs/95-testing/Release-verification.md
+  - ../../../docs/95-testing/Mandatory-scenarios.md
 ---
 
 # Карта standalone E2E-сценариев
 
-Набор связывает действия administrator, customer и сотрудника через отдельно
-запущенные front-office и back-office. Подробные пользовательские шаги и
-ожидаемые результаты — в JSDoc соответствующего spec; правила их оформления — в
-[Code Style](../80-conventions/Code-style.md).
+Это единственный реестр 78 атомарных и 5 сквозных пользовательских сценариев.
+Подробные шаги и ожидаемые результаты принадлежат связанным документам сценариев;
+требования к их форме заданы в [Code Style](../80-conventions/Code-style.md).
 
-| Spec                                             | Backlog                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------- |
-| `catalog/publish-product.spec.ts`                | [BL-0166](../../../docs/10-overview/backlog/E13/quality/BL-0166.md) |
-| `checkout/place-order.spec.ts`                   | [BL-0167](../../../docs/10-overview/backlog/E13/quality/BL-0167.md) |
-| `fulfillment/issue-order.spec.ts`                | [BL-0168](../../../docs/10-overview/backlog/E13/quality/BL-0168.md) |
-| `order-history/view-issued-order.spec.ts`        | [BL-0169](../../../docs/10-overview/backlog/E13/quality/BL-0169.md) |
-| `order-lifecycle/complete-order-journey.spec.ts` | [BL-0170](../../../docs/10-overview/backlog/E13/quality/BL-0170.md) |
+Статус `current` означает реализованную возможность, `required-failing` —
+расхождение текущего UI с ТЗ, `required-blocked` — отсутствие необходимого UI.
+Техническое задание — источник обязательного поведения; код определяет только
+статус. Сценарии выполняются только через UI customer, barista и administrator.
 
-Карта фиксирует только границу E13: BL-0166–BL-0170 и пять связанных specs.
-Она не является полным реестром сценариев приложения.
+## Атомарные сценарии
 
-## Открытое противоречие по истории заказов
+| ID          | Название                                  | Роль                             | Статус           | Требование                                                 | Подробное описание                                 | Future spec                                          |
+| ----------- | ----------------------------------------- | -------------------------------- | ---------------- | ---------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| AUTH-01     | Первый вход customer                      | customer                         | current          | FR-AUTH-001, FR-AUTH-002, FR-AUTH-006                      | [authentication.md](scenarios/authentication.md)   | `authentication/first-customer-login.spec.ts`        |
+| AUTH-02     | Повторный вход customer                   | customer                         | current          | FR-AUTH-001, FR-AUTH-002, FR-AUTH-006                      | [authentication.md](scenarios/authentication.md)   | `authentication/repeat-customer-login.spec.ts`       |
+| AUTH-03     | Неверный формат телефона                  | customer                         | current          | FR-AUTH-001                                                | [authentication.md](scenarios/authentication.md)   | `authentication/invalid-phone.spec.ts`               |
+| AUTH-04     | Неверный одноразовый код                  | customer                         | current          | FR-AUTH-002, FR-AUTH-005                                   | [authentication.md](scenarios/authentication.md)   | `authentication/invalid-otp.spec.ts`                 |
+| AUTH-05     | Истёкший одноразовый код                  | customer                         | current          | FR-AUTH-003                                                | [authentication.md](scenarios/authentication.md)   | `authentication/expired-otp.spec.ts`                 |
+| AUTH-06     | Ограничение повторной отправки кода       | customer                         | current          | FR-AUTH-004                                                | [authentication.md](scenarios/authentication.md)   | `authentication/otp-resend-cooldown.spec.ts`         |
+| AUTH-07     | Восстановление и завершение сессии        | customer                         | current          | FR-AUTH-009, FR-AUTH-011                                   | [authentication.md](scenarios/authentication.md)   | `authentication/session-lifecycle.spec.ts`           |
+| AUTH-08     | Вход staff-пользователя                   | administrator, barista           | current          | FR-AUTH-010                                                | [authentication.md](scenarios/authentication.md)   | `authentication/staff-login.spec.ts`                 |
+| AUTH-09     | Запрет customer-доступа в back-office     | customer                         | current          | FR-AUTH-010                                                | [authentication.md](scenarios/authentication.md)   | `authentication/customer-staff-denied.spec.ts`       |
+| MENU-01     | Публичное опубликованное меню             | customer                         | current          | FR-CAT-001, FR-CAT-002, FR-CAT-003                         | [menu.md](scenarios/menu.md)                       | `menu/published-menu.spec.ts`                        |
+| MENU-02     | Пустое публичное меню                     | customer                         | current          | FR-CAT-001                                                 | [menu.md](scenarios/menu.md)                       | `menu/empty-menu.spec.ts`                            |
+| MENU-03     | Меню при закрытом приёме заказов          | customer                         | current          | FR-CAT-014                                                 | [menu.md](scenarios/menu.md)                       | `menu/intake-closed.spec.ts`                         |
+| MENU-04     | Навигация по категории и товару           | customer                         | current          | FR-CAT-001, FR-CAT-003                                     | [menu.md](scenarios/menu.md)                       | `menu/category-product-navigation.spec.ts`           |
+| MENU-05     | Конфигурация товара по умолчанию          | customer                         | current          | FR-CAT-004, FR-CAT-011, FR-CART-002                        | [menu.md](scenarios/menu.md)                       | `menu/default-product-configuration.spec.ts`         |
+| MENU-06     | Недоступный товар в меню                  | customer                         | current          | FR-CAT-003, FR-AVL-007                                     | [menu.md](scenarios/menu.md)                       | `menu/unavailable-product.spec.ts`                   |
+| MENU-07     | Неопубликованный товар                    | customer                         | current          | FR-CAT-015                                                 | [menu.md](scenarios/menu.md)                       | `menu/unpublished-product.spec.ts`                   |
+| CART-01     | Добавление товара в корзину               | customer                         | current          | FR-CART-001, FR-CART-002                                   | [cart.md](scenarios/cart.md)                       | `cart/add-item.spec.ts`                              |
+| CART-02     | Объединение одинаковых конфигураций       | customer                         | current          | FR-CART-005                                                | [cart.md](scenarios/cart.md)                       | `cart/merge-identical-items.spec.ts`                 |
+| CART-03     | Раздельные позиции разных конфигураций    | customer                         | current          | FR-CART-001, FR-CART-005                                   | [cart.md](scenarios/cart.md)                       | `cart/separate-configurations.spec.ts`               |
+| CART-04     | Количество, цена и итог                   | customer                         | current          | FR-CART-003, FR-CART-006, FR-CART-010                      | [cart.md](scenarios/cart.md)                       | `cart/quantity-and-total.spec.ts`                    |
+| CART-05     | Удаление позиции и очистка корзины        | customer                         | current          | FR-CART-004                                                | [cart.md](scenarios/cart.md)                       | `cart/remove-and-clear.spec.ts`                      |
+| CART-06     | Сохранение корзины после reload и входа   | customer                         | current          | FR-CART-001, FR-CART-011                                   | [cart.md](scenarios/cart.md)                       | `cart/persist-after-reload-and-login.spec.ts`        |
+| CART-07     | Актуализация доступности позиции          | customer                         | current          | FR-CART-007, FR-CART-009                                   | [cart.md](scenarios/cart.md)                       | `cart/revalidate-availability.spec.ts`               |
+| CHECKOUT-01 | Успешное оформление заказа                | customer                         | required-failing | FR-ORD-001, FR-ORD-004, FR-ORD-005, FR-PAY-003             | [checkout.md](scenarios/checkout.md)               | `checkout/place-order.spec.ts`                       |
+| CHECKOUT-02 | Возврат к оформлению после OTP            | customer                         | current          | FR-AUTH-006, FR-CART-011, FR-ORD-001                       | [checkout.md](scenarios/checkout.md)               | `checkout/return-after-otp.spec.ts`                  |
+| CHECKOUT-03 | Подтверждение актуальной цены             | customer                         | current          | FR-CART-008                                                | [checkout.md](scenarios/checkout.md)               | `checkout/confirm-updated-price.spec.ts`             |
+| CHECKOUT-04 | Отмена оформления при изменении цены      | customer                         | current          | FR-CART-008                                                | [checkout.md](scenarios/checkout.md)               | `checkout/cancel-updated-price.spec.ts`              |
+| CHECKOUT-05 | Недоступная позиция перед оформлением     | customer                         | current          | FR-CART-007, FR-CART-009, FR-AVL-008                       | [checkout.md](scenarios/checkout.md)               | `checkout/unavailable-item.spec.ts`                  |
+| CHECKOUT-06 | Закрытый приём заказов                    | customer                         | current          | FR-CAT-014, FR-AVL-004                                     | [checkout.md](scenarios/checkout.md)               | `checkout/intake-closed.spec.ts`                     |
+| CHECKOUT-07 | Защита от повторного оформления           | customer                         | current          | FR-ORD-002, FR-ORD-003                                     | [checkout.md](scenarios/checkout.md)               | `checkout/prevent-duplicate-order.spec.ts`           |
+| ORDER-01    | Снимок созданного заказа                  | customer                         | current          | FR-ORD-007, FR-ORD-008, FR-ORD-016                         | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/order-snapshot.spec.ts`             |
+| ORDER-02    | Запрет доступа к чужому заказу            | customer                         | current          | FR-HIST-006                                                | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/foreign-order-denied.spec.ts`       |
+| ORDER-03    | Просмотр текущего заказа                  | customer, barista                | current          | FR-ORD-015, FR-ORD-016                                     | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/current-order.spec.ts`              |
+| ORDER-04    | Просмотр завершённых заказов в истории    | customer                         | current          | FR-HIST-001, FR-HIST-002, FR-HIST-003, FR-HIST-004         | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/order-history.spec.ts`              |
+| ORDER-05    | Изоляция истории customer                 | customer                         | current          | FR-HIST-006                                                | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/customer-history-isolation.spec.ts` |
+| ORDER-06    | Полный повтор заказа открывает корзину    | customer                         | required-failing | FR-HIST-007, FR-HIST-008, FR-HIST-012                      | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/repeat-full-order.spec.ts`          |
+| ORDER-07    | Частичный повтор заказа                   | customer                         | required-failing | FR-HIST-008, FR-HIST-009                                   | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/repeat-partial-order.spec.ts`       |
+| ORDER-08    | Полностью недоступный повтор заказа       | customer                         | required-failing | FR-HIST-009, FR-HIST-010                                   | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/repeat-unavailable-order.spec.ts`   |
+| ORDER-09    | Customer push-уведомления                 | customer, barista                | current          | FR-PUSH-002, FR-PUSH-003, FR-PUSH-005, FR-PUSH-006         | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/customer-push.spec.ts`              |
+| ORDER-10    | Barista push-уведомление о новом заказе   | barista                          | required-blocked | FR-PUSH-002, FR-PUSH-004, FR-PUSH-005, FR-PUSH-006         | [customer-orders.md](scenarios/customer-orders.md) | `customer-orders/barista-push.spec.ts`               |
+| QUEUE-01    | Пустая очередь заказов                    | barista, administrator           | current          | FR-ORD-009                                                 | [queue.md](scenarios/queue.md)                     | `queue/empty-queue.spec.ts`                          |
+| QUEUE-02    | Заполненная очередь заказов               | barista, administrator           | required-failing | FR-ORD-009                                                 | [queue.md](scenarios/queue.md)                     | `queue/populated-queue.spec.ts`                      |
+| QUEUE-03    | Фильтрация очереди по стадии              | barista, administrator           | required-failing | FR-ORD-009                                                 | [queue.md](scenarios/queue.md)                     | `queue/filter-by-status.spec.ts`                     |
+| QUEUE-04    | Поиск заказа по номеру                    | barista, administrator           | current          | FR-ORD-009                                                 | [queue.md](scenarios/queue.md)                     | `queue/search-by-number.spec.ts`                     |
+| QUEUE-05    | Детали заказа в очереди                   | barista, administrator           | required-failing | FR-ORD-010, FR-ORD-012                                     | [queue.md](scenarios/queue.md)                     | `queue/order-details.spec.ts`                        |
+| QUEUE-06    | Автоматальное обновление очереди          | customer, barista, administrator | current          | FR-ORD-014                                                 | [queue.md](scenarios/queue.md)                     | `queue/automatic-refresh.spec.ts`                    |
+| QUEUE-07    | Разрешённые и запрещённые переходы заказа | barista, administrator           | required-failing | FR-ORD-011, FR-ORD-012, FR-PAY-002                         | [queue.md](scenarios/queue.md)                     | `queue/order-status-transitions.spec.ts`             |
+| AVAIL-01    | Список позиций                            | barista, administrator           | current          | FR-AVL-001, FR-AVL-002, FR-AVL-003                         | [availability.md](scenarios/availability.md)       | `availability/list-availability.spec.ts`             |
+| AVAIL-02    | Поиск позиции                             | barista, administrator           | current          | FR-AVL-001, FR-AVL-002, FR-AVL-003                         | [availability.md](scenarios/availability.md)       | `availability/search-availability.spec.ts`           |
+| AVAIL-03    | Выключение товара                         | barista, administrator, customer | current          | FR-AVL-001, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/disable-product.spec.ts`               |
+| AVAIL-04    | Включение товара                          | barista, administrator, customer | current          | FR-AVL-001, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/enable-product.spec.ts`                |
+| AVAIL-05    | Закрытие приёма заказов                   | barista, administrator, customer | current          | FR-AVL-004, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/close-intake.spec.ts`                  |
+| AVAIL-06    | Автор и время изменения приёма заказов    | barista, administrator           | required-failing | FR-AVL-006                                                 | [availability.md](scenarios/availability.md)       | `availability/view-intake-audit.spec.ts`             |
+| AVAIL-07    | Выключение размера напитка                | barista, administrator, customer | current          | FR-AVL-002, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/disable-size.spec.ts`                  |
+| AVAIL-08    | Включение размера напитка                 | barista, administrator, customer | current          | FR-AVL-002, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/enable-size.spec.ts`                   |
+| AVAIL-09    | Выключение добавки                        | barista, administrator, customer | current          | FR-AVL-003, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/disable-modifier.spec.ts`              |
+| AVAIL-10    | Включение добавки                         | barista, administrator, customer | current          | FR-AVL-003, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/enable-modifier.spec.ts`               |
+| AVAIL-11    | Возобновление приёма заказов              | barista, administrator, customer | current          | FR-AVL-004, FR-AVL-005, FR-AVL-007                         | [availability.md](scenarios/availability.md)       | `availability/reopen-intake.spec.ts`                 |
+| AVAIL-12    | Пустое состояние                          | barista, administrator           | current          | FR-AVL-001, FR-AVL-002, FR-AVL-003                         | [availability.md](scenarios/availability.md)       | `availability/empty-availability.spec.ts`            |
+| AVAIL-13    | Фильтр по категории                       | barista, administrator           | current          | FR-AVL-001, FR-AVL-002, FR-AVL-003                         | [availability.md](scenarios/availability.md)       | `availability/filter-availability.spec.ts`           |
+| AVAIL-14    | Автор и время изменения товара            | barista, administrator           | required-blocked | FR-AVL-006                                                 | [availability.md](scenarios/availability.md)       | `availability/view-product-audit.spec.ts`            |
+| AVAIL-15    | Автор и время изменения размера           | barista, administrator           | required-blocked | FR-AVL-006                                                 | [availability.md](scenarios/availability.md)       | `availability/view-size-audit.spec.ts`               |
+| AVAIL-16    | Автор и время изменения добавки           | barista, administrator           | required-blocked | FR-AVL-006                                                 | [availability.md](scenarios/availability.md)       | `availability/view-modifier-audit.spec.ts`           |
+| CATALOG-01  | Пустой каталог                            | administrator                    | current          | FR-ADM-001, FR-ADM-002                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/empty-catalog.spec.ts`                      |
+| CATALOG-02  | Создание валидной категории               | administrator                    | current          | FR-ADM-001, FR-CAT-002                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/create-category.spec.ts`                    |
+| CATALOG-03  | Валидация категории                       | administrator                    | current          | FR-ADM-001, FR-CAT-002                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/validate-category.spec.ts`                  |
+| CATALOG-04  | Редактирование категории                  | administrator                    | current          | FR-ADM-001, FR-CAT-002                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/edit-category.spec.ts`                      |
+| CATALOG-05  | Порядок категорий                         | administrator                    | current          | FR-ADM-001, FR-ADM-008                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/order-categories.spec.ts`                   |
+| CATALOG-06  | Архивирование категории                   | administrator, customer          | current          | FR-ADM-001, FR-ADM-009                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/archive-category.spec.ts`                   |
+| CATALOG-07  | Напиток с размерами                       | administrator                    | current          | FR-ADM-002, FR-ADM-004, FR-CAT-004, FR-CAT-005             | [catalog.md](scenarios/catalog.md)                 | `catalog/create-drink-with-sizes.spec.ts`            |
+| CATALOG-08  | Товар без размеров                        | administrator                    | current          | FR-ADM-002, FR-ADM-004, FR-CAT-006                         | [catalog.md](scenarios/catalog.md)                 | `catalog/create-item-without-sizes.spec.ts`          |
+| CATALOG-09  | Валидация товара                          | administrator                    | current          | FR-ADM-002, FR-ADM-004, FR-CAT-015                         | [catalog.md](scenarios/catalog.md)                 | `catalog/validate-product.spec.ts`                   |
+| CATALOG-10  | Редактирование товара                     | administrator                    | current          | FR-ADM-002                                                 | [catalog.md](scenarios/catalog.md)                 | `catalog/edit-product.spec.ts`                       |
+| CATALOG-11  | Порядок товаров                           | administrator                    | current          | FR-ADM-002, FR-ADM-008                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/order-products.spec.ts`                     |
+| CATALOG-12  | Архивирование товара                      | administrator, customer          | current          | FR-ADM-002, FR-ADM-009                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/archive-product.spec.ts`                    |
+| CATALOG-13  | Группа и варианты добавок                 | administrator                    | current          | FR-ADM-005, FR-ADM-006, FR-CAT-007, FR-CAT-008, FR-CAT-009 | [catalog.md](scenarios/catalog.md)                 | `catalog/manage-modifier-group.spec.ts`              |
+| CATALOG-14  | Порядок добавок                           | administrator                    | current          | FR-ADM-006, FR-CAT-009                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/order-modifiers.spec.ts`                    |
+| CATALOG-15  | Назначение группы добавок категории       | administrator                    | current          | FR-ADM-007, FR-CAT-010                                     | [catalog.md](scenarios/catalog.md)                 | `catalog/assign-modifier-group.spec.ts`              |
 
-[BL-0169](../../../docs/10-overview/backlog/E13/quality/BL-0169.md) требует,
-чтобы customer видел выданный заказ в истории. В
-[истории и повторе заказа](../../../docs/40-features/Track-history-and-repeat-order.md)
-история обозначена как неподдерживаемая runtime-возможность, а
-[TARGET-01](../../../docs/95-testing/Mandatory-scenarios.md#целевые-требования-вне-текущего-runtime-green-gate)
-фиксирует её как требование вне текущего runtime green gate.
+## Сквозные сценарии
 
-Карта не выбирает продуктовое ожидание и не ослабляет критерии BL-0169.
-Противоречие должно быть разрешено в источниках требований и runtime-контракте
-до подтверждения сценария истории как выполненного runtime-поведением.
+| ID         | Название                            | Роль                             | Статус           | Требование                                                             | Подробное описание                                     | Future spec                                      |
+| ---------- | ----------------------------------- | -------------------------------- | ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| JOURNEY-01 | Публикация товара                   | administrator, customer          | current          | FR-ADM-001, FR-ADM-002, FR-ADM-004, FR-ADM-005, FR-ADM-007, FR-CAT-015 | [critical-journeys.md](scenarios/critical-journeys.md) | `catalog/publish-product.spec.ts`                |
+| JOURNEY-02 | Оформление через корзину и OTP      | customer                         | required-failing | FR-CART-002, FR-CART-011, FR-ORD-001, FR-AUTH-006                      | [critical-journeys.md](scenarios/critical-journeys.md) | `checkout/place-order.spec.ts`                   |
+| JOURNEY-03 | Приготовление и выдача заказа       | barista, administrator, customer | required-failing | FR-ORD-009, FR-ORD-011, FR-ORD-012, FR-PAY-002                         | [critical-journeys.md](scenarios/critical-journeys.md) | `fulfillment/issue-order.spec.ts`                |
+| JOURNEY-04 | История выданного заказа            | customer                         | current          | FR-HIST-001, FR-HIST-004, FR-HIST-005                                  | [critical-journeys.md](scenarios/critical-journeys.md) | `order-history/view-issued-order.spec.ts`        |
+| JOURNEY-05 | Публикация, заказ, выдача и история | administrator, customer, barista | required-failing | FR-ADM-001, FR-ORD-001, FR-ORD-011, FR-PAY-002, FR-HIST-001            | [critical-journeys.md](scenarios/critical-journeys.md) | `order-lifecycle/complete-order-journey.spec.ts` |
 
-Все сценарии используют только UI Playwright и обязательные URL окружения.
-Подготовка через API, БД, Web Storage или изменение сети не допускается. Место
-E2E-набора в release-приёмке определяет
-[проверка готовности и выпуска](../../../docs/95-testing/Release-verification.md).
+Каждая строка ведёт к одному из девяти подробных документов. Реестр не включает
+прямую работу с API, БД или SAP, сетевые ошибки и таймауты, accessibility,
+responsive, временные слоты и отклонение заказа: они не являются
+пользовательскими сценариями MVP.

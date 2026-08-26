@@ -18,8 +18,8 @@ sources:
 | --- | --- | --- |
 | `/` | — | `redirect` на `/queue`. |
 | `/login` | анонимный | Активен; см. [вход](Authentication-and-role-gates.md). |
-| `/queue` | barista, administrator | Placeholder; см. [неактивные экраны](Inactive-screens.md). |
-| `/availability` | barista, administrator | Placeholder; см. [неактивные экраны](Inactive-screens.md). |
+| `/queue` | barista, administrator | Активен; см. [неактивные экраны](Inactive-screens.md). |
+| `/availability` | barista, administrator | Активен; см. [неактивные экраны](Inactive-screens.md). |
 | `/menu` | administrator | Активен; см. [управление каталогом](Catalog-management.md). |
 
 Навигация показывает barista только очередь и доступность, administrator — также меню. Источник таблицы: [router.constants.ts](../../src/app/router.constants.ts), [navigation.constants.ts](../../src/app/navigation.constants.ts), [страницы](../../src/pages/).

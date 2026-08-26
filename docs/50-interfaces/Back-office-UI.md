@@ -41,7 +41,7 @@ Breakpoint мобильного диалога — не шире 767px.
 скругления от 768px и max-height 90vh.
 [back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:admin-dialog__surface](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
 
-## Очередь и неактивные экраны
+## Очередь и управление доступностью
 
 `/queue` и `/availability` защищены role metadata. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
 
@@ -51,8 +51,12 @@ Breakpoint мобильного диалога — не шире 767px.
 снимок, события и только следующее допустимое действие.
 [QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [OrderCard](../../back-office/src/pages/admin/orders/OrderCard.vue).
 
-`/availability` показывает только сообщение до публикации availability API.
-[back-office/src/pages/AvailabilityPage.vue:entry](../../back-office/src/pages/AvailabilityPage.vue).
+`/availability` — активное управление доступностью. `AvailabilityPage` загружает
+категории и приём заказов, а `AvailabilityScreen` показывает поиск, фильтр и
+переключатели доступности.
+[AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
+[AvailabilityScreen](../../back-office/src/pages/admin/availability/AvailabilityScreen.vue).
 
-`AvailabilityScreen`, `UsersScreen`, `SettingsScreen` не зарегистрированы среди
-active routes. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
+`AvailabilityScreen` — активный дочерний UI `AvailabilityPage`; `UsersScreen` и
+`SettingsScreen` не зарегистрированы среди active routes.
+[back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
