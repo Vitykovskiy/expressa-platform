@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
+import { ProductSize, ProductType } from "./product-editor.types";
 
 export class ProductEditorComponent {
   private readonly addProductButton: Locator;
@@ -12,43 +13,99 @@ export class ProductEditorComponent {
     });
   }
 
-  async create(input: ProductOrderScenarioData): Promise<void> {
-    await test.step(`Создать товар «${input.productName}»`, async () => {
-      const dialog = this.dialog();
-
+  async startCreation(): Promise<void> {
+    await test.step("Начать создание товара", async () => {
       await expect(
         this.addProductButton,
         "Кнопка добавления товара доступна.",
       ).toBeEnabled();
       await this.addProductButton.click();
-      await expect(dialog, "Диалог нового товара открыт.").toBeVisible();
-      await dialog
-        .getByLabel("Категория", { exact: true })
-        .selectOption({ label: input.categoryName });
-      await dialog
-        .getByLabel("Тип товара", { exact: true })
-        .selectOption("DRINK");
-      await dialog
-        .getByLabel("Название товара", { exact: true })
-        .fill(input.productName);
-      await dialog
-        .getByLabel("Описание", { exact: true })
-        .fill(input.productDescription);
-      await dialog
-        .getByLabel("Цена S, коп.", { exact: true })
-        .fill(input.productPrice);
-      await dialog
-        .getByLabel("Цена M, коп.", { exact: true })
-        .fill(input.productPrice);
-      await dialog
-        .getByLabel("Цена L, коп.", { exact: true })
-        .fill(input.productPrice);
-      await dialog
+      await expect(this.dialog(), "Диалог нового товара открыт.").toBeVisible();
+    });
+  }
+
+  async selectCategory(name: string): Promise<void> {
+    await test.step(`Выбрать категорию «${name}»`, async () => {
+      const category = this.dialog().getByLabel("Категория", { exact: true });
+      const categoryOption = category.getByRole("option", {
+        name,
+        exact: true,
+      });
+
+      await expect(category, `Категория «${name}» доступна.`).toBeVisible();
+      await expect(
+        categoryOption,
+        `Категория «${name}» доступна для выбора.`,
+      ).toBeVisible();
+      const categoryValue = await categoryOption.getAttribute("value");
+
+      if (categoryValue === null) {
+        throw new Error(`У категории «${name}» нет значения.`);
+      }
+
+      await category.selectOption({ label: name });
+      await expect(category, `Выбрана категория «${name}».`).toHaveValue(
+        categoryValue,
+      );
+    });
+  }
+
+  async selectType(type: ProductType): Promise<void> {
+    await test.step(`Выбрать тип товара «${type}»`, async () => {
+      const productType = this.dialog().getByLabel("Тип товара", {
+        exact: true,
+      });
+
+      await expect(productType, `Тип товара «${type}» доступен.`).toBeVisible();
+      await productType.selectOption(type);
+      await expect(productType, `Выбран тип товара «${type}».`).toHaveValue(
+        type,
+      );
+    });
+  }
+
+  async fillName(name: string): Promise<void> {
+    await test.step(`Указать название товара «${name}»`, async () => {
+      const productName = this.dialog().getByLabel("Название товара", {
+        exact: true,
+      });
+
+      await productName.fill(name);
+      await expect(productName, "Название товара указано.").toHaveValue(name);
+    });
+  }
+
+  async fillDescription(description: string): Promise<void> {
+    await test.step("Указать описание товара", async () => {
+      const productDescription = this.dialog().getByLabel("Описание", {
+        exact: true,
+      });
+
+      await productDescription.fill(description);
+      await expect(productDescription, "Описание товара указано.").toHaveValue(
+        description,
+      );
+    });
+  }
+
+  async setPrice(size: ProductSize, price: string): Promise<void> {
+    await test.step(`Установить цену товара размера ${size}`, async () => {
+      const priceInput = this.priceInput(size);
+
+      await priceInput.fill(price);
+      await expect(
+        priceInput,
+        `Цена товара размера ${size} установлена.`,
+      ).toHaveValue(price);
+    });
+  }
+
+  async save(name: string): Promise<void> {
+    await test.step(`Сохранить товар «${name}»`, async () => {
+      await this.dialog()
         .getByRole("button", { name: "Добавить товар", exact: true })
         .click();
-      await expect(dialog, `Товар «${input.productName}» создан.`).toHaveCount(
-        0,
-      );
+      await expect(this.dialog(), `Товар «${name}» создан.`).toHaveCount(0);
     });
   }
 
@@ -113,5 +170,9 @@ export class ProductEditorComponent {
       name: `Редактировать товар ${name}`,
       exact: true,
     });
+  }
+
+  private priceInput(size: ProductSize): Locator {
+    return this.dialog().getByLabel(`Цена ${size}, коп.`, { exact: true });
   }
 }

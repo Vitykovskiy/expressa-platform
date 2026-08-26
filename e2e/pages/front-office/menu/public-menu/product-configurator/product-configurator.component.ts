@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { ProductSize } from "./product-configurator.types";
+
 import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 export class ProductConfiguratorComponent {
@@ -56,7 +58,7 @@ export class ProductConfiguratorComponent {
     });
   }
 
-  async selectVariant(size: string): Promise<void> {
+  async selectVariant(size: ProductSize): Promise<void> {
     await test.step(`Выбрать размер «${size}»`, async () => {
       const variant = this.page.getByRole("button", {
         name: new RegExp(`^${escapeRegExp(size)} ·`, "u"),
@@ -89,6 +91,38 @@ export class ProductConfiguratorComponent {
     });
   }
 
+  async readProductPrice(): Promise<string> {
+    const [, price] = (await this.selectedSize().innerText()).split(" · ");
+
+    if (price === undefined) {
+      throw new Error("Цена выбранного размера не найдена.");
+    }
+
+    return price;
+  }
+
+  async readSelectedSize(): Promise<ProductSize> {
+    const [size] = (await this.selectedSize().innerText()).split(" · ");
+
+    if (!this.isProductSize(size)) {
+      throw new Error("Выбранный размер товара не распознан.");
+    }
+
+    return size;
+  }
+
+  async readSelectedRequiredModifier(groupName: string): Promise<string> {
+    const [modifierName] = (
+      await this.selectedRequiredModifier(groupName).innerText()
+    ).split(" · ");
+
+    if (modifierName === undefined) {
+      throw new Error("Выбранная обязательная добавка не найдена.");
+    }
+
+    return modifierName;
+  }
+
   async addToCart(): Promise<void> {
     await test.step("Добавить настроенный товар в корзину", async () => {
       await expect(
@@ -111,6 +145,22 @@ export class ProductConfiguratorComponent {
     return products.getByRole("listitem").filter({
       has: this.page.getByRole("button", { name: product.productName }),
     });
+  }
+
+  private selectedSize(): Locator {
+    return this.page
+      .getByRole("group", { name: "Размер", exact: true })
+      .getByRole("button", { pressed: true });
+  }
+
+  private selectedRequiredModifier(groupName: string): Locator {
+    return this.page
+      .getByRole("group", { name: groupName, exact: true })
+      .getByRole("button", { pressed: true });
+  }
+
+  private isProductSize(value: string | undefined): value is ProductSize {
+    return Object.values(ProductSize).includes(value as ProductSize);
   }
 }
 

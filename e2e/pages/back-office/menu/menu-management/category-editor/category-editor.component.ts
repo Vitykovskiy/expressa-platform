@@ -1,7 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
-
 export class CategoryEditorComponent {
   private readonly addCategoryButton: Locator;
 
@@ -12,29 +10,52 @@ export class CategoryEditorComponent {
     });
   }
 
-  async create(input: ProductOrderScenarioData): Promise<void> {
-    await test.step(`Создать категорию «${input.categoryName}»`, async () => {
-      const dialog = this.dialog();
-
+  async startCreation(): Promise<void> {
+    await test.step("Начать создание категории", async () => {
       await expect(
         this.addCategoryButton,
         "Кнопка добавления категории доступна.",
       ).toBeEnabled();
       await this.addCategoryButton.click();
-      await expect(dialog, "Диалог новой категории открыт.").toBeVisible();
-      await dialog
-        .getByLabel("Название категории", { exact: true })
-        .fill(input.categoryName);
-      await dialog
-        .getByLabel("Описание", { exact: true })
-        .fill(input.productDescription);
-      await dialog
+      await expect(
+        this.dialog(),
+        "Диалог новой категории открыт.",
+      ).toBeVisible();
+    });
+  }
+
+  async fillName(name: string): Promise<void> {
+    await test.step(`Указать название категории «${name}»`, async () => {
+      const nameInput = this.dialog().getByLabel("Название категории", {
+        exact: true,
+      });
+
+      await nameInput.fill(name);
+      await expect(nameInput, "Название категории указано.").toHaveValue(name);
+    });
+  }
+
+  async fillDescription(description: string): Promise<void> {
+    await test.step("Указать описание категории", async () => {
+      const descriptionInput = this.dialog().getByLabel("Описание", {
+        exact: true,
+      });
+
+      await descriptionInput.fill(description);
+      await expect(descriptionInput, "Описание категории указано.").toHaveValue(
+        description,
+      );
+    });
+  }
+
+  async save(name: string): Promise<void> {
+    await test.step(`Сохранить категорию «${name}»`, async () => {
+      await this.dialog()
         .getByRole("button", { name: "Добавить категорию", exact: true })
         .click();
-      await expect(
-        dialog,
-        `Категория «${input.categoryName}» создана.`,
-      ).toHaveCount(0);
+      await expect(this.dialog(), `Категория «${name}» создана.`).toHaveCount(
+        0,
+      );
     });
   }
 

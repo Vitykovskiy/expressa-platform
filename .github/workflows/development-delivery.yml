@@ -88,3 +88,115 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           AUTH_DEVELOPMENT_OTP: ${{ secrets.AUTH_DEVELOPMENT_OTP }}
         run: deploy/run-remote.sh development deploy/images.env
+  e2e-image:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    environment: development
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Build and push immutable E2E image
+        env:
+          DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+          DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          temporary_directory="$(mktemp -d)"
+          trap 'rm -rf -- "$temporary_directory"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
+          chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
+          ssh -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT" -N -L 5000:127.0.0.1:5000 "$DEPLOY_USER@$DEPLOY_HOST" &
+          tunnel_pid=$!
+          trap 'kill "$tunnel_pid" 2>/dev/null || true; rm -rf -- "$temporary_directory"' EXIT
+          for _ in {1..20}; do curl --silent --fail http://127.0.0.1:5000/v2/ >/dev/null && break; sleep 1; done
+          tag="sha-${GITHUB_SHA}"
+          docker build --tag "127.0.0.1:5000/expressa/e2e:$tag" e2e
+          docker push "127.0.0.1:5000/expressa/e2e:$tag"
+          printf 'E2E_IMAGE=%s\n' "$(docker inspect --format '{{index .RepoDigests 0}}' "127.0.0.1:5000/expressa/e2e:$tag")" > deploy/e2e-images.env
+      - name: Upload E2E image manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: e2e-images-${{ github.sha }}
+          path: deploy/e2e-images.env
+          retention-days: 3
+  e2e:
+    needs: [deploy, e2e-image]
+    if: always()
+    runs-on: ubuntu-24.04
+    environment: development
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Download application image manifest
+        if: needs.deploy.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: deploy-images-${{ github.sha }}
+          path: deploy
+      - name: Download E2E image manifest
+        if: needs.e2e-image.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: e2e-images-${{ github.sha }}
+          path: deploy
+      - name: Publish pre-test diagnostic
+        if: needs.deploy.result != 'success' || needs.e2e-image.result != 'success'
+        env:
+          DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+          DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+          E2E_REPORT_ALLOWLIST: ${{ secrets.E2E_REPORT_ALLOWLIST }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          diagnostic_stage=deploy
+          if [[ "${{ needs.deploy.result }}" == success && "${{ needs.e2e-image.result }}" != success ]]; then
+            diagnostic_stage=build
+          fi
+          temporary_directory="$(mktemp -d)"
+          trap 'rm -rf -- "$temporary_directory"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
+          chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
+          ssh_options=(-i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT")
+          remote_directory="$(ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" 'mktemp -d /tmp/expressa-e2e.XXXXXX')"
+          trap 'ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true; rm -rf -- "$temporary_directory"' EXIT
+          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/e2e-compose.yml deploy/e2e-gateway.nginx.conf deploy/e2e-report.nginx.conf.template deploy/run-e2e-remote.sh "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
+          printf '%s\0%s\0%s\0%s\0' "$E2E_REPORT_ALLOWLIST" "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" |
+            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' E2E_REPORT_ALLOWLIST; IFS= read -r -d '' E2E_RUN_ID; IFS= read -r -d '' E2E_REVISION; IFS= read -r -d '' E2E_RUN_URL; export E2E_REPORT_ALLOWLIST E2E_RUN_ID E2E_REVISION E2E_RUN_URL; E2E_REPORT_ROOT=/srv/expressa/e2e-reports E2E_REPORT_CONFIG_ROOT=/srv/expressa/e2e-report-host E2E_REPORT_PORT=8088 bash $(printf %q "$remote_directory/run-e2e-remote.sh") setup-report-host; E2E_REPORT_ROOT=/srv/expressa/e2e-reports E2E_REPORT_CONFIG_ROOT=/srv/expressa/e2e-report-host E2E_REPORT_PORT=8088 bash $(printf %q "$remote_directory/run-e2e-remote.sh") diagnostic $(printf %q "$diagnostic_stage")"
+      - name: Run isolated E2E suite
+        if: needs.deploy.result == 'success' && needs.e2e-image.result == 'success'
+        env:
+          DEPLOY_HOST: ${{ secrets.EXPRESSA_VPS_HOST }}
+          DEPLOY_PORT: ${{ secrets.EXPRESSA_VPS_PORT }}
+          DEPLOY_USER: ${{ secrets.EXPRESSA_VPS_DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.EXPRESSA_VPS_DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.EXPRESSA_VPS_KNOWN_HOSTS }}
+          E2E_REPORT_ALLOWLIST: ${{ secrets.E2E_REPORT_ALLOWLIST }}
+          BOOTSTRAP_ADMIN_PHONE: ${{ secrets.BOOTSTRAP_ADMIN_PHONE }}
+          AUTH_DEVELOPMENT_OTP: ${{ secrets.AUTH_DEVELOPMENT_OTP }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E2E_STAFF_PHONE='+79990000002'
+          E2E_CUSTOMER_PHONE='+79990000003'
+          [[ "$BOOTSTRAP_ADMIN_PHONE" != "$E2E_STAFF_PHONE" && "$BOOTSTRAP_ADMIN_PHONE" != "$E2E_CUSTOMER_PHONE" && "$E2E_STAFF_PHONE" != "$E2E_CUSTOMER_PHONE" ]] || { printf '%s\n' 'E2E role phones must be distinct' >&2; exit 1; }
+          temporary_directory="$(mktemp -d)"
+          trap 'rm -rf -- "$temporary_directory"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$temporary_directory/key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$temporary_directory/known_hosts"
+          chmod 600 "$temporary_directory/key" "$temporary_directory/known_hosts"
+          ssh_options=(-i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes -p "$DEPLOY_PORT")
+          remote_directory="$(ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" 'mktemp -d /tmp/expressa-e2e.XXXXXX')"
+          trap 'ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf -- $(printf %q "$remote_directory")" >/dev/null 2>&1 || true; rm -rf -- "$temporary_directory"' EXIT
+          scp -P "$DEPLOY_PORT" -i "$temporary_directory/key" -o UserKnownHostsFile="$temporary_directory/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes deploy/e2e-compose.yml deploy/e2e-gateway.nginx.conf deploy/e2e-report.nginx.conf.template deploy/run-e2e-remote.sh deploy/images.env deploy/e2e-images.env "$DEPLOY_USER@$DEPLOY_HOST:$remote_directory/"
+          printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' "$E2E_REPORT_ALLOWLIST" "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "$BOOTSTRAP_ADMIN_PHONE" "$E2E_STAFF_PHONE" "$E2E_CUSTOMER_PHONE" "$AUTH_DEVELOPMENT_OTP" "$VAPID_SUBJECT" "$VAPID_PUBLIC_KEY" "$VAPID_PRIVATE_KEY" "$remote_directory" |
+            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "set -Eeuo pipefail; IFS= read -r -d '' E2E_REPORT_ALLOWLIST; IFS= read -r -d '' E2E_RUN_ID; IFS= read -r -d '' E2E_REVISION; IFS= read -r -d '' E2E_RUN_URL; IFS= read -r -d '' E2E_ADMIN_PHONE; IFS= read -r -d '' E2E_STAFF_PHONE; IFS= read -r -d '' E2E_CUSTOMER_PHONE; IFS= read -r -d '' E2E_OTP; IFS= read -r -d '' DELIVERY_VAPID_SUBJECT; IFS= read -r -d '' DELIVERY_VAPID_PUBLIC_KEY; IFS= read -r -d '' DELIVERY_VAPID_PRIVATE_KEY; IFS= read -r -d '' STAGED_E2E_DIRECTORY; export E2E_REPORT_ALLOWLIST E2E_RUN_ID E2E_REVISION E2E_RUN_URL E2E_ADMIN_PHONE E2E_STAFF_PHONE E2E_CUSTOMER_PHONE E2E_OTP; source \"\$STAGED_E2E_DIRECTORY/images.env\"; source \"\$STAGED_E2E_DIRECTORY/e2e-images.env\"; export BACKEND_IMAGE FRONT_IMAGE BACK_IMAGE E2E_IMAGE; E2E_REPORT_ROOT=/srv/expressa/e2e-reports E2E_REPORT_CONFIG_ROOT=/srv/expressa/e2e-report-host E2E_REPORT_PORT=8088 bash \"\$STAGED_E2E_DIRECTORY/run-e2e-remote.sh\" setup-report-host; DELIVERY_VAPID_SUBJECT=\"\$DELIVERY_VAPID_SUBJECT\" DELIVERY_VAPID_PUBLIC_KEY=\"\$DELIVERY_VAPID_PUBLIC_KEY\" DELIVERY_VAPID_PRIVATE_KEY=\"\$DELIVERY_VAPID_PRIVATE_KEY\" E2E_REPORT_ROOT=/srv/expressa/e2e-reports E2E_REPORT_CONFIG_ROOT=/srv/expressa/e2e-report-host E2E_REPORT_PORT=8088 bash \"\$STAGED_E2E_DIRECTORY/run-e2e-remote.sh\" run"

@@ -66,18 +66,13 @@ E08/E09 — запреты ролей и неверного перехода, п
 
 ## Тестовые доступы и ротация
 
-Публичные тестовые пользователи development и staging: customer
-`+79990000001` и administrator `+79990000002`; OTP для обоих — `000000`.
-Адреса Customer, Admin и API приведены в [средах](Environments.md).
-
-Standalone E2E получает адреса сред из этой карты, а customer, administrator и
-их OTP — из [CI/CD](CI-CD.md#Публичные-тестовые-доступы). В staging
-`E2E_STAFF_PHONE` использует ту же существующую учётную запись администратора
-`BOOTSTRAP_ADMIN_PHONE`: развёрнутый staging-контракт пропускает её при проверке
-прав Staff. `E2E_STAFF_OTP` использует тот же фиксированный источник `staging_test`,
-что указан в [CI/CD](CI-CD.md#Публичные-тестовые-доступы). Все значения
-передаются только в окружение запуска Playwright и не создают отдельный
-файл учётных данных, секрет или конфигурацию.
+Standalone E2E запускается только в development. Он использует administrator
+из `BOOTSTRAP_ADMIN_PHONE`, OTP из `AUTH_DEVELOPMENT_OTP`, фиксированные staff
+`+79990000002` и customer `+79990000003`. До seed и staff upsert runner и VPS
+runtime отклоняют совпадение любой пары этих ролей. `E2E_REPORT_ALLOWLIST` —
+единственный новый E2E secret; порядок запуска описан в
+[E2E на VPS](E2E-on-VPS.md). Адреса Customer, Admin и API приведены в
+[средах](Environments.md).
 
 Для ротации administrator оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
 номер формата `+7XXXXXXXXXX` в GitHub Environments `development` и `staging`.
@@ -94,8 +89,8 @@ Git, логи или `runtime.env`. Следующая поставка seed-о�
 После изменения GitHub Secret оператор запускает development
 delivery из `main`; для staging повторно запускает deployment существующего
 тега. Production не меняется. После успешной поставки проверяет оба API по
-`/health/live` и `/health/ready`, вход customer и administrator с OTP `000000`,
-роль `administrator` в Admin и staging smoke. Если ротация меняет номер,
+`/health/live` и `/health/ready`, вход customer и administrator с OTP текущей
+среды, роль `administrator` в Admin и staging smoke. Если ротация меняет номер,
 обновляет таблицу [CI/CD](CI-CD.md) тем же change.
 
 Для наблюдаемости оператор запускает отдельный `ops-compose.yml` в edge-сети

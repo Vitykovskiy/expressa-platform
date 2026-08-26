@@ -6,6 +6,7 @@ import { defineConfig } from "@playwright/test";
 import { getE2eEnvironment } from "@support/config/e2e-environment";
 
 const LOCAL_ENV_PATH = ".env.e2e.local";
+const isSafeReportMode = process.env["E2E_SAFE_REPORT"] === "1";
 
 if (existsSync(LOCAL_ENV_PATH)) {
   loadEnvFile(LOCAL_ENV_PATH);
@@ -18,9 +19,20 @@ export default defineConfig({
   testMatch: ["specs/**/*.spec.ts", "support/config/**/*.test.ts"],
   workers: 1,
   retries: 0,
-  reporter: [["list"], ["html"]],
+  reporter: [
+    ["list"],
+    [
+      "html",
+      {
+        open: "never",
+        outputFolder:
+          process.env["PLAYWRIGHT_HTML_OUTPUT_DIR"] ?? "playwright-report",
+      },
+    ],
+  ],
   use: {
-    screenshot: "only-on-failure",
+    screenshot: isSafeReportMode ? "off" : "only-on-failure",
+    trace: isSafeReportMode ? "off" : "retain-on-failure",
   },
   projects: [
     {

@@ -26,9 +26,12 @@ related:
 ## Структура и TypeScript
 
 - Используется строгий TypeScript; `any` не применяется. Публичные входы, результаты чтения и предметные данные типизируются явно.
+- Системное UI-значение — значение из конечного набора, заданного интерфейсом: тип, размер, роль, статус или режим. Каждое такое значение выражается TypeScript `enum` владельца Page или Component Object, а публичный метод принимает этот `enum`. Строковый литерал, общий `string`, string literal union, constants-object и отдельный метод для каждого значения не заменяют `enum` и запрещены: spec и тестовые данные передают член `enum`, поэтому IDE показывает допустимые варианты, а TypeScript отклоняет неизвестный.
+- Свободные данные, создаваемые сценарием или вводимые пользователем, остаются `string`: например, имя, описание, телефон, OTP, цена и идентификатор, созданный сценарием.
+- Технические ключи полей, `data-testid` и строки Playwright-локаторов остаются private-деталью реализации Page/Component Object. Они не входят в публичный API и не передаются из spec. Прямые импорты из `front-office/src` и `back-office/src` не используются: standalone E2E сохраняет собственный типизированный контракт.
 - Page живёт в `pages/<office>/<area>/<page-name>/`. Local Component Object, используемый только этим Page, живёт внутри его каталога. Page не повторяет действия своих компонентов и не содержит workflow нескольких областей; local Component не управляет другим экраном и не содержит предметных правил приложения.
 - `components/<office>/<area>/` содержит только Shared Component Object, который используют минимум два разных Page Objects. Пока второго Page-потребителя нет, Component остаётся local внутри Page-владельца.
-- `*.constants.ts` и `*.types.ts` принадлежат одному конкретному Page либо Component Object, лежат в каталоге владельца и имеют с ним одинаковое базовое имя. Каждый именованный module-scope `const`, задающий статический UI-контракт или конфигурацию владельца, выносится в `<owner>.constants.ts`, а каждый именованный module-scope `type` или `interface` владельца — в `<owner>.types.ts`, независимо от `export` и повторного использования. В частности, `currencyFormatter`, `orderHeadingPattern` и `orderIdPattern` — константы владельца. Локальные переменные, параметры методов, private Locator-поля и иные детали, не являющиеся module-scope UI- или config-контрактом, остаются в классе. Общие предметные контракты не копируются между владельцами.
+- `*.constants.ts` и `*.types.ts` принадлежат одному конкретному Page либо Component Object, лежат в каталоге владельца и имеют с ним одинаковое базовое имя. Каждый именованный module-scope `const`, задающий статический UI-контракт или конфигурацию владельца, выносится в `<owner>.constants.ts`, а каждый именованный module-scope `type`, `interface` или `enum` владельца — в `<owner>.types.ts`, независимо от `export` и повторного использования. В частности, `currencyFormatter`, `orderHeadingPattern` и `orderIdPattern` — константы владельца. Локальные переменные, параметры методов, private Locator-поля и иные детали, не являющиеся module-scope UI- или config-контрактом, остаются в классе. Общие предметные контракты не копируются между владельцами.
 - Межкаталожные импорты используют только aliases `@pages/*`, `@components/*`, `@fixtures/*`, `@support/*`. Относительные импорты допустимы только внутри одного каталога владельца. Barrel-файлы и отдельный runtime resolver не создаются.
 
 ```text
@@ -63,6 +66,7 @@ e2e/
 - Page/Component Object владеет локаторами, кликами, готовностью экрана и вложенным `test.step` атомарного UI-действия. Внутри action-step находится web-first `expect` его непосредственного видимого результата.
 - Spec вызывает действия Page/Component Objects напрямую и владеет предметными проверками. Межэкранные сравнения — например, созданного заказа с заказом в истории, состава, количества, итога и статуса — также принадлежат spec.
 - Spec вызывает предметные методы Page/Component Objects. Он не создаёт локаторы, не повторяет ожидания готовности и не содержит технические клики, уже инкапсулированные объектом.
+- Публичный API Page/Component Object принимает системное UI-значение только через `enum` владельца и не раскрывает технические ключи полей или селекторы.
 - Стабильные локаторы — приватные поля класса. Параметризованный элемент выражается приватной фабрикой `item(name): Locator`; наружу локаторы не передаются.
 - Сначала используются роль с доступным именем, подпись или стабильный `id`. `data-testid` — минимальный контракт для структурной части интерфейса, которую нельзя выбрать семантически (например, итог строки или корень повторяемой карточки).
 - Нельзя строить контракт на CSS-классах, HTML-тегах, `.first()`, `.last()`, `nth()` или порядке DOM.
@@ -135,6 +139,12 @@ Page/Component Object. Метод чтения возвращает наблюд
 внутри неё проверяется отдельным `expect` с собственным сообщением.
 
 ```ts
+import {
+  ProductSize as ProductEditorSize,
+  ProductType,
+} from "@pages/back-office/menu/menu-management/product-editor/product-editor.types";
+import { ProductSize as ProductConfiguratorSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
+
 const data = createProductOrderScenarioData(testInfo);
 
 await backOffice.menu.categoryEditor.startCreation();
@@ -144,13 +154,22 @@ await backOffice.menu.categoryEditor.save();
 
 await backOffice.menu.productEditor.startCreation();
 await backOffice.menu.productEditor.selectCategory(data.categoryName);
-await backOffice.menu.productEditor.selectType("DRINK");
+await backOffice.menu.productEditor.selectType(ProductType.DRINK);
 await backOffice.menu.productEditor.fillName(data.productName);
 await backOffice.menu.productEditor.fillDescription(data.productDescription);
-await backOffice.menu.productEditor.setPrice("S", data.productPrice);
-await backOffice.menu.productEditor.setPrice("M", data.productPrice);
-await backOffice.menu.productEditor.setPrice("L", data.productPrice);
-await backOffice.menu.productEditor.save();
+await backOffice.menu.productEditor.setPrice(
+  ProductEditorSize.S,
+  data.productPrice,
+);
+await backOffice.menu.productEditor.setPrice(
+  ProductEditorSize.M,
+  data.productPrice,
+);
+await backOffice.menu.productEditor.setPrice(
+  ProductEditorSize.L,
+  data.productPrice,
+);
+await backOffice.menu.productEditor.save(data.productName);
 
 await backOffice.menu.modifierGroupEditor.startCreation();
 await backOffice.menu.modifierGroupEditor.fillName(data.modifierGroupName);
@@ -165,7 +184,7 @@ await backOffice.menu.assignments.save();
 
 await publicMenu.product.openCategory(data.categoryName);
 await publicMenu.product.openProduct(data);
-await publicMenu.product.selectVariant(data.productSize);
+await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
 await publicMenu.product.selectModifier(data.modifierName);
 await publicMenu.product.addToCart();
 await checkout.cart.setQuantity(data.productName, data.productQuantity);
@@ -213,6 +232,14 @@ await test.step("Результат очистки: данные сценари�
 });
 ```
 
+### Практика: Page и Component Object
+
+Создайте Page как корень одного экрана: он собирает его устойчивые области и
+проверяет готовность. Для каждой области создайте local Component Object с
+private-локаторами и публичными атомарными действиями; системный выбор выразите
+`enum` этого владельца. Spec вызывает только публичное действие, а оно ожидает
+свой непосредственный видимый результат через web-first `expect`.
+
 Page собирает компоненты и знает только свой экран:
 
 ```ts
@@ -227,18 +254,31 @@ export class CheckoutPage {
 }
 ```
 
-Публичный метод Component Object оформляет одно действие так:
+Типовой контракт компонента живёт в соседнем `product-configurator.types.ts`:
 
 ```ts
-async selectModifier(name: string): Promise<void> {
-  await test.step(`Выбрать добавку «${name}»`, async () => {
-    await this.modifier(name).click();
-    await expect(this.modifier(name)).toBeChecked();
+export enum ProductSize {
+  S = "S",
+  M = "M",
+  L = "L",
+}
+```
+
+Компонент импортирует контракт, скрывает локаторы и оформляет выбор одного
+системного значения:
+
+```ts
+import { ProductSize } from "./product-configurator.types";
+
+async selectSize(size: ProductSize): Promise<void> {
+  await test.step(`Выбрать размер ${size}`, async () => {
+    await this.size(size).click();
+    await expect(this.size(size)).toBeChecked();
   });
 }
 
-private modifier(name: string): Locator {
-  return this.options.getByRole("radio", { name, exact: true });
+private size(size: ProductSize): Locator {
+  return this.options.getByRole("radio", { name: size, exact: true });
 }
 ```
 

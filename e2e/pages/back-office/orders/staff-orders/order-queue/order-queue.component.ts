@@ -1,5 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import {
+  OrderQueueStage,
+  type OrderQueueTransition,
+} from "./order-queue.types";
+
 import type { OrderSnapshot } from "@support/data/order-snapshot.types";
 
 export class OrderQueueComponent {
@@ -51,7 +56,7 @@ export class OrderQueueComponent {
         .getByRole("button", { name: "Принять заказ", exact: true })
         .click();
       await expect(
-        card.getByText("Принят", { exact: true }),
+        card.getByText(OrderQueueStage.ACCEPTED, { exact: true }),
         "Заказ принят.",
       ).toBeVisible();
     });
@@ -75,7 +80,7 @@ export class OrderQueueComponent {
         })
         .click();
       await expect(
-        card.getByText("Готовится", { exact: true }),
+        card.getByText(OrderQueueStage.PREPARING, { exact: true }),
         "Заказ готовится.",
       ).toBeVisible();
     });
@@ -96,7 +101,7 @@ export class OrderQueueComponent {
         .getByRole("button", { name: "Отметить готовым", exact: true })
         .click();
       await expect(
-        card.getByText("Готов к выдаче", { exact: true }),
+        card.getByText(OrderQueueStage.READY, { exact: true }),
         "Заказ готов к выдаче.",
       ).toBeVisible();
     });
@@ -114,15 +119,105 @@ export class OrderQueueComponent {
         .getByRole("button", { name: "Выдать заказ", exact: true })
         .click();
       await expect(
-        card.getByText("Выдан", { exact: true }),
+        card.getByText(OrderQueueStage.ISSUED, { exact: true }),
         "Заказ выдан.",
       ).toBeVisible();
     });
+  }
+
+  async readCurrentStage(order: OrderSnapshot): Promise<OrderQueueStage> {
+    const card = this.orderCard(order);
+
+    if (
+      await card
+        .getByRole("button", { name: "Принять заказ", exact: true })
+        .isVisible()
+    ) {
+      return OrderQueueStage.CREATED;
+    }
+
+    if (
+      await card
+        .getByRole("button", {
+          name: "Начать приготовление",
+          exact: true,
+        })
+        .isVisible()
+    ) {
+      return OrderQueueStage.ACCEPTED;
+    }
+
+    if (
+      await card
+        .getByRole("button", {
+          name: "Отметить готовым",
+          exact: true,
+        })
+        .isVisible()
+    ) {
+      return OrderQueueStage.PREPARING;
+    }
+
+    if (
+      await card
+        .getByRole("button", { name: "Выдать заказ", exact: true })
+        .isVisible()
+    ) {
+      return OrderQueueStage.READY;
+    }
+
+    await expect(
+      card.getByText(OrderQueueStage.ISSUED, { exact: true }),
+      "Выданный заказ показан в очереди.",
+    ).toBeVisible();
+
+    return OrderQueueStage.ISSUED;
+  }
+
+  async readTransitionHistory(
+    order: OrderSnapshot,
+  ): Promise<OrderQueueTransition[]> {
+    const events = this.orderDetails(order)
+      .getByRole("listitem")
+      .filter({ hasText: "Автор:" });
+
+    await expect(
+      events,
+      "История переходов заказа показана в деталях.",
+    ).not.toHaveCount(0);
+
+    return (await events.allInnerTexts()).map((event) =>
+      this.readTransition(event),
+    );
   }
 
   private orderCard(order: OrderSnapshot): Locator {
     return this.page
       .getByTestId("staff-order-card")
       .and(this.page.locator(`[data-order-id="${order.id}"]`));
+  }
+
+  private orderDetails(order: OrderSnapshot): Locator {
+    return this.orderCard(order).getByRole("region", {
+      name: `Детали заказа ${order.number}`,
+      exact: true,
+    });
+  }
+
+  private readTransition(event: string): OrderQueueTransition {
+    const [fromValue, toValue] = event.split(" — ");
+    const [to] = toValue?.split(", ") ?? [];
+
+    if (!this.isOrderQueueStage(fromValue) || !this.isOrderQueueStage(to)) {
+      throw new Error("Не удалось прочитать переход статуса заказа.");
+    }
+
+    return { from: fromValue, to };
+  }
+
+  private isOrderQueueStage(
+    value: string | undefined,
+  ): value is OrderQueueStage {
+    return Object.values(OrderQueueStage).includes(value as OrderQueueStage);
   }
 }

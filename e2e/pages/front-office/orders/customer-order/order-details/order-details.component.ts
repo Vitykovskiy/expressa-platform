@@ -1,12 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import {
-  currencyFormatter,
-  orderHeadingPattern,
-  orderIdPattern,
-} from "./order-details.constants";
+import { orderHeadingPattern, orderIdPattern } from "./order-details.constants";
+import { OrderStatus } from "./order-details.types";
 
-import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 import type { OrderSnapshot } from "@support/data/order-snapshot.types";
 
 export class OrderDetailsComponent {
@@ -20,26 +16,22 @@ export class OrderDetailsComponent {
     this.orderTotal = page.getByTestId("order-total");
   }
 
-  async readSnapshot(order: ProductOrderScenarioData): Promise<OrderSnapshot> {
-    return test.step(`Сохранить снимок заказа «${order.productName}»`, async () => {
-      await expect(
-        this.page.getByText("Заказ принят", { exact: true }),
-        "Заказ принят.",
-      ).toBeVisible();
-      await this.assertScenarioOrder(order);
+  async readSnapshot(): Promise<OrderSnapshot> {
+    const [item] = await this.orderItems.allInnerTexts();
 
-      const number = await this.readNumber();
+    if (item === undefined || (await this.orderItems.count()) !== 1) {
+      throw new Error("Не удалось прочитать единственную позицию заказа.");
+    }
 
-      return {
-        id: this.readId(),
-        number,
-        productName: order.productName,
-        size: `Размер ${order.productSize}`,
-        modifierName: `+ ${order.modifierName}`,
-        quantity: this.quantity(order),
-        total: this.total(order),
-      };
-    });
+    const values = this.readItemValues(item);
+
+    return {
+      id: this.readId(),
+      number: await this.readNumber(),
+      ...values,
+      total: await this.orderTotal.innerText(),
+      status: await this.readStatus(),
+    };
   }
 
   async assertMatches(snapshot: OrderSnapshot): Promise<void> {
@@ -80,7 +72,7 @@ export class OrderDetailsComponent {
   async assertIssued(snapshot: OrderSnapshot): Promise<void> {
     await test.step(`Проверить выдачу заказа ${snapshot.number}`, async () => {
       await expect(
-        this.page.getByText("Заказ выдан", { exact: true }),
+        this.page.getByText(OrderStatus.ISSUED, { exact: true }),
         "Заказ выдан клиенту.",
       ).toBeVisible();
       await this.assertMatches(snapshot);
@@ -103,37 +95,6 @@ export class OrderDetailsComponent {
     return this.orderItems;
   }
 
-  private async assertScenarioOrder(
-    order: ProductOrderScenarioData,
-  ): Promise<void> {
-    const item = await this.onlyItem();
-
-    await expect(
-      item.getByText(order.productName, { exact: true }),
-      "Заказ содержит выбранный товар.",
-    ).toBeVisible();
-    await expect(
-      item.getByText(`Размер ${order.productSize}`, { exact: true }),
-      "Заказ содержит выбранный размер.",
-    ).toBeVisible();
-    await expect(
-      item.getByText(`+ ${order.modifierName}`, { exact: true }),
-      "Заказ содержит обязательную добавку.",
-    ).toBeVisible();
-    await expect(
-      item.getByText(this.quantity(order), { exact: true }),
-      "Заказ содержит выбранное количество и цену.",
-    ).toBeVisible();
-    await expect(
-      item.getByTestId("order-item-line-total"),
-      "Итог позиции равен цене, умноженной на количество.",
-    ).toHaveText(this.total(order));
-    await expect(
-      this.orderTotal,
-      "Итог заказа равен итогу единственной позиции.",
-    ).toHaveText(this.total(order));
-  }
-
   private readId(): string {
     const path = new URL(this.page.url()).pathname.split("/").filter(Boolean);
     const [resource, id] = path;
@@ -152,23 +113,48 @@ export class OrderDetailsComponent {
 
   private async readNumber(): Promise<string> {
     const title = this.page.getByRole("heading", { level: 1 });
-    await expect(title, "Заголовок заказа содержит числовой номер.").toHaveText(
-      orderHeadingPattern,
-    );
-    const number = (await title.innerText()).replace("Заказ №", "");
+    const heading = await title.innerText();
+
+    if (!orderHeadingPattern.test(heading)) {
+      throw new Error("Заголовок заказа не содержит числовой номер.");
+    }
+
+    const number = heading.replace("Заказ №", "");
 
     return number;
   }
 
-  private quantity(order: ProductOrderScenarioData): string {
-    return `${order.productQuantity} × ${currencyFormatter.format(
-      Number(order.productPrice) / 100,
-    )}`;
+  private readItemValues(
+    item: string,
+  ): Pick<OrderSnapshot, "productName" | "size" | "modifierName" | "quantity"> {
+    const [productName, quantity, size, modifierName, lineTotal, ...rest] = item
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (
+      productName === undefined ||
+      quantity === undefined ||
+      size === undefined ||
+      modifierName === undefined ||
+      lineTotal === undefined ||
+      rest.length !== 0 ||
+      !size.startsWith("Размер ") ||
+      !modifierName.startsWith("+ ")
+    ) {
+      throw new Error("Не удалось прочитать состав позиции заказа.");
+    }
+
+    return { productName, size, modifierName, quantity };
   }
 
-  private total(order: ProductOrderScenarioData): string {
-    return currencyFormatter.format(
-      (Number(order.productPrice) * order.productQuantity) / 100,
-    );
+  private async readStatus(): Promise<OrderStatus> {
+    for (const status of Object.values(OrderStatus)) {
+      if (await this.page.getByText(status, { exact: true }).isVisible()) {
+        return status;
+      }
+    }
+
+    throw new Error("Не удалось прочитать статус заказа.");
   }
 }

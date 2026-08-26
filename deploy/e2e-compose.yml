@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: "postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777"
+    environment:
+      POSTGRES_DB: expressa
+      POSTGRES_USER: expressa
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
+  backend:
+    image: "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"
+    environment:
+      NODE_ENV: development
+      PORT: '3000'
+      DATABASE_URL: "postgresql://expressa:${POSTGRES_PASSWORD}@postgres:5432/expressa"
+      AUTH_ACCESS_TOKEN_SECRET: "${AUTH_ACCESS_TOKEN_SECRET:?AUTH_ACCESS_TOKEN_SECRET is required}"
+      AUTH_OTP_PEPPER: "${AUTH_OTP_PEPPER:?AUTH_OTP_PEPPER is required}"
+      AUTH_DEVELOPMENT_OTP: "${E2E_OTP:?E2E_OTP is required}"
+      VAPID_SUBJECT: "${VAPID_SUBJECT:?VAPID_SUBJECT is required}"
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:?VAPID_PUBLIC_KEY is required}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:?VAPID_PRIVATE_KEY is required}"
+      CORS_ORIGINS: http://gateway:8081,http://gateway:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [edge, data]
+    healthcheck:
+      test: ['CMD', '/nodejs/bin/node', '-e', "fetch('http://127.0.0.1:3000/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
+  front:
+    image: "${FRONT_IMAGE:?FRONT_IMAGE is required}"
+    networks: [edge]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
+  back:
+    image: "${BACK_IMAGE:?BACK_IMAGE is required}"
+    networks: [edge]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
+  gateway:
+    image: "nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:e88d990b349df8cf4aa82f16642d7a23375016638c9ace4e5c6ca25028e62e65"
+    volumes:
+      - ./e2e-gateway.nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+      back:
+        condition: service_healthy
+    networks: [edge]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8081/health && wget --no-verbose --tries=1 --spider http://127.0.0.1:8082/health']
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
+  e2e:
+    image: "${E2E_IMAGE:?E2E_IMAGE is required}"
+    working_dir: /app
+    environment:
+      E2E_FRONT_OFFICE_URL: http://gateway:8081
+      E2E_BACK_OFFICE_URL: http://gateway:8082
+      E2E_ADMIN_PHONE: "${E2E_ADMIN_PHONE:?E2E_ADMIN_PHONE is required}"
+      E2E_ADMIN_OTP: "${E2E_OTP:?E2E_OTP is required}"
+      E2E_STAFF_PHONE: "${E2E_STAFF_PHONE:?E2E_STAFF_PHONE is required}"
+      E2E_STAFF_OTP: "${E2E_OTP:?E2E_OTP is required}"
+      E2E_CUSTOMER_PHONE: "${E2E_CUSTOMER_PHONE:?E2E_CUSTOMER_PHONE is required}"
+      E2E_CUSTOMER_OTP: "${E2E_OTP:?E2E_OTP is required}"
+    volumes:
+      - "${E2E_ARTIFACT_DIRECTORY:?E2E_ARTIFACT_DIRECTORY is required}:/artifacts"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks: [edge]
+
+networks:
+  edge:
+  data:
+
+volumes:
+  postgres-data:

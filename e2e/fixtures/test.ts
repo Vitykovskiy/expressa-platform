@@ -68,3 +68,12 @@ export const test = base.extend<E2eFixtures>({
 });
 
 export { expect };
+export {
+  ProductSize as ProductEditorSize,
+  ProductType,
+} from "@pages/back-office/menu/menu-management/product-editor/product-editor.types";
+export { ModifierSelectionType } from "@pages/back-office/menu/menu-management/modifier-group-editor/modifier-group-editor.types";
+export { ProductSize as ProductConfiguratorSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
+export { OrderQueueStage } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { OrderHistoryStatus } from "@pages/front-office/orders/order-history/order-history-list/order-history-list.component.types";
+export { OrderStatus } from "@pages/front-office/orders/customer-order/order-details/order-details.types";

@@ -11,4 +11,4 @@ sources:
 
 - [Среды](Environments.md), [CI/CD](CI-CD.md), [выпуск](Release-and-version-compatibility.md).
 - [Операционный запуск](Operations-runbook.md), [наблюдаемость](Observability.md), [backup/restore](Backup-and-restore.md).
-- [Проверка выпуска](../95-testing/Release-verification.md).
+- [Проверка выпуска](../95-testing/Release-verification.md), [E2E на VPS](E2E-on-VPS.md).

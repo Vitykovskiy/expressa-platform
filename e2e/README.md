@@ -7,11 +7,16 @@ Standalone UI-only набор Playwright для сквозных браузер�
 ```bash
 npm ci
 cp .env.example .env.e2e.local
-# Указать E2E_FRONT_OFFICE_URL и E2E_BACK_OFFICE_URL
+# Указать URL и учётные данные administrator, staff и customer
 npm run e2e
 ```
 
 Оба приложения запускаются вне этого каталога. `E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL` обязательны: это абсолютные HTTP(S)-адреса без credentials, query и fragment.
+Сквозные сценарии дополнительно используют `E2E_ADMIN_PHONE`, `E2E_ADMIN_OTP`,
+`E2E_STAFF_PHONE`, `E2E_STAFF_OTP`, `E2E_CUSTOMER_PHONE` и
+`E2E_CUSTOMER_OTP`. Для VPS administrator и OTP остаются секретами, а
+синтетические staff `+79990000002` и customer `+79990000003` — часть
+зафиксированного E2E-контракта.
 
 ## Команды
 
@@ -24,3 +29,15 @@ npm run format:check
 ```
 
 Документация и правила: [карта vault](docs/INDEX.md), [карта сценариев](docs/95-testing/E2E-map.md), [AGENTS.md](AGENTS.md).
+
+## Автоматический запуск
+
+После каждого push в `main` workflow поставки собирает неизменяемый E2E-образ
+и запускает пять сценариев `JOURNEY-01`—`JOURNEY-05` дважды в изолированном
+временном Compose-проекте на VPS. Последний HTML-отчёт доступен на
+`http://<IP_VPS>:8088/` только для CIDR из GitHub Environment Secret
+`E2E_REPORT_ALLOWLIST`; administrator и OTP берутся из существующих
+`BOOTSTRAP_ADMIN_PHONE` и `AUTH_DEVELOPMENT_OTP`, а staff и customer — из
+фиксированного E2E-контракта. Все три роли должны различаться. Порядок запуска,
+секреты и очистка описаны в
+[E2E-on-VPS](../docs/70-deployment/E2E-on-VPS.md).

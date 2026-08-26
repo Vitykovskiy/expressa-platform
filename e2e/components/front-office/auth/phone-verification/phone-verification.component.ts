@@ -1,7 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import type { E2eOtpCredentials } from "@support/config/e2e-environment.types";
-
 export class PhoneVerificationComponent {
   private readonly phoneInput;
   private readonly sendCodeButton;
@@ -21,13 +19,21 @@ export class PhoneVerificationComponent {
     });
   }
 
-  async verify(credentials: E2eOtpCredentials): Promise<void> {
-    await test.step("Подтвердить номер телефона", async () => {
+  async fillPhone(phone: string): Promise<void> {
+    await test.step("Указать номер телефона", async () => {
       await expect(
         this.phoneInput,
         "Поле номера телефона доступно.",
       ).toBeEnabled();
-      await this.phoneInput.fill(credentials.phone);
+      await this.phoneInput.fill(phone);
+      await expect(this.phoneInput, "Номер телефона указан.").toHaveValue(
+        phone,
+      );
+    });
+  }
+
+  async requestCode(): Promise<void> {
+    await test.step("Запросить одноразовый код", async () => {
       await expect(
         this.sendCodeButton,
         "Кнопка отправки кода доступна.",
@@ -37,7 +43,18 @@ export class PhoneVerificationComponent {
         this.otpInput,
         "Поле одноразового кода показано.",
       ).toBeVisible();
-      await this.otpInput.fill(credentials.otp);
+    });
+  }
+
+  async fillCode(otp: string): Promise<void> {
+    await test.step("Указать одноразовый код", async () => {
+      await this.otpInput.fill(otp);
+      await expect(this.otpInput, "Одноразовый код указан.").toHaveValue(otp);
+    });
+  }
+
+  async confirm(): Promise<void> {
+    await test.step("Подтвердить номер телефона", async () => {
       await expect(
         this.confirmButton,
         "Кнопка подтверждения кода доступна.",

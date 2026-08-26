@@ -19,9 +19,18 @@ Docker build; client CI включает contract, UI и container провер�
 [delivery CI](../../.github/workflows/delivery-ci.yml).
 
 После main три проверенных образа получают SHA-tag, публикуются в локальный
-registry и передаются по digest в development. Staging проверяет manifest из
-`deploy/staging.env` и развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
-[staging](../../.github/workflows/staging-deploy.yml). Ручной workflow production до доступа к secrets и SSH проверяет dispatch из `main`, владельца репозитория и `confirm_production=true`; затем принимает только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого тега. `environment: production` служит только меткой аудита и поставки. [Production](../../.github/workflows/production-promotion.yml).
+registry и передаются по digest в development. После успешной development
+поставки workflow собирает четвёртый E2E-образ, передаёт его immutable digest
+вместе с тремя digest приложений и запускает изолированную E2E-проверку. Если
+поставка или сборка E2E-образа неуспешна, always job публикует E2E-диагностику
+вместо Playwright. Staging проверяет manifest из `deploy/staging.env` и
+развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
+[E2E на VPS](E2E-on-VPS.md), [staging](../../.github/workflows/staging-deploy.yml).
+Ручной workflow production до доступа к secrets и SSH проверяет dispatch из
+`main`, владельца репозитория и `confirm_production=true`; затем принимает
+только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого
+тега. `environment: production` служит только меткой аудита и поставки.
+[Production](../../.github/workflows/production-promotion.yml).
 
 GitHub SSH-переменные остаются входами runner для соединения с VPS и не
 передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
@@ -43,6 +52,17 @@ NUL-разделённым stdin; `deploy.sh` использует его тол
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
 
+E2E job передаёт во временный VPS-каталог `e2e-compose.yml`, конфигурации
+gateway и report host, remote runtime и, при успешной сборке, оба image manifest.
+Administrator берётся из `BOOTSTRAP_ADMIN_PHONE`, OTP — из
+`AUTH_DEVELOPMENT_OTP`, а staff и customer имеют фиксированные номера
+`+79990000002` и `+79990000003`. Runner и VPS runtime проверяют, что все три
+роли различаются, до seed и staff upsert. Единственный новый E2E secret —
+`E2E_REPORT_ALLOWLIST`; он, существующие значения доступа и `VAPID_*` приходят
+из GitHub Environment `development` process-scoped через NUL-разделённый stdin
+и не попадают в manifest, runtime.env или отчёт. Полный жизненный цикл
+временного стенда и отчёта описан в [E2E на VPS](E2E-on-VPS.md).
+
 Источник соединения workflow — GitHub Environment Secrets `EXPRESSA_VPS_*`;
 источник постоянных секретов среды — её VPS
 `/srv/expressa/<environment>/runtime.env`; process-scoped значения workflow
@@ -53,16 +73,19 @@ workflow, `runtime.env` и `deploy.sh`; последний задаёт един
 
 ## Публичные тестовые доступы
 
-| Среда | Роль | Телефон | OTP | Источник конфигурации |
-| --- | --- | --- | --- | --- |
-| development | customer | `+79990000001` | `000000` | GitHub Environment `development`: `AUTH_DEVELOPMENT_OTP` |
-| development | administrator | `+79990000002` | `000000` | GitHub Environment `development`: `BOOTSTRAP_ADMIN_PHONE`, `AUTH_DEVELOPMENT_OTP` |
-| staging | customer | `+79990000001` | `000000` | фиксированный контракт `staging_test` |
-| staging | administrator | `+79990000002` | `000000` | GitHub Environment `staging`: `BOOTSTRAP_ADMIN_PHONE`; фиксированный контракт `staging_test` |
+| Среда       | Роль              | Телефон                         | OTP                    | Источник конфигурации                                                |
+| ----------- | ----------------- | ------------------------------- | ---------------------- | -------------------------------------------------------------------- |
+| development | E2E administrator | значение `BOOTSTRAP_ADMIN_PHONE` | `AUTH_DEVELOPMENT_OTP` | GitHub Environment `development`                                    |
+| development | E2E staff         | `+79990000002`                  | `AUTH_DEVELOPMENT_OTP` | фиксированный E2E-контракт                                          |
+| development | E2E customer      | `+79990000003`                  | `AUTH_DEVELOPMENT_OTP` | фиксированный E2E-контракт                                          |
+| staging     | customer          | `+79990000001`                  | `000000`               | фиксированный контракт `staging_test`                                |
+| staging     | administrator     | значение `BOOTSTRAP_ADMIN_PHONE` | `000000`               | GitHub Environment `staging`; фиксированный контракт `staging_test` |
 
 `BOOTSTRAP_ADMIN_PHONE` в GitHub Environments `development` и `staging`
-создаёт или обновляет administrator при каждом seed. В staging OTP выдаётся
-только двум номерам таблицы; другие номера не входят в allowlist. Полный
+создаёт или обновляет administrator при каждом seed. Временный E2E-стенд затем
+upsert-ит staff по фиксированному номеру; runner и VPS runtime не запускают его
+при совпадении любой пары ролей. В staging OTP выдаётся только двум номерам
+таблицы; другие номера не входят в allowlist. Полный
 порядок ротации и проверки приведён в [операционном запуске](Operations-runbook.md).
 
 `operations-verification.yml` запускается из `main` по cron `0 2 * * *` или
