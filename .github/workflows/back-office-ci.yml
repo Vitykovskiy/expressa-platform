@@ -136,3 +136,12 @@ jobs:
       - name: Run orders E2E
         working-directory: back-office
         run: npx playwright test --config=playwright.orders.config.ts
+
+      - name: Upload orders E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: back-office-orders-e2e-diagnostics
+          path: /tmp/expressa-orders-playwright-results
+          if-no-files-found: ignore
+          retention-days: 3
