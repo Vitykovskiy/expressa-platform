@@ -17,4 +17,4 @@ tags: [e2e, playwright, moc]
 - [ADR-001](20-architecture/ADR/ADR-001-standalone-e2e-architecture.md) — граница и устройство набора.
 - [Definition of Done](80-conventions/Definition-of-Done.md) — критерии готовности.
 - [Code Style](80-conventions/Code-style.md) — правила Playwright, TypeScript и POM.
-- [Карта сценариев](95-testing/E2E-map.md) — будущие сквозные сценарии и их связь с Q-E2E.
+- [Карта сценариев](95-testing/E2E-map.md) — сквозные сценарии и их связь с требованиями.

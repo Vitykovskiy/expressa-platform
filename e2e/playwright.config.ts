@@ -3,7 +3,7 @@ import { loadEnvFile } from "node:process";
 
 import { defineConfig } from "@playwright/test";
 
-import { getE2eEnvironment } from "./support/config/e2e-environment";
+import { getE2eEnvironment } from "@support/config/e2e-environment";
 
 const LOCAL_ENV_PATH = ".env.e2e.local";
 

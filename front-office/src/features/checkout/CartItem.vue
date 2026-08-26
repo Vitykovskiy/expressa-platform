@@ -44,7 +44,9 @@
     <footer class="cart-item__footer">
       <p class="cart-item__price">
         <span v-if="props.priceOutdated">Цена до обновления</span>
-        <strong>{{ props.item.lineTotalRub }} ₽</strong>
+        <strong data-testid="cart-item-line-total"
+          >{{ props.item.lineTotalRub }} ₽</strong
+        >
       </p>
       <div class="cart-item__quantity" aria-label="Количество">
         <ui-icon-btn

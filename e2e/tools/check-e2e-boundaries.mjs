@@ -125,17 +125,23 @@ function memberName(expression) {
 }
 
 function bindingName(binding) {
-  return ts.isIdentifier(binding) || ts.isStringLiteral(binding)
+  return binding && (ts.isIdentifier(binding) || ts.isStringLiteral(binding))
     ? binding.text
     : null;
 }
 
 function isFixtureTestModule(moduleSpecifier) {
-  return /(?:^|\/)fixtures\/test$/u.test(moduleSpecifier);
+  return (
+    moduleSpecifier === "@fixtures/test" ||
+    /(?:^|\/)fixtures\/test$/u.test(moduleSpecifier)
+  );
 }
 
 function isPOMModule(moduleSpecifier) {
-  return /(?:^|\/)(?:pages|components)(?:\/|$)/u.test(moduleSpecifier);
+  return (
+    /(?:^|\/)(?:pages|components)(?:\/|$)/u.test(moduleSpecifier) ||
+    /@(?:pages|components)\//u.test(moduleSpecifier)
+  );
 }
 
 function collectImports(sourceFile) {

@@ -10,6 +10,13 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "target": "ES2022",
-    "module": "ES2022"
+    "module": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "@pages/*": ["pages/*"],
+      "@components/*": ["components/*"],
+      "@fixtures/*": ["fixtures/*"],
+      "@support/*": ["support/*"]
+    }
   }
 }

@@ -1,5 +1,9 @@
 <template>
-  <article class="order-card">
+  <article
+    class="order-card"
+    data-testid="staff-order-card"
+    :data-order-id="props.order.id"
+  >
     <div class="order-card__heading">
       <span class="order-card__number">{{ props.order.number }}</span>
       <span class="order-card__stage" :data-tone="stage.tone">{{

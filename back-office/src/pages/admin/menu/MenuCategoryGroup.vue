@@ -7,6 +7,7 @@
         variant="ghost"
         :disabled="props.disabled"
         :aria-expanded="props.expanded"
+        :aria-label="`Открыть категорию ${props.category.name}`"
         @click="emit('toggle', props.category)"
       >
         <span aria-hidden="true" class="menu-category__toggle-icon">

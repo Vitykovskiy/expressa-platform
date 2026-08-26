@@ -24,14 +24,18 @@
               + {{ modifier.modifierName }}
             </p>
           </div>
-          <strong class="order-page__item-total">{{
-            formatMinorAmount(item.lineTotalMinor)
-          }}</strong>
+          <strong
+            class="order-page__item-total"
+            data-testid="order-item-line-total"
+            >{{ formatMinorAmount(item.lineTotalMinor) }}</strong
+          >
         </li>
       </ul>
       <p class="order-page__total">
         <span>Итого</span
-        ><strong>{{ formatMinorAmount(order.totalMinor) }}</strong>
+        ><strong data-testid="order-total">{{
+          formatMinorAmount(order.totalMinor)
+        }}</strong>
       </p>
       <p class="order-page__payment">Оплата на кассе при получении</p>
       <section

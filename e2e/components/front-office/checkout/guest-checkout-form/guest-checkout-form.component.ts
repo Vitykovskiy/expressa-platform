@@ -1,0 +1,31 @@
+import { expect, test, type Page } from "@playwright/test";
+
+export class GuestCheckoutFormComponent {
+  private readonly nameInput;
+  private readonly continueButton;
+
+  constructor(page: Page) {
+    this.nameInput = page.getByLabel("Ваше имя", { exact: true });
+    this.continueButton = page.getByRole("button", {
+      name: "Продолжить",
+      exact: true,
+    });
+  }
+
+  async completeProfileIfShown(name: string): Promise<boolean> {
+    if (!(await this.nameInput.isVisible())) return false;
+
+    await test.step("Заполнить профиль нового клиента", async () => {
+      await expect(this.nameInput, "Поле имени доступно.").toBeEnabled();
+      await this.nameInput.fill(name);
+      await expect(
+        this.continueButton,
+        "Кнопка продолжения доступна.",
+      ).toBeEnabled();
+      await this.continueButton.click();
+      await expect(this.nameInput, "Профиль клиента сохранён.").toHaveCount(0);
+    });
+
+    return true;
+  }
+}

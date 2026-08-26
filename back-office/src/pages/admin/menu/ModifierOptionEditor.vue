@@ -5,6 +5,7 @@
       Название
       <AdminTextField
         :aria-invalid="Boolean(props.fieldErrors?.name)"
+        data-testid="modifier-option-name"
         :model-value="props.modelValue.name"
         autocomplete="off"
         type="text"
