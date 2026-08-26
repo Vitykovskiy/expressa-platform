@@ -124,6 +124,15 @@ jobs:
         working-directory: back-office
         run: npm run test:catalog:e2e
 
+      - name: Upload catalog E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: back-office-catalog-e2e-diagnostics
+          path: back-office/test-results
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Run orders E2E
         working-directory: back-office
         run: npx playwright test --config=playwright.orders.config.ts
