@@ -49,11 +49,35 @@ E08/E09 — запреты ролей и неверного перехода, п
 `/health` и container health-checks. Значения `runtime.env` — секреты и не
 выводятся. [Compose](../../deploy/compose.yml), [backend health](../../backend/src/platform/health/health.controller.ts).
 
+## Диск VPS
+
+Перед очисткой оператор снимает только читаемый инвентарь `df`, `docker system df`,
+контейнеров, образов, volume, networks, `/var/log` и `/tmp`. Защищены работающие
+контейнеры и используемые ими digest образов, все volume и networks,
+`/srv/expressa/<environment>/runtime.env` и копии в пределах срока хранения.
+Удаляют только по инвентарю остановленные одноразовые контейнеры, неиспользуемые
+образы и build cache, истёкшие копии и временные каталоги поставки. Команда
+`docker system prune --volumes` не применяется: она может удалить данные
+состояния. После очистки оператор повторяет инвентарь и health-проверки сред.
+
+Перед созданием переменной окружения, GitHub Secret, SSH alias или Compose project
+оператор сверяет существующие источники и корни сред: `/srv/expressa/<environment>`
+с `runtime.env`, workflows и `deploy.sh` задают `expressa-<environment>`.
+
 ## Тестовые доступы и ротация
 
 Публичные тестовые пользователи development и staging: customer
 `+79990000001` и administrator `+79990000002`; OTP для обоих — `000000`.
 Адреса Customer, Admin и API приведены в [средах](Environments.md).
+
+Standalone E2E получает адреса сред из этой карты, а customer, administrator и
+их OTP — из [CI/CD](CI-CD.md#Публичные-тестовые-доступы). В staging
+`E2E_STAFF_PHONE` использует ту же существующую учётную запись администратора
+`BOOTSTRAP_ADMIN_PHONE`: развёрнутый staging-контракт пропускает её при проверке
+прав Staff. `E2E_STAFF_OTP` использует тот же фиксированный источник `staging_test`,
+что указан в [CI/CD](CI-CD.md#Публичные-тестовые-доступы). Все значения
+передаются только в окружение запуска Playwright и не создают отдельный
+файл учётных данных, секрет или конфигурацию.
 
 Для ротации administrator оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
 номер формата `+7XXXXXXXXXX` в GitHub Environments `development` и `staging`.

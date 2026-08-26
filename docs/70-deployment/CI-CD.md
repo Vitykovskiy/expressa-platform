@@ -43,6 +43,14 @@ NUL-разделённым stdin; `deploy.sh` использует его тол
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
 
+Источник соединения workflow — GitHub Environment Secrets `EXPRESSA_VPS_*`;
+источник постоянных секретов среды — её VPS
+`/srv/expressa/<environment>/runtime.env`; process-scoped значения workflow
+передаёт только на время поставки. Локальный SSH alias не заменяет эти источники.
+Перед добавлением переменной, секрета, alias или Compose project оператор сверяет
+workflow, `runtime.env` и `deploy.sh`; последний задаёт единственный root проекта
+`/srv/expressa/<environment>` и имя `expressa-<environment>`.
+
 ## Публичные тестовые доступы
 
 | Среда | Роль | Телефон | OTP | Источник конфигурации |

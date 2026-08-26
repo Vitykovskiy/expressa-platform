@@ -24,6 +24,10 @@ MAC до расшифровки. Копии старше
 [Backup script](../../deploy/backup.sh),
 [alert](../../deploy/prometheus/alerts.yml).
 
+`operations-verification.yml` передаёт `BACKUP_RETENTION_DAYS=7`, поэтому его
+рабочие копии хранятся семь дней. `backup.sh` принимает положительное значение
+параметра для других явных запусков; оно не меняет политику workflow.
+
 Workflow использует user-owned каталоги development
 `/srv/expressa/development/state/operations/{backups,backup-metrics}` с режимом
 `0700`. Ключи backup и VAPID передаются на host только для запуска: временные
