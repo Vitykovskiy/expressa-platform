@@ -21,6 +21,12 @@ export class CatalogListComponent {
     });
   }
 
+  async expandCategoryIfPresent(name: string): Promise<boolean> {
+    if ((await this.categoryToggle(name).count()) === 0) return false;
+    await this.expandCategory(name);
+    return true;
+  }
+
   async assertProductVisible(name: string): Promise<void> {
     await test.step(`Проверить видимость товара «${name}»`, async () => {
       await expect(

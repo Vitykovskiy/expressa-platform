@@ -83,6 +83,11 @@ export class CategoryEditorComponent {
     });
   }
 
+  async archiveIfPresent(name: string): Promise<void> {
+    if ((await this.categoryEditButton(name).count()) === 0) return;
+    await this.archive(name);
+  }
+
   private dialog(): Locator {
     return this.page.getByRole("dialog");
   }

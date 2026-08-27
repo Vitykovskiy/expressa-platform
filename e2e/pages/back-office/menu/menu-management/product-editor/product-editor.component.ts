@@ -36,7 +36,7 @@ export class ProductEditorComponent {
       await expect(
         categoryOption,
         `Категория «${name}» доступна для выбора.`,
-      ).toBeVisible();
+      ).toHaveCount(1);
       const categoryValue = await categoryOption.getAttribute("value");
 
       if (categoryValue === null) {
@@ -152,6 +152,11 @@ export class ProductEditorComponent {
         `Товар «${name}» архивирован.`,
       ).toHaveCount(0);
     });
+  }
+
+  async archiveIfPresent(name: string): Promise<void> {
+    if ((await this.productEditButton(name).count()) === 0) return;
+    await this.archive(name);
   }
 
   private dialog(): Locator {

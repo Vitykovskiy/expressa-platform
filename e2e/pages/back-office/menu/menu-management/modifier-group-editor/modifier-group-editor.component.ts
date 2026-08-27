@@ -198,6 +198,12 @@ export class ModifierGroupEditorComponent {
     });
   }
 
+  async archiveIfPresent(name: string): Promise<void> {
+    await this.openManagement();
+    if ((await this.modifierGroupEditButton(name).count()) === 0) return;
+    await this.archive(name);
+  }
+
   private confirmationDialog(): Locator {
     return this.page.getByRole("dialog", {
       name: "Архивировать группу добавок?",

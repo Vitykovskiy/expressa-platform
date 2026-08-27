@@ -149,10 +149,12 @@ test("JOURNEY-02: customer оформляет заказ через OTP", async 
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
     await menuManagement.open();
-    await menuManagement.catalog.expandCategory(data.categoryName);
-    await menuManagement.productEditor.archive(data.productName);
-    await menuManagement.modifierGroupEditor.archive(data.modifierGroupName);
-    await menuManagement.categoryEditor.archive(data.categoryName);
+    await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
+    await menuManagement.productEditor.archiveIfPresent(data.productName);
+    await menuManagement.modifierGroupEditor.archiveIfPresent(
+      data.modifierGroupName,
+    );
+    await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
     await menuManagement.catalog.assertScenarioAbsent(data);
   }
 });
