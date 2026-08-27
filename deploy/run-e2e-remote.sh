@@ -65,7 +65,8 @@ validate_metadata() {
 ensure_report_host() {
   validate_report_host_input
   [[ ! -L "$report_root" && ! -L "$report_config_root" ]] || fail 'report path must not be a symbolic link'
-  install -d -m 750 "$report_root" "$report_config_root"
+  install -d -m 755 "$report_root"
+  install -d -m 750 "$report_config_root"
   local allow_lines='' cidr
   for cidr in $E2E_REPORT_ALLOWLIST; do
     allow_lines+="    allow $cidr;"$'\n'
