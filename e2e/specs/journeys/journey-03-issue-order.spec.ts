@@ -97,6 +97,7 @@ test("JOURNEY-03: staff выдаёт готовый заказ", async ({
     await menuManagement.productEditor.selectType(ProductType.DRINK);
     await menuManagement.productEditor.fillName(data.productName);
     await menuManagement.productEditor.fillDescription(data.productDescription);
+    await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
     await menuManagement.productEditor.setPrice(
       ProductEditorSize.M,
       data.productPrice,

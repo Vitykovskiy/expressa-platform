@@ -106,6 +106,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     await menuManagement.productEditor.selectType(ProductType.DRINK);
     await menuManagement.productEditor.fillName(data.productName);
     await menuManagement.productEditor.fillDescription(data.productDescription);
+    await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
     await menuManagement.productEditor.setPrice(
       ProductEditorSize.M,
       data.productPrice,

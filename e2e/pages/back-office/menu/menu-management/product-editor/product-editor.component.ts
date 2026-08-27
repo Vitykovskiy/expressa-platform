@@ -100,6 +100,31 @@ export class ProductEditorComponent {
     });
   }
 
+  async useOnlySize(size: ProductSize): Promise<void> {
+    await test.step(`Оставить только размер ${size}`, async () => {
+      for (const candidate of Object.values(ProductSize)) {
+        const toggle = this.dialog().getByRole("switch", {
+          name: `Использовать размер ${candidate}`,
+          exact: true,
+        });
+
+        if (candidate === size) {
+          await toggle.check();
+          await expect(
+            toggle,
+            `Размер ${candidate} используется.`,
+          ).toBeChecked();
+        } else {
+          await toggle.uncheck();
+          await expect(
+            toggle,
+            `Размер ${candidate} отключён.`,
+          ).not.toBeChecked();
+        }
+      }
+    });
+  }
+
   async save(name: string): Promise<void> {
     await test.step(`Сохранить товар «${name}»`, async () => {
       await this.dialog()
