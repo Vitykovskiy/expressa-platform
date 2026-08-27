@@ -95,9 +95,7 @@ export class ModifierGroupEditorComponent {
 
   async selectType(type: ModifierSelectionType): Promise<void> {
     await test.step(`Выбрать тип группы добавок «${type}»`, async () => {
-      const selectionType = this.editorRegion.getByLabel("Тип выбора", {
-        exact: true,
-      });
+      const selectionType = this.editorRegion.getByRole("combobox");
 
       await selectionType.selectOption(type);
       await expect(selectionType, "Тип группы добавок выбран.").toHaveValue(
