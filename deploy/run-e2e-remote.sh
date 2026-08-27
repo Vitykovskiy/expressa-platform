@@ -90,12 +90,37 @@ ensure_report_host() {
 
 assert_no_e2e_secret() {
   local publication_directory="$1" secret
-  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_OTP:-}"; do
+  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_OTP:-}"; do
     [[ -n "$secret" ]] || continue
     if grep --recursive --fixed-strings --quiet -- "$secret" "$publication_directory"; then
       fail 'E2E credential was found in report publication'
     fi
   done
+}
+
+sanitize_e2e_report() {
+  local publication_directory="$1"
+  python3 - "$publication_directory" <<'PY'
+import os
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+credentials = {
+    os.environ.get(name, "").encode()
+    for name in ("E2E_ADMIN_PHONE", "E2E_STAFF_PHONE", "E2E_CUSTOMER_PHONE", "E2E_OTP")
+}
+for path in root.rglob("*"):
+    if not path.is_file() or path.is_symlink():
+        continue
+    content = path.read_bytes()
+    sanitized = content
+    for credential in credentials:
+        if credential:
+            sanitized = sanitized.replace(credential, b"*" * len(credential))
+    if sanitized != content:
+        path.write_bytes(sanitized)
+PY
 }
 
 publish_directory() {
@@ -135,6 +160,7 @@ publish_suite_report() {
   copy_playwright_report 'run-2' "$publication_directory/run-2"
   printf '<!doctype html><meta charset="utf-8"><title>E2E report</title><h1>E2E report</h1><p>Run 1: %s. <a href="run-1/">Open Playwright report</a></p><p>Run 2: %s. <a href="run-2/">Open Playwright report</a></p><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p>' \
     "$run_one_status" "$run_two_status" "$E2E_REVISION" "$E2E_RUN_URL" > "$publication_directory/index.html"
+  sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
   ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
   mv -Tf "$report_root/current.next" "$report_root/current"
@@ -146,6 +172,9 @@ compose() {
 }
 
 cleanup_runtime() {
+  if [[ -n "$project" && -n "$run_directory" && -d "$run_directory" ]]; then
+    compose run --rm --no-deps --entrypoint sh e2e -c 'chmod -R a+rwX /artifacts' >/dev/null 2>&1 || true
+  fi
   if [[ -n "$project" ]]; then
     compose down --volumes --remove-orphans >/dev/null 2>&1 || true
   fi
