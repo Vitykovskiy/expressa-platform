@@ -17,6 +17,7 @@ getE2eEnvironment();
 export default defineConfig({
   testDir: ".",
   testMatch: ["specs/**/*.spec.ts", "support/config/**/*.test.ts"],
+  timeout: 5 * 60_000,
   workers: 1,
   retries: 0,
   reporter: [

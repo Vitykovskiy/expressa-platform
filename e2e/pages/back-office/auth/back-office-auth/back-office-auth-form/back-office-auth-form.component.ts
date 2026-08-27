@@ -34,7 +34,13 @@ export class BackOfficeAuthFormComponent {
         this.phoneInput,
         "В поле указан номер сотрудника.",
       ).toHaveValue(formatPhoneForUi(credentials.phone));
-      await this.sendOtpButton.click();
+      await expect(async () => {
+        await this.sendOtpButton.click();
+        await expect(this.otpInput).toBeVisible({ timeout: 1_000 });
+      }, "OTP-запрос принят с учётом серверного ограничения частоты.").toPass({
+        intervals: [5_000],
+        timeout: 65_000,
+      });
       await expect(
         this.otpInput,
         "Появилось поле кода подтверждения.",

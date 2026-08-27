@@ -38,7 +38,13 @@ export class PhoneVerificationComponent {
         this.sendCodeButton,
         "Кнопка отправки кода доступна.",
       ).toBeEnabled();
-      await this.sendCodeButton.click();
+      await expect(async () => {
+        await this.sendCodeButton.click();
+        await expect(this.otpInput).toBeVisible({ timeout: 1_000 });
+      }, "OTP-запрос принят с учётом серверного ограничения частоты.").toPass({
+        intervals: [5_000],
+        timeout: 65_000,
+      });
       await expect(
         this.otpInput,
         "Поле одноразового кода показано.",

@@ -119,12 +119,13 @@ report_pattern = re.compile(
     rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
     re.DOTALL,
 )
+phone_pattern = re.compile(rb"\+7(?:\d{10}| \d{3} \d{3}-\d{2}-\d{2})")
 
 def redact(content: bytes) -> bytes:
     for credential in credentials:
         if credential:
             content = content.replace(credential, b"*" * len(credential))
-    return content
+    return phone_pattern.sub(lambda match: b"*" * len(match.group()), content)
 
 def sanitize_embedded_report(match: re.Match[bytes]) -> bytes:
     source = io.BytesIO(base64.b64decode(match.group(2)))
