@@ -1,32 +1,60 @@
 # Expressa
 
-Expressa — система заказа кофе: клиентское PWA, рабочее PWA сотрудников и
-backend. Репозиторий объединяет поставку системы и межконтурные контракты; у
-каждого приложения есть собственные зависимости, команды и документация.
+Expressa помогает кофейне принять и приготовить заказ без очереди у кассы.
+Покупатель выбирает напитки в клиентском PWA, оформляет заказ и следит за его
+состоянием. Бариста принимает заказ в рабочем PWA, проводит его через этапы
+приготовления и выдаёт после оплаты на кассе. Администратор управляет меню,
+ценами и доступностью позиций.
 
-## Контуры
+Система объединяет два веб-приложения, общий HTTP API и отдельный набор
+сквозных браузерных тестов. Подробный продуктовый сценарий описан в
+[обзоре Expressa](docs/10-overview/Project-overview.md).
 
-| Контур | Назначение | Вход | Правила | Документация |
-| --- | --- | --- | --- | --- |
-| [backend](backend/README.md) | HTTP API и PostgreSQL | [README](backend/README.md) | [AGENTS](backend/AGENTS.md) | [docs](backend/docs/INDEX.md) |
-| [front-office](front-office/README.md) | клиентское PWA | [README](front-office/README.md) | [AGENTS](front-office/AGENTS.md) | [docs](front-office/docs/INDEX.md) |
-| [back-office](back-office/README.md) | рабочее PWA | [README](back-office/README.md) | [AGENTS](back-office/AGENTS.md) | [docs](back-office/docs/INDEX.md) |
-| [e2e](e2e/README.md) | standalone UI-only Playwright-набор | [README](e2e/README.md) | [AGENTS](e2e/AGENTS.md) | [docs](e2e/docs/INDEX.md) |
+## Структура каталога
 
-Клиенты не импортируют исходный код друг друга или backend. Их общая граница —
-версионированный HTTP API и снимки OpenAPI; точное правило —
-[межконтурные контракты](docs/20-architecture/Cross-repository-contracts.md).
-Пакет `e2e` запускается против подготовленных front-office и back-office и
-проверяет их только через браузерный UI.
-
-## Корневая документация
-
-[docs/INDEX.md](docs/INDEX.md) содержит систему, поставку, общие интерфейсы и
-бэклог. Локальное устройство и команды принадлежат документации
-соответствующего контура. Решение о границах: [ADR-004](docs/20-architecture/ADR/ADR-004-remove-storybook.md).
-
-## Git hooks
-
-```sh
-./scripts/install-git-hooks.sh
+```text
+expressa/
+├── backend/          # HTTP API, бизнес-правила, PostgreSQL и OpenAPI
+├── front-office/     # клиентское PWA покупателя
+├── back-office/      # рабочее PWA бариста и администратора
+├── e2e/              # сквозные браузерные сценарии
+├── docs/             # документация системы и общие контракты
+├── deploy/           # конфигурация окружений и поставки
+├── scripts/          # общие проверки и служебные команды
+├── .github/          # CI/CD workflows
+├── .githooks/        # общие Git hooks
+├── AGENTS.md         # правила работы агентов
+└── CHANGELOG.md      # журнал изменений
 ```
+
+Каждый контур запускается и проверяется независимо. Его команды, внутренняя
+структура и локальная документация находятся в собственном README:
+[backend](backend/README.md), [front-office](front-office/README.md),
+[back-office](back-office/README.md), [e2e](e2e/README.md).
+
+## Как работает продукт
+
+1. Покупатель просматривает меню и настраивает напиток.
+2. Авторизуется по номеру телефона, собирает корзину и оформляет заказ.
+3. Бариста принимает заказ и отмечает этапы приготовления.
+4. Покупатель видит актуальное состояние заказа.
+5. Готовый заказ оплачивается на кассе и выдаётся покупателю.
+
+Полные функции первого выпуска собраны в [границах MVP](docs/10-overview/MVP-scope.md),
+роли сотрудников и покупателей — в [матрице доступа](docs/10-overview/Roles-and-access.md).
+
+## Документация
+
+- [Карта документации](docs/INDEX.md) — устройство системы и входы во все разделы.
+- [Контракты и интерфейсы](docs/50-interfaces/INDEX.md) — HTTP API, UI и push-уведомления.
+- [Предметная область](docs/30-domain/INDEX.md) — каталог, цены, заказы, доступ и аудит.
+- [Тестирование](docs/95-testing/INDEX.md) — стратегия, обязательные сценарии и проверка выпуска.
+- [Поставка](docs/70-deployment/INDEX.md) — окружения, CI/CD и эксплуатация.
+- [Бэклог](docs/10-overview/backlog/INDEX.md) — планы следующих этапов и карточки работ.
+- [Правила работы](AGENTS.md) — обязательные инструкции для агентов.
+
+## Состояние и проверка
+
+- [Последний отчёт Playwright](http://216.57.105.133:8088/).
+- [Development delivery в GitHub Actions](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml).
+- Проверка документации: `node scripts/check-docs.mjs`.

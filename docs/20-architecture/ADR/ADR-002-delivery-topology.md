@@ -18,7 +18,7 @@ sources:
   - ../../../.github/workflows/production-promotion.yml
 requirements: [BL-0014, BL-0018, BL-0019, BL-0161]
 repositories: [expressa-platform]
-related: ["[[../Repository-boundaries]]", "[[../../70-deployment/Environments]]", "[[../../70-deployment/CI-CD]]", "[[../../70-deployment/Operations-runbook]]"]
+related: ["[../Repository-boundaries](../Repository-boundaries.md)", "[../../70-deployment/Environments](../../70-deployment/Environments.md)", "[../../70-deployment/CI-CD](../../70-deployment/CI-CD.md)", "[../../70-deployment/Operations-runbook](../../70-deployment/Operations-runbook.md)"]
 ---
 
 # ADR-002. Топология поставки E01

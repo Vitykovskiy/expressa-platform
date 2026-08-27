@@ -11,10 +11,15 @@ tags: [e2e, playwright, moc]
 
 Набор проверяет два отдельно запущенных пользовательских интерфейса Expressa через браузер. Исходный код приложений, их локальные E2E-наборы и инфраструктура запуска принадлежат соответствующим контурам.
 
-## Точки входа
+## Текущее устройство
 
 - [Быстрый старт](10-overview/Quick-start.md) — установка и запуск.
-- [ADR-001](20-architecture/ADR/ADR-001-standalone-e2e-architecture.md) — граница и устройство набора.
-- [Definition of Done](80-conventions/Definition-of-Done.md) — критерии готовности.
-- [Code Style](80-conventions/Code-style.md) — правила Playwright, TypeScript и POM.
-- [Карта сценариев](95-testing/E2E-map.md) — сквозные сценарии и их связь с требованиями.
+- [Архитектура](20-architecture/INDEX.md) — UI-only граница и принятые решения.
+- [Соглашения](80-conventions/INDEX.md) — правила Playwright, TypeScript и критерии готовности.
+- [Тестирование](95-testing/INDEX.md) — карта сценариев, их подробные описания и исполняемые journeys.
+
+## Первичные источники и поставка
+
+- [Конфигурация Playwright](../playwright.config.ts), [fixtures](../fixtures/test.ts) и [конфигурация окружения](../support/config/e2e-environment.ts) — исполняемая граница набора.
+- [Сквозной сценарий](../specs/journeys/journey-05-full-order-lifecycle.spec.ts) и [проверка границ](../tools/check-e2e-boundaries.mjs) — сценарии и локальная приёмка.
+- [Результаты прогонов](../../docs/70-deployment/E2E-on-VPS.md) — постоянный Playwright report на VPS и журнал запусков GitHub Actions.

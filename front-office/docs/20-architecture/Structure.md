@@ -22,3 +22,5 @@ checkout-состояние. [Источники: store](../../src/features/chec
 [страница](../../src/pages/OrderPage.vue).
 
 Проверка границ: [typecheck и тесты](../40-testing/Verification.md).
+
+Карта раздела: [архитектура](INDEX.md).

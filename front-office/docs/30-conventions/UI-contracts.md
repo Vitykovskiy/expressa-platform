@@ -34,4 +34,4 @@ value, перенос текста и disabled/model state; AuthForm испол�
 и breakpoint. [Источники: main CSS](../../src/styles/main.css), [tokens](../../src/styles/customer-tokens.css).
 
 `role`, `aria-*` и live region фиксируются там, где их задаёт компонент.
-[Источник: UI](../../src/shared/ui/customer).
+[Источник: UI](../../src/shared/ui/customer/dialog/UiDialog.vue).

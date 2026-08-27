@@ -1,17 +1,47 @@
 # Expressa front-office
 
-Клиентское приложение кофейни: меню, авторизация по телефону, корзина и заказ.
-Используйте Node.js `24.15.0` из `.nvmrc`.
+Клиентское PWA покупателя: меню, вход по телефону, корзина и оформление
+заказа. Статус оформленного заказа доступен в приложении.
+
+Для работы требуется Node.js `24.15.0` из [.nvmrc](.nvmrc).
+
+## Структура каталога
+
+```text
+front-office/
+├── contracts/        # снимок HTTP-контракта, используемый клиентом
+├── docs/             # описание сценариев, устройства и проверок
+├── public/           # статические ресурсы PWA
+├── scripts/          # локальные проверки контракта
+├── src/              # исходный код Vue-приложения
+├── tests/            # сквозные браузерные сценарии клиента
+├── .nvmrc            # требуемая версия Node.js
+├── AGENTS.md         # правила работы в контуре
+├── package.json      # команды и зависимости приложения
+└── README.md         # вход в контур
+```
+
+## Запуск
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Runtime-код лежит в `src`: `app` собирает приложение и сессию, `pages` владеют
-маршрутами, `widgets` — оболочкой, `features` — действиями пользователя,
-`entities` — корзиной и меню, `shared` — HTTP-клиентом и UI-примитивами.
-[Исходник: слои и маршруты](src/app/router.ts).
+## Устройство и проверка
 
-Команды проверки — в [package.json](package.json). Сценарии, UI и API описаны в
-[docs/INDEX.md](docs/INDEX.md). Локальные правила: [AGENTS.md](AGENTS.md).
+Runtime находится в `src`: `app` собирает приложение, `pages` владеют
+страницами, `widgets` — их составом, `features` — действиями пользователя,
+`entities` — предметными данными, `shared` — общими примитивами клиента.
+Unit-тесты располагаются рядом с runtime-кодом, браузерные сценарии — в
+`tests/e2e`.
+
+Команды проверки: `npm run typecheck`, `npm run lint`, `npm run format:check`,
+`npm test`, `npm run test:e2e` и `npm run contract:check`. Полный список и
+параметры — в [package.json](package.json).
+
+[Документация](docs/INDEX.md) описывает сценарии и контракты; [AGENTS.md](AGENTS.md)
+содержит правила работы. Точку сборки приложения задаёт
+[src/app/App.vue](src/app/App.vue), маршруты —
+[src/app/router.ts](src/app/router.ts), HTTP-границу —
+[contracts/openapi.json](contracts/openapi.json).

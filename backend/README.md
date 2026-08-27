@@ -1,11 +1,25 @@
 # Backend Expressa
 
-HTTP-сервер Expressa на NestJS, TypeScript и PostgreSQL. Публичный клиент читает
-меню и создаёт заказ, сотрудник управляет каталогом, а пользователь получает
-сессию по одноразовому коду. Рабочие сценарии и их первичные источники собраны
-в [документации](docs/INDEX.md).
+Backend — HTTP API Expressa. Он обслуживает меню, заказы, доступ сотрудников и
+пользовательские сессии; данные хранятся в PostgreSQL. Устройство сервера и
+действующие контракты собраны в [документации backend](docs/INDEX.md).
 
-## Быстрый старт
+## Структура каталога
+
+```text
+backend/
+├── docs/               # документация, правила и карта текущего устройства
+├── migrations/         # последовательные SQL-миграции PostgreSQL
+├── scripts/            # миграции, заполнение данных и служебные команды
+├── src/                # NestJS-модули и исполняемый код API
+├── test/               # интеграционные и HTTP e2e-проверки
+├── .env.example        # безопасный шаблон переменных окружения
+├── compose.local.yml   # локальный PostgreSQL
+├── package.json        # команды разработки и зависимости
+└── AGENTS.md           # правила изменения backend
+```
+
+## Локальный запуск
 
 ```bash
 npm ci
@@ -17,8 +31,14 @@ npm run seed
 npm run start:dev
 ```
 
-Проверка доступности: `GET http://localhost:3000/health/live`. HTTP API имеет
-префикс `/api/v1`; при `NODE_ENV=local` документация доступна по `/docs`.
+После копирования шаблона заполните обязательные значения окружения. Их
+проверяет [конфигурация](src/platform/config/environment.ts): всегда нужны
+`NODE_ENV`, `PORT`, `DATABASE_URL`, секреты сессии, VAPID-ключи и `CORS_ORIGINS`;
+для `local` и `development` также нужен `AUTH_DEVELOPMENT_OTP`.
+
+Проверка доступности: `GET http://localhost:3000/health/live`. API использует
+префикс `/api/v1`; при `NODE_ENV=local` или `development` Swagger доступен по
+`/docs`.
 
 ## Команды
 
@@ -36,14 +56,11 @@ npm run staff -- upsert --phone +79991234567 --role administrator
 `npm run staff` создаёт или обновляет сотрудника. Допустимые роли: `barista`,
 `administrator`; телефон — `+7XXXXXXXXXX`.
 
-Перед запуском обязательны `NODE_ENV`, `PORT`, `DATABASE_URL`,
-`AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER`, VAPID subject/public/private keys
-и `CORS_ORIGINS`. В `local` и `development` также нужен `AUTH_DEVELOPMENT_OTP`;
-в `staging` и `production` — `SMS_RU_API_ID` и `SMS_RU_SENDER`. Пример без
-секретов: [.env.example](.env.example).
+## Где искать детали
 
-## Документация и правила
-
-[docs/INDEX.md](docs/INDEX.md) — карта текущего устройства и реестр покрытия;
-[AGENTS.md](AGENTS.md) — локальные правила. Машиночитаемый HTTP-контракт —
-[openapi/openapi.json](openapi/openapi.json).
+- [AGENTS.md](AGENTS.md) — правила backend и обязательные проверки.
+- [docs/INDEX.md](docs/INDEX.md) — карта архитектуры, предметных областей,
+  данных, API, операций и тестирования.
+- [openapi/openapi.json](openapi/openapi.json) — машиночитаемый HTTP-контракт;
+  `npm run openapi:check` сопоставляет его с NestJS-декораторами.
+- [тестирование](docs/95-testing/INDEX.md) — уровни и сценарии проверок.

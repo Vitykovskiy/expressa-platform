@@ -13,4 +13,4 @@
 
 Перед сдачей изменений запускай применимые команды из `package.json`: `npm run lint`, `npm run format:check`, `npm run typecheck:e2e`, `npm run e2e:boundaries`. Полные E2E-сценарии запускай только при предоставленных URL.
 
-Навигация: [README](README.md), [документация](docs/INDEX.md), [DoD](docs/80-conventions/Definition-of-Done.md), [Code Style](docs/80-conventions/Code-style.md).
+Навигация: [README](README.md), [карта документации](docs/INDEX.md), [DoD](docs/80-conventions/Definition-of-Done.md), [Code Style](docs/80-conventions/Code-style.md).

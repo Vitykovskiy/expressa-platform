@@ -1,3 +1,3 @@
 # Карта инструкций
 
-- [[Project-instructions|Проектные инструкции]]
+- [Проектные инструкции](Project-instructions.md)

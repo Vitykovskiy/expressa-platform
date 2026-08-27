@@ -11,6 +11,8 @@ sources:
 
 # Тестирование
 
+[Локальная карта](INDEX.md) — вход раздела.
+
 `npm test -- --runInBand` запускает unit-спеки из `src`; `test:integration`
 проверяет PostgreSQL-схему и adapters; `test:e2e` проверяет HTTP с PostgreSQL;
 `test:production` — собранный runtime. [Scripts](../../package.json).

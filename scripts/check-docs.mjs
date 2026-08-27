@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Offline Docs-as-Code checks. Supported links: Markdown `[label](target)` and
- * Obsidian `[[target]]` / `[[target|label]]`. Links in fenced code blocks,
- * external URLs, anchors and mail links are deliberately ignored.
+ * Offline Docs-as-Code checks. Documentation uses relative Markdown links.
+ * Links in fenced code blocks, external URLs, anchors and mail links are
+ * deliberately ignored.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, extname, normalize, relative, resolve, sep } from 'node:path';
 
 const root = process.cwd();
@@ -14,7 +15,13 @@ const SCOPES = {
   backend: { docs: 'backend/docs', index: 'backend/docs/INDEX.md' },
   'front-office': { docs: 'front-office/docs', index: 'front-office/docs/INDEX.md' },
   'back-office': { docs: 'back-office/docs', index: 'back-office/docs/INDEX.md' },
+  e2e: { docs: 'e2e/docs', index: 'e2e/docs/INDEX.md' },
 };
+const EXCLUDED_DIRECTORIES = new Set([
+  '.cache', '.codex', '.git', '.turbo', '.vite', 'build', 'cache', 'coverage',
+  'dist', 'generated', 'node_modules', 'playwright-report', 'reports', 'test-results', 'tmp', 'vendor',
+]);
+const HISTORICAL_DIRECTORIES = new Set(['_journal', '_sources']);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.vue', '.json', '.yaml', '.yml', '.sql', '.css', '.env']);
 const SOURCE_FILE_PATTERN = /[\w./-]+\.(?:tsx|cjs|mjs|json|yaml|yml|vue|sql|css|ts|js|md)(?=$|[^\w])/g;
 const REQUIRED_METADATA = ['type', 'owner', 'last_verified', 'sources'];
@@ -28,7 +35,7 @@ function walk(directory, predicate = () => true) {
   if (!existsSync(directory)) return [];
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name);
-    if (entry.isDirectory()) return walk(path, predicate);
+    if (entry.isDirectory()) return EXCLUDED_DIRECTORIES.has(entry.name) ? [] : walk(path, predicate);
     return predicate(path) ? [path] : [];
   });
 }
@@ -43,6 +50,62 @@ function withoutInlineCode(text) {
 
 function markdownFiles(scope) {
   return walk(resolve(root, scope.docs), (file) => extname(file) === '.md');
+}
+
+function applicationRoot(scope) {
+  return scope.appRoot ?? (scope.name === 'root' ? root : resolve(root, scope.name));
+}
+
+function scopeNavigationFiles(scope, files) {
+  const appRoot = applicationRoot(scope);
+  return [...new Set([
+    ...files,
+    resolve(appRoot, 'README.md'),
+    resolve(appRoot, 'AGENTS.md'),
+  ])].filter(existsSync);
+}
+
+function readmeStructureViolation(text) {
+  const lines = text.split(/\r?\n/);
+  const headings = lines.flatMap((line, index) => {
+    const match = line.match(/^## (?!#)(.+?)\s*#*\s*$/);
+    return match ? [{ index, title: match[1] }] : [];
+  });
+  const structures = headings.filter((heading) => heading.title === 'Структура каталога');
+  if (structures.length !== 1) return 'README.md must contain exactly one "## Структура каталога" section';
+  if (headings[0]?.index !== structures[0].index) return '"## Структура каталога" must be the first level-two heading';
+
+  let treeStart = structures[0].index + 1;
+  while (!lines[treeStart]?.trim()) treeStart += 1;
+  if (lines[treeStart]?.trim() !== '```text') return '"## Структура каталога" must be followed by a fenced text tree';
+
+  const treeEnd = lines.findIndex((line, index) => index > treeStart && line.trim() === '```');
+  if (treeEnd === -1 || !lines.slice(treeStart + 1, treeEnd).some((line) => line.trim())) {
+    return '"## Структура каталога" must be followed by a fenced text tree';
+  }
+  return null;
+}
+
+function checkReadmeStructures(files, scope = 'root') {
+  for (const file of files) {
+    const violation = readmeStructureViolation(readFileSync(file, 'utf8'));
+    if (violation) fail(scope, file, violation);
+  }
+}
+
+function readmesIn(directory) {
+  return walk(directory, (file) => relative(directory, file).split(sep).at(-1) === 'README.md');
+}
+
+function trackedNestedReadmes() {
+  const paths = execFileSync('git', ['ls-files', '-z', '--', 'README.md', ':(glob)**/README.md'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).split('\0').filter(Boolean);
+  return [...new Set(paths)]
+    .map((path) => resolve(root, path))
+    .filter((file) => file !== resolve(root, 'README.md'))
+    .filter((file) => !relative(root, file).split(sep).some((segment) => EXCLUDED_DIRECTORIES.has(segment)));
 }
 
 function frontmatter(text) {
@@ -70,10 +133,25 @@ function isKnowledgeNote(file, scope) {
 
 function isHistoricalNote(file, scope) {
   const local = relative(resolve(root, scope.docs), file).split(sep);
-  return local.includes('_journal')
-    || local.includes('_sources')
+  return local.some((segment) => HISTORICAL_DIRECTORIES.has(segment))
     || local.includes('backlog')
     || frontmatter(readFileSync(file, 'utf8')).status === 'superseded';
+}
+
+function isExcludedFromLinkChecks(file, scope) {
+  return relative(resolve(root, scope.docs), file)
+    .split(sep)
+    .some((segment) => HISTORICAL_DIRECTORIES.has(segment));
+}
+
+function usesLegacyContentChecks(scope) {
+  return scope.name !== 'e2e';
+}
+
+function isHistoricalDirectory(directory, scope) {
+  return relative(resolve(root, scope.docs), directory)
+    .split(sep)
+    .some((segment) => HISTORICAL_DIRECTORIES.has(segment));
 }
 
 function localTarget(raw) {
@@ -114,11 +192,16 @@ function links(text) {
   return found;
 }
 
+function wikilinks(text) {
+  return [...withoutInlineCode(withoutFencedCode(text)).matchAll(/\[\[[^\]]+\]\]/g)].map((match) => match[0]);
+}
+
 function checkLinks(scope, files) {
   const docsDirectory = resolve(root, scope.docs);
   for (const file of files) {
-    if (isHistoricalNote(file, scope)) continue;
+    if (isExcludedFromLinkChecks(file, scope)) continue;
     const text = readFileSync(file, 'utf8');
+    for (const link of wikilinks(text)) fail(scope.name, file, `Obsidian wikilink is not allowed: ${link}`);
     for (const target of links(text)) {
       if (escapesWorkspace(file, target)) {
         fail(scope.name, file, `link outside workspace: ${target}`);
@@ -126,7 +209,131 @@ function checkLinks(scope, files) {
       }
       const resolved = resolveTarget(file, target, docsDirectory);
       if (resolved && !existsSync(resolved)) fail(scope.name, file, `broken link: ${target}`);
+      if (resolved && existsSync(resolved) && statSync(resolved).isDirectory()) {
+        fail(scope.name, file, `link must target a file: ${target}`);
+      }
     }
+  }
+}
+
+function directSubdirectories(directory) {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !EXCLUDED_DIRECTORIES.has(entry.name))
+    .map((entry) => resolve(directory, entry.name));
+}
+
+function hasDocumentationContent(directory) {
+  return walk(directory, (file) => extname(file) === '.md').length > 0;
+}
+
+function needsIndex(directory) {
+  const notes = readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && extname(entry.name) === '.md')
+    .map((entry) => entry.name)
+    .filter((name) => !['README.md', 'INDEX.md', 'COVERAGE.md'].includes(name) && !name.startsWith('_MOC-'));
+  return notes.length >= 2 || directSubdirectories(directory).some(hasDocumentationContent);
+}
+
+function docsDirectories(scope) {
+  const docsDirectory = resolve(root, scope.docs);
+  const directories = [docsDirectory];
+  const visit = (directory) => {
+    for (const child of directSubdirectories(directory)) {
+      if (isHistoricalDirectory(child, scope)) continue;
+      directories.push(child);
+      visit(child);
+    }
+  };
+  visit(docsDirectory);
+  return directories;
+}
+
+function resolvesTo(file, target, expected, docsDirectory) {
+  return resolveTarget(file, target, docsDirectory) === expected;
+}
+
+function linksTo(file, expected, docsDirectory) {
+  return links(readFileSync(file, 'utf8')).some((target) => resolvesTo(file, target, expected, docsDirectory));
+}
+
+function checkIndexes(scope) {
+  const docsDirectory = resolve(root, scope.docs);
+  for (const directory of docsDirectories(scope)) {
+    const index = resolve(directory, 'INDEX.md');
+    if (needsIndex(directory) && !existsSync(index)) {
+      const moc = readdirSync(directory, { withFileTypes: true }).some((entry) => entry.isFile() && entry.name.startsWith('_MOC-'));
+      fail(scope.name, directory, moc ? 'local _MOC-* cannot replace required INDEX.md' : 'missing INDEX.md');
+      continue;
+    }
+    if (existsSync(index)) {
+      for (const child of directSubdirectories(directory)) {
+        const childIndex = resolve(child, 'INDEX.md');
+        if (existsSync(childIndex) && !linksTo(index, childIndex, docsDirectory)) {
+          fail(scope.name, index, `missing child INDEX.md link: ${relative(root, childIndex)}`);
+        }
+      }
+    }
+    if (directory === docsDirectory || !existsSync(index)) continue;
+    const parentIndex = resolve(dirname(directory), 'INDEX.md');
+    if (existsSync(parentIndex) && !linksTo(index, parentIndex, docsDirectory)) {
+      fail(scope.name, index, `missing parent INDEX.md link: ${relative(root, parentIndex)}`);
+    }
+  }
+}
+
+function checkEntrypoints(scope) {
+  const appRoot = applicationRoot(scope);
+  for (const name of ['README.md', 'AGENTS.md', 'docs/INDEX.md']) {
+    const file = resolve(appRoot, name);
+    if (!existsSync(file)) fail(scope.name, file, `missing required entrypoint: ${name}`);
+  }
+}
+
+function validateScope(scope, sampleSize = null) {
+  const files = markdownFiles(scope);
+  checkEntrypoints(scope);
+  checkLinks(scope, scopeNavigationFiles(scope, files));
+  checkIndexes(scope);
+  if (usesLegacyContentChecks(scope)) {
+    checkMetadata(scope, files);
+    checkCoverage(scope);
+  }
+  checkReachability(scope, files);
+  return { files, sources: checkSources(scope, files, sampleSize) };
+}
+
+function requiredRootNavigationFiles() {
+  const required = [resolve(root, 'README.md'), resolve(root, 'AGENTS.md')];
+  for (const [name, definition] of Object.entries(SCOPES)) {
+    const scope = { name, ...definition };
+    const appRoot = scope.name === 'root' ? root : resolve(root, scope.name);
+    required.push(resolve(appRoot, 'README.md'), resolve(appRoot, 'AGENTS.md'));
+    required.push(...docsDirectories(scope).map((directory) => resolve(directory, 'INDEX.md')).filter(existsSync));
+  }
+  return [...new Set(required)];
+}
+
+function rootReachableFiles() {
+  const start = resolve(root, 'README.md');
+  const seen = new Set();
+  const visit = (file) => {
+    if (seen.has(file) || !existsSync(file) || extname(file) !== '.md') return;
+    seen.add(file);
+    for (const target of links(readFileSync(file, 'utf8'))) {
+      const next = resolveTarget(file, target, root);
+      if (next && existsSync(next) && extname(next) === '.md') visit(next);
+    }
+  };
+  visit(start);
+  return seen;
+}
+
+function checkRootReachability() {
+  const reachable = rootReachableFiles();
+  for (const file of requiredRootNavigationFiles()) {
+    if (relative(root, file).split(sep).some((segment) => HISTORICAL_DIRECTORIES.has(segment))) continue;
+    if (!reachable.has(file)) fail('root', file, 'unreachable from README.md');
   }
 }
 
@@ -302,7 +509,7 @@ function parseArguments(argumentsList) {
     else if (argument === '--sample') sampleSize = Number.parseInt(argumentsList[++index], 10);
     else if (argument === '--self-test') selfTest = true;
     else if (argument === '--help') {
-      console.log('Usage: node scripts/check-docs.mjs [--scope all|root|backend|front-office|back-office] [--sample N] [--self-test]');
+      console.log('Usage: node scripts/check-docs.mjs [--scope all|root|backend|front-office|back-office|e2e] [--sample N] [--self-test]');
       process.exit(0);
     } else throw new Error(`unknown argument: ${argument}`);
   }
@@ -311,9 +518,47 @@ function parseArguments(argumentsList) {
   return { selected, sampleSize, selfTest };
 }
 
+function writeFixture(directory, files) {
+  for (const [path, text] of Object.entries(files)) {
+    const file = resolve(directory, path);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, text);
+  }
+}
+
+function e2eFixtureFailures(files) {
+  mkdirSync(resolve(root, '.codex/tmp'), { recursive: true });
+  const directory = mkdtempSync(resolve(root, '.codex/tmp/check-docs-self-test-'));
+  try {
+    writeFixture(directory, {
+      'e2e/README.md': '# E2E\n\nКраткое назначение.\n\n## Структура каталога\n\n```text\ne2e/\n└── docs/\n```\n\n[Документация](docs/INDEX.md)\n',
+      'e2e/AGENTS.md': '[Документация](docs/INDEX.md)\n',
+      'e2e/docs/INDEX.md': '# E2E\n',
+      ...files,
+    });
+    const scope = {
+      name: 'e2e',
+      appRoot: resolve(directory, 'e2e'),
+      docs: relative(root, resolve(directory, 'e2e/docs')),
+      index: relative(root, resolve(directory, 'e2e/docs/INDEX.md')),
+    };
+    const firstFailure = failures.length;
+    validateScope(scope);
+    checkReadmeStructures(readmesIn(scope.appRoot), scope.name);
+    return failures.splice(firstFailure);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 function runSelfTest() {
   const expected = (actual, value, name) => {
     if (actual !== value) throw new Error(`self-test failed: ${name}`);
+  };
+  const finds = (files, message, name) => {
+    if (!e2eFixtureFailures(files).some((failure) => failure.message.includes(message))) {
+      throw new Error(`self-test failed: ${name}`);
+    }
   };
   expected(links('[valid](note.md) `[[not-a-link]]` [[Note|label]]').join(','), 'note.md,Note', 'inline code');
   expected(frontmatter('---\nsources:\n  - src/one.ts\n  - src/two.ts\n---\n').sources, 'src/one.ts src/two.ts', 'multiline sources');
@@ -321,6 +566,44 @@ function runSelfTest() {
   expected(splitTableRow('| [[Note|label]] | current |')[0], ' [[Note|label]] ', 'wikilink table cell');
   expected(routeReferences('/ /cart').join(','), '/,/cart', 'root and non-root routes');
   expected([... '../../back-office/package.json'.matchAll(SOURCE_FILE_PATTERN)][0][0], '../../back-office/package.json', 'json source extension');
+  expected(Boolean(SCOPES.e2e), true, 'e2e scope');
+  expected(wikilinks('[valid](note.md) `[[not-a-link]]` [[Note|label]]').join(','), '[[Note|label]]', 'forbidden wikilink');
+  expected(needsIndex(resolve(root, 'docs')), true, 'nested docs directory needs index');
+  finds({
+    'e2e/README.md': '# E2E\n\nКраткое назначение.\n',
+  }, 'must contain exactly one', 'missing README structure section');
+  finds({
+    'e2e/README.md': '# E2E\n\nКраткое назначение.\n\n## Команды\n\n## Структура каталога\n\n```text\ne2e/\n```\n',
+  }, 'must be the first level-two heading', 'README structure section order');
+  finds({
+    'e2e/README.md': '# E2E\n\nКраткое назначение.\n\n## Структура каталога\n\nТекст вместо дерева.\n',
+  }, 'must be followed by a fenced text tree', 'README structure tree');
+  finds({
+    'e2e/docs/child/INDEX.md': '[Родитель](../INDEX.md)\n',
+  }, 'missing child INDEX.md link', 'parent to child index');
+  finds({
+    'e2e/docs/INDEX.md': '[Нет](missing.md)\n',
+  }, 'broken link', 'broken link');
+  finds({
+    'e2e/docs/INDEX.md': '[Каталог](pages/)\n',
+    'e2e/docs/pages/.keep': '',
+  }, 'link must target a file', 'directory link');
+  finds({
+    'e2e/docs/INDEX.md': '[[Guide]]\n',
+    'e2e/docs/Guide.md': '# Guide\n',
+  }, 'Obsidian wikilink is not allowed', 'wikilink');
+  expected(e2eFixtureFailures({
+    'e2e/docs/INDEX.md': '[Guide](Guide.md)\n',
+    'e2e/docs/Guide.md': '# Guide\n',
+  }).length, 0, 'e2e navigation without legacy checks');
+  expected(e2eFixtureFailures({
+    'e2e/generated/README.md': '# Generated\n',
+    'e2e/vendor/README.md': '# Vendor\n',
+    'e2e/docs/generated/README.md': '# Generated\n',
+    'e2e/docs/generated/Note.md': '# Generated note\n',
+    'e2e/docs/vendor/README.md': '# Vendor\n',
+    'e2e/docs/vendor/Note.md': '# Vendor note\n',
+  }).length, 0, 'generated and vendor files are excluded');
 }
 
 try {
@@ -334,13 +617,11 @@ try {
   const summaries = [];
   for (const [name, definition] of scopes) {
     const scope = { name, ...definition };
-    const files = markdownFiles(scope);
-    checkLinks(scope, files);
-    checkMetadata(scope, files);
-    checkReachability(scope, files);
-    checkCoverage(scope);
-    summaries.push({ name, files: files.length, sources: checkSources(scope, files, sampleSize) });
+    const summary = validateScope(scope, sampleSize);
+    summaries.push({ name, files: summary.files.length, sources: summary.sources });
   }
+  checkReadmeStructures(trackedNestedReadmes());
+  if (selected === 'all' || selected === 'root') checkRootReachability();
   for (const summary of summaries) console.log(`${summary.name}: ${summary.files} notes, sampled ${summary.sources.inspected}/${summary.sources.total} truth sources`);
   if (failures.length) {
     for (const failure of failures) console.error(`${failure.scope}: ${failure.file}: ${failure.message}`);

@@ -29,3 +29,5 @@ error, выбранный/disabled), но `/cart` их не подключает
 [Источники: slot picker](../../src/features/checkout/SlotPickerScreen.vue), [CartPage](../../src/pages/CartPage.vue).
 
 Проверки: [CartScreen spec](../../src/features/checkout/CartScreen.spec.ts), [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [e2e](../../tests/e2e/checkout.e2e.spec.ts).
+
+Карта раздела: [сценарии](INDEX.md).

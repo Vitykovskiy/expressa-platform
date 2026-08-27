@@ -29,3 +29,5 @@ auth-маршруты; `//`, внешний URL и auth-пути заменяю�
 имеют подписи; адаптивный layout остаётся в компоненте. [Источник: screen](../../src/features/auth/AuthScreen.vue).
 
 Проверки: [router spec](../../src/app/router.spec.ts), [phone spec](../../src/pages/AuthPhonePage.spec.ts), [code spec](../../src/pages/AuthCodePage.spec.ts).
+
+Карта раздела: [сценарии](INDEX.md).

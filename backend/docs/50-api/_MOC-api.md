@@ -11,6 +11,9 @@ sources:
 
 # HTTP API
 
+[Локальная карта](INDEX.md) ведёт к этому тематическому маршруту и первичному
+контракту.
+
 Машиночитаемый источник — [OpenAPI](../../openapi/openapi.json); `npm run
 openapi:check` сверяет его с NestJS-декораторами. Предметные маршруты имеют
 `/api/v1`, health остаётся вне версии. [HTTP config](../../src/platform/http/http-configuration.ts).

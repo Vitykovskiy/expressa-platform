@@ -22,9 +22,9 @@ updated: 2026-08-01
 > такой пользы не являются основанием для правки.
 
 Документ определяет готовность production-кода приложения `backend`: NestJS,
-TypeScript и PostgreSQL. Он не заменяет [[../20-architecture/Backend-architecture|архитектуру backend]],
-[[../20-architecture/Repository-boundaries|границы приложений]] и
-[[../50-interfaces/HTTP-API-conventions|соглашения HTTP API]], а задаёт критерии
+TypeScript и PostgreSQL. Он не заменяет [архитектуру backend](../20-architecture/Backend-architecture.md),
+[границы приложений](../20-architecture/Repository-boundaries.md) и
+[соглашения HTTP API](../50-interfaces/HTTP-API-conventions.md), а задаёт критерии
 приёмки изменений в их пределах.
 
 ## Содержательная польза и простота
@@ -91,7 +91,7 @@ TypeScript и PostgreSQL. Он не заменяет [[../20-architecture/Backen
 ## Контракты, ошибки и побочные эффекты
 
 - Изменение публичного HTTP-контракта совместимо с правилами
-  [[../50-interfaces/HTTP-API-conventions|HTTP API]]. Внутри `/api/v1`
+  [HTTP API](../50-interfaces/HTTP-API-conventions.md). Внутри `/api/v1`
   допустимы добавочные изменения; разрыв контракта требует нового базового пути.
   OpenAPI обновляется и проверяется только когда меняется кодовый HTTP-контракт.
 - HTTP-ошибка имеет установленную форму `{ code, message, details, requestId }`.
@@ -113,7 +113,7 @@ TypeScript и PostgreSQL. Он не заменяет [[../20-architecture/Backen
   запуска HTTP-сервера, когда это не требуется контрактом.
 - Изменение domain, application, persistence adapter или HTTP-контракта имеет
   соразмерную автоматическую проверку: модульную, интеграционную или контрактную
-  согласно [[../95-testing/Test-strategy|стратегии тестирования]]. Исправление
+  согласно [стратегии тестирования](../95-testing/Test-strategy.md). Исправление
   дефекта обязательно содержит регрессионный тест.
 - До приёмки выполнены применимые команды, уже настроенные в изменяемом
   приложении или CI: lint, typecheck, целевые тесты, сборка и проверка OpenAPI

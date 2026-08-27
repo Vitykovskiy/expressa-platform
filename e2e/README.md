@@ -1,6 +1,25 @@
 # Expressa — E2E
 
-Standalone UI-only набор Playwright для сквозных браузерных проверок Expressa. Он проверяет отдельно запущенные front-office и back-office и не заменяет их локальные E2E-наборы. Архитектурная граница описана в [ADR-001](docs/20-architecture/ADR/ADR-001-standalone-e2e-architecture.md).
+Standalone-набор Playwright проверяет полный путь заказа через браузерные
+интерфейсы front-office и back-office. Оба приложения запускаются отдельно;
+набор взаимодействует с ними только через UI. Граница и устройство набора
+зафиксированы в [ADR-001](docs/20-architecture/ADR/ADR-001-standalone-e2e-architecture.md).
+
+## Структура каталога
+
+```text
+e2e/
+├── components/       # общие фрагменты пользовательских интерфейсов
+├── docs/             # правила набора, архитектура и карта сценариев
+├── fixtures/         # общая точка сборки тестовых зависимостей
+├── pages/            # Page и Component Objects экранов двух приложений
+├── specs/            # браузерные пользовательские сценарии
+├── support/          # проверка окружения и предметные тестовые данные
+├── tools/            # локальная проверка архитектурных границ
+├── AGENTS.md         # правила внесения изменений в E2E-набор
+├── package.json      # команды запуска и статических проверок
+└── playwright.config.ts # конфигурация Playwright
+```
 
 ## Запуск
 
@@ -11,14 +30,12 @@ cp .env.example .env.e2e.local
 npm run e2e
 ```
 
-Оба приложения запускаются вне этого каталога. `E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL` обязательны: это абсолютные HTTP(S)-адреса без credentials, query и fragment.
-Сквозные сценарии дополнительно используют `E2E_ADMIN_PHONE`, `E2E_ADMIN_OTP`,
-`E2E_STAFF_PHONE`, `E2E_STAFF_OTP`, `E2E_CUSTOMER_PHONE` и
-`E2E_CUSTOMER_OTP`. Для VPS administrator и OTP остаются секретами, а
-синтетические staff и customer из пула `+79990000002…+79990000004` — часть
-зафиксированного E2E-контракта.
+`E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL` обязательны. Они принимают
+абсолютные HTTP(S)-адреса без учётных данных, query-параметров и fragment.
+Сквозные сценарии также используют телефоны и OTP для ролей administrator,
+staff и customer; значения остаются в локальном файле окружения.
 
-## Команды
+## Проверки и документация
 
 ```bash
 npm run e2e:headed
@@ -28,18 +45,18 @@ npm run lint
 npm run format:check
 ```
 
-Документация и правила: [карта vault](docs/INDEX.md), [карта сценариев](docs/95-testing/E2E-map.md), [AGENTS.md](AGENTS.md).
+- [Правила работы](AGENTS.md) — UI-only границы и обязательные проверки.
+- [Карта документации](docs/INDEX.md) — быстрый старт, соглашения и сценарии.
+- [Карта E2E-сценариев](docs/95-testing/E2E-map.md) — состав пользовательских
+  проверок.
 
-## Автоматический запуск
+## Результаты поставки
 
-После каждого push в `main` workflow поставки собирает неизменяемый E2E-образ
-и запускает пять сценариев `JOURNEY-01`—`JOURNEY-05` в изолированном
-временном Compose-проекте на VPS. Последний HTML-отчёт доступен на
-`http://<IP_VPS>:8088/` только для CIDR из GitHub Environment Secret
-`E2E_REPORT_ALLOWLIST`; administrator и OTP берутся из существующих
-`BOOTSTRAP_ADMIN_PHONE` и `AUTH_DEVELOPMENT_OTP`, а staff и customer — из
-резервного пула с исключением administrator. Все три роли должны различаться.
-Корневой URL сразу открывает единственный актуальный Playwright report; повторный
-прогон того же commit запускается вручную через GitHub Actions. Порядок запуска,
-секреты и очистка описаны в
-[E2E-on-VPS](../docs/70-deployment/E2E-on-VPS.md).
+После push в `main` [Development delivery](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml)
+сначала поставляет приложения, затем собирает E2E-образ и запускает Playwright
+на временном VPS-стенде. Если поставка или сборка E2E-образа неуспешна, workflow
+публикует диагностическую страницу без браузерных сценариев. Последний
+[Playwright report](http://216.57.105.133:8088/) доступен из сетей, разрешённых
+`E2E_REPORT_ALLOWLIST`; повтор того же commit запускается через `Re-run jobs` в
+GitHub Actions. Порядок поставки, доступ и очистка стенда — в
+[E2E на VPS](../docs/70-deployment/E2E-on-VPS.md).

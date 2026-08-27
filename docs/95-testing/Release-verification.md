@@ -9,7 +9,7 @@ sources:
 # Проверка готовности и выпуска
 
 - **Q-SMOKE.** Чистая база проходит миграции, seed и полный API-маршрут до выдачи заказа.
-- **Q-E2E.** Эпик [[../10-overview/backlog/E13/index|E13]] создаёт standalone-набор [`e2e`](../../e2e/README.md), который связывает создание меню, клиентский заказ, приготовление, оплату, выдачу и историю через UI подготовленных front-office и back-office.
+- **Q-E2E.** Эпик [E13](../10-overview/backlog/E13/INDEX.md) создаёт standalone-набор [`e2e`](../../e2e/README.md), который связывает создание меню, клиентский заказ, приготовление, оплату, выдачу и историю через UI подготовленных front-office и back-office.
 - **Q-RELEASE.** Выпуск компонента фиксирует совпадающие версию пакета, Git-тег
   и запись `CHANGELOG.md`; составной staging-тег фиксирует совместимый набор
   трёх digest и результаты обязательных проверок.
@@ -19,7 +19,7 @@ sources:
 Область проверки E04: local, CI и реальный Chromium-браузер. Для неё запускать
 backend CI-эквивалент и браузерные auth-сценарии обоих клиентов.
 
-- Состав эпика: [[../10-overview/backlog/E04/index|E04]].
+- Состав эпика: [E04](../10-overview/backlog/E04/INDEX.md).
 - Backend: [CI](../../.github/workflows/backend-ci.yml), [auth E2E](../../backend/test/e2e/auth.e2e-spec.ts) и [PostgreSQL-интеграция](../../backend/test/integration/auth-repository.integration.spec.ts).
 - Front-office: [CI](../../.github/workflows/front-office-ci.yml) и [реальный auth E2E](../../front-office/tests/e2e/auth.e2e.spec.ts).
 - Back-office: [CI](../../.github/workflows/back-office-ci.yml) и [реальный auth и роли E2E](../../back-office/tests/e2e/auth.e2e.ts).
@@ -127,7 +127,7 @@ Q-SMOKE запускает миграции, дважды выполняет и�
 - ошибки содержат диагностический `requestId`;
 - функциональность подтверждена в `development`, а версия для демонстрации — в `staging`;
 - выпуск с UI-изменениями требует свежего положительного вердикта обязательной
-  [[../40-quality/Definition-of-done#Браузерная UI-приёмка|браузерной UI-приёмки]];
+  [браузерной UI-приёмки](../40-quality/Definition-of-done.md#Браузерная UI-приёмка);
 - при выпуске компонента версия в `package.json`, Git-тег и запись в
   `CHANGELOG.md` совпадают; составной staging-тег записан в `CHANGELOG.md` и
   может повторно поставить неизменные digest без изменения версий компонентов;
@@ -165,4 +165,4 @@ Q-SMOKE запускает миграции, дважды выполняет и�
 - тексты меню и цены;
 - политика обработки персональных данных и пользовательские тексты согласия.
 
-Связанные эпики: [[../10-overview/Epic-roadmap]]. Правила выпуска: [[../70-deployment/Release-and-version-compatibility]].
+Связанные эпики: [../10-overview/Epic-roadmap](../10-overview/Epic-roadmap.md). Правила выпуска: [../70-deployment/Release-and-version-compatibility](../70-deployment/Release-and-version-compatibility.md).

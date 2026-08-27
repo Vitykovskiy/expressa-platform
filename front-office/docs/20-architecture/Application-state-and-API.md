@@ -40,5 +40,7 @@ stores сохраняют сообщения ошибок в собственн�
 В production регистрируется service worker; development его не регистрирует.
 [Источник: PWA](../../src/app/pwa.ts).
 
-Проверки: [session](../../src/app/session.store.spec.ts), [API](../../src/shared/api),
+Проверки: [session](../../src/app/session.store.spec.ts), [API](../../src/shared/api/client.spec.ts),
 [checkout](../../src/features/checkout/checkout.store.spec.ts).
+
+Карта раздела: [архитектура](INDEX.md).

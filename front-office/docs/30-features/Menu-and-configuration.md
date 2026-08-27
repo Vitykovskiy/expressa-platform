@@ -27,6 +27,8 @@ sources:
 [источник: MenuRootScreen](../../src/features/menu/MenuRootScreen.vue).
 
 Данные приходят из `/public/menu`; `menu` store владеет loading/error, `cart`
-store — добавлением и объединением конфигураций. [Источники: API](../../src/shared/api/public-menu.api.ts), [stores](../../src/entities/customer/model).
+store — добавлением и объединением конфигураций. [Источники: API](../../src/shared/api/public-menu.api.ts), [menu store](../../src/entities/customer/model/menu.store.ts), [cart store](../../src/entities/customer/model/cart.store.ts).
 
 Проверки: [MenuPage spec](../../src/pages/MenuPage.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [configuration spec](../../src/features/menu/product-configuration.spec.ts).
+
+Карта раздела: [сценарии](INDEX.md).

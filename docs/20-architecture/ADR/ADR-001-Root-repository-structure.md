@@ -16,7 +16,7 @@ sources:
   - ../../../e2e/package.json
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office, e2e]
-related: ["[[../Repository-boundaries]]", "[[../../10-overview/Backlog]]", "[[../../00-meta/How-to-use-this-vault]]"]
+related: ["[../Repository-boundaries](../Repository-boundaries.md)", "[../../10-overview/Backlog](../../10-overview/Backlog.md)", "[../../00-meta/How-to-use-this-vault](../../00-meta/How-to-use-this-vault.md)"]
 ---
 
 # ADR-001. Корневая структура репозитория

@@ -26,8 +26,11 @@ sources:
 ## Потребляемый API
 
 Клиент использует только `/auth/otp/request`, `/auth/otp/verify`, `/auth/refresh`,
-`/auth/logout`, `/me`, `/public/menu` и `POST /orders`; back-office пути снимка
-не потребляются. [Источник: OpenAPI](../../contracts/openapi.json),
-[сервисы](../../src/shared/api).
+`/auth/logout`, `/me`, `/public/menu`, `POST /orders`, `GET /orders`,
+`GET /orders/:id`, `GET /push/public-key` и `PUT`/`DELETE` `/push/subscriptions`;
+[Источник order endpoints](../../src/shared/api/orders.api.ts).
+back-office пути снимка не потребляются. [Источник: OpenAPI](../../contracts/openapi.json),
+[API-клиент](../../src/shared/api/client.ts),
+[Push API](../../src/shared/api/push.api.ts).
 
 Связанное: [покрытие](../COVERAGE.md), [состояние и API](../20-architecture/Application-state-and-API.md).

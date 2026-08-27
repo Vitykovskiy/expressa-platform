@@ -9,21 +9,18 @@ sources:
 
 # Индекс документации back-office
 
-Back-office — отдельное Vue-приложение сотрудников. Этот индекс — MOC: runtime обслуживает вход и меню администратора; `/queue` и `/availability` сохранены как защищённые заглушки.
+Back-office — отдельное Vue-приложение сотрудников. Эта локальная карта ведёт к текущему runtime: входу, очереди, доступности и меню администратора.
 
 ## Запуск и проверка
 
 - [README приложения](../README.md) задаёт Node.js, установку и основные команды.
+- [Правила области](../AGENTS.md) задают границы автономного контура и Definition of Done.
 - [Проверки](95-testing/README.md) перечисляют команды из `package.json` и их назначение.
 - [Покрытие](COVERAGE.md) связывает маршруты, runtime, API и тесты с нормативными нотами.
 
 ## Текущее поведение
 
-- [Вход и роли](30-domains/Authentication-and-role-gates.md) — активный `/login`, восстановление сессии и доступ по ролям.
-- [Управление каталогом](30-domains/Catalog-management.md) — активный `/menu`: данные, действия, validation, диалоги и ошибки.
-- [Неактивные экраны](30-domains/Inactive-screens.md) — точные границы placeholder-маршрутов и неактивных компонентов.
-- [Маршруты](30-domains/working-areas-and-routes.md) — компактная карта URL и перенаправлений.
-- [API-интеграция](30-domains/api-integration-and-errors.md) — транспортная граница и OpenAPI-снимок.
+- [Рабочие области](30-domains/INDEX.md) — вход, роли, маршруты, каталог, API и границы активных экранов.
 - [Архитектура UI](10-architecture/ui-ownership.md) — владельцы состояния, responsive и accessibility-границы.
 - [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) — границы feature-sliced runtime.
 
@@ -34,3 +31,8 @@ Back-office — отдельное Vue-приложение сотруднико
 ## Структура исходного кода
 
 Исходный код следует направлению `app -> pages -> widgets -> features -> entities -> shared`; локальное правило — в [Размещении кода](80-conventions/code-layout.md), DoD — в [корневой конвенции](../../docs/80-conventions/Code-Definition-of-Done-back-office.md).
+
+## Служебные материалы
+
+- [Журнал](_journal/README.md) хранит только операционный контекст, не описание текущего поведения.
+- [Источники](_sources/README.md) содержат проверяемые внешние ссылки и снимки.

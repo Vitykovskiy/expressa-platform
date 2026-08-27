@@ -9,16 +9,26 @@ sources:
 
 # Карта документации Expressa
 
-Начните с [реестра покрытия](COVERAGE.md): он отделяет работающие контракты от
-планирования и заглушек. Корневые ноты описывают систему и связи контуров;
-детали реализации находятся в [backend](../backend/docs/INDEX.md),
-[front-office](../front-office/docs/INDEX.md) и [back-office](../back-office/docs/INDEX.md).
+Корневые ноты описывают систему, межконтурные контракты и поставку. Детали
+реализации находятся в [backend](../backend/docs/INDEX.md),
+[front-office](../front-office/docs/INDEX.md), [back-office](../back-office/docs/INDEX.md)
+и [e2e](../e2e/docs/INDEX.md).
 
-## По задаче
+## Текущее устройство
 
-- Система и границы: [[10-overview/_MOC-overview|обзор]], [[20-architecture/_MOC-architecture|архитектура]], [[30-domain/_MOC-domain|предметная область]].
-- Пользовательский сценарий: [[40-features/_MOC-features|возможности]] и [[50-interfaces/_MOC-interfaces|интерфейсы]].
-- Поставка и поддержка: [[70-deployment/_MOC-deployment|поставка]] и [[95-testing/_MOC-testing|тестирование]].
-- Качество и DoD: [[40-quality/Definition-of-done|общие критерии]], [[40-quality/UI-accessibility|доступность]], [[40-quality/Validation-strategy|валидация]], [[40-quality/Vue-code-style|Vue-стиль]], [[80-conventions/Code-Definition-of-Done-backend|backend]], [[80-conventions/Code-Definition-of-Done-front-office|front-office]], [[80-conventions/Code-Definition-of-Done-back-office|back-office]].
-- Планирование и правила: [[10-overview/Backlog|бэклог]], [[00-meta/_MOC-meta|метаданные]], [[90-agents/_MOC-agents|инструкции]].
-- Источники и история: [[_sources/README|источники]], [[_journal/README|журнал]].
+- [Правила документации](00-meta/INDEX.md) и [реестр покрытия](COVERAGE.md).
+- [Обзор системы](10-overview/INDEX.md), [архитектура](20-architecture/INDEX.md)
+  и [предметная область](30-domain/INDEX.md).
+- [Пользовательские сценарии](40-features/INDEX.md) и
+  [интерфейсы](50-interfaces/INDEX.md).
+- [Поставка](70-deployment/INDEX.md), [проверка](95-testing/INDEX.md) и
+  [инженерные соглашения](80-conventions/INDEX.md).
+- [Качество](40-quality/INDEX.md).
+
+## Планы, правила и источники
+
+- [Бэклог](10-overview/backlog/INDEX.md) и [карта его покрытия](10-overview/Backlog-coverage.md)
+  описывают планирование, а не текущее поведение.
+- [Инструкции для агентов](90-agents/INDEX.md).
+- [Зафиксированные источники](_sources/README.md) и [журнал](_journal/README.md)
+  отделены от актуальных контрактов.

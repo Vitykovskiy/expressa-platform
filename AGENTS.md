@@ -23,6 +23,12 @@
 
 ## Входы контуров
 
+Начинайте с [README](README.md): он ведёт к контурам, корневой
+[карте документации](docs/INDEX.md), поставке, тестам и бэклогу. В каждой
+области `README.md` является входом, `AGENTS.md` — правилами, а `INDEX.md` —
+локальной картой; `_MOC-*` используется только для сквозных тематических
+маршрутов.
+
 - Backend: [README](backend/README.md), [AGENTS](backend/AGENTS.md), [docs](backend/docs/INDEX.md).
 - Front-office: [README](front-office/README.md), [AGENTS](front-office/AGENTS.md), [docs](front-office/docs/INDEX.md).
 - Back-office: [README](back-office/README.md), [AGENTS](back-office/AGENTS.md), [docs](back-office/docs/INDEX.md).

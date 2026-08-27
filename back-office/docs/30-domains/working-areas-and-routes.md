@@ -22,7 +22,7 @@ sources:
 | `/availability` | barista, administrator | Активен; см. [неактивные экраны](Inactive-screens.md). |
 | `/menu` | administrator | Активен; см. [управление каталогом](Catalog-management.md). |
 
-Навигация показывает barista только очередь и доступность, administrator — также меню. Источник таблицы: [router.constants.ts](../../src/app/router.constants.ts), [navigation.constants.ts](../../src/app/navigation.constants.ts), [страницы](../../src/pages/).
+Навигация показывает barista только очередь и доступность, administrator — также меню. Источник таблицы: [router.constants.ts](../../src/app/router.constants.ts), [navigation.constants.ts](../../src/app/navigation.constants.ts), [QueuePage.vue](../../src/pages/QueuePage.vue), [AvailabilityPage.vue](../../src/pages/AvailabilityPage.vue), [MenuPage.vue](../../src/pages/MenuPage.vue).
 
 `LoginPage` импортирует `AuthScreen`, поэтому это активный дочерний UI `/login`, а не orphan. Остальные административные экраны, не импортируемые маршрутизатором, перечислены в [неактивных экранах](Inactive-screens.md). Источники: [LoginPage.vue](../../src/pages/LoginPage.vue), [router.constants.ts](../../src/app/router.constants.ts).
 

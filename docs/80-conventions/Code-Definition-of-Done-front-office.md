@@ -25,12 +25,12 @@ updated: 2026-08-01
 Этот документ задаёт критерии приёмки целевого production-кода автономного
 клиента `front-office`. Он применяется к Vue 3, Vuetify, TypeScript, Vite и
 Pinia после появления реализации. Архитектурная структура и автономность
-клиента определены в [[../20-architecture/Client-architecture|Архитектуре
-клиентов]] и [[../20-architecture/Repository-boundaries|Границах приложений]].
-Для всего UI-кода обязательны [[../40-quality/Definition-of-done|UI DoD]],
-[[../40-quality/Vue-code-style|стиль Vue-кода]],
-[[../40-quality/UI-accessibility|доступность]] и
-[[../40-quality/Validation-strategy|стратегия проверки]].
+клиента определены в [Архитектуре
+клиентов](../20-architecture/Client-architecture.md) и [Границах приложений](../20-architecture/Repository-boundaries.md).
+Для всего UI-кода обязательны [UI DoD](../40-quality/Definition-of-done.md),
+[стиль Vue-кода](../40-quality/Vue-code-style.md),
+[доступность](../40-quality/UI-accessibility.md) и
+[стратегия проверки](../40-quality/Validation-strategy.md).
 
 ## Простота и ответственность
 

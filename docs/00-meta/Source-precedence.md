@@ -15,13 +15,13 @@ sources:
   - ../10-overview/Backlog-coverage.md
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
-related: ["[[_MOC-meta]]", "[[Coverage-model]]", "[[Update-protocol]]", "[[../20-architecture/ADR/ADR-001-Root-repository-structure]]"]
+related: ["[_MOC-meta](_MOC-meta.md)", "[Coverage-model](Coverage-model.md)", "[Update-protocol](Update-protocol.md)", "[../20-architecture/ADR/ADR-001-Root-repository-structure](../20-architecture/ADR/ADR-001-Root-repository-structure.md)"]
 ---
 
 # Приоритет источников
 
-Для требований Expressa нормативен `Expressa_MVP_Техническое_задание.md`. [[../10-overview/Backlog|Бэклог]] — текущий источник планирования, [[../10-overview/Backlog-coverage|покрытие бэклога]] — источник трассируемости; они не изменяют требования ТЗ.
+Для требований Expressa нормативен `Expressa_MVP_Техническое_задание.md`. [Бэклог](../10-overview/Backlog.md) — текущий источник планирования, [покрытие бэклога](../10-overview/Backlog-coverage.md) — источник трассируемости; они не изменяют требования ТЗ.
 
-Принятый ADR имеет приоритет над соответствующим архитектурным положением ТЗ. [[../20-architecture/ADR/ADR-001-Root-repository-structure|ADR-001]] заменяет требование отдельных Git-репозиториев правилом единого корневого репозитория с тремя автономно собираемыми приложениями.
+Принятый ADR имеет приоритет над соответствующим архитектурным положением ТЗ. [ADR-001](../20-architecture/ADR/ADR-001-Root-repository-structure.md) заменяет требование отдельных Git-репозиториев правилом единого корневого репозитория с тремя автономно собираемыми приложениями.
 
 - код, OpenAPI, конфигурация и тесты имеют приоритет над текстом документации;

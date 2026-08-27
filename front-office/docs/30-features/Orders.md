@@ -50,3 +50,5 @@ customer-уведомления о стадиях `Принят`, `Готов` �
 [Push notifications](../../../docs/50-interfaces/Push-notifications.md).
 
 Проверка доступного результата: [OrderPage spec](../../src/pages/OrderPage.spec.ts).
+
+Карта раздела: [сценарии](INDEX.md).
