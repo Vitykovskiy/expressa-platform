@@ -130,6 +130,7 @@ publish_directory() {
   printf '<!doctype html><meta charset="utf-8"><title>%s</title><h1>%s</h1><p>%s</p><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p>' \
     "$title" "$title" "$details" "$E2E_REVISION" "$E2E_RUN_URL" > "$publication_directory/index.html"
   assert_no_e2e_secret "$publication_directory"
+  chmod -R a+rX "$publication_directory"
   ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
   mv -Tf "$report_root/current.next" "$report_root/current"
   published=1
@@ -162,6 +163,7 @@ publish_suite_report() {
     "$run_one_status" "$run_two_status" "$E2E_REVISION" "$E2E_RUN_URL" > "$publication_directory/index.html"
   sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
+  chmod -R a+rX "$publication_directory"
   ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
   mv -Tf "$report_root/current.next" "$report_root/current"
   published=1
