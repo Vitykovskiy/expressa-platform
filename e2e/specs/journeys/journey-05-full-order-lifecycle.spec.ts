@@ -202,7 +202,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
     await menuManagement.open();
-    await menuManagement.assignments.openCategory(data.categoryName);
+    await menuManagement.catalog.expandCategory(data.categoryName);
     await menuManagement.productEditor.archive(data.productName);
     await menuManagement.modifierGroupEditor.archive(data.modifierGroupName);
     await menuManagement.categoryEditor.archive(data.categoryName);
