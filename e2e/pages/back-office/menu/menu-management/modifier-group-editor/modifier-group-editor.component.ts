@@ -108,13 +108,16 @@ export class ModifierGroupEditorComponent {
 
   async setRequired(): Promise<void> {
     await test.step("Сделать выбор добавки обязательным", async () => {
-      const required = this.editorRegion.getByRole("checkbox", {
+      const required = this.editorRegion.getByRole("switch", {
         name: "Выбор обязателен",
         exact: true,
       });
 
-      await required.check();
-      await expect(required, "Выбор добавки обязателен.").toBeChecked();
+      await required.click();
+      await expect(required, "Выбор добавки обязателен.").toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
     });
   }
 

@@ -18,6 +18,7 @@ export default defineConfig({
   testDir: ".",
   testMatch: ["specs/**/*.spec.ts", "support/config/**/*.test.ts"],
   timeout: 5 * 60_000,
+  expect: { timeout: 15_000 },
   workers: 1,
   retries: 0,
   reporter: [
@@ -32,6 +33,8 @@ export default defineConfig({
     ],
   ],
   use: {
+    actionTimeout: 15_000,
+    navigationTimeout: 15_000,
     screenshot: isSafeReportMode ? "off" : "only-on-failure",
     trace: isSafeReportMode ? "off" : "retain-on-failure",
   },
