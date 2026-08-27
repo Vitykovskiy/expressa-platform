@@ -104,21 +104,44 @@ sanitize_e2e_report() {
   python3 - "$publication_directory" <<'PY'
 import os
 import pathlib
+import base64
+import io
+import re
 import sys
+import zipfile
 
 root = pathlib.Path(sys.argv[1])
 credentials = {
     os.environ.get(name, "").encode()
     for name in ("E2E_ADMIN_PHONE", "E2E_STAFF_PHONE", "E2E_CUSTOMER_PHONE", "E2E_OTP")
 }
+report_pattern = re.compile(
+    rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
+    re.DOTALL,
+)
+
+def redact(content: bytes) -> bytes:
+    for credential in credentials:
+        if credential:
+            content = content.replace(credential, b"*" * len(credential))
+    return content
+
+def sanitize_embedded_report(match: re.Match[bytes]) -> bytes:
+    source = io.BytesIO(base64.b64decode(match.group(2)))
+    target = io.BytesIO()
+    with zipfile.ZipFile(source, "r") as archive, zipfile.ZipFile(
+        target, "w", zipfile.ZIP_DEFLATED
+    ) as sanitized_archive:
+        for item in archive.infolist():
+            sanitized_archive.writestr(item, redact(archive.read(item.filename)))
+    return match.group(1) + base64.b64encode(target.getvalue()) + match.group(3)
+
 for path in root.rglob("*"):
     if not path.is_file() or path.is_symlink():
         continue
     content = path.read_bytes()
-    sanitized = content
-    for credential in credentials:
-        if credential:
-            sanitized = sanitized.replace(credential, b"*" * len(credential))
+    sanitized = report_pattern.sub(sanitize_embedded_report, content)
+    sanitized = redact(sanitized)
     if sanitized != content:
         path.write_bytes(sanitized)
 PY

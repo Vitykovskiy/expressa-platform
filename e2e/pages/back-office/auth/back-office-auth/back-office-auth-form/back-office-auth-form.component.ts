@@ -32,8 +32,8 @@ export class BackOfficeAuthFormComponent {
       await this.phoneInput.fill(credentials.phone);
       await expect(
         this.phoneInput,
-        "В поле указан номер администратора.",
-      ).toHaveValue(credentials.phone);
+        "В поле указан номер сотрудника.",
+      ).toHaveValue(formatPhoneForUi(credentials.phone));
       await this.sendOtpButton.click();
       await expect(
         this.otpInput,
@@ -69,4 +69,10 @@ export class BackOfficeAuthFormComponent {
       "Форма входа в back-office показана.",
     ).toBeVisible();
   }
+}
+
+function formatPhoneForUi(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+
+  return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
 }
