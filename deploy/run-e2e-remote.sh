@@ -25,8 +25,6 @@ project=''
 run_directory=''
 published=0
 stage='runtime'
-run_one_status='not-run'
-run_two_status='not-run'
 
 [[ -f "$compose_file" && ! -L "$compose_file" ]] || fail 'e2e-compose.yml is unavailable'
 [[ -f "$gateway_file" && ! -L "$gateway_file" ]] || fail 'e2e gateway configuration is unavailable'
@@ -168,11 +166,11 @@ publish_diagnostic() {
 }
 
 copy_playwright_report() {
-  local run_name="$1" target_directory="$2"
-  local source_directory="$E2E_ARTIFACT_DIRECTORY/$run_name"
-  [[ -d "$source_directory" && ! -L "$source_directory" && -f "$source_directory/index.html" ]] || fail "$run_name Playwright report is unavailable"
+  local target_directory="$1"
+  local source_directory="$E2E_ARTIFACT_DIRECTORY/report"
+  [[ -d "$source_directory" && ! -L "$source_directory" && -f "$source_directory/index.html" ]] || fail 'Playwright report is unavailable'
   if find "$source_directory" -type l -print -quit | grep --quiet .; then
-    fail "$run_name Playwright report contains a symbolic link"
+    fail 'Playwright report contains a symbolic link'
   fi
   cp -a -- "$source_directory/." "$target_directory/"
 }
@@ -181,11 +179,7 @@ publish_suite_report() {
   local publication_directory
   ensure_report_host
   publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
-  mkdir "$publication_directory/run-1" "$publication_directory/run-2"
-  copy_playwright_report 'run-1' "$publication_directory/run-1"
-  copy_playwright_report 'run-2' "$publication_directory/run-2"
-  printf '<!doctype html><meta charset="utf-8"><title>E2E report</title><h1>E2E report</h1><p>Run 1: %s. <a href="run-1/">Open Playwright report</a></p><p>Run 2: %s. <a href="run-2/">Open Playwright report</a></p><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p>' \
-    "$run_one_status" "$run_two_status" "$E2E_REVISION" "$E2E_RUN_URL" > "$publication_directory/index.html"
+  copy_playwright_report "$publication_directory"
   sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
   chmod -R a+rX "$publication_directory"
@@ -258,18 +252,8 @@ prepare_runtime_environment() {
   [[ "${E2E_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'E2E_IMAGE must be immutable'
 }
 
-run_suite_twice() {
-  if compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/run-1 e2e npm run e2e >/dev/null 2>&1; then
-    run_one_status='passed'
-  else
-    run_one_status='failed'
-  fi
-  if compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/run-2 e2e npm run e2e >/dev/null 2>&1; then
-    run_two_status='passed'
-  else
-    run_two_status='failed'
-  fi
-  [[ "$run_one_status" == passed && "$run_two_status" == passed ]]
+run_suite() {
+  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e >/dev/null 2>&1
 }
 
 run() {
@@ -296,7 +280,7 @@ run() {
   wait_for_health back
   wait_for_health gateway
   stage='playwright'
-  if run_suite_twice; then
+  if run_suite; then
     publish_suite_report
   else
     publish_suite_report

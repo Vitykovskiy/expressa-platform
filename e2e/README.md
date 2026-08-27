@@ -33,11 +33,13 @@ npm run format:check
 ## Автоматический запуск
 
 После каждого push в `main` workflow поставки собирает неизменяемый E2E-образ
-и запускает пять сценариев `JOURNEY-01`—`JOURNEY-05` дважды в изолированном
+и запускает пять сценариев `JOURNEY-01`—`JOURNEY-05` в изолированном
 временном Compose-проекте на VPS. Последний HTML-отчёт доступен на
 `http://<IP_VPS>:8088/` только для CIDR из GitHub Environment Secret
 `E2E_REPORT_ALLOWLIST`; administrator и OTP берутся из существующих
 `BOOTSTRAP_ADMIN_PHONE` и `AUTH_DEVELOPMENT_OTP`, а staff и customer — из
-резервного пула с исключением administrator. Все три роли должны различаться. Порядок запуска,
+резервного пула с исключением administrator. Все три роли должны различаться.
+Корневой URL сразу открывает единственный актуальный Playwright report; повторный
+прогон того же commit запускается вручную через GitHub Actions. Порядок запуска,
 секреты и очистка описаны в
 [E2E-on-VPS](../docs/70-deployment/E2E-on-VPS.md).

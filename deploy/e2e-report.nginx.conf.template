@@ -1,16 +1,12 @@
 server {
     listen 8080;
     server_name _;
-    root /usr/share/nginx/html;
+    root /usr/share/nginx/html/current;
     index index.html;
     absolute_redirect off;
 
 __ALLOWLIST__
     deny all;
-
-    location = / {
-        return 302 /current/;
-    }
 
     location / {
         try_files $uri $uri/ =404;

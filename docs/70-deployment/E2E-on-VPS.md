@@ -14,8 +14,8 @@ sources:
 После каждого push в `main` [Development delivery](../../.github/workflows/development-delivery.yml)
 сначала поставляет backend, front-office и back-office в development. Только
 после успешной поставки он собирает четвёртый E2E-образ с SHA-тегом, передаёт
-все четыре неизменяемых digest на VPS и запускает `JOURNEY-01`—`JOURNEY-05`
-дважды подряд. Если поставка или сборка E2E-образа неуспешна, always job
+все четыре неизменяемых digest на VPS и запускает `JOURNEY-01`—`JOURNEY-05`.
+Если поставка или сборка E2E-образа неуспешна, always job
 публикует диагностическую страницу без запуска Playwright. Development-стенд
 в E2E-запуск не входит.
 
@@ -34,9 +34,9 @@ containers, networks, volume PostgreSQL и временные test data. HTML-а
 
 ## Отчёт и доступ
 
-Постоянный контейнер `expressa-e2e-report-host` слушает `8088` и отдаёт
-`$HOME/.local/share/expressa/e2e-reports/current` (или
-`$XDG_DATA_HOME/expressa/e2e-reports/current`). Новый отчёт или диагностическая страница
+Постоянный контейнер `expressa-e2e-report-host` слушает `8088`. Корневой URL
+`http://<IP_VPS>:8088/` сразу отдаёт единственный актуальный Playwright HTML report
+без служебного списка и вложенных маршрутов. Новый отчёт или диагностическая страница
 сначала записывается в отдельный каталог, после чего ссылка `current`
 переключается атомарно. Поэтому незавершённая публикация не заменяет предыдущий
 результат. При ошибке до Playwright доступна санитизированная диагностическая
@@ -64,6 +64,6 @@ GitHub Environment `development` хранит `EXPRESSA_VPS_*` для SSH,
 `DELIVERY_VAPID_PRIVATE_KEY`, а VPS — системный `python3` для валидации CIDR.
 Значения секретов не записываются в репозиторий, отчёт или документацию.
 
-Успех E13 подтверждается только двумя последовательными успешными реальными
-прогонами; настройка workflow сама по себе не служит evidence. Критерий принятия
+Новый прогон того же commit запускается оператором через `Re-run jobs` в GitHub
+Actions. Настройка workflow сама по себе не служит evidence. Критерий принятия
 зафиксирован в [проверке выпуска](../95-testing/Release-verification.md).
