@@ -96,6 +96,52 @@ describe("session store", () => {
     expect(store.otpExpiresAt).toBeNull();
   });
 
+  it("показывает понятную ошибку для недействительного одноразового кода", async () => {
+    const dependencies = createDependencies();
+    dependencies.authApi.verifyOtp = vi
+      .fn()
+      .mockRejectedValue(apiError(400, "AUTH_CODE_INVALID", "Код не принят."));
+    setSessionDependencies(dependencies);
+
+    await expect(
+      useSessionStore().verifyOtp("+79991234567", "123456"),
+    ).rejects.toThrow("Код не принят.");
+
+    expect(useSessionStore().errorMessage).toBe(
+      "Одноразовый код недействителен.",
+    );
+  });
+
+  it("сохраняет текст неизвестной ошибки API", async () => {
+    const dependencies = createDependencies();
+    dependencies.authApi.verifyOtp = vi
+      .fn()
+      .mockRejectedValue(apiError(400, "AUTH_CODE_EXPIRED", "Код истёк."));
+    setSessionDependencies(dependencies);
+
+    await expect(
+      useSessionStore().verifyOtp("+79991234567", "123456"),
+    ).rejects.toThrow("Код истёк.");
+
+    expect(useSessionStore().errorMessage).toBe("Код истёк.");
+  });
+
+  it("сохраняет резервный текст для не-API ошибки", async () => {
+    const dependencies = createDependencies();
+    dependencies.authApi.verifyOtp = vi
+      .fn()
+      .mockRejectedValue({ code: "AUTH_CODE_INVALID" });
+    setSessionDependencies(dependencies);
+
+    await expect(
+      useSessionStore().verifyOtp("+79991234567", "123456"),
+    ).rejects.toEqual({ code: "AUTH_CODE_INVALID" });
+
+    expect(useSessionStore().errorMessage).toBe(
+      "Не удалось выполнить операцию сессии.",
+    );
+  });
+
   it("направляет запросы авторизации сессии на настроенный API origin", async () => {
     let requestedUrl = "";
     const apiClient = createApiClient(
@@ -155,11 +201,15 @@ function createDependencies(
   };
 }
 
-function apiError(status: number): ApiError {
+function apiError(
+  status: number,
+  code = "API_ERROR",
+  message = "Ошибка API",
+): ApiError {
   return new ApiError({
-    code: "API_ERROR",
+    code,
     details: null,
-    message: "Ошибка API",
+    message,
     requestId: null,
     status,
   });

@@ -5,6 +5,7 @@ import { ApiError } from "../shared/api/client";
 import {
   anonymousSessionState,
   initialSessionState,
+  sessionErrorCodes,
   sessionMessages,
   sessionStatuses,
 } from "./session.store.constants";
@@ -122,6 +123,13 @@ function isUnauthorized(error: unknown): boolean {
 }
 
 function getErrorMessage(error: unknown): string {
+  if (
+    error instanceof ApiError &&
+    error.code === sessionErrorCodes.invalidOtpCode
+  ) {
+    return sessionMessages.invalidOtpCode;
+  }
+
   return error instanceof Error
     ? error.message
     : sessionMessages.operationFailed;

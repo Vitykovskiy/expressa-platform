@@ -8,8 +8,13 @@ export const sessionStatuses = {
 
 export const sessionMessages = {
   dependenciesNotConfigured: "Зависимости сессии не настроены.",
+  invalidOtpCode: "Одноразовый код недействителен.",
   operationFailed: "Не удалось выполнить операцию сессии.",
   roleRejected: "Эта учётная запись не является клиентской.",
+} as const;
+
+export const sessionErrorCodes = {
+  invalidOtpCode: "AUTH_CODE_INVALID",
 } as const;
 
 export const initialSessionState: SessionState = {
