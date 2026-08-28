@@ -46,7 +46,7 @@ export class PostgresAuthRepository implements AuthRepository {
       const latest = await client.query<DatabaseRow>(
         `SELECT sent_at
          FROM otp_challenges
-         WHERE phone_e164 = $1
+         WHERE phone_e164 = $1 AND consumed_at IS NULL AND attempts < 5
          ORDER BY sent_at DESC
          LIMIT 1`,
         [phoneE164],

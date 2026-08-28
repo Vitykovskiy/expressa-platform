@@ -36,4 +36,10 @@ test("AUTH-06 — Customer видит ограничение повторной 
   await test.step("Customer остаётся на шаге ввода кода", async () => {
     await customerAuth.phoneVerification.assertStep(PhoneVerificationStep.OTP);
   });
+
+  await test.step("Customer завершает вход и выходит из учётной записи", async () => {
+    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await customerAuth.phoneVerification.confirm();
+    await customerAuth.signOut();
+  });
 });

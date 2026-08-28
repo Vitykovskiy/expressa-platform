@@ -4,6 +4,8 @@ import { Test } from "@nestjs/testing";
 import type { AddressInfo } from "node:net";
 import { Pool } from "pg";
 import { AppModule } from "../../src/app.module";
+import { clockPort } from "../../src/auth/application/clock.constants";
+import type { Clock } from "../../src/auth/application/clock.types";
 import { migrateDatabase } from "../../src/platform/database/migrations";
 import { configureHttp } from "../../src/platform/http/http-configuration";
 import { configureObservability } from "../../src/platform/observability/observability-configuration";
@@ -43,6 +45,7 @@ describe("auth E2E", () => {
   let app: INestApplication;
   let pool: Pool;
   let url: string;
+  let clock: Clock;
 
   beforeAll(async () => {
     if (databaseUrl === undefined)
@@ -57,6 +60,7 @@ describe("auth E2E", () => {
     configureObservability(app);
     await app.listen(0, "127.0.0.1");
     url = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
+    clock = app.get<Clock>(clockPort);
   });
 
   afterAll(async () => {
@@ -65,6 +69,7 @@ describe("auth E2E", () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     const phones = [...createdPhones];
     createdPhones.clear();
     if (phones.length === 0) return;
@@ -96,6 +101,33 @@ describe("auth E2E", () => {
       headers: headers(randomUUID()),
       method: "POST",
     });
+  }
+
+  async function insertChallenge(
+    value: string,
+    sentAt: Date,
+    attempts = 0,
+    consumedAt: Date | null = null,
+  ): Promise<void> {
+    await pool.query(
+      `INSERT INTO otp_challenges (id, phone_e164, code_hash, expires_at, sent_at, attempts, consumed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        randomUUID(),
+        value,
+        "test-code-hash",
+        new Date(sentAt.getTime() + 5 * 60 * 1_000),
+        sentAt,
+        attempts,
+        consumedAt,
+      ],
+    );
+  }
+
+  function useClock(value: string): Date {
+    const now = new Date(value);
+    jest.spyOn(clock, "now").mockReturnValue(now);
+    return now;
   }
 
   it("проверяет OTP-аутентификацию, ротацию refresh-сессии и logout", async () => {
@@ -236,5 +268,47 @@ describe("auth E2E", () => {
       details: null,
       requestId: expect.any(String),
     });
+  });
+
+  it("не создаёт новый OTP через 59 999 миллисекунд после открытого challenge", async () => {
+    const now = useClock("2031-02-03T10:00:00.000Z");
+    const value = phone();
+    await insertChallenge(value, new Date(now.getTime() - 59_999));
+
+    expect((await requestOtp(value)).status).toBe(429);
+  });
+
+  it("создаёт новый OTP ровно через 60 секунд после открытого challenge", async () => {
+    const now = useClock("2031-02-03T10:00:00.000Z");
+    const value = phone();
+    await insertChallenge(value, new Date(now.getTime() - 60_000));
+
+    expect((await requestOtp(value)).status).toBe(202);
+  });
+
+  it("создаёт новый OTP после использованного challenge до cooldown", async () => {
+    const now = useClock("2031-02-03T10:00:00.000Z");
+    const value = phone();
+    const sentAt = new Date(now.getTime() - 1);
+    await insertChallenge(value, sentAt, 0, sentAt);
+
+    expect((await requestOtp(value)).status).toBe(202);
+  });
+
+  it("создаёт новый OTP после пятой попытки до cooldown", async () => {
+    const now = useClock("2031-02-03T10:00:00.000Z");
+    const value = phone();
+    await insertChallenge(value, new Date(now.getTime() - 1), 5);
+
+    expect((await requestOtp(value)).status).toBe(202);
+  });
+
+  it("при параллельных запросах создаёт один OTP и ограничивает второй", async () => {
+    useClock("2031-02-03T10:00:00.000Z");
+    const value = phone();
+
+    const responses = await Promise.all([requestOtp(value), requestOtp(value)]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([202, 429]);
   });
 });

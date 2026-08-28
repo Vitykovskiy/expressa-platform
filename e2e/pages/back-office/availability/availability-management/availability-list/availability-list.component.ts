@@ -7,11 +7,19 @@ import {
 
 export class AvailabilityListComponent {
   private readonly screen: Locator;
+  private readonly screenTitle: Locator;
   private readonly searchInput: Locator;
   private readonly intakeToggle: Locator;
 
   constructor(private readonly page: Page) {
-    this.screen = page.getByRole("main");
+    this.screenTitle = page.getByRole("heading", {
+      name: "Доступность",
+      exact: true,
+      level: 2,
+    });
+    this.screen = page.getByRole("main").filter({
+      has: this.screenTitle,
+    });
     this.searchInput = this.screen.getByLabel("Поиск по меню", {
       exact: true,
     });
@@ -22,7 +30,7 @@ export class AvailabilityListComponent {
   }
 
   async waitReady(): Promise<void> {
-    await expect(this.screen, "Экран доступности показан.").toBeVisible();
+    await expect(this.screenTitle, "Экран доступности показан.").toBeVisible();
     await expect(
       this.screen.getByRole("status", { name: "Загружаем доступность" }),
       "Загрузка доступности завершена.",
