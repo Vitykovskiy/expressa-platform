@@ -454,7 +454,7 @@ describe("admin catalog E2E", () => {
       intake: {
         acceptsNewOrders: true,
         updatedBy: null,
-        updatedAt: expect.any(String),
+        updatedAt: null,
       },
       products: [expect.objectContaining({ id: product.id })],
     });
@@ -854,7 +854,7 @@ async function resetState(pool: Pool, acceptsNewOrders = true): Promise<void> {
   await pool.query("DELETE FROM otp_challenges");
   await pool.query("DELETE FROM users");
   await pool.query(
-    "UPDATE service_settings SET value = $1 WHERE key = 'accepts_new_orders'",
+    "UPDATE service_settings SET value = $1, updated_by = NULL, updated_at = NULL WHERE key = 'accepts_new_orders'",
     [acceptsNewOrders],
   );
 }
