@@ -82,6 +82,25 @@ export class PhoneVerificationComponent {
     });
   }
 
+  async confirmInvalidCode(): Promise<void> {
+    await test.step("Подтвердить неверный одноразовый код", async () => {
+      await expect(
+        this.confirmButton,
+        "Кнопка подтверждения кода доступна.",
+      ).toBeEnabled();
+      await this.confirmButton.click();
+      await this.assertError(PhoneVerificationError.INVALID_CODE);
+      await expect(
+        this.otpInput,
+        "Customer остаётся на шаге ввода кода.",
+      ).toBeVisible();
+      await expect(
+        this.authenticatedAccountButton,
+        "Customer не авторизован после неверного кода.",
+      ).toBeHidden();
+    });
+  }
+
   async resendCode(): Promise<void> {
     await test.step("Повторно запросить одноразовый код", async () => {
       await expect(

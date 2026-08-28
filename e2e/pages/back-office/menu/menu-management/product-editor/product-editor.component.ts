@@ -156,8 +156,30 @@ export class ProductEditorComponent {
 
   async save(name: string): Promise<void> {
     await test.step(`Сохранить товар «${name}»`, async () => {
+      const selectedCategory = this.dialog()
+        .getByLabel("Категория", { exact: true })
+        .getByRole("option", { selected: true });
+      const categoryName = await selectedCategory.innerText();
+
       await this.createSaveButton().click();
       await expect(this.dialog(), `Товар «${name}» создан.`).toHaveCount(0);
+      const categoryToggle = this.categoryToggle(categoryName);
+
+      const expanded = await categoryToggle.getAttribute("aria-expanded");
+
+      if (expanded !== "true" && expanded !== "false") {
+        throw new Error(
+          `У категории «${categoryName}» некорректное значение aria-expanded: ${expanded ?? "отсутствует"}.`,
+        );
+      }
+
+      if (expanded === "false") {
+        await categoryToggle.click();
+        await expect(
+          categoryToggle,
+          `Категория «${categoryName}» открыта.`,
+        ).toHaveAttribute("aria-expanded", "true");
+      }
       await expect(
         this.productEditButton(name),
         `Созданный товар «${name}» показан в каталоге.`,
@@ -275,6 +297,13 @@ export class ProductEditorComponent {
   private productEditButton(name: string): Locator {
     return this.page.getByRole("button", {
       name: `Редактировать товар ${name}`,
+      exact: true,
+    });
+  }
+
+  private categoryToggle(name: string): Locator {
+    return this.page.getByRole("button", {
+      name: `Открыть категорию ${name}`,
       exact: true,
     });
   }
