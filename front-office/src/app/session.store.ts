@@ -130,6 +130,13 @@ function getErrorMessage(error: unknown): string {
     return sessionMessages.invalidOtpCode;
   }
 
+  if (
+    error instanceof ApiError &&
+    error.code === sessionErrorCodes.otpRateLimited
+  ) {
+    return sessionMessages.otpRateLimited;
+  }
+
   return error instanceof Error
     ? error.message
     : sessionMessages.operationFailed;

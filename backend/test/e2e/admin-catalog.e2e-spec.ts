@@ -591,6 +591,105 @@ describe("admin catalog E2E", () => {
     }
   });
 
+  it("не возвращает осиротевшие элементы после архивации их родителя", async () => {
+    const administrator = await accessToken("administrator");
+    const archivedCategory = await createCatalogGraph(pool, 0);
+    const archivedProduct = await createCatalogGraph(pool, 1);
+    const archivedGroup = await createCatalogGraph(pool, 2);
+    const unaffected = await createCatalogGraph(pool, 3);
+
+    await pool.query(
+      "UPDATE categories SET archived_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [archivedCategory.categoryId],
+    );
+    await pool.query(
+      "UPDATE products SET archived_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [archivedProduct.productId],
+    );
+    await pool.query(
+      "UPDATE modifier_groups SET archived_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [archivedGroup.groupId],
+    );
+
+    const catalog = await json<AdminCatalogResponse>(
+      await request("/backoffice/catalog", administrator),
+      200,
+    );
+
+    expect(catalog.categories.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        archivedProduct.categoryId,
+        archivedGroup.categoryId,
+        unaffected.categoryId,
+      ]),
+    );
+    expect(catalog.categories.map(({ id }) => id)).not.toContain(
+      archivedCategory.categoryId,
+    );
+    expect(catalog.products.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([archivedGroup.productId, unaffected.productId]),
+    );
+    expect(catalog.products.map(({ id }) => id)).not.toEqual(
+      expect.arrayContaining([
+        archivedCategory.productId,
+        archivedProduct.productId,
+      ]),
+    );
+    expect(catalog.productVariants.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([archivedGroup.variantId, unaffected.variantId]),
+    );
+    expect(catalog.productVariants.map(({ id }) => id)).not.toEqual(
+      expect.arrayContaining([
+        archivedCategory.variantId,
+        archivedProduct.variantId,
+      ]),
+    );
+    expect(catalog.modifierGroups.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        archivedCategory.groupId,
+        archivedProduct.groupId,
+        unaffected.groupId,
+      ]),
+    );
+    expect(catalog.modifierGroups.map(({ id }) => id)).not.toContain(
+      archivedGroup.groupId,
+    );
+    expect(catalog.modifierOptions.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        archivedCategory.optionId,
+        archivedProduct.optionId,
+        unaffected.optionId,
+      ]),
+    );
+    expect(catalog.modifierOptions.map(({ id }) => id)).not.toContain(
+      archivedGroup.optionId,
+    );
+    expect(catalog.categoryModifierGroups).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          categoryId: archivedProduct.categoryId,
+          groupId: archivedProduct.groupId,
+        }),
+        expect.objectContaining({
+          categoryId: unaffected.categoryId,
+          groupId: unaffected.groupId,
+        }),
+      ]),
+    );
+    expect(catalog.categoryModifierGroups).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          categoryId: archivedCategory.categoryId,
+          groupId: archivedCategory.groupId,
+        }),
+        expect.objectContaining({
+          categoryId: archivedGroup.categoryId,
+          groupId: archivedGroup.groupId,
+        }),
+      ]),
+    );
+  });
+
   async function accessToken(
     role: "administrator" | "barista" | "customer",
   ): Promise<string> {
@@ -665,6 +764,62 @@ async function json<Result>(
   return response.json() as Promise<Result>;
 }
 let urlPlaceholder = "";
+type AdminCatalogResponse = {
+  categories: { id: string }[];
+  products: { id: string }[];
+  productVariants: { id: string }[];
+  modifierGroups: { id: string }[];
+  modifierOptions: { id: string }[];
+  categoryModifierGroups: { categoryId: string; groupId: string }[];
+};
+type CatalogGraph = {
+  categoryId: string;
+  productId: string;
+  variantId: string;
+  groupId: string;
+  optionId: string;
+};
+async function createCatalogGraph(
+  pool: Pool,
+  sortOrder: number,
+): Promise<CatalogGraph> {
+  const category = await pool.query<{ id: string }>(
+    "INSERT INTO categories (name, description, sort_order) VALUES ($1, '', $2) RETURNING id",
+    [`Категория ${sortOrder}`, sortOrder],
+  );
+  const categoryId = category.rows[0]?.id;
+  if (categoryId === undefined) throw new Error("Category was not created");
+  const product = await pool.query<{ id: string }>(
+    "INSERT INTO products (category_id, type, name, description, price_minor, sort_order) VALUES ($1, 'DRINK', $2, '', NULL, $3) RETURNING id",
+    [categoryId, `Напиток ${sortOrder}`, sortOrder],
+  );
+  const productId = product.rows[0]?.id;
+  if (productId === undefined) throw new Error("Product was not created");
+  const variant = await pool.query<{ id: string }>(
+    "INSERT INTO product_variants (product_id, size, price_minor, sort_order) VALUES ($1, 'M', 10000, 0) RETURNING id",
+    [productId],
+  );
+  const variantId = variant.rows[0]?.id;
+  if (variantId === undefined) throw new Error("Variant was not created");
+  const group = await pool.query<{ id: string }>(
+    "INSERT INTO modifier_groups (name, selection_type, min_select, max_select) VALUES ($1, 'single', 0, 1) RETURNING id",
+    [`Группа ${sortOrder}`],
+  );
+  const groupId = group.rows[0]?.id;
+  if (groupId === undefined) throw new Error("Modifier group was not created");
+  const option = await pool.query<{ id: string }>(
+    "INSERT INTO modifier_options (group_id, name, price_delta_minor, sort_order) VALUES ($1, $2, 0, 0) RETURNING id",
+    [groupId, `Опция ${sortOrder}`],
+  );
+  const optionId = option.rows[0]?.id;
+  if (optionId === undefined)
+    throw new Error("Modifier option was not created");
+  await pool.query(
+    "INSERT INTO category_modifier_groups (category_id, group_id, sort_order) VALUES ($1, $2, 0)",
+    [categoryId, groupId],
+  );
+  return { categoryId, productId, variantId, groupId, optionId };
+}
 async function readAcceptsNewOrders(pool: Pool): Promise<boolean> {
   const result = await pool.query<{ value: boolean }>(
     "SELECT value FROM service_settings WHERE key = 'accepts_new_orders'",

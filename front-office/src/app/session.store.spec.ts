@@ -112,6 +112,24 @@ describe("session store", () => {
     );
   });
 
+  it("показывает понятную ошибку при ограничении повторного запроса кода", async () => {
+    const dependencies = createDependencies();
+    dependencies.authApi.requestOtp = vi
+      .fn()
+      .mockRejectedValue(
+        apiError(429, "AUTH_RATE_LIMITED", "Too many requests"),
+      );
+    setSessionDependencies(dependencies);
+
+    await expect(useSessionStore().requestOtp("+79991234567")).rejects.toThrow(
+      "Too many requests",
+    );
+
+    expect(useSessionStore().errorMessage).toBe(
+      "Повторный запрос кода пока недоступен.",
+    );
+  });
+
   it("сохраняет текст неизвестной ошибки API", async () => {
     const dependencies = createDependencies();
     dependencies.authApi.verifyOtp = vi
