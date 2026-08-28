@@ -89,7 +89,7 @@ ensure_report_host() {
 
 assert_no_e2e_secret() {
   local publication_directory="$1" secret
-  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_CUSTOMER_2_PHONE:-}" "${E2E_OTP:-}"; do
+  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_CUSTOMER_2_PHONE:-}" "${E2E_OTP:-}" "${POSTGRES_PASSWORD:-}" "${AUTH_ACCESS_TOKEN_SECRET:-}" "${AUTH_OTP_PEPPER:-}" "${DELIVERY_VAPID_SUBJECT:-}" "${DELIVERY_VAPID_PUBLIC_KEY:-}" "${DELIVERY_VAPID_PRIVATE_KEY:-}" "${VAPID_SUBJECT:-}" "${VAPID_PUBLIC_KEY:-}" "${VAPID_PRIVATE_KEY:-}"; do
     [[ -n "$secret" ]] || continue
     if grep --recursive --fixed-strings --quiet -- "$secret" "$publication_directory"; then
       fail 'E2E credential was found in report publication'
@@ -111,7 +111,22 @@ import zipfile
 root = pathlib.Path(sys.argv[1])
 credentials = {
     os.environ.get(name, "").encode()
-    for name in ("E2E_ADMIN_PHONE", "E2E_STAFF_PHONE", "E2E_CUSTOMER_PHONE", "E2E_CUSTOMER_2_PHONE", "E2E_OTP")
+    for name in (
+        "E2E_ADMIN_PHONE",
+        "E2E_STAFF_PHONE",
+        "E2E_CUSTOMER_PHONE",
+        "E2E_CUSTOMER_2_PHONE",
+        "E2E_OTP",
+        "POSTGRES_PASSWORD",
+        "AUTH_ACCESS_TOKEN_SECRET",
+        "AUTH_OTP_PEPPER",
+        "DELIVERY_VAPID_SUBJECT",
+        "DELIVERY_VAPID_PUBLIC_KEY",
+        "DELIVERY_VAPID_PRIVATE_KEY",
+        "VAPID_SUBJECT",
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+    )
 }
 report_pattern = re.compile(
     rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
@@ -175,11 +190,34 @@ copy_playwright_report() {
   cp -a -- "$source_directory/." "$target_directory/"
 }
 
+copy_playwright_output() {
+  local target_directory="$1"
+  local output_file="$E2E_ARTIFACT_DIRECTORY/playwright-output.log"
+  [[ -f "$output_file" && ! -L "$output_file" ]] || fail 'Playwright output is unavailable'
+  cp -- "$output_file" "$target_directory/playwright-output.log"
+}
+
 publish_suite_report() {
-  local publication_directory
+  local include_playwright_output="${1:-0}" publication_directory
   ensure_report_host
   publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
   copy_playwright_report "$publication_directory"
+  [[ "$include_playwright_output" == 0 ]] || copy_playwright_output "$publication_directory"
+  sanitize_e2e_report "$publication_directory"
+  assert_no_e2e_secret "$publication_directory"
+  chmod -R a+rX "$publication_directory"
+  ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
+  mv -Tf "$report_root/current.next" "$report_root/current"
+  report_published=1
+}
+
+publish_playwright_diagnostic() {
+  local diagnostic_stage="$1" publication_directory
+  ensure_report_host
+  publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
+  copy_playwright_output "$publication_directory"
+  printf '<!doctype html><meta charset="utf-8"><title>Playwright diagnostic</title><h1>Playwright diagnostic</h1><p>Stage: %s. Playwright did not produce a report.</p><p><a href="playwright-output.log">Playwright output</a></p>' \
+    "$diagnostic_stage" > "$publication_directory/index.html"
   sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
   chmod -R a+rX "$publication_directory"
@@ -215,10 +253,10 @@ on_exit() {
 
 wait_for_health() {
   local service="$1" container health
-  container="$(compose ps -q "$service")"
+  container="$(compose ps -q "$service" 2>/dev/null)"
   [[ -n "$container" ]] || fail "$service container is unavailable"
   for _ in {1..36}; do
-    health="$(docker inspect --format '{{.State.Health.Status}}' "$container")"
+    health="$(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null)"
     [[ "$health" == healthy ]] && return
     sleep 5
   done
@@ -254,7 +292,19 @@ prepare_runtime_environment() {
 }
 
 run_suite() {
-  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e >/dev/null 2>&1
+  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
+}
+
+run_readiness_step() {
+  local step="$1"
+  shift
+  printf 'e2e-runtime: %s readiness: %s started\n' "$E2E_PROFILE" "$step" >&2
+  if "$@" >/dev/null 2>&1; then
+    printf 'e2e-runtime: %s readiness: %s passed\n' "$E2E_PROFILE" "$step" >&2
+    return
+  fi
+  printf 'e2e-runtime: %s readiness: %s failed\n' "$E2E_PROFILE" "$step" >&2
+  return 1
 }
 
 seed_catalog_if_needed() {
@@ -280,7 +330,20 @@ run_profile() {
   install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
 
   stage="$profile-readiness"
-  if ! compose config -q || ! compose pull || ! compose up -d postgres || ! wait_for_health postgres || ! compose run --rm --no-deps backend dist/scripts/migrate.js || ! provision_customer_if_needed || ! compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_ADMIN_PHONE" --role administrator || ! seed_catalog_if_needed || ! compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_STAFF_PHONE" --role barista || ! compose up -d backend front back gateway || ! wait_for_health backend || ! wait_for_health front || ! wait_for_health back || ! wait_for_health gateway; then
+  if ! run_readiness_step 'compose configuration' compose config -q ||
+    ! run_readiness_step 'image pull' compose pull ||
+    ! run_readiness_step 'PostgreSQL startup' compose up -d postgres ||
+    ! run_readiness_step 'PostgreSQL health' wait_for_health postgres ||
+    ! run_readiness_step 'database migration' compose run --rm --no-deps backend dist/scripts/migrate.js ||
+    ! run_readiness_step 'customer provisioning' provision_customer_if_needed ||
+    ! run_readiness_step 'administrator provisioning' compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_ADMIN_PHONE" --role administrator ||
+    ! run_readiness_step 'catalog seeding' seed_catalog_if_needed ||
+    ! run_readiness_step 'barista provisioning' compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_STAFF_PHONE" --role barista ||
+    ! run_readiness_step 'application startup' compose up -d backend front back gateway ||
+    ! run_readiness_step 'backend health' wait_for_health backend ||
+    ! run_readiness_step 'front-office health' wait_for_health front ||
+    ! run_readiness_step 'back-office health' wait_for_health back ||
+    ! run_readiness_step 'gateway health' wait_for_health gateway; then
     publish_diagnostic "$stage" || true
     cleanup_runtime
     project=''
@@ -291,7 +354,7 @@ run_profile() {
 
   stage="$profile-playwright"
   if ! run_suite; then
-    publish_suite_report || publish_diagnostic "$stage" || true
+    publish_suite_report 1 || publish_playwright_diagnostic "$stage" || publish_diagnostic "$stage" || true
     cleanup_runtime
     project=''
     run_directory=''
