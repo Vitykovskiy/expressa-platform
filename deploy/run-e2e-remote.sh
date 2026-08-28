@@ -23,7 +23,13 @@ work_root="${E2E_WORK_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/expressa/e2e-ru
 report_container='expressa-e2e-report-host'
 project=''
 run_directory=''
-report_published=0
+suite_directory=''
+empty_status='not-run'
+seeded_status='not-run'
+mutating_status='not-run'
+suite_published=0
+suite_diagnostic=''
+cleanup_failure=0
 stage='runtime'
 
 [[ -f "$compose_file" && ! -L "$compose_file" ]] || fail 'e2e-compose.yml is unavailable'
@@ -52,6 +58,14 @@ self_test_allowlist() {
   if validate_cidr '2001:db8::/129'; then
     fail 'invalid IPv6 CIDR was accepted'
   fi
+  python3 - <<'PY' || fail 'E2E phone redaction patterns are invalid'
+import re
+
+phone_pattern = re.compile(rb"\+7(?:[\s()\-]*\d){10}")
+for phone in (b"+79990000001", b"+7 (999) 000-00-01"):
+    if phone_pattern.fullmatch(phone) is None:
+        raise SystemExit(1)
+PY
 }
 
 validate_metadata() {
@@ -132,7 +146,7 @@ report_pattern = re.compile(
     rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
     re.DOTALL,
 )
-phone_pattern = re.compile(rb"\+7(?:\d{10}| \d{3} \d{3}-\d{2}-\d{2})")
+phone_pattern = re.compile(rb"\+7(?:[\s()\-]*\d){10}")
 
 def redact(content: bytes) -> bytes:
     for credential in credentials:
@@ -161,23 +175,65 @@ for path in root.rglob("*"):
 PY
 }
 
-publish_directory() {
-  local title="$1" details="$2" publication_directory
+set_profile_status() {
+  local profile="$1" status="$2"
+  case "$profile" in
+    empty|seeded|mutating) ;;
+    *) fail 'E2E profile is invalid' ;;
+  esac
+  case "$status" in
+    passed|failed|not-run) ;;
+    *) fail 'E2E profile status is invalid' ;;
+  esac
+  printf -v "${profile}_status" '%s' "$status"
+}
+
+write_suite_index() {
+  [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
+  printf '<!doctype html><meta charset="utf-8"><title>E2E suite report</title><h1>E2E suite report</h1><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p><ul>' \
+    "$E2E_REVISION" "$E2E_RUN_URL" > "$suite_directory/index.html"
+  [[ -z "$suite_diagnostic" ]] || printf '<p>Diagnostic: %s</p>' "$suite_diagnostic" >> "$suite_directory/index.html"
+  local profile status
+  for profile in empty seeded mutating; do
+    case "$profile" in
+      empty) status="$empty_status" ;;
+      seeded) status="$seeded_status" ;;
+      mutating) status="$mutating_status" ;;
+    esac
+    printf '<li>%s: %s — <a href="%s/">report</a></li>' "$profile" "$status" "$profile" >> "$suite_directory/index.html"
+  done
+  printf '</ul>' >> "$suite_directory/index.html"
+}
+
+prepare_suite_report() {
   ensure_report_host
-  publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
-  printf '<!doctype html><meta charset="utf-8"><title>%s</title><h1>%s</h1><p>%s</p><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p>' \
-    "$title" "$title" "$details" "$E2E_REVISION" "$E2E_RUN_URL" > "$publication_directory/index.html"
-  assert_no_e2e_secret "$publication_directory"
-  chmod -R a+rX "$publication_directory"
-  ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
-  mv -Tf "$report_root/current.next" "$report_root/current"
-  report_published=1
+  suite_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
 }
 
 publish_diagnostic() {
   local diagnostic_stage="$1"
   validate_metadata
-  publish_directory 'E2E deployment diagnostic' "Stage: $diagnostic_stage. Playwright did not produce a report."
+  prepare_suite_report
+  suite_diagnostic="Stage: $diagnostic_stage. Playwright did not run."
+  finalize_suite_report
+}
+
+finalize_suite_report() {
+  [[ -n "$suite_directory" ]] || return 0
+  local profile
+  for profile in empty seeded mutating; do
+    if [[ ! -d "$suite_directory/$profile" ]]; then
+      install -d -m 700 "$suite_directory/$profile"
+      printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Profile did not run.</p>' > "$suite_directory/$profile/index.html"
+    fi
+  done
+  write_suite_index
+  sanitize_e2e_report "$suite_directory"
+  assert_no_e2e_secret "$suite_directory"
+  chmod -R a+rX "$suite_directory"
+  ln -s "$(basename -- "$suite_directory")" "$report_root/current.next"
+  mv -Tf "$report_root/current.next" "$report_root/current"
+  suite_published=1
 }
 
 copy_playwright_report() {
@@ -305,33 +361,22 @@ SQL
   fi >> "$output_file" 2>/dev/null
 }
 
-publish_suite_report() {
-  local include_playwright_output="${1:-0}" publication_directory
-  ensure_report_host
-  publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
-  copy_playwright_report "$publication_directory"
-  [[ "$include_playwright_output" == 0 ]] || copy_playwright_output "$publication_directory"
+publish_profile_report() {
+  local profile="$1" status="$2" diagnostic_stage="$3" publication_directory
+  [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
+  publication_directory="$suite_directory/$profile"
+  install -d -m 700 "$publication_directory"
+  if [[ -d "${E2E_ARTIFACT_DIRECTORY:-}/report" && -f "${E2E_ARTIFACT_DIRECTORY:-}/report/index.html" ]]; then
+    copy_playwright_report "$publication_directory"
+    [[ "$status" == passed ]] || copy_playwright_output "$publication_directory"
+  else
+    [[ -f "${E2E_ARTIFACT_DIRECTORY:-}/playwright-output.log" ]] && copy_playwright_output "$publication_directory"
+    printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Stage: %s. Playwright report is unavailable.</p>' \
+      "$diagnostic_stage" > "$publication_directory/index.html"
+  fi
   sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
-  chmod -R a+rX "$publication_directory"
-  ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
-  mv -Tf "$report_root/current.next" "$report_root/current"
-  report_published=1
-}
-
-publish_playwright_diagnostic() {
-  local diagnostic_stage="$1" publication_directory
-  ensure_report_host
-  publication_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
-  copy_playwright_output "$publication_directory"
-  printf '<!doctype html><meta charset="utf-8"><title>Playwright diagnostic</title><h1>Playwright diagnostic</h1><p>Stage: %s. Playwright did not produce a report.</p><p><a href="playwright-output.log">Playwright output</a></p>' \
-    "$diagnostic_stage" > "$publication_directory/index.html"
-  sanitize_e2e_report "$publication_directory"
-  assert_no_e2e_secret "$publication_directory"
-  chmod -R a+rX "$publication_directory"
-  ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
-  mv -Tf "$report_root/current.next" "$report_root/current"
-  report_published=1
+  set_profile_status "$profile" "$status"
 }
 
 compose() {
@@ -339,23 +384,37 @@ compose() {
 }
 
 cleanup_runtime() {
+  local cleanup_failed=0
+  cleanup_failure=0
   if [[ -n "$project" && -n "$run_directory" && -d "$run_directory" ]]; then
-    compose run --rm --no-deps --entrypoint sh e2e -c 'chmod -R a+rwX /artifacts' >/dev/null 2>&1 || true
+    compose run --rm --no-deps --entrypoint sh e2e -c 'chmod -R a+rwX /artifacts' >/dev/null || cleanup_failed=1
   fi
   if [[ -n "$project" ]]; then
-    compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+    compose down --volumes --remove-orphans >/dev/null || cleanup_failed=1
+    if docker ps --all --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
+      docker network ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
+      docker volume ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet .; then
+      printf '%s\n' 'e2e-runtime: Compose project resources remain after cleanup' >&2
+      cleanup_failed=1
+    fi
   fi
   if [[ -n "$run_directory" && -d "$run_directory" && ! -L "$run_directory" ]]; then
-    rm -rf -- "$run_directory"
+    rm -rf -- "$run_directory" || cleanup_failed=1
+    if [[ -e "$run_directory" ]]; then
+      printf '%s\n' 'e2e-runtime: E2E run directory remains after cleanup' >&2
+      cleanup_failed=1
+    fi
   fi
+  cleanup_failure="$cleanup_failed"
+  (( cleanup_failed == 0 ))
 }
 
 on_exit() {
   local exit_status=$?
-  if (( exit_status != 0 )) && (( report_published == 0 )); then
-    publish_diagnostic "$stage" >/dev/null 2>&1 || true
+  if (( suite_published == 0 )) && [[ -n "$suite_directory" ]]; then
+    finalize_suite_report >/dev/null 2>&1 || true
   fi
-  cleanup_runtime
+  cleanup_runtime || exit_status=1
   exit "$exit_status"
 }
 
@@ -431,7 +490,12 @@ run_profile() {
   export E2E_PROFILE
 
   # A re-run cleans only the exact GitHub-run/profile project left by an interrupted attempt.
-  compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+  compose down --volumes --remove-orphans >/dev/null
+  if docker ps --all --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
+    docker network ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
+    docker volume ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet .; then
+    fail 'Compose project resources remain before profile startup'
+  fi
   install -d -m 700 "$work_root"
   run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$profile.XXXXXX")"
   export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
@@ -452,8 +516,8 @@ run_profile() {
     ! run_readiness_step 'front-office health' wait_for_health front ||
     ! run_readiness_step 'back-office health' wait_for_health back ||
     ! run_readiness_step 'gateway health' wait_for_health gateway; then
-    publish_diagnostic "$stage" || true
-    cleanup_runtime
+    publish_profile_report "$profile" failed "$stage"
+    cleanup_runtime || return 1
     project=''
     run_directory=''
     unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
@@ -463,16 +527,19 @@ run_profile() {
   stage="$profile-playwright"
   if ! run_suite; then
     append_temporary_catalog_diagnostic
-    publish_suite_report 1 || publish_playwright_diagnostic "$stage" || publish_diagnostic "$stage" || true
-    cleanup_runtime
+    publish_profile_report "$profile" failed "$stage"
+    cleanup_runtime || return 1
     project=''
     run_directory=''
     unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
     return 1
   fi
 
-  publish_suite_report
-  cleanup_runtime
+  publish_profile_report "$profile" passed "$stage"
+  if ! cleanup_runtime; then
+    set_profile_status "$profile" failed
+    return 1
+  fi
   project=''
   run_directory=''
   unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
@@ -481,11 +548,20 @@ run_profile() {
 run() {
   validate_metadata
   prepare_runtime_environment
-  ensure_report_host
-  local profile
+  prepare_suite_report
+  local profile suite_failed=0
   for profile in empty seeded mutating; do
-    run_profile "$profile" || return 1
+    if ! run_profile "$profile"; then
+      suite_failed=1
+      if (( cleanup_failure != 0 )); then
+        suite_diagnostic="Profile: $profile. Stage: $stage. Cleanup failed; suite stopped."
+        finalize_suite_report
+        return 1
+      fi
+    fi
   done
+  finalize_suite_report
+  (( suite_failed == 0 ))
 }
 
 [[ "$#" -ge 1 ]] || usage
