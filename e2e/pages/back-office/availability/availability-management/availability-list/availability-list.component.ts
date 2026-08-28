@@ -15,10 +15,11 @@ export class AvailabilityListComponent {
     this.screenTitle = page.getByRole("heading", {
       name: "Доступность",
       exact: true,
-      level: 2,
+      level: 1,
     });
     this.screen = page.getByRole("main").filter({
       has: this.screenTitle,
+      hasNot: page.getByRole("main"),
     });
     this.searchInput = this.screen.getByLabel("Поиск по меню", {
       exact: true,

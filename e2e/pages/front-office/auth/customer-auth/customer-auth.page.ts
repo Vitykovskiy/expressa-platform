@@ -14,9 +14,17 @@ export class CustomerAuthPage {
     this.profile = new GuestCheckoutFormComponent(page);
   }
 
-  async open(url: string): Promise<void> {
+  async open(frontUrl: string): Promise<void> {
     await test.step("Открыть вход клиента", async () => {
-      await this.page.goto(`${url}/auth/phone`);
+      await this.page.goto(new URL("/", frontUrl).toString());
+      await expect(
+        this.signInButton,
+        "Кнопка подтверждения телефона доступна гостю.",
+      ).toBeVisible();
+      await this.signInButton.click();
+      await expect(this.page, "Открыт ввод номера телефона.").toHaveURL(
+        (url) => url.pathname === "/auth/phone",
+      );
       await expect(
         this.page.getByLabel("Номер телефона", { exact: true }),
         "Открыта форма входа клиента.",
