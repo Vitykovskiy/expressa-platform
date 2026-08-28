@@ -97,7 +97,6 @@ export class CategoryEditorComponent {
         this.categoryEditButton(name),
         `Созданная категория «${name}» показана в каталоге.`,
       ).toBeVisible();
-      await this.categoryEditButton(name).click({ trial: true });
     });
   }
 
@@ -126,7 +125,34 @@ export class CategoryEditorComponent {
         this.categoryEditButton(name),
         `Изменённая категория «${name}» показана в каталоге.`,
       ).toBeVisible();
-      await this.categoryEditButton(name).click({ trial: true });
+    });
+  }
+
+  async cancelCreation(): Promise<void> {
+    const dialog = this.createDialog();
+
+    if (!(await dialog.isVisible())) return;
+
+    await test.step("Отменить создание категории", async () => {
+      await this.cancelEditorButton(dialog).click();
+      await expect(
+        dialog,
+        "Диалог новой категории закрыт без сохранения.",
+      ).toHaveCount(0);
+    });
+  }
+
+  async cancelEditing(name: string): Promise<void> {
+    const dialog = this.editDialog();
+
+    if (!(await dialog.isVisible())) return;
+
+    await test.step(`Отменить редактирование категории «${name}»`, async () => {
+      await this.cancelEditorButton(dialog).click();
+      await expect(
+        dialog,
+        `Редактор категории «${name}» закрыт без изменений.`,
+      ).toHaveCount(0);
     });
   }
 
@@ -164,7 +190,6 @@ export class CategoryEditorComponent {
         this.addCategoryButton,
         "Каталог доступен для следующего действия.",
       ).toBeEnabled();
-      await this.addCategoryButton.click({ trial: true });
       await expect(
         this.categoryEditButton(name),
         `Категория «${name}» архивирована.`,
@@ -196,7 +221,6 @@ export class CategoryEditorComponent {
         this.addCategoryButton,
         "Каталог доступен для следующего действия.",
       ).toBeEnabled();
-      await this.addCategoryButton.click({ trial: true });
       await expect(
         this.categoryEditButton(name),
         `Категория «${name}» архивирована.`,
@@ -211,6 +235,22 @@ export class CategoryEditorComponent {
 
   private dialog(): Locator {
     return this.page.getByRole("dialog");
+  }
+
+  private createDialog(): Locator {
+    return this.dialog().filter({
+      has: this.page.getByRole("heading", {
+        name: "Новая категория",
+        exact: true,
+      }),
+    });
+  }
+
+  private editDialog(): Locator {
+    return this.page.getByRole("dialog", {
+      name: "Редактировать категорию",
+      exact: true,
+    });
   }
 
   private confirmationDialog(): Locator {
@@ -256,6 +296,13 @@ export class CategoryEditorComponent {
   private editSaveButton(): Locator {
     return this.dialog().getByRole("button", {
       name: "Сохранить изменения",
+      exact: true,
+    });
+  }
+
+  private cancelEditorButton(dialog: Locator): Locator {
+    return dialog.getByRole("button", {
+      name: "Отмена",
       exact: true,
     });
   }

@@ -18,7 +18,11 @@ test("CATALOG-03: administrator видит валидацию категории
   e2eCredentials,
   e2eEnvironment,
   menuManagement,
-}) => {
+}, testInfo) => {
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  const cleanupErrors: unknown[] = [];
+
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.signIn(e2eCredentials.administrator);
   await menuManagement.open();
@@ -39,7 +43,36 @@ test("CATALOG-03: administrator видит валидацию категории
         "Действие сохранения категории недоступно.",
       ).toBe(false);
     });
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
   } finally {
-    await backOfficeAuth.form.signOut();
+    try {
+      await menuManagement.categoryEditor.cancelCreation();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+    try {
+      await backOfficeAuth.form.signOut();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
   }
+
+  for (const cleanupError of cleanupErrors) {
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Первичная ошибка сценария или очистки сохраняет приоритет.
+    }
+  }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (cleanupErrors.length > 0) throw cleanupErrors[0];
 });

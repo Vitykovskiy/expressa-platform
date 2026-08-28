@@ -26,6 +26,11 @@ test("CATALOG-09: администратор видит валидацию це�
 }, testInfo) => {
   const categoryName = `E2E Валидация ${testInfo.testId}`;
   const productName = `E2E Напиток ${testInfo.testId}`;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  let cleanupError: unknown;
+  let hasCleanupFailure = false;
+  let isProductEditorOpen = false;
 
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.signIn(e2eCredentials.administrator);
@@ -38,6 +43,7 @@ test("CATALOG-09: администратор видит валидацию це�
     await menuManagement.categoryEditor.save(categoryName);
 
     await menuManagement.productEditor.startCreation();
+    isProductEditorOpen = true;
     await menuManagement.productEditor.selectCategory(categoryName);
     await menuManagement.productEditor.selectType(ProductType.DRINK);
     await menuManagement.productEditor.fillName(productName);
@@ -57,9 +63,37 @@ test("CATALOG-09: администратор видит валидацию це�
         "Действие сохранения товара недоступно.",
       ).toBe(false);
     });
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
   } finally {
-    await menuManagement.productEditor.deleteIfPresent(productName);
-    await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-    await backOfficeAuth.form.signOut();
+    try {
+      if (isProductEditorOpen) {
+        await menuManagement.productEditor.cancelCreation();
+      }
+      await menuManagement.productEditor.deleteIfPresent(productName);
+      await menuManagement.categoryEditor.archiveIfPresent(categoryName);
+      await backOfficeAuth.form.signOut();
+    } catch (error) {
+      if (!hasPrimaryFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      } else {
+        try {
+          await testInfo.attach("Ошибка очистки", {
+            body:
+              error instanceof Error
+                ? (error.stack ?? error.message)
+                : String(error),
+            contentType: "text/plain",
+          });
+        } catch {
+          // Исходная ошибка сценария сохраняет приоритет.
+        }
+      }
+    }
   }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (hasCleanupFailure) throw cleanupError;
 });

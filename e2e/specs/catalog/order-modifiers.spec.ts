@@ -24,6 +24,10 @@ test("CATALOG-14: администратор меняет порядок вар�
   const groupName = `E2E Порядок добавок ${testInfo.testId}`;
   const firstOptionName = `E2E Первый вариант ${testInfo.testId}`;
   const secondOptionName = `E2E Второй вариант ${testInfo.testId}`;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  let cleanupError: unknown;
+  let hasCleanupFailure = false;
 
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.signIn(e2eCredentials.administrator);
@@ -62,8 +66,36 @@ test("CATALOG-14: администратор меняет порядок вар�
         "Для первого варианта действие перемещения вверх недоступно.",
       ).toBe(false);
     });
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
   } finally {
-    await menuManagement.modifierGroupEditor.archiveIfPresent(groupName);
-    await backOfficeAuth.form.signOut();
+    try {
+      await menuManagement.modifierGroupEditor.cancelEditing(groupName);
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
+    try {
+      await menuManagement.modifierGroupEditor.archiveIfPresent(groupName);
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
+    try {
+      await backOfficeAuth.form.signOut();
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
   }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (hasCleanupFailure) throw cleanupError;
 });

@@ -44,7 +44,7 @@ export class ProductConfiguratorComponent {
         card,
         `Карточка товара «${productName}» показана.`,
       ).toBeVisible();
-      await card.getByRole("button", { name: productName }).click();
+      await this.productButton(productName).click();
       await expect(
         this.page.getByRole("heading", {
           name: productName,
@@ -229,12 +229,19 @@ export class ProductConfiguratorComponent {
     });
 
     return products.getByRole("listitem").filter({
-      has: this.page.getByRole("button", { name: productName, exact: true }),
+      has: this.productButton(productName),
     });
   }
 
   private productButton(productName: string): Locator {
-    return this.page.getByRole("button", { name: productName, exact: true });
+    const price = "\\d[\\d\\s]*(?:,\\d+)?\\s+₽";
+    const drinkPrice = `(?:S|M|L)\\s+·\\s+${price}`;
+    const productButtonName = new RegExp(
+      `^${escapeRegExp(productName)}\\s+(?:Напиток\\s+${drinkPrice}(?:\\s+${drinkPrice})*|Еда и другое\\s+${price})$`,
+      "u",
+    );
+
+    return this.page.getByRole("button", { name: productButtonName });
   }
 
   private productTitle(): Locator {

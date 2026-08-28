@@ -58,13 +58,38 @@ self_test_allowlist() {
   if validate_cidr '2001:db8::/129'; then
     fail 'invalid IPv6 CIDR was accepted'
   fi
-  python3 - <<'PY' || fail 'E2E phone redaction patterns are invalid'
+  python3 - <<'PY' || fail 'E2E evidence redaction patterns are invalid'
+import json
 import re
 
+credentials = {b"+79990000001", b"123456"}
+numeric_credentials = {credential for credential in credentials if credential.isdigit()}
 phone_pattern = re.compile(rb"\+7(?:[\s()\-]*\d){10}")
-for phone in (b"+79990000001", b"+7 (999) 000-00-01"):
-    if phone_pattern.fullmatch(phone) is None:
-        raise SystemExit(1)
+
+def redact(content):
+    for credential in credentials - numeric_credentials:
+        content = content.replace(credential, b"*" * len(credential))
+    for credential in numeric_credentials:
+        content = re.sub(
+            rb"([\"'])" + re.escape(credential) + rb"\1",
+            lambda match: match.group(1) + b"*" * len(credential) + match.group(1),
+            content,
+        )
+        content = re.sub(
+            rb"(?i)((?:e2e_)?(?:otp|code|password|token|\xd0\xba\xd0\xbe\xd0\xb4|\xd0\xbf\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c)[^0-9]{0,32})"
+            + re.escape(credential)
+            + rb"(?![0-9])",
+            lambda match: match.group(1) + b"0",
+            content,
+        )
+    return phone_pattern.sub(lambda match: b"*" * len(match.group()), content)
+
+source = b'{"amount":5484.534123456001,"otp":"123456","otpNumeric":123456,"rawPhone":"+79990000001","phone":"+7 (999) 000-00-01"}'
+sanitized = redact(source)
+if b'"otp":"123456"' in sanitized or b'"otpNumeric":123456' in sanitized or b'+79990000001' in sanitized or b'+7 (999) 000-00-01' in sanitized:
+    raise SystemExit(1)
+if json.loads(sanitized)["amount"] != json.loads(source)["amount"] or json.loads(sanitized)["otpNumeric"] != 0:
+    raise SystemExit(1)
 PY
 }
 
@@ -103,12 +128,29 @@ ensure_report_host() {
 
 assert_no_e2e_secret() {
   local publication_directory="$1" secret
-  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_CUSTOMER_2_PHONE:-}" "${E2E_OTP:-}" "${POSTGRES_PASSWORD:-}" "${AUTH_ACCESS_TOKEN_SECRET:-}" "${AUTH_OTP_PEPPER:-}" "${DELIVERY_VAPID_SUBJECT:-}" "${DELIVERY_VAPID_PUBLIC_KEY:-}" "${DELIVERY_VAPID_PRIVATE_KEY:-}" "${VAPID_SUBJECT:-}" "${VAPID_PUBLIC_KEY:-}" "${VAPID_PRIVATE_KEY:-}"; do
+  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_CUSTOMER_2_PHONE:-}" "${POSTGRES_PASSWORD:-}" "${AUTH_ACCESS_TOKEN_SECRET:-}" "${AUTH_OTP_PEPPER:-}" "${DELIVERY_VAPID_SUBJECT:-}" "${DELIVERY_VAPID_PUBLIC_KEY:-}" "${DELIVERY_VAPID_PRIVATE_KEY:-}" "${VAPID_SUBJECT:-}" "${VAPID_PUBLIC_KEY:-}" "${VAPID_PRIVATE_KEY:-}"; do
     [[ -n "$secret" ]] || continue
     if grep --recursive --fixed-strings --quiet -- "$secret" "$publication_directory"; then
       fail 'E2E credential was found in report publication'
     fi
   done
+  python3 - "$publication_directory" "${E2E_OTP:-}" <<'PY' || fail 'E2E credential was found in report publication'
+import pathlib
+import re
+import sys
+
+root = pathlib.Path(sys.argv[1])
+otp = sys.argv[2].encode()
+phone_pattern = re.compile(rb"\+7(?:[\s()\-]*\d){10}")
+otp_pattern = re.compile(rb"(?<![0-9.])" + re.escape(otp) + rb"(?![0-9.])") if otp else None
+
+for path in root.rglob("*"):
+    if not path.is_file() or path.is_symlink():
+        continue
+    content = path.read_bytes()
+    if phone_pattern.search(content) or (otp_pattern and otp_pattern.search(content)):
+        raise SystemExit(1)
+PY
 }
 
 sanitize_e2e_report() {
@@ -142,6 +184,7 @@ credentials = {
         "VAPID_PRIVATE_KEY",
     )
 }
+numeric_credentials = {credential for credential in credentials if credential.isdigit()}
 report_pattern = re.compile(
     rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
     re.DOTALL,
@@ -149,9 +192,22 @@ report_pattern = re.compile(
 phone_pattern = re.compile(rb"\+7(?:[\s()\-]*\d){10}")
 
 def redact(content: bytes) -> bytes:
-    for credential in credentials:
+    for credential in credentials - numeric_credentials:
         if credential:
             content = content.replace(credential, b"*" * len(credential))
+    for credential in numeric_credentials:
+        content = re.sub(
+            rb"([\"'])" + re.escape(credential) + rb"\1",
+            lambda match: match.group(1) + b"*" * len(credential) + match.group(1),
+            content,
+        )
+        content = re.sub(
+            rb"(?i)((?:e2e_)?(?:otp|code|password|token|\xd0\xba\xd0\xbe\xd0\xb4|\xd0\xbf\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c)[^0-9]{0,32})"
+            + re.escape(credential)
+            + rb"(?![0-9])",
+            lambda match: match.group(1) + b"0",
+            content,
+        )
     return phone_pattern.sub(lambda match: b"*" * len(match.group()), content)
 
 def sanitize_embedded_report(match: re.Match[bytes]) -> bytes:

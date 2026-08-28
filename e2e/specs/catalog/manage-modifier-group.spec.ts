@@ -29,6 +29,10 @@ test("CATALOG-13: администратор создаёт группу доб�
 }, testInfo) => {
   const groupName = `E2E Добавки ${testInfo.testId}`;
   const optionName = `E2E Вариант ${testInfo.testId}`;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  let cleanupError: unknown;
+  let hasCleanupFailure = false;
 
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.signIn(e2eCredentials.administrator);
@@ -65,8 +69,36 @@ test("CATALOG-13: администратор создаёт группу доб�
         "Созданный вариант выбран по умолчанию.",
       ).toBe(true);
     });
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
   } finally {
-    await menuManagement.modifierGroupEditor.archiveIfPresent(groupName);
-    await backOfficeAuth.form.signOut();
+    try {
+      await menuManagement.modifierGroupEditor.cancelEditing(groupName);
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
+    try {
+      await menuManagement.modifierGroupEditor.archiveIfPresent(groupName);
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
+    try {
+      await backOfficeAuth.form.signOut();
+    } catch (error) {
+      if (!hasCleanupFailure) {
+        cleanupError = error;
+        hasCleanupFailure = true;
+      }
+    }
   }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (hasCleanupFailure) throw cleanupError;
 });

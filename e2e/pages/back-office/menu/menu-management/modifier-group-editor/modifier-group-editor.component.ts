@@ -235,6 +235,20 @@ export class ModifierGroupEditorComponent {
     });
   }
 
+  async cancelEditing(name: string): Promise<void> {
+    if ((await this.editorRegion.count()) === 0) return;
+
+    await test.step(`Отменить редактирование группы добавок «${name}»`, async () => {
+      await this.editorRegion
+        .getByRole("button", { name: "Отмена", exact: true })
+        .click();
+      await expect(
+        this.editorRegion,
+        `Редактор группы добавок «${name}» закрыт без изменений.`,
+      ).toHaveCount(0);
+    });
+  }
+
   async archive(name: string): Promise<void> {
     await test.step(`Архивировать группу добавок «${name}»`, async () => {
       await this.openManagement();

@@ -24,6 +24,18 @@ export class ProductEditorComponent {
     });
   }
 
+  async cancelCreation(): Promise<void> {
+    await test.step("Отменить создание товара", async () => {
+      await this.dialog()
+        .getByRole("button", { name: "Отмена", exact: true })
+        .click();
+      await expect(
+        this.dialog(),
+        "Редактор нового товара закрыт без сохранения.",
+      ).toHaveCount(0);
+    });
+  }
+
   async selectCategory(name: string): Promise<void> {
     await test.step(`Выбрать категорию «${name}»`, async () => {
       const category = this.dialog().getByLabel("Категория", { exact: true });
