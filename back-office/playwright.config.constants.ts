@@ -26,10 +26,7 @@ export const backOfficeAppWebServerCommand = "npm run preview";
 export const backOfficeDesktopBrowserDeviceName = "Desktop Chrome";
 export const backOfficeAuthWebServerCommand =
   "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && npm run preview -- --port 4175";
-export const catalogBackendPidPath =
-  "/tmp/expressa-backoffice-catalog-e2e-backend.pid";
 export const catalogBackendReadyUrl = "http://127.0.0.1:3001/docs";
-export const catalogComposeProjectName = "expressa-backoffice-catalog-e2e";
 export const catalogDatabaseUrl =
   "postgresql://expressa:expressa@127.0.0.1:5435/expressa";
 export const catalogFrontendUrl = "http://127.0.0.1:4174";
@@ -53,7 +50,7 @@ export const catalogServerEnvironment = {
   VAPID_PRIVATE_KEY: "9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c",
 } as const;
 export const catalogBackendCommand =
-  'sh -c \'set -e; rm -f /tmp/expressa-backoffice-catalog-e2e-backend.pid; docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml down --volumes; printf "services:\\n  postgres:\\n    ports: !override\\n      - 127.0.0.1:5435:5432\\n" | docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml -f - up -d --wait; (cd ../backend && env DATABASE_URL=postgresql://expressa:expressa@127.0.0.1:5435/expressa AUTH_ACCESS_TOKEN_SECRET=changeme-back-office-catalog-e2e-access-token-secret AUTH_DEVELOPMENT_OTP=123456 AUTH_OTP_PEPPER=back-office-catalog-e2e-otp-pepper CORS_ORIGINS=http://127.0.0.1:4175,http://127.0.0.1:4174 NODE_ENV=local PORT=3001 npm run migrate && exec ./node_modules/.bin/nest start) & backend_pid=$!; echo "$backend_pid" > /tmp/expressa-backoffice-catalog-e2e-backend.pid; wait "$backend_pid"\'';
+  'sh -c \'set -e; cleanup() { exit_code=$?; trap - EXIT INT TERM; if [ -n "${backend_pid:-}" ]; then kill "$backend_pid" 2>/dev/null || true; wait "$backend_pid" 2>/dev/null || true; fi; docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml down --volumes || true; exit "$exit_code"; }; trap cleanup EXIT; trap "exit 130" INT; trap "exit 143" TERM; docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml down --volumes; printf "services:\\n  postgres:\\n    ports: !override\\n      - 127.0.0.1:5435:5432\\n" | docker compose -p expressa-backoffice-catalog-e2e -f ../backend/compose.local.yml -f - up -d --wait; (cd ../backend && env DATABASE_URL=postgresql://expressa:expressa@127.0.0.1:5435/expressa AUTH_ACCESS_TOKEN_SECRET=changeme-back-office-catalog-e2e-access-token-secret AUTH_DEVELOPMENT_OTP=123456 AUTH_OTP_PEPPER=back-office-catalog-e2e-otp-pepper CORS_ORIGINS=http://127.0.0.1:4175,http://127.0.0.1:4174 NODE_ENV=local PORT=3001 npm run migrate && exec ./node_modules/.bin/nest start) & backend_pid=$!; wait "$backend_pid"\'';
 export const backOfficePlaywrightProjectName = {
   app: "app-e2e",
   auth: "auth-e2e",

@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFileSync, unlinkSync } from "node:fs";
 
 import {
   expect,
@@ -11,8 +10,6 @@ import {
 } from "@playwright/test";
 
 import {
-  catalogBackendPidPath,
-  catalogComposeProjectName,
   catalogDatabaseUrl,
   catalogFrontendUrl,
   catalogOrigin,
@@ -37,23 +34,6 @@ import type {
   CatalogPage,
   CatalogProductResponse,
 } from "./catalog.e2e.types";
-
-test.afterAll(async () => {
-  await stopBackend();
-  execFileSync(
-    "docker",
-    [
-      "compose",
-      "-p",
-      catalogComposeProjectName,
-      "-f",
-      "../backend/compose.local.yml",
-      "down",
-      "--volumes",
-    ],
-    { stdio: "inherit" },
-  );
-});
 
 test("production runtime компилирует Vuetify-диалог категории", async ({
   browser,
@@ -940,7 +920,7 @@ async function confirmUpdatedTotal(page: CatalogPage): Promise<void> {
   ]);
   expect(createdResponse.status()).toBe(201);
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
-  await expect(page.getByText("Заказ принят")).toBeVisible();
+  await expect(page.getByText("Оформлен")).toBeVisible();
 }
 
 async function categoryNames(page: CatalogPage): Promise<string[]> {
@@ -1058,18 +1038,4 @@ async function expectNoHorizontalOverflow(
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(width);
-}
-
-async function stopBackend(): Promise<void> {
-  const processId = Number.parseInt(
-    readFileSync(catalogBackendPidPath, "utf8"),
-    10,
-  );
-  if (Number.isSafeInteger(processId) && processId > 0)
-    process.kill(processId, "SIGTERM");
-  try {
-    unlinkSync(catalogBackendPidPath);
-  } catch {
-    // Playwright can stop the web server before this hook on startup failure.
-  }
 }
