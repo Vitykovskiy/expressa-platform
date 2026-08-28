@@ -14,6 +14,7 @@ export class MenuManagementPage {
   public readonly modifierGroupEditor: ModifierGroupEditorComponent;
 
   private readonly menuButton: Locator;
+  private readonly managementButton: Locator;
   private readonly addCategoryButton: Locator;
 
   constructor(page: Page) {
@@ -23,6 +24,10 @@ export class MenuManagementPage {
     this.productEditor = new ProductEditorComponent(page);
     this.modifierGroupEditor = new ModifierGroupEditorComponent(page);
     this.menuButton = page.getByRole("button", { name: "Меню", exact: true });
+    this.managementButton = page.getByRole("button", {
+      name: "Управление меню",
+      exact: true,
+    });
     this.addCategoryButton = page.getByRole("button", {
       name: "Добавить группу",
       exact: true,
@@ -42,5 +47,29 @@ export class MenuManagementPage {
       this.addCategoryButton,
       "Рабочее пространство меню показано.",
     ).toBeVisible();
+  }
+
+  async ensureManagementExpanded(): Promise<void> {
+    await test.step("Открыть управление меню", async () => {
+      if (
+        (await this.managementButton.getAttribute("aria-expanded")) === "true"
+      ) {
+        await expect(
+          this.managementButton,
+          "Управление меню открыто.",
+        ).toHaveAttribute("aria-expanded", "true");
+        return;
+      }
+
+      await expect(
+        this.managementButton,
+        "Управление меню доступно.",
+      ).toBeEnabled();
+      await this.managementButton.click();
+      await expect(
+        this.managementButton,
+        "Управление меню открыто.",
+      ).toHaveAttribute("aria-expanded", "true");
+    });
   }
 }

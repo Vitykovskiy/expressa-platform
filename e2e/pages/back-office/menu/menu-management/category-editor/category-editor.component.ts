@@ -248,8 +248,7 @@ export class CategoryEditorComponent {
 
   private editDialog(): Locator {
     return this.page.getByRole("dialog", {
-      name: "Редактировать категорию",
-      exact: true,
+      name: /^Редактировать категорию\s+Закрыть диалог$/u,
     });
   }
 

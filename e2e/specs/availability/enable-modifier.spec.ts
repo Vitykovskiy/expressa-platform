@@ -35,6 +35,10 @@ test("AVAIL-10: сотрудник включает добавку", async ({
   const groupName = `Молоко ${testInfo.testId}`;
   const optionName = `Овсяное ${testInfo.testId}`;
   const modifierName = `${groupName} · ${optionName}`;
+  let modifierGroupCreated = false;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  const cleanupErrors: unknown[] = [];
 
   try {
     await test.step("Подготовка: administrator публикует уникальные категорию, капучино и обязательную недоступную добавку.", async () => {
@@ -64,7 +68,9 @@ test("AVAIL-10: сотрудник включает добавку", async ({
       await menuManagement.modifierGroupEditor.addOption();
       await menuManagement.modifierGroupEditor.fillOptionName(optionName);
       await menuManagement.modifierGroupEditor.setOptionPrice("0");
+      await menuManagement.modifierGroupEditor.setOptionDefault();
       await menuManagement.modifierGroupEditor.save();
+      modifierGroupCreated = true;
       await menuManagement.assignments.openCategory(categoryName);
       await menuManagement.assignments.selectGroup(groupName);
       await menuManagement.assignments.save();
@@ -98,22 +104,97 @@ test("AVAIL-10: сотрудник включает добавку", async ({
         "Добавка «Овсяное» доступна для выбора.",
       ).toBe(true);
     });
-  } finally {
-    await test.step("Очистка: administrator возвращает доступность добавки и удаляет данные сценария.", async () => {
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает back-office.", async () => {
       await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
       await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(productName);
-      await availabilityManagement.list.setModifierAvailability(
-        modifierName,
-        AvailabilityState.AVAILABLE,
-      );
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  if (modifierGroupCreated) {
+    try {
+      await test.step("Очистка: administrator возвращает доступность добавки.", async () => {
+        await availabilityManagement.open();
+        await availabilityManagement.list.search(productName);
+        await availabilityManagement.list.setModifierAvailability(
+          modifierName,
+          AvailabilityState.AVAILABLE,
+        );
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает управление меню.", async () => {
       await menuManagement.open();
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator раскрывает категорию сценария.", async () => {
       await menuManagement.catalog.expandCategoryIfPresent(categoryName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator удаляет товар сценария.", async () => {
       await menuManagement.productEditor.deleteIfPresent(productName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator архивирует группу добавок сценария.", async () => {
       await menuManagement.modifierGroupEditor.archiveIfPresent(groupName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator архивирует категорию сценария.", async () => {
       await menuManagement.categoryEditor.archiveIfPresent(categoryName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator завершает сессию back-office.", async () => {
       await backOfficeAuth.form.signOut();
     });
+  } catch (error) {
+    cleanupErrors.push(error);
   }
+
+  for (const cleanupError of cleanupErrors) {
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Первичная ошибка сценария или очистки сохраняет приоритет.
+    }
+  }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (cleanupErrors.length > 0) throw cleanupErrors[0];
 });

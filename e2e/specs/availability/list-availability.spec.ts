@@ -58,6 +58,7 @@ test("AVAIL-01: сотрудник видит список позиций", asyn
       await menuManagement.modifierGroupEditor.addOption();
       await menuManagement.modifierGroupEditor.fillOptionName(optionName);
       await menuManagement.modifierGroupEditor.setOptionPrice("0");
+      await menuManagement.modifierGroupEditor.setOptionDefault();
       await menuManagement.modifierGroupEditor.save();
       await menuManagement.assignments.openCategory(categoryName);
       await menuManagement.assignments.selectGroup(groupName);

@@ -124,10 +124,10 @@ test("CHECKOUT-04: customer отменяет оформление после и�
       await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
       await backOfficeAuth.form.signIn(e2eCredentials.administrator);
       await menuManagement.open();
+      await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
       await menuManagement.productEditor.openForEditing(productName);
       await menuManagement.productEditor.setPrice(ProductEditorSize.M, "25000");
       await menuManagement.productEditor.saveChanges(productName);
-      await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
       await menuManagement.productEditor.deleteIfPresent(productName);
       await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
       await backOfficeAuth.form.signOut();

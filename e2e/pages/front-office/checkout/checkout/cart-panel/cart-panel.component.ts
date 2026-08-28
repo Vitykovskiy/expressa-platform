@@ -8,7 +8,9 @@ export class CartPanelComponent {
   private readonly checkoutButton: Locator;
 
   constructor(private readonly page: Page) {
-    this.cartButton = page.getByRole("button", { name: /^Корзина ·/u });
+    this.cartButton = page
+      .getByRole("button", { name: /^(?:Корзина|Корзина \d+)$/u })
+      .filter({ visible: true });
     this.items = page.getByRole("list", { name: "Позиции в корзине" });
     this.checkoutButton = page.getByRole("button", {
       name: "Оформить заказ",

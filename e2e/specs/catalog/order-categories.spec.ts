@@ -36,6 +36,7 @@ test("CATALOG-05: administrator меняет порядок категорий",
     await menuManagement.categoryEditor.save(secondCategoryName);
 
     await menuManagement.open();
+    await menuManagement.ensureManagementExpanded();
     await menuManagement.catalog.moveCategoryUp(secondCategoryName);
 
     await test.step("Administrator видит вторую категорию перед первой.", async () => {

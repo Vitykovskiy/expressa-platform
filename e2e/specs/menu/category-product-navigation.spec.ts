@@ -85,7 +85,6 @@ test("MENU-04: покупатель открывает категорию и т�
 
     await publicMenu.open(e2eEnvironment.frontOfficeUrl);
     await publicMenu.product.openCategory(data.categoryName);
-    await publicMenu.product.openProduct(data.productName);
 
     await test.step("Покупатель видит название выбранной категории и её товары.", async () => {
       expect(
@@ -97,6 +96,8 @@ test("MENU-04: покупатель открывает категорию и т�
         "В открытой категории показан созданный товар.",
       ).toEqual([data.productName]);
     });
+    await publicMenu.product.openProduct(data.productName);
+
     await test.step("Покупатель видит название, описание и цену выбранного товара.", async () => {
       expect(
         await publicMenu.product.readOpenedProductTitle(),

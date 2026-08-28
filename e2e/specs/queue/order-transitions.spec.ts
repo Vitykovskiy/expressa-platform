@@ -43,12 +43,18 @@ test("QUEUE-07: сотрудник проводит заказ по разреш
   staffOrders,
 }, testInfo) => {
   const data = createProductOrderScenarioData(testInfo.testId);
+  let administratorSignedIn = false;
+  let staffSignedIn = false;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  const cleanupErrors: unknown[] = [];
 
   try {
     const order =
       await test.step("Подготовка: administrator публикует товар, а customer оформляет заказ через UI.", async () => {
         await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
         await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+        administratorSignedIn = true;
         await menuManagement.open();
         await menuManagement.categoryEditor.startCreation();
         await menuManagement.categoryEditor.fillName(data.categoryName);
@@ -89,6 +95,7 @@ test("QUEUE-07: сотрудник проводит заказ по разреш
         await menuManagement.assignments.selectGroup(data.modifierGroupName);
         await menuManagement.assignments.save();
         await backOfficeAuth.form.signOut();
+        administratorSignedIn = false;
         await publicMenu.open(e2eEnvironment.frontOfficeUrl);
         await publicMenu.product.openCategory(data.categoryName);
         await publicMenu.product.openProduct(data);
@@ -112,6 +119,7 @@ test("QUEUE-07: сотрудник проводит заказ по разреш
     await test.step("Подготовка: staff входит в back-office.", async () => {
       await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
       await backOfficeAuth.form.signIn(e2eCredentials.staff);
+      staffSignedIn = true;
     });
 
     await staffOrders.open();
@@ -249,19 +257,110 @@ test("QUEUE-07: сотрудник проводит заказ по разреш
         "После выдачи повторное действие не показано.",
       ).toEqual([]);
     });
-  } finally {
-    await test.step("Очистка: administrator удаляет созданные позиции каталога через UI.", async () => {
-      await backOfficeAuth.form.signOut();
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
+  }
+
+  if (staffSignedIn) {
+    try {
+      await test.step("Очистка: staff завершает сессию back-office.", async () => {
+        await backOfficeAuth.form.signOut();
+        staffSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  if (administratorSignedIn) {
+    try {
+      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
+        await backOfficeAuth.form.signOut();
+        administratorSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает back-office.", async () => {
       await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
       await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+      administratorSignedIn = true;
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает управление меню.", async () => {
       await menuManagement.open();
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator раскрывает категорию сценария.", async () => {
       await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator удаляет товар сценария.", async () => {
       await menuManagement.productEditor.deleteIfPresent(data.productName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator архивирует группу добавок сценария.", async () => {
       await menuManagement.modifierGroupEditor.archiveIfPresent(
         data.modifierGroupName,
       );
-      await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-      await backOfficeAuth.form.signOut();
     });
+  } catch (error) {
+    cleanupErrors.push(error);
   }
+
+  try {
+    await test.step("Очистка: administrator архивирует категорию сценария.", async () => {
+      await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  if (administratorSignedIn) {
+    try {
+      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
+        await backOfficeAuth.form.signOut();
+        administratorSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  for (const cleanupError of cleanupErrors) {
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Первичная ошибка сценария или очистки сохраняет приоритет.
+    }
+  }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (cleanupErrors.length > 0) throw cleanupErrors[0];
 });

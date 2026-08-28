@@ -57,6 +57,7 @@ test("AVAIL-02: сотрудник ищет позицию", async ({
       await menuManagement.modifierGroupEditor.addOption();
       await menuManagement.modifierGroupEditor.fillOptionName(optionName);
       await menuManagement.modifierGroupEditor.setOptionPrice("0");
+      await menuManagement.modifierGroupEditor.setOptionDefault();
       await menuManagement.modifierGroupEditor.save();
       await menuManagement.assignments.openCategory(categoryName);
       await menuManagement.assignments.selectGroup(groupName);

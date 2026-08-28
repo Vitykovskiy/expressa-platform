@@ -8,9 +8,8 @@ export class ModifierGroupEditorComponent {
   private readonly editorRegion: Locator;
   private readonly groupNameInput: Locator;
   private readonly addOptionButton: Locator;
-  private readonly optionNameInput: Locator;
-  private readonly optionPriceInput: Locator;
   private readonly saveGroupButton: Locator;
+  private newOption: Locator | undefined;
 
   constructor(private readonly page: Page) {
     this.managementButton = page.getByRole("button", {
@@ -32,13 +31,6 @@ export class ModifierGroupEditorComponent {
       name: "Добавить вариант",
       exact: true,
     });
-    this.optionNameInput = this.editorRegion.getByTestId(
-      "modifier-option-name",
-    );
-    this.optionPriceInput = this.editorRegion.getByLabel(
-      "Изменение цены, коп.",
-      { exact: true },
-    );
     this.saveGroupButton = this.editorRegion.getByRole("button", {
       name: "Сохранить группу",
       exact: true,
@@ -183,8 +175,9 @@ export class ModifierGroupEditorComponent {
   async addOption(): Promise<void> {
     await test.step("Добавить вариант добавки", async () => {
       await this.addOptionButton.click();
+      this.newOption = await this.emptyOption();
       await expect(
-        this.optionNameInput,
+        this.addedOptionNameInput(),
         "Поле названия варианта добавки показано.",
       ).toBeVisible();
     });
@@ -192,9 +185,11 @@ export class ModifierGroupEditorComponent {
 
   async fillOptionName(name: string): Promise<void> {
     await test.step(`Указать название варианта добавки «${name}»`, async () => {
-      await this.optionNameInput.fill(name);
+      const optionNameInput = this.addedOptionNameInput();
+
+      await optionNameInput.fill(name);
       await expect(
-        this.optionNameInput,
+        optionNameInput,
         "Название варианта добавки указано.",
       ).toHaveValue(name);
     });
@@ -202,9 +197,14 @@ export class ModifierGroupEditorComponent {
 
   async setOptionPrice(price: string): Promise<void> {
     await test.step(`Указать цену варианта добавки «${price}»`, async () => {
-      await this.optionPriceInput.fill(price);
+      const optionPriceInput = this.addedOption().getByLabel(
+        "Изменение цены, коп.",
+        { exact: true },
+      );
+
+      await optionPriceInput.fill(price);
       await expect(
-        this.optionPriceInput,
+        optionPriceInput,
         "Цена варианта добавки указана.",
       ).toHaveValue(price);
     });
@@ -296,6 +296,38 @@ export class ModifierGroupEditorComponent {
 
   private optionNameInputs(): Locator {
     return this.editorRegion.getByTestId("modifier-option-name");
+  }
+
+  private addedOptionNameInput(): Locator {
+    return this.addedOption().getByTestId("modifier-option-name");
+  }
+
+  private addedOption(): Locator {
+    if (this.newOption === undefined)
+      throw new Error("Сначала добавьте вариант добавки.");
+
+    return this.newOption;
+  }
+
+  private async emptyOption(): Promise<Locator> {
+    const emptyOptions: Locator[] = [];
+    const options = await this.editorRegion
+      .getByRole("group", { name: "Вариант добавки", exact: true })
+      .all();
+
+    for (const option of options) {
+      const optionNameInput = option.getByTestId("modifier-option-name");
+
+      if ((await optionNameInput.inputValue()) === "")
+        emptyOptions.push(option);
+    }
+
+    if (emptyOptions.length !== 1)
+      throw new Error(
+        "Не удалось однозначно найти новый пустой вариант добавки.",
+      );
+
+    return emptyOptions[0];
   }
 
   private async optionByName(name: string): Promise<Locator> {

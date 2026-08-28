@@ -67,7 +67,9 @@ export class CatalogListComponent {
         categoryToggle,
         `Категория «${name}» доступна.`,
       ).toBeEnabled();
-      await categoryToggle.click();
+      if ((await categoryToggle.getAttribute("aria-expanded")) === "false") {
+        await categoryToggle.click();
+      }
       await expect(
         categoryToggle,
         `Категория «${name}» открыта.`,

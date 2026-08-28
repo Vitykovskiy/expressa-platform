@@ -34,11 +34,17 @@ test("QUEUE-06: очередь автоматически показывает �
   const data = createProductOrderScenarioData(testInfo.testId);
   let existingOrder: OrderSnapshot | null = null;
   let newOrder: OrderSnapshot | null = null;
+  let administratorSignedIn = false;
+  let staffSignedIn = false;
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+  const cleanupErrors: unknown[] = [];
 
   try {
     await test.step("Подготовка: administrator публикует товар с обязательной добавкой через UI.", async () => {
       await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
       await multiSession.staff.auth.form.signIn(e2eCredentials.administrator);
+      administratorSignedIn = true;
       await multiSession.staff.menuManagement.open();
       await multiSession.staff.menuManagement.categoryEditor.startCreation();
       await multiSession.staff.menuManagement.categoryEditor.fillName(
@@ -99,6 +105,7 @@ test("QUEUE-06: очередь автоматически показывает �
       );
       await multiSession.staff.menuManagement.assignments.save();
       await multiSession.staff.auth.form.signOut();
+      administratorSignedIn = false;
     });
     const preparedExistingOrder =
       await test.step("Подготовка: customer оформляет первый заказ, который остаётся в очереди.", async () => {
@@ -162,6 +169,7 @@ test("QUEUE-06: очередь автоматически показывает �
     await test.step("Подготовка: staff входит в back-office.", async () => {
       await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
       await multiSession.staff.auth.form.signIn(e2eCredentials.staff);
+      staffSignedIn = true;
     });
 
     await multiSession.staff.orders.open();
@@ -181,89 +189,194 @@ test("QUEUE-06: очередь автоматически показывает �
         preparedExistingOrder,
       );
     });
-  } finally {
-    await test.step("Очистка: staff выдаёт созданные заказы через UI.", async () => {
-      for (const order of [existingOrder, newOrder]) {
-        if (order === null) continue;
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
+  }
 
-        await multiSession.staff.orders.queue.openDetails(order);
-        const stage =
-          await multiSession.staff.orders.queue.readCurrentStage(order);
+  if (administratorSignedIn) {
+    try {
+      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
+        await multiSession.staff.auth.form.signOut();
+        administratorSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
 
-        if (stage === OrderQueueStage.CREATED) {
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.ACCEPT,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.START_PREPARING,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.MARK_READY,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.ISSUE,
-          );
-          continue;
+  if (existingOrder !== null || newOrder !== null) {
+    try {
+      await test.step("Очистка: staff выдаёт созданные заказы через UI.", async () => {
+        if (!staffSignedIn) {
+          await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
+          await multiSession.staff.auth.form.signIn(e2eCredentials.staff);
+          staffSignedIn = true;
         }
+        await multiSession.staff.orders.open();
 
-        if (stage === OrderQueueStage.ACCEPTED) {
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.START_PREPARING,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.MARK_READY,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.ISSUE,
-          );
-          continue;
-        }
+        for (const order of [existingOrder, newOrder]) {
+          if (order === null) continue;
 
-        if (stage === OrderQueueStage.PREPARING) {
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.MARK_READY,
-          );
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.ISSUE,
-          );
-          continue;
-        }
+          await multiSession.staff.orders.queue.openDetails(order);
+          const stage =
+            await multiSession.staff.orders.queue.readCurrentStage(order);
 
-        if (stage === OrderQueueStage.READY) {
-          await multiSession.staff.orders.queue.transition(
-            order,
-            OrderQueueTransitionAction.ISSUE,
-          );
+          if (stage === OrderQueueStage.CREATED) {
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.ACCEPT,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.START_PREPARING,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.MARK_READY,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.ISSUE,
+            );
+            continue;
+          }
+
+          if (stage === OrderQueueStage.ACCEPTED) {
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.START_PREPARING,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.MARK_READY,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.ISSUE,
+            );
+            continue;
+          }
+
+          if (stage === OrderQueueStage.PREPARING) {
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.MARK_READY,
+            );
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.ISSUE,
+            );
+            continue;
+          }
+
+          if (stage === OrderQueueStage.READY) {
+            await multiSession.staff.orders.queue.transition(
+              order,
+              OrderQueueTransitionAction.ISSUE,
+            );
+          }
         }
-      }
-    });
-    await test.step("Очистка: administrator удаляет созданные позиции каталога через UI.", async () => {
-      await multiSession.staff.auth.form.signOut();
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  if (staffSignedIn) {
+    try {
+      await test.step("Очистка: staff завершает сессию back-office.", async () => {
+        await multiSession.staff.auth.form.signOut();
+        staffSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает back-office.", async () => {
       await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
       await multiSession.staff.auth.form.signIn(e2eCredentials.administrator);
+      administratorSignedIn = true;
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator открывает управление меню.", async () => {
       await multiSession.staff.menuManagement.open();
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator раскрывает категорию сценария.", async () => {
       await multiSession.staff.menuManagement.catalog.expandCategoryIfPresent(
         data.categoryName,
       );
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator удаляет товар сценария.", async () => {
       await multiSession.staff.menuManagement.productEditor.deleteIfPresent(
         data.productName,
       );
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator архивирует группу добавок сценария.", async () => {
       await multiSession.staff.menuManagement.modifierGroupEditor.archiveIfPresent(
         data.modifierGroupName,
       );
+    });
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  try {
+    await test.step("Очистка: administrator архивирует категорию сценария.", async () => {
       await multiSession.staff.menuManagement.categoryEditor.archiveIfPresent(
         data.categoryName,
       );
-      await multiSession.staff.auth.form.signOut();
     });
+  } catch (error) {
+    cleanupErrors.push(error);
   }
+
+  if (administratorSignedIn) {
+    try {
+      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
+        await multiSession.staff.auth.form.signOut();
+        administratorSignedIn = false;
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  for (const cleanupError of cleanupErrors) {
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Первичная ошибка сценария или очистки сохраняет приоритет.
+    }
+  }
+
+  if (hasPrimaryFailure) throw primaryError;
+  if (cleanupErrors.length > 0) throw cleanupErrors[0];
 });
