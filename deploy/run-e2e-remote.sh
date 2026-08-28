@@ -488,6 +488,10 @@ run_profile() {
   [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*-(empty|seeded|mutating)$ ]] || fail 'compose project is invalid'
   E2E_PROFILE="$profile"
   export E2E_PROFILE
+  install -d -m 700 "$work_root"
+  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$profile.XXXXXX")"
+  export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
+  install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
 
   # A re-run cleans only the exact GitHub-run/profile project left by an interrupted attempt.
   compose down --volumes --remove-orphans >/dev/null
@@ -496,10 +500,6 @@ run_profile() {
     docker volume ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet .; then
     fail 'Compose project resources remain before profile startup'
   fi
-  install -d -m 700 "$work_root"
-  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$profile.XXXXXX")"
-  export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
-  install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
 
   stage="$profile-readiness"
   if ! run_readiness_step 'compose configuration' compose config -q ||
