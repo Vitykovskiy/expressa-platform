@@ -197,6 +197,114 @@ copy_playwright_output() {
   cp -- "$output_file" "$target_directory/playwright-output.log"
 }
 
+append_temporary_catalog_diagnostic() {
+  local output_file="$E2E_ARTIFACT_DIRECTORY/playwright-output.log"
+  [[ -f "$output_file" && ! -L "$output_file" ]] || return
+
+  if ! {
+    printf '\nTEMPORARY E2E catalog diagnostic: profile=%s\n' "$E2E_PROFILE"
+    compose exec -T postgres psql --quiet --tuples-only --no-align --field-separator='|' \
+      --set=ON_ERROR_STOP=on --username=expressa --dbname=expressa <<'SQL'
+WITH catalog_diagnostic AS (
+  SELECT
+    'category'::text AS entity,
+    c.id::text AS id,
+    NULL::text AS foreign_id,
+    NULL::text AS type,
+    NULL::integer AS price_minor,
+    c.is_active,
+    NULL::boolean AS is_available,
+    c.archived_at IS NULL AS archived_at_is_null,
+    NULL::boolean AS variants_configured
+  FROM categories c
+  WHERE c.name LIKE 'E2E %'
+
+  UNION ALL
+
+  SELECT
+    'product'::text,
+    p.id::text,
+    p.category_id::text,
+    p.type::text,
+    p.price_minor,
+    p.is_active,
+    p.is_available,
+    p.archived_at IS NULL,
+    EXISTS (
+      SELECT 1
+      FROM product_variants pv
+      WHERE pv.product_id = p.id AND pv.archived_at IS NULL
+    )
+  FROM products p
+  WHERE p.name LIKE 'E2E %'
+
+  UNION ALL
+
+  SELECT
+    'product_variant'::text,
+    pv.id::text,
+    pv.product_id::text,
+    pv.product_type::text,
+    pv.price_minor,
+    NULL::boolean,
+    pv.is_available,
+    pv.archived_at IS NULL,
+    NULL::boolean
+  FROM product_variants pv
+  JOIN products p ON p.id = pv.product_id
+  WHERE p.name LIKE 'E2E %'
+
+  UNION ALL
+
+  SELECT
+    'modifier_group'::text,
+    mg.id::text,
+    NULL::text,
+    mg.selection_type::text,
+    NULL::integer,
+    mg.is_active,
+    NULL::boolean,
+    mg.archived_at IS NULL,
+    NULL::boolean
+  FROM modifier_groups mg
+  WHERE mg.name LIKE 'E2E %'
+
+  UNION ALL
+
+  SELECT
+    'category_modifier_group'::text,
+    cmg.category_id::text,
+    cmg.group_id::text,
+    NULL::text,
+    NULL::integer,
+    NULL::boolean,
+    NULL::boolean,
+    NULL::boolean,
+    NULL::boolean
+  FROM category_modifier_groups cmg
+  JOIN categories c ON c.id = cmg.category_id
+  JOIN modifier_groups mg ON mg.id = cmg.group_id
+  WHERE c.name LIKE 'E2E %' AND mg.name LIKE 'E2E %'
+)
+SELECT
+  entity,
+  id,
+  foreign_id,
+  type,
+  price_minor,
+  is_active,
+  is_available,
+  archived_at_is_null,
+  variants_configured
+FROM catalog_diagnostic
+ORDER BY entity, id
+LIMIT 100;
+SQL
+  }; then
+    printf 'TEMPORARY E2E catalog diagnostic: unavailable\n'
+  fi >> "$output_file" 2>/dev/null
+}
+
 publish_suite_report() {
   local include_playwright_output="${1:-0}" publication_directory
   ensure_report_host
@@ -354,6 +462,7 @@ run_profile() {
 
   stage="$profile-playwright"
   if ! run_suite; then
+    append_temporary_catalog_diagnostic
     publish_suite_report 1 || publish_playwright_diagnostic "$stage" || publish_diagnostic "$stage" || true
     cleanup_runtime
     project=''
