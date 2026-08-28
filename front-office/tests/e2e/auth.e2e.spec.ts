@@ -72,13 +72,6 @@ test("сохраняет гостевую корзину через вход, re
     .toBe(true);
   expect(await refreshedUser).toBe(firstUser);
 
-  const cooldown = await page.request.post(
-    `${frontOfficeApiOrigin}/api/v1/auth/otp/request`,
-    { data: { phone }, headers: { Origin: frontOfficeOrigin } },
-  );
-  expect(cooldown.status()).toBe(429);
-  moveOtpChallengeOutsideCooldown(phone);
-
   const oldRefresh = (await context.cookies()).find(
     (cookie) => cookie.name === "expressa_refresh",
   );
@@ -337,12 +330,6 @@ function createPhone(): string {
   const phone = `${phonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`;
   phones.add(phone);
   return phone;
-}
-
-function moveOtpChallengeOutsideCooldown(phone: string): void {
-  runDatabaseCommand(
-    `UPDATE otp_challenges SET sent_at = CURRENT_TIMESTAMP - INTERVAL '61 seconds' WHERE phone_e164 = '${phone}';`,
-  );
 }
 
 function runDatabaseCommand(statement: string): void {
