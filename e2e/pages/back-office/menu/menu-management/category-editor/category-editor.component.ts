@@ -97,6 +97,7 @@ export class CategoryEditorComponent {
         this.categoryEditButton(name),
         `Созданная категория «${name}» показана в каталоге.`,
       ).toBeVisible();
+      await this.categoryEditButton(name).click({ trial: true });
     });
   }
 
@@ -125,6 +126,7 @@ export class CategoryEditorComponent {
         this.categoryEditButton(name),
         `Изменённая категория «${name}» показана в каталоге.`,
       ).toBeVisible();
+      await this.categoryEditButton(name).click({ trial: true });
     });
   }
 
@@ -155,6 +157,14 @@ export class CategoryEditorComponent {
   async confirmArchive(name: string): Promise<void> {
     await test.step(`Подтвердить архивацию категории «${name}»`, async () => {
       await this.confirmArchiveButton().click();
+      await expect(this.dialog(), "Редакторы категории закрыты.").toHaveCount(
+        0,
+      );
+      await expect(
+        this.addCategoryButton,
+        "Каталог доступен для следующего действия.",
+      ).toBeEnabled();
+      await this.addCategoryButton.click({ trial: true });
       await expect(
         this.categoryEditButton(name),
         `Категория «${name}» архивирована.`,
@@ -179,6 +189,14 @@ export class CategoryEditorComponent {
       await this.confirmationDialog()
         .getByRole("button", { name: "Архивировать", exact: true })
         .click();
+      await expect(this.dialog(), "Редакторы категории закрыты.").toHaveCount(
+        0,
+      );
+      await expect(
+        this.addCategoryButton,
+        "Каталог доступен для следующего действия.",
+      ).toBeEnabled();
+      await this.addCategoryButton.click({ trial: true });
       await expect(
         this.categoryEditButton(name),
         `Категория «${name}» архивирована.`,

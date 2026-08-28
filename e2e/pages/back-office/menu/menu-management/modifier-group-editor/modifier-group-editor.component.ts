@@ -115,6 +115,7 @@ export class ModifierGroupEditorComponent {
 
   async startCreation(): Promise<void> {
     await test.step("Начать создание группы добавок", async () => {
+      await this.openManagement();
       await expect(
         this.newModifierGroupButton,
         "Кнопка новой группы добавок доступна.",

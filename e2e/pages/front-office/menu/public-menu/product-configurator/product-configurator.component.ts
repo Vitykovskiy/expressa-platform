@@ -18,7 +18,7 @@ export class ProductConfiguratorComponent {
   async openCategory(categoryName: string): Promise<void> {
     await test.step(`Открыть категорию «${categoryName}»`, async () => {
       const category = this.categoryList.getByRole("button", {
-        name: new RegExp(`^${escapeRegExp(categoryName)} · \\d+ позиций$`, "u"),
+        name: new RegExp(`^${escapeRegExp(categoryName)} \\d+ позиций$`, "u"),
       });
 
       await expect(
