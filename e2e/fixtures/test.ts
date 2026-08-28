@@ -1,6 +1,7 @@
 import { expect, test as base } from "@playwright/test";
 
 import { BackOfficeAuthPage } from "@pages/back-office/auth/back-office-auth/back-office-auth.page";
+import { AvailabilityManagementPage } from "@pages/back-office/availability/availability-management/availability-management.page";
 import { MenuManagementPage } from "@pages/back-office/menu/menu-management/menu-management.page";
 import { StaffOrdersPage } from "@pages/back-office/orders/staff-orders/staff-orders.page";
 import { CustomerAuthPage } from "@pages/front-office/auth/customer-auth/customer-auth.page";
@@ -17,10 +18,17 @@ import type {
   E2eEnvironment,
 } from "@support/config/e2e-environment.types";
 
+import { useMultiSessionFixture } from "./multi-session.fixture";
+import type { MultiSessionFixture } from "./multi-session.fixture.types";
+
+export { createProductOrderScenarioData } from "@support/data/product-order-scenario-data";
+
 type E2eFixtures = {
   readonly e2eEnvironment: E2eEnvironment;
   readonly e2eCredentials: E2eCredentials;
+  readonly multiSession: MultiSessionFixture;
   readonly backOfficeAuth: BackOfficeAuthPage;
+  readonly availabilityManagement: AvailabilityManagementPage;
   readonly menuManagement: MenuManagementPage;
   readonly customerAuth: CustomerAuthPage;
   readonly publicMenu: PublicMenuPage;
@@ -41,8 +49,14 @@ export const test = base.extend<E2eFixtures>({
   e2eCredentials: async ({}, use) => {
     await use(getE2eCredentials());
   },
+  multiSession: async ({ browser, page }, use) => {
+    await useMultiSessionFixture(browser, page, use);
+  },
   backOfficeAuth: async ({ page }, use) => {
     await use(new BackOfficeAuthPage(page));
+  },
+  availabilityManagement: async ({ page }, use) => {
+    await use(new AvailabilityManagementPage(page));
   },
   menuManagement: async ({ page }, use) => {
     await use(new MenuManagementPage(page));
@@ -72,8 +86,22 @@ export {
   ProductSize as ProductEditorSize,
   ProductType,
 } from "@pages/back-office/menu/menu-management/product-editor/product-editor.types";
+export {
+  BackOfficeRole,
+  BackOfficeWorkspaceSection,
+} from "@pages/back-office/auth/back-office-auth/back-office-auth.page.types";
+export {
+  PhoneVerificationError,
+  PhoneVerificationStep,
+} from "@components/front-office/auth/phone-verification/phone-verification.component.types";
+export { CustomerSessionState } from "@pages/front-office/auth/customer-auth/customer-auth.page.types";
 export { ModifierSelectionType } from "@pages/back-office/menu/menu-management/modifier-group-editor/modifier-group-editor.types";
 export { ProductSize as ProductConfiguratorSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
 export { OrderQueueStage } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { OrderQueueFilter } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { QueueScenarioStage } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { QueueScenarioFilter } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { OrderQueueTransitionAction } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
+export { AvailabilityState } from "@pages/back-office/availability/availability-management/availability-list/availability-list.types";
 export { OrderHistoryStatus } from "@pages/front-office/orders/order-history/order-history-list/order-history-list.component.types";
 export { OrderStatus } from "@pages/front-office/orders/customer-order/order-details/order-details.types";

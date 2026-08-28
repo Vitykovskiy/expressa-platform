@@ -100,6 +100,35 @@ export class ProductEditorComponent {
     });
   }
 
+  async readPrice(size: ProductSize): Promise<string> {
+    return this.priceInput(size).inputValue();
+  }
+
+  async setSinglePrice(price: string): Promise<void> {
+    await test.step("Установить единую цену товара", async () => {
+      const priceInput = this.singlePriceInput();
+
+      await priceInput.fill(price);
+      await expect(priceInput, "Единая цена товара установлена.").toHaveValue(
+        price,
+      );
+    });
+  }
+
+  async readSinglePrice(): Promise<string> {
+    return this.singlePriceInput().inputValue();
+  }
+
+  async readSizesPriceValidation(): Promise<string | null> {
+    const alert = this.variantsRequiredAlert();
+
+    return (await alert.isVisible()) ? alert.innerText() : null;
+  }
+
+  async isCreateSaveAvailable(): Promise<boolean> {
+    return this.createSaveButton().isEnabled();
+  }
+
   async useOnlySize(size: ProductSize): Promise<void> {
     await test.step(`Оставить только размер ${size}`, async () => {
       for (const candidate of Object.values(ProductSize)) {
@@ -127,10 +156,74 @@ export class ProductEditorComponent {
 
   async save(name: string): Promise<void> {
     await test.step(`Сохранить товар «${name}»`, async () => {
-      await this.dialog()
-        .getByRole("button", { name: "Добавить товар", exact: true })
-        .click();
+      await this.createSaveButton().click();
       await expect(this.dialog(), `Товар «${name}» создан.`).toHaveCount(0);
+      await expect(
+        this.productEditButton(name),
+        `Созданный товар «${name}» показан в каталоге.`,
+      ).toBeVisible();
+    });
+  }
+
+  async openForEditing(name: string): Promise<void> {
+    await test.step(`Открыть редактирование товара «${name}»`, async () => {
+      await expect(
+        this.productEditButton(name),
+        `Редактирование товара «${name}» доступно.`,
+      ).toBeEnabled();
+      await this.productEditButton(name).click();
+      await expect(
+        this.dialog(),
+        `Редактор товара «${name}» открыт.`,
+      ).toBeVisible();
+    });
+  }
+
+  async saveChanges(name: string): Promise<void> {
+    await test.step(`Сохранить изменения товара «${name}»`, async () => {
+      await this.editSaveButton().click();
+      await expect(
+        this.dialog(),
+        `Редактор товара «${name}» закрыт.`,
+      ).toHaveCount(0);
+      await expect(
+        this.productEditButton(name),
+        `Изменённый товар «${name}» показан в каталоге.`,
+      ).toBeVisible();
+    });
+  }
+
+  async requestArchive(name: string): Promise<void> {
+    await test.step(`Запросить архивацию товара «${name}»`, async () => {
+      await this.deleteButton().click();
+      await expect(
+        this.confirmationDialog(),
+        "Подтверждение архивации товара открыто.",
+      ).toBeVisible();
+    });
+  }
+
+  async cancelArchive(name: string): Promise<void> {
+    await test.step(`Отменить архивацию товара «${name}»`, async () => {
+      await this.cancelArchiveButton().click();
+      await expect(
+        this.confirmationDialog(),
+        "Подтверждение архивации товара закрыто.",
+      ).toHaveCount(0);
+      await expect(
+        this.productEditButton(name),
+        `Товар «${name}» остался в категории.`,
+      ).toBeVisible();
+    });
+  }
+
+  async confirmArchive(name: string): Promise<void> {
+    await test.step(`Подтвердить архивацию товара «${name}»`, async () => {
+      await this.confirmArchiveButton().click();
+      await expect(
+        this.productEditButton(name),
+        `Товар «${name}» архивирован.`,
+      ).toHaveCount(0);
     });
   }
 
@@ -155,33 +248,17 @@ export class ProductEditorComponent {
     });
   }
 
-  async archive(name: string): Promise<void> {
-    await test.step(`Архивировать товар «${name}»`, async () => {
-      await this.productEditButton(name).click();
-      await expect(
-        this.dialog(),
-        `Редактор товара «${name}» открыт.`,
-      ).toBeVisible();
-      await this.dialog()
-        .getByRole("button", { name: "Архивировать товар", exact: true })
-        .click();
-      await expect(
-        this.confirmationDialog(),
-        "Подтверждение архивации товара открыто.",
-      ).toBeVisible();
-      await this.confirmationDialog()
-        .getByRole("button", { name: "Архивировать", exact: true })
-        .click();
-      await expect(
-        this.productEditButton(name),
-        `Товар «${name}» архивирован.`,
-      ).toHaveCount(0);
+  async delete(name: string): Promise<void> {
+    await test.step(`Удалить товар «${name}»`, async () => {
+      await this.openForEditing(name);
+      await this.requestArchive(name);
+      await this.confirmArchive(name);
     });
   }
 
-  async archiveIfPresent(name: string): Promise<void> {
+  async deleteIfPresent(name: string): Promise<void> {
     if ((await this.productEditButton(name).count()) === 0) return;
-    await this.archive(name);
+    await this.delete(name);
   }
 
   private dialog(): Locator {
@@ -190,7 +267,7 @@ export class ProductEditorComponent {
 
   private confirmationDialog(): Locator {
     return this.page.getByRole("dialog", {
-      name: "Архивировать товар?",
+      name: "Удалить товар?",
       exact: true,
     });
   }
@@ -204,5 +281,48 @@ export class ProductEditorComponent {
 
   private priceInput(size: ProductSize): Locator {
     return this.dialog().getByLabel(`Цена ${size}, коп.`, { exact: true });
+  }
+
+  private singlePriceInput(): Locator {
+    return this.dialog().getByLabel("Цена, коп.", { exact: true });
+  }
+
+  private variantsRequiredAlert(): Locator {
+    return this.dialog().getByRole("alert");
+  }
+
+  private createSaveButton(): Locator {
+    return this.dialog().getByRole("button", {
+      name: "Добавить товар",
+      exact: true,
+    });
+  }
+
+  private editSaveButton(): Locator {
+    return this.dialog().getByRole("button", {
+      name: "Сохранить изменения",
+      exact: true,
+    });
+  }
+
+  private deleteButton(): Locator {
+    return this.dialog().getByRole("button", {
+      name: "Удалить товар",
+      exact: true,
+    });
+  }
+
+  private cancelArchiveButton(): Locator {
+    return this.confirmationDialog().getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+  }
+
+  private confirmArchiveButton(): Locator {
+    return this.confirmationDialog().getByRole("button", {
+      name: "Удалить",
+      exact: true,
+    });
   }
 }

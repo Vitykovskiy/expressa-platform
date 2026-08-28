@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
+import CartItem from "./CartItem.vue";
 import CartScreen from "./CartScreen.vue";
 import type { CartScreenProps } from "./CartScreen.types";
 
@@ -134,6 +135,32 @@ describe("CartScreen", () => {
     expect(
       wrapper.get('[data-test="cart-item"]').attributes("data-disabled"),
     ).toBe("true");
+  });
+});
+
+describe("CartItem", () => {
+  it("связывает недоступную позицию с сообщением о недоступности", () => {
+    const wrapper = mount(CartItem, {
+      props: { item: cartItem, unavailable: true },
+      global: { stubs: { UiIconBtn: true } },
+    });
+    const item = wrapper.get("li");
+    const unavailableMessage = wrapper.get('[role="status"]');
+
+    expect(item.attributes("aria-describedby")).toBe(
+      unavailableMessage.attributes("id"),
+    );
+    expect(unavailableMessage.text()).toContain("Сейчас недоступно");
+  });
+
+  it("не добавляет сообщение о недоступности доступной позиции", () => {
+    const wrapper = mount(CartItem, {
+      props: { item: cartItem },
+      global: { stubs: { UiIconBtn: true } },
+    });
+
+    expect(wrapper.get("li").attributes("aria-describedby")).toBeUndefined();
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 });
 

@@ -8,12 +8,16 @@ import type { OrderSnapshot } from "@support/data/order-snapshot.types";
 export class OrderDetailsComponent {
   private readonly orderItems: Locator;
   private readonly orderTotal: Locator;
+  private readonly paymentMethod: Locator;
 
   constructor(private readonly page: Page) {
     this.orderItems = page
       .getByRole("list", { name: "Состав заказа", exact: true })
       .getByRole("listitem");
     this.orderTotal = page.getByTestId("order-total");
+    this.paymentMethod = page.getByText("Оплата на кассе при получении", {
+      exact: true,
+    });
   }
 
   async readSnapshot(): Promise<OrderSnapshot> {
@@ -29,8 +33,22 @@ export class OrderDetailsComponent {
       id: this.readId(),
       number: await this.readNumber(),
       ...values,
+      lineTotal: await this.orderItems
+        .getByTestId("order-item-line-total")
+        .innerText(),
       total: await this.orderTotal.innerText(),
       status: await this.readStatus(),
+    };
+  }
+
+  async readItemsCount(): Promise<number> {
+    return this.orderItems.count();
+  }
+
+  async readReference(): Promise<Pick<OrderSnapshot, "id" | "number">> {
+    return {
+      id: this.readId(),
+      number: await this.readNumber(),
     };
   }
 
@@ -79,11 +97,139 @@ export class OrderDetailsComponent {
     });
   }
 
+  async assertStatus(status: OrderStatus): Promise<void> {
+    await expect(
+      this.page.getByText(status, { exact: true }),
+      `Заказ находится на стадии «${status}».`,
+    ).toBeVisible();
+  }
+
+  async readPaymentMethod(): Promise<string> {
+    return this.paymentMethod.innerText();
+  }
+
+  async isUnavailableMessageVisible(): Promise<boolean> {
+    return this.page
+      .getByText("Заказ недоступен.", { exact: true })
+      .isVisible();
+  }
+
+  async areItemsAbsent(): Promise<boolean> {
+    return (await this.orderItems.count()) === 0;
+  }
+
+  async isTotalAbsent(): Promise<boolean> {
+    return (await this.orderTotal.count()) === 0;
+  }
+
+  async areStatusesAbsent(): Promise<boolean> {
+    for (const status of Object.values(OrderStatus)) {
+      if ((await this.page.getByText(status, { exact: true }).count()) !== 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async assertUnavailable(): Promise<void> {
+    await expect(
+      this.page.getByText("Заказ недоступен.", { exact: true }),
+      "Показано сообщение о недоступности заказа.",
+    ).toBeVisible();
+    await expect(
+      this.orderItems,
+      "Состав недоступного заказа не показан.",
+    ).toHaveCount(0);
+    await expect(
+      this.orderTotal,
+      "Сумма недоступного заказа не показана.",
+    ).toHaveCount(0);
+  }
+
+  async enableNotifications(): Promise<void> {
+    await test.step("Включить уведомления о заказе", async () => {
+      const enableButton = this.page.getByRole("button", {
+        name: "Включить уведомления",
+        exact: true,
+      });
+
+      await expect(
+        enableButton,
+        "Включение уведомлений доступно.",
+      ).toBeEnabled();
+      await enableButton.click();
+      await expect(
+        this.page.getByRole("button", {
+          name: "Отключить уведомления",
+          exact: true,
+        }),
+        "Уведомления о заказе включены.",
+      ).toBeVisible();
+    });
+  }
+
+  async assertNotificationsUnsupported(): Promise<void> {
+    await expect(
+      this.page.getByText("Уведомления не поддерживаются этим браузером.", {
+        exact: true,
+      }),
+      "Показано ограничение уведомлений браузера.",
+    ).toBeVisible();
+  }
+
+  async repeatOrder(): Promise<void> {
+    await test.step("Повторить заказ", async () => {
+      const repeatButton = this.page.getByRole("button", {
+        name: "Повторить заказ",
+        exact: true,
+      });
+
+      await expect(repeatButton, "Повтор заказа доступен.").toBeEnabled();
+      await repeatButton.click();
+      await expect(
+        this.page
+          .getByRole("heading", { name: "Корзина", exact: true })
+          .or(this.repeatUnavailableAlert()),
+        "Повтор заказа завершён открытием корзины или сообщением о недоступных позициях.",
+      ).toBeVisible();
+    });
+  }
+
+  async readRepeatUnavailableProductNames(): Promise<readonly string[]> {
+    await expect(
+      this.repeatUnavailableAlert(),
+      "Показано ограничение повторения заказа.",
+    ).toBeVisible();
+
+    return this.repeatUnavailableAlert().getByRole("listitem").allInnerTexts();
+  }
+
+  async readRepeatUnavailableReason(productName: string): Promise<string> {
+    const item = this.repeatUnavailableAlert()
+      .getByRole("listitem")
+      .filter({ hasText: productName });
+    const text = await item.innerText();
+    const reason = text.replace(productName, "").trim();
+
+    if (reason === "") {
+      throw new Error(
+        `Причина недоступности позиции «${productName}» не показана.`,
+      );
+    }
+
+    return reason;
+  }
+
   private heading(number: string): Locator {
     return this.page.getByRole("heading", {
       name: `Заказ №${number}`,
       exact: true,
     });
+  }
+
+  private repeatUnavailableAlert(): Locator {
+    return this.page.getByRole("alert");
   }
 
   private async onlyItem(): Promise<Locator> {

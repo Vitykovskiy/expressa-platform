@@ -30,18 +30,33 @@ npm run dev
 
 ## Устройство и проверка
 
-Runtime находится в `src`: `app` собирает приложение, `pages` владеют
-страницами, `widgets` — их составом, `features` — действиями пользователя,
-`entities` — предметными данными, `shared` — общими примитивами клиента.
+Runtime находится в `src` и разделён по ролям:
+
+- `app` собирает приложение;
+- `pages` владеют страницами;
+- `widgets` отвечают за их состав;
+- `features` содержат действия пользователя;
+- `entities` содержат предметные данные;
+- `shared` содержит общие примитивы клиента.
+
 Unit-тесты располагаются рядом с runtime-кодом, браузерные сценарии — в
 `tests/e2e`.
 
-Команды проверки: `npm run typecheck`, `npm run lint`, `npm run format:check`,
-`npm test`, `npm run test:e2e` и `npm run contract:check`. Полный список и
-параметры — в [package.json](package.json).
+Команды проверки:
 
-[Документация](docs/INDEX.md) описывает сценарии и контракты; [AGENTS.md](AGENTS.md)
-содержит правила работы. Точку сборки приложения задаёт
-[src/app/App.vue](src/app/App.vue), маршруты —
-[src/app/router.ts](src/app/router.ts), HTTP-границу —
-[contracts/openapi.json](contracts/openapi.json).
+- `npm run typecheck`;
+- `npm run lint`;
+- `npm run format:check`;
+- `npm test`;
+- `npm run test:e2e`;
+- `npm run contract:check`.
+
+Полный список и параметры — в [package.json](package.json).
+
+[Документация](docs/INDEX.md) описывает сценарии и контракты.
+
+[AGENTS.md](AGENTS.md) содержит правила работы.
+
+- Точку сборки приложения задаёт [src/app/App.vue](src/app/App.vue).
+- Маршруты задаёт [src/app/router.ts](src/app/router.ts).
+- HTTP-границу задаёт [contracts/openapi.json](contracts/openapi.json).

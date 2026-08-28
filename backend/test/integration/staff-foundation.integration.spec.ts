@@ -61,13 +61,15 @@ describe('staff foundation CLI', () => {
   });
 
   it(
-    'создаёт и обновляет только barista или administrator',
+    'создаёт и обновляет допустимые роли',
     async () => {
       const phone = '+79991234568';
       const reversedPhone = '+79991234569';
+      const customerPhone = '+79991234570';
       runStaff('upsert', '--phone', phone, '--role', 'barista');
       runStaff('upsert', '--phone', phone, '--role', 'administrator');
       runStaff('upsert', '--role', 'barista', '--phone', reversedPhone);
+      runStaff('upsert', '--phone', customerPhone, '--role', 'customer');
 
       const result = await pool.query<{ role: string }>(
         'SELECT role FROM users WHERE phone_e164 = $1',
@@ -81,7 +83,13 @@ describe('staff foundation CLI', () => {
       );
       expect(reversedResult.rows).toEqual([{ role: 'barista' }]);
 
-      expectUsageExit('upsert', '--phone', phone, '--role', 'customer');
+      const customerResult = await pool.query<{ role: string }>(
+        'SELECT role FROM users WHERE phone_e164 = $1',
+        [customerPhone],
+      );
+      expect(customerResult.rows).toEqual([{ role: 'customer' }]);
+
+      expectUsageExit('upsert', '--phone', phone, '--role', 'guest');
       expectUsageExit('remove', '--phone', phone, '--role', 'barista');
       expectUsageExit('upsert', '--phone', phone, '--role', 'barista', '--unknown', 'x');
       expectUsageExit('upsert', '--phone', phone, '--phone', phone);

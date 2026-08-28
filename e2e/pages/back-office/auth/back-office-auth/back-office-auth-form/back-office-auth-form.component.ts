@@ -8,6 +8,7 @@ export class BackOfficeAuthFormComponent {
   private readonly sendOtpButton: Locator;
   private readonly confirmOtpButton: Locator;
   private readonly signOutButton: Locator;
+  private readonly deniedMessage: Locator;
 
   constructor(page: Page) {
     this.phoneInput = page.locator("#auth-phone");
@@ -24,33 +25,15 @@ export class BackOfficeAuthFormComponent {
       name: "Выйти",
       exact: true,
     });
+    this.deniedMessage = page.getByRole("alert");
   }
 
   async signIn(credentials: E2eOtpCredentials): Promise<void> {
     await test.step("Войти в back-office", async () => {
-      await expect(this.phoneInput, "Поле телефона доступно.").toBeEnabled();
-      await this.phoneInput.fill(credentials.phone);
-      await expect(
-        this.phoneInput,
-        "В поле указан номер сотрудника.",
-      ).toHaveValue(formatPhoneForUi(credentials.phone));
-      await expect(async () => {
-        await this.sendOtpButton.click();
-        await expect(this.otpInput).toBeVisible({ timeout: 1_000 });
-      }, "OTP-запрос принят с учётом серверного ограничения частоты.").toPass({
-        intervals: [5_000],
-        timeout: 65_000,
-      });
-      await expect(
-        this.otpInput,
-        "Появилось поле кода подтверждения.",
-      ).toBeVisible();
-      await this.otpInput.fill(credentials.otp);
-      await expect(
-        this.otpInput,
-        "В поле указан код подтверждения.",
-      ).toHaveValue(credentials.otp);
-      await this.confirmOtpButton.click();
+      await this.fillPhone(credentials.phone);
+      await this.requestCode();
+      await this.fillCode(credentials.otp);
+      await this.confirmCode();
       await expect(
         this.signOutButton,
         "Пользователь вошёл в back-office.",
@@ -67,6 +50,60 @@ export class BackOfficeAuthFormComponent {
         "Сессия back-office завершена.",
       ).toBeVisible();
     });
+  }
+
+  async fillPhone(phone: string): Promise<void> {
+    await test.step("Указать номер сотрудника", async () => {
+      await expect(this.phoneInput, "Поле телефона доступно.").toBeEnabled();
+      await this.phoneInput.fill(phone);
+      await expect(
+        this.phoneInput,
+        "В поле указан номер сотрудника.",
+      ).toHaveValue(formatPhoneForUi(phone));
+    });
+  }
+
+  async requestCode(): Promise<void> {
+    await test.step("Запросить одноразовый код сотрудника", async () => {
+      await expect(
+        this.sendOtpButton,
+        "Кнопка отправки кода доступна.",
+      ).toBeEnabled();
+      await this.sendOtpButton.click();
+      await expect(
+        this.otpInput,
+        "Появилось поле кода подтверждения.",
+      ).toBeVisible();
+    });
+  }
+
+  async fillCode(otp: string): Promise<void> {
+    await test.step("Указать одноразовый код сотрудника", async () => {
+      await expect(this.otpInput, "Поле кода доступно.").toBeEnabled();
+      await this.otpInput.fill(otp);
+      await expect(
+        this.otpInput,
+        "В поле указан код подтверждения.",
+      ).toHaveValue(otp);
+    });
+  }
+
+  async confirmCode(): Promise<void> {
+    await test.step("Подтвердить одноразовый код сотрудника", async () => {
+      await expect(
+        this.confirmOtpButton,
+        "Кнопка подтверждения кода доступна.",
+      ).toBeEnabled();
+      await this.confirmOtpButton.click();
+      await expect(
+        this.signOutButton.or(this.deniedMessage),
+        "Подтверждение кода завершено.",
+      ).toBeVisible();
+    });
+  }
+
+  async isAccessDeniedVisible(): Promise<boolean> {
+    return this.deniedMessage.isVisible();
   }
 
   async waitReady(): Promise<void> {

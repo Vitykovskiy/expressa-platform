@@ -3,6 +3,7 @@ import {
   ModifierSelectionType,
   OrderHistoryStatus,
   OrderStatus,
+  OrderQueueTransitionAction,
   ProductConfiguratorSize,
   ProductEditorSize,
   ProductType,
@@ -91,6 +92,9 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
   staffOrders,
 }, testInfo) => {
   const data = createProductOrderScenarioData(testInfo.testId);
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+
   try {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
@@ -148,10 +152,22 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     await backOfficeAuth.form.signIn(e2eCredentials.staff);
     await staffOrders.queue.waitReady();
     await staffOrders.queue.openDetails(snapshot);
-    await staffOrders.queue.accept(snapshot);
-    await staffOrders.queue.startPreparing(snapshot);
-    await staffOrders.queue.markReady(snapshot);
-    await staffOrders.queue.issue(snapshot);
+    await staffOrders.queue.transition(
+      snapshot,
+      OrderQueueTransitionAction.ACCEPT,
+    );
+    await staffOrders.queue.transition(
+      snapshot,
+      OrderQueueTransitionAction.START_PREPARING,
+    );
+    await staffOrders.queue.transition(
+      snapshot,
+      OrderQueueTransitionAction.MARK_READY,
+    );
+    await staffOrders.queue.transition(
+      snapshot,
+      OrderQueueTransitionAction.ISSUE,
+    );
     await backOfficeAuth.form.signOut();
     await customerAuth.open(e2eEnvironment.frontOfficeUrl);
     await customerAuth.phoneVerification.fillPhone(
@@ -199,16 +215,37 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
         OrderStatus.ISSUED,
       );
     });
-  } finally {
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
+  }
+
+  try {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
     await menuManagement.open();
     await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-    await menuManagement.productEditor.archiveIfPresent(data.productName);
+    await menuManagement.productEditor.deleteIfPresent(data.productName);
     await menuManagement.modifierGroupEditor.archiveIfPresent(
       data.modifierGroupName,
     );
     await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
     await menuManagement.catalog.assertScenarioAbsent(data);
+  } catch (cleanupError) {
+    if (!hasPrimaryFailure) throw cleanupError;
+
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Исходная ошибка сценария сохраняет приоритет.
+    }
   }
+
+  if (hasPrimaryFailure) throw primaryError;
 });

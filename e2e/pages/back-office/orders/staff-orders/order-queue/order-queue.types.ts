@@ -1,12 +1,44 @@
 export enum OrderQueueStage {
-  CREATED = "Новый",
+  CREATED = "Оформлен",
   ACCEPTED = "Принят",
   PREPARING = "Готовится",
-  READY = "Готов к выдаче",
+  READY = "Готов",
   ISSUED = "Выдан",
 }
 
+export enum OrderQueueFilter {
+  ALL = "Все",
+  CREATED = "Новые",
+  ACCEPTED = "Приняты",
+  PREPARING = "Готовятся",
+  READY = "Готовы",
+  ISSUED = "Выданы",
+}
+
+export enum OrderQueueTransitionAction {
+  ACCEPT = "Принять заказ",
+  START_PREPARING = "Начать приготовление",
+  MARK_READY = "Отметить готовым",
+  ISSUE = "Выдать заказ",
+}
+
+export enum QueueScenarioStage {
+  CREATED = "Оформлен",
+  READY = "Готов",
+}
+
+export enum QueueScenarioFilter {
+  CREATED = "Оформлен",
+}
+
+export interface OrderQueueDetails {
+  readonly customer: string;
+  readonly items: readonly string[];
+}
+
 export interface OrderQueueTransition {
-  from: OrderQueueStage;
-  to: OrderQueueStage;
+  readonly from: OrderQueueStage;
+  readonly to: OrderQueueStage;
+  readonly occurredAt: string;
+  readonly author: string;
 }

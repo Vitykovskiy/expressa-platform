@@ -53,7 +53,7 @@ test("guest сохраняет конфигурацию через OTP и соз
         idempotencyKey = request.headers()["idempotency-key"] ?? "";
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
-    await expect(page.getByText("Заказ принят")).toBeVisible();
+    await expect(page.getByText("Оформлен")).toBeVisible();
     await expect(page.getByText(checkoutProductName)).toBeVisible();
     await expect(page.getByText("Размер M")).toBeVisible();
     await expect(page.getByText("+ Обычное молоко")).toBeVisible();
@@ -283,7 +283,7 @@ test("checkout и заказ не ломают вёрстку на ключев�
     await page.getByRole("button", { name: "Оформить заказ" }).click();
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
     await expectNoOverflow(page, width);
-    await expectElementNotOccluded(page, page.getByText("Заказ принят"));
+    await expectElementNotOccluded(page, page.getByText("Оформлен"));
     await expectElementNotOccluded(
       page,
       page.getByText(checkoutProductName, { exact: true }),
@@ -312,7 +312,7 @@ test("issued заказ показывает history, скрывает чужо�
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
-    await expect(page.getByText("Заказ принят")).toBeVisible();
+    await expect(page.getByText("Оформлен")).toBeVisible();
     const order = await requireOrder(database, customerId, key);
     const detailRequests: string[] = [];
     page.on("request", (request) => {

@@ -1,10 +1,18 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+import {
+  PhoneVerificationError,
+  PhoneVerificationStep,
+} from "./phone-verification.component.types";
 
 export class PhoneVerificationComponent {
-  private readonly phoneInput;
-  private readonly sendCodeButton;
-  private readonly otpInput;
-  private readonly confirmButton;
+  private readonly phoneInput: Locator;
+  private readonly sendCodeButton: Locator;
+  private readonly otpInput: Locator;
+  private readonly confirmButton: Locator;
+  private readonly resendCodeButton: Locator;
+  private readonly errorMessage: Locator;
+  private readonly authenticatedAccountButton: Locator;
 
   constructor(page: Page) {
     this.phoneInput = page.getByLabel("Номер телефона", { exact: true });
@@ -16,6 +24,13 @@ export class PhoneVerificationComponent {
     this.confirmButton = page.getByRole("button", {
       name: "Подтвердить",
       exact: true,
+    });
+    this.resendCodeButton = page.getByRole("button", {
+      name: /Отправить код (ещё раз|повторно)/,
+    });
+    this.errorMessage = page.getByRole("alert");
+    this.authenticatedAccountButton = page.getByRole("button", {
+      name: /Выйти/,
     });
   }
 
@@ -38,13 +53,7 @@ export class PhoneVerificationComponent {
         this.sendCodeButton,
         "Кнопка отправки кода доступна.",
       ).toBeEnabled();
-      await expect(async () => {
-        await this.sendCodeButton.click();
-        await expect(this.otpInput).toBeVisible({ timeout: 1_000 });
-      }, "OTP-запрос принят с учётом серверного ограничения частоты.").toPass({
-        intervals: [5_000],
-        timeout: 65_000,
-      });
+      await this.sendCodeButton.click();
       await expect(
         this.otpInput,
         "Поле одноразового кода показано.",
@@ -67,9 +76,72 @@ export class PhoneVerificationComponent {
       ).toBeEnabled();
       await this.confirmButton.click();
       await expect(
-        this.otpInput,
-        "Подтверждение номера завершено.",
-      ).toHaveCount(0);
+        this.authenticatedAccountButton,
+        "После подтверждения номера customer авторизован.",
+      ).toBeVisible();
     });
+  }
+
+  async resendCode(): Promise<void> {
+    await test.step("Повторно запросить одноразовый код", async () => {
+      await expect(
+        this.resendCodeButton,
+        "Кнопка повторной отправки кода доступна.",
+      ).toBeEnabled();
+      await this.resendCodeButton.click();
+      await expect(
+        this.otpInput,
+        "Customer остаётся на шаге ввода кода.",
+      ).toBeVisible();
+    });
+  }
+
+  async assertStep(step: PhoneVerificationStep): Promise<void> {
+    if (step === PhoneVerificationStep.PHONE) {
+      await expect(
+        this.phoneInput,
+        "Customer находится на шаге ввода номера.",
+      ).toBeVisible();
+      return;
+    }
+
+    await expect(
+      this.otpInput,
+      "Customer находится на шаге ввода кода.",
+    ).toBeVisible();
+  }
+
+  async assertCodeRequestDisabled(): Promise<void> {
+    await expect(
+      this.sendCodeButton,
+      "Кнопка запроса одноразового кода недоступна.",
+    ).toBeDisabled();
+  }
+
+  async isCodeConfirmationDisabled(): Promise<boolean> {
+    return this.confirmButton.isDisabled();
+  }
+
+  async assertError(error: PhoneVerificationError): Promise<void> {
+    if (error === PhoneVerificationError.INVALID_CODE) {
+      await expect(
+        this.errorMessage,
+        "Показано сообщение о неверном одноразовом коде.",
+      ).toContainText("Одноразовый код недействителен.");
+      return;
+    }
+
+    if (error === PhoneVerificationError.EXPIRED_CODE) {
+      await expect(
+        this.errorMessage,
+        "Показано сообщение об истечении срока действия кода.",
+      ).toContainText("Срок действия одноразового кода истёк.");
+      return;
+    }
+
+    await expect(
+      this.errorMessage,
+      "Показано ограничение повторной отправки кода.",
+    ).toContainText("Повторный запрос кода пока недоступен.");
   }
 }

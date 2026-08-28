@@ -85,6 +85,9 @@ services:
       E2E_STAFF_OTP: "${E2E_OTP:?E2E_OTP is required}"
       E2E_CUSTOMER_PHONE: "${E2E_CUSTOMER_PHONE:?E2E_CUSTOMER_PHONE is required}"
       E2E_CUSTOMER_OTP: "${E2E_OTP:?E2E_OTP is required}"
+      E2E_CUSTOMER_2_PHONE: "${E2E_CUSTOMER_2_PHONE:?E2E_CUSTOMER_2_PHONE is required}"
+      E2E_CUSTOMER_2_OTP: "${E2E_OTP:?E2E_OTP is required}"
+      E2E_PROFILE: "${E2E_PROFILE:?E2E_PROFILE is required}"
     volumes:
       - "${E2E_ARTIFACT_DIRECTORY:?E2E_ARTIFACT_DIRECTORY is required}:/artifacts"
     depends_on:

@@ -60,7 +60,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * 43. Customer подтверждает оформление заказа.
  *
  * Ожидаемый результат:
- * - Создан заказ со стадией «Заказ принят» и сохранёнными составом, количеством и итогом корзины.
+ * - Создан заказ со стадией «Оформлен» и сохранёнными составом, количеством и итогом корзины.
  */
 test("JOURNEY-02: customer оформляет заказ через OTP", async ({
   backOfficeAuth,
@@ -72,6 +72,9 @@ test("JOURNEY-02: customer оформляет заказ через OTP", async 
   publicMenu,
 }, testInfo) => {
   const data = createProductOrderScenarioData(testInfo.testId);
+  let primaryError: unknown;
+  let hasPrimaryFailure = false;
+
   try {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
@@ -146,16 +149,37 @@ test("JOURNEY-02: customer оформляет заказ через OTP", async 
         OrderStatus.CREATED,
       );
     });
-  } finally {
+  } catch (error) {
+    primaryError = error;
+    hasPrimaryFailure = true;
+  }
+
+  try {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
     await menuManagement.open();
     await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-    await menuManagement.productEditor.archiveIfPresent(data.productName);
+    await menuManagement.productEditor.deleteIfPresent(data.productName);
     await menuManagement.modifierGroupEditor.archiveIfPresent(
       data.modifierGroupName,
     );
     await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
     await menuManagement.catalog.assertScenarioAbsent(data);
+  } catch (cleanupError) {
+    if (!hasPrimaryFailure) throw cleanupError;
+
+    try {
+      await testInfo.attach("Ошибка очистки", {
+        body:
+          cleanupError instanceof Error
+            ? (cleanupError.stack ?? cleanupError.message)
+            : String(cleanupError),
+        contentType: "text/plain",
+      });
+    } catch {
+      // Исходная ошибка сценария сохраняет приоритет.
+    }
   }
+
+  if (hasPrimaryFailure) throw primaryError;
 });

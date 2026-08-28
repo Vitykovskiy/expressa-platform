@@ -32,13 +32,23 @@ npm run start:dev
 ```
 
 После копирования шаблона заполните обязательные значения окружения. Их
-проверяет [конфигурация](src/platform/config/environment.ts): всегда нужны
-`NODE_ENV`, `PORT`, `DATABASE_URL`, секреты сессии, VAPID-ключи и `CORS_ORIGINS`;
-для `local` и `development` также нужен `AUTH_DEVELOPMENT_OTP`.
+проверяет [конфигурация](src/platform/config/environment.ts).
 
-Проверка доступности: `GET http://localhost:3000/health/live`. API использует
-префикс `/api/v1`; при `NODE_ENV=local` или `development` Swagger доступен по
-`/docs`.
+Всегда нужны:
+
+- `NODE_ENV`;
+- `PORT`;
+- `DATABASE_URL`;
+- секреты сессии;
+- VAPID-ключи;
+- `CORS_ORIGINS`.
+
+Для `local` и `development` также нужен `AUTH_DEVELOPMENT_OTP`.
+
+Проверка доступности: `GET http://localhost:3000/health/live`.
+
+API использует префикс `/api/v1`. При `NODE_ENV=local` или `development`
+Swagger доступен по `/docs`.
 
 ## Команды
 
@@ -53,8 +63,10 @@ npm run seed
 npm run staff -- upsert --phone +79991234567 --role administrator
 ```
 
-`npm run staff` создаёт или обновляет сотрудника. Допустимые роли: `barista`,
-`administrator`; телефон — `+7XXXXXXXXXX`.
+`npm run staff` создаёт или обновляет сотрудника.
+
+Допустимые роли: `barista`, `administrator`. Формат телефона —
+`+7XXXXXXXXXX`.
 
 ## Где искать детали
 

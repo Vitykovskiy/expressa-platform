@@ -52,11 +52,18 @@ npm run format:check
 
 ## Результаты поставки
 
-После push в `main` [Development delivery](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml)
-сначала поставляет приложения, затем собирает E2E-образ и запускает Playwright
-на временном VPS-стенде. Если поставка или сборка E2E-образа неуспешна, workflow
-публикует диагностическую страницу без браузерных сценариев. Последний
-[Playwright report](http://216.57.105.133:8088/) доступен из сетей, разрешённых
-`E2E_REPORT_ALLOWLIST`; повтор того же commit запускается через `Re-run jobs` в
-GitHub Actions. Порядок поставки, доступ и очистка стенда — в
+После push в `main` [Development delivery](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml):
+
+1. поставляет приложения;
+2. собирает E2E-образ;
+3. запускает Playwright на временном VPS-стенде.
+
+Если поставка или сборка E2E-образа неуспешна, workflow публикует
+диагностическую страницу без браузерных сценариев.
+
+Последний [Playwright report](http://216.57.105.133:8088/) доступен из сетей,
+разрешённых `E2E_REPORT_ALLOWLIST`. Повтор того же commit запускается через
+`Re-run jobs` в GitHub Actions.
+
+Порядок поставки, доступ и очистка стенда — в
 [E2E на VPS](../docs/70-deployment/E2E-on-VPS.md).

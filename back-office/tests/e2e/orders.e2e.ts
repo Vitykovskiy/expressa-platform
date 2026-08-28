@@ -95,13 +95,7 @@ test("administrator создаёт меню, customer получает issued з
       ).toContainText(ordersUnifiedProductName);
       await transition(staffPage, card, "Принять заказ", "Принят", 1);
       await transition(staffPage, card, "Начать приготовление", "Готовится", 2);
-      await transition(
-        staffPage,
-        card,
-        "Отметить готовым",
-        "Готов к выдаче",
-        3,
-      );
+      await transition(staffPage, card, "Отметить готовым", "Готов", 3);
       await transition(staffPage, card, "Выдать заказ", "Выдан", 4);
     });
 
@@ -170,7 +164,7 @@ test("Chromium подтверждает полный жизненный цикл
     await expect(staffPage.locator(".order-card")).toHaveCount(1);
     await expect(card).toBeVisible();
     await expect(card.locator(".order-card__number")).toHaveText(orderNumber);
-    await expect(card.locator(".order-card__stage")).toHaveText("Новый");
+    await expect(card.locator(".order-card__stage")).toHaveText("Оформлен");
     await card.getByRole("button", { name: "Открыть детали" }).click();
     await expect(card.getByLabel(`Детали заказа ${orderNumber}`)).toContainText(
       ordersProductName,
@@ -187,11 +181,11 @@ test("Chromium подтверждает полный жизненный цикл
       { headers: { authorization: `Bearer ${staffToken}` } },
     );
     expect(invalidIssue.status()).toBe(409);
-    await expect(card.locator(".order-card__stage")).toHaveText("Новый");
+    await expect(card.locator(".order-card__stage")).toHaveText("Оформлен");
 
     await transition(staffPage, card, "Принять заказ", "Принят", 1);
     await transition(staffPage, card, "Начать приготовление", "Готовится", 2);
-    await transition(staffPage, card, "Отметить готовым", "Готов к выдаче", 3);
+    await transition(staffPage, card, "Отметить готовым", "Готов", 3);
 
     const deniedIssue = await customerPage.request.post(
       `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/issue`,
@@ -200,9 +194,7 @@ test("Chromium подтверждает полный жизненный цикл
     expect(deniedIssue.status()).toBe(403);
     await staffPage.setViewportSize({ width: 390, height: 844 });
     await staffPage.getByRole("button", { name: "Обновить очередь" }).click();
-    await expect(card.locator(".order-card__stage")).toHaveText(
-      "Готов к выдаче",
-    );
+    await expect(card.locator(".order-card__stage")).toHaveText("Готов");
     await expect(card.locator(".order-card__events li")).toHaveCount(3);
 
     await transition(staffPage, card, "Выдать заказ", "Выдан", 4);

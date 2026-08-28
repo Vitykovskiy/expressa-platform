@@ -52,9 +52,12 @@ npm run contract:check # совпадение OpenAPI-снимка с backend
 
 ## Межконтурные зависимости
 
-`app.e2e.ts` проверяет только production-сборку back-office. `auth.e2e.ts`
-поднимает backend и PostgreSQL; `catalog.e2e.ts` также собирает и запускает
-front-office; `orders.e2e.ts` запускает backend, front-office и back-office.
+- `app.e2e.ts` проверяет только production-сборку back-office.
+- `auth.e2e.ts` поднимает backend и PostgreSQL.
+- `catalog.e2e.ts` также собирает и запускает front-office.
+- `orders.e2e.ts` запускает backend, front-office и back-office.
+
 Перед тремя последними сценариями установите зависимости в нужных контурах:
-back-office, backend и, где требуется, front-office. Эти команды выполняет
-[workflow back-office](../../../.github/workflows/back-office-ci.yml).
+back-office, backend и, где требуется, front-office.
+
+Эти команды выполняет [workflow back-office](../../../.github/workflows/back-office-ci.yml).

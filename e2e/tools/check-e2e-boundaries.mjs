@@ -5,6 +5,11 @@ import ts from "typescript";
 
 const PACKAGE_ROOT = resolve(import.meta.dirname, "..");
 const SPECS_ROOT = join(PACKAGE_ROOT, "specs");
+const MULTI_SESSION_FIXTURE_PATH = join(
+  PACKAGE_ROOT,
+  "fixtures",
+  "multi-session.fixture.ts",
+);
 const IGNORED_DIRECTORIES = new Set([
   "node_modules",
   "playwright-report",
@@ -60,6 +65,7 @@ const NETWORK_EVENT_SUBSCRIPTION_METHODS = new Set([
   "removeListener",
 ]);
 const NETWORK_EVENT_NAMES = new Set(["request", "response"]);
+const MULTI_SESSION_METHODS = new Set(["newContext", "newPage"]);
 const FORBIDDEN_IDENTIFIERS = new Set([
   "api",
   "accesstoken",
@@ -243,10 +249,22 @@ function isNetworkEventCall(node) {
   );
 }
 
-function isForbiddenNetworkCall(node) {
+function isSanctionedMultiSessionFixture(path) {
+  return path === MULTI_SESSION_FIXTURE_PATH;
+}
+
+function isDirectMultiSessionCall(node) {
+  return (
+    ts.isPropertyAccessExpression(node.expression) &&
+    MULTI_SESSION_METHODS.has(node.expression.name.text)
+  );
+}
+
+function isForbiddenNetworkCall(node, path) {
   return (
     NETWORK_METHODS.has(memberName(node.expression)) ||
-    memberName(node.expression) === "newPage" ||
+    (isDirectMultiSessionCall(node) &&
+      !isSanctionedMultiSessionFixture(path)) ||
     isNetworkEventCall(node)
   );
 }
@@ -278,12 +296,12 @@ function validateTypeScriptFile(path) {
     );
     const errors = [];
     const visit = (node) => {
-      if (ts.isCallExpression(node) && isForbiddenNetworkCall(node)) {
+      if (ts.isCallExpression(node) && isForbiddenNetworkCall(node, path)) {
         addError(
           errors,
           sourceFile,
           node,
-          "API, сеть, storage и создание Page в E2E запрещены",
+          "API, сеть, storage и создание контекста или Page в E2E запрещены",
         );
       }
       if (ts.isCallExpression(node)) {
@@ -396,6 +414,14 @@ function validateSpec(path) {
           sourceFile,
           node,
           "API, сеть, storage и создание Page в E2E spec запрещены",
+        );
+      }
+      if (ts.isCallExpression(node) && isForbiddenNetworkCall(node, path)) {
+        addError(
+          errors,
+          sourceFile,
+          node,
+          "API, сеть, storage и создание контекста или Page в E2E spec запрещены",
         );
       }
       if (

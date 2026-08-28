@@ -7,7 +7,8 @@ import type {
   StoredOtpChallenge,
 } from './auth-repository.types';
 import { SessionCreationUnavailableError, VerifyOtpUseCase } from './verify-otp.use-case';
-import { ExpiredOtpCodeError, InvalidOtpCodeError } from '../domain/auth.errors';
+import { InvalidOtpCodeError } from '../domain/auth.errors';
+import { otpLifetimeMs } from '../domain/otp-policy.constants';
 
 const now = new Date('2026-08-04T10:00:00.000Z');
 
@@ -138,9 +139,13 @@ describe('VerifyOtpUseCase', () => {
     );
   });
 
-  it('различает истёкшую OTP-задачу', async () => {
+  it('отклоняет код старше пяти минут по внедрённым часам', async () => {
     const repository = createRepository();
-    const expired = createChallenge({ expiresAt: now });
+    const expiredAt = new Date(now.getTime() - 1_000);
+    const expired = createChallenge({
+      expiresAt: expiredAt,
+      sentAt: new Date(expiredAt.getTime() - otpLifetimeMs),
+    });
     repository.findOpenOtpChallenge.mockResolvedValue(expired);
     repository.verifyOtpAndCreateSession.mockResolvedValue({
       status: 'unavailable',
@@ -148,9 +153,9 @@ describe('VerifyOtpUseCase', () => {
     });
     const useCase = new VerifyOtpUseCase(repository, createCrypto(), { now: () => now });
 
-    await expect(useCase.execute('+79991234567', '123456')).rejects.toBeInstanceOf(
-      ExpiredOtpCodeError,
-    );
+    await expect(useCase.execute('+79991234567', '123456')).rejects.toMatchObject({
+      code: 'AUTH_CODE_EXPIRED',
+    });
   });
 
   it('безопасно отклоняет коллизию session id', async () => {

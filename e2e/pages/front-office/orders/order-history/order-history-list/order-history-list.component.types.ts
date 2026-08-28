@@ -1,5 +1,5 @@
 export enum OrderHistoryStatus {
-  CREATED = "Заказ принят",
+  CREATED = "Оформлен",
   ACCEPTED = "Заказ принят бариста",
   PREPARING = "Готовим заказ",
   READY = "Заказ готов к выдаче",

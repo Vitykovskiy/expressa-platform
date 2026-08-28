@@ -2,6 +2,8 @@ import {
   E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE,
   E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
   E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE,
+  E2E_CUSTOMER_2_OTP_ENVIRONMENT_VARIABLE,
+  E2E_CUSTOMER_2_PHONE_ENVIRONMENT_VARIABLE,
   E2E_CUSTOMER_OTP_ENVIRONMENT_VARIABLE,
   E2E_CUSTOMER_PHONE_ENVIRONMENT_VARIABLE,
   E2E_FRONT_OFFICE_URL_ENVIRONMENT_VARIABLE,
@@ -22,7 +24,7 @@ export function getE2eEnvironment(): E2eEnvironment {
 }
 
 export function getE2eCredentials(): E2eCredentials {
-  return {
+  const credentials = {
     administrator: readOtpCredentials(
       E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
       E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE,
@@ -35,7 +37,15 @@ export function getE2eCredentials(): E2eCredentials {
       E2E_CUSTOMER_PHONE_ENVIRONMENT_VARIABLE,
       E2E_CUSTOMER_OTP_ENVIRONMENT_VARIABLE,
     ),
+    secondCustomer: readOtpCredentials(
+      E2E_CUSTOMER_2_PHONE_ENVIRONMENT_VARIABLE,
+      E2E_CUSTOMER_2_OTP_ENVIRONMENT_VARIABLE,
+    ),
   };
+
+  assertDistinctPhones(credentials);
+
+  return credentials;
 }
 
 function readUrl(name: string): string {
@@ -90,4 +100,21 @@ function readRequiredValue(name: string): string {
   if (value === undefined || value === "")
     throw new Error(`${name} is required.`);
   return value;
+}
+
+function assertDistinctPhones(credentials: E2eCredentials): void {
+  const roles = Object.entries(credentials);
+
+  for (const [index, [firstRole, firstCredentials]] of roles.entries()) {
+    for (const [secondRole, secondCredentials] of roles.slice(index + 1)) {
+      if (
+        firstCredentials.phone.replace(/\D/gu, "") ===
+        secondCredentials.phone.replace(/\D/gu, "")
+      ) {
+        throw new Error(
+          `Phone credentials for ${firstRole} and ${secondRole} must be distinct.`,
+        );
+      }
+    }
+  }
 }

@@ -20,5 +20,6 @@ _sources/
 ```
 
 Текущий локальный снимок HTTP-контракта находится в
-[contracts/openapi.json](../../contracts/openapi.json); его соответствие
-backend проверяет `npm run contract:check`.
+[contracts/openapi.json](../../contracts/openapi.json).
+
+Его соответствие backend проверяет `npm run contract:check`.

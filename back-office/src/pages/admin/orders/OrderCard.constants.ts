@@ -5,10 +5,10 @@ import type {
 
 export const orderStages: OrderStagePresentationMap = {
   ACCEPTED: { label: "Принят", tone: "info" },
-  CREATED: { label: "Новый", tone: "warning" },
+  CREATED: { label: "Оформлен", tone: "warning" },
   ISSUED: { label: "Выдан", tone: "success" },
   PREPARING: { label: "Готовится", tone: "info" },
-  READY: { label: "Готов к выдаче", tone: "success" },
+  READY: { label: "Готов", tone: "success" },
 };
 
 export const orderActions: Partial<

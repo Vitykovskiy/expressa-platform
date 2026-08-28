@@ -79,6 +79,31 @@ describe("QueuePage", () => {
     wrapper.unmount();
   });
 
+  it("показывает стадии заказа в бизнес-терминах", async () => {
+    ordersApi.details.mockResolvedValue({
+      ...order,
+      customer: { id: "customer", phoneE164: "+79991234567" },
+      events: [
+        {
+          actorId: "staff-42",
+          from: "CREATED",
+          to: "READY",
+          occurredAt: "2030-01-02T10:01:00.000Z",
+        },
+      ],
+      snapshot: [],
+    });
+    const wrapper = mount(QueuePage);
+    await flushPromises();
+
+    expect(wrapper.get(".order-card__stage").text()).toBe("Оформлен");
+    await wrapper.get(".order-card__details-button").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Оформлен — Готов");
+    wrapper.unmount();
+  });
+
   it("не показывает ошибку перехода A после открытия заказа B", async () => {
     let rejectTransition: (error: unknown) => void = () => undefined;
     ordersApi.details.mockImplementation(

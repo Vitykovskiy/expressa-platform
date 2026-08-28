@@ -2,11 +2,11 @@ import { Pool } from 'pg';
 import { validateEnvironment } from '../src/platform/config/environment';
 
 const phonePattern = /^\+7\d{10}$/;
-const staffRoles = ['barista', 'administrator'] as const;
+const staffRoles = ['barista', 'administrator', 'customer'] as const;
 type StaffRole = (typeof staffRoles)[number];
 
 function exitWithUsage(): never {
-  process.stderr.write('Usage: npm run staff -- upsert --phone +7XXXXXXXXXX --role barista|administrator\n');
+  process.stderr.write('Usage: npm run staff -- upsert --phone +7XXXXXXXXXX --role barista|administrator|customer\n');
   process.exit(2);
 }
 

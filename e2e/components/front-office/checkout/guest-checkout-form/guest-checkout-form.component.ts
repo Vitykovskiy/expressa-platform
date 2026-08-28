@@ -23,9 +23,23 @@ export class GuestCheckoutFormComponent {
         "Кнопка продолжения доступна.",
       ).toBeEnabled();
       await this.continueButton.click();
-      await expect(this.nameInput, "Профиль клиента сохранён.").toHaveCount(0);
+      await this.assertProfileCompleted();
     });
 
     return true;
+  }
+
+  async assertNotShown(): Promise<void> {
+    await expect(
+      this.nameInput,
+      "Заполнение профиля не требуется.",
+    ).toHaveCount(0);
+  }
+
+  async assertProfileCompleted(): Promise<void> {
+    await expect(
+      this.nameInput,
+      "Профиль нового клиента сохранён.",
+    ).toHaveCount(0);
   }
 }

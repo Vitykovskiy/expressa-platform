@@ -10,7 +10,12 @@ import { RefreshSessionUseCase } from '../application/refresh-session.use-case';
 import { RequestOtpUseCase } from '../application/request-otp.use-case';
 import { VerifyOtpUseCase } from '../application/verify-otp.use-case';
 import { originGuardConfigurationToken } from '../auth.constants';
-import { AccessDeniedError, InvalidOtpCodeError, OtpRateLimitedError } from '../domain/auth.errors';
+import {
+  AccessDeniedError,
+  ExpiredOtpCodeError,
+  InvalidOtpCodeError,
+  OtpRateLimitedError,
+} from '../domain/auth.errors';
 import { otpRetryAfterSeconds, refreshCookieName } from './auth.controller.constants';
 import { AuthController } from './auth.controller';
 import { OriginGuard } from './origin.guard';
@@ -159,6 +164,13 @@ describe('AuthController', () => {
     invalidCode.verifyOtp.execute.mockRejectedValue(new InvalidOtpCodeError());
     await expect(invalidCode.controller.verifyCode({ phone: '+79123456789', code: '123456' }, response)).rejects.toMatchObject({
       response: authErrorResponse('AUTH_CODE_INVALID', 'Invalid verification code'),
+      status: HttpStatus.UNAUTHORIZED,
+    });
+
+    const expiredCode = createController();
+    expiredCode.verifyOtp.execute.mockRejectedValue(new ExpiredOtpCodeError());
+    await expect(expiredCode.controller.verifyCode({ phone: '+79123456789', code: '123456' }, response)).rejects.toMatchObject({
+      response: authErrorResponse('AUTH_CODE_EXPIRED', 'Verification code expired'),
       status: HttpStatus.UNAUTHORIZED,
     });
   });

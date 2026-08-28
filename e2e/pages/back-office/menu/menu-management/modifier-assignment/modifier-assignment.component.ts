@@ -10,6 +10,24 @@ export class ModifierAssignmentComponent {
     });
   }
 
+  async isGroupAssigned(name: string): Promise<boolean> {
+    return this.groupCheckbox(name).isChecked();
+  }
+
+  async readOrder(): Promise<string> {
+    return this.orderInput().inputValue();
+  }
+
+  async readOrderValidation(): Promise<string | null> {
+    const alert = this.assignments().getByRole("alert");
+
+    return (await alert.isVisible()) ? alert.innerText() : null;
+  }
+
+  async isSaveAvailable(): Promise<boolean> {
+    return this.saveButton().isEnabled();
+  }
+
   async openCategory(categoryName: string): Promise<void> {
     await test.step(`Открыть назначения категории «${categoryName}»`, async () => {
       await this.openManagement();
@@ -23,10 +41,7 @@ export class ModifierAssignmentComponent {
 
   async selectGroup(groupName: string): Promise<void> {
     await test.step(`Назначить группу добавок «${groupName}»`, async () => {
-      const groupCheckbox = this.assignments().getByRole("checkbox", {
-        name: groupName,
-        exact: true,
-      });
+      const groupCheckbox = this.groupCheckbox(groupName);
 
       await expect(
         groupCheckbox,
@@ -40,11 +55,28 @@ export class ModifierAssignmentComponent {
     });
   }
 
+  async setOrder(order: string): Promise<void> {
+    await test.step(`Указать порядок группы добавок «${order}»`, async () => {
+      const orderInput = this.orderInput();
+
+      await expect(
+        orderInput,
+        "Поле порядка группы добавок показано.",
+      ).toBeVisible();
+      await orderInput.fill(order);
+      await expect(orderInput, "Порядок группы добавок указан.").toHaveValue(
+        order,
+      );
+    });
+  }
+
   async save(): Promise<void> {
     await test.step("Сохранить назначения добавок категории", async () => {
-      await this.assignments()
-        .getByRole("button", { name: "Сохранить назначения", exact: true })
-        .click();
+      await expect(
+        this.saveButton(),
+        "Сохранение назначений добавок категории доступно.",
+      ).toBeEnabled();
+      await this.saveButton().click();
       await expect(
         this.assignments(),
         "Назначения добавок категории сохранены.",
@@ -76,5 +108,20 @@ export class ModifierAssignmentComponent {
 
   private categoryButton(name: string): Locator {
     return this.page.getByRole("button", { name, exact: true });
+  }
+
+  private orderInput(): Locator {
+    return this.assignments().getByLabel("Порядок", { exact: true });
+  }
+
+  private groupCheckbox(name: string): Locator {
+    return this.assignments().getByRole("checkbox", { name, exact: true });
+  }
+
+  private saveButton(): Locator {
+    return this.assignments().getByRole("button", {
+      name: "Сохранить назначения",
+      exact: true,
+    });
   }
 }

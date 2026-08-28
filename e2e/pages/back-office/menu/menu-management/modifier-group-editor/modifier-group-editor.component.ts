@@ -45,6 +45,50 @@ export class ModifierGroupEditorComponent {
     });
   }
 
+  async isGroupVisible(name: string): Promise<boolean> {
+    return this.modifierGroupEditButton(name).isVisible();
+  }
+
+  async isOptionFree(name: string): Promise<boolean> {
+    const optionPrice = await this.optionPriceInputByName(name);
+
+    return (await optionPrice.inputValue()) === "0";
+  }
+
+  async isOptionDefault(name: string): Promise<boolean> {
+    const optionDefault = await this.optionDefaultSwitch(name);
+
+    return (await optionDefault.getAttribute("aria-checked")) === "true";
+  }
+
+  async readOptionOrder(): Promise<readonly string[]> {
+    const optionNames = await this.optionNameInputs().all();
+
+    return Promise.all(
+      optionNames.map((optionName) => optionName.inputValue()),
+    );
+  }
+
+  async isOptionMoveUpAvailable(name: string): Promise<boolean> {
+    return this.optionMoveUpButton(name).isEnabled();
+  }
+
+  async moveOptionUp(name: string): Promise<void> {
+    await test.step(`Переместить вариант добавки «${name}» вверх`, async () => {
+      const moveUp = this.optionMoveUpButton(name);
+
+      await expect(
+        moveUp,
+        `Вариант добавки «${name}» можно переместить вверх.`,
+      ).toBeEnabled();
+      await moveUp.click();
+      await expect(
+        moveUp,
+        `Вариант добавки «${name}» стал первым в группе.`,
+      ).toBeDisabled();
+    });
+  }
+
   async openManagement(): Promise<void> {
     await test.step("Открыть управление меню", async () => {
       const expanded =
@@ -79,6 +123,22 @@ export class ModifierGroupEditorComponent {
       await expect(
         this.editorRegion,
         "Редактор новой группы добавок открыт.",
+      ).toBeVisible();
+    });
+  }
+
+  async openForEditing(name: string): Promise<void> {
+    await test.step(`Открыть редактирование группы добавок «${name}»`, async () => {
+      const editGroup = this.modifierGroupEditButton(name);
+
+      await expect(
+        editGroup,
+        `Редактирование группы добавок «${name}» доступно.`,
+      ).toBeEnabled();
+      await editGroup.click();
+      await expect(
+        this.editorRegion,
+        `Редактор группы добавок «${name}» открыт.`,
       ).toBeVisible();
     });
   }
@@ -151,16 +211,16 @@ export class ModifierGroupEditorComponent {
 
   async setOptionDefault(): Promise<void> {
     await test.step("Выбрать вариант добавки по умолчанию", async () => {
-      const optionDefault = this.editorRegion.getByRole("checkbox", {
+      const optionDefault = this.editorRegion.getByRole("switch", {
         name: "Выбран по умолчанию",
         exact: true,
       });
 
-      await optionDefault.check();
+      await optionDefault.click();
       await expect(
         optionDefault,
         "Вариант добавки выбран по умолчанию.",
-      ).toBeChecked();
+      ).toHaveAttribute("aria-checked", "true");
     });
   }
 
@@ -215,6 +275,45 @@ export class ModifierGroupEditorComponent {
   private modifierGroupEditButton(name: string): Locator {
     return this.page.getByRole("button", {
       name: `Редактировать группу опций ${name}`,
+      exact: true,
+    });
+  }
+
+  private optionNameInputs(): Locator {
+    return this.editorRegion.getByTestId("modifier-option-name");
+  }
+
+  private async optionByName(name: string): Promise<Locator> {
+    const options = await this.editorRegion
+      .getByRole("group", { name: "Вариант добавки", exact: true })
+      .all();
+
+    for (const option of options) {
+      if (
+        (await option.getByTestId("modifier-option-name").inputValue()) === name
+      )
+        return option;
+    }
+
+    throw new Error(`Не удалось найти вариант добавки «${name}».`);
+  }
+
+  private async optionPriceInputByName(name: string): Promise<Locator> {
+    return (await this.optionByName(name)).getByLabel("Изменение цены, коп.", {
+      exact: true,
+    });
+  }
+
+  private async optionDefaultSwitch(name: string): Promise<Locator> {
+    return (await this.optionByName(name)).getByRole("switch", {
+      name: "Выбран по умолчанию",
+      exact: true,
+    });
+  }
+
+  private optionMoveUpButton(name: string): Locator {
+    return this.editorRegion.getByRole("button", {
+      name: `Переместить ${name} вверх`,
       exact: true,
     });
   }

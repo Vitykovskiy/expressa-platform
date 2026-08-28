@@ -7,6 +7,7 @@ export interface OrderSnapshot {
   readonly size: string;
   readonly modifierName: string;
   readonly quantity: string;
+  readonly lineTotal: string;
   readonly total: string;
   readonly status: OrderStatus;
 }

@@ -396,33 +396,199 @@ describe("admin catalog E2E", () => {
     });
   });
 
-  it('даёт staff атомарно менять доступность и приём заказов с аудитом', async () => {
-    const administrator = await accessToken('administrator');
-    const barista = await accessToken('barista');
-    const category = await json<{ id: string }>(await request('/backoffice/catalog/categories', administrator, 'POST', categoryBody(0)));
-    const product = await json<{ id: string; variants: Array<{ id: string }> }>(await request('/backoffice/catalog/products', administrator, 'POST', productBody(category.id)));
+  it("AVAIL-14/15/16 — даёт staff атомарно менять доступность и приём заказов с аудитом", async () => {
+    const administrator = await accessToken("administrator");
+    const barista = await accessToken("barista");
+    const baristaId = (
+      await json<{ id: string }>(await request("/me", barista), 200)
+    ).id;
+    const category = await json<{ id: string }>(
+      await request(
+        "/backoffice/catalog/categories",
+        administrator,
+        "POST",
+        categoryBody(0),
+      ),
+    );
+    const product = await json<{ id: string; variants: Array<{ id: string }> }>(
+      await request(
+        "/backoffice/catalog/products",
+        administrator,
+        "POST",
+        productBody(category.id),
+      ),
+    );
     const variant = product.variants[0];
-    if (variant === undefined) throw new Error('Product response returned no variant');
-    const group = await json<{ options: Array<{ id: string }> }>(await request('/backoffice/catalog/modifier-groups', administrator, 'POST', {
-      name: 'Добавка', selectionType: 'single', minSelect: 0, maxSelect: 1, isActive: true,
-      options: [{ name: 'Сироп', priceDeltaMinor: 0, sortOrder: 0, isDefault: true, isAvailable: true }],
-    }));
+    if (variant === undefined)
+      throw new Error("Product response returned no variant");
+    const group = await json<{ options: Array<{ id: string }> }>(
+      await request(
+        "/backoffice/catalog/modifier-groups",
+        administrator,
+        "POST",
+        {
+          name: "Добавка",
+          selectionType: "single",
+          minSelect: 0,
+          maxSelect: 1,
+          isActive: true,
+          options: [
+            {
+              name: "Сироп",
+              priceDeltaMinor: 0,
+              sortOrder: 0,
+              isDefault: true,
+              isAvailable: true,
+            },
+          ],
+        },
+      ),
+    );
     const option = group.options[0];
-    if (option === undefined) throw new Error('Modifier response returned no option');
+    if (option === undefined)
+      throw new Error("Modifier response returned no option");
 
-    const aggregate = await request('/backoffice/availability', barista);
+    const aggregate = await request("/backoffice/availability", barista);
     expect(aggregate.status).toBe(200);
-    await expect(aggregate.json()).resolves.toMatchObject({ intake: { acceptsNewOrders: true, updatedBy: null, updatedAt: expect.any(String) }, products: [expect.objectContaining({ id: product.id })] });
-    expect((await request(`/backoffice/availability/product/${product.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
-    expect((await request(`/backoffice/availability/variant/${variant.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
-    expect((await request(`/backoffice/availability/modifier/${option.id}`, barista, 'PATCH', { isAvailable: false })).status).toBe(200);
-    const intake = await request('/backoffice/service/intake', barista, 'PATCH', { acceptsNewOrders: false });
-    await expect(intake.json()).resolves.toMatchObject({ acceptsNewOrders: false, updatedBy: expect.any(String), updatedAt: expect.any(String) });
-    expect((await request('/backoffice/availability/product/not-a-uuid', barista, 'PATCH', { isAvailable: false })).status).toBe(400);
-    expect((await request(`/backoffice/availability/product/${randomUUID()}`, barista, 'PATCH', { isAvailable: false })).status).toBe(404);
+    await expect(aggregate.json()).resolves.toMatchObject({
+      intake: {
+        acceptsNewOrders: true,
+        updatedBy: null,
+        updatedAt: expect.any(String),
+      },
+      products: [expect.objectContaining({ id: product.id })],
+    });
+    const auditStart = await databaseTimestamp(pool);
+    expect(
+      (
+        await request(
+          `/backoffice/availability/product/${product.id}`,
+          barista,
+          "PATCH",
+          { isAvailable: false },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/backoffice/availability/variant/${variant.id}`,
+          barista,
+          "PATCH",
+          { isAvailable: false },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/backoffice/availability/modifier/${option.id}`,
+          barista,
+          "PATCH",
+          { isAvailable: false },
+        )
+      ).status,
+    ).toBe(200);
+    const auditEnd = await databaseTimestamp(pool);
+    const intake = await request(
+      "/backoffice/service/intake",
+      barista,
+      "PATCH",
+      { acceptsNewOrders: false },
+    );
+    await expect(intake.json()).resolves.toMatchObject({
+      acceptsNewOrders: false,
+      updatedBy: expect.any(String),
+      updatedAt: expect.any(String),
+    });
+    expect(
+      (
+        await request(
+          "/backoffice/availability/product/not-a-uuid",
+          barista,
+          "PATCH",
+          { isAvailable: false },
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(
+          `/backoffice/availability/product/${randomUUID()}`,
+          barista,
+          "PATCH",
+          { isAvailable: false },
+        )
+      ).status,
+    ).toBe(404);
 
-    await expect(pool.query(`SELECT value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`)).resolves.toMatchObject({ rows: [expect.objectContaining({ value: false, updated_by: expect.any(String), updated_at: expect.any(Date) })] });
-    await expect(pool.query(`SELECT action FROM audit_events WHERE action IN ('AVAILABILITY_UPDATED', 'SERVICE_INTAKE_UPDATED') ORDER BY action`)).resolves.toMatchObject({ rows: [{ action: 'AVAILABILITY_UPDATED' }, { action: 'AVAILABILITY_UPDATED' }, { action: 'AVAILABILITY_UPDATED' }, { action: 'SERVICE_INTAKE_UPDATED' }] });
+    await expect(
+      pool.query(
+        `SELECT value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`,
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        expect.objectContaining({
+          value: false,
+          updated_by: expect.any(String),
+          updated_at: expect.any(Date),
+        }),
+      ],
+    });
+    await expect(
+      pool.query(
+        `SELECT action FROM audit_events WHERE action IN ('AVAILABILITY_UPDATED', 'SERVICE_INTAKE_UPDATED') ORDER BY action`,
+      ),
+    ).resolves.toMatchObject({
+      rows: [
+        { action: "AVAILABILITY_UPDATED" },
+        { action: "AVAILABILITY_UPDATED" },
+        { action: "AVAILABILITY_UPDATED" },
+        { action: "SERVICE_INTAKE_UPDATED" },
+      ],
+    });
+    const availabilityAudits = await pool.query<{
+      actor_id: string;
+      entity_type: string;
+      entity_id: string;
+      created_at: Date;
+    }>(
+      `SELECT actor_id, entity_type, entity_id, created_at
+       FROM audit_events
+       WHERE action = 'AVAILABILITY_UPDATED'
+         AND entity_id = ANY($1::uuid[])
+       ORDER BY created_at, entity_id`,
+      [[product.id, variant.id, option.id]],
+    );
+    expect(availabilityAudits.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actor_id: baristaId,
+          entity_type: "product",
+          entity_id: product.id,
+        }),
+        expect.objectContaining({
+          actor_id: baristaId,
+          entity_type: "variant",
+          entity_id: variant.id,
+        }),
+        expect.objectContaining({
+          actor_id: baristaId,
+          entity_type: "modifier_option",
+          entity_id: option.id,
+        }),
+      ]),
+    );
+    expect(availabilityAudits.rows).toHaveLength(3);
+    for (const audit of availabilityAudits.rows) {
+      expect(audit.created_at).toBeInstanceOf(Date);
+      expect(audit.created_at.getTime()).toBeGreaterThanOrEqual(
+        auditStart.getTime(),
+      );
+      expect(audit.created_at.getTime()).toBeLessThanOrEqual(
+        auditEnd.getTime(),
+      );
+    }
   });
 
   async function accessToken(
@@ -431,11 +597,11 @@ describe("admin catalog E2E", () => {
     const phone = `+7999${Math.floor(Math.random() * 10_000_000)
       .toString()
       .padStart(7, "0")}`;
-    if (role === "administrator" || role === 'barista')
-      await pool.query(
-        "INSERT INTO users (phone_e164, role) VALUES ($1, $2)",
-        [phone, role],
-      );
+    if (role === "administrator" || role === "barista")
+      await pool.query("INSERT INTO users (phone_e164, role) VALUES ($1, $2)", [
+        phone,
+        role,
+      ]);
     await fetch(`${url}/api/v1/auth/otp/request`, {
       method: "POST",
       headers: headers(),
@@ -500,10 +666,22 @@ async function json<Result>(
 }
 let urlPlaceholder = "";
 async function readAcceptsNewOrders(pool: Pool): Promise<boolean> {
-  const result = await pool.query<{ value: boolean }>("SELECT value FROM service_settings WHERE key = 'accepts_new_orders'");
+  const result = await pool.query<{ value: boolean }>(
+    "SELECT value FROM service_settings WHERE key = 'accepts_new_orders'",
+  );
   const value = result.rows[0]?.value;
-  if (typeof value !== 'boolean') throw new Error('Service intake setting is missing');
+  if (typeof value !== "boolean")
+    throw new Error("Service intake setting is missing");
   return value;
+}
+async function databaseTimestamp(pool: Pool): Promise<Date> {
+  const result = await pool.query<{ timestamp: Date }>(
+    "SELECT CURRENT_TIMESTAMP AS timestamp",
+  );
+  const timestamp = result.rows[0]?.timestamp;
+  if (!(timestamp instanceof Date))
+    throw new Error("Database timestamp is missing");
+  return timestamp;
 }
 async function resetState(pool: Pool, acceptsNewOrders = true): Promise<void> {
   await pool.query("DELETE FROM audit_events");
@@ -520,5 +698,8 @@ async function resetState(pool: Pool, acceptsNewOrders = true): Promise<void> {
   await pool.query("DELETE FROM sessions");
   await pool.query("DELETE FROM otp_challenges");
   await pool.query("DELETE FROM users");
-  await pool.query("UPDATE service_settings SET value = $1 WHERE key = 'accepts_new_orders'", [acceptsNewOrders]);
+  await pool.query(
+    "UPDATE service_settings SET value = $1 WHERE key = 'accepts_new_orders'",
+    [acceptsNewOrders],
+  );
 }

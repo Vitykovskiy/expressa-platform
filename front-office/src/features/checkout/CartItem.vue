@@ -3,6 +3,7 @@
     class="cart-item"
     :class="{ 'cart-item--unavailable': props.unavailable }"
     :aria-busy="props.disabled"
+    :aria-describedby="props.unavailable ? unavailableMessageId : undefined"
     :aria-label="`Позиция корзины: ${props.item.productName}`"
   >
     <div class="cart-item__details">
@@ -14,7 +15,12 @@
           >Размер {{ props.item.size }}</span
         >
       </div>
-      <p v-if="props.unavailable" class="cart-item__unavailable" role="status">
+      <p
+        v-if="props.unavailable"
+        :id="unavailableMessageId"
+        class="cart-item__unavailable"
+        role="status"
+      >
         Сейчас недоступно — удалите позицию или выберите другую
       </p>
       <ul
@@ -89,6 +95,7 @@ import type { CartItemEmits, CartItemProps } from "./CartItem.types";
 
 const props = defineProps<CartItemProps>();
 const emit = defineEmits<CartItemEmits>();
+const unavailableMessageId = `cart-item-unavailable-${props.item.id}`;
 
 const addonRows = computed(() => {
   const addonsById = new Map<

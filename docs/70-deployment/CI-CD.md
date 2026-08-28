@@ -63,6 +63,9 @@ Administrator берётся из `BOOTSTRAP_ADMIN_PHONE`, OTP — из
 и не попадают в manifest, runtime.env или отчёт. Полный жизненный цикл
 временного стенда и отчёта описан в [E2E на VPS](E2E-on-VPS.md).
 
+CI последовательно запускает disposable-профили `empty`, `seeded` и `mutating`;
+их контракт и очистка описаны в [E2E на VPS](E2E-on-VPS.md).
+
 Источник соединения workflow — GitHub Environment Secrets `EXPRESSA_VPS_*`;
 источник постоянных секретов среды — её VPS
 `/srv/expressa/<environment>/runtime.env`; process-scoped значения workflow

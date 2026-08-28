@@ -30,6 +30,15 @@ describe("OrderPage", () => {
     expect(wrapper.text()).not.toContain("Онлайн-оплата");
   });
 
+  it("показывает оформленную стадию созданного заказа", async () => {
+    const { wrapper } = await mountOrder({
+      ...orderResponse,
+      stage: "CREATED",
+    });
+
+    expect(wrapper.text()).toContain("Оформлен");
+  });
+
   it("не показывает снимок при отказе API", async () => {
     const { wrapper } = await mountOrder(
       {

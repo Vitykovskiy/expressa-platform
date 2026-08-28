@@ -23,7 +23,7 @@ work_root="${E2E_WORK_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/expressa/e2e-ru
 report_container='expressa-e2e-report-host'
 project=''
 run_directory=''
-published=0
+report_published=0
 stage='runtime'
 
 [[ -f "$compose_file" && ! -L "$compose_file" ]] || fail 'e2e-compose.yml is unavailable'
@@ -89,7 +89,7 @@ ensure_report_host() {
 
 assert_no_e2e_secret() {
   local publication_directory="$1" secret
-  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_OTP:-}"; do
+  for secret in "${E2E_ADMIN_PHONE:-}" "${E2E_STAFF_PHONE:-}" "${E2E_CUSTOMER_PHONE:-}" "${E2E_CUSTOMER_2_PHONE:-}" "${E2E_OTP:-}"; do
     [[ -n "$secret" ]] || continue
     if grep --recursive --fixed-strings --quiet -- "$secret" "$publication_directory"; then
       fail 'E2E credential was found in report publication'
@@ -111,7 +111,7 @@ import zipfile
 root = pathlib.Path(sys.argv[1])
 credentials = {
     os.environ.get(name, "").encode()
-    for name in ("E2E_ADMIN_PHONE", "E2E_STAFF_PHONE", "E2E_CUSTOMER_PHONE", "E2E_OTP")
+    for name in ("E2E_ADMIN_PHONE", "E2E_STAFF_PHONE", "E2E_CUSTOMER_PHONE", "E2E_CUSTOMER_2_PHONE", "E2E_OTP")
 }
 report_pattern = re.compile(
     rb'(<template id="playwrightReportBase64">data:application/zip;base64,)(.*?)(</template>)',
@@ -156,7 +156,7 @@ publish_directory() {
   chmod -R a+rX "$publication_directory"
   ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
   mv -Tf "$report_root/current.next" "$report_root/current"
-  published=1
+  report_published=1
 }
 
 publish_diagnostic() {
@@ -185,7 +185,7 @@ publish_suite_report() {
   chmod -R a+rX "$publication_directory"
   ln -s "$(basename -- "$publication_directory")" "$report_root/current.next"
   mv -Tf "$report_root/current.next" "$report_root/current"
-  published=1
+  report_published=1
 }
 
 compose() {
@@ -206,7 +206,7 @@ cleanup_runtime() {
 
 on_exit() {
   local exit_status=$?
-  if (( exit_status != 0 )) && (( published == 0 )); then
+  if (( exit_status != 0 )) && (( report_published == 0 )); then
     publish_diagnostic "$stage" >/dev/null 2>&1 || true
   fi
   cleanup_runtime
@@ -245,7 +245,8 @@ prepare_runtime_environment() {
   [[ "${E2E_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'E2E_ADMIN_PHONE is invalid'
   [[ "${E2E_STAFF_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'E2E_STAFF_PHONE is invalid'
   [[ "${E2E_CUSTOMER_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'E2E_CUSTOMER_PHONE is invalid'
-  [[ "$E2E_ADMIN_PHONE" != "$E2E_STAFF_PHONE" && "$E2E_ADMIN_PHONE" != "$E2E_CUSTOMER_PHONE" && "$E2E_STAFF_PHONE" != "$E2E_CUSTOMER_PHONE" ]] || fail 'E2E role phones must be distinct'
+  [[ "${E2E_CUSTOMER_2_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'E2E_CUSTOMER_2_PHONE is invalid'
+  [[ "$E2E_ADMIN_PHONE" != "$E2E_STAFF_PHONE" && "$E2E_ADMIN_PHONE" != "$E2E_CUSTOMER_PHONE" && "$E2E_ADMIN_PHONE" != "$E2E_CUSTOMER_2_PHONE" && "$E2E_STAFF_PHONE" != "$E2E_CUSTOMER_PHONE" && "$E2E_STAFF_PHONE" != "$E2E_CUSTOMER_2_PHONE" && "$E2E_CUSTOMER_PHONE" != "$E2E_CUSTOMER_2_PHONE" ]] || fail 'E2E role phones must be distinct'
   [[ "${BACKEND_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACKEND_IMAGE must be immutable'
   [[ "${FRONT_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'FRONT_IMAGE must be immutable'
   [[ "${BACK_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACK_IMAGE must be immutable'
@@ -256,36 +257,63 @@ run_suite() {
   compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e >/dev/null 2>&1
 }
 
+seed_catalog_if_needed() {
+  [[ "$E2E_PROFILE" == empty ]] || compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$E2E_ADMIN_PHONE" backend dist/scripts/seed.js
+}
+
+provision_customer_if_needed() {
+  [[ "$E2E_PROFILE" == empty ]] || compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_CUSTOMER_PHONE" --role customer
+}
+
+run_profile() {
+  local profile="$1"
+  project="expressa-e2e-$E2E_RUN_ID-$profile"
+  [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*-(empty|seeded|mutating)$ ]] || fail 'compose project is invalid'
+  E2E_PROFILE="$profile"
+  export E2E_PROFILE
+
+  # A re-run cleans only the exact GitHub-run/profile project left by an interrupted attempt.
+  compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+  install -d -m 700 "$work_root"
+  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$profile.XXXXXX")"
+  export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
+  install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
+
+  stage="$profile-readiness"
+  if ! compose config -q || ! compose pull || ! compose up -d postgres || ! wait_for_health postgres || ! compose run --rm --no-deps backend dist/scripts/migrate.js || ! provision_customer_if_needed || ! compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_ADMIN_PHONE" --role administrator || ! seed_catalog_if_needed || ! compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_STAFF_PHONE" --role barista || ! compose up -d backend front back gateway || ! wait_for_health backend || ! wait_for_health front || ! wait_for_health back || ! wait_for_health gateway; then
+    publish_diagnostic "$stage" || true
+    cleanup_runtime
+    project=''
+    run_directory=''
+    unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+    return 1
+  fi
+
+  stage="$profile-playwright"
+  if ! run_suite; then
+    publish_suite_report || publish_diagnostic "$stage" || true
+    cleanup_runtime
+    project=''
+    run_directory=''
+    unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+    return 1
+  fi
+
+  publish_suite_report
+  cleanup_runtime
+  project=''
+  run_directory=''
+  unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+}
+
 run() {
   validate_metadata
   prepare_runtime_environment
   ensure_report_host
-  project="expressa-e2e-$E2E_RUN_ID"
-  [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*$ ]] || fail 'compose project is invalid'
-  install -d -m 700 "$work_root"
-  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.XXXXXX")"
-  export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
-  install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
-  stage='readiness'
-  compose config -q
-  compose pull
-  compose up -d postgres
-  wait_for_health postgres
-  compose run --rm --no-deps backend dist/scripts/migrate.js
-  compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$E2E_ADMIN_PHONE" backend dist/scripts/seed.js
-  compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_STAFF_PHONE" --role barista
-  compose up -d backend front back gateway
-  wait_for_health backend
-  wait_for_health front
-  wait_for_health back
-  wait_for_health gateway
-  stage='playwright'
-  if run_suite; then
-    publish_suite_report
-  else
-    publish_suite_report
-    return 1
-  fi
+  local profile
+  for profile in empty seeded mutating; do
+    run_profile "$profile" || return 1
+  done
 }
 
 [[ "$#" -ge 1 ]] || usage

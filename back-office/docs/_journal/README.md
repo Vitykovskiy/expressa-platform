@@ -21,5 +21,6 @@ _journal/
 ```
 
 Архитектурные решения фиксируются в
-[ADR](../ADR/ADR-001-feature-sliced-runtime-and-storybook.md), а актуальное
-устройство приложения — в [локальной карте](../INDEX.md).
+[ADR](../ADR/ADR-001-feature-sliced-runtime-and-storybook.md).
+
+Актуальное устройство приложения — в [локальной карте](../INDEX.md).
