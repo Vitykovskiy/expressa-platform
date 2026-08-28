@@ -55,13 +55,13 @@
         aria-label="Изменение итога заказа"
       >
         <span>Предыдущий итог</span>
-        <s>{{ totalRub }} ₽</s>
+        <s>{{ formatRubAmount(totalRub) }}</s>
         <span>Новый итог</span>
-        <strong>{{ checkoutTotalRub }} ₽</strong>
+        <strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
       </div>
       <div v-else class="cart-screen__mobile-total" aria-label="Итого заказа">
         <span>Итого</span>
-        <strong>{{ totalRub }} ₽</strong>
+        <strong>{{ formatRubAmount(totalRub) }}</strong>
       </div>
 
       <aside class="cart-screen__summary" aria-label="Сводка заказа">
@@ -72,14 +72,15 @@
         </p>
         <template v-if="needsReconfirmation">
           <p class="cart-screen__total cart-screen__total--previous">
-            <span>Предыдущий итог</span><s>{{ totalRub }} ₽</s>
+            <span>Предыдущий итог</span><s>{{ formatRubAmount(totalRub) }}</s>
           </p>
           <p class="cart-screen__total cart-screen__total--changed">
-            <span>Новый итог</span><strong>{{ checkoutTotalRub }} ₽</strong>
+            <span>Новый итог</span
+            ><strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
           </p>
         </template>
         <p v-else class="cart-screen__total">
-          <span>Итого</span><strong>{{ totalRub }} ₽</strong>
+          <span>Итого</span><strong>{{ formatRubAmount(totalRub) }}</strong>
         </p>
         <p class="cart-screen__payment">Оплата на кассе при получении</p>
         <ui-btn
@@ -114,6 +115,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ShoppingCart } from "lucide-vue-next";
+import { formatMinorAmount } from "@/entities/customer/model/money";
+import { minorUnitsPerRuble } from "@/entities/customer/model/money.constants";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import CartItem from "./CartItem.vue";
 import type { CartScreenEmits, CartScreenProps } from "./CartScreen.types";
@@ -194,8 +197,12 @@ const checkoutLabel = computed(() => {
   return "Оформить заказ";
 });
 const mobileCheckoutLabel = computed(
-  () => `${checkoutLabel.value} · ${checkoutTotalRub.value} ₽`,
+  () => `${checkoutLabel.value} · ${formatRubAmount(checkoutTotalRub.value)}`,
 );
+
+function formatRubAmount(value: number): string {
+  return formatMinorAmount(Math.round(value * minorUnitsPerRuble));
+}
 
 function emitCheckout(): void {
   if (isCheckoutDisabled.value) return;

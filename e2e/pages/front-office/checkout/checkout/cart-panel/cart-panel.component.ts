@@ -110,7 +110,9 @@ export class CartPanelComponent {
   }
 
   async readItemsCount(): Promise<number> {
-    return this.items.getByRole("listitem").count();
+    return this.items
+      .getByRole("listitem", { name: /^Позиция корзины:/u })
+      .count();
   }
 
   async readItemNames(): Promise<readonly string[]> {

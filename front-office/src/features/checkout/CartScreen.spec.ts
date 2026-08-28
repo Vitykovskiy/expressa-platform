@@ -22,6 +22,20 @@ describe("CartScreen", () => {
     expect(wrapper.text()).not.toContain("Онлайн-оплата");
   });
 
+  it("показывает локализованную сумму корзины", () => {
+    const wrapper = mountCartScreen({
+      items: [
+        { ...cartItem, id: "first", lineTotalRub: 1.99 },
+        { ...cartItem, id: "second", lineTotalRub: 1.99 },
+      ],
+    });
+
+    expect(wrapper.get('[aria-label="Итого заказа"]').text()).toContain(
+      "3,98 ₽",
+    );
+    expect(wrapper.text()).not.toContain("3.98 ₽");
+  });
+
   it("разрешает оформление, когда признак приёма не передан", async () => {
     const wrapper = mountCartScreen();
     const checkoutButtons = wrapper.findAll(".cart-screen__checkout");
@@ -161,6 +175,17 @@ describe("CartItem", () => {
 
     expect(wrapper.get("li").attributes("aria-describedby")).toBeUndefined();
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
+  });
+
+  it("показывает локализованную цену позиции", () => {
+    const wrapper = mount(CartItem, {
+      props: { item: { ...cartItem, lineTotalRub: 1.99 } },
+      global: { stubs: { UiIconBtn: true } },
+    });
+
+    expect(wrapper.get('[data-testid="cart-item-line-total"]').text()).toBe(
+      "1,99 ₽",
+    );
   });
 });
 

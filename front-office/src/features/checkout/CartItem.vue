@@ -50,9 +50,9 @@
     <footer class="cart-item__footer">
       <p class="cart-item__price">
         <span v-if="props.priceOutdated">Цена до обновления</span>
-        <strong data-testid="cart-item-line-total"
-          >{{ props.item.lineTotalRub }} ₽</strong
-        >
+        <strong data-testid="cart-item-line-total">{{
+          formatRubAmount(props.item.lineTotalRub)
+        }}</strong>
       </p>
       <div class="cart-item__quantity" aria-label="Количество">
         <ui-icon-btn
@@ -90,12 +90,18 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Minus, Plus, Trash2 } from "lucide-vue-next";
+import { formatMinorAmount } from "@/entities/customer/model/money";
+import { minorUnitsPerRuble } from "@/entities/customer/model/money.constants";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import type { CartItemEmits, CartItemProps } from "./CartItem.types";
 
 const props = defineProps<CartItemProps>();
 const emit = defineEmits<CartItemEmits>();
 const unavailableMessageId = `cart-item-unavailable-${props.item.id}`;
+
+function formatRubAmount(value: number): string {
+  return formatMinorAmount(Math.round(value * minorUnitsPerRuble));
+}
 
 const addonRows = computed(() => {
   const addonsById = new Map<

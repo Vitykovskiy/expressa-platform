@@ -79,14 +79,14 @@ test("AVAIL-11: сотрудник возобновляет приём новы�
 
     await availabilityManagement.open();
     await availabilityManagement.list.setIntake(AvailabilityState.AVAILABLE);
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await checkout.cart.open();
-
     await test.step("Back-office показывает, что приём новых заказов открыт.", async () => {
       await availabilityManagement.list.assertIntakeAvailability(
         AvailabilityState.AVAILABLE,
       );
     });
+    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+    await checkout.cart.open();
+
     await test.step("Customer не видит сообщение о закрытом приёме новых заказов.", async () => {
       expect(
         await checkout.cart.isIntakeClosedVisible(),

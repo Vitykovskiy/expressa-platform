@@ -77,15 +77,15 @@ test("AVAIL-05: сотрудник закрывает приём новых за
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
     await availabilityManagement.open();
     await availabilityManagement.list.setIntake(AvailabilityState.UNAVAILABLE);
-
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await checkout.cart.open();
-
     await test.step("Back-office показывает, что приём новых заказов остановлен.", async () => {
       await availabilityManagement.list.assertIntakeAvailability(
         AvailabilityState.UNAVAILABLE,
       );
     });
+
+    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+    await checkout.cart.open();
+
     await test.step("Customer видит публичное меню.", async () => {
       expect(
         await publicMenu.product.isProductVisible(productName),
