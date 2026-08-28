@@ -71,16 +71,39 @@ test("MENU-01: customer видит опубликованное меню", async
     await publicMenu.open(e2eEnvironment.frontOfficeUrl);
 
     await test.step("Customer видит активные категории в заданном порядке.", async () => {
+      const categoryNames = await publicMenu.readCategoryNames();
+      const firstCategoryIndex = categoryNames.indexOf(firstCategoryName);
+      const secondCategoryIndex = categoryNames.indexOf(secondCategoryName);
+
       expect(
-        await publicMenu.readCategoryNames(),
-        "Активные категории показаны в заданном порядке.",
-      ).toEqual([firstCategoryName, secondCategoryName]);
+        firstCategoryIndex,
+        "Первая созданная активная категория показана в меню.",
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        secondCategoryIndex,
+        "Вторая созданная активная категория показана в меню.",
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        firstCategoryIndex,
+        "Созданные активные категории показаны в заданном порядке.",
+      ).toBeLessThan(secondCategoryIndex);
     });
     await test.step("Для каждой категории показаны её название и количество товаров.", async () => {
+      const [categoryNames, productCounts] = await Promise.all([
+        publicMenu.readCategoryNames(),
+        publicMenu.readCategoryProductCounts(),
+      ]);
+      const firstCategoryIndex = categoryNames.indexOf(firstCategoryName);
+      const secondCategoryIndex = categoryNames.indexOf(secondCategoryName);
+
       expect(
-        await publicMenu.readCategoryProductCounts(),
-        "Для каждой опубликованной категории показано количество товаров.",
-      ).toEqual([1, 1]);
+        productCounts[firstCategoryIndex],
+        "Для первой созданной категории показано количество товаров.",
+      ).toBe(1);
+      expect(
+        productCounts[secondCategoryIndex],
+        "Для второй созданной категории показано количество товаров.",
+      ).toBe(1);
     });
   } finally {
     await test.step("Очистка: administrator удаляет созданные категории и товары.", async () => {

@@ -104,6 +104,59 @@ export class ProductEditorComponent {
     return this.priceInput(size).inputValue();
   }
 
+  async readSelectedCategoryName(): Promise<string> {
+    return this.dialog()
+      .getByLabel("Категория", { exact: true })
+      .getByRole("option", { selected: true })
+      .innerText();
+  }
+
+  async readName(): Promise<string> {
+    return this.dialog()
+      .getByLabel("Название товара", { exact: true })
+      .inputValue();
+  }
+
+  async readType(): Promise<string> {
+    return this.dialog().getByLabel("Тип товара", { exact: true }).inputValue();
+  }
+
+  async isActive(): Promise<boolean> {
+    return this.readSwitchState(
+      this.dialog().getByRole("switch", {
+        name: "Товар активен",
+        exact: true,
+      }),
+    );
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return this.readSwitchState(
+      this.dialog().getByRole("switch", {
+        name: "Товар доступен",
+        exact: true,
+      }),
+    );
+  }
+
+  async isSizeConfigured(size: ProductSize): Promise<boolean> {
+    return this.readSwitchState(
+      this.dialog().getByRole("switch", {
+        name: `Использовать размер ${size}`,
+        exact: true,
+      }),
+    );
+  }
+
+  async isSizeAvailable(size: ProductSize): Promise<boolean> {
+    return this.readSwitchState(
+      this.dialog().getByRole("switch", {
+        name: `Размер ${size} доступен`,
+        exact: true,
+      }),
+    );
+  }
+
   async setSinglePrice(price: string): Promise<void> {
     await test.step("Установить единую цену товара", async () => {
       const priceInput = this.singlePriceInput();
@@ -215,6 +268,18 @@ export class ProductEditorComponent {
     });
   }
 
+  async cancelEditing(name: string): Promise<void> {
+    await test.step(`Отменить редактирование товара «${name}»`, async () => {
+      await this.dialog()
+        .getByRole("button", { name: "Отмена", exact: true })
+        .click();
+      await expect(
+        this.dialog(),
+        `Редактор товара «${name}» закрыт без изменений.`,
+      ).toHaveCount(0);
+    });
+  }
+
   async requestArchive(name: string): Promise<void> {
     await test.step(`Запросить архивацию товара «${name}»`, async () => {
       await this.deleteButton().click();
@@ -285,6 +350,18 @@ export class ProductEditorComponent {
 
   private dialog(): Locator {
     return this.page.getByRole("dialog");
+  }
+
+  private async readSwitchState(switchControl: Locator): Promise<boolean> {
+    const checked = await switchControl.getAttribute("aria-checked");
+
+    if (checked !== "true" && checked !== "false") {
+      throw new Error(
+        `У переключателя некорректное значение aria-checked: ${checked ?? "отсутствует"}.`,
+      );
+    }
+
+    return checked === "true";
   }
 
   private confirmationDialog(): Locator {

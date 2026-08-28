@@ -62,6 +62,49 @@ test("CART-01: customer добавляет товар в корзину", async 
         data.productPrice,
       );
       await menuManagement.productEditor.save(data.productName);
+      await menuManagement.productEditor.openForEditing(data.productName);
+      await test.step("Созданный напиток сохранён с исходной конфигурацией.", async () => {
+        expect(
+          await menuManagement.productEditor.readSelectedCategoryName(),
+          "Сохранённый напиток относится к созданной категории.",
+        ).toBe(data.categoryName);
+        expect(
+          await menuManagement.productEditor.readName(),
+          "Сохранённый напиток имеет исходное название.",
+        ).toBe(data.productName);
+        expect(
+          await menuManagement.productEditor.readType(),
+          "Сохранённый напиток имеет тип DRINK.",
+        ).toBe(ProductType.DRINK);
+        expect(
+          await menuManagement.productEditor.isActive(),
+          "Сохранённый напиток активен.",
+        ).toBe(true);
+        expect(
+          await menuManagement.productEditor.isAvailable(),
+          "Сохранённый напиток доступен.",
+        ).toBe(true);
+
+        for (const size of [
+          ProductEditorSize.S,
+          ProductEditorSize.M,
+          ProductEditorSize.L,
+        ]) {
+          expect(
+            await menuManagement.productEditor.isSizeConfigured(size),
+            `Размер ${size} сохранён в конфигурации напитка.`,
+          ).toBe(true);
+          expect(
+            await menuManagement.productEditor.isSizeAvailable(size),
+            `Размер ${size} сохранён доступным.`,
+          ).toBe(true);
+          expect(
+            await menuManagement.productEditor.readPrice(size),
+            `Цена размера ${size} сохранена.`,
+          ).toBe(data.productPrice);
+        }
+      });
+      await menuManagement.productEditor.cancelEditing(data.productName);
       await backOfficeAuth.form.signOut();
     });
 
