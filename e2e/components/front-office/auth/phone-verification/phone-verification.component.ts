@@ -42,7 +42,7 @@ export class PhoneVerificationComponent {
       ).toBeEnabled();
       await this.phoneInput.fill(phone);
       await expect(this.phoneInput, "Номер телефона указан.").toHaveValue(
-        phone,
+        formatPhoneForUi(phone),
       );
     });
   }
@@ -144,4 +144,22 @@ export class PhoneVerificationComponent {
       "Показано ограничение повторной отправки кода.",
     ).toContainText("Повторный запрос кода пока недоступен.");
   }
+}
+
+function formatPhoneForUi(phone: string): string {
+  const digits = phone.replace(/\D/g, "").slice(0, 11);
+  const localDigits = digits.startsWith("8") ? `7${digits.slice(1)}` : digits;
+  const number = localDigits.startsWith("7")
+    ? localDigits.slice(1)
+    : localDigits;
+
+  if (number.length === 0) return "";
+  if (number.length <= 3) return `+7 (${number}`;
+  if (number.length <= 6)
+    return `+7 (${number.slice(0, 3)}) ${number.slice(3)}`;
+  if (number.length <= 8) {
+    return `+7 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
+  }
+
+  return `+7 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6, 8)}-${number.slice(8, 10)}`;
 }
