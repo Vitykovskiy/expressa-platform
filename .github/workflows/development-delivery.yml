@@ -87,6 +87,8 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           AUTH_DEVELOPMENT_OTP: ${{ secrets.AUTH_DEVELOPMENT_OTP }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
+          BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
         run: deploy/run-remote.sh development deploy/images.env
   e2e-image:
     needs: deploy

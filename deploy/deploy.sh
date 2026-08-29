@@ -78,14 +78,44 @@ export POSTGRES_DB="${POSTGRES_DB:-expressa}" POSTGRES_USER="${POSTGRES_USER:-ex
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 compose() { docker compose --file "$compose_file" "$@"; }
 
+backup_key_file_is_secure() {
+  [[ -f "$1" && ! -L "$1" && -O "$1" && "$(stat --format='%a' -- "$1")" == 600 && -r "$1" ]]
+}
+
+validate_backup_preflight() {
+  [[ "${BACKUP_ENCRYPTION_KEY_FILE:-}" ]] || fail 'BACKUP_ENCRYPTION_KEY_FILE is required'
+  [[ "${BACKUP_INTEGRITY_KEY_FILE:-}" ]] || fail 'BACKUP_INTEGRITY_KEY_FILE is required'
+  [[ "${BACKUP_RETENTION_DAYS:-}" =~ ^[1-9][0-9]*$ && "$BACKUP_RETENTION_DAYS" == 7 ]] || fail 'BACKUP_RETENTION_DAYS must equal 7'
+  backup_key_file_is_secure "$BACKUP_ENCRYPTION_KEY_FILE" || fail 'backup encryption key file must be an owner-owned readable regular file with mode 0600'
+  backup_key_file_is_secure "$BACKUP_INTEGRITY_KEY_FILE" || fail 'backup integrity key file must be an owner-owned readable regular file with mode 0600'
+}
+
+start_existing_service() {
+  local container service="$1"
+
+  container="$(compose ps -aq "$service")"
+  if [[ "$container" && "$(docker inspect --format '{{.State.Running}}' "$container")" != true ]]; then
+    docker start "$container" >/dev/null
+  fi
+}
+
+wait_for_existing_service_health() {
+  local container service="$1"
+
+  container="$(compose ps -aq "$service")"
+  [[ "$container" ]] || return
+  for _ in {1..30}; do
+    [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]] && return
+    sleep 2
+  done
+  fail "$service did not become healthy before backup rehearsal"
+}
+
 verify_fresh_backup() {
   local backup_file backup_name backup_output
 
   BACKUP_DIRECTORY="${BACKUP_DIRECTORY:-$deploy_root/state/operations/backups}"
   BACKUP_METRICS_DIRECTORY="${BACKUP_METRICS_DIRECTORY:-$deploy_root/state/operations/backup-metrics}"
-  [[ "${BACKUP_ENCRYPTION_KEY_FILE:-}" ]] || fail 'BACKUP_ENCRYPTION_KEY_FILE is required'
-  [[ "${BACKUP_INTEGRITY_KEY_FILE:-}" ]] || fail 'BACKUP_INTEGRITY_KEY_FILE is required'
-  [[ "${BACKUP_RETENTION_DAYS:-}" ]] || fail 'BACKUP_RETENTION_DAYS is required'
   export BACKUP_DIRECTORY BACKUP_METRICS_DIRECTORY
   backup_output="$(BACKUP_ENCRYPTION_KEY_FILE="$BACKUP_ENCRYPTION_KEY_FILE" \
     BACKUP_INTEGRITY_KEY_FILE="$BACKUP_INTEGRITY_KEY_FILE" \
@@ -107,17 +137,28 @@ verify_fresh_backup() {
   passed backup restore
 }
 
+validate_backup_preflight
 compose config -q
-compose pull
-compose up -d postgres
-postgres_id="$(compose ps -q postgres)"
+start_existing_service postgres
+postgres_id="$(compose ps -aq postgres)"
+if [[ ! "$postgres_id" ]]; then
+  compose up -d postgres
+  postgres_id="$(compose ps -q postgres)"
+fi
 for _ in {1..30}; do
   [[ "$(docker inspect --format '{{.State.Health.Status}}' "$postgres_id")" == healthy ]] && break
   sleep 2
 done
 [[ "$(docker inspect --format '{{.State.Health.Status}}' "$postgres_id")" == healthy ]] || fail 'postgres did not become healthy'
-compose stop backend front back
+for service in backend front back; do
+  start_existing_service "$service"
+done
+for service in backend front back; do
+  wait_for_existing_service_health "$service"
+done
+compose pull
 verify_fresh_backup
+compose stop backend front back
 compose run --rm --no-deps backend dist/scripts/migrate.js
 passed migration
 compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$BOOTSTRAP_ADMIN_PHONE" backend dist/scripts/seed.js
