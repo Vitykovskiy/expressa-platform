@@ -409,6 +409,9 @@ seed_catalog_for_scenario() {
   [[ "$scenario" == no-seed ]] && return
   compose run --rm --no-deps \
     -e BOOTSTRAP_ADMIN_PHONE="$E2E_ADMIN_PHONE" \
+    -e E2E_CUSTOMER_PHONE="$E2E_CUSTOMER_PHONE" \
+    -e E2E_CUSTOMER_2_PHONE="$E2E_CUSTOMER_2_PHONE" \
+    -e E2E_STAFF_PHONE="$E2E_STAFF_PHONE" \
     -e E2E_SEED_SCENARIO="$scenario" \
     backend dist/scripts/seed.js
 }
