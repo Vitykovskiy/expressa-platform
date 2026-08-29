@@ -31,12 +31,11 @@ import {
  * - Customer не может оформить корзину, пока не удалит недоступную позицию.
  */
 test("CHECKOUT-05: customer не оформляет корзину с недоступной позицией", async ({
-  availabilityManagement,
-  backOfficeAuth,
   checkout,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
+  multiSession,
   publicMenu,
 }) => {
   await test.step("Подготовка: customer авторизуется", async () => {
@@ -55,11 +54,11 @@ test("CHECKOUT-05: customer не оформляет корзину с недос
   await publicMenu.product.selectModifier("Обычное молоко");
   await publicMenu.product.addToCart();
   await test.step("Подготовка: staff авторизуется", async () => {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.staff);
+    await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
+    await multiSession.staff.auth.form.signIn(e2eCredentials.staff);
   });
-  await availabilityManagement.open();
-  await availabilityManagement.list.setItemAvailability(
+  await multiSession.staff.availabilityManagement.open();
+  await multiSession.staff.availabilityManagement.list.setItemAvailability(
     "Капучино",
     AvailabilityItemType.PRODUCT,
     AvailabilityState.UNAVAILABLE,

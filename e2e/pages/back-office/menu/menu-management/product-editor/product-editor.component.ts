@@ -59,7 +59,7 @@ export class ProductEditorComponent {
       name: "Товар доступен",
       exact: true,
     });
-    this.singlePriceInput = this.dialog.getByLabel("Цена, коп.", {
+    this.singlePriceInput = this.dialog.getByLabel("Цена, ₽", {
       exact: true,
     });
     this.variantsRequiredAlert = this.dialog.getByRole("alert");
@@ -419,6 +419,6 @@ export class ProductEditorComponent {
   }
 
   private priceInput(size: ProductSize): Locator {
-    return this.dialog.getByLabel(`Цена ${size}, коп.`, { exact: true });
+    return this.dialog.getByLabel(`Цена ${size}, ₽`, { exact: true });
   }
 }

@@ -39,8 +39,10 @@ test("ORDER-05: история customer изолирована от заказо
     for (const [position, order] of orders.entries()) {
       const index = 21 - position;
       const expectedDate = new Intl.DateTimeFormat("ru-RU", {
-        dateStyle: "short",
-        timeStyle: "short",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
         timeZone: "UTC",
       }).format(
         new Date(`2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`),

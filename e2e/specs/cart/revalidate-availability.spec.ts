@@ -37,12 +37,11 @@ import {
  * - После удаления «Капучино» customer может продолжить оформление с «Эспрессо».
  */
 test("CART-07: customer устраняет недоступную позицию", async ({
-  availabilityManagement,
-  backOfficeAuth,
   checkout,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
+  multiSession,
   publicMenu,
 }) => {
   await test.step("Подготовка: customer авторизуется.", async () => {
@@ -60,14 +59,16 @@ test("CART-07: customer устраняет недоступную позицию
   await publicMenu.product.addToCart();
   await publicMenu.product.openProduct("Эспрессо");
   await publicMenu.product.addToCart();
-  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-  await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
-  await backOfficeAuth.form.requestCode();
-  await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
-  await backOfficeAuth.form.confirmCode();
-  await availabilityManagement.open();
-  await availabilityManagement.list.search("Капучино");
-  await availabilityManagement.list.setItemAvailability(
+  await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
+  await multiSession.staff.auth.form.fillPhone(
+    e2eCredentials.administrator.phone,
+  );
+  await multiSession.staff.auth.form.requestCode();
+  await multiSession.staff.auth.form.fillCode(e2eCredentials.administrator.otp);
+  await multiSession.staff.auth.form.confirmCode();
+  await multiSession.staff.availabilityManagement.open();
+  await multiSession.staff.availabilityManagement.list.search("Капучино");
+  await multiSession.staff.availabilityManagement.list.setItemAvailability(
     "Капучино",
     AvailabilityItemType.PRODUCT,
     AvailabilityState.UNAVAILABLE,

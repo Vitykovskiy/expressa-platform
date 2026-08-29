@@ -1,6 +1,7 @@
 import type { Browser, BrowserContext } from "@playwright/test";
 
 import { BackOfficeAuthPage } from "@pages/back-office/auth/back-office-auth/back-office-auth.page";
+import { AvailabilityManagementPage } from "@pages/back-office/availability/availability-management/availability-management.page";
 import { MenuManagementPage } from "@pages/back-office/menu/menu-management/menu-management.page";
 import { StaffOrdersPage } from "@pages/back-office/orders/staff-orders/staff-orders.page";
 import { CustomerAuthPage } from "@pages/front-office/auth/customer-auth/customer-auth.page";
@@ -32,6 +33,7 @@ export async function useMultiSessionFixture(
       },
       staff: {
         auth: new BackOfficeAuthPage(staffPage),
+        availabilityManagement: new AvailabilityManagementPage(staffPage),
         menuManagement: new MenuManagementPage(staffPage),
         orders: new StaffOrdersPage(staffPage),
       },

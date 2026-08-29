@@ -161,7 +161,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     ]);
 
     expect(name, "Открыт опубликованный напиток.").toBe(data.productName);
-    expect(price, "Цена напитка опубликована.").toContain("1,99");
+    expect(price, "Цена напитка опубликована.").toBe("199 ₽");
     expect(size, "Доступен размер M.").toBe(ProductConfiguratorSize.M);
     expect(modifierName, "Выбрана обязательная добавка.").toBe(
       data.modifierName,
@@ -186,7 +186,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     expect(snapshot.quantity, "Количество сохранено в заказе.").toContain(
       String(data.productQuantity),
     );
-    expect(snapshot.total, "Итог сохранён в заказе.").toContain("3,98");
+    expect(snapshot.total, "Итог сохранён в заказе.").toBe("398 ₽");
   });
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);

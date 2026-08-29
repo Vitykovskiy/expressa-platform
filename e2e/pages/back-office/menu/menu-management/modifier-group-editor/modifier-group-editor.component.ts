@@ -297,7 +297,7 @@ export class ModifierGroupEditorComponent {
   }
 
   private optionPriceInput(option: Locator): Locator {
-    return option.getByLabel("Изменение цены, коп.", { exact: true });
+    return option.getByLabel("Изменение цены, ₽", { exact: true });
   }
 
   private optionDefaultSwitchFor(option: Locator): Locator {

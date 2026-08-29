@@ -139,6 +139,6 @@ test("JOURNEY-01: администратор публикует напиток",
   await test.step("Результат: цена напитка соответствует опубликованной.", async () => {
     const price = await publicMenu.product.readProductPrice();
 
-    expect(price, "Цена напитка показана.").toContain("1,99");
+    expect(price, "Цена напитка показана.").toBe("199 ₽");
   });
 });
