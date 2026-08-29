@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 usage() {
-  printf '%s\n' 'Usage: run-e2e-remote.sh setup-report-host|run|diagnostic build|deploy|readiness|self-test-allowlist' >&2
+  printf '%s\n' 'Usage: run-e2e-remote.sh setup-report-host|run|export-published-report DIRECTORY|diagnostic build|deploy|readiness|self-test-allowlist' >&2
   exit 64
 }
 
@@ -231,15 +231,68 @@ PY
 
 write_suite_index() {
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
+  local total=0 passed=0 failed=0
+  local entry case_id status failed_case_ids=()
+  for entry in "${report_entries[@]}"; do
+    IFS='|' read -r case_id status <<< "$entry"
+    (( total += 1 ))
+    if [[ "$status" == passed ]]; then
+      (( passed += 1 ))
+    else
+      (( failed += 1 ))
+      failed_case_ids+=("$case_id")
+    fi
+  done
+  {
+    printf 'run_id=%s\nrevision=%s\ntotal=%d\npassed=%d\nfailed=%d\n' \
+      "$E2E_RUN_ID" "$E2E_REVISION" "$total" "$passed" "$failed"
+    printf 'failed_case_ids='
+    (IFS=,; printf '%s' "${failed_case_ids[*]:-}")
+    printf '\n'
+  } > "$suite_directory/summary.txt"
   printf '<!doctype html><meta charset="utf-8"><title>E2E suite report</title><h1>E2E suite report</h1><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p><ul>' \
     "$E2E_REVISION" "$E2E_RUN_URL" > "$suite_directory/index.html"
+  printf '<p>Total: %d. Passed: %d. Failed: %d.</p>' "$total" "$passed" "$failed" >> "$suite_directory/index.html"
   [[ -z "$suite_diagnostic" ]] || printf '<p>Diagnostic: %s</p>' "$suite_diagnostic" >> "$suite_directory/index.html"
-  local entry case_id status
   for entry in "${report_entries[@]}"; do
     IFS='|' read -r case_id status <<< "$entry"
     printf '<li>%s: %s — <a href="%s/">report</a></li>' "$case_id" "$status" "$case_id" >> "$suite_directory/index.html"
   done
   printf '</ul>' >> "$suite_directory/index.html"
+}
+
+published_suite_directory() {
+  [[ -d "$report_root" && ! -L "$report_root" ]] || fail 'report root is unavailable'
+  local canonical_root current_directory
+  canonical_root="$(realpath -e -- "$report_root")"
+  [[ -L "$report_root/current" ]] || fail 'current E2E report is unavailable'
+  current_directory="$(realpath -e -- "$report_root/current")"
+  [[ -d "$current_directory" && ! -L "$current_directory" ]] || fail 'current E2E report is invalid'
+  [[ "$(dirname -- "$current_directory")" == "$canonical_root" ]] || fail 'current E2E report is outside report root'
+  [[ "$(basename -- "$current_directory")" =~ ^\.incoming\.${E2E_RUN_ID}\.[A-Za-z0-9]{6}$ ]] || fail 'current E2E report belongs to another run'
+  if find "$current_directory" -type l -print -quit | grep --quiet .; then
+    fail 'current E2E report contains a symbolic link'
+  fi
+  printf '%s\n' "$current_directory"
+}
+
+export_published_report() {
+  local destination="$1" source_directory canonical_destination
+  validate_metadata
+  source_directory="$(published_suite_directory)"
+  sanitize_e2e_report "$source_directory"
+  assert_no_e2e_secret "$source_directory"
+  [[ ! -e "$destination" || ( -d "$destination" && ! -L "$destination" ) ]] || fail 'E2E export destination is invalid'
+  install -d -m 700 "$destination"
+  canonical_destination="$(realpath -e -- "$destination")"
+  [[ "$canonical_destination" != "$source_directory" ]] || fail 'E2E export destination must differ from report source'
+  if find "$canonical_destination" -mindepth 1 -print -quit | grep --quiet .; then
+    fail 'E2E export destination must be empty'
+  fi
+  cp -a -- "$source_directory/." "$canonical_destination/"
+  if find "$canonical_destination" -type l -print -quit | grep --quiet .; then
+    fail 'E2E export contains a symbolic link'
+  fi
 }
 
 prepare_suite_report() {
@@ -276,13 +329,6 @@ copy_playwright_report() {
   cp -a -- "$source_directory/." "$target_directory/"
 }
 
-copy_playwright_output() {
-  local target_directory="$1"
-  local output_file="$E2E_ARTIFACT_DIRECTORY/playwright-output.log"
-  [[ -f "$output_file" && ! -L "$output_file" ]] || fail 'Playwright output is unavailable'
-  cp -- "$output_file" "$target_directory/playwright-output.log"
-}
-
 publish_case_report() {
   local case_id="$1" status="$2" diagnostic_stage="$3" publication_directory
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
@@ -290,9 +336,7 @@ publish_case_report() {
   install -d -m 700 "$publication_directory"
   if [[ -d "${E2E_ARTIFACT_DIRECTORY:-}/report" && -f "${E2E_ARTIFACT_DIRECTORY:-}/report/index.html" ]]; then
     copy_playwright_report "$publication_directory"
-    [[ "$status" == passed ]] || copy_playwright_output "$publication_directory"
   else
-    [[ -f "${E2E_ARTIFACT_DIRECTORY:-}/playwright-output.log" ]] && copy_playwright_output "$publication_directory"
     printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Stage: %s. Playwright report is unavailable.</p>' \
       "$diagnostic_stage" > "$publication_directory/index.html"
   fi
@@ -579,8 +623,8 @@ validate_test_cases() {
 
 run() {
   validate_metadata
-  prepare_runtime_environment
   prepare_suite_report
+  prepare_runtime_environment
   validate_test_cases
   local record case_id profile scenario test_title case_number=0 suite_failed=0
   for record in "${test_cases[@]}"; do
@@ -612,6 +656,10 @@ case "$1" in
     trap 'on_signal 143' TERM
     trap 'on_signal 129' HUP
     run
+    ;;
+  export-published-report)
+    [[ "$#" == 2 ]] || usage
+    export_published_report "$2"
     ;;
   diagnostic)
     [[ "$#" == 2 ]] || usage
