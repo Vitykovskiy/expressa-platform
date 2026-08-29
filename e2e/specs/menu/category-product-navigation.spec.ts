@@ -48,7 +48,7 @@ test("MENU-04: покупатель открывает категорию и т�
     expect(
       await publicMenu.product.readProductPrice(),
       "Показана цена выбранного размера.",
-    ).toBe("320 ₽");
+    ).toBe("320 ₽");
   });
   await test.step("Покупатель видит доступные варианты товара и группы добавок.", async () => {
     expect(

@@ -60,7 +60,9 @@ export class PublicMenuPage {
   }
 
   async readOpenedProductNames(): Promise<readonly string[]> {
-    return this.openedProducts.allInnerTexts();
+    const products = await this.openedProducts.allInnerTexts();
+
+    return products.map((text) => this.productName(text));
   }
 
   async isEmptyVisible(): Promise<boolean> {
@@ -87,6 +89,16 @@ export class PublicMenuPage {
     }
 
     return text.slice(0, separator);
+  }
+
+  private productName(text: string): string {
+    const [name] = text.split("\n");
+
+    if (name === undefined || name === "") {
+      throw new Error("Название товара не распознано.");
+    }
+
+    return name;
   }
 
   private categoryProductCount(text: string): number {

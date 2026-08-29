@@ -8,9 +8,10 @@ import { expect, test } from "@fixtures/test";
  * порядке.
  *
  * Сценарий:
- * 1. Администратор открывает управление меню.
- * 2. Администратор раскрывает категорию «Кофе».
- * 3. Администратор перемещает товар «Эспрессо» вверх.
+ * 1. Администратор открывает раздел «Меню».
+ * 2. Администратор открывает управление меню.
+ * 3. Администратор раскрывает категорию «Кофе».
+ * 4. Администратор перемещает товар «Эспрессо» вверх.
  *
  * Ожидаемый результат:
  * - Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории
@@ -31,6 +32,7 @@ test("CATALOG-11: администратор меняет порядок тов�
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
   });
   await menuManagement.open();
+  await menuManagement.ensureManagementExpanded();
   await menuManagement.catalog.expandCategory(categoryName);
   await menuManagement.catalog.moveProductUp(secondProductName);
   await test.step("Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории «Кофе».", async () => {

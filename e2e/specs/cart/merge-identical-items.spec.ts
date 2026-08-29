@@ -48,17 +48,17 @@ test("CART-02: customer объединяет одинаковые конфигу
       "Количество позиции равно двум.",
     ).toBe(2);
   });
-  await test.step("Стоимость позиции и итог корзины равны 640 ₽.", async () => {
+  await test.step("Стоимость позиции и итог корзины равны 640 ₽.", async () => {
     expect(
       await checkout.cart.readItemLineTotal(
         "Капучино",
         ProductConfiguratorSize.M,
         ["Обычное молоко"],
       ),
-      "Стоимость позиции равна 640 ₽.",
-    ).toBe("640 ₽");
-    expect(await checkout.cart.readTotal(), "Итог корзины равен 640 ₽.").toBe(
-      "640 ₽",
+      "Стоимость позиции равна 640 ₽.",
+    ).toBe("640 ₽");
+    expect(await checkout.cart.readTotal(), "Итог корзины равен 640 ₽.").toBe(
+      "640 ₽",
     );
   });
 });

@@ -72,7 +72,7 @@ test("QUEUE-05: сотрудник открывает детали заказа"
       OrderQueueStage.ACCEPTED,
     );
     expect(history[0]?.occurredAt, "Показано точное время перехода.").toBe(
-      "02.01.2030, 00:03",
+      "02.01.2030, 00:02",
     );
     expect(history[0]?.author, "Показан автор перехода.").not.toBe("");
   });

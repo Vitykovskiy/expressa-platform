@@ -8,9 +8,10 @@ import { expect, test } from "@fixtures/test";
  *
  * Сценарий:
  * 1. Администратор открывает управление меню.
- * 2. Администратор открывает редактирование товара «Эспрессо».
- * 3. Администратор изменяет название товара на «Эспрессо — обновлено».
- * 4. Администратор сохраняет изменения.
+ * 2. Администратор раскрывает категорию «Кофе».
+ * 3. Администратор открывает редактирование товара «Эспрессо».
+ * 4. Администратор изменяет название товара на «Эспрессо — обновлено».
+ * 5. Администратор сохраняет изменения.
  *
  * Ожидаемый результат:
  * - Администратор видит товар «Эспрессо — обновлено».
@@ -29,6 +30,7 @@ test("CATALOG-10: администратор редактирует товар",
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
   });
   await menuManagement.open();
+  await menuManagement.catalog.expandCategory("Кофе");
   await menuManagement.productEditor.openForEditing(initialProductName);
   await menuManagement.productEditor.fillName(productName);
   await menuManagement.productEditor.saveChanges(productName);

@@ -38,7 +38,7 @@ test("AVAIL-10: сотрудник включает добавку", async ({
     await backOfficeAuth.form.confirmCode();
   });
   await availabilityManagement.open();
-  await availabilityManagement.list.search("Капучино");
+  await availabilityManagement.list.search("Овсяное молоко");
   await availabilityManagement.list.setItemAvailability(
     modifierName,
     AvailabilityItemType.MODIFIER,

@@ -242,10 +242,10 @@ export class ProductConfiguratorComponent {
   }
 
   private productButton(productName: string): Locator {
-    const price = "\\d[\\d\\s]*(?:,\\d+)?\\s+₽";
-    const drinkPrice = `(?:S|M|L)\\s+·\\s+${price}`;
+    const price = "\\d[\\d\\p{White_Space}]*(?:,\\d+)?\\p{White_Space}+₽";
+    const drinkPrice = `(?:S|M|L)\\p{White_Space}+·\\p{White_Space}+${price}`;
     const productButtonName = new RegExp(
-      `^${escapeRegExp(productName)}\\s+(?:Напиток\\s+${drinkPrice}(?:\\s+${drinkPrice})*|Еда и другое\\s+${price})$`,
+      `^${escapeRegExp(productName)}\\p{White_Space}+(?:Напиток\\p{White_Space}+${drinkPrice}(?:\\p{White_Space}+${drinkPrice})*|Еда и другое\\p{White_Space}+${price})$`,
       "u",
     );
 

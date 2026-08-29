@@ -49,12 +49,12 @@ test("CART-04: customer изменяет количество и итог", asyn
         ProductConfiguratorSize.M,
         ["Обычное молоко"],
       ),
-      "После увеличения показана стоимость 640 ₽.",
-    ).toBe("640 ₽");
+      "После увеличения показана стоимость 640 ₽.",
+    ).toBe("640 ₽");
     expect(
       await checkout.cart.readTotal(),
-      "После увеличения показан итог 640 ₽.",
-    ).toBe("640 ₽");
+      "После увеличения показан итог 640 ₽.",
+    ).toBe("640 ₽");
   });
   await checkout.cart.setQuantity("Капучино", 1, ProductConfiguratorSize.M, [
     "Обычное молоко",
@@ -74,10 +74,10 @@ test("CART-04: customer изменяет количество и итог", asyn
         ProductConfiguratorSize.M,
         ["Обычное молоко"],
       ),
-      "Стоимость одной конфигурации равна 320 ₽.",
-    ).toBe("320 ₽");
-    expect(await checkout.cart.readTotal(), "Итог корзины равен 320 ₽.").toBe(
-      "320 ₽",
+      "Стоимость одной конфигурации равна 320 ₽.",
+    ).toBe("320 ₽");
+    expect(await checkout.cart.readTotal(), "Итог корзины равен 320 ₽.").toBe(
+      "320 ₽",
     );
   });
   await checkout.cart.setQuantity("Капучино", 20, ProductConfiguratorSize.M, [
@@ -98,10 +98,10 @@ test("CART-04: customer изменяет количество и итог", asyn
         ProductConfiguratorSize.M,
         ["Обычное молоко"],
       ),
-      "Стоимость позиции пересчитана до 6 400 ₽.",
-    ).toBe("6 400 ₽");
-    expect(await checkout.cart.readTotal(), "Итог корзины равен 6 400 ₽.").toBe(
-      "6 400 ₽",
+      "Стоимость позиции пересчитана до 6 400 ₽.",
+    ).toBe("6 400 ₽");
+    expect(await checkout.cart.readTotal(), "Итог корзины равен 6 400 ₽.").toBe(
+      "6 400 ₽",
     );
   });
 });
