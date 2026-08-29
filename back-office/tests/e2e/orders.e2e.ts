@@ -334,9 +334,9 @@ async function createCatalogProduct(page: OrdersPage): Promise<void> {
   await productDialog
     .getByLabel("Название товара")
     .fill(ordersUnifiedProductName);
-  await productDialog.getByLabel("Цена S, коп.").fill("30000");
-  await productDialog.getByLabel("Цена M, коп.").fill("32000");
-  await productDialog.getByLabel("Цена L, коп.").fill("34000");
+  await productDialog.getByLabel("Цена S, ₽").fill("300");
+  await productDialog.getByLabel("Цена M, ₽").fill("320");
+  await productDialog.getByLabel("Цена L, ₽").fill("340");
   const [productResponse] = await Promise.all([
     page.waitForResponse(
       (response) =>
@@ -434,7 +434,7 @@ async function transition(
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        /\/api\/v1\/backoffice\/orders\/.+\/(accept|start-preparing|mark-ready|issue)$/.test(
+        /\/api\/v2\/backoffice\/orders\/.+\/(accept|start-preparing|mark-ready|issue)$/.test(
           new URL(candidate.url()).pathname,
         ),
       { timeout: 10_000 },
