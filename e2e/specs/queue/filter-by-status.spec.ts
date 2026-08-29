@@ -35,8 +35,8 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.CREATED,
   };
   const preparing = {
@@ -46,8 +46,8 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.PREPARING,
   };
   const ready = {
@@ -57,8 +57,8 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.READY,
   };
   const accepted = {
@@ -68,8 +68,8 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.ACCEPTED,
   };
   const issued = {
@@ -79,8 +79,8 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.ISSUED,
   };
 

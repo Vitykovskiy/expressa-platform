@@ -132,7 +132,7 @@ describe("product configuration", () => {
     ).toBe(false);
   });
 
-  it("считает integer minor totals и создаёт только валидный discriminated draft", () => {
+  it("считает integer ruble totals и создаёт только валидный discriminated draft", () => {
     let configuration = createProductConfiguration(drink);
     configuration = toggleProductConfigurationOption(
       configuration,
@@ -147,18 +147,18 @@ describe("product configuration", () => {
     configuration = setProductConfigurationQuantity(configuration, 2);
 
     expect(getProductConfigurationTotals(configuration)).toEqual({
-      lineTotalMinor: 76000,
-      unitTotalMinor: 38000,
+      lineTotal: 760,
+      unitTotal: 380,
     });
     expect(toCartItemDraft(configuration)).toMatchObject({
-      lineTotalMinor: 76000,
+      lineTotal: 760,
       selectedModifierOptions: [
         { groupId: "milk", id: "milk-oat" },
         { groupId: "syrup", id: "vanilla" },
       ],
       selectedVariant: { id: "m", size: "M" },
       type: "DRINK",
-      unitTotalMinor: 38000,
+      unitTotal: 380,
     });
   });
 
@@ -188,11 +188,11 @@ const drink = {
   type: "DRINK",
   name: "Капучино",
   description: "Классический",
-  priceMinor: null,
+  price: null,
   isAvailable: true,
   variants: [
-    { id: "s", size: "S", priceMinor: 28000, isAvailable: false },
-    { id: "m", size: "M", priceMinor: 30000, isAvailable: true },
+    { id: "s", size: "S", price: 280, isAvailable: false },
+    { id: "m", size: "M", price: 300, isAvailable: true },
   ],
   modifierGroups: [
     {
@@ -205,21 +205,21 @@ const drink = {
         {
           id: "milk-regular",
           name: "Обычное",
-          priceDeltaMinor: 0,
+          priceDelta: 0,
           isDefault: true,
           isAvailable: true,
         },
         {
           id: "milk-oat",
           name: "Овсяное",
-          priceDeltaMinor: 8000,
+          priceDelta: 80,
           isDefault: false,
           isAvailable: true,
         },
         {
           id: "milk-unavailable",
           name: "Кокосовое",
-          priceDeltaMinor: 8000,
+          priceDelta: 80,
           isDefault: false,
           isAvailable: false,
         },
@@ -235,21 +235,21 @@ const drink = {
         {
           id: "vanilla",
           name: "Ваниль",
-          priceDeltaMinor: 0,
+          priceDelta: 0,
           isDefault: false,
           isAvailable: true,
         },
         {
           id: "caramel",
           name: "Карамель",
-          priceDeltaMinor: 1000,
+          priceDelta: 10,
           isDefault: false,
           isAvailable: true,
         },
         {
           id: "hazelnut",
           name: "Фундук",
-          priceDeltaMinor: 1000,
+          priceDelta: 10,
           isDefault: false,
           isAvailable: true,
         },
@@ -263,7 +263,7 @@ const other = {
   type: "OTHER",
   name: "Круассан",
   description: "С маслом",
-  priceMinor: 18000,
+  price: 180,
   isAvailable: true,
   variants: [],
   modifierGroups: [],

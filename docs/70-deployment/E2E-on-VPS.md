@@ -24,7 +24,7 @@ sources:
 Для GitHub run создаётся Compose project `expressa-e2e-<run-id>` с отдельными
 PostgreSQL volume и сетями. Внутренний gateway предоставляет E2E-контейнеру
 front-office на `gateway:8081`, back-office на `gateway:8082` и проксирует
-`/api/v1` в backend; host-порты временного стенда не публикуются. До браузерных
+`/api/v2` в backend; host-порты временного стенда не публикуются. До браузерных
 сценариев runtime выполняет миграции, seed administrator и создание staff,
 затем ждёт healthcheck всех сервисов.
 

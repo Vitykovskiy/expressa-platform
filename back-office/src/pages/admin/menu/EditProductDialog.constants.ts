@@ -10,7 +10,7 @@ export function createEditProductVariantDrafts(
     .map((variant) => ({
       id: variant?.id,
       size: variant.size,
-      priceMinor: variant?.priceMinor.toString() ?? "",
+      price: variant?.price.toString() ?? "",
       isConfigured: true,
       isAvailable: variant?.isAvailable ?? false,
     }));
@@ -18,7 +18,7 @@ export function createEditProductVariantDrafts(
     .filter((size) => !configured.some((variant) => variant.size === size))
     .map((size) => ({
       size,
-      priceMinor: "",
+      price: "",
       isConfigured: false,
       isAvailable: false,
     }));

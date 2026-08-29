@@ -28,8 +28,8 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.CREATED,
   };
   const other = {
@@ -39,8 +39,8 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.ACCEPTED,
   };
   const preparing = {
@@ -50,8 +50,8 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.PREPARING,
   };
   const ready = {
@@ -61,8 +61,8 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.READY,
   };
   const issued = {
@@ -72,8 +72,8 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.ISSUED,
   };
 

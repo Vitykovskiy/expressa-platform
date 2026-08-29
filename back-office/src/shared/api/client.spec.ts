@@ -5,7 +5,7 @@ import { ApiClient, ApiError, createApiClient } from "./client";
 describe("ApiClient", () => {
   it("преобразует ошибку API в единый объект ошибки и не возвращает подтверждение", async () => {
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () =>
         new Response(
           JSON.stringify({
@@ -31,7 +31,7 @@ describe("ApiClient", () => {
 
   it("сообщает о нарушении формата успешного ответа API", async () => {
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () =>
         new Response(JSON.stringify({ accepted: true }), { status: 200 }),
     });
@@ -44,7 +44,7 @@ describe("ApiClient", () => {
 
   it("принимает ожидаемый статус 202", async () => {
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () =>
         new Response(JSON.stringify("accepted"), { status: 202 }),
     });
@@ -56,7 +56,7 @@ describe("ApiClient", () => {
 
   it("преобразует несовпадение ожидаемого успешного статуса в ошибку контракта", async () => {
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () => new Response(JSON.stringify("ok"), { status: 200 }),
     });
 
@@ -72,7 +72,7 @@ describe("ApiClient", () => {
 
   it("сохраняет статус 503 для ошибки с некорректным телом", async () => {
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () =>
         new Response(JSON.stringify({ message: "Сбой." }), { status: 503 }),
     });
@@ -89,7 +89,7 @@ describe("ApiClient", () => {
     const response = new Response(null, { status: 204 });
     const parseJson = vi.spyOn(response, "json");
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: async () => response,
     });
 
@@ -108,14 +108,14 @@ describe("ApiClient", () => {
       return Promise.resolve(new Response(JSON.stringify("ok")));
     }) as unknown as typeof fetch;
     const client = new ApiClient({
-      baseUrl: "https://api.example.test/api/v1",
+      baseUrl: "https://api.example.test/api/v2",
       fetcher: receiverSensitiveFetcher,
     });
 
     await expect(client.request("/queue", isString)).resolves.toBe("ok");
   });
 
-  it("сохраняет абсолютный origin и добавляет /api/v1 без двойных слешей", async () => {
+  it("сохраняет абсолютный origin и добавляет /api/v2 без двойных слешей", async () => {
     let requestedUrl = "";
     const response = new Response(JSON.stringify("ok"));
 
@@ -128,10 +128,10 @@ describe("ApiClient", () => {
 
     await client.request("/queue", isString);
 
-    expect(requestedUrl).toBe("https://api.example.test/api/v1/queue");
+    expect(requestedUrl).toBe("https://api.example.test/api/v2/queue");
   });
 
-  it("создаёт same-origin URL с /api/v1 без двойных слешей", async () => {
+  it("создаёт same-origin URL с /api/v2 без двойных слешей", async () => {
     let requestedUrl = "";
     const response = new Response(JSON.stringify("ok"));
 
@@ -144,7 +144,7 @@ describe("ApiClient", () => {
 
     await client.request("/queue", isString);
 
-    expect(requestedUrl).toBe("/api/v1/queue");
+    expect(requestedUrl).toBe("/api/v2/queue");
   });
 
   it("кодирует путь и параметры same-origin URL по правилам URL", async () => {
@@ -161,7 +161,7 @@ describe("ApiClient", () => {
     await client.request("/заказы с чаем?поиск=зелёный чай", isString);
 
     expect(requestedUrl).toBe(
-      "/api/v1/%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D1%8B%20%D1%81%20%D1%87%D0%B0%D0%B5%D0%BC?%D0%BF%D0%BE%D0%B8%D1%81%D0%BA=%D0%B7%D0%B5%D0%BB%D1%91%D0%BD%D1%8B%D0%B9%20%D1%87%D0%B0%D0%B9",
+      "/api/v2/%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D1%8B%20%D1%81%20%D1%87%D0%B0%D0%B5%D0%BC?%D0%BF%D0%BE%D0%B8%D1%81%D0%BA=%D0%B7%D0%B5%D0%BB%D1%91%D0%BD%D1%8B%D0%B9%20%D1%87%D0%B0%D0%B9",
     );
   });
 

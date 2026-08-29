@@ -25,7 +25,7 @@ import {
   idempotencyHeaderDescription,
   idempotencyHeaderName,
   idempotencyHeaderSchema,
-  maximumOrderTotalMinor,
+  maximumOrderTotal,
   ordersControllerPath,
 } from './orders.controller.constants';
 import { CreateOrderDto, CreateOrderItemDto } from './create-order.dto';
@@ -37,7 +37,7 @@ const swaggerParametersMetadataKey = 'swagger/apiParameters';
 const swaggerModelPropertyMetadataKey = 'swagger/apiModelProperties';
 const swaggerResponsesMetadataKey = 'swagger/apiResponse';
 const body = {
-  expectedTotalMinor: 450,
+  expectedTotal: 450,
   items: [{ productId: uuid, variantId: null, modifierOptionIds: [], quantity: 1 }],
 };
 const auth = { userId: 'ccca6117-9fa5-4d9a-986d-8d02747cc6d5', sessionId: 'session-id', phoneE164: '+79991234567', role: 'customer' as const };
@@ -45,8 +45,8 @@ const order = {
   id: 'ccca6117-9fa5-4d9a-986d-8d02747cc6d5',
   number: '20300102-001',
   stage: 'CREATED' as const,
-  totalMinor: 450,
-  items: [{ productId: uuid, variantId: null, productName: 'Кофе', size: null, quantity: 1, unitTotalMinor: 450, lineTotalMinor: 450, modifiers: [{ modifierOptionId: 'fe3a8d7b-d983-4b4a-a4f0-977f94b91f7e', modifierName: 'Овсяное', priceDeltaMinor: 50 }] }],
+  total: 450,
+  items: [{ productId: uuid, variantId: null, productName: 'Кофе', size: null, quantity: 1, unitTotal: 450, lineTotal: 450, modifiers: [{ modifierOptionId: 'fe3a8d7b-d983-4b4a-a4f0-977f94b91f7e', modifierName: 'Овсяное', priceDelta: 50 }] }],
 };
 
 function createController(result: unknown = { order, replayed: false }) {
@@ -64,7 +64,7 @@ describe('OrdersController', () => {
     expect(createOrder.execute).toHaveBeenCalledWith({
       customerId: auth.userId,
       idempotencyKey: uuid,
-      request: { totalMinor: body.expectedTotalMinor, items: body.items },
+      request: { total: body.expectedTotal, items: body.items },
       now: clock.now.mock.results[0]!.value,
     });
   });
@@ -81,7 +81,7 @@ describe('OrdersController', () => {
     getOrders.listForCustomer.mockResolvedValue({ orders: [{ ...order, createdAt: new Date('2030-01-02T03:04:05.000Z'), snapshot: order.items }], nextCursor });
 
     await expect(controller.list(undefined, auth)).resolves.toEqual({
-      orders: [{ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, totalMinor: order.totalMinor, snapshot: order.items }],
+      orders: [{ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, total: order.total, snapshot: order.items }],
       nextCursor: expect.any(String),
     });
     expect(getOrders.listForCustomer).toHaveBeenCalledWith(auth.userId, null);
@@ -112,7 +112,7 @@ describe('OrdersController', () => {
     const { controller, getOrders } = createController();
     getOrders.detailsForCustomer.mockResolvedValue({ ...order, createdAt: new Date('2030-01-02T03:04:05.000Z'), snapshot: order.items });
 
-    await expect(controller.details(uuid, auth)).resolves.toEqual({ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, totalMinor: order.totalMinor, snapshot: order.items });
+    await expect(controller.details(uuid, auth)).resolves.toEqual({ id: order.id, number: order.number, createdAt: '2030-01-02T03:04:05.000Z', stage: order.stage, total: order.total, snapshot: order.items });
   });
 
   it('отклоняет некорректный customer cursor до чтения', async () => {
@@ -185,8 +185,8 @@ describe('OrdersController', () => {
   });
 
   it('документирует ограничения DTO, совпадающие с transport-проверкой', () => {
-    expect(Reflect.getMetadata(swaggerModelPropertyMetadataKey, CreateOrderDto.prototype, 'expectedTotalMinor')).toMatchObject({
-      type: 'integer', format: 'int32', minimum: 0, maximum: maximumOrderTotalMinor,
+    expect(Reflect.getMetadata(swaggerModelPropertyMetadataKey, CreateOrderDto.prototype, 'expectedTotal')).toMatchObject({
+      type: 'integer', format: 'int32', minimum: 0, maximum: maximumOrderTotal,
     });
     const itemsMetadata = Reflect.getMetadata(swaggerModelPropertyMetadataKey, CreateOrderDto.prototype, 'items');
     expect(itemsMetadata).toMatchObject({ isArray: true, minItems: 1 });
@@ -203,8 +203,8 @@ describe('OrdersController', () => {
   });
 
   const invalidRequests: readonly [unknown, string, string][] = [
-    [{ ...body, expectedTotalMinor: -1 }, uuid, 'negative expected total'],
-    [{ ...body, expectedTotalMinor: 0.5 }, uuid, 'fractional expected total'],
+    [{ ...body, expectedTotal: -1 }, uuid, 'negative expected total'],
+    [{ ...body, expectedTotal: 0.5 }, uuid, 'fractional expected total'],
     [{ ...body, items: [] }, uuid, 'empty items'],
     [body, undefined as unknown as string, 'missing header'],
     [body, 'invalid-key', 'malformed header'],
@@ -230,7 +230,7 @@ describe('OrdersController', () => {
 
   it.each([
     [new OrderValidationError(), 'VALIDATION_ERROR', null],
-    [new OrderTotalChangedError(500), 'ORDER_TOTAL_CHANGED', { totalMinor: 500 }],
+    [new OrderTotalChangedError(500), 'ORDER_TOTAL_CHANGED', { total: 500 }],
     [new MenuItemUnavailableError(uuid), 'MENU_ITEM_UNAVAILABLE', { itemId: uuid }],
     [new OrderIntakeClosedError(), 'ORDER_INTAKE_CLOSED', null],
     [new IdempotencyKeyReusedError(), 'IDEMPOTENCY_KEY_REUSED', null],

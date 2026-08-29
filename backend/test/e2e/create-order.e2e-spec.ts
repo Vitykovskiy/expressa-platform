@@ -71,7 +71,7 @@ describe("create order E2E", () => {
     const customer = await accessToken("customer");
     const response = await createOrder(
       customer,
-      orderBody(64_000),
+      orderBody(640),
       randomUUID(),
       "success-request-id",
     );
@@ -82,7 +82,7 @@ describe("create order E2E", () => {
       id: expect.any(String),
       number: "20310203-001",
       stage: "CREATED",
-      totalMinor: 64_000,
+      total: 640,
       items: [
         {
           productId,
@@ -90,13 +90,13 @@ describe("create order E2E", () => {
           productName: "Капучино",
           size: "M",
           quantity: 2,
-          unitTotalMinor: 32_000,
-          lineTotalMinor: 64_000,
+          unitTotal: 320,
+          lineTotal: 640,
           modifiers: [
             {
               modifierOptionId: optionId,
               modifierName: "Обычное",
-              priceDeltaMinor: 0,
+              priceDelta: 0,
             },
           ],
         },
@@ -106,7 +106,7 @@ describe("create order E2E", () => {
     useClock("2031-02-04T00:00:00.000Z");
     const next = await createOrder(
       customer,
-      orderBody(32_000),
+      orderBody(320),
       randomUUID(),
       "utc-boundary-request-id",
     );
@@ -128,7 +128,7 @@ describe("create order E2E", () => {
     const created = await createOrder(
       customer,
       {
-        expectedTotalMinor: 32_000,
+        expectedTotal: 320,
         items: [
           {
             productId: seededCappuccinoId,
@@ -167,7 +167,7 @@ describe("create order E2E", () => {
     await expectStructuredError(
       await createOrder(
         undefined,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "guest-request-id",
       ),
@@ -181,7 +181,7 @@ describe("create order E2E", () => {
       [administrator, "administrator-request-id"],
     ] as const) {
       await expectStructuredError(
-        await createOrder(token, orderBody(32_000), randomUUID(), requestId),
+        await createOrder(token, orderBody(320), randomUUID(), requestId),
         403,
         "ACCESS_DENIED",
         null,
@@ -199,12 +199,12 @@ describe("create order E2E", () => {
       accessToken("customer"),
       accessToken("barista"),
     ]);
-    const first = await createOrder(owner, orderBody(32_000), randomUUID(), "owner-first-request-id");
+    const first = await createOrder(owner, orderBody(320), randomUUID(), "owner-first-request-id");
     expect(first.status).toBe(201);
     const firstOrder = (await first.json()) as { id: string };
     await pool.query("UPDATE products SET name = 'Новое имя каталога' WHERE id = $1", [productId]);
     for (let index = 0; index < 20; index += 1) {
-      const created = await createOrder(owner, orderBody(32_000), randomUUID(), `owner-page-${index}-request-id`);
+      const created = await createOrder(owner, orderBody(320), randomUUID(), `owner-page-${index}-request-id`);
       expect(created.status).toBe(201);
     }
 
@@ -240,7 +240,7 @@ describe("create order E2E", () => {
       ),
       400,
       "ORDER_TOTAL_CHANGED",
-      { totalMinor: 32_000 },
+      { total: 320 },
       "total-request-id",
     );
     await pool.query("UPDATE products SET is_available = false WHERE id = $1", [
@@ -249,7 +249,7 @@ describe("create order E2E", () => {
     await expectStructuredError(
       await createOrder(
         customer,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "unavailable-request-id",
       ),
@@ -265,7 +265,7 @@ describe("create order E2E", () => {
       await createOrder(
         customer,
         {
-          expectedTotalMinor: 32_000,
+          expectedTotal: 320,
           items: [{ productId, variantId, modifierOptionIds: [], quantity: 1 }],
         },
         randomUUID(),
@@ -281,7 +281,7 @@ describe("create order E2E", () => {
     await expectStructuredError(
       await createOrder(
         customer,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "closed-request-id",
       ),
@@ -301,13 +301,13 @@ describe("create order E2E", () => {
     const [first, second] = await Promise.all([
       createOrder(
         customer,
-        orderBody(32_000),
+        orderBody(320),
         key,
         "concurrent-first-request-id",
       ),
       createOrder(
         customer,
-        orderBody(32_000),
+        orderBody(320),
         key,
         "concurrent-second-request-id",
       ),
@@ -325,7 +325,7 @@ describe("create order E2E", () => {
     const key = randomUUID();
     const created = await createOrder(
       customer,
-      orderBody(32_000),
+      orderBody(320),
       key,
       "created-request-id",
     );
@@ -337,16 +337,16 @@ describe("create order E2E", () => {
       [productId],
     );
     await pool.query(
-      "UPDATE product_variants SET price_minor = 45_000 WHERE id = $1",
+      "UPDATE product_variants SET price = 450 WHERE id = $1",
       [variantId],
     );
     await pool.query(
-      "UPDATE modifier_options SET name = 'Изменённое молоко', price_delta_minor = 5_000 WHERE id = $1",
+      "UPDATE modifier_options SET name = 'Изменённое молоко', price_delta = 50 WHERE id = $1",
       [optionId],
     );
     const replay = await createOrder(
       customer,
-      orderBody(32_000),
+      orderBody(320),
       key,
       "replay-request-id",
     );
@@ -355,7 +355,7 @@ describe("create order E2E", () => {
 
     const conflict = await createOrder(
       customer,
-      orderBody(64_000),
+      orderBody(640),
       key,
       "conflict-request-id",
     );
@@ -375,7 +375,7 @@ describe("create order E2E", () => {
       accessToken("administrator"),
       accessToken("customer"),
     ]);
-    const priceUpdate = await updateProductVariant(administrator, 45_000, true);
+    const priceUpdate = await updateProductVariant(administrator, 450, true);
     expect(priceUpdate.status).toBe(200);
     await expect(priceUpdate.json()).resolves.toMatchObject({
       variants: [expect.objectContaining({ id: variantId, size: "M" })],
@@ -384,20 +384,20 @@ describe("create order E2E", () => {
     await expectStructuredError(
       await createOrder(
         customer,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "stale-price-request-id",
       ),
       400,
       "ORDER_TOTAL_CHANGED",
-      { totalMinor: 45_000 },
+      { total: 450 },
       "stale-price-request-id",
     );
     expect(
       (
         await createOrder(
           customer,
-          orderBody(45_000),
+          orderBody(450),
           randomUUID(),
           "reconfirmed-price-request-id",
         )
@@ -406,14 +406,14 @@ describe("create order E2E", () => {
 
     const availabilityUpdate = await updateProductVariant(
       administrator,
-      45_000,
+      450,
       false,
     );
     expect(availabilityUpdate.status).toBe(200);
     await expectStructuredError(
       await createOrder(
         customer,
-        orderBody(45_000),
+        orderBody(450),
         randomUUID(),
         "unavailable-variant-request-id",
       ),
@@ -434,13 +434,13 @@ describe("create order E2E", () => {
     const [first, second] = await Promise.all([
       createOrder(
         firstCustomer,
-        orderBody(32_000),
+        orderBody(320),
         sharedKey,
         "customer-one-request-id",
       ),
       createOrder(
         secondCustomer,
-        orderBody(32_000),
+        orderBody(320),
         sharedKey,
         "customer-two-request-id",
       ),
@@ -453,13 +453,13 @@ describe("create order E2E", () => {
     const [third, fourth] = await Promise.all([
       createOrder(
         firstCustomer,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "number-one-request-id",
       ),
       createOrder(
         secondCustomer,
-        orderBody(32_000),
+        orderBody(320),
         randomUUID(),
         "number-two-request-id",
       ),
@@ -487,12 +487,12 @@ describe("create order E2E", () => {
         phone,
         role,
       ]);
-    await fetch(`${url}/api/v1/auth/otp/request`, {
+    await fetch(`${url}/api/v2/auth/otp/request`, {
       method: "POST",
       headers: headers(randomUUID()),
       body: JSON.stringify({ phone }),
     });
-    const verified = await fetch(`${url}/api/v1/auth/otp/verify`, {
+    const verified = await fetch(`${url}/api/v2/auth/otp/verify`, {
       method: "POST",
       headers: headers(randomUUID()),
       body: JSON.stringify({ phone, code: otp }),
@@ -501,15 +501,15 @@ describe("create order E2E", () => {
     return ((await verified.json()) as { accessToken: string }).accessToken;
   }
 
-  function orderBody(expectedTotalMinor: number) {
+  function orderBody(expectedTotal: number) {
     return {
-      expectedTotalMinor,
+      expectedTotal,
       items: [
         {
           productId,
           variantId,
           modifierOptionIds: [optionId],
-          quantity: expectedTotalMinor === 64_000 ? 2 : 1,
+          quantity: expectedTotal === 640 ? 2 : 1,
         },
       ],
     };
@@ -517,10 +517,10 @@ describe("create order E2E", () => {
 
   function updateProductVariant(
     token: string,
-    priceMinor: number,
+    price: number,
     isAvailable: boolean,
   ): Promise<Response> {
-    return fetch(`${url}/api/v1/backoffice/catalog/products/${productId}`, {
+    return fetch(`${url}/api/v2/backoffice/catalog/products/${productId}`, {
       method: "PATCH",
       headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
       body: JSON.stringify({
@@ -528,18 +528,18 @@ describe("create order E2E", () => {
         type: "DRINK",
         name: "Капучино",
         description: "Кофе с молоком",
-        priceMinor: null,
+        price: null,
         sortOrder: 10,
         isActive: true,
         isAvailable: true,
         variants: [
-          { size: "M", priceMinor, sortOrder: 10, isAvailable },
+          { size: "M", price, sortOrder: 10, isAvailable },
           ...(isAvailable
             ? []
             : [
                 {
                   size: "L",
-                  priceMinor: 50_000,
+                  price: 500,
                   sortOrder: 20,
                   isAvailable: true,
                 },
@@ -550,7 +550,7 @@ describe("create order E2E", () => {
   }
 
   function updateIntake(token: string, acceptsNewOrders: boolean): Promise<Response> {
-    return fetch(`${url}/api/v1/backoffice/service/intake`, {
+    return fetch(`${url}/api/v2/backoffice/service/intake`, {
       method: 'PATCH',
       headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
       body: JSON.stringify({ acceptsNewOrders }),
@@ -562,7 +562,7 @@ describe("create order E2E", () => {
     orderId: string,
     action: "accept" | "start-preparing" | "mark-ready" | "issue",
   ): Promise<Response> {
-    return fetch(`${url}/api/v1/backoffice/orders/${orderId}/${action}`, {
+    return fetch(`${url}/api/v2/backoffice/orders/${orderId}/${action}`, {
       method: "POST",
       headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
     });
@@ -574,7 +574,7 @@ describe("create order E2E", () => {
     key: string,
     requestId: string,
   ): Promise<Response> {
-    return fetch(`${url}/api/v1/orders`, {
+    return fetch(`${url}/api/v2/orders`, {
       method: "POST",
       headers: headers(requestId, {
         "idempotency-key": key,
@@ -586,13 +586,13 @@ describe("create order E2E", () => {
 
   function getOrders(token: string, cursor?: string): Promise<Response> {
     const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
-    return fetch(`${url}/api/v1/orders${query}`, {
+    return fetch(`${url}/api/v2/orders${query}`, {
       headers: headers('get-orders-request-id', { authorization: `Bearer ${token}` }),
     });
   }
 
   function getOrder(token: string | undefined, orderId: string, requestId: string): Promise<Response> {
-    return fetch(`${url}/api/v1/orders/${orderId}`, {
+    return fetch(`${url}/api/v2/orders/${orderId}`, {
       headers: headers(requestId, token === undefined ? {} : { authorization: `Bearer ${token}` }),
     });
   }
@@ -611,11 +611,11 @@ describe("create order E2E", () => {
       [categoryId],
     );
     await pool.query(
-      `INSERT INTO products (id, category_id, type, name, description, price_minor, sort_order) VALUES ($1, $2, 'DRINK', 'Капучино', 'Кофе с молоком', NULL, 10)`,
+      `INSERT INTO products (id, category_id, type, name, description, price, sort_order) VALUES ($1, $2, 'DRINK', 'Капучино', 'Кофе с молоком', NULL, 10)`,
       [productId, categoryId],
     );
     await pool.query(
-      `INSERT INTO product_variants (id, product_id, size, price_minor, sort_order) VALUES ($1, $2, 'M', 32000, 10)`,
+      `INSERT INTO product_variants (id, product_id, size, price, sort_order) VALUES ($1, $2, 'M', 320, 10)`,
       [variantId, productId],
     );
     await pool.query(
@@ -623,7 +623,7 @@ describe("create order E2E", () => {
       [groupId],
     );
     await pool.query(
-      `INSERT INTO modifier_options (id, group_id, name, price_delta_minor, sort_order, is_default) VALUES ($1, $2, 'Обычное', 0, 10, true)`,
+      `INSERT INTO modifier_options (id, group_id, name, price_delta, sort_order, is_default) VALUES ($1, $2, 'Обычное', 0, 10, true)`,
       [optionId, groupId],
     );
     await pool.query(

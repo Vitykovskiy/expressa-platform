@@ -5,7 +5,7 @@ export const menuFlowViewportWidths = [320, 390, 768, 1280];
 export const menuViewportHeight = 844;
 // Only this exact anonymous bootstrap endpoint and status may produce Chromium's generic resource error.
 // Pathname comparison deliberately accepts the configured API origin and ignores query parameters.
-export const expectedUnauthenticatedRefreshPath = "/api/v1/auth/refresh";
+export const expectedUnauthenticatedRefreshPath = "/api/v2/auth/refresh";
 export const expectedUnauthenticatedRefreshOrigin = new URL(
   frontOfficeBackendReadyUrl,
 ).origin;

@@ -15,10 +15,10 @@ describe('catalog pricing and availability coverage', () => {
     await expect(repository.findCandidates()).resolves.toEqual({
       acceptsNewOrders: true,
       categories: [{ id: 'coffee', name: 'Coffee', description: 'Drinks', sortOrder: 0, isActive: true, archivedAt: null }],
-      products: [{ id: 'cappuccino', categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', priceMinor: null, sortOrder: 0, isActive: true, isAvailable: true, archivedAt: null }],
-      productVariants: [{ id: 'medium', productId: 'cappuccino', size: 'M', priceMinor: 32_000, sortOrder: 0, isAvailable: true, archivedAt: null }],
+      products: [{ id: 'cappuccino', categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', price: null, sortOrder: 0, isActive: true, isAvailable: true, archivedAt: null }],
+      productVariants: [{ id: 'medium', productId: 'cappuccino', size: 'M', price: 320, sortOrder: 0, isAvailable: true, archivedAt: null }],
       modifierGroups: [{ id: 'milk', name: 'Milk', selectionType: 'single', minSelect: 1, maxSelect: 1, isActive: true, archivedAt: null }],
-      modifierOptions: [{ id: 'oat', groupId: 'milk', name: 'Oat', priceDeltaMinor: 8_000, sortOrder: 0, isDefault: false, isAvailable: true, archivedAt: null }],
+      modifierOptions: [{ id: 'oat', groupId: 'milk', name: 'Oat', priceDelta: 80, sortOrder: 0, isDefault: false, isAvailable: true, archivedAt: null }],
       categoryModifierGroups: [{ categoryId: 'coffee', groupId: 'milk', sortOrder: 0 }],
     });
     expect(client.query).toHaveBeenCalledWith('COMMIT');
@@ -29,7 +29,7 @@ describe('catalog pricing and availability coverage', () => {
     ['type', { type: 'UNKNOWN' }],
     ['size', { size: 'XL' }],
     ['selection type', { selection_type: 'many' }],
-    ['price', { price_minor: -1 }],
+    ['price', { price: -1 }],
   ])('rejects invalid PostgreSQL %s before publishing menu', async (_name, invalidRow) => {
     const { client, repository } = publicMenuRepository(invalidRow);
 
@@ -39,17 +39,17 @@ describe('catalog pricing and availability coverage', () => {
 
   it('keeps available drink sizes, omits archived options, and rejects invalid price shapes', async () => {
     const candidates = catalogCandidates();
-    candidates.productVariants.push({ id: 'archived', productId: 'cappuccino', size: 'S', priceMinor: 28_000, sortOrder: 1, isAvailable: false, archivedAt: timestamp });
-    candidates.modifierOptions.push({ id: 'archived-oat', groupId: 'milk', name: 'Old oat', priceDeltaMinor: 1_000, sortOrder: 1, isDefault: false, isAvailable: true, archivedAt: timestamp });
+    candidates.productVariants.push({ id: 'archived', productId: 'cappuccino', size: 'S', price: 280, sortOrder: 1, isAvailable: false, archivedAt: timestamp });
+    candidates.modifierOptions.push({ id: 'archived-oat', groupId: 'milk', name: 'Old oat', priceDelta: 10, sortOrder: 1, isDefault: false, isAvailable: true, archivedAt: timestamp });
 
     const menu = await publicMenu(candidates);
     expect(menu.categories[0]?.products[0]).toMatchObject({
       id: 'cappuccino',
-      variants: [{ id: 'medium', priceMinor: 32_000, isAvailable: true }],
-      modifierGroups: [{ options: [{ id: 'regular', priceDeltaMinor: 0 }] }],
+      variants: [{ id: 'medium', price: 320, isAvailable: true }],
+      modifierGroups: [{ options: [{ id: 'regular', priceDelta: 0 }] }],
     });
 
-    candidates.products[0]!.priceMinor = 1;
+    candidates.products[0]!.price = 1;
     await expect(publicMenu(candidates)).resolves.toEqual({ acceptsNewOrders: true, categories: [] });
   });
 
@@ -83,9 +83,9 @@ describe('catalog pricing and availability coverage', () => {
   });
 
   it('requires price only for OTHER and available size for active drinks', () => {
-    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'OTHER', name: 'Cookie', description: '', priceMinor: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [] })).toThrow(ProductAdminError);
-    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: '', priceMinor: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [{ size: 'M', priceMinor: 32_000, sortOrder: 0, isAvailable: false }] })).toThrow(ProductAdminError);
-    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'OTHER', name: 'Cookie', description: '', priceMinor: 12_000, sortOrder: 0, isActive: true, isAvailable: true, variants: [] })).not.toThrow();
+    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'OTHER', name: 'Cookie', description: '', price: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [] })).toThrow(ProductAdminError);
+    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: '', price: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [{ size: 'M', price: 320, sortOrder: 0, isAvailable: false }] })).toThrow(ProductAdminError);
+    expect(() => assertProductDetails({ categoryId: 'coffee', type: 'OTHER', name: 'Cookie', description: '', price: 120, sortOrder: 0, isActive: true, isAvailable: true, variants: [] })).not.toThrow();
   });
 });
 
@@ -101,10 +101,10 @@ function publicMenuRepository(invalidRow: Record<string, unknown> = {}) {
 function rowsForPublicMenu(sql: string, invalidRow: Record<string, unknown>) {
   if (sql.includes('FROM service_settings')) return [{ value: true }];
   if (sql.includes('FROM categories')) return [{ id: 'coffee', name: 'Coffee', description: 'Drinks', sort_order: 0, is_active: true, archived_at: null }];
-  if (sql.includes('FROM products')) return [{ id: 'cappuccino', category_id: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', price_minor: null, sort_order: 0, is_active: true, is_available: true, archived_at: null, ...invalidRow }];
-  if (sql.includes('FROM product_variants')) return [{ id: 'medium', product_id: 'cappuccino', size: 'M', price_minor: 32_000, sort_order: 0, is_available: true, archived_at: null, ...invalidRow }];
+  if (sql.includes('FROM products')) return [{ id: 'cappuccino', category_id: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', price: null, sort_order: 0, is_active: true, is_available: true, archived_at: null, ...invalidRow }];
+  if (sql.includes('FROM product_variants')) return [{ id: 'medium', product_id: 'cappuccino', size: 'M', price: 320, sort_order: 0, is_available: true, archived_at: null, ...invalidRow }];
   if (sql.includes('FROM modifier_groups')) return [{ id: 'milk', name: 'Milk', selection_type: 'single', min_select: 1, max_select: 1, is_active: true, archived_at: null, ...invalidRow }];
-  if (sql.includes('FROM modifier_options')) return [{ id: 'oat', group_id: 'milk', name: 'Oat', price_delta_minor: 8_000, sort_order: 0, is_default: false, is_available: true, archived_at: null, ...invalidRow }];
+  if (sql.includes('FROM modifier_options')) return [{ id: 'oat', group_id: 'milk', name: 'Oat', price_delta: 80, sort_order: 0, is_default: false, is_available: true, archived_at: null, ...invalidRow }];
   if (sql.includes('FROM category_modifier_groups')) return [{ category_id: 'coffee', group_id: 'milk', sort_order: 0 }];
   return [];
 }
@@ -119,10 +119,10 @@ function catalogCandidates(): PublicMenuCandidates {
   return {
     acceptsNewOrders: true,
     categories: [{ id: 'coffee', name: 'Coffee', description: 'Drinks', sortOrder: 0, isActive: true, archivedAt: null }],
-    products: [{ id: 'cappuccino', categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', priceMinor: null, sortOrder: 0, isActive: true, isAvailable: true, archivedAt: null }],
-    productVariants: [{ id: 'medium', productId: 'cappuccino', size: 'M', priceMinor: 32_000, sortOrder: 0, isAvailable: true, archivedAt: null }],
+    products: [{ id: 'cappuccino', categoryId: 'coffee', type: 'DRINK', name: 'Cappuccino', description: 'Milk coffee', price: null, sortOrder: 0, isActive: true, isAvailable: true, archivedAt: null }],
+    productVariants: [{ id: 'medium', productId: 'cappuccino', size: 'M', price: 320, sortOrder: 0, isAvailable: true, archivedAt: null }],
     modifierGroups: [{ id: 'milk', name: 'Milk', selectionType: 'single', minSelect: 1, maxSelect: 1, isActive: true, archivedAt: null }],
-    modifierOptions: [{ id: 'regular', groupId: 'milk', name: 'Regular', priceDeltaMinor: 0, sortOrder: 0, isDefault: true, isAvailable: true, archivedAt: null }],
+    modifierOptions: [{ id: 'regular', groupId: 'milk', name: 'Regular', priceDelta: 0, sortOrder: 0, isDefault: true, isAvailable: true, archivedAt: null }],
     categoryModifierGroups: [{ categoryId: 'coffee', groupId: 'milk', sortOrder: 0 }],
   };
 }

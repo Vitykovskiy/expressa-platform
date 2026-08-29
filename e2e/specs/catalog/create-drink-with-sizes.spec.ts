@@ -52,13 +52,13 @@ test("CATALOG-07: администратор создаёт напиток с р
     const card = await menuManagement.catalog.readProductPrice(productName);
 
     expect(card, "В карточке показан размер S с указанной ценой.").toContain(
-      "S: 1.99 ₽",
+      "S: 199 ₽",
     );
     expect(card, "В карточке показан размер M с указанной ценой.").toContain(
-      "M: 2.49 ₽",
+      "M: 249 ₽",
     );
     expect(card, "В карточке показан размер L с указанной ценой.").toContain(
-      "L: 2.99 ₽",
+      "L: 299 ₽",
     );
   });
 });

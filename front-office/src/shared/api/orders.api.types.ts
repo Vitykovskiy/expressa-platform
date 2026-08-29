@@ -16,7 +16,7 @@ export type CustomerOrdersApi = OrdersApi & {
 export type OrdersApiClient = Pick<ApiClient, "request">;
 
 export type CreateOrderRequest = {
-  expectedTotalMinor: number;
+  expectedTotal: number;
   items: CreateOrderItem[];
 };
 
@@ -31,7 +31,7 @@ export type Order = {
   id: string;
   number: string;
   stage: "CREATED";
-  totalMinor: number;
+  total: number;
   items: OrderItem[];
 };
 
@@ -44,7 +44,7 @@ export type CustomerOrder = {
   items: OrderItem[];
   number: string;
   stage: CustomerOrderStage;
-  totalMinor: number;
+  total: number;
 };
 
 export type CustomerOrdersPage = {
@@ -58,15 +58,15 @@ export type OrderItem = {
   productName: string;
   size: "S" | "M" | "L" | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   modifiers: OrderModifier[];
 };
 
 export type OrderModifier = {
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };
 
 export type CustomerOrderResponse = {
@@ -75,7 +75,7 @@ export type CustomerOrderResponse = {
   number: string;
   snapshot: OrderItemResponse[];
   stage: CustomerOrderStage;
-  totalMinor: number;
+  total: number;
 };
 
 export type CustomerOrdersPageResponse = {
@@ -87,7 +87,7 @@ export type OrderResponse = {
   id: string;
   number: string;
   stage: "CREATED";
-  totalMinor: number;
+  total: number;
   items: OrderItemResponse[];
 };
 
@@ -97,13 +97,13 @@ export type OrderItemResponse = {
   productName: string;
   size: "S" | "M" | "L" | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   modifiers: OrderModifierResponse[];
 };
 
 export type OrderModifierResponse = {
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };

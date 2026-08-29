@@ -23,7 +23,7 @@ interface OrderRow {
   number: string;
   owner: string;
   stage: SeedOrderStage;
-  totalMinor: number;
+  total: number;
 }
 
 interface ItemRow {
@@ -31,15 +31,15 @@ interface ItemRow {
   productName: string;
   size: string | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
 }
 
 interface ModifierRow {
   number: string;
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 }
 
 interface EventRow {
@@ -396,20 +396,20 @@ async function readScenarioState(pool: Pool): Promise<ScenarioState> {
   const [orders, items, modifiers, events] = await Promise.all([
     pool.query<OrderRow>(
       `SELECT orders.id, orders.number, users.phone_e164 AS owner, orders.stage,
-              orders.total_minor AS "totalMinor"
+              orders.total
        FROM orders JOIN users ON users.id = orders.customer_id ORDER BY orders.number`,
     ),
     pool.query<ItemRow>(
       `SELECT orders.number, order_items.product_name AS "productName", order_items.size,
-              order_items.quantity, order_items.unit_total_minor AS "unitTotalMinor",
-              order_items.line_total_minor AS "lineTotalMinor"
+              order_items.quantity, order_items.unit_total AS "unitTotal",
+              order_items.line_total AS "lineTotal"
        FROM order_items JOIN orders ON orders.id = order_items.order_id
        ORDER BY orders.number, order_items.sort_order`,
     ),
     pool.query<ModifierRow>(
       `SELECT orders.number, order_item_modifiers.modifier_option_id AS "modifierOptionId",
               order_item_modifiers.modifier_name AS "modifierName",
-              order_item_modifiers.price_delta_minor AS "priceDeltaMinor"
+              order_item_modifiers.price_delta AS "priceDelta"
        FROM order_item_modifiers JOIN order_items ON order_items.id = order_item_modifiers.order_item_id
        JOIN orders ON orders.id = order_items.order_id
        ORDER BY orders.number, order_item_modifiers.sort_order`,
@@ -548,7 +548,7 @@ function assertScenarioState(
           ? secondCustomerPhone
           : customerPhone,
       stage,
-      totalMinor: expectation.specialOrderState === "partial" ? 60_000 : 32_000,
+      total: expectation.specialOrderState === "partial" ? 600 : 320,
     })),
   );
   expect(state.items).toEqual([
@@ -557,8 +557,8 @@ function assertScenarioState(
       productName: "Капучино",
       size: "M",
       quantity: 1,
-      unitTotalMinor: 32_000,
-      lineTotalMinor: 32_000,
+      unitTotal: 320,
+      lineTotal: 320,
     })),
     ...(expectation.specialOrderState === "partial"
       ? [
@@ -567,8 +567,8 @@ function assertScenarioState(
             productName: "Чизкейк",
             size: null,
             quantity: 1,
-            unitTotalMinor: 28_000,
-            lineTotalMinor: 28_000,
+            unitTotal: 280,
+            lineTotal: 280,
           },
         ]
       : []),
@@ -578,7 +578,7 @@ function assertScenarioState(
       number: orderNumber(index + 1),
       modifierOptionId: e2eSeedIds.regularMilk,
       modifierName: "Обычное молоко",
-      priceDeltaMinor: 0,
+      priceDelta: 0,
     })),
   );
   expect(state.events).toEqual(

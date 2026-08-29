@@ -76,7 +76,7 @@ test("запрет browser permission не блокирует экран зак�
 
 test("ошибка Push API не блокирует экран заказа", async ({ page }) => {
   await installPushBrowser(page, "granted");
-  await page.route("**/api/v1/push/subscriptions", async (route) => {
+  await page.route("**/api/v2/push/subscriptions", async (route) => {
     if (route.request().method() !== "PUT") return route.continue();
 
     await route.fulfill({

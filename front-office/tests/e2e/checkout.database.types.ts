@@ -3,7 +3,7 @@ export type CheckoutDatabaseState = {
   modifierAvailable: boolean;
   productAvailable: boolean;
   variantAvailable: boolean;
-  variantPriceMinor: number;
+  variantPrice: number;
 };
 
 export type OrderRow = {
@@ -11,7 +11,7 @@ export type OrderRow = {
   idempotencyKey: string;
   orderNumber: string;
   quantity: number;
-  totalMinor: number;
+  total: number;
 };
 
 export type OrderRowQuery = {
@@ -19,7 +19,7 @@ export type OrderRowQuery = {
   idempotencyKey: unknown;
   orderNumber: unknown;
   quantity: unknown;
-  totalMinor: unknown;
+  total: unknown;
 };
 
 export type IssuedHistoryOrder = {

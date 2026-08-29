@@ -33,20 +33,20 @@ export function revalidateOrder(request: OrderRequest, catalog: OrderCatalog): O
   const items = validatedItems.map(({ item, product, variant, modifiers }) =>
     createSnapshot(item, product, variant, modifiers),
   );
-  const totalMinor = items.reduce((total, item) => total + item.lineTotalMinor, 0);
+  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
 
-  if (!isNonNegativeMinor(totalMinor)) {
+  if (!isNonNegativeAmount(total)) {
     throw new OrderValidationError();
   }
-  if (request.totalMinor !== totalMinor) {
-    throw new OrderTotalChangedError(totalMinor);
+  if (request.total !== total) {
+    throw new OrderTotalChangedError(total);
   }
 
-  return Object.freeze({ totalMinor, items: Object.freeze(items) });
+  return Object.freeze({ total, items: Object.freeze(items) });
 }
 
 function assertValidRequest(request: OrderRequest): void {
-  if (!isNonNegativeMinor(request.totalMinor) || request.items.length === 0) {
+  if (!isNonNegativeAmount(request.total) || request.items.length === 0) {
     throw new OrderValidationError();
   }
 
@@ -91,13 +91,13 @@ function createSnapshot(
   modifiers: readonly OrderCatalogModifierOption[],
 ): OrderSnapshotItem {
 
-  const basePriceMinor = variant === null ? product.priceMinor : variant.priceMinor;
-  if (basePriceMinor === null) {
+  const basePrice = variant === null ? product.price : variant.price;
+  if (basePrice === null) {
     throw new OrderValidationError();
   }
-  const unitTotalMinor = basePriceMinor + modifiers.reduce((total, modifier) => total + modifier.priceDeltaMinor, 0);
-  const lineTotalMinor = unitTotalMinor * item.quantity;
-  if (!isNonNegativeMinor(unitTotalMinor) || !isNonNegativeMinor(lineTotalMinor)) {
+  const unitTotal = basePrice + modifiers.reduce((sum, modifier) => sum + modifier.priceDelta, 0);
+  const lineTotal = unitTotal * item.quantity;
+  if (!isNonNegativeAmount(unitTotal) || !isNonNegativeAmount(lineTotal)) {
     throw new OrderValidationError();
   }
 
@@ -107,8 +107,8 @@ function createSnapshot(
     productName: product.name,
     size: variant?.size ?? null,
     quantity: item.quantity,
-    unitTotalMinor,
-    lineTotalMinor,
+    unitTotal,
+    lineTotal,
     modifiers: Object.freeze(modifiers.map(toSnapshotModifier)),
   });
 }
@@ -119,7 +119,7 @@ function isValidProduct(product: OrderCatalogProduct): boolean {
   }
   if (product.type === 'DRINK') {
     return (
-      product.priceMinor === null
+      product.price === null
       && product.variants.every(isValidVariant)
       && hasUniqueValues(product.variants.map((variant) => variant.id))
       && hasUniqueValues(product.variants.map((variant) => variant.size))
@@ -127,8 +127,8 @@ function isValidProduct(product: OrderCatalogProduct): boolean {
   }
   return (
     product.type === 'OTHER'
-    && product.priceMinor !== null
-    && isNonNegativeMinor(product.priceMinor)
+    && product.price !== null
+    && isNonNegativeAmount(product.price)
     && product.variants.length === 0
   );
 }
@@ -151,8 +151,8 @@ function getValidVariant(product: OrderCatalogProduct, variantId: string | null)
   return variant;
 }
 
-function isValidVariant(variant: { id: string; priceMinor: number }): boolean {
-  return isNonBlankString(variant.id) && isNonNegativeMinor(variant.priceMinor);
+function isValidVariant(variant: { id: string; price: number }): boolean {
+  return isNonBlankString(variant.id) && isNonNegativeAmount(variant.price);
 }
 
 function assertValidCatalog(catalog: OrderCatalog): void {
@@ -237,12 +237,12 @@ function isValidGroup(group: OrderCatalogModifierGroup): boolean {
   return group.minSelect === 0 || (
     defaults.length >= group.minSelect
     && defaults.length <= group.maxSelect
-    && defaults.every((option) => option.priceDeltaMinor === 0)
+    && defaults.every((option) => option.priceDelta === 0)
   );
 }
 
 function isValidOption(option: OrderCatalogModifierOption): boolean {
-  return isNonBlankString(option.id) && isNonBlankString(option.name) && Number.isSafeInteger(option.priceDeltaMinor);
+  return isNonBlankString(option.id) && isNonBlankString(option.name) && Number.isSafeInteger(option.priceDelta);
 }
 
 function assertAvailable(
@@ -269,7 +269,7 @@ function toSnapshotModifier(option: OrderCatalogModifierOption): OrderSnapshotMo
   return Object.freeze({
     modifierOptionId: option.id,
     modifierName: option.name,
-    priceDeltaMinor: option.priceDeltaMinor,
+    priceDelta: option.priceDelta,
   });
 }
 
@@ -281,7 +281,7 @@ function createConfigurationKey(item: OrderRequestItem): string {
   });
 }
 
-function isNonNegativeMinor(value: number): boolean {
+function isNonNegativeAmount(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 

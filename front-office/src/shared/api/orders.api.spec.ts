@@ -126,7 +126,7 @@ const orderId = "00000000-0000-4000-8000-000000000004";
 const idempotencyKey = "00000000-0000-4000-8000-000000000005";
 
 const createOrderRequest = {
-  expectedTotalMinor: 43000,
+  expectedTotal: 430,
   items: [
     {
       productId,
@@ -141,7 +141,7 @@ const orderResponse = {
   id: orderId,
   number: "20300102-001",
   stage: "CREATED" as const,
-  totalMinor: 43000,
+  total: 430,
   items: [
     {
       productId,
@@ -149,13 +149,13 @@ const orderResponse = {
       productName: "Капучино",
       size: "M" as const,
       quantity: 1,
-      unitTotalMinor: 43000,
-      lineTotalMinor: 43000,
+      unitTotal: 430,
+      lineTotal: 430,
       modifiers: [
         {
           modifierOptionId,
           modifierName: "Овсяное молоко",
-          priceDeltaMinor: 5000,
+          priceDelta: 50,
         },
       ],
     },
@@ -179,7 +179,12 @@ const invalidOrderResponses: { name: string; response: unknown }[] = [
   { name: "id", response: { ...orderResponse, id: "not-a-uuid" } },
   { name: "number", response: { ...orderResponse, number: 1 } },
   { name: "stage", response: { ...orderResponse, stage: "PREPARING" } },
-  { name: "totalMinor", response: { ...orderResponse, totalMinor: 12.5 } },
+  { name: "total", response: { ...orderResponse, total: 12.5 } },
+  { name: "negative total", response: { ...orderResponse, total: -1 } },
+  {
+    name: "total above int32",
+    response: { ...orderResponse, total: 2_147_483_648 },
+  },
   { name: "items", response: { ...orderResponse, items: {} } },
   {
     name: "item.productId",
@@ -196,12 +201,20 @@ const invalidOrderResponses: { name: string; response: unknown }[] = [
   { name: "item.size", response: withInvalidItem({ size: "XL" }) },
   { name: "item.quantity", response: withInvalidItem({ quantity: 1.5 }) },
   {
-    name: "item.unitTotalMinor",
-    response: withInvalidItem({ unitTotalMinor: 1.5 }),
+    name: "item.unitTotal",
+    response: withInvalidItem({ unitTotal: 1.5 }),
   },
   {
-    name: "item.lineTotalMinor",
-    response: withInvalidItem({ lineTotalMinor: 1.5 }),
+    name: "negative item.unitTotal",
+    response: withInvalidItem({ unitTotal: -1 }),
+  },
+  {
+    name: "item.lineTotal",
+    response: withInvalidItem({ lineTotal: 1.5 }),
+  },
+  {
+    name: "item.lineTotal above int32",
+    response: withInvalidItem({ lineTotal: 2_147_483_648 }),
   },
   { name: "item.modifiers", response: withInvalidItem({ modifiers: {} }) },
   {
@@ -213,13 +226,17 @@ const invalidOrderResponses: { name: string; response: unknown }[] = [
     response: withInvalidModifier({ modifierName: 1 }),
   },
   {
-    name: "modifier.priceDeltaMinor",
-    response: withInvalidModifier({ priceDeltaMinor: 1.5 }),
+    name: "modifier.priceDelta",
+    response: withInvalidModifier({ priceDelta: 1.5 }),
+  },
+  {
+    name: "negative modifier.priceDelta",
+    response: withInvalidModifier({ priceDelta: -1 }),
   },
 ];
 
 const orderErrors = [
-  { code: "ORDER_TOTAL_CHANGED", details: { totalMinor: 43000 }, status: 400 },
+  { code: "ORDER_TOTAL_CHANGED", details: { total: 430 }, status: 400 },
   {
     code: "MENU_ITEM_UNAVAILABLE",
     details: { itemId: productId },
@@ -249,7 +266,7 @@ function client(
   status = 201,
 ): ApiClient {
   return new ApiClient({
-    baseUrl: "https://api.example.test/api/v1",
+    baseUrl: "https://api.example.test/api/v2",
     fetcher: async (_url, options) => {
       capture.push(options ?? {});
 

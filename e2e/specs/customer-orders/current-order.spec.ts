@@ -44,8 +44,8 @@ test("ORDER-03: customer видит текущий заказ", async ({
     expect(order.size, "Показан размер товара.").toBe("M");
     expect(order.modifierName, "Показана добавка.").toBe("Обычное молоко");
     expect(order.quantity, "Показано количество товара.").toBe("1");
-    expect(order.lineTotal, "Показана сумма позиции.").toBe("320,00 ₽");
-    expect(order.total, "Показана итоговая сумма заказа.").toBe("320,00 ₽");
+    expect(order.lineTotal, "Показана сумма позиции.").toBe("320 ₽");
+    expect(order.total, "Показана итоговая сумма заказа.").toBe("320 ₽");
   });
   await test.step("Customer видит текст об оплате на кассе при получении.", async () => {
     expect(

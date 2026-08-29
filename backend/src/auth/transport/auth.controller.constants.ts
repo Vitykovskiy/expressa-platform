@@ -1,7 +1,7 @@
 import { otpResendIntervalMs } from '../domain/otp-policy.constants';
 
 export const refreshCookieName = 'expressa_refresh';
-export const refreshCookiePath = '/api/v1/auth';
+export const refreshCookiePath = '/api/v2/auth';
 
 export const authErrorResponses = {
   expiredOtp: { code: 'AUTH_CODE_EXPIRED', details: null, message: 'Verification code expired' },

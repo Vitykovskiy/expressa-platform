@@ -55,9 +55,9 @@ export function assertModifierOptionDetails(
     throw new ModifierAdminError("MODIFIER_INVALID", [
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (!isInteger(value.priceDeltaMinor))
+  if (!isNonNegativeInteger(value.priceDelta))
     throw new ModifierAdminError("MODIFIER_INVALID", [
-      { path: "priceDeltaMinor", reason: "Must be an int32" },
+      { path: "priceDelta", reason: "Must be an int32" },
     ]);
   if (!isNonNegativeInteger(value.sortOrder))
     throw new ModifierAdminError("MODIFIER_INVALID", [
@@ -86,7 +86,7 @@ export function assertPublishableModifierGroup(
     options.filter((option) => option.isAvailable).length < group.minSelect ||
     defaults.length < group.minSelect ||
     defaults.length > group.maxSelect ||
-    defaults.some((option) => option.priceDeltaMinor !== 0)
+    defaults.some((option) => option.priceDelta !== 0)
   )
     throw new ModifierAdminError("MODIFIER_INVALID", [
       { path: "options", reason: "Must satisfy active group selection rules" },

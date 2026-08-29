@@ -26,7 +26,7 @@ function createCandidates(): PublicMenuCandidates {
         type: 'DRINK',
         name: 'Капучино',
         description: 'Кофе с молоком',
-        priceMinor: null,
+        price: null,
         sortOrder: 10,
         isActive: true,
         isAvailable: true,
@@ -38,7 +38,7 @@ function createCandidates(): PublicMenuCandidates {
         type: 'OTHER',
         name: 'Круассан',
         description: 'Выпечка',
-        priceMinor: 22_000,
+        price: 220,
         sortOrder: 20,
         isActive: true,
         isAvailable: false,
@@ -50,7 +50,7 @@ function createCandidates(): PublicMenuCandidates {
         id: 'small',
         productId: drinkId,
         size: 'S',
-        priceMinor: 28_000,
+        price: 280,
         sortOrder: 10,
         isAvailable: true,
         archivedAt: null,
@@ -59,7 +59,7 @@ function createCandidates(): PublicMenuCandidates {
         id: 'medium',
         productId: drinkId,
         size: 'M',
-        priceMinor: 32_000,
+        price: 320,
         sortOrder: 20,
         isAvailable: false,
         archivedAt: null,
@@ -68,7 +68,7 @@ function createCandidates(): PublicMenuCandidates {
         id: 'large',
         productId: drinkId,
         size: 'L',
-        priceMinor: 36_000,
+        price: 360,
         sortOrder: 30,
         isAvailable: true,
         archivedAt: null,
@@ -90,7 +90,7 @@ function createCandidates(): PublicMenuCandidates {
         id: 'regular',
         groupId,
         name: 'Обычное',
-        priceDeltaMinor: 0,
+        priceDelta: 0,
         sortOrder: 10,
         isDefault: true,
         isAvailable: true,
@@ -100,7 +100,7 @@ function createCandidates(): PublicMenuCandidates {
         id: 'oat',
         groupId,
         name: 'Овсяное',
-        priceDeltaMinor: 8_000,
+        priceDelta: 80,
         sortOrder: 20,
         isDefault: false,
         isAvailable: true,
@@ -136,12 +136,12 @@ describe('GetPublicMenuUseCase', () => {
               type: 'DRINK',
               name: 'Капучино',
               description: 'Кофе с молоком',
-              priceMinor: null,
+              price: null,
               isAvailable: true,
               variants: [
-                { id: 'small', size: 'S', priceMinor: 28_000, isAvailable: true },
-                { id: 'medium', size: 'M', priceMinor: 32_000, isAvailable: false },
-                { id: 'large', size: 'L', priceMinor: 36_000, isAvailable: true },
+                { id: 'small', size: 'S', price: 280, isAvailable: true },
+                { id: 'medium', size: 'M', price: 320, isAvailable: false },
+                { id: 'large', size: 'L', price: 360, isAvailable: true },
               ],
               modifierGroups: [
                 {
@@ -154,14 +154,14 @@ describe('GetPublicMenuUseCase', () => {
                     {
                       id: 'regular',
                       name: 'Обычное',
-                      priceDeltaMinor: 0,
+                      priceDelta: 0,
                       isDefault: true,
                       isAvailable: true,
                     },
                     {
                       id: 'oat',
                       name: 'Овсяное',
-                      priceDeltaMinor: 8_000,
+                      priceDelta: 80,
                       isDefault: false,
                       isAvailable: true,
                     },
@@ -174,7 +174,7 @@ describe('GetPublicMenuUseCase', () => {
               type: 'OTHER',
               name: 'Круассан',
               description: 'Выпечка',
-              priceMinor: 22_000,
+              price: 220,
               isAvailable: false,
               variants: [],
               modifierGroups: expect.any(Array),
@@ -217,7 +217,7 @@ describe('GetPublicMenuUseCase', () => {
 
   it('исключает все товары категории при некорректной обязательной группе', async () => {
     const candidates = createCandidates();
-    candidates.modifierOptions[0]!.priceDeltaMinor = 1;
+    candidates.modifierOptions[0]!.priceDelta = 1;
 
     await expect(createUseCase(candidates).execute()).resolves.toEqual({
       acceptsNewOrders: true,

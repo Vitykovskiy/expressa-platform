@@ -180,7 +180,7 @@ describe("catalog store", () => {
           isAvailable: true,
           isDefault: false,
           name: "Овсяное",
-          priceDeltaMinor: 5000,
+          priceDelta: 50,
           sortOrder: 0,
         },
       ],
@@ -302,7 +302,7 @@ const productInput = {
   isActive: true,
   isAvailable: true,
   name: "Латте",
-  priceMinor: 25000,
+  price: 250,
   sortOrder: 0,
   type: "OTHER" as const,
   variants: [],
@@ -320,7 +320,7 @@ const modifierOptionInput = {
   isAvailable: true,
   isDefault: false,
   name: "Овсяное",
-  priceDeltaMinor: 5000,
+  priceDelta: 50,
   sortOrder: 0,
 };
 

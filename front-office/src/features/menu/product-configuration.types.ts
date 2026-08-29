@@ -17,8 +17,8 @@ export type ProductConfigurationModifierGroup = {
 };
 
 export type ProductConfigurationTotals = {
-  lineTotalMinor: number;
-  unitTotalMinor: number;
+  lineTotal: number;
+  unitTotal: number;
 };
 
 export type ProductConfigurationGroupSelection = {

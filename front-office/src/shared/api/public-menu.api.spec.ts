@@ -16,7 +16,7 @@ describe("PublicMenuApi", () => {
     expect(menu.categories[0]?.products[1]?.type).toBe("OTHER");
   });
 
-  it("передаёт customer только доступные размеры напитка", async () => {
+  it("передаёт customer все опубликованные размеры напитка", async () => {
     const response = {
       ...menuResponse,
       categories: [
@@ -29,19 +29,19 @@ describe("PublicMenuApi", () => {
                 {
                   id: "00000000-0000-4000-8000-000000000006",
                   size: "S" as const,
-                  priceMinor: 20000,
+                  price: 200,
                   isAvailable: true,
                 },
                 {
                   id: "00000000-0000-4000-8000-000000000007",
                   size: "M" as const,
-                  priceMinor: 24000,
+                  price: 240,
                   isAvailable: false,
                 },
                 {
                   id: "00000000-0000-4000-8000-000000000008",
                   size: "L" as const,
-                  priceMinor: 28000,
+                  price: 280,
                   isAvailable: false,
                 },
               ],
@@ -57,8 +57,20 @@ describe("PublicMenuApi", () => {
       {
         id: "00000000-0000-4000-8000-000000000006",
         size: "S",
-        priceMinor: 20000,
+        price: 200,
         isAvailable: true,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000007",
+        size: "M",
+        price: 240,
+        isAvailable: false,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000008",
+        size: "L",
+        price: 280,
+        isAvailable: false,
       },
     ]);
   });
@@ -72,7 +84,21 @@ describe("PublicMenuApi", () => {
           products: [
             {
               ...menuResponse.categories[0]!.products[0],
-              priceMinor: 30000,
+              price: 300,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      ...menuResponse,
+      categories: [
+        {
+          ...menuResponse.categories[0],
+          products: [
+            {
+              ...menuResponse.categories[0]!.products[1],
+              price: 2_147_483_648,
             },
           ],
         },
@@ -159,6 +185,64 @@ describe("PublicMenuApi", () => {
         },
       ],
     },
+    {
+      ...menuResponse,
+      categories: [
+        {
+          ...menuResponse.categories[0],
+          products: [
+            {
+              ...menuResponse.categories[0]!.products[1],
+              price: -1,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      ...menuResponse,
+      categories: [
+        {
+          ...menuResponse.categories[0],
+          products: [
+            {
+              ...menuResponse.categories[0]!.products[0],
+              variants: [
+                {
+                  ...menuResponse.categories[0]!.products[0]!.variants[0],
+                  price: 2_147_483_648,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      ...menuResponse,
+      categories: [
+        {
+          ...menuResponse.categories[0],
+          products: [
+            {
+              ...menuResponse.categories[0]!.products[0],
+              modifierGroups: [
+                {
+                  ...menuResponse.categories[0]!.products[0]!.modifierGroups[0],
+                  options: [
+                    {
+                      ...menuResponse.categories[0]!.products[0]!
+                        .modifierGroups[0]!.options[0],
+                      priceDelta: -1,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   ])("отклоняет нарушенный вложенный контракт", async (response) => {
     await expect(
       createPublicMenuApi(client(response)).getMenu(),
@@ -190,13 +274,13 @@ const menuResponse = {
           type: "DRINK" as const,
           name: "Капучино",
           description: "Классический",
-          priceMinor: null,
+          price: null,
           isAvailable: true,
           variants: [
             {
               id: "00000000-0000-4000-8000-000000000003",
               size: "M" as const,
-              priceMinor: 30000,
+              price: 300,
               isAvailable: true,
             },
           ],
@@ -211,7 +295,7 @@ const menuResponse = {
                 {
                   id: "00000000-0000-4000-8000-000000000005",
                   name: "Обычное",
-                  priceDeltaMinor: 0,
+                  priceDelta: 0,
                   isDefault: true,
                   isAvailable: true,
                 },
@@ -224,7 +308,7 @@ const menuResponse = {
           type: "OTHER" as const,
           name: "Круассан",
           description: "С маслом",
-          priceMinor: 18000,
+          price: 180,
           isAvailable: true,
           variants: [],
           modifierGroups: [],
@@ -240,7 +324,7 @@ function client(
   status = 200,
 ): ApiClient {
   return new ApiClient({
-    baseUrl: "https://api.example.test/api/v1",
+    baseUrl: "https://api.example.test/api/v2",
     fetcher: async (_url, options) => {
       capture.push(options ?? {});
 

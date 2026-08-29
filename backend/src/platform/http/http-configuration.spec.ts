@@ -111,7 +111,7 @@ describe('HTTP configuration', () => {
         expect(openApi.status).toBe(200);
         expect(probe.status).toBe(200);
         await expect(openApi.json()).resolves.toMatchObject({
-          paths: { '/api/v1/probe': expect.any(Object) },
+          paths: { '/api/v2/probe': expect.any(Object) },
         });
       } finally {
         await app.close();
@@ -194,14 +194,14 @@ describe('HTTP configuration', () => {
         [bearerSecuritySchemeName]: { bearerFormat: 'JWT', scheme: 'bearer', type: 'http' },
         [refreshCookieSecuritySchemeName]: { in: 'cookie', name: 'expressa_refresh', type: 'apiKey' },
       });
-      expect(document.paths['/api/v1/auth/refresh']?.post?.security).toEqual([
+      expect(document.paths['/api/v2/auth/refresh']?.post?.security).toEqual([
         { expressa_refresh: [] },
       ]);
-      expect(document.paths['/api/v1/auth/logout']?.post?.security).toEqual([
+      expect(document.paths['/api/v2/auth/logout']?.post?.security).toEqual([
         { expressa_refresh: [] },
       ]);
-      expect(document.paths['/api/v1/me']?.get?.security).toEqual([{ bearer: [] }]);
-      expect(document.paths['/api/v1/auth/me']).toBeUndefined();
+      expect(document.paths['/api/v2/me']?.get?.security).toEqual([{ bearer: [] }]);
+      expect(document.paths['/api/v2/auth/me']).toBeUndefined();
     } finally {
       await app.close();
     }

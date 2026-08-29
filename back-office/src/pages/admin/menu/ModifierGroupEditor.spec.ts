@@ -91,6 +91,23 @@ describe("ModifierGroupEditor", () => {
 
     expect(optionNames(wrapper)).toEqual(["Первый", "Третий", ""]);
   });
+
+  it("не сохраняет отрицательное изменение цены", async () => {
+    const wrapper = mount(ModifierGroupEditor, {
+      props: {
+        group: {
+          ...group,
+          options: [{ ...group.options[0]!, priceDelta: -1 }],
+        },
+      },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper.get("form").trigger("submit");
+
+    expect(wrapper.text()).toContain("Укажите изменение цены в целых рублях");
+    expect(wrapper.emitted("save")).toBeUndefined();
+  });
 });
 
 const group: ModifierGroup = {
@@ -104,7 +121,7 @@ const group: ModifierGroup = {
     id: `option-${index}`,
     groupId: "group",
     name,
-    priceDeltaMinor: 0,
+    priceDelta: 0,
     sortOrder: index,
     isDefault: false,
     isAvailable: true,

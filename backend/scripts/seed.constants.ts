@@ -232,7 +232,7 @@ export const catalogSeed: CatalogSeed = {
       type: 'DRINK',
       name: 'Капучино',
       description: 'Эспрессо с молочной пеной.',
-      priceMinor: null,
+      price: null,
       sortOrder: 10,
       isActive: true,
       isAvailable: true,
@@ -243,7 +243,7 @@ export const catalogSeed: CatalogSeed = {
       type: 'DRINK',
       name: 'Эспрессо',
       description: 'Классический двойной эспрессо.',
-      priceMinor: null,
+      price: null,
       sortOrder: 20,
       isActive: true,
       isAvailable: true,
@@ -254,7 +254,7 @@ export const catalogSeed: CatalogSeed = {
       type: 'OTHER',
       name: 'Круассан',
       description: 'Слоёный круассан из масляного теста.',
-      priceMinor: 22_000,
+      price: 220,
       sortOrder: 10,
       isActive: true,
       isAvailable: true,
@@ -265,7 +265,7 @@ export const catalogSeed: CatalogSeed = {
       type: 'OTHER',
       name: 'Чизкейк',
       description: 'Десерт временно недоступен.',
-      priceMinor: 28_000,
+      price: 280,
       sortOrder: 20,
       isActive: true,
       isAvailable: false,
@@ -276,7 +276,7 @@ export const catalogSeed: CatalogSeed = {
       type: 'DRINK',
       name: 'Тестовый напиток',
       description: 'Непубликуемый кандидат без размеров.',
-      priceMinor: null,
+      price: null,
       sortOrder: 30,
       isActive: false,
       isAvailable: true,
@@ -287,7 +287,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000011',
       productId: cappuccinoId,
       size: 'S',
-      priceMinor: 28_000,
+      price: 280,
       sortOrder: 10,
       isAvailable: true,
     },
@@ -295,7 +295,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000012',
       productId: cappuccinoId,
       size: 'M',
-      priceMinor: 32_000,
+      price: 320,
       sortOrder: 20,
       isAvailable: true,
     },
@@ -303,7 +303,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000013',
       productId: cappuccinoId,
       size: 'L',
-      priceMinor: 36_000,
+      price: 360,
       sortOrder: 30,
       isAvailable: true,
     },
@@ -311,7 +311,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000021',
       productId: espressoId,
       size: 'S',
-      priceMinor: 20_000,
+      price: 200,
       sortOrder: 10,
       isAvailable: true,
     },
@@ -331,7 +331,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000101',
       groupId: milkGroupId,
       name: 'Обычное молоко',
-      priceDeltaMinor: 0,
+      priceDelta: 0,
       sortOrder: 10,
       isDefault: true,
       isAvailable: true,
@@ -340,7 +340,7 @@ export const catalogSeed: CatalogSeed = {
       id: '00000000-0000-4000-8000-000000000102',
       groupId: milkGroupId,
       name: 'Овсяное молоко',
-      priceDeltaMinor: 8_000,
+      priceDelta: 80,
       sortOrder: 20,
       isDefault: false,
       isAvailable: true,
@@ -368,7 +368,7 @@ export const categoryUpsertSql = `
 
 export const productUpsertSql = `
   INSERT INTO products (
-    id, category_id, type, name, description, price_minor, sort_order, is_active, is_available, archived_at
+    id, category_id, type, name, description, price, sort_order, is_active, is_available, archived_at
   )
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
   ON CONFLICT (id) DO UPDATE SET
@@ -376,7 +376,7 @@ export const productUpsertSql = `
     type = EXCLUDED.type,
     name = EXCLUDED.name,
     description = EXCLUDED.description,
-    price_minor = EXCLUDED.price_minor,
+    price = EXCLUDED.price,
     sort_order = EXCLUDED.sort_order,
     is_active = EXCLUDED.is_active,
     is_available = EXCLUDED.is_available,
@@ -384,12 +384,12 @@ export const productUpsertSql = `
 `;
 
 export const productVariantUpsertSql = `
-  INSERT INTO product_variants (id, product_id, size, price_minor, sort_order, is_available, archived_at)
+  INSERT INTO product_variants (id, product_id, size, price, sort_order, is_available, archived_at)
   VALUES ($1, $2, $3, $4, $5, $6, NULL)
   ON CONFLICT (id) DO UPDATE SET
     product_id = EXCLUDED.product_id,
     size = EXCLUDED.size,
-    price_minor = EXCLUDED.price_minor,
+    price = EXCLUDED.price,
     sort_order = EXCLUDED.sort_order,
     is_available = EXCLUDED.is_available,
     archived_at = NULL
@@ -409,13 +409,13 @@ export const modifierGroupUpsertSql = `
 
 export const modifierOptionUpsertSql = `
   INSERT INTO modifier_options (
-    id, group_id, name, price_delta_minor, sort_order, is_default, is_available, archived_at
+    id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at
   )
   VALUES ($1, $2, $3, $4, $5, $6, $7, NULL)
   ON CONFLICT (id) DO UPDATE SET
     group_id = EXCLUDED.group_id,
     name = EXCLUDED.name,
-    price_delta_minor = EXCLUDED.price_delta_minor,
+    price_delta = EXCLUDED.price_delta,
     sort_order = EXCLUDED.sort_order,
     is_default = EXCLUDED.is_default,
     is_available = EXCLUDED.is_available,

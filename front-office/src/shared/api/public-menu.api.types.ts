@@ -22,13 +22,13 @@ export type PublicMenuProduct = PublicDrinkMenuProduct | PublicOtherMenuProduct;
 
 export type PublicDrinkMenuProduct = PublicMenuProductBase & {
   type: "DRINK";
-  priceMinor: null;
+  price: null;
   variants: PublicMenuVariant[];
 };
 
 export type PublicOtherMenuProduct = PublicMenuProductBase & {
   type: "OTHER";
-  priceMinor: number;
+  price: number;
   variants: [];
 };
 
@@ -43,7 +43,7 @@ export type PublicMenuProductBase = {
 export type PublicMenuVariant = {
   id: string;
   size: "S" | "M" | "L";
-  priceMinor: number;
+  price: number;
   isAvailable: boolean;
 };
 
@@ -59,7 +59,7 @@ export type PublicMenuModifierGroup = {
 export type PublicMenuModifierOption = {
   id: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   isDefault: boolean;
   isAvailable: boolean;
 };
@@ -81,13 +81,13 @@ export type PublicMenuProductResponse =
 
 export type PublicDrinkMenuProductResponse = PublicMenuProductResponseBase & {
   type: "DRINK";
-  priceMinor: null;
+  price: null;
   variants: PublicMenuVariantResponse[];
 };
 
 export type PublicOtherMenuProductResponse = PublicMenuProductResponseBase & {
   type: "OTHER";
-  priceMinor: number;
+  price: number;
   variants: [];
 };
 
@@ -102,7 +102,7 @@ export type PublicMenuProductResponseBase = {
 export type PublicMenuVariantResponse = {
   id: string;
   size: "S" | "M" | "L";
-  priceMinor: number;
+  price: number;
   isAvailable: boolean;
 };
 
@@ -118,7 +118,7 @@ export type PublicMenuModifierGroupResponse = {
 export type PublicMenuModifierOptionResponse = {
   id: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   isDefault: boolean;
   isAvailable: boolean;
 };

@@ -20,7 +20,7 @@ export class AdminCatalogProductDto {
   @ApiProperty({ enum: productTypes }) type!: AdminCatalogProductType;
   @ApiProperty() name!: string;
   @ApiProperty() description!: string;
-  @ApiProperty({ format: 'int32', nullable: true, type: 'integer' }) priceMinor!: number | null;
+  @ApiProperty({ format: 'int32', minimum: 0, nullable: true, type: 'integer' }) price!: number | null;
   @ApiProperty({ format: 'int32', type: 'integer' }) sortOrder!: number;
   @ApiProperty() isActive!: boolean;
   @ApiProperty() isAvailable!: boolean;
@@ -30,7 +30,7 @@ export class AdminCatalogProductVariantDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) productId!: string;
   @ApiProperty({ enum: productSizes }) size!: AdminCatalogProductSize;
-  @ApiProperty({ format: 'int32', type: 'integer' }) priceMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' }) price!: number;
   @ApiProperty({ format: 'int32', type: 'integer' }) sortOrder!: number;
   @ApiProperty() isAvailable!: boolean;
 }
@@ -48,7 +48,7 @@ export class AdminCatalogModifierOptionDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) groupId!: string;
   @ApiProperty() name!: string;
-  @ApiProperty({ format: 'int32', type: 'integer' }) priceDeltaMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' }) priceDelta!: number;
   @ApiProperty({ format: 'int32', type: 'integer' }) sortOrder!: number;
   @ApiProperty() isDefault!: boolean;
   @ApiProperty() isAvailable!: boolean;

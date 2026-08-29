@@ -7,7 +7,7 @@ describe('PostgresOrderLifecycleRepository', () => {
   it('меняет стадию и записывает единственное событие в одной транзакции', async () => {
     const query = jest.fn((sql: string) => {
       if (sql.includes('UPDATE orders')) return Promise.resolve({ rows: [{ id: orderId }] });
-      if (sql.includes('FROM orders JOIN users')) return Promise.resolve({ rows: [{ id: orderId, number: '20300102-001', created_at: new Date('2030-01-02T03:04:05.000Z'), total_minor: 450, stage: 'ACCEPTED', customer_id: 'customer-id', customer_phone_e164: '+79991234567' }] });
+      if (sql.includes('FROM orders JOIN users')) return Promise.resolve({ rows: [{ id: orderId, number: '20300102-001', created_at: new Date('2030-01-02T03:04:05.000Z'), total: 450, stage: 'ACCEPTED', customer_id: 'customer-id', customer_phone_e164: '+79991234567' }] });
       if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [] });
       if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
       if (sql.includes('FROM order_events')) return Promise.resolve({ rows: [{ actor_id: 'actor-id', actor_label: '+79991234567', occurred_at: new Date('2030-01-02T03:04:05.000Z'), from_stage: 'CREATED', to_stage: 'ACCEPTED' }] });
@@ -54,18 +54,18 @@ describe('PostgresOrderLifecycleRepository', () => {
     const query = jest.fn((sql: string) => {
       if (sql.includes('FROM orders') && sql.includes('customer_id = $1')) {
         return Promise.resolve({ rows: [
-          { id: orderId, number: '20300102-002', created_at: createdAt, cursor_created_at: '2030-01-02 03:04:05+00', total_minor: 450, stage: 'ISSUED' },
+          { id: orderId, number: '20300102-002', created_at: createdAt, cursor_created_at: '2030-01-02 03:04:05+00', total: 450, stage: 'ISSUED' },
         ] });
       }
-      if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [{ order_item_id: itemId, modifier_option_id: '88888888-8888-4888-8888-888888888888', modifier_name: 'Овсяное молоко', price_delta_minor: 50 }] });
-      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [{ id: itemId, order_id: orderId, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Капучино', size: null, quantity: 1, unit_total_minor: 450, line_total_minor: 450 }] });
+      if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [{ order_item_id: itemId, modifier_option_id: '88888888-8888-4888-8888-888888888888', modifier_name: 'Овсяное молоко', price_delta: 50 }] });
+      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [{ id: itemId, order_id: orderId, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Капучино', size: null, quantity: 1, unit_total: 450, line_total: 450 }] });
       return Promise.resolve({ rows: [] });
     });
     const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
 
     await expect(repository.listForCustomer(customerId, null)).resolves.toEqual({
       orders: [
-        { id: orderId, number: '20300102-002', createdAt, totalMinor: 450, stage: 'ISSUED', snapshot: [{ productId: '99999999-9999-4999-8999-999999999999', variantId: null, productName: 'Капучино', size: null, quantity: 1, unitTotalMinor: 450, lineTotalMinor: 450, modifiers: [{ modifierOptionId: '88888888-8888-4888-8888-888888888888', modifierName: 'Овсяное молоко', priceDeltaMinor: 50 }] }] },
+        { id: orderId, number: '20300102-002', createdAt, total: 450, stage: 'ISSUED', snapshot: [{ productId: '99999999-9999-4999-8999-999999999999', variantId: null, productName: 'Капучино', size: null, quantity: 1, unitTotal: 450, lineTotal: 450, modifiers: [{ modifierOptionId: '88888888-8888-4888-8888-888888888888', modifierName: 'Овсяное молоко', priceDelta: 50 }] }] },
       ],
       nextCursor: null,
     });
@@ -78,10 +78,10 @@ describe('PostgresOrderLifecycleRepository', () => {
     const ids = Array.from({ length: 20 }, (_value, index) => `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`);
     const query = jest.fn((sql: string) => {
       if (sql.includes('FROM orders') && sql.includes('customer_id = $1')) {
-        return Promise.resolve({ rows: ids.map((id, index) => ({ id, number: `20310205-${String(index + 1).padStart(3, '0')}`, created_at: new Date(`2031-02-05T13:00:${String(index).padStart(2, '0')}.000Z`), cursor_created_at: `2031-02-05 13:00:${String(index).padStart(2, '0')}+00`, total_minor: 100, stage: 'CREATED' })) });
+        return Promise.resolve({ rows: ids.map((id, index) => ({ id, number: `20310205-${String(index + 1).padStart(3, '0')}`, created_at: new Date(`2031-02-05T13:00:${String(index).padStart(2, '0')}.000Z`), cursor_created_at: `2031-02-05 13:00:${String(index).padStart(2, '0')}+00`, total: 100, stage: 'CREATED' })) });
       }
       if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
-      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: ids.map((id) => ({ id: `${id.slice(0, -1)}1`, order_id: id, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Американо', size: null, quantity: 1, unit_total_minor: 100, line_total_minor: 100 })) });
+      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: ids.map((id) => ({ id: `${id.slice(0, -1)}1`, order_id: id, product_id: '99999999-9999-4999-8999-999999999999', variant_id: null, product_name: 'Американо', size: null, quantity: 1, unit_total: 100, line_total: 100 })) });
       return Promise.resolve({ rows: [] });
     });
     const repository = new PostgresOrderLifecycleRepository({ pool: { query } as unknown as Pool });
@@ -104,8 +104,8 @@ describe('PostgresOrderLifecycleRepository', () => {
       if (sql.includes('FROM orders') && sql.includes('customer_id = $1')) {
         orderQueryCount += 1;
         return Promise.resolve({ rows: orderQueryCount === 1
-          ? ids.map((id, index) => ({ id, number: `20310205-${String(index + 1).padStart(3, '0')}`, created_at: new Date('2031-02-05T13:00:00.123Z'), cursor_created_at: index === 19 ? cursorCreatedAt : '2031-02-05 13:00:00.123457+00', total_minor: 100, stage: 'CREATED' }))
-          : [{ id: ids[20], number: '20310205-021', created_at: new Date('2031-02-05T13:00:00.123Z'), cursor_created_at: '2031-02-05 13:00:00.123455+00', total_minor: 100, stage: 'CREATED' }] });
+          ? ids.map((id, index) => ({ id, number: `20310205-${String(index + 1).padStart(3, '0')}`, created_at: new Date('2031-02-05T13:00:00.123Z'), cursor_created_at: index === 19 ? cursorCreatedAt : '2031-02-05 13:00:00.123457+00', total: 100, stage: 'CREATED' }))
+          : [{ id: ids[20], number: '20310205-021', created_at: new Date('2031-02-05T13:00:00.123Z'), cursor_created_at: '2031-02-05 13:00:00.123455+00', total: 100, stage: 'CREATED' }] });
       }
       return Promise.resolve({ rows: [] });
     });

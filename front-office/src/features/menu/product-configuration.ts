@@ -6,7 +6,6 @@ import type {
   CartSelectedModifierOption,
   ConfiguredCartItemDraft,
 } from "@/entities/customer/model/customer.types";
-import { minorUnitsPerRub } from "@/entities/customer/model/cart.store.constants";
 import {
   initialProductConfigurationQuantity,
   preferredDrinkVariantSize,
@@ -131,21 +130,21 @@ export function isProductConfigurationValid(
 export function getProductConfigurationTotals(
   configuration: ProductConfiguration,
 ): ProductConfigurationTotals | null {
-  const basePriceMinor = getBasePriceMinor(configuration);
+  const basePrice = getBasePrice(configuration);
   const selectedOptions = getSelectedModifierOptions(configuration);
 
-  if (basePriceMinor === null || !selectedOptions.valid) {
+  if (basePrice === null || !selectedOptions.valid) {
     return null;
   }
 
-  const unitTotalMinor = selectedOptions.options.reduce(
-    (total, option) => total + option.priceDeltaMinor,
-    basePriceMinor,
+  const unitTotal = selectedOptions.options.reduce(
+    (total, option) => total + option.priceDelta,
+    basePrice,
   );
 
   return {
-    lineTotalMinor: unitTotalMinor * configuration.quantity,
-    unitTotalMinor,
+    lineTotal: unitTotal * configuration.quantity,
+    unitTotal,
   };
 }
 
@@ -168,9 +167,9 @@ export function toCartItemDraft(
     productName: configuration.product.name,
     addons: selectedOptions.options.map(toCartAddon),
     quantity: configuration.quantity,
-    lineTotalRub: totals.lineTotalMinor / minorUnitsPerRub,
-    unitTotalMinor: totals.unitTotalMinor,
-    lineTotalMinor: totals.lineTotalMinor,
+    lineTotalRub: totals.lineTotal,
+    unitTotal: totals.unitTotal,
+    lineTotal: totals.lineTotal,
     selectedModifierOptions: selectedOptions.options,
   };
 
@@ -189,10 +188,10 @@ export function toCartItemDraft(
       selectedVariant: {
         id: selectedVariant.id,
         size: selectedVariant.size,
-        priceMinor: selectedVariant.priceMinor,
+        price: selectedVariant.price,
       },
       size: selectedVariant.size,
-      sizePrice: selectedVariant.priceMinor / minorUnitsPerRub,
+      sizePrice: selectedVariant.price,
     };
   }
 
@@ -224,7 +223,7 @@ export function getSelectedModifierOptions(
         groupId: group.id,
         id: option.id,
         name: option.name,
-        priceDeltaMinor: option.priceDeltaMinor,
+        priceDelta: option.priceDelta,
       });
     }
   }
@@ -260,7 +259,7 @@ function getDefaultOptionIds(group: PublicMenuModifierGroup): string[] {
   return group.options
     .filter(
       (option) =>
-        option.isAvailable && option.isDefault && option.priceDeltaMinor === 0,
+        option.isAvailable && option.isDefault && option.priceDelta === 0,
     )
     .map((option) => option.id);
 }
@@ -347,15 +346,15 @@ function isAvailableOption(
   );
 }
 
-function getBasePriceMinor(configuration: ProductConfiguration): number | null {
+function getBasePrice(configuration: ProductConfiguration): number | null {
   if (configuration.product.type !== publicMenuProductTypes[0]) {
-    return configuration.product.priceMinor;
+    return configuration.product.price;
   }
 
   return (
     configuration.product.variants.find(
       (variant) => variant.id === configuration.selectedVariantId,
-    )?.priceMinor ?? null
+    )?.price ?? null
   );
 }
 
@@ -363,6 +362,6 @@ function toCartAddon(option: CartSelectedModifierOption) {
   return {
     id: option.id,
     name: option.name,
-    priceRub: option.priceDeltaMinor / minorUnitsPerRub,
+    priceRub: option.priceDelta,
   };
 }

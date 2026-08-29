@@ -14,7 +14,7 @@ const staffPhone = "+79991234567";
 
 function createAvailabilityApi(fetcher: typeof fetch): AvailabilityApi {
   return new AvailabilityApi(
-    new ApiClient({ baseUrl: "https://api.example.test/api/v1", fetcher }),
+    new ApiClient({ baseUrl: "https://api.example.test/api/v2", fetcher }),
   );
 }
 
@@ -158,7 +158,7 @@ describe("AvailabilityApi", () => {
       RequestInit,
     ];
     expect(availabilityUrl).toBe(
-      `https://api.example.test/api/v1/backoffice/availability/product/${productId}`,
+      `https://api.example.test/api/v2/backoffice/availability/product/${productId}`,
     );
     expect(availabilityRequest).toMatchObject({
       body: JSON.stringify({ isAvailable: false }),
@@ -166,7 +166,7 @@ describe("AvailabilityApi", () => {
       method: "PATCH",
     });
     expect(intakeUrl).toBe(
-      "https://api.example.test/api/v1/backoffice/service/intake",
+      "https://api.example.test/api/v2/backoffice/service/intake",
     );
     expect(intakeRequest.body).toBe(
       JSON.stringify({ acceptsNewOrders: false }),

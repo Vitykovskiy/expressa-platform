@@ -150,13 +150,13 @@ test("allowlist не пропускает public menu и foreign origin 401", ()
   expect(
     isExpectedUnauthenticatedRefresh(
       401,
-      "http://127.0.0.1:3000/api/v1/public/menu",
+      "http://127.0.0.1:3000/api/v2/public/menu",
     ),
   ).toBe(false);
   expect(
     isExpectedUnauthenticatedRefresh(
       401,
-      "https://foreign.example/api/v1/auth/refresh",
+      "https://foreign.example/api/v2/auth/refresh",
     ),
   ).toBe(false);
 });

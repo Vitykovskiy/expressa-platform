@@ -35,8 +35,8 @@ function isStructuredErrorResponse(
 
 function isOtpFailurePath(path: string): boolean {
   return (
-    path === '/api/v1/auth/otp/request' ||
-    path === '/api/v1/auth/otp/verify'
+    path === '/api/v2/auth/otp/request' ||
+    path === '/api/v2/auth/otp/verify'
   );
 }
 

@@ -1,7 +1,7 @@
 export type AuthCookieOptions = {
   httpOnly: true;
   maxAge: number;
-  path: '/api/v1/auth';
+  path: '/api/v2/auth';
   sameSite: 'strict';
   secure: boolean;
 };

@@ -5,7 +5,7 @@ export type ProductFormField =
   | "type"
   | "name"
   | "description"
-  | "priceMinor"
+  | "price"
   | "isActive"
   | "isAvailable"
   | "variants";
@@ -13,7 +13,7 @@ export type ProductFormField =
 export interface ProductVariantDraft {
   id?: string;
   size: ProductSize;
-  priceMinor: string;
+  price: string;
   isConfigured: boolean;
   isAvailable: boolean;
 }
@@ -23,7 +23,7 @@ export type ProductVariantMoveDirection = -1 | 1;
 export interface ProductVariantFormData {
   id?: string;
   size: ProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -35,7 +35,7 @@ export interface DrinkProductFormData {
   description: string;
   isActive: boolean;
   isAvailable: boolean;
-  priceMinor: null;
+  price: null;
   variants: readonly ProductVariantFormData[];
 }
 
@@ -46,7 +46,7 @@ export interface OtherProductFormData {
   description: string;
   isActive: boolean;
   isAvailable: boolean;
-  priceMinor: number;
+  price: number;
   variants: readonly [];
 }
 

@@ -39,8 +39,8 @@ test("QUEUE-07: сотрудник проводит заказ по разреш
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.CREATED,
   };
 

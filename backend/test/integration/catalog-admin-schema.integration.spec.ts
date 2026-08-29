@@ -70,8 +70,8 @@ describe('схема управления каталогом', () => {
           'product',
           entityId,
           'updated',
-          { name: 'Капучино', priceMinor: 19900 },
-          { name: 'Капучино', priceMinor: 20900 },
+          { name: 'Капучино', price: 199 },
+          { name: 'Капучино', price: 209 },
           requestId,
         ],
       );
@@ -86,8 +86,8 @@ describe('схема управления каталогом', () => {
       expect(auditEvent.rows).toEqual([
         expect.objectContaining({
           action: 'updated',
-          after_state: { name: 'Капучино', priceMinor: 20900 },
-          before_state: { name: 'Капучино', priceMinor: 19900 },
+          after_state: { name: 'Капучино', price: 209 },
+          before_state: { name: 'Капучино', price: 199 },
           created_at: expect.any(Date),
           entity_id: entityId,
           entity_type: 'product',
@@ -130,8 +130,8 @@ describe('схема управления каталогом', () => {
         [productId, categoryId, `Напиток ${productId}`, sortOrder],
       );
       await pool.query(
-        `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-         VALUES ($1, 'M', 10000, $2)`,
+        `INSERT INTO product_variants (product_id, size, price, sort_order)
+         VALUES ($1, 'M', 100, $2)`,
         [productId, sortOrder],
       );
       await pool.query(
@@ -139,14 +139,14 @@ describe('схема управления каталогом', () => {
         [productId],
       );
       await pool.query(
-        `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-         VALUES ($1, 'M', 11000, $2)`,
+        `INSERT INTO product_variants (product_id, size, price, sort_order)
+         VALUES ($1, 'M', 110, $2)`,
         [productId, sortOrder],
       );
       await expect(
         pool.query(
-          `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-           VALUES ($1, 'M', 12000, $2)`,
+          `INSERT INTO product_variants (product_id, size, price, sort_order)
+           VALUES ($1, 'M', 120, $2)`,
           [productId, sortOrder + 1],
         ),
       ).rejects.toMatchObject({ code: '23505' });

@@ -12,7 +12,7 @@ export const PRODUCT_TYPE_OPTIONS: readonly ProductTypeOption[] = [
 export function createInitialProductVariantDrafts(): ProductVariantDraft[] {
   return productSizes.map((size) => ({
     size,
-    priceMinor: "",
+    price: "",
     isConfigured: true,
     isAvailable: true,
   }));

@@ -172,9 +172,9 @@ function assertProductBody(body: CreateProductDto): void {
     throw validationError([
       { path: "description", reason: "Must be a string" },
     ]);
-  if (!(body.priceMinor === null || isInt32(body.priceMinor)))
+  if (!(body.price === null || isInt32(body.price)))
     throw validationError([
-      { path: "priceMinor", reason: "Must be an int32 or null" },
+      { path: "price", reason: "Must be a non-negative int32 or null" },
     ]);
   if (!isInt32(body.sortOrder))
     throw validationError([
@@ -193,10 +193,10 @@ function assertProductBody(body: CreateProductDto): void {
       throw validationError([
         { path: `variants.${index}.size`, reason: "Must be S, M, or L" },
       ]);
-    if (!isInt32(variant.priceMinor))
+    if (!isInt32(variant.price))
       throw validationError([
         {
-          path: `variants.${index}.priceMinor`,
+          path: `variants.${index}.price`,
           reason: "Must be a non-negative int32",
         },
       ]);
@@ -214,23 +214,23 @@ function assertProductBody(body: CreateProductDto): void {
   });
   if (
     body.type === "OTHER" &&
-    (body.priceMinor === null || body.variants.length !== 0)
+    (body.price === null || body.variants.length !== 0)
   )
     throw validationError([
       {
-        path: body.priceMinor === null ? "priceMinor" : "variants",
+        path: body.price === null ? "price" : "variants",
         reason: "Must match product type",
       },
     ]);
   if (
     body.type === "DRINK" &&
-    (body.priceMinor !== null ||
+    (body.price !== null ||
       body.variants.length === 0 ||
       (body.isActive && !body.variants.some((variant) => variant.isAvailable)))
   )
     throw validationError([
       {
-        path: body.priceMinor !== null ? "priceMinor" : "variants",
+        path: body.price !== null ? "price" : "variants",
         reason: "Must match product type",
       },
     ]);
@@ -284,7 +284,7 @@ function toDto(product: AdminProduct): ProductDto {
     type: product.type,
     name: product.name,
     description: product.description,
-    priceMinor: product.priceMinor,
+    price: product.price,
     sortOrder: product.sortOrder,
     isActive: product.isActive,
     isAvailable: product.isAvailable,
@@ -293,7 +293,7 @@ function toDto(product: AdminProduct): ProductDto {
       .map((variant) => ({
         id: variant.id,
         size: variant.size,
-        priceMinor: variant.priceMinor,
+        price: variant.price,
         sortOrder: variant.sortOrder,
         isAvailable: variant.isAvailable,
       })),

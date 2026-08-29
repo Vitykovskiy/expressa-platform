@@ -1,10 +1,10 @@
 import { assertFullProductReorder, assertProductDetails, ProductAdminError } from './product-admin.policy';
 
-const variant = { size: 'M' as const, priceMinor: 32000, sortOrder: 0, isAvailable: true };
-const drink = { categoryId: 'category', type: 'DRINK' as const, name: 'Капучино', description: '', priceMinor: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [variant] };
+const variant = { size: 'M' as const, price: 320, sortOrder: 0, isAvailable: true };
+const drink = { categoryId: 'category', type: 'DRINK' as const, name: 'Капучино', description: '', price: null, sortOrder: 0, isActive: true, isAvailable: true, variants: [variant] };
 describe('product admin policy', () => {
   it('требует доступный размер для публикуемого напитка', () => expect(() => assertProductDetails({ ...drink, variants: [{ ...variant, isAvailable: false }] })).toThrow(ProductAdminError));
-  it('не допускает цену или размеры вне типа товара', () => { expect(() => assertProductDetails({ ...drink, type: 'OTHER', priceMinor: null })).toThrow('PRODUCT_INVALID'); expect(() => assertProductDetails({ ...drink, type: 'OTHER', priceMinor: 0, variants: [] })).not.toThrow(); });
+  it('не допускает цену или размеры вне типа товара', () => { expect(() => assertProductDetails({ ...drink, type: 'OTHER', price: null })).toThrow('PRODUCT_INVALID'); expect(() => assertProductDetails({ ...drink, type: 'OTHER', price: 0, variants: [] })).not.toThrow(); });
   it('не допускает повторяющиеся размеры', () => expect(() => assertProductDetails({ ...drink, variants: [variant, { ...variant, sortOrder: 1 }] })).toThrow('PRODUCT_INVALID'));
   it('не допускает повторяющиеся позиции размеров и активный напиток без доступного размера', () => {
     expect(() => assertProductDetails({ ...drink, variants: [{ ...variant, size: 'S' }, { ...variant, size: 'M' }] })).toThrow('PRODUCT_INVALID');

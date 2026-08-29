@@ -161,7 +161,7 @@ export class ProductConfiguratorComponent {
       .map((group) => group.split("\n")[0]?.trim())
       .filter(
         (groupName): groupName is string =>
-          groupName !== undefined && groupName !== "Размер",
+          groupName !== undefined && groupName.toLocaleLowerCase() !== "размер",
       );
   }
 

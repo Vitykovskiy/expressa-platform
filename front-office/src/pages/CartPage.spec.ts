@@ -74,7 +74,7 @@ describe("CartPage", () => {
 
     await wrapper.get('[data-test="quantity"]').trigger("click");
     expect(cart.items[0]?.quantity).toBe(2);
-    expect(cart.items[0]?.lineTotalRub).toBe(8);
+    expect(cart.items[0]?.lineTotalRub).toBe(4);
     expect(cart.repeatWarnings).toEqual([]);
 
     cart.applyRepeat([], [createRepeatWarning()]);
@@ -136,14 +136,14 @@ describe("CartPage", () => {
     const { checkout, session, wrapper } = await mountPage();
     authenticate(session);
     checkout.status = checkoutStatuses.reconfirmationRequired;
-    checkout.reconfirmedTotalMinor = 720;
+    checkout.reconfirmedTotal = 720;
     const reconfirm = vi.spyOn(checkout, "reconfirm").mockResolvedValue(null);
     await wrapper.vm.$nextTick();
 
     expect(wrapper.findComponent({ name: "CartScreen" }).props()).toMatchObject(
       {
         checkoutState: checkoutStatuses.reconfirmationRequired,
-        reconfirmedTotalRub: 7.2,
+        reconfirmedTotalRub: 720,
       },
     );
 
@@ -235,7 +235,7 @@ function createCartItem() {
   return {
     addons: [],
     id: "item",
-    lineTotalMinor: 400,
+    lineTotal: 400,
     lineTotalRub: 4,
     productId: "00000000-0000-4000-8000-000000000001",
     productName: "Капучино",
@@ -243,13 +243,13 @@ function createCartItem() {
     selectedModifierOptions: [],
     selectedVariant: {
       id: "00000000-0000-4000-8000-000000000002",
-      priceMinor: 400,
+      price: 400,
       size: "M" as const,
     },
     size: "M" as const,
     sizePrice: 4,
     type: "DRINK" as const,
-    unitTotalMinor: 400,
+    unitTotal: 400,
   };
 }
 
@@ -266,18 +266,18 @@ function createOrderResult() {
     id: "00000000-0000-4000-8000-000000000003",
     items: [
       {
-        lineTotalMinor: 400,
+        lineTotal: 400,
         modifiers: [],
         productId: "00000000-0000-4000-8000-000000000001",
         productName: "Капучино",
         quantity: 1,
         size: "M" as const,
-        unitTotalMinor: 400,
+        unitTotal: 400,
         variantId: "00000000-0000-4000-8000-000000000002",
       },
     ],
     number: "1042",
     stage: "CREATED" as const,
-    totalMinor: 400,
+    total: 400,
   };
 }

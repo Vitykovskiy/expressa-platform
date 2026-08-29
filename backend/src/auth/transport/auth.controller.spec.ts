@@ -106,7 +106,7 @@ describe('AuthController', () => {
 
       await expect(verify.controller.verifyCode({ phone: '+79123456789', code: '123456' }, verifyResponse)).resolves.toEqual({ accessToken: 'access', expiresInSeconds: 900, tokenType: 'Bearer' });
       expect(verify.verifyOtp.execute).toHaveBeenCalledWith('+79123456789', '123456');
-      expect(verifyResponse.cookie).toHaveBeenCalledWith(refreshCookieName, refreshToken, expect.objectContaining({ maxAge: 119999, httpOnly: true, path: '/api/v1/auth', sameSite: 'strict', secure: false }));
+      expect(verifyResponse.cookie).toHaveBeenCalledWith(refreshCookieName, refreshToken, expect.objectContaining({ maxAge: 119999, httpOnly: true, path: '/api/v2/auth', sameSite: 'strict', secure: false }));
 
       const refresh = createController();
       const refreshResponse = { cookie: jest.fn() };

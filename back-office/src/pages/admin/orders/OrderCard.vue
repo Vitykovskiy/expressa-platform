@@ -25,7 +25,7 @@
           : itemsSummary
       }}
     </p>
-    <p class="order-card__total">{{ formatMoney(props.order.totalMinor) }}</p>
+    <p class="order-card__total">{{ formatMoney(props.order.total) }}</p>
 
     <AdminButton
       class="order-card__details-button"
@@ -60,7 +60,7 @@
           class="order-card__item"
         >
           {{ item.productName }}{{ item.size ? `, ${item.size}` : "" }} ×
-          {{ item.quantity }} — {{ formatMoney(item.lineTotalMinor) }}
+          {{ item.quantity }} — {{ formatMoney(item.lineTotal) }}
           <span v-if="item.modifiers.length"
             >({{
               item.modifiers
@@ -127,7 +127,7 @@ function formatMoney(value: number): string {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency: "RUB",
-  }).format(value / 100);
+  }).format(value);
 }
 </script>
 

@@ -89,12 +89,12 @@ describe("OrderPage", () => {
       variantId: "00000000-0000-4000-8000-000000000008",
     };
     const menu = createMenu({
-      priceMinor: 72_000,
+      price: 720,
       variants: [
         {
           id: repeatedItem.variantId,
           isAvailable: true,
-          priceMinor: 72_000,
+          price: 720,
           size: "S",
         },
       ],
@@ -115,12 +115,12 @@ describe("OrderPage", () => {
           {
             id: orderResponse.snapshot[0].modifiers[0].modifierOptionId,
             name: "Овсяное молоко",
-            priceRub: 0.6,
+            priceRub: 60,
           },
         ],
         id: "repeat-0",
-        lineTotalMinor: 216_180,
-        lineTotalRub: 2161.8,
+        lineTotal: 2_340,
+        lineTotalRub: 2_340,
         productId: orderResponse.snapshot[0].productId,
         productName: "Капучино",
         quantity: 3,
@@ -129,18 +129,18 @@ describe("OrderPage", () => {
             groupId: "00000000-0000-4000-8000-000000000010",
             id: orderResponse.snapshot[0].modifiers[0].modifierOptionId,
             name: "Овсяное молоко",
-            priceDeltaMinor: 60,
+            priceDelta: 60,
           },
         ],
         selectedVariant: {
           id: repeatedItem.variantId,
-          priceMinor: 72_000,
+          price: 720,
           size: "S",
         },
         size: "S",
         sizePrice: 720,
         type: "DRINK",
-        unitTotalMinor: 72_060,
+        unitTotal: 780,
       },
     ]);
     expect(cart.repeatWarnings).toEqual([]);
@@ -240,7 +240,7 @@ describe("OrderPage", () => {
           {
             id: "00000000-0000-4000-8000-000000000009",
             isAvailable: true,
-            priceMinor: 80_000,
+            price: 800,
             size: "L",
           },
         ],
@@ -363,7 +363,7 @@ async function mountOrder(
       plugins: [router],
       provide: {
         [apiClientKey as symbol]: new ApiClient({
-          baseUrl: "https://api.example.test/api/v1",
+          baseUrl: "https://api.example.test/api/v2",
           fetcher: async (url, options) => {
             const requestUrl = typeof url === "string" ? url : url.toString();
             requests.push(options ?? {});
@@ -440,7 +440,7 @@ type PushOptions = {
 type MenuVariant = {
   id: string;
   isAvailable: boolean;
-  priceMinor: number;
+  price: number;
   size: "S" | "M" | "L";
 };
 
@@ -459,24 +459,24 @@ const orderResponse = {
   number: "1042",
   snapshot: [
     {
-      lineTotalMinor: 56_000,
+      lineTotal: 560,
       modifiers: [
         {
           modifierName: "Овсяное молоко",
           modifierOptionId: "00000000-0000-4000-8000-000000000004",
-          priceDeltaMinor: 60,
+          priceDelta: 60,
         },
       ],
       productId: "00000000-0000-4000-8000-000000000001",
       productName: "Капучино",
       quantity: 1,
       size: "M",
-      unitTotalMinor: 56_000,
+      unitTotal: 560,
       variantId: "00000000-0000-4000-8000-000000000002",
     },
   ],
   stage: "ACCEPTED",
-  totalMinor: 56_000,
+  total: 560,
 };
 
 const menuResponse = {
@@ -503,20 +503,20 @@ const menuResponse = {
                   isAvailable: true,
                   isDefault: false,
                   name: "Овсяное молоко",
-                  priceDeltaMinor: 60,
+                  priceDelta: 60,
                 },
               ],
               selectionType: "single",
             },
           ],
           name: "Капучино",
-          priceMinor: null,
+          price: null,
           type: "DRINK",
           variants: [
             {
               id: orderResponse.snapshot[0].variantId,
               isAvailable: true,
-              priceMinor: 56_000,
+              price: 560,
               size: "M",
             },
           ],
@@ -528,11 +528,11 @@ const menuResponse = {
 
 function createMenu({
   isAvailable = true,
-  priceMinor = 56_000,
+  price = 560,
   variants = defaultMenuVariants,
 }: {
   isAvailable?: boolean;
-  priceMinor?: number;
+  price?: number;
   variants?: MenuVariant[];
 }) {
   return {
@@ -544,7 +544,7 @@ function createMenu({
           {
             ...menuResponse.categories[0].products[0],
             isAvailable,
-            variants: variants.map((variant) => ({ ...variant, priceMinor })),
+            variants: variants.map((variant) => ({ ...variant, price })),
           },
         ],
       },
@@ -556,7 +556,7 @@ const defaultMenuVariants: MenuVariant[] = [
   {
     id: orderResponse.snapshot[0].variantId,
     isAvailable: true,
-    priceMinor: 56_000,
+    price: 560,
     size: "M",
   },
 ];
@@ -564,12 +564,12 @@ const defaultMenuVariants: MenuVariant[] = [
 const existingCartItem = {
   addons: [],
   id: "existing-item",
-  lineTotalMinor: 100,
+  lineTotal: 100,
   lineTotalRub: 1,
   productId: "00000000-0000-4000-8000-000000000006",
   productName: "Американо",
   quantity: 1,
   selectedModifierOptions: [],
   type: "OTHER" as const,
-  unitTotalMinor: 100,
+  unitTotal: 100,
 };

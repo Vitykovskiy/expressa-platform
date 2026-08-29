@@ -213,7 +213,7 @@ export function createApiClient(
   fetcher?: typeof fetch,
 ): ApiClient {
   if (apiBaseUrl === "/") {
-    return new ApiClient({ baseUrl: "/api/v1", fetcher });
+    return new ApiClient({ baseUrl: "/api/v2", fetcher });
   }
 
   if (apiBaseUrl.startsWith("/")) {
@@ -222,5 +222,5 @@ export function createApiClient(
 
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, "");
 
-  return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v1`, fetcher });
+  return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v2`, fetcher });
 }

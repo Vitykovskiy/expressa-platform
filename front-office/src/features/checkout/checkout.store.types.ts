@@ -19,7 +19,7 @@ export type CheckoutAttempt = {
 };
 
 export type CheckoutRequest = {
-  expectedTotalMinor: number;
+  expectedTotal: number;
   items: CheckoutRequestItem[];
 };
 
@@ -35,7 +35,7 @@ export type CheckoutState = {
   errorCode: CheckoutErrorCode | null;
   errorMessage: string | null;
   order: Order | null;
-  reconfirmedTotalMinor: number | null;
+  reconfirmedTotal: number | null;
   status: CheckoutStatus;
   submitPromise: Promise<Order | null> | null;
   unavailableCartItemIds: string[];

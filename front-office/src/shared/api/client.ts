@@ -218,5 +218,5 @@ export function createApiClient(
 
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, "");
 
-  return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v1`, fetcher });
+  return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v2`, fetcher });
 }

@@ -11,7 +11,7 @@ sources:
 # Push-уведомления
 
 Backend публикует public VAPID key и customer-only upsert/delete подписки через
-`/api/v1/push/*`. Новый заказ уведомляет staff; переходы `ACCEPTED`, `READY` и
+`/api/v2/push/*`. Новый заказ уведомляет staff; переходы `ACCEPTED`, `READY` и
 `ISSUED` уведомляют customer после core transaction. Ошибка доставки не
 откатывает заказ, а недействительная подписка удаляется.
 [Notifications module](../../backend/src/notifications/notifications.module.ts),

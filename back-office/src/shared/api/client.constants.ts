@@ -6,7 +6,7 @@ export const apiClientKey: InjectionKey<ApiClient> = Symbol("apiClient");
 export const apiContractErrorCode = "API_CONTRACT_ERROR";
 export const networkErrorCode = "NETWORK_ERROR";
 export const noContentStatus = 204;
-export const sameOriginApiBaseUrl = "http://same-origin.invalid/api/v1/";
+export const sameOriginApiBaseUrl = "http://same-origin.invalid/api/v2/";
 
 export const apiResponseContractErrorMessage =
   "Сервер вернул ответ, не соответствующий контракту API.";

@@ -88,7 +88,7 @@ describe("auth E2E", () => {
   });
 
   async function requestOtp(value: string): Promise<Response> {
-    return fetch(`${url}/api/v1/auth/otp/request`, {
+    return fetch(`${url}/api/v2/auth/otp/request`, {
       body: JSON.stringify({ phone: value }),
       headers: headers(randomUUID()),
       method: "POST",
@@ -96,7 +96,7 @@ describe("auth E2E", () => {
   }
 
   async function verify(value: string, code = otp): Promise<Response> {
-    return fetch(`${url}/api/v1/auth/otp/verify`, {
+    return fetch(`${url}/api/v2/auth/otp/verify`, {
       body: JSON.stringify({ phone: value, code }),
       headers: headers(randomUUID()),
       method: "POST",
@@ -146,10 +146,10 @@ describe("auth E2E", () => {
     const first = (await verified.json()) as { accessToken: string };
     const firstCookie = cookie(verified);
     expect(verified.headers.get("set-cookie")).toContain("HttpOnly");
-    expect(verified.headers.get("set-cookie")).toContain("Path=/api/v1/auth");
+    expect(verified.headers.get("set-cookie")).toContain("Path=/api/v2/auth");
     expect(verified.headers.get("set-cookie")).toContain("SameSite=Strict");
     expect(verified.headers.get("set-cookie")).not.toContain("Secure");
-    const me = await fetch(`${url}/api/v1/me`, {
+    const me = await fetch(`${url}/api/v2/me`, {
       headers: { authorization: `Bearer ${first.accessToken}` },
     });
     await expect(me.json()).resolves.toMatchObject({
@@ -157,7 +157,7 @@ describe("auth E2E", () => {
       role: "customer",
     });
 
-    const refreshed = await fetch(`${url}/api/v1/auth/refresh`, {
+    const refreshed = await fetch(`${url}/api/v2/auth/refresh`, {
       headers: { cookie: firstCookie, origin: "http://localhost:5173" },
       method: "POST",
     });
@@ -166,20 +166,20 @@ describe("auth E2E", () => {
     expect(nextCookie).not.toBe(firstCookie);
     expect(
       (
-        await fetch(`${url}/api/v1/auth/refresh`, {
+        await fetch(`${url}/api/v2/auth/refresh`, {
           headers: { cookie: firstCookie, origin: "http://localhost:5173" },
           method: "POST",
         })
       ).status,
     ).toBe(401);
-    const logout = await fetch(`${url}/api/v1/auth/logout`, {
+    const logout = await fetch(`${url}/api/v2/auth/logout`, {
       headers: { cookie: nextCookie, origin: "http://localhost:5173" },
       method: "POST",
     });
     expect(logout.status).toBe(204);
     expect(logout.headers.get("set-cookie")).toMatch(/Max-Age=0/);
     expect(logout.headers.get("set-cookie")).toContain("HttpOnly");
-    expect(logout.headers.get("set-cookie")).toContain("Path=/api/v1/auth");
+    expect(logout.headers.get("set-cookie")).toContain("Path=/api/v2/auth");
     expect(logout.headers.get("set-cookie")).toContain("SameSite=Strict");
     expect(logout.headers.get("set-cookie")).not.toContain("Secure");
     await pool.query(
@@ -210,13 +210,13 @@ describe("auth E2E", () => {
       .accessToken;
     await expect(
       (
-        await fetch(`${url}/api/v1/me`, {
+        await fetch(`${url}/api/v2/me`, {
           headers: { authorization: `Bearer ${staffAccess}` },
         })
       ).json(),
     ).resolves.toMatchObject({ role: "barista" });
 
-    const invalid = await fetch(`${url}/api/v1/auth/otp/request`, {
+    const invalid = await fetch(`${url}/api/v2/auth/otp/request`, {
       body: JSON.stringify({ phone: 1 }),
       headers: headers("invalid-id"),
       method: "POST",
@@ -258,7 +258,7 @@ describe("auth E2E", () => {
       details: null,
       requestId: expect.any(String),
     });
-    const forbidden = await fetch(`${url}/api/v1/auth/refresh`, {
+    const forbidden = await fetch(`${url}/api/v2/auth/refresh`, {
       headers: { origin: "https://evil.example" },
       method: "POST",
     });

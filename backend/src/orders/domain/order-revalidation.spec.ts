@@ -8,7 +8,7 @@ import { revalidateOrder } from './order-revalidation';
 import type { OrderCatalog, OrderRequest } from './order.types';
 
 const request: OrderRequest = {
-  totalMinor: 82_000,
+  total: 820,
   items: [{ productId: 'coffee', variantId: 'medium', modifierOptionIds: ['oat'], quantity: 2 }],
 };
 
@@ -16,11 +16,11 @@ function createCatalog(): OrderCatalog {
   return {
     acceptsNewOrders: true,
     products: [{
-      id: 'coffee', type: 'DRINK', name: 'Капучино', priceMinor: null, isAvailable: true,
-      variants: [{ id: 'medium', size: 'M', priceMinor: 32_000, isAvailable: true }],
+      id: 'coffee', type: 'DRINK', name: 'Капучино', price: null, isAvailable: true,
+      variants: [{ id: 'medium', size: 'M', price: 320, isAvailable: true }],
       modifierGroups: [{
         id: 'milk', selectionType: 'single', minSelect: 1, maxSelect: 1,
-        options: [{ id: 'oat', name: 'Овсяное', priceDeltaMinor: 9_000, isDefault: false, isAvailable: true }, { id: 'regular', name: 'Обычное', priceDeltaMinor: 0, isDefault: true, isAvailable: true }],
+        options: [{ id: 'oat', name: 'Овсяное', priceDelta: 90, isDefault: false, isAvailable: true }, { id: 'regular', name: 'Обычное', priceDelta: 0, isDefault: true, isAvailable: true }],
       }],
     }],
   };
@@ -32,14 +32,14 @@ describe('revalidateOrder', () => {
     const result = revalidateOrder(request, catalog);
 
     catalog.products[0]!.name = 'Изменённый напиток';
-    catalog.products[0]!.variants[0]!.priceMinor = 1;
+    catalog.products[0]!.variants[0]!.price = 1;
 
     expect(result).toEqual({
-      totalMinor: 82_000,
+      total: 820,
       items: [{
         productId: 'coffee', variantId: 'medium', productName: 'Капучино', size: 'M', quantity: 2,
-        unitTotalMinor: 41_000, lineTotalMinor: 82_000,
-        modifiers: [{ modifierOptionId: 'oat', modifierName: 'Овсяное', priceDeltaMinor: 9_000 }],
+        unitTotal: 410, lineTotal: 820,
+        modifiers: [{ modifierOptionId: 'oat', modifierName: 'Овсяное', priceDelta: 90 }],
       }],
     });
     expect(Object.isFrozen(result)).toBe(true);
@@ -59,9 +59,9 @@ describe('revalidateOrder', () => {
 
     const changed = createCatalog();
     changed.products[0]!.isAvailable = false;
-    expect(() => revalidateOrder({ ...request, totalMinor: 1 }, changed)).toThrow(MenuItemUnavailableError);
+    expect(() => revalidateOrder({ ...request, total: 1 }, changed)).toThrow(MenuItemUnavailableError);
 
-    expect(() => revalidateOrder({ ...request, totalMinor: 1 }, createCatalog())).toThrow(OrderTotalChangedError);
+    expect(() => revalidateOrder({ ...request, total: 1 }, createCatalog())).toThrow(OrderTotalChangedError);
   });
 
   it('отклоняет неверную конфигурацию и недоступный выбранный вариант', () => {
@@ -106,16 +106,16 @@ describe('revalidateOrder', () => {
     const catalog: OrderCatalog = {
       acceptsNewOrders: true,
       products: [{
-      id: 'cake', type: 'OTHER', name: 'Пирог', priceMinor: 120, isAvailable: true,
+      id: 'cake', type: 'OTHER', name: 'Пирог', price: 120, isAvailable: true,
       variants: [], modifierGroups: [],
       }],
     };
     const otherRequest: OrderRequest = {
-      totalMinor: 240,
+      total: 240,
       items: [{ productId: 'cake', variantId: null, modifierOptionIds: [], quantity: 2 }],
     };
     expect(revalidateOrder(otherRequest, catalog).items[0]).toMatchObject({
-      variantId: null, size: null, unitTotalMinor: 120, lineTotalMinor: 240, modifiers: [],
+      variantId: null, size: null, unitTotal: 120, lineTotal: 240, modifiers: [],
     });
     expect(() => revalidateOrder({ ...otherRequest, items: [{ ...otherRequest.items[0]!, variantId: 'x' }] }, catalog))
       .toThrow(OrderValidationError);
@@ -149,14 +149,14 @@ describe('revalidateOrder', () => {
     expect(() => revalidateOrder(request, unavailable)).toThrow(MenuItemUnavailableError);
 
     const negative = createCatalog();
-    negative.products[0]!.variants[0]!.priceMinor = -1;
+    negative.products[0]!.variants[0]!.price = -1;
     expect(() => revalidateOrder(request, negative)).toThrow(OrderValidationError);
 
     const nullPrice: OrderCatalog = {
       acceptsNewOrders: true,
-      products: [{ id: 'cake', type: 'OTHER', name: 'Пирог', priceMinor: null, isAvailable: true, variants: [], modifierGroups: [] }],
+      products: [{ id: 'cake', type: 'OTHER', name: 'Пирог', price: null, isAvailable: true, variants: [], modifierGroups: [] }],
     };
-    expect(() => revalidateOrder({ totalMinor: 0, items: [{ productId: 'cake', variantId: null, modifierOptionIds: [], quantity: 1 }] }, nullPrice))
+    expect(() => revalidateOrder({ total: 0, items: [{ productId: 'cake', variantId: null, modifierOptionIds: [], quantity: 1 }] }, nullPrice))
       .toThrow(OrderValidationError);
   });
 });

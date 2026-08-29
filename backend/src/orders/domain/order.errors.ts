@@ -31,7 +31,7 @@ export class MenuItemUnavailableError extends OrderDomainError {
 export class OrderTotalChangedError extends OrderDomainError {
   readonly code = 'ORDER_TOTAL_CHANGED';
 
-  constructor(readonly totalMinor: number) {
+  constructor(readonly total: number) {
     super('Итоговая сумма заказа изменилась.');
   }
 }

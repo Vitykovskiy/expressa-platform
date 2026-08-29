@@ -40,7 +40,7 @@ Workflow использует user-owned каталоги development
 целостности, `runtime.env`,
 `compose.yml` и три immutable image reference. Он создаёт отдельные Compose
 project, volume и сети, проверяет MAC, расшифровывает копию, применяет миграции, ждёт backend
-и проверяет `/health/ready` и непустое меню в `/api/v1/public/menu`. Имя
+и проверяет `/health/ready` и непустое меню в `/api/v2/public/menu`. Имя
 допускаемой копии — `expressa-YYYYMMDDTHHMMSSZ.sql.enc`; выбирается только
 новейшая корректная UTC-копия. RPO — разность UTC между началом restore и
 временем из имени копии, цель `RPO <= 93600s`. RTO — время от момента

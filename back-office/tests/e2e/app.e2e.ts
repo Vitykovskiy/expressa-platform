@@ -29,7 +29,7 @@ test("анонимный пользователь перенаправляетс
 });
 
 test("экран входа сохраняет mobile и tablet baseline", async ({ page }) => {
-  await page.route("**/api/v1/auth/refresh", (route) =>
+  await page.route("**/api/v2/auth/refresh", (route) =>
     route.fulfill({ status: 401 }),
   );
 

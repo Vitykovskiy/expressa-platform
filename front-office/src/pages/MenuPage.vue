@@ -44,7 +44,7 @@
         :to="cartPageRoute.cart"
       >
         Корзина · {{ cartStore.itemCount }} ·
-        {{ formatMinorAmount(cartStore.totalMinor) }}
+        {{ formatRubles(cartStore.total) }}
       </ui-btn>
     </template>
   </section>
@@ -58,7 +58,7 @@ import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import UiProgress from "@/shared/ui/customer/progress/UiProgress.vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
-import { formatMinorAmount } from "@/entities/customer/model/money";
+import { formatRubles } from "@/entities/customer/model/money";
 import { cartPageRoute } from "./CartPage.constants";
 
 const menuStore = useMenuStore();

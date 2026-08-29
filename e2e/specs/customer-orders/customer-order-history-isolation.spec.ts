@@ -54,7 +54,7 @@ test("ORDER-05: история customer изолирована от заказо
         `Показана дата собственного заказа ${index}.`,
       ).toBe(expectedDate);
       expect(order.total, `Показана сумма собственного заказа ${index}.`).toBe(
-        "320,00 ₽",
+        "320 ₽",
       );
       expect(
         order.status,

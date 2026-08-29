@@ -44,7 +44,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
 
       const request = createCheckoutRequest(
         submission.cartItems,
-        this.reconfirmedTotalMinor,
+        this.reconfirmedTotal,
       );
       if (request === null) {
         this.setError(
@@ -55,7 +55,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       }
 
       this.attempt = createAttempt(request, submission.cartItems);
-      this.reconfirmedTotalMinor = null;
+      this.reconfirmedTotal = null;
       return this.send(submission.accessToken);
     },
     retry(accessToken: string): Promise<unknown> {
@@ -132,12 +132,12 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       this.attempt = null;
 
       if (error.code === checkoutErrorCodes.totalChanged) {
-        const totalMinor = getTotalMinor(error.details);
-        if (totalMinor !== null) {
+        const total = getTotal(error.details);
+        if (total !== null) {
           this.errorCode = checkoutErrorCodes.totalChanged;
           this.errorMessage = checkoutMessages.totalChanged;
           this.order = null;
-          this.reconfirmedTotalMinor = totalMinor;
+          this.reconfirmedTotal = total;
           this.status = checkoutStatuses.reconfirmationRequired;
           this.unavailableCartItemIds = [];
           return;
@@ -171,7 +171,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
 
 function createCheckoutRequest(
   cartItems: CheckoutSubmission["cartItems"],
-  expectedTotalMinor?: number | null,
+  expectedTotal?: number | null,
 ): CheckoutRequest | null {
   const items: CheckoutRequest["items"] = [];
 
@@ -181,10 +181,10 @@ function createCheckoutRequest(
     items.push(item);
   }
 
-  const totalMinor = expectedTotalMinor ?? getCartTotalMinor(cartItems);
-  if (!isNonNegativeInteger(totalMinor) || items.length === 0) return null;
+  const total = expectedTotal ?? getCartTotal(cartItems);
+  if (!isNonNegativeInteger(total) || items.length === 0) return null;
 
-  return { expectedTotalMinor: totalMinor, items };
+  return { expectedTotal: total, items };
 }
 
 function createAttempt(
@@ -245,8 +245,8 @@ function isPersistedCartItem(
   if (
     !isNonEmptyString(value.productId) ||
     !isPositiveInteger(value.quantity) ||
-    !isNonNegativeInteger(value.unitTotalMinor) ||
-    value.lineTotalMinor !== value.unitTotalMinor * value.quantity
+    !isNonNegativeInteger(value.unitTotal) ||
+    value.lineTotal !== value.unitTotal * value.quantity
   ) {
     return false;
   }
@@ -262,20 +262,19 @@ function isPersistedCartItem(
   return value.type !== "DRINK" || isNonEmptyString(value.selectedVariant.id);
 }
 
-function getCartTotalMinor(
+function getCartTotal(
   cartItems: CheckoutSubmission["cartItems"],
 ): number | null {
-  const totalMinor = cartItems.reduce((total, item) => {
-    return total + ("lineTotalMinor" in item ? item.lineTotalMinor : NaN);
+  const total = cartItems.reduce((total, item) => {
+    return total + ("lineTotal" in item ? item.lineTotal : NaN);
   }, 0);
 
-  return isNonNegativeInteger(totalMinor) ? totalMinor : null;
+  return isNonNegativeInteger(total) ? total : null;
 }
 
-function getTotalMinor(details: unknown): number | null {
-  if (!isRecord(details) || !isNonNegativeInteger(details.totalMinor))
-    return null;
-  return details.totalMinor;
+function getTotal(details: unknown): number | null {
+  if (!isRecord(details) || !isNonNegativeInteger(details.total)) return null;
+  return details.total;
 }
 
 function getUnavailableCartItemIds(

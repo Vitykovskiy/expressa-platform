@@ -63,6 +63,7 @@ describe('PostgreSQL foundation', () => {
         { name: '0008_e10_customer_order_reads.sql' },
         { name: '0009_e10_push_subscriptions.sql' },
         { name: '0010_e11_availability_audit.sql' },
+        { name: '0011_e12_whole_rubles.sql' },
       ]);
       expect(administrators.rows).toEqual([
         { phone_e164: bootstrapAdministratorPhone, role: 'administrator' },

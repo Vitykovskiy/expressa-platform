@@ -1,6 +1,6 @@
 export const developmentOtp = "123456";
 export const staffRoles = ["barista", "administrator"] as const;
-export const authApiPath = "/api/v1/auth/";
+export const authApiPath = "/api/v2/auth/";
 export const phonePrefix = "+7998";
 export const otpRequestPath = "/auth/otp/request";
 export const otpVerifyPath = "/auth/otp/verify";

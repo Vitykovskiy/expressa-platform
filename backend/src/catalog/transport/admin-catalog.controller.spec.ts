@@ -13,10 +13,10 @@ describe('AdminCatalogController', () => {
   it('возвращает точный transport DTO без archivedAt', async () => {
     const catalog = {
       categories: [{ id: 'category', name: 'Кофе', description: 'Напитки', sortOrder: 10, isActive: false, archivedAt: null }],
-      products: [{ id: 'product', categoryId: 'category', type: 'DRINK', name: 'Капучино', description: 'Кофе', priceMinor: null, sortOrder: 20, isActive: false, isAvailable: false, archivedAt: null }],
-      productVariants: [{ id: 'variant', productId: 'product', size: 'M', priceMinor: 32000, sortOrder: 30, isAvailable: false, archivedAt: null }],
+      products: [{ id: 'product', categoryId: 'category', type: 'DRINK', name: 'Капучино', description: 'Кофе', price: null, sortOrder: 20, isActive: false, isAvailable: false, archivedAt: null }],
+      productVariants: [{ id: 'variant', productId: 'product', size: 'M', price: 320, sortOrder: 30, isAvailable: false, archivedAt: null }],
       modifierGroups: [{ id: 'group', name: 'Молоко', selectionType: 'single', minSelect: 0, maxSelect: 1, isActive: false, archivedAt: null }],
-      modifierOptions: [{ id: 'option', groupId: 'group', name: 'Овсяное', priceDeltaMinor: 5000, sortOrder: 40, isDefault: false, isAvailable: false, archivedAt: null }],
+      modifierOptions: [{ id: 'option', groupId: 'group', name: 'Овсяное', priceDelta: 50, sortOrder: 40, isDefault: false, isAvailable: false, archivedAt: null }],
       categoryModifierGroups: [{ categoryId: 'category', groupId: 'group', sortOrder: 50 }],
     };
     const getAdminCatalog = { execute: jest.fn().mockResolvedValue(catalog) };
@@ -24,10 +24,10 @@ describe('AdminCatalogController', () => {
 
     await expect(controller.getCatalog()).resolves.toEqual({
       categories: [{ id: 'category', name: 'Кофе', description: 'Напитки', sortOrder: 10, isActive: false }],
-      products: [{ id: 'product', categoryId: 'category', type: 'DRINK', name: 'Капучино', description: 'Кофе', priceMinor: null, sortOrder: 20, isActive: false, isAvailable: false }],
-      productVariants: [{ id: 'variant', productId: 'product', size: 'M', priceMinor: 32000, sortOrder: 30, isAvailable: false }],
+      products: [{ id: 'product', categoryId: 'category', type: 'DRINK', name: 'Капучино', description: 'Кофе', price: null, sortOrder: 20, isActive: false, isAvailable: false }],
+      productVariants: [{ id: 'variant', productId: 'product', size: 'M', price: 320, sortOrder: 30, isAvailable: false }],
       modifierGroups: [{ id: 'group', name: 'Молоко', selectionType: 'single', minSelect: 0, maxSelect: 1, isActive: false }],
-      modifierOptions: [{ id: 'option', groupId: 'group', name: 'Овсяное', priceDeltaMinor: 5000, sortOrder: 40, isDefault: false, isAvailable: false }],
+      modifierOptions: [{ id: 'option', groupId: 'group', name: 'Овсяное', priceDelta: 50, sortOrder: 40, isDefault: false, isAvailable: false }],
       categoryModifierGroups: [{ categoryId: 'category', groupId: 'group', sortOrder: 50 }],
     });
     expect(getAdminCatalog.execute).toHaveBeenCalledTimes(1);

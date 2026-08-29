@@ -13,7 +13,7 @@ describe('UnifiedExceptionFilter', () => {
     const filter = new UnifiedExceptionFilter(
       {
         httpAdapter: {
-          getRequestUrl: () => '/api/v1/auth/otp/verify',
+          getRequestUrl: () => '/api/v2/auth/otp/verify',
           reply,
         },
       } as never,
@@ -57,7 +57,7 @@ describe('UnifiedExceptionFilter', () => {
     const filter = new UnifiedExceptionFilter(
       {
         httpAdapter: {
-          getRequestUrl: () => '/api/v1/auth/refresh',
+          getRequestUrl: () => '/api/v2/auth/refresh',
           reply: jest.fn(),
         },
       } as never,
@@ -80,7 +80,7 @@ describe('UnifiedExceptionFilter', () => {
     const filter = new UnifiedExceptionFilter(
       {
         httpAdapter: {
-          getRequestUrl: () => '/api/v1/auth/otp/verify',
+          getRequestUrl: () => '/api/v2/auth/otp/verify',
           reply,
         },
       } as never,

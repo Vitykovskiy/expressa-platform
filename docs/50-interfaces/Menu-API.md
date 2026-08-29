@@ -9,13 +9,13 @@ sources:
 
 # API меню
 
-`GET /api/v1/public/menu` доступен без Bearer token и возвращает публичную
+`GET /api/v2/public/menu` доступен без Bearer token и возвращает публичную
 проекцию категорий, товаров, вариантов, модификаторов и `acceptsNewOrders`.
 Схемы, поля и ответы принадлежат [OpenAPI](../../backend/openapi/openapi.json);
 HTTP-вход — [PublicMenuController](../../backend/src/catalog/transport/public-menu.controller.ts).
 
 Административное чтение и команды каталога находятся под
-`/api/v1/backoffice/catalog/*`, требуют administrator и не заменяют публичную
+`/api/v2/backoffice/catalog/*`, требуют administrator и не заменяют публичную
 проекцию. [API map](../../backend/docs/50-api/_MOC-api.md),
 [admin controller](../../backend/src/catalog/transport/admin-catalog.controller.ts).
 

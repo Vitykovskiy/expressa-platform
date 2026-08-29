@@ -23,7 +23,7 @@ export class CheckoutDatabase {
 
   async readState(): Promise<CheckoutDatabaseState> {
     const result = await this.#pool.query<CheckoutDatabaseState>(
-      `SELECT products.is_available AS "productAvailable", variants.is_available AS "variantAvailable", options.is_available AS "modifierAvailable", variants.price_minor AS "variantPriceMinor", settings.value AS "acceptsNewOrders"
+      `SELECT products.is_available AS "productAvailable", variants.is_available AS "variantAvailable", options.is_available AS "modifierAvailable", variants.price AS "variantPrice", settings.value AS "acceptsNewOrders"
        FROM products
        JOIN product_variants variants ON variants.id = $1
        JOIN modifier_options options ON options.id = $2
@@ -37,10 +37,7 @@ export class CheckoutDatabase {
       ],
     );
     const row = requireSingleRow(result.rows, "Состояние checkout seed");
-    if (
-      !Number.isSafeInteger(row.variantPriceMinor) ||
-      row.variantPriceMinor < 0
-    )
+    if (!Number.isSafeInteger(row.variantPrice) || row.variantPrice < 0)
       throw new Error("Цена checkout seed некорректна.");
     return row;
   }
@@ -49,7 +46,7 @@ export class CheckoutDatabase {
     await this.setProductAvailable(state.productAvailable);
     await this.setVariantAvailable(state.variantAvailable);
     await this.setModifierAvailable(state.modifierAvailable);
-    await this.setVariantPriceMinor(state.variantPriceMinor);
+    await this.setVariantPrice(state.variantPrice);
     await this.setAcceptsNewOrders(state.acceptsNewOrders);
   }
 
@@ -90,12 +87,12 @@ export class CheckoutDatabase {
     );
   }
 
-  async setVariantPriceMinor(value: number): Promise<void> {
+  async setVariantPrice(value: number): Promise<void> {
     if (!Number.isSafeInteger(value) || value < 0)
       throw new Error("Цена должна быть неотрицательным целым числом.");
     await this.#update(
       "product_variants",
-      "price_minor",
+      "price",
       value,
       "id",
       checkoutSeedIds.cappuccinoVariantM,
@@ -139,7 +136,7 @@ export class CheckoutDatabase {
       `SELECT orders.id,
               orders.idempotency_key AS "idempotencyKey",
               orders.number AS "orderNumber",
-              orders.total_minor AS "totalMinor",
+              orders.total AS "total",
               COALESCE(SUM(order_items.quantity), 0)::integer AS quantity
        FROM orders
        LEFT JOIN order_items ON order_items.order_id = orders.id
@@ -157,7 +154,7 @@ export class CheckoutDatabase {
       ),
       orderNumber: requireNonEmptyString(row.orderNumber, "номер заказа"),
       quantity: requirePositiveInteger(row.quantity, "Количество заказа"),
-      totalMinor: requireNonNegativeInteger(row.totalMinor, "Сумма заказа"),
+      total: requireNonNegativeInteger(row.total, "Сумма заказа"),
     };
   }
 
@@ -176,7 +173,7 @@ export class CheckoutDatabase {
       `WITH history_orders AS (
          INSERT INTO orders (
            id, number, customer_id, idempotency_key, request_fingerprint,
-           stage, total_minor, order_day, daily_number, created_at
+           stage, total, order_day, daily_number, created_at
          )
          SELECT
            ('00000000-0000-4000-8000-' || lpad((200 + sequence)::text, 12, '0'))::uuid,
@@ -185,7 +182,7 @@ export class CheckoutDatabase {
            ('00000000-0000-4000-8000-' || lpad((300 + sequence)::text, 12, '0'))::uuid,
            'checkout-e2e-issued-history',
            'ISSUED',
-           source.total_minor,
+           source.total,
            DATE '2001-01-01' + sequence,
            1,
            (DATE '2001-01-01' + sequence)::timestamptz
@@ -195,13 +192,13 @@ export class CheckoutDatabase {
        ), inserted_items AS (
          INSERT INTO order_items (
            id, order_id, sort_order, product_id, variant_id, product_name,
-           size, quantity, unit_total_minor, line_total_minor
+           size, quantity, unit_total, line_total
          )
          SELECT
            gen_random_uuid(), history_orders.id, source.sort_order,
            source.product_id, source.variant_id, source.product_name,
-           source.size, source.quantity, source.unit_total_minor,
-           source.line_total_minor
+           source.size, source.quantity, source.unit_total,
+           source.line_total
          FROM history_orders
          JOIN order_items source ON source.order_id = $2
        )
@@ -240,7 +237,7 @@ export class CheckoutDatabase {
       | "modifier_options"
       | "service_settings"
       | "orders",
-    column: "is_available" | "price_minor" | "stage" | "value",
+    column: "is_available" | "price" | "stage" | "value",
     value: boolean | number | CheckoutOrderStage,
     key: "id" | "key",
     identifier: string,

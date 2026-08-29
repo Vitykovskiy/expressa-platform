@@ -47,4 +47,4 @@ find "$BACKUP_DIRECTORY" -type f \( -name 'expressa-*.sql.enc' -o -name 'express
 backup_timestamp="$(date +%s)"
 printf 'expressa_backup_last_success_timestamp_seconds %s\nexpressa_backup_last_success 1\n' "$backup_timestamp" > "$temporary_metric_file"
 mv -- "$temporary_metric_file" "$metric_file"
-printf 'expressa-backup: status=passed timestamp=%s\n' "$backup_stamp"
+printf 'expressa-backup: status=passed timestamp=%s name=%s\n' "$backup_stamp" "${backup_file##*/}"

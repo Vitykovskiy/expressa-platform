@@ -10,12 +10,12 @@ sources:
 
 # Просмотр меню и сбор корзины
 
-Гость открывает front-office, получает `GET /api/v1/public/menu`, выбирает
+Гость открывает front-office, получает `GET /api/v2/public/menu`, выбирает
 категорию и конфигурирует товар; готовая позиция добавляется в локальную корзину.
 Экран покрывает loading/error/empty и недоступные варианты. [Front menu](../../front-office/docs/30-features/Menu-and-configuration.md),
 [маршрут](../../front-office/src/app/router.ts), [API](../../backend/openapi/openapi.json).
 
 Корзина объединяет только одинаковую конфигурацию и передаёт её в отдельный
 checkout-сценарий; revalidation цены, доступности и приёма заказов происходит
-на `POST /api/v1/orders`. [Cart/checkout](../../front-office/docs/30-features/Cart-and-checkout.md),
+на `POST /api/v2/orders`. [Cart/checkout](../../front-office/docs/30-features/Cart-and-checkout.md),
 [orders](../../backend/docs/30-domains/Orders.md).

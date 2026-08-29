@@ -34,7 +34,7 @@ export const initialCheckoutState: CheckoutState = {
   errorCode: null,
   errorMessage: null,
   order: null,
-  reconfirmedTotalMinor: null,
+  reconfirmedTotal: null,
   status: checkoutStatuses.idle,
   submitPromise: null,
   unavailableCartItemIds: [],

@@ -52,7 +52,7 @@ describe("catalog validation HTTP responses", () => {
             type: "OTHER",
             name: "Печенье",
             description: "",
-            priceMinor: 100,
+            price: 100,
             sortOrder: 0,
             isActive: true,
             isAvailable: true,
@@ -102,7 +102,7 @@ describe("catalog validation HTTP responses", () => {
       const filter = new UnifiedExceptionFilter(
         {
           httpAdapter: {
-            getRequestUrl: () => "/api/v1/backoffice/catalog",
+            getRequestUrl: () => "/api/v2/backoffice/catalog",
             reply,
           },
         } as never,

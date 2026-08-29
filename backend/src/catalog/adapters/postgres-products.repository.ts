@@ -49,14 +49,14 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
   }
   async create(details: ProductDetails): Promise<AdminProduct> {
     const result = await this.client.query<DatabaseRow>(
-      `INSERT INTO products (category_id, type, name, description, price_minor, sort_order, is_active, is_available)
+      `INSERT INTO products (category_id, type, name, description, price, sort_order, is_active, is_available)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
       [
         details.categoryId,
         details.type,
         details.name,
         details.description,
-        details.priceMinor,
+        details.price,
         details.sortOrder,
         details.isActive,
         details.isAvailable,
@@ -68,7 +68,7 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
   }
   async update(id: string, details: ProductDetails): Promise<AdminProduct> {
     await this.client.query(
-      `UPDATE products SET category_id = $2, type = $3, name = $4, description = $5, price_minor = $6, sort_order = $7, is_active = $8, is_available = $9
+      `UPDATE products SET category_id = $2, type = $3, name = $4, description = $5, price = $6, sort_order = $7, is_active = $8, is_available = $9
       WHERE id = $1 AND archived_at IS NULL`,
       [
         id,
@@ -76,7 +76,7 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
         details.type,
         details.name,
         details.description,
-        details.priceMinor,
+        details.price,
         details.sortOrder,
         details.isActive,
         details.isAvailable,
@@ -138,12 +138,12 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
   ): Promise<void> {
     for (const variant of variants)
       await this.client.query(
-        `INSERT INTO product_variants (product_id, size, price_minor, sort_order, is_available)
+        `INSERT INTO product_variants (product_id, size, price, sort_order, is_available)
       VALUES ($1, $2, $3, $4, $5)`,
         [
           productId,
           variant.size,
-          variant.priceMinor,
+          variant.price,
           variant.sortOrder,
           variant.isAvailable,
         ],
@@ -173,12 +173,12 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
       }
       await this.client.query(
         `UPDATE product_variants
-        SET size = $2, price_minor = $3, sort_order = $4, is_available = $5, archived_at = NULL
+        SET size = $2, price = $3, sort_order = $4, is_available = $5, archived_at = NULL
         WHERE id = $1`,
         [
           currentVariantId,
           variant.size,
-          variant.priceMinor,
+          variant.price,
           variant.sortOrder,
           variant.isAvailable,
         ],
@@ -190,12 +190,12 @@ class PostgresProductsTransactionRepository implements ProductsRepository {
     values: unknown[],
   ): Promise<AdminProduct[]> {
     const products = await this.client.query<DatabaseRow>(
-      `SELECT id, category_id, type, name, description, price_minor, sort_order, is_active, is_available, archived_at FROM products ${where} ORDER BY sort_order, id`,
+      `SELECT id, category_id, type, name, description, price, sort_order, is_active, is_available, archived_at FROM products ${where} ORDER BY sort_order, id`,
       values,
     );
     if (products.rows.length === 0) return [];
     const variants = await this.client.query<DatabaseRow>(
-      "SELECT id, product_id, size, price_minor, sort_order, is_available, archived_at FROM product_variants WHERE product_id = ANY($1::uuid[]) ORDER BY sort_order, id",
+      "SELECT id, product_id, size, price, sort_order, is_available, archived_at FROM product_variants WHERE product_id = ANY($1::uuid[]) ORDER BY sort_order, id",
       [products.rows.map((row) => readString(row, "id"))],
     );
     return products.rows.map((row) =>
@@ -220,14 +220,14 @@ function requiredProduct(value: AdminProduct | null): AdminProduct {
 }
 function parseProduct(row: DatabaseRow, variants: DatabaseRow[]): AdminProduct {
   const type = readProductType(row, "type");
-  const priceMinor = readNullableInteger(row, "price_minor");
+  const price = readNullableInteger(row, "price");
   return {
     id: readString(row, "id"),
     categoryId: readString(row, "category_id"),
     type,
     name: readString(row, "name"),
     description: readString(row, "description"),
-    priceMinor,
+    price,
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isActive: readBoolean(row, "is_active"),
     isAvailable: readBoolean(row, "is_available"),
@@ -240,7 +240,7 @@ function parseVariant(row: DatabaseRow): AdminProductVariant {
     id: readString(row, "id"),
     productId: readString(row, "product_id"),
     size: readProductSize(row, "size"),
-    priceMinor: readNonNegativeInteger(row, "price_minor"),
+    price: readNonNegativeInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isAvailable: readBoolean(row, "is_available"),
     archivedAt: readNullableDate(row, "archived_at"),

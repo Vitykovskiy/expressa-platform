@@ -10,7 +10,7 @@ export class PostgresOrderLifecycleRepository implements OrderReadRepository, Or
 
   async list(query: ListOrdersQuery): Promise<readonly OrderQueueItem[]> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, total_minor, stage FROM orders
+      `SELECT id, number, created_at, total, stage FROM orders
        WHERE ($1::order_stage IS NULL OR stage = $1)
          AND ($2::text IS NULL OR number ILIKE '%' || $2 || '%')
        ORDER BY created_at ASC, id ASC`, [query.stage ?? null, query.number ?? null],
@@ -24,7 +24,7 @@ export class PostgresOrderLifecycleRepository implements OrderReadRepository, Or
 
   async listForCustomer(customerId: string, cursor: CustomerOrdersCursor | null): Promise<CustomerOrdersPage> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, created_at::text AS cursor_created_at, total_minor, stage FROM orders
+      `SELECT id, number, created_at, created_at::text AS cursor_created_at, total, stage FROM orders
        WHERE customer_id = $1
          AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3::uuid))
        ORDER BY created_at DESC, id DESC
@@ -44,7 +44,7 @@ export class PostgresOrderLifecycleRepository implements OrderReadRepository, Or
 
   async findDetailsForCustomer(customerId: string, orderId: string): Promise<CustomerOrder | null> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, total_minor, stage FROM orders WHERE id = $1 AND customer_id = $2`,
+      `SELECT id, number, created_at, total, stage FROM orders WHERE id = $1 AND customer_id = $2`,
       [orderId, customerId],
     );
     const row = result.rows[0];
@@ -86,7 +86,7 @@ type Queryable = Pick<TransactionClient, 'query'>;
 
 async function readDetails(client: Queryable, orderId: string): Promise<OrderDetails | null> {
   const order = await client.query<DatabaseRow>(
-    `SELECT orders.id, orders.number, orders.created_at, orders.total_minor, orders.stage,
+    `SELECT orders.id, orders.number, orders.created_at, orders.total, orders.stage,
             users.id AS customer_id, users.phone_e164 AS customer_phone_e164
      FROM orders JOIN users ON users.id = orders.customer_id WHERE orders.id = $1`, [orderId],
   );
@@ -109,12 +109,12 @@ async function readCustomerOrders(client: Queryable, rows: readonly DatabaseRow[
   const orderIds = rows.map((row) => readString(row, 'id'));
   const [items, modifiers] = await Promise.all([
     client.query<DatabaseRow>(
-      `SELECT id, order_id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor
+      `SELECT id, order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total
        FROM order_items WHERE order_id = ANY($1::uuid[]) ORDER BY order_id, sort_order`,
       [orderIds],
     ),
     client.query<DatabaseRow>(
-      `SELECT order_item_id, modifier_option_id, modifier_name, price_delta_minor FROM order_item_modifiers
+      `SELECT order_item_id, modifier_option_id, modifier_name, price_delta FROM order_item_modifiers
        WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ANY($1::uuid[]))
        ORDER BY order_item_id, sort_order`,
       [orderIds],
@@ -129,8 +129,8 @@ async function readCustomerOrders(client: Queryable, rows: readonly DatabaseRow[
 
 async function readSnapshot(client: Queryable, orderId: string): Promise<readonly OrderSnapshotItem[]> {
   const [items, modifiers] = await Promise.all([
-    client.query<DatabaseRow>(`SELECT id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor FROM order_items WHERE order_id = $1 ORDER BY sort_order`, [orderId]),
-    client.query<DatabaseRow>(`SELECT order_item_id, modifier_option_id, modifier_name, price_delta_minor FROM order_item_modifiers WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) ORDER BY order_item_id, sort_order`, [orderId]),
+    client.query<DatabaseRow>(`SELECT id, product_id, variant_id, product_name, size, quantity, unit_total, line_total FROM order_items WHERE order_id = $1 ORDER BY sort_order`, [orderId]),
+    client.query<DatabaseRow>(`SELECT order_item_id, modifier_option_id, modifier_name, price_delta FROM order_item_modifiers WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1) ORDER BY order_item_id, sort_order`, [orderId]),
   ]);
   return snapshotItems(items.rows, modifiers.rows);
 }
@@ -151,10 +151,10 @@ function snapshotItems(items: readonly DatabaseRow[], modifiers: readonly Databa
   for (const row of modifiers) {
     const id = readString(row, 'order_item_id');
     const values = byItem.get(id) ?? [];
-    values.push({ modifierOptionId: readString(row, 'modifier_option_id'), modifierName: readString(row, 'modifier_name'), priceDeltaMinor: readInteger(row, 'price_delta_minor') });
+    values.push({ modifierOptionId: readString(row, 'modifier_option_id'), modifierName: readString(row, 'modifier_name'), priceDelta: readInteger(row, 'price_delta') });
     byItem.set(id, values);
   }
-  return items.map((row) => ({ productId: readString(row, 'product_id'), variantId: readNullableString(row, 'variant_id'), productName: readString(row, 'product_name'), size: readNullableSize(row, 'size'), quantity: readPositiveInteger(row, 'quantity'), unitTotalMinor: readNonNegativeInteger(row, 'unit_total_minor'), lineTotalMinor: readNonNegativeInteger(row, 'line_total_minor'), modifiers: byItem.get(readString(row, 'id')) ?? [] }));
+  return items.map((row) => ({ productId: readString(row, 'product_id'), variantId: readNullableString(row, 'variant_id'), productName: readString(row, 'product_name'), size: readNullableSize(row, 'size'), quantity: readPositiveInteger(row, 'quantity'), unitTotal: readNonNegativeInteger(row, 'unit_total'), lineTotal: readNonNegativeInteger(row, 'line_total'), modifiers: byItem.get(readString(row, 'id')) ?? [] }));
 }
 
 async function readEvents(client: Queryable, orderId: string): Promise<readonly OrderEvent[]> {
@@ -166,7 +166,7 @@ async function readEvents(client: Queryable, orderId: string): Promise<readonly 
   return result.rows.map((row) => ({ actorId: readString(row, 'actor_id'), actorLabel: readString(row, 'actor_label'), occurredAt: readDate(row, 'occurred_at'), from: readStage(row, 'from_stage'), to: readStage(row, 'to_stage') }));
 }
 
-function toQueueItem(row: DatabaseRow): OrderQueueItem { return { id: readString(row, 'id'), number: readString(row, 'number'), createdAt: readDate(row, 'created_at'), totalMinor: readNonNegativeInteger(row, 'total_minor'), stage: readStage(row, 'stage') }; }
+function toQueueItem(row: DatabaseRow): OrderQueueItem { return { id: readString(row, 'id'), number: readString(row, 'number'), createdAt: readDate(row, 'created_at'), total: readNonNegativeInteger(row, 'total'), stage: readStage(row, 'stage') }; }
 function readString(row: DatabaseRow, key: string): string { const value = row[key]; if (typeof value !== 'string') throw new Error('Invalid PostgreSQL row field: ' + key); return value; }
 function readNullableString(row: DatabaseRow, key: string): string | null { return row[key] === null ? null : readString(row, key); }
 function readDate(row: DatabaseRow, key: string): Date { const value = row[key]; if (!(value instanceof Date) || Number.isNaN(value.getTime())) throw new Error('Invalid PostgreSQL row field: ' + key); return value; }

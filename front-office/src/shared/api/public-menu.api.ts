@@ -85,7 +85,7 @@ function isPublicMenuProductResponse(
 
   if (value.type === publicMenuProductTypes[0]) {
     if (
-      value.priceMinor !== null ||
+      value.price !== null ||
       !isArrayOf(value.variants, isPublicMenuVariantResponse)
     ) {
       return false;
@@ -96,7 +96,7 @@ function isPublicMenuProductResponse(
 
   return (
     value.type === publicMenuProductTypes[1] &&
-    isNonNegativeInteger(value.priceMinor) &&
+    isNonNegativeInt32(value.price) &&
     Array.isArray(value.variants) &&
     value.variants.length === 0
   );
@@ -129,7 +129,7 @@ function isPublicMenuVariantResponse(
     isRecord(value) &&
     isUuid(value.id) &&
     publicMenuVariantSizes.some((size) => size === value.size) &&
-    isNonNegativeInteger(value.priceMinor) &&
+    isNonNegativeInt32(value.price) &&
     typeof value.isAvailable === "boolean"
   );
 }
@@ -176,7 +176,7 @@ function hasValidDefaultOptions(
     availableOptions.length >= minSelect &&
     defaultOptions.length >= minSelect &&
     defaultOptions.length <= maxSelect &&
-    defaultOptions.every((option) => option.priceDeltaMinor === 0)
+    defaultOptions.every((option) => option.priceDelta === 0)
   );
 }
 
@@ -187,7 +187,7 @@ function isPublicMenuModifierOptionResponse(
     isRecord(value) &&
     isUuid(value.id) &&
     typeof value.name === "string" &&
-    isInteger(value.priceDeltaMinor) &&
+    isNonNegativeInt32(value.priceDelta) &&
     typeof value.isDefault === "boolean" &&
     typeof value.isAvailable === "boolean"
   );
@@ -229,11 +229,9 @@ function toPublicDrinkMenuProduct(
     type: product.type,
     name: product.name,
     description: product.description,
-    priceMinor: product.priceMinor,
+    price: product.price,
     isAvailable: product.isAvailable,
-    variants: product.variants
-      .filter((variant) => variant.isAvailable)
-      .map(toPublicMenuVariant),
+    variants: product.variants.map(toPublicMenuVariant),
     modifierGroups: product.modifierGroups.map(toPublicMenuModifierGroup),
   };
 }
@@ -246,7 +244,7 @@ function toPublicOtherMenuProduct(
     type: product.type,
     name: product.name,
     description: product.description,
-    priceMinor: product.priceMinor,
+    price: product.price,
     isAvailable: product.isAvailable,
     variants: [],
     modifierGroups: product.modifierGroups.map(toPublicMenuModifierGroup),
@@ -259,7 +257,7 @@ function toPublicMenuVariant(
   return {
     id: variant.id,
     size: variant.size,
-    priceMinor: variant.priceMinor,
+    price: variant.price,
     isAvailable: variant.isAvailable,
   };
 }
@@ -283,7 +281,7 @@ function toPublicMenuModifierOption(
   return {
     id: option.id,
     name: option.name,
-    priceDeltaMinor: option.priceDeltaMinor,
+    priceDelta: option.priceDelta,
     isDefault: option.isDefault,
     isAvailable: option.isAvailable,
   };
@@ -306,6 +304,10 @@ function isNonNegativeInteger(value: unknown): value is number {
 
 function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
+}
+
+function isNonNegativeInt32(value: unknown): value is number {
+  return isInteger(value) && value >= 0 && value <= 2_147_483_647;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

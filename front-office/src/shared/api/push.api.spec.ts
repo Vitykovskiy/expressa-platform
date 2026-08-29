@@ -74,7 +74,7 @@ describe("PushApi", () => {
 
 function client(responses: unknown[], calls: RequestInit[] = []): ApiClient {
   return new ApiClient({
-    baseUrl: "https://api.example.test/api/v1",
+    baseUrl: "https://api.example.test/api/v2",
     fetcher: async (_url, options) => {
       calls.push(options ?? {});
       const response = responses.shift();

@@ -24,7 +24,7 @@ const order = {
   id: "11111111-1111-4111-8111-111111111111",
   number: "20300102-001",
   createdAt: "2030-01-02T10:00:00.000Z",
-  totalMinor: 38000,
+  total: 380,
   stage: "CREATED" as const,
 };
 
@@ -53,7 +53,7 @@ describe("QueuePage", () => {
       .trigger("click");
     await flushPromises();
 
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(50);
 
     expect(ordersApi.list).toHaveBeenLastCalledWith("access-token", {
       number: "20300102-001",

@@ -11,7 +11,7 @@ export type StoredOrder = {
   id: string;
   number: string;
   stage: 'CREATED';
-  totalMinor: number;
+  total: number;
   items: readonly OrderSnapshotItem[];
 };
 

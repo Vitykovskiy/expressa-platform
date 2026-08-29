@@ -17,8 +17,8 @@ export class PublicMenuOptionDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  priceDeltaMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  priceDelta!: number;
 
   @ApiProperty()
   isDefault!: boolean;
@@ -54,8 +54,8 @@ export class PublicMenuVariantDto {
   @ApiProperty({ enum: productSizes })
   size!: PublicMenuProductSize;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  priceMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  price!: number;
 
   @ApiProperty()
   isAvailable!: boolean;
@@ -74,8 +74,8 @@ export class PublicMenuProductDto {
   @ApiProperty()
   description!: string;
 
-  @ApiProperty({ format: 'int32', nullable: true, type: 'integer' })
-  priceMinor!: number | null;
+  @ApiProperty({ format: 'int32', minimum: 0, nullable: true, type: 'integer' })
+  price!: number | null;
 
   @ApiProperty()
   isAvailable!: boolean;

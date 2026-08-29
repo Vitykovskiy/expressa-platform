@@ -7,7 +7,7 @@ describe('ObservabilityMetrics', () => {
     metrics.recordHttpResponse(200, '/health/live');
     metrics.recordHttpResponse(
       503,
-      '/api/v1/orders/:orderId',
+      '/api/v2/orders/:orderId',
     );
     metrics.recordApiError();
     metrics.recordReadinessFailure();
@@ -20,7 +20,7 @@ describe('ObservabilityMetrics', () => {
     });
 
     await expect(metrics.prometheus()).resolves.toContain(
-      'expressa_http_responses_total{path="/api/v1/orders/:orderId",status_class="5xx"} 1',
+      'expressa_http_responses_total{path="/api/v2/orders/:orderId",status_class="5xx"} 1',
     );
   });
 

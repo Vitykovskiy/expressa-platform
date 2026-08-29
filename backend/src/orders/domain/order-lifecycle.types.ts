@@ -9,7 +9,7 @@ export type OrderQueueItem = {
   id: string;
   number: string;
   createdAt: Date;
-  totalMinor: number;
+  total: number;
   stage: OrderStage;
 };
 

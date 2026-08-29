@@ -65,8 +65,8 @@ describe('схема каталога', () => {
       );
 
       await pool.query(
-        `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-         VALUES ($1, 'S', 10000, $2)`,
+        `INSERT INTO product_variants (product_id, size, price, sort_order)
+         VALUES ($1, 'S', 100, $2)`,
         [productId, sortOrder],
       );
 
@@ -77,7 +77,7 @@ describe('схема каталога', () => {
       );
 
       await pool.query(
-        `INSERT INTO modifier_options (group_id, name, price_delta_minor, sort_order)
+        `INSERT INTO modifier_options (group_id, name, price_delta, sort_order)
          VALUES ($1, $2, 0, $3)`,
         [groupId, 'Бесплатный вариант', sortOrder],
       );
@@ -93,7 +93,7 @@ describe('схема каталога', () => {
       ).rejects.toMatchObject({ code: '23514' });
       await expect(
         pool.query(
-          `INSERT INTO products (category_id, type, name, price_minor, sort_order)
+          `INSERT INTO products (category_id, type, name, price, sort_order)
            VALUES ($1, 'DRINK', 'Цена у напитка', 100, $2)`,
           [categoryId, sortOrder + 1],
         ),
@@ -119,28 +119,28 @@ describe('схема каталога', () => {
       ).rejects.toMatchObject({ code: '23514' });
       await expect(
         pool.query(
-          `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-           VALUES ($1, 'S', 10000, $2)`,
+          `INSERT INTO product_variants (product_id, size, price, sort_order)
+           VALUES ($1, 'S', 100, $2)`,
           [productId, sortOrder + 1],
         ),
       ).rejects.toMatchObject({ code: '23505' });
       const otherProductId = randomUUID();
       await pool.query(
-        `INSERT INTO products (id, category_id, type, name, price_minor, sort_order)
-         VALUES ($1, $2, 'OTHER', 'OTHER для проверки варианта', 10000, $3)`,
+        `INSERT INTO products (id, category_id, type, name, price, sort_order)
+         VALUES ($1, $2, 'OTHER', 'OTHER для проверки варианта', 100, $3)`,
         [otherProductId, categoryId, sortOrder + 3],
       );
       await expect(
         pool.query(
-          `INSERT INTO product_variants (product_id, size, price_minor, sort_order)
-           VALUES ($1, 'S', 10000, $2)`,
+          `INSERT INTO product_variants (product_id, size, price, sort_order)
+           VALUES ($1, 'S', 100, $2)`,
           [otherProductId, sortOrder + 2],
         ),
       ).rejects.toMatchObject({ code: '23503' });
       await expect(
         pool.query(
-          `INSERT INTO product_variants (product_id, product_type, size, price_minor, sort_order)
-           VALUES ($1, 'OTHER', 'M', 10000, $2)`,
+          `INSERT INTO product_variants (product_id, product_type, size, price, sort_order)
+           VALUES ($1, 'OTHER', 'M', 100, $2)`,
           [productId, sortOrder + 2],
         ),
       ).rejects.toMatchObject({ code: '23514' });
@@ -150,18 +150,25 @@ describe('схема каталога', () => {
       await expect(
         pool.query(
           `UPDATE products
-           SET type = 'OTHER', price_minor = 10000
+           SET type = 'OTHER', price = 100
            WHERE id = $1`,
           [productId],
         ),
       ).rejects.toMatchObject({ code: '23503' });
       await expect(
         pool.query(
-          `INSERT INTO modifier_options (group_id, name, price_delta_minor, sort_order)
+          `INSERT INTO modifier_options (group_id, name, price_delta, sort_order)
            VALUES ($1, 'Повторный порядок', 0, $2)`,
           [groupId, sortOrder],
         ),
       ).rejects.toMatchObject({ code: '23505' });
+      await expect(
+        pool.query(
+          `INSERT INTO modifier_options (group_id, name, price_delta, sort_order)
+           VALUES ($1, 'Отрицательная добавка', -1, $2)`,
+          [groupId, sortOrder + 1],
+        ),
+      ).rejects.toMatchObject({ code: '23514' });
     },
     externalProcessTimeoutMs,
   );

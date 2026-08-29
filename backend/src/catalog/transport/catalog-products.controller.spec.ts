@@ -23,7 +23,7 @@ const product = {
   type: "OTHER" as const,
   name: "Печенье",
   description: "",
-  priceMinor: 10000,
+  price: 100,
   sortOrder: 0,
   isActive: true,
   isAvailable: true,

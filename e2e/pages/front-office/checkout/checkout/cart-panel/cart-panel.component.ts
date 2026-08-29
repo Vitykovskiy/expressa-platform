@@ -21,8 +21,7 @@ export class CartPanelComponent {
       .filter({ visible: true });
     this.items = page.getByRole("list", { name: "Позиции в корзине" });
     this.checkoutButton = page.getByRole("button", {
-      name: "Оформить заказ",
-      exact: true,
+      name: /^Оформить заказ/u,
     });
     this.repeatWarnings = page.getByRole("alert", {
       name: "Не все позиции из заказа добавлены",

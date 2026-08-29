@@ -96,7 +96,7 @@ describe("CatalogModifiersController", () => {
         group.id,
         {
           name: "Овсяное",
-          priceDeltaMinor: 2_147_483_648,
+          priceDelta: 2_147_483_648,
           sortOrder: 0,
           isDefault: true,
           isAvailable: true,

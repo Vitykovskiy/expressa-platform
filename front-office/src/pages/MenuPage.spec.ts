@@ -51,7 +51,7 @@ describe("MenuPage", () => {
 
     const cart = useCartStore();
     expect(cart.itemCount).toBe(1);
-    expect(cart.totalMinor).toBe(25_000);
+    expect(cart.total).toBe(250);
     expect(wrapper.get('[data-test="cart"]').text()).toContain(
       "Корзина · 1 · 250",
     );
@@ -117,7 +117,7 @@ async function mountPage(menuShellCommand?: {
           ],
           template: `<div>
             <button data-test="category" @click='$emit("changeLevel", "category")' />
-            <button data-test="add" @click='$emit("add", { addons: [], lineTotalMinor: 25000, lineTotalRub: 250, productId: "cookie", productName: "Печенье", quantity: 1, selectedModifierOptions: [], type: "OTHER", unitTotalMinor: 25000 })' />
+            <button data-test="add" @click='$emit("add", { addons: [], lineTotal: 250, lineTotalRub: 250, productId: "cookie", productName: "Печенье", quantity: 1, selectedModifierOptions: [], type: "OTHER", unitTotal: 250 })' />
             <button data-test="product" @click='$emit("changeLevel", "product")' />
             <button data-test="screen" @click='$emit("menuScreenChange", { id: "category", categoryId: "coffee" })' />
             <button data-test="ack" @click='$emit("menuShellCommandAck", menuShellCommand.requestId)' />

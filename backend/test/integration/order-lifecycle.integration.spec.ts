@@ -39,7 +39,7 @@ async function createOrder(pool: Pool, customerId: string): Promise<string> {
   const number = orderDay.replaceAll('-', '') + '-' + dailyNumber.toString().padStart(3, '0');
   await pool.query(
     `INSERT INTO orders (
-      id, number, customer_id, idempotency_key, request_fingerprint, total_minor, order_day, daily_number
+      id, number, customer_id, idempotency_key, request_fingerprint, total, order_day, daily_number
     ) VALUES ($1, $2, $3, $4, $5, 450, $6, $7)`,
     [id, number, customerId, randomUUID(), randomUUID(), orderDay, dailyNumber],
   );

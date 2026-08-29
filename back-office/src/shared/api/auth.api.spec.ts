@@ -5,7 +5,7 @@ import { ApiClient, ApiError } from "./client";
 
 function createAuthApi(fetcher: typeof fetch): AuthApi {
   return new AuthApi(
-    new ApiClient({ baseUrl: "https://api.example.test/api/v1", fetcher }),
+    new ApiClient({ baseUrl: "https://api.example.test/api/v2", fetcher }),
   );
 }
 
@@ -27,7 +27,7 @@ describe("AuthApi", () => {
     });
 
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/auth/otp/request",
+      "https://api.example.test/api/v2/auth/otp/request",
       expect.objectContaining({
         body: JSON.stringify({ phone: "+79123456789" }),
         credentials: "include",
@@ -71,7 +71,7 @@ describe("AuthApi", () => {
       expiresInSeconds: 900,
     });
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/auth/otp/verify",
+      "https://api.example.test/api/v2/auth/otp/verify",
       expect.objectContaining({
         body: JSON.stringify({ code: "123456", phone: "+79123456789" }),
         credentials: "include",
@@ -98,7 +98,7 @@ describe("AuthApi", () => {
       expiresInSeconds: 900,
     });
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/auth/refresh",
+      "https://api.example.test/api/v2/auth/refresh",
       expect.objectContaining({ credentials: "include", method: "POST" }),
     );
   });
@@ -111,7 +111,7 @@ describe("AuthApi", () => {
 
     await expect(api.logout()).resolves.toBeUndefined();
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/auth/logout",
+      "https://api.example.test/api/v2/auth/logout",
       expect.objectContaining({ credentials: "include", method: "POST" }),
     );
   });
@@ -150,7 +150,7 @@ describe("AuthApi", () => {
       code: "API_CONTRACT_ERROR",
     } satisfies Partial<ApiError>);
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/me",
+      "https://api.example.test/api/v2/me",
       expect.objectContaining({
         headers: { authorization: "Bearer access-token" },
         method: "GET",

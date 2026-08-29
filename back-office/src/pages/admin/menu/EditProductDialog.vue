@@ -134,7 +134,7 @@
           {{ availableError }}
         </p>
         <template v-if="type === 'DRINK'">
-          <label>Размеры и цены, коп.</label>
+          <label>Размеры и цены, ₽</label>
           <div
             v-for="(variant, index) in variants"
             :key="variant.size"
@@ -157,15 +157,13 @@
               />
             </div>
             <div v-if="variant.isConfigured" class="size-row-fields">
-              <label :for="`edit-product-price-${variant.size}`"
-                >Цена, коп.</label
-              >
+              <label :for="`edit-product-price-${variant.size}`">Цена, ₽</label>
               <AdminTextField
                 :id="`edit-product-price-${variant.size}`"
-                :aria-label="`Цена ${variant.size}, коп.`"
+                :aria-label="`Цена ${variant.size}, ₽`"
                 :aria-describedby="variantsError ? variantsErrorId : undefined"
                 :aria-invalid="Boolean(variantsError)"
-                :model-value="variant.priceMinor"
+                :model-value="variant.price"
                 class="edit-dialog-input"
                 inputmode="numeric"
                 min="0"
@@ -173,7 +171,7 @@
                 @input="
                   updateVariant(
                     index,
-                    'priceMinor',
+                    'price',
                     ($event.target as HTMLInputElement).value,
                   )
                 "
@@ -224,17 +222,17 @@
           </p>
         </template>
         <template v-else>
-          <label :for="priceId">Цена, коп.</label>
+          <label :for="priceId">Цена, ₽</label>
           <AdminTextField
             :id="priceId"
-            v-model="priceMinor"
+            v-model="price"
             :aria-describedby="priceError ? priceErrorId : undefined"
             :aria-invalid="Boolean(priceError)"
             class="edit-dialog-input"
             inputmode="numeric"
             min="0"
             type="number"
-            @update:model-value="dismissFieldError('priceMinor')"
+            @update:model-value="dismissFieldError('price')"
           />
           <p
             v-if="priceError"
@@ -314,7 +312,7 @@ const categoryIdValue = shallowRef("");
 const type = shallowRef<"DRINK" | "OTHER">("OTHER");
 const name = shallowRef("");
 const description = shallowRef("");
-const priceMinor = shallowRef("");
+const price = shallowRef("");
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const dismissedFieldErrors = shallowRef<
@@ -356,9 +354,9 @@ const nameError = computed(() =>
 );
 const descriptionError = computed(() => fieldError("description"));
 const priceError = computed(() =>
-  isNonNegativeInteger(priceMinor.value)
-    ? fieldError("priceMinor")
-    : "Укажите цену в копейках",
+  isNonNegativeInteger(price.value)
+    ? fieldError("price")
+    : "Укажите цену в целых рублях",
 );
 const activeError = computed(() => fieldError("isActive"));
 const availableError = computed(() => fieldError("isAvailable"));
@@ -370,7 +368,7 @@ const variantsError = computed(() => {
     return "Выберите хотя бы один размер";
   if (
     configuredVariants.value.some(
-      (variant) => !isNonNegativeInteger(variant.priceMinor),
+      (variant) => !isNonNegativeInteger(variant.price),
     )
   )
     return "Укажите цену для каждого выбранного размера";
@@ -406,7 +404,7 @@ function resetDraft(): void {
   type.value = product?.type ?? "OTHER";
   name.value = product?.name ?? "";
   description.value = product?.description ?? "";
-  priceMinor.value = product?.priceMinor?.toString() ?? "";
+  price.value = product?.price?.toString() ?? "";
   isActive.value = product?.isActive ?? true;
   isAvailable.value = product?.isAvailable ?? true;
   variants.value = createEditProductVariantDrafts(product);
@@ -428,7 +426,7 @@ function updateOpen(value: boolean): void {
 }
 function updateVariant(
   index: number,
-  field: "priceMinor" | "isConfigured" | "isAvailable",
+  field: "price" | "isConfigured" | "isAvailable",
   value: string | boolean,
 ): void {
   dismissFieldError("variants");
@@ -490,11 +488,11 @@ function save(): void {
           description: description.value.trim(),
           isActive: isActive.value,
           isAvailable: isAvailable.value,
-          priceMinor: null,
+          price: null,
           variants: configuredVariants.value.map((variant, sortOrder) => ({
             ...(variant.id ? { id: variant.id } : {}),
             size: variant.size,
-            priceMinor: Number(variant.priceMinor),
+            price: Number(variant.price),
             sortOrder,
             isAvailable: variant.isAvailable,
           })),
@@ -506,7 +504,7 @@ function save(): void {
           description: description.value.trim(),
           isActive: isActive.value,
           isAvailable: isAvailable.value,
-          priceMinor: Number(priceMinor.value),
+          price: Number(price.value),
           variants: [],
         };
   emit("save", data);

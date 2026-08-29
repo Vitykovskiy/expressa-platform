@@ -25,6 +25,10 @@ function runScript(script: 'migrate' | 'seed'): void {
       AUTH_OTP_PEPPER: 'public-menu-otp-pepper',
       AUTH_DEVELOPMENT_OTP: '123456',
       CORS_ORIGINS: 'http://localhost:5173',
+      VAPID_SUBJECT: 'mailto:public-menu@expressa.test',
+      VAPID_PUBLIC_KEY:
+        'BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw',
+      VAPID_PRIVATE_KEY: '9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c',
     },
     stdio: 'inherit',
   });
@@ -108,25 +112,25 @@ describe('PostgreSQL repository публичного меню', () => {
                 type: 'DRINK',
                 name: cappuccino?.name,
                 description: cappuccino?.description,
-                priceMinor: null,
+                price: null,
                 isAvailable: true,
                 variants: [
                   {
                     id: cappuccinoSmall?.id,
                     size: 'S',
-                    priceMinor: cappuccinoSmall?.priceMinor,
+                    price: cappuccinoSmall?.price,
                     isAvailable: true,
                   },
                   {
                     id: cappuccinoMedium?.id,
                     size: 'M',
-                    priceMinor: cappuccinoMedium?.priceMinor,
+                    price: cappuccinoMedium?.price,
                     isAvailable: true,
                   },
                   {
                     id: cappuccinoLarge?.id,
                     size: 'L',
-                    priceMinor: cappuccinoLarge?.priceMinor,
+                    price: cappuccinoLarge?.price,
                     isAvailable: true,
                   },
                 ],
@@ -141,14 +145,14 @@ describe('PostgreSQL repository публичного меню', () => {
                       {
                         id: regularMilk?.id,
                         name: regularMilk?.name,
-                        priceDeltaMinor: 0,
+                        priceDelta: 0,
                         isDefault: true,
                         isAvailable: true,
                       },
                       {
                         id: oatMilk?.id,
                         name: oatMilk?.name,
-                        priceDeltaMinor: oatMilk?.priceDeltaMinor,
+                        priceDelta: oatMilk?.priceDelta,
                         isDefault: false,
                         isAvailable: true,
                       },
@@ -161,13 +165,13 @@ describe('PostgreSQL repository публичного меню', () => {
                 type: 'DRINK',
                 name: espresso?.name,
                 description: espresso?.description,
-                priceMinor: null,
+                price: null,
                 isAvailable: true,
                 variants: [
                   {
                     id: espressoSmall?.id,
                     size: 'S',
-                    priceMinor: espressoSmall?.priceMinor,
+                    price: espressoSmall?.price,
                     isAvailable: true,
                   },
                 ],
@@ -182,14 +186,14 @@ describe('PostgreSQL repository публичного меню', () => {
                       {
                         id: regularMilk?.id,
                         name: regularMilk?.name,
-                        priceDeltaMinor: 0,
+                        priceDelta: 0,
                         isDefault: true,
                         isAvailable: true,
                       },
                       {
                         id: oatMilk?.id,
                         name: oatMilk?.name,
-                        priceDeltaMinor: oatMilk?.priceDeltaMinor,
+                        priceDelta: oatMilk?.priceDelta,
                         isDefault: false,
                         isAvailable: true,
                       },
@@ -209,7 +213,7 @@ describe('PostgreSQL repository публичного меню', () => {
                 type: 'OTHER',
                 name: croissant?.name,
                 description: croissant?.description,
-                priceMinor: croissant?.priceMinor,
+                price: croissant?.price,
                 isAvailable: true,
                 variants: [],
                 modifierGroups: [],
@@ -219,7 +223,7 @@ describe('PostgreSQL repository публичного меню', () => {
                 type: 'OTHER',
                 name: cheesecake?.name,
                 description: cheesecake?.description,
-                priceMinor: cheesecake?.priceMinor,
+                price: cheesecake?.price,
                 isAvailable: false,
                 variants: [],
                 modifierGroups: [],
@@ -247,7 +251,7 @@ describe('PostgreSQL repository публичного меню', () => {
         cappuccino.id,
         espresso.id,
       ]);
-      await pool.query(`UPDATE modifier_options SET price_delta_minor = 1 WHERE id = $1`, [regularMilk.id]);
+      await pool.query(`UPDATE modifier_options SET price_delta = 1 WHERE id = $1`, [regularMilk.id]);
 
       await expect(useCase.execute()).resolves.toEqual({
         acceptsNewOrders: true,

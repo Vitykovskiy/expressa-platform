@@ -20,7 +20,7 @@ sources:
 набор default-вариантов. [Public repository](../../backend/src/catalog/adapters/postgres-public-menu.repository.ts),
 [catalog schema](../../backend/migrations/0004_e05_catalog.sql).
 
-Administrator управляет каталогом через `/api/v1/backoffice/catalog/*`; каждая
+Administrator управляет каталогом через `/api/v2/backoffice/catalog/*`; каждая
 команда проверяет правила, выполняется с audit в транзакции и сериализует
 конкурирующие изменения каталога. [Catalog commands](../../backend/docs/30-domains/Catalog.md),
 [command runner](../../backend/src/catalog/adapters/postgres-catalog-command.runner.ts).

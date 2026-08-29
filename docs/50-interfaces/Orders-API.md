@@ -8,8 +8,8 @@ sources:
 ---
 # API заказов
 
-Customer использует `POST /api/v1/orders`, `GET /api/v1/orders` и
-`GET /api/v1/orders/{orderId}`. Создание требует Bearer и UUID
+Customer использует `POST /api/v2/orders`, `GET /api/v2/orders` и
+`GET /api/v2/orders/{orderId}`. Создание требует Bearer и UUID
 `Idempotency-Key`; список использует opaque cursor и возвращает только заказы
 текущего customer, а деталь скрывает staff events. Тело создания содержит expected
 total и непустые item с товаром, nullable variant, modifier ids и quantity;

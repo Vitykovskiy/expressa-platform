@@ -4,7 +4,7 @@ import { createAuthApi } from "./auth.api";
 
 function client(response: Response, capture: RequestInit[] = []): ApiClient {
   return new ApiClient({
-    baseUrl: "https://api.example.test/api/v1",
+    baseUrl: "https://api.example.test/api/v2",
     fetcher: async (_url, options) => {
       capture.push(options ?? {});
       return response;

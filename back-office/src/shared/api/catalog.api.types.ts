@@ -23,7 +23,7 @@ export interface CatalogProductVariant {
   id: string;
   productId: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -34,7 +34,7 @@ export interface CatalogProduct {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -45,7 +45,7 @@ export interface CatalogModifierOption {
   id: string;
   groupId: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;
@@ -85,7 +85,7 @@ export type UpdateCatalogCategory = CreateCatalogCategory;
 
 export interface CreateCatalogProductVariant {
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -95,7 +95,7 @@ export interface CreateCatalogProduct {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -123,7 +123,7 @@ export interface SaveCatalogModifierGroup extends CreateCatalogModifierGroup {
 
 export interface CreateCatalogModifierOption {
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;
@@ -155,7 +155,7 @@ export interface CatalogCategoryDto {
 export interface CatalogProductVariantDto {
   id: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -166,7 +166,7 @@ export interface CatalogProductDto {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -177,7 +177,7 @@ export interface CatalogModifierOptionDto {
   id: string;
   groupId: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;
@@ -217,7 +217,7 @@ export interface CatalogProductResponseDto {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -227,7 +227,7 @@ export interface CatalogProductVariantResponseDto {
   id: string;
   productId: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }

@@ -39,38 +39,38 @@ sources:
 | slot picker | orphan | [Корзина](30-features/Cart-and-checkout.md) | [screen](../src/features/checkout/SlotPickerScreen.vue) | N/A | no routed consumer |
 | orders history screen | orphan | [Заказы](30-features/Orders.md) | [screen](../src/features/orders/OrdersHistoryScreen.vue) | N/A | no routed consumer |
 | dialog primitive | orphan | [Контракты UI](30-conventions/UI-contracts.md) | [dialog](../src/shared/ui/customer/dialog/UiDialog.vue) | N/A | no runtime consumer |
-| /api/v1/auth/otp/request | current | [Вход](30-features/Authentication-and-returnTo.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
-| /api/v1/auth/otp/verify | current | [Вход](30-features/Authentication-and-returnTo.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
-| /api/v1/auth/refresh | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
-| /api/v1/auth/logout | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
-| /api/v1/me | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
-| /api/v1/public/menu | current | [Меню](30-features/Menu-and-configuration.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/public-menu.api.spec.ts) | consumed |
-| /api/v1/backoffice/catalog | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/categories | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/categories/{categoryId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/categories/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/products | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/products/{productId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/products/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/modifier-groups | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/modifier-groups/{groupId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/modifier-groups/{groupId}/options | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/modifier-groups/options/{optionId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/orders | current | [Корзина](30-features/Cart-and-checkout.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed POST |
-| /api/v1/orders/{orderId} | current | [Заказы](30-features/Orders.md) | [API](../src/shared/api/orders.api.ts) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed GET |
-| /api/v1/backoffice/availability | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/availability/{type}/{id} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/service/intake | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders/{orderId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders/{orderId}/accept | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders/{orderId}/start-preparing | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders/{orderId}/mark-ready | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/backoffice/orders/{orderId}/issue | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
-| /api/v1/push/public-key | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed GET |
-| /api/v1/push/subscriptions | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed PUT/DELETE |
+| /api/v2/auth/otp/request | current | [Вход](30-features/Authentication-and-returnTo.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
+| /api/v2/auth/otp/verify | current | [Вход](30-features/Authentication-and-returnTo.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
+| /api/v2/auth/refresh | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
+| /api/v2/auth/logout | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
+| /api/v2/me | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/auth.api.spec.ts) | consumed |
+| /api/v2/public/menu | current | [Меню](30-features/Menu-and-configuration.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/public-menu.api.spec.ts) | consumed |
+| /api/v2/backoffice/catalog | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/categories | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/categories/{categoryId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/categories/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/products | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/products/{productId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/products/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/modifier-groups | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/modifier-groups/{groupId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/modifier-groups/{groupId}/options | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/modifier-groups/options/{optionId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/modifier-groups/{groupId}/options/reorder | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/catalog/categories/{categoryId}/modifier-groups | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/orders | current | [Корзина](30-features/Cart-and-checkout.md) | [OpenAPI](../contracts/openapi.json) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed POST |
+| /api/v2/orders/{orderId} | current | [Заказы](30-features/Orders.md) | [API](../src/shared/api/orders.api.ts) | [API spec](../src/shared/api/orders.api.spec.ts) | consumed GET |
+| /api/v2/backoffice/availability | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/availability/{type}/{id} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/service/intake | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders/{orderId} | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders/{orderId}/accept | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders/{orderId}/start-preparing | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders/{orderId}/mark-ready | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/backoffice/orders/{orderId}/issue | N/A reason: admin client | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
+| /api/v2/push/public-key | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed GET |
+| /api/v2/push/subscriptions | current | [Состояние и API](20-architecture/Application-state-and-API.md) | [API](../src/shared/api/push.api.ts) | [API spec](../src/shared/api/push.api.spec.ts) | consumed PUT/DELETE |
 | /metrics | N/A reason: backend observability endpoint | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /health/live | N/A reason: no front-office caller | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |
 | /health/ready | N/A reason: no front-office caller | [Контур](00-meta/Scope.md) | [OpenAPI](../contracts/openapi.json) | N/A | not consumed |

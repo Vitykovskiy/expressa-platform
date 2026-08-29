@@ -8,7 +8,7 @@ import type { orderErrorCodes } from './order.constants';
 export type OrderErrorCode = (typeof orderErrorCodes)[number];
 
 export type OrderRequest = {
-  totalMinor: number;
+  total: number;
   items: readonly OrderRequestItem[];
 };
 
@@ -28,7 +28,7 @@ export type OrderCatalogProduct = {
   id: string;
   type: CatalogProductType;
   name: string;
-  priceMinor: number | null;
+  price: number | null;
   isAvailable: boolean;
   variants: readonly OrderCatalogVariant[];
   modifierGroups: readonly OrderCatalogModifierGroup[];
@@ -37,7 +37,7 @@ export type OrderCatalogProduct = {
 export type OrderCatalogVariant = {
   id: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   isAvailable: boolean;
 };
 
@@ -52,13 +52,13 @@ export type OrderCatalogModifierGroup = {
 export type OrderCatalogModifierOption = {
   id: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   isDefault: boolean;
   isAvailable: boolean;
 };
 
 export type OrderRevalidationResult = {
-  totalMinor: number;
+  total: number;
   items: readonly OrderSnapshotItem[];
 };
 
@@ -68,13 +68,13 @@ export type OrderSnapshotItem = {
   productName: string;
   size: CatalogProductSize | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   modifiers: readonly OrderSnapshotModifier[];
 };
 
 export type OrderSnapshotModifier = {
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };

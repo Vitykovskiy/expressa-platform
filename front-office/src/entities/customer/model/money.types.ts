@@ -1,1 +1,1 @@
-export type MinorAmount = number;
+export type RubleAmount = number;

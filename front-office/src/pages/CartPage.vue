@@ -137,10 +137,10 @@ async function finishCheckout(): Promise<void> {
 }
 
 function getReconfirmedTotalRub(): number {
-  if (checkoutStore.reconfirmedTotalMinor === null) {
+  if (checkoutStore.reconfirmedTotal === null) {
     throw new Error(cartPageMessages.invalidReconfirmedTotal);
   }
 
-  return checkoutStore.reconfirmedTotalMinor / 100;
+  return checkoutStore.reconfirmedTotal;
 }
 </script>

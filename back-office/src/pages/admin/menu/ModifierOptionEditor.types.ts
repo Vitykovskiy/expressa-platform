@@ -1,12 +1,12 @@
 import type { ModifierOption } from "./catalog.types";
 
 export type ModifierOptionFormField =
-  "name" | "priceDeltaMinor" | "isDefault" | "isAvailable";
+  "name" | "priceDelta" | "isDefault" | "isAvailable";
 
 export interface ModifierOptionDraft {
   id?: string;
   name: string;
-  priceDeltaMinor: string;
+  priceDelta: string;
   isDefault: boolean;
   isAvailable: boolean;
 }
@@ -14,7 +14,7 @@ export interface ModifierOptionDraft {
 export interface ModifierOptionFormData {
   id?: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;
@@ -42,7 +42,7 @@ export function createModifierOptionDraft(
   return {
     id: option.id,
     name: option.name,
-    priceDeltaMinor: String(option.priceDeltaMinor),
+    priceDelta: String(option.priceDelta),
     isDefault: option.isDefault,
     isAvailable: option.isAvailable,
   };

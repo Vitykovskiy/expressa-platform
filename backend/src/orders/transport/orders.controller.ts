@@ -41,7 +41,7 @@ import {
   idempotencyHeaderName,
   idempotencyHeaderRequestKey,
   idempotencyHeaderSchema,
-  maximumOrderTotalMinor,
+  maximumOrderTotal,
   customerOrdersCursorParameter,
   ordersApiTag,
   ordersControllerPath,
@@ -130,7 +130,7 @@ export class OrdersController {
         customerId: auth.userId,
         idempotencyKey,
         request: {
-          totalMinor: body.expectedTotalMinor,
+          total: body.expectedTotal,
           items: body.items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
@@ -151,8 +151,8 @@ function assertCreateOrderBody(body: unknown): asserts body is CreateOrderDto {
   if (
     typeof body !== 'object'
     || body === null
-    || !('expectedTotalMinor' in body)
-    || !isNonNegativeInt32(body.expectedTotalMinor)
+    || !('expectedTotal' in body)
+    || !isNonNegativeInt32(body.expectedTotal)
     || !('items' in body)
     || !Array.isArray(body.items)
     || body.items.length === 0
@@ -184,7 +184,7 @@ function isUuid(value: unknown): value is string {
 }
 
 function isNonNegativeInt32(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= maximumOrderTotalMinor;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= maximumOrderTotal;
 }
 
 function isOrderItemQuantity(value: unknown): value is number {
@@ -204,7 +204,7 @@ function throwOrderError(error: unknown): never {
     throw error;
   }
   if (error instanceof OrderTotalChangedError) {
-    throw new HttpException(orderErrorResponses.totalChanged(error.totalMinor), orderErrorStatus);
+    throw new HttpException(orderErrorResponses.totalChanged(error.total), orderErrorStatus);
   }
   if (error instanceof MenuItemUnavailableError) {
     throw new HttpException(orderErrorResponses.unavailable(error.itemId), orderErrorStatus);
@@ -226,19 +226,19 @@ function toOrderDto(order: StoredOrder): OrderDto {
     id: order.id,
     number: order.number,
     stage: order.stage,
-    totalMinor: order.totalMinor,
+    total: order.total,
     items: order.items.map((item) => ({
       productId: item.productId,
       variantId: item.variantId,
       productName: item.productName,
       size: item.size,
       quantity: item.quantity,
-      unitTotalMinor: item.unitTotalMinor,
-      lineTotalMinor: item.lineTotalMinor,
+      unitTotal: item.unitTotal,
+      lineTotal: item.lineTotal,
       modifiers: item.modifiers.map((modifier) => ({
         modifierOptionId: modifier.modifierOptionId,
         modifierName: modifier.modifierName,
-        priceDeltaMinor: modifier.priceDeltaMinor,
+        priceDelta: modifier.priceDelta,
       })),
     })),
   };
@@ -250,19 +250,19 @@ function toCustomerOrderDto(order: CustomerOrder): CustomerOrderDto {
     number: order.number,
     createdAt: order.createdAt.toISOString(),
     stage: order.stage,
-    totalMinor: order.totalMinor,
+    total: order.total,
     snapshot: order.snapshot.map((item) => ({
       productId: item.productId,
       variantId: item.variantId,
       productName: item.productName,
       size: item.size,
       quantity: item.quantity,
-      unitTotalMinor: item.unitTotalMinor,
-      lineTotalMinor: item.lineTotalMinor,
+      unitTotal: item.unitTotal,
+      lineTotal: item.lineTotal,
       modifiers: item.modifiers.map((modifier) => ({
         modifierOptionId: modifier.modifierOptionId,
         modifierName: modifier.modifierName,
-        priceDeltaMinor: modifier.priceDeltaMinor,
+        priceDelta: modifier.priceDelta,
       })),
     })),
   };

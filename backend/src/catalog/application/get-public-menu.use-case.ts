@@ -67,14 +67,14 @@ function createProduct(
     .map(toPublicVariant);
 
   if (product.type === 'DRINK') {
-    if (product.priceMinor !== null || !productVariants.some((variant) => variant.isAvailable)) {
+    if (product.price !== null || !productVariants.some((variant) => variant.isAvailable)) {
       return [];
     }
 
-    return [{ ...toPublicProduct(product), priceMinor: null, variants: productVariants, modifierGroups }];
+    return [{ ...toPublicProduct(product), price: null, variants: productVariants, modifierGroups }];
   }
 
-  if (product.priceMinor === null || productVariants.length > 0) {
+  if (product.price === null || productVariants.length > 0) {
     return [];
   }
 
@@ -157,7 +157,9 @@ function isValidModifierGroup(group: PublicMenuModifierGroup): boolean {
     return false;
   }
 
-  return group.options.every((option) => Number.isInteger(option.priceDeltaMinor));
+  return group.options.every(
+    (option) => Number.isInteger(option.priceDelta) && option.priceDelta >= 0,
+  );
 }
 
 function isValidRequiredGroup(group: PublicMenuModifierGroup): boolean {
@@ -172,7 +174,7 @@ function isValidRequiredGroup(group: PublicMenuModifierGroup): boolean {
     availableOptions.length >= group.minSelect &&
     defaultOptions.length >= group.minSelect &&
     defaultOptions.length <= group.maxSelect &&
-    defaultOptions.every((option) => option.priceDeltaMinor === 0)
+    defaultOptions.every((option) => option.priceDelta === 0)
   );
 }
 
@@ -182,7 +184,7 @@ function toPublicProduct(product: CatalogProductCandidate): Omit<PublicMenuProdu
     type: product.type,
     name: product.name,
     description: product.description,
-    priceMinor: product.priceMinor,
+    price: product.price,
     isAvailable: product.isAvailable,
   };
 }
@@ -191,7 +193,7 @@ function toPublicVariant(variant: CatalogProductVariantCandidate): PublicMenuPro
   return {
     id: variant.id,
     size: variant.size,
-    priceMinor: variant.priceMinor,
+    price: variant.price,
     isAvailable: variant.isAvailable,
   };
 }
@@ -200,7 +202,7 @@ function toPublicModifierOption(option: CatalogModifierOptionCandidate): PublicM
   return {
     id: option.id,
     name: option.name,
-    priceDeltaMinor: option.priceDeltaMinor,
+    priceDelta: option.priceDelta,
     isDefault: option.isDefault,
     isAvailable: option.isAvailable,
   };

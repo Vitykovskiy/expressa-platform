@@ -47,7 +47,8 @@ npm run start:dev
 
 Проверка доступности: `GET http://localhost:3000/health/live`.
 
-API использует префикс `/api/v1`. При `NODE_ENV=local` или `development`
+API использует префикс `/api/v2`. Денежные значения передаются целыми рублями:
+`320 ₽` — это `320`. При `NODE_ENV=local` или `development`
 Swagger доступен по `/docs`.
 
 ## Команды

@@ -166,7 +166,7 @@
                   <span class="menu-page__option-row-copy">
                     <span>{{ option.name }}</span>
                     <span class="menu-page__option-price">
-                      {{ modifierOptionPrice(option.priceDeltaMinor) }}
+                      {{ modifierOptionPrice(option.priceDelta) }}
                     </span>
                   </span>
                   <ChevronRight
@@ -410,9 +410,9 @@ function toggleModifierGroup(group: ModifierGroup): void {
   expandedModifierGroupIds.value = next;
 }
 
-function modifierOptionPrice(priceDeltaMinor: number): string {
-  if (priceDeltaMinor === 0) return "Бесплатно";
-  return `${priceDeltaMinor / 100} ₽`;
+function modifierOptionPrice(priceDelta: number): string {
+  if (priceDelta === 0) return "Бесплатно";
+  return `${priceDelta} ₽`;
 }
 
 function modifierOptionCountLabel(count: number): string {

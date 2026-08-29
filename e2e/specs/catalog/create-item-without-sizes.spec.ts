@@ -47,7 +47,7 @@ test("CATALOG-08: администратор создаёт товар без р
   await test.step("У товара показана единая цена без размеров.", async () => {
     const card = await menuManagement.catalog.readProductPrice(productName);
 
-    expect(card, "В карточке показана единая цена товара.").toContain("3.49 ₽");
+    expect(card, "В карточке показана единая цена товара.").toContain("349 ₽");
     expect(card, "В карточке не показан размер S.").not.toContain("S:");
     expect(card, "В карточке не показан размер M.").not.toContain("M:");
     expect(card, "В карточке не показан размер L.").not.toContain("L:");

@@ -29,27 +29,27 @@ describe("cart store", () => {
     expect(store.items).toEqual([item]);
   });
 
-  it("restores configured integer-minor prices with kopecks", () => {
+  it("restores configured integer-ruble prices", () => {
     const configured = {
       addons: [],
       id: "tea",
-      lineTotalMinor: 30550,
-      lineTotalRub: 305.5,
+      lineTotal: 305,
+      lineTotalRub: 305,
       productId: "tea",
       productName: "Чай",
       quantity: 1,
       selectedModifierOptions: [],
       type: "OTHER" as const,
-      unitTotalMinor: 30550,
+      unitTotal: 305,
     };
     const storage = createStorage(JSON.stringify([configured]));
     const store = useCartStore();
     store.restore(storage);
     expect(store.items).toEqual([configured]);
-    expect(store.totalMinor).toBe(30550);
+    expect(store.total).toBe(305);
   });
 
-  it("restores configured drinks with fractional legacy sizePrice", () => {
+  it("restores configured drinks with integer ruble prices", () => {
     const item = {
       addons: [],
       id: "drink",
@@ -57,19 +57,19 @@ describe("cart store", () => {
       productName: "Напиток",
       type: "DRINK" as const,
       size: "M" as const,
-      sizePrice: 305.5,
-      selectedVariant: { id: "m", size: "M" as const, priceMinor: 30550 },
+      sizePrice: 305,
+      selectedVariant: { id: "m", size: "M" as const, price: 305 },
       selectedModifierOptions: [],
       quantity: 1,
-      unitTotalMinor: 30550,
-      lineTotalMinor: 30550,
-      lineTotalRub: 305.5,
+      unitTotal: 305,
+      lineTotal: 305,
+      lineTotalRub: 305,
     };
     const storage = createStorage(JSON.stringify([item]));
     const store = useCartStore();
     store.restore(storage);
     expect(store.items).toEqual([item]);
-    expect(store.totalMinor).toBe(30550);
+    expect(store.total).toBe(305);
   });
 
   it("rejects corrupted configured totals and variant size", () => {
@@ -80,18 +80,18 @@ describe("cart store", () => {
       productName: "Напиток",
       type: "DRINK" as const,
       size: "M" as const,
-      sizePrice: 305.5,
-      selectedVariant: { id: "m", size: "M" as const, priceMinor: 30550 },
+      sizePrice: 305,
+      selectedVariant: { id: "m", size: "M" as const, price: 305 },
       selectedModifierOptions: [],
       quantity: 1,
-      unitTotalMinor: 30550,
-      lineTotalMinor: 30550,
-      lineTotalRub: 305.5,
+      unitTotal: 305,
+      lineTotal: 305,
+      lineTotalRub: 305,
     };
     for (const item of [
       { ...valid, lineTotalRub: undefined },
       { ...valid, lineTotalRub: Number.NaN },
-      { ...valid, lineTotalRub: 305 },
+      { ...valid, lineTotalRub: 305.5 },
       { ...valid, size: "L" as const },
     ]) {
       const storage = createStorage(JSON.stringify([item]));
@@ -255,14 +255,14 @@ describe("cart store", () => {
     store.addConfigured(
       {
         addons: [],
-        lineTotalMinor: 30000,
+        lineTotal: 300,
         lineTotalRub: 300,
         productId: "product-1",
         productName: "Кофе",
         quantity: 1,
         selectedModifierOptions: [],
         type: "OTHER",
-        unitTotalMinor: 30000,
+        unitTotal: 300,
       },
       storage,
     );
@@ -277,32 +277,32 @@ describe("cart store", () => {
     store.addConfigured(
       {
         addons: [],
-        lineTotalMinor: 30000,
+        lineTotal: 300,
         lineTotalRub: 300,
         productId: "product-1",
         productName: "Кофе",
         quantity: 1,
         selectedModifierOptions: [
-          { groupId: "milk", id: "oat", name: "Овсяное", priceDeltaMinor: 0 },
+          { groupId: "milk", id: "oat", name: "Овсяное", priceDelta: 0 },
           {
             groupId: "syrup",
             id: "vanilla",
             name: "Ваниль",
-            priceDeltaMinor: 0,
+            priceDelta: 0,
           },
         ],
-        selectedVariant: { id: "m", priceMinor: 30000, size: "M" },
+        selectedVariant: { id: "m", price: 300, size: "M" },
         size: "M",
         sizePrice: 300,
         type: "DRINK",
-        unitTotalMinor: 30000,
+        unitTotal: 300,
       },
       storage,
     );
     store.addConfigured(
       {
         addons: [],
-        lineTotalMinor: 60000,
+        lineTotal: 600,
         lineTotalRub: 600,
         productId: "product-1",
         productName: "Кофе",
@@ -312,23 +312,23 @@ describe("cart store", () => {
             groupId: "syrup",
             id: "vanilla",
             name: "Ваниль",
-            priceDeltaMinor: 0,
+            priceDelta: 0,
           },
-          { groupId: "milk", id: "oat", name: "Овсяное", priceDeltaMinor: 0 },
+          { groupId: "milk", id: "oat", name: "Овсяное", priceDelta: 0 },
         ],
-        selectedVariant: { id: "m", priceMinor: 30000, size: "M" },
+        selectedVariant: { id: "m", price: 300, size: "M" },
         size: "M",
         sizePrice: 300,
         type: "DRINK",
-        unitTotalMinor: 30000,
+        unitTotal: 300,
       },
       storage,
     );
 
-    expect(store).toMatchObject({ itemCount: 3, totalMinor: 90000 });
+    expect(store).toMatchObject({ itemCount: 3, total: 900 });
     expect(store.items).toHaveLength(1);
     expect(store.items[0]).toMatchObject({
-      lineTotalMinor: 90000,
+      lineTotal: 900,
       lineTotalRub: 900,
       quantity: 3,
     });
@@ -339,23 +339,23 @@ describe("cart store", () => {
     const item = {
       addons: [],
       id: "configured",
-      lineTotalMinor: 30000,
+      lineTotal: 300,
       lineTotalRub: 300,
       productId: "product-1",
       productName: "Кофе",
       quantity: 2,
       selectedModifierOptions: [],
-      selectedVariant: { id: "m", priceMinor: 30000, size: "M" as const },
+      selectedVariant: { id: "m", price: 300, size: "M" as const },
       size: "M" as const,
       sizePrice: 300,
       type: "DRINK" as const,
-      unitTotalMinor: 30000,
+      unitTotal: 300,
     };
 
     store.replace([item], createStorage(null));
 
     expect(store.items[0]).toMatchObject({
-      lineTotalMinor: 60000,
+      lineTotal: 600,
       lineTotalRub: 600,
     });
   });
@@ -374,7 +374,7 @@ describe("cart store", () => {
     };
     const configuredItem = {
       addons: [],
-      lineTotalMinor: 30000,
+      lineTotal: 300,
       lineTotalRub: 300,
       productId: "product-1",
       productName: "Кофе",
@@ -384,20 +384,20 @@ describe("cart store", () => {
           groupId: "milk",
           id: "oat",
           name: "Овсяное",
-          priceDeltaMinor: 0,
+          priceDelta: 0,
         },
         {
           groupId: "syrup",
           id: "vanilla",
           name: "Ваниль",
-          priceDeltaMinor: 0,
+          priceDelta: 0,
         },
       ],
-      selectedVariant: { id: "m", priceMinor: 30000, size: "M" as const },
+      selectedVariant: { id: "m", price: 300, size: "M" as const },
       size: "M" as const,
       sizePrice: 300,
       type: "DRINK" as const,
-      unitTotalMinor: 30000,
+      unitTotal: 300,
     };
     store.replace([legacyItem], storage);
 
@@ -405,7 +405,7 @@ describe("cart store", () => {
     store.addConfigured(
       {
         ...configuredItem,
-        lineTotalMinor: 60000,
+        lineTotal: 600,
         lineTotalRub: 600,
         quantity: 2,
       },

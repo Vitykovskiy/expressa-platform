@@ -3,7 +3,7 @@ export type OrderStageDto = 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IS
 export type OrderModifierDto = {
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };
 
 export type OrderItemDto = {
@@ -12,8 +12,8 @@ export type OrderItemDto = {
   productName: string;
   size: 'S' | 'M' | 'L' | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   modifiers: OrderModifierDto[];
 };
 
@@ -22,7 +22,7 @@ export type CustomerOrderDto = {
   number: string;
   createdAt: string;
   stage: OrderStageDto;
-  totalMinor: number;
+  total: number;
   snapshot: readonly OrderItemDto[];
 };
 

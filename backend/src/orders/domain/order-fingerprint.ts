@@ -2,7 +2,7 @@ import type { OrderRequest } from './order.types';
 
 export function createOrderFingerprint(request: OrderRequest): string {
   return JSON.stringify({
-    totalMinor: request.totalMinor,
+    total: request.total,
     items: request.items
       .map((item) => ({
         productId: item.productId,

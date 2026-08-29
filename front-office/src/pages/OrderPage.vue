@@ -13,8 +13,7 @@
           <div class="order-page__item-main">
             <strong>{{ item.productName }}</strong>
             <span
-              >{{ item.quantity }} ×
-              {{ formatMinorAmount(item.unitTotalMinor) }}</span
+              >{{ item.quantity }} × {{ formatRubles(item.unitTotal) }}</span
             >
             <p v-if="item.size">Размер {{ item.size }}</p>
             <p
@@ -27,14 +26,14 @@
           <strong
             class="order-page__item-total"
             data-testid="order-item-line-total"
-            >{{ formatMinorAmount(item.lineTotalMinor) }}</strong
+            >{{ formatRubles(item.lineTotal) }}</strong
           >
         </li>
       </ul>
       <p class="order-page__total">
         <span>Итого</span
         ><strong data-testid="order-total">{{
-          formatMinorAmount(order.totalMinor)
+          formatRubles(order.total)
         }}</strong>
       </p>
       <p class="order-page__payment">Оплата на кассе при получении</p>
@@ -102,7 +101,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "@/app/session.store";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import type { ConfiguredCartItemDraft } from "@/entities/customer/model/customer.types";
-import { formatMinorAmount } from "@/entities/customer/model/money";
+import { formatRubles } from "@/entities/customer/model/money";
 import { toCartItemDraft } from "@/features/menu/product-configuration";
 import {
   createPublicMenuApi,

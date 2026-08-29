@@ -17,7 +17,7 @@ export const MODIFIER_GROUP_EDITOR_DEFAULTS = {
 export function createEmptyModifierOptionDraft(): ModifierOptionDraft {
   return {
     name: "",
-    priceDeltaMinor: "0",
+    priceDelta: "0",
     isDefault: false,
     isAvailable: true,
   };

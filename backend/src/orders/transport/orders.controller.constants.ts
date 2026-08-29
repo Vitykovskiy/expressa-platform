@@ -6,7 +6,7 @@ export const idempotencyHeaderName = 'Idempotency-Key';
 export const idempotencyHeaderRequestKey = 'idempotency-key';
 export const idempotencyHeaderDescription = 'UUID-ключ идемпотентности запроса.';
 export const idempotencyHeaderSchema = { type: 'string', format: 'uuid' } as const;
-export const maximumOrderTotalMinor = 2_147_483_647;
+export const maximumOrderTotal = 2_147_483_647;
 export const customerOrdersCursorParameter = 'cursor';
 
 export const orderErrorResponses = {
@@ -15,10 +15,10 @@ export const orderErrorResponses = {
     message: 'Приём новых заказов выключен.',
     details: null,
   },
-  totalChanged: (totalMinor: number) => ({
+  totalChanged: (total: number) => ({
     code: 'ORDER_TOTAL_CHANGED',
     message: 'Итоговая сумма заказа изменилась.',
-    details: { totalMinor },
+    details: { total },
   }),
   unavailable: (itemId: string) => ({
     code: 'MENU_ITEM_UNAVAILABLE',

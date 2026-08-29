@@ -65,14 +65,14 @@ export class PostgresAdminCatalogRepository
              ORDER BY c.sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT p.id, p.category_id, p.type, p.name, p.description, p.price_minor, p.sort_order, p.is_active, p.is_available, p.archived_at
+          `SELECT p.id, p.category_id, p.type, p.name, p.description, p.price, p.sort_order, p.is_active, p.is_available, p.archived_at
              FROM products p
              INNER JOIN categories c ON c.id = p.category_id
              WHERE p.archived_at IS NULL AND c.archived_at IS NULL
              ORDER BY p.category_id, p.sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT v.id, v.product_id, v.size, v.price_minor, v.sort_order, v.is_available, v.archived_at
+          `SELECT v.id, v.product_id, v.size, v.price, v.sort_order, v.is_available, v.archived_at
              FROM product_variants v
              INNER JOIN products p ON p.id = v.product_id
              INNER JOIN categories c ON c.id = p.category_id
@@ -86,7 +86,7 @@ export class PostgresAdminCatalogRepository
              ORDER BY g.id`,
         ),
         client.query<DatabaseRow>(
-          `SELECT o.id, o.group_id, o.name, o.price_delta_minor, o.sort_order, o.is_default, o.is_available, o.archived_at
+          `SELECT o.id, o.group_id, o.name, o.price_delta, o.sort_order, o.is_default, o.is_available, o.archived_at
              FROM modifier_options o
              INNER JOIN modifier_groups g ON g.id = o.group_id
              WHERE o.archived_at IS NULL AND g.archived_at IS NULL
@@ -271,7 +271,7 @@ function parseProduct(row: DatabaseRow): CatalogProductCandidate {
     type: readProductType(row),
     name: readString(row, "name"),
     description: readString(row, "description"),
-    priceMinor: readNullableInteger(row, "price_minor"),
+    price: readNullableInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isActive: readBoolean(row, "is_active"),
     isAvailable: readBoolean(row, "is_available"),
@@ -284,7 +284,7 @@ function parseProductVariant(row: DatabaseRow): CatalogProductVariantCandidate {
     id: readString(row, "id"),
     productId: readString(row, "product_id"),
     size: readProductSize(row),
-    priceMinor: readNonNegativeInteger(row, "price_minor"),
+    price: readNonNegativeInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isAvailable: readBoolean(row, "is_available"),
     archivedAt: readNullableDate(row, "archived_at"),
@@ -308,7 +308,7 @@ function parseModifierOption(row: DatabaseRow): CatalogModifierOptionCandidate {
     id: readString(row, "id"),
     groupId: readString(row, "group_id"),
     name: readString(row, "name"),
-    priceDeltaMinor: readInteger(row, "price_delta_minor"),
+    priceDelta: readInteger(row, "price_delta"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isDefault: readBoolean(row, "is_default"),
     isAvailable: readBoolean(row, "is_available"),

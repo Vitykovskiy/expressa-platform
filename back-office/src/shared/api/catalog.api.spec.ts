@@ -19,7 +19,7 @@ const variantId = "55555555-5555-4555-8555-555555555555";
 
 function createCatalogApi(fetcher: typeof fetch): CatalogApi {
   return new CatalogApi(
-    new ApiClient({ baseUrl: "https://api.example.test/api/v1", fetcher }),
+    new ApiClient({ baseUrl: "https://api.example.test/api/v2", fetcher }),
   );
 }
 
@@ -37,7 +37,7 @@ function catalogResponse(): CatalogResponseDto {
       {
         id: variantId,
         isAvailable: true,
-        priceMinor: 32000,
+        price: 320,
         productId,
         size: "M",
         sortOrder: 0,
@@ -65,7 +65,7 @@ function product(): Omit<CatalogProduct, "variants"> {
     isActive: true,
     isAvailable: true,
     name: "Капучино",
-    priceMinor: null,
+    price: null,
     sortOrder: 0,
     type: "DRINK",
   };
@@ -78,7 +78,7 @@ function productResponse(): CatalogProductDto {
       {
         id: variantId,
         isAvailable: true,
-        priceMinor: 32000,
+        price: 320,
         size: "M",
         sortOrder: 0,
       },
@@ -104,12 +104,34 @@ function option(): CatalogModifierOption {
     isAvailable: true,
     isDefault: false,
     name: "Овсяное",
-    priceDeltaMinor: 5000,
+    priceDelta: 50,
     sortOrder: 0,
   };
 }
 
 describe("CatalogApi", () => {
+  it.each([320.5, -1, 2_147_483_648])(
+    "отклоняет цену вне целого int32: %s",
+    async (price) => {
+      const invalidResponse = catalogResponse();
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+        jsonResponse(
+          {
+            ...invalidResponse,
+            productVariants: [{ ...invalidResponse.productVariants[0], price }],
+          },
+          200,
+        ),
+      );
+
+      await expect(
+        createCatalogApi(fetcher).getCatalog("access-token"),
+      ).rejects.toMatchObject({
+        code: "API_CONTRACT_ERROR",
+      });
+    },
+  );
+
   it("сохраняет aggregate группы одним POST с вариантами", async () => {
     const fetcher = vi
       .fn()
@@ -128,7 +150,7 @@ describe("CatalogApi", () => {
           isAvailable: true,
           isDefault: false,
           name: "Овсяное",
-          priceDeltaMinor: 5000,
+          priceDelta: 50,
           sortOrder: 0,
         },
       ],
@@ -159,7 +181,7 @@ describe("CatalogApi", () => {
           isAvailable: true,
           isDefault: false,
           name: "Овсяное",
-          priceDeltaMinor: 5000,
+          priceDelta: 50,
           sortOrder: 0,
         },
       ],
@@ -214,7 +236,7 @@ describe("CatalogApi", () => {
             {
               id: variantId,
               isAvailable: true,
-              priceMinor: 32000,
+              price: 320,
               productId,
               size: "M",
               sortOrder: 0,
@@ -236,7 +258,7 @@ describe("CatalogApi", () => {
         {
           id: variantId,
           isAvailable: true,
-          priceMinor: 32000,
+          price: 320,
           productId: "66666666-6666-4666-8666-666666666666",
           size: "M",
           sortOrder: 0,
@@ -367,13 +389,13 @@ describe("CatalogApi", () => {
       isActive: true,
       isAvailable: true,
       name: "Капучино",
-      priceMinor: null,
+      price: null,
       sortOrder: 0,
       type: "DRINK" as const,
       variants: [
         {
           isAvailable: true,
-          priceMinor: 32000,
+          price: 320,
           size: "M" as const,
           sortOrder: 0,
         },
@@ -407,7 +429,7 @@ describe("CatalogApi", () => {
         isAvailable: true,
         isDefault: false,
         name: "Овсяное",
-        priceDeltaMinor: 5000,
+        priceDelta: 50,
         sortOrder: 0,
       }),
     ).rejects.toMatchObject({
@@ -436,13 +458,13 @@ describe("CatalogApi", () => {
       isActive: true,
       isAvailable: true,
       name: "Капучино",
-      priceMinor: null,
+      price: null,
       sortOrder: 0,
       type: "DRINK" as const,
       variants: [
         {
           isAvailable: true,
-          priceMinor: 32000,
+          price: 320,
           size: "M" as const,
           sortOrder: 0,
         },
@@ -452,7 +474,7 @@ describe("CatalogApi", () => {
       isAvailable: true,
       isDefault: false,
       name: "Овсяное",
-      priceDeltaMinor: 5000,
+      priceDelta: 50,
       sortOrder: 0,
     };
 
@@ -649,6 +671,6 @@ function request(method: string, path: string): object {
   return {
     authorization: "Bearer access-token",
     method,
-    url: `https://api.example.test/api/v1${path}`,
+    url: `https://api.example.test/api/v2${path}`,
   };
 }

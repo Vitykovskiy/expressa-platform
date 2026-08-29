@@ -20,21 +20,21 @@
       {{ props.fieldErrors.name }}
     </p>
     <label class="modifier-option-editor__label">
-      Изменение цены, коп.
+      Изменение цены, ₽
       <AdminTextField
-        :aria-invalid="Boolean(props.fieldErrors?.priceDeltaMinor)"
-        :model-value="props.modelValue.priceDeltaMinor"
+        :aria-invalid="Boolean(props.fieldErrors?.priceDelta)"
+        :model-value="props.modelValue.priceDelta"
         inputmode="numeric"
         type="number"
-        @update:model-value="updateField('priceDeltaMinor', $event)"
+        @update:model-value="updateField('priceDelta', $event)"
       />
     </label>
     <p
-      v-if="props.fieldErrors?.priceDeltaMinor"
+      v-if="props.fieldErrors?.priceDelta"
       class="modifier-option-editor__error"
       role="alert"
     >
-      {{ props.fieldErrors.priceDeltaMinor }}
+      {{ props.fieldErrors.priceDelta }}
     </p>
     <div class="modifier-option-editor__toggle-row">
       <span :id="defaultLabelId">Выбран по умолчанию</span>

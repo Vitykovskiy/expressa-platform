@@ -25,7 +25,7 @@ export type CatalogProductCandidate = {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -36,7 +36,7 @@ export type CatalogProductVariantCandidate = {
   id: string;
   productId: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
   archivedAt: Date | null;
@@ -56,7 +56,7 @@ export type CatalogModifierOptionCandidate = {
   id: string;
   groupId: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;
@@ -86,7 +86,7 @@ export type PublicMenuProduct = {
   type: CatalogProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   isAvailable: boolean;
   variants: PublicMenuProductVariant[];
   modifierGroups: PublicMenuModifierGroup[];
@@ -95,7 +95,7 @@ export type PublicMenuProduct = {
 export type PublicMenuProductVariant = {
   id: string;
   size: CatalogProductSize;
-  priceMinor: number;
+  price: number;
   isAvailable: boolean;
 };
 
@@ -111,7 +111,7 @@ export type PublicMenuModifierGroup = {
 export type PublicMenuModifierOption = {
   id: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   isDefault: boolean;
   isAvailable: boolean;
 };

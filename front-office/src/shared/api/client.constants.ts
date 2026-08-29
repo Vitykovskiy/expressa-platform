@@ -17,4 +17,4 @@ export const networkErrorMessage = "Не удалось подключиться
 export const noContentStatus = 204;
 export const protocolRelativeApiBaseUrlMessage =
   "Неверная конфигурация: VITE_API_BASE_URL не может быть protocol-relative URL.";
-export const sameOriginApiBaseUrl = "https://same-origin.invalid/api/v1/";
+export const sameOriginApiBaseUrl = "https://same-origin.invalid/api/v2/";

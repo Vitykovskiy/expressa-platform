@@ -18,7 +18,7 @@ export interface ProductSeed {
   type: ProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -28,7 +28,7 @@ export interface ProductVariantSeed {
   id: string;
   productId: string;
   size: ProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -46,7 +46,7 @@ export interface ModifierOptionSeed {
   id: string;
   groupId: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;

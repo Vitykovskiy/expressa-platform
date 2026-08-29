@@ -34,9 +34,9 @@ export function assertProductDetails(value: ProductDetails): void {
       { path: "sortOrder", reason: "Must be a non-negative int32" },
     ]);
   if (value.type === "OTHER") {
-    if (!isPrice(value.priceMinor))
+    if (!isPrice(value.price))
       throw new ProductAdminError("PRODUCT_INVALID", [
-        { path: "priceMinor", reason: "Must be a price for OTHER" },
+        { path: "price", reason: "Must be a price for OTHER" },
       ]);
     if (value.variants.length !== 0)
       throw new ProductAdminError("PRODUCT_INVALID", [
@@ -45,13 +45,13 @@ export function assertProductDetails(value: ProductDetails): void {
     return;
   }
   if (
-    value.priceMinor !== null ||
+    value.price !== null ||
     value.variants.length === 0 ||
     (value.isActive && !value.variants.some((variant) => variant.isAvailable))
   ) {
     throw new ProductAdminError("PRODUCT_INVALID", [
       {
-        path: value.priceMinor !== null ? "priceMinor" : "variants",
+        path: value.price !== null ? "price" : "variants",
         reason: "Must match product type",
       },
     ]);
@@ -73,10 +73,10 @@ export function assertProductDetails(value: ProductDetails): void {
           reason: "Must be unique and non-negative",
         },
       ]);
-    if (!isPrice(variant.priceMinor))
+    if (!isPrice(variant.price))
       throw new ProductAdminError("PRODUCT_INVALID", [
         {
-          path: `variants.${index}.priceMinor`,
+          path: `variants.${index}.price`,
           reason: "Must be a non-negative int32",
         },
       ]);

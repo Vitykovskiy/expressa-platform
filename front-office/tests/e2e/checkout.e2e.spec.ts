@@ -5,7 +5,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { CheckoutDatabase } from "./checkout.database";
 import {
   checkoutCategoryName,
-  checkoutRepeatPriceDeltaMinor,
+  checkoutRepeatPriceDelta,
   checkoutOtp,
   checkoutPhonePrefix,
   checkoutProductName,
@@ -49,7 +49,7 @@ test("guest сохраняет конфигурацию через OTP и соз
 
     let idempotencyKey = "";
     page.on("request", (request) => {
-      if (request.url().endsWith("/api/v1/orders"))
+      if (request.url().endsWith("/api/v2/orders"))
         idempotencyKey = request.headers()["idempotency-key"] ?? "";
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
@@ -87,13 +87,13 @@ test("изменённая цена требует повторного подт
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
     );
-    const previousTotal = `${state.variantPriceMinor / 100} ₽`;
-    const nextPriceMinor = state.variantPriceMinor + 100;
-    const nextTotal = `${nextPriceMinor / 100} ₽`;
-    await database.setVariantPriceMinor(nextPriceMinor);
+    const previousTotal = `${state.variantPrice} ₽`;
+    const nextPrice = state.variantPrice + 1;
+    const nextTotal = `${nextPrice} ₽`;
+    await database.setVariantPrice(nextPrice);
     let key = "";
     page.on("request", (request) => {
-      if (request.url().endsWith("/api/v1/orders"))
+      if (request.url().endsWith("/api/v2/orders"))
         key = request.headers()["idempotency-key"] ?? "";
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
@@ -137,7 +137,7 @@ test("недоступный вариант выделен и не создаё�
     await database.setVariantAvailable(false);
     let key = "";
     page.on("request", (request) => {
-      if (request.url().endsWith("/api/v1/orders"))
+      if (request.url().endsWith("/api/v2/orders"))
         key = request.headers()["idempotency-key"] ?? "";
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
@@ -207,7 +207,7 @@ test("повтор после потери ответа сохраняет од�
 
     const idempotencyKeys: string[] = [];
     let dropFirstResponse = true;
-    await page.route("**/api/v1/orders", async (route) => {
+    await page.route("**/api/v2/orders", async (route) => {
       idempotencyKeys.push(route.request().headers()["idempotency-key"] ?? "");
       if (!dropFirstResponse) {
         await route.continue();
@@ -307,7 +307,7 @@ test("issued заказ показывает history, скрывает чужо�
     const customerId = await login(page, phone);
     let key = "";
     page.on("request", (request) => {
-      if (request.url().endsWith("/api/v1/orders"))
+      if (request.url().endsWith("/api/v2/orders"))
         key = request.headers()["idempotency-key"] ?? "";
     });
     await page.getByRole("button", { name: "Оформить заказ" }).click();
@@ -316,7 +316,7 @@ test("issued заказ показывает history, скрывает чужо�
     const order = await requireOrder(database, customerId, key);
     const detailRequests: string[] = [];
     page.on("request", (request) => {
-      if (request.url().endsWith(`/api/v1/orders/${order.id}`))
+      if (request.url().endsWith(`/api/v2/orders/${order.id}`))
         detailRequests.push(request.url());
     });
     await database.setOrderStage(order.id, "ISSUED");
@@ -371,8 +371,8 @@ test("issued заказ показывает history, скрывает чужо�
     await stranger.close();
 
     await openCappuccinoCart(page);
-    await database.setVariantPriceMinor(
-      state.variantPriceMinor + checkoutRepeatPriceDeltaMinor,
+    await database.setVariantPrice(
+      state.variantPrice + checkoutRepeatPriceDelta,
     );
     await page.goto(`/orders/${order.id}`);
     await page.getByRole("button", { name: "Повторить заказ" }).click();
@@ -383,9 +383,7 @@ test("issued заказ показывает history, скрывает чужо�
     await expect(page).toHaveURL(/\/cart$/);
     await expect(
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
-    ).toContainText(
-      `${(state.variantPriceMinor + checkoutRepeatPriceDeltaMinor) / 100} ₽`,
-    );
+    ).toContainText(`${state.variantPrice + checkoutRepeatPriceDelta} ₽`);
 
     await database.setVariantAvailable(false);
     await page.goto(`/orders/${order.id}`);
@@ -398,9 +396,7 @@ test("issued заказ показывает history, скрывает чужо�
     await expect(page).toHaveURL(/\/cart$/);
     await expect(
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
-    ).toContainText(
-      `${(state.variantPriceMinor + checkoutRepeatPriceDeltaMinor) / 100} ₽`,
-    );
+    ).toContainText(`${state.variantPrice + checkoutRepeatPriceDelta} ₽`);
   } finally {
     await database.deleteOrders(historyOrderIds);
     await database.restore(state);
@@ -417,7 +413,7 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
     await page.getByRole("button", { name: "Оформить заказ" }).click();
     const customerId = await login(page, phone);
     const orderRequest = page.waitForRequest((request) =>
-      request.url().endsWith("/api/v1/orders"),
+      request.url().endsWith("/api/v2/orders"),
     );
     await page.getByRole("button", { name: "Оформить заказ" }).click();
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
@@ -563,7 +559,7 @@ async function requireOrder(
 }
 
 async function expectOrderPage(page: Page, order: OrderRow): Promise<void> {
-  const total = `${order.totalMinor / 100} ₽`;
+  const total = `${order.total} ₽`;
   await expect(page).toHaveURL(new RegExp(`/orders/${order.id}$`));
   await expect(
     page.getByRole("heading", { name: `Заказ №${order.orderNumber}` }),

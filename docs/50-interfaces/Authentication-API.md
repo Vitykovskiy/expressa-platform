@@ -9,9 +9,9 @@ sources:
 
 # API аутентификации
 
-Контракт: `POST /api/v1/auth/otp/request` возвращает metadata;
-`POST /api/v1/auth/otp/verify` и `POST /api/v1/auth/refresh` возвращают Bearer
-access token; `POST /api/v1/auth/logout` возвращает 204; `GET /api/v1/me`
+Контракт: `POST /api/v2/auth/otp/request` возвращает metadata;
+`POST /api/v2/auth/otp/verify` и `POST /api/v2/auth/refresh` возвращают Bearer
+access token; `POST /api/v2/auth/logout` возвращает 204; `GET /api/v2/me`
 требует Bearer. OpenAPI описывает paths и JSON body, но не response
 headers/cookie attributes. [Источник: OpenAPI](../../backend/openapi/openapi.json).
 

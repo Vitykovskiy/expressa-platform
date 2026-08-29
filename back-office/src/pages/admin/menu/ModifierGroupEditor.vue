@@ -210,7 +210,7 @@ const defaultError = computed(() => {
   const defaults = options.value.filter((option) => option.isDefault);
   if (
     defaults.some(
-      (option) => !option.isAvailable || Number(option.priceDeltaMinor) !== 0,
+      (option) => !option.isAvailable || Number(option.priceDelta) !== 0,
     )
   )
     return "Вариант по умолчанию должен быть доступным и бесплатным";
@@ -226,13 +226,13 @@ const optionFieldErrors = computed(() =>
     const errors: Partial<Record<ModifierOptionFormField, string>> = {};
 
     if (!option.name.trim()) errors.name = "Введите название варианта";
-    if (!isFiniteInteger(option.priceDeltaMinor)) {
-      errors.priceDeltaMinor = "Укажите целое изменение цены в копейках";
+    if (!isNonNegativeInteger(option.priceDelta)) {
+      errors.priceDelta = "Укажите изменение цены в целых рублях";
     }
     const index = options.value.indexOf(option);
     for (const field of [
       "name",
-      "priceDeltaMinor",
+      "priceDelta",
       "isDefault",
       "isAvailable",
     ] as const) {
@@ -298,11 +298,12 @@ function moveOption(index: number, offset: -1 | 1) {
   [next[index], next[targetIndex]] = [next[targetIndex]!, next[index]!];
   options.value = next;
 }
-function isFiniteInteger(value: string) {
+function isNonNegativeInteger(value: string) {
   return (
     value.trim() !== "" &&
     Number.isFinite(Number(value)) &&
-    Number.isInteger(Number(value))
+    Number.isInteger(Number(value)) &&
+    Number(value) >= 0
   );
 }
 function toModifierOptionFormData(
@@ -312,7 +313,7 @@ function toModifierOptionFormData(
   return {
     id: option.id,
     name: option.name.trim(),
-    priceDeltaMinor: Number(option.priceDeltaMinor),
+    priceDelta: Number(option.priceDelta),
     sortOrder,
     isDefault: option.isDefault,
     isAvailable: option.isAvailable,

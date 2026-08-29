@@ -8,7 +8,7 @@ export type ModifierGroupFormField =
   | "maxSelect"
   | "options"
   | `options.${number}.name`
-  | `options.${number}.priceDeltaMinor`
+  | `options.${number}.priceDelta`
   | `options.${number}.isDefault`
   | `options.${number}.isAvailable`;
 

@@ -137,8 +137,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ShoppingCart } from "lucide-vue-next";
-import { formatMinorAmount } from "@/entities/customer/model/money";
-import { minorUnitsPerRuble } from "@/entities/customer/model/money.constants";
+import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import CartItem from "./CartItem.vue";
 import type { CartScreenEmits, CartScreenProps } from "./CartScreen.types";
@@ -225,7 +224,7 @@ const mobileCheckoutLabel = computed(
 );
 
 function formatRubAmount(value: number): string {
-  return formatMinorAmount(Math.round(value * minorUnitsPerRuble));
+  return formatRubles(value);
 }
 
 function emitCheckout(): void {

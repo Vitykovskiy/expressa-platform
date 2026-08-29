@@ -62,19 +62,15 @@ const emit = defineEmits<MenuProductRowEmits>();
 function priceLabel(product: Product): string {
   if (product.type === "DRINK") {
     return product.variants
-      .map(
-        (variant) => `${variant.size}: ${formatPriceMinor(variant.priceMinor)}`,
-      )
+      .map((variant) => `${variant.size}: ${formatPrice(variant.price)}`)
       .join(" · ");
   }
 
-  return product.priceMinor === null
-    ? "Нет цены"
-    : formatPriceMinor(product.priceMinor);
+  return product.price === null ? "Нет цены" : formatPrice(product.price);
 }
 
-function formatPriceMinor(priceMinor: number): string {
-  return `${priceMinor / 100} ₽`;
+function formatPrice(price: number): string {
+  return `${price} ₽`;
 }
 </script>
 

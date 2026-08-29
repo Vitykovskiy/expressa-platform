@@ -62,6 +62,6 @@ test("MENU-04: покупатель открывает категорию и т�
     expect(
       await publicMenu.product.readModifierGroupNames(),
       "Показана группа добавок «Молоко».",
-    ).toEqual(["Молоко"]);
+    ).toEqual(["МОЛОКО"]);
   });
 });

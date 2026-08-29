@@ -63,15 +63,13 @@ describe("CartScreen", () => {
   it("показывает локализованную сумму корзины", () => {
     const wrapper = mountCartScreen({
       items: [
-        { ...cartItem, id: "first", lineTotalRub: 1.99 },
-        { ...cartItem, id: "second", lineTotalRub: 1.99 },
+        { ...cartItem, id: "first", lineTotalRub: 2 },
+        { ...cartItem, id: "second", lineTotalRub: 2 },
       ],
     });
 
-    expect(wrapper.get('[aria-label="Итого заказа"]').text()).toContain(
-      "3,98 ₽",
-    );
-    expect(wrapper.text()).not.toContain("3.98 ₽");
+    expect(wrapper.get('[aria-label="Итого заказа"]').text()).toContain("4 ₽");
+    expect(wrapper.text()).not.toContain("4.00 ₽");
   });
 
   it("разрешает оформление, когда признак приёма не передан", async () => {
@@ -217,12 +215,12 @@ describe("CartItem", () => {
 
   it("показывает локализованную цену позиции", () => {
     const wrapper = mount(CartItem, {
-      props: { item: { ...cartItem, lineTotalRub: 1.99 } },
+      props: { item: { ...cartItem, lineTotalRub: 2 } },
       global: { stubs: { UiIconBtn: true } },
     });
 
     expect(wrapper.get('[data-testid="cart-item-line-total"]').text()).toBe(
-      "1,99 ₽",
+      "2 ₽",
     );
   });
 });

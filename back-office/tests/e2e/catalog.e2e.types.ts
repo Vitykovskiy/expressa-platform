@@ -15,7 +15,7 @@ export type CatalogProductResponse = {
 export type CatalogProductVariantResponse = {
   id: string;
   isAvailable: boolean;
-  priceMinor: number;
+  price: number;
   size: "S" | "M" | "L";
   sortOrder: number;
 };

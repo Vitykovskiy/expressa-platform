@@ -97,7 +97,7 @@ function isOrderResponse(value: unknown): value is OrderResponse {
     isUuid(value.id) &&
     typeof value.number === "string" &&
     ordersStages.some((stage) => stage === value.stage) &&
-    isInteger(value.totalMinor) &&
+    isNonNegativeInt32(value.total) &&
     isArrayOf(value.items, isOrderItemResponse)
   );
 }
@@ -122,7 +122,7 @@ function isCustomerOrderResponse(
     typeof value.createdAt === "string" &&
     !Number.isNaN(Date.parse(value.createdAt)) &&
     customerOrderStages.some((stage) => stage === value.stage) &&
-    isInteger(value.totalMinor) &&
+    isNonNegativeInt32(value.total) &&
     isArrayOf(value.snapshot, isOrderItemResponse)
   );
 }
@@ -135,8 +135,8 @@ function isOrderItemResponse(value: unknown): value is OrderItemResponse {
     typeof value.productName === "string" &&
     (value.size === null || ordersSizes.some((size) => size === value.size)) &&
     isInteger(value.quantity) &&
-    isInteger(value.unitTotalMinor) &&
-    isInteger(value.lineTotalMinor) &&
+    isNonNegativeInt32(value.unitTotal) &&
+    isNonNegativeInt32(value.lineTotal) &&
     isArrayOf(value.modifiers, isOrderModifierResponse)
   );
 }
@@ -148,7 +148,7 @@ function isOrderModifierResponse(
     isRecord(value) &&
     isUuid(value.modifierOptionId) &&
     typeof value.modifierName === "string" &&
-    isInteger(value.priceDeltaMinor)
+    isNonNegativeInt32(value.priceDelta)
   );
 }
 
@@ -157,7 +157,7 @@ function toOrder(response: OrderResponse): Order {
     id: response.id,
     number: response.number,
     stage: response.stage,
-    totalMinor: response.totalMinor,
+    total: response.total,
     items: response.items.map(toOrderItem),
   };
 }
@@ -169,7 +169,7 @@ function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
     items: response.snapshot.map(toOrderItem),
     number: response.number,
     stage: response.stage,
-    totalMinor: response.totalMinor,
+    total: response.total,
   };
 }
 
@@ -180,8 +180,8 @@ function toOrderItem(response: OrderItemResponse): OrderItem {
     productName: response.productName,
     size: response.size,
     quantity: response.quantity,
-    unitTotalMinor: response.unitTotalMinor,
-    lineTotalMinor: response.lineTotalMinor,
+    unitTotal: response.unitTotal,
+    lineTotal: response.lineTotal,
     modifiers: response.modifiers.map(toOrderModifier),
   };
 }
@@ -190,7 +190,7 @@ function toOrderModifier(response: OrderModifierResponse): OrderModifier {
   return {
     modifierOptionId: response.modifierOptionId,
     modifierName: response.modifierName,
-    priceDeltaMinor: response.priceDeltaMinor,
+    priceDelta: response.priceDelta,
   };
 }
 
@@ -203,6 +203,10 @@ function isArrayOf<T>(
 
 function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
+}
+
+function isNonNegativeInt32(value: unknown): value is number {
+  return isInteger(value) && value >= 0 && value <= 2_147_483_647;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

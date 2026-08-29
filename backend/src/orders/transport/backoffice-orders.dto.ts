@@ -19,7 +19,7 @@ export class BackofficeOrderListItemResponseDto implements BackofficeOrderListIt
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ example: '20300102-001' }) number!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
-  @ApiProperty({ format: 'int32', type: 'integer' }) totalMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' }) total!: number;
   @ApiProperty({ enum: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'] }) stage!: 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'ISSUED';
 }
 

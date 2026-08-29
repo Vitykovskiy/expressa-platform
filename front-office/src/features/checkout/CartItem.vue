@@ -90,8 +90,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Minus, Plus, Trash2 } from "lucide-vue-next";
-import { formatMinorAmount } from "@/entities/customer/model/money";
-import { minorUnitsPerRuble } from "@/entities/customer/model/money.constants";
+import { formatRubles } from "@/entities/customer/model/money";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import type { CartItemEmits, CartItemProps } from "./CartItem.types";
 
@@ -100,7 +99,7 @@ const emit = defineEmits<CartItemEmits>();
 const unavailableMessageId = `cart-item-unavailable-${props.item.id}`;
 
 function formatRubAmount(value: number): string {
-  return formatMinorAmount(Math.round(value * minorUnitsPerRuble));
+  return formatRubles(value);
 }
 
 const addonRows = computed(() => {

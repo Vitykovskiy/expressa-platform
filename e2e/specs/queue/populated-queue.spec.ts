@@ -26,8 +26,8 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       size: "M",
       modifierName: "Обычное молоко",
       quantity: "1",
-      lineTotal: "320,00 ₽",
-      total: "320,00 ₽",
+      lineTotal: "320 ₽",
+      total: "320 ₽",
       status: OrderStatus.CREATED,
       stage: OrderQueueStage.CREATED,
     },
@@ -38,8 +38,8 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       size: "M",
       modifierName: "Обычное молоко",
       quantity: "1",
-      lineTotal: "320,00 ₽",
-      total: "320,00 ₽",
+      lineTotal: "320 ₽",
+      total: "320 ₽",
       status: OrderStatus.ACCEPTED,
       stage: OrderQueueStage.ACCEPTED,
     },
@@ -50,8 +50,8 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       size: "M",
       modifierName: "Обычное молоко",
       quantity: "1",
-      lineTotal: "320,00 ₽",
-      total: "320,00 ₽",
+      lineTotal: "320 ₽",
+      total: "320 ₽",
       status: OrderStatus.PREPARING,
       stage: OrderQueueStage.PREPARING,
     },
@@ -62,8 +62,8 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       size: "M",
       modifierName: "Обычное молоко",
       quantity: "1",
-      lineTotal: "320,00 ₽",
-      total: "320,00 ₽",
+      lineTotal: "320 ₽",
+      total: "320 ₽",
       status: OrderStatus.READY,
       stage: OrderQueueStage.READY,
     },
@@ -74,8 +74,8 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       size: "M",
       modifierName: "Обычное молоко",
       quantity: "1",
-      lineTotal: "320,00 ₽",
-      total: "320,00 ₽",
+      lineTotal: "320 ₽",
+      total: "320 ₽",
       status: OrderStatus.ISSUED,
       stage: OrderQueueStage.ISSUED,
     },
@@ -107,7 +107,7 @@ test("QUEUE-02: сотрудник видит заполненную очере�
       expect(
         await staffOrders.queue.readOrderTotal(order),
         `Показана сумма заказа ${order.number}.`,
-      ).toBe("320,00 ₽");
+      ).toBe("320 ₽");
     }
   });
 });

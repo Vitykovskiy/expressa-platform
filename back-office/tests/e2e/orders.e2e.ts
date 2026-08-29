@@ -154,7 +154,7 @@ test("Chromium подтверждает полный жизненный цикл
     } = await createCustomerOrder(customerPage);
 
     const customerTransition = await customerPage.request.post(
-      `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/accept`,
+      `${ordersBackendOrigin}/api/v2/backoffice/orders/${orderId}/accept`,
       { headers: { authorization: `Bearer ${customerToken}` } },
     );
     expect(customerTransition.status()).toBe(403);
@@ -177,7 +177,7 @@ test("Chromium подтверждает полный жизненный цикл
     await assertStableQueueScreenshot(staffPage, "queue-ready-tablet.png");
 
     const invalidIssue = await staffPage.request.post(
-      `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/issue`,
+      `${ordersBackendOrigin}/api/v2/backoffice/orders/${orderId}/issue`,
       { headers: { authorization: `Bearer ${staffToken}` } },
     );
     expect(invalidIssue.status()).toBe(409);
@@ -188,7 +188,7 @@ test("Chromium подтверждает полный жизненный цикл
     await transition(staffPage, card, "Отметить готовым", "Готов", 3);
 
     const deniedIssue = await customerPage.request.post(
-      `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/issue`,
+      `${ordersBackendOrigin}/api/v2/backoffice/orders/${orderId}/issue`,
       { headers: { authorization: `Bearer ${customerToken}` } },
     );
     expect(deniedIssue.status()).toBe(403);
@@ -240,7 +240,7 @@ test("закрытый intake сохраняет меню и выдачу сущ
     const closedOrder = customerPage.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
-        new URL(response.url()).pathname === "/api/v1/orders",
+        new URL(response.url()).pathname === "/api/v2/orders",
     );
     await customerPage.getByRole("button", { name: "Оформить заказ" }).click();
     const closedResponse = await closedOrder;
@@ -265,7 +265,7 @@ test("закрытый intake сохраняет меню и выдачу сущ
     const reopenedOrder = customerPage.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
-        new URL(response.url()).pathname === "/api/v1/orders",
+        new URL(response.url()).pathname === "/api/v2/orders",
     );
     await customerPage.getByRole("button", { name: "Оформить заказ" }).click();
     expect((await reopenedOrder).status()).toBe(201);
@@ -341,7 +341,7 @@ async function createCatalogProduct(page: OrdersPage): Promise<void> {
     page.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
-        response.url().endsWith("/api/v1/backoffice/catalog/products"),
+        response.url().endsWith("/api/v2/backoffice/catalog/products"),
     ),
     productDialog.getByRole("button", { name: "Добавить товар" }).click(),
   ]);
@@ -372,7 +372,7 @@ async function loginCustomer(
   await page.getByRole("button", { name: "Отправить код" }).click();
   const verified = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/v1/auth/otp/verify") &&
+      response.url().endsWith("/api/v2/auth/otp/verify") &&
       response.status() === 200,
   );
   await page.getByLabel("Код из сообщения").fill(ordersDevelopmentOtp);
@@ -389,7 +389,7 @@ async function loginStaff(
   await page.getByRole("button", { name: "Отправить код" }).click();
   const verified = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/v1/auth/otp/verify") &&
+      response.url().endsWith("/api/v2/auth/otp/verify") &&
       response.status() === 200,
   );
   await page.getByLabel("Код из сообщения").fill(ordersDevelopmentOtp);
@@ -399,7 +399,7 @@ async function loginStaff(
 }
 
 async function proxyBackOfficeApi(page: OrdersPage): Promise<void> {
-  await page.route(`${ordersBackOfficeOrigin}/api/v1/**`, async (route) => {
+  await page.route(`${ordersBackOfficeOrigin}/api/v2/**`, async (route) => {
     const requestUrl = new URL(route.request().url());
     const response = await route.fetch({
       url: `${ordersBackendOrigin}${requestUrl.pathname}${requestUrl.search}`,
@@ -500,7 +500,7 @@ async function setIntake(
   const response = page.waitForResponse(
     (candidate) =>
       candidate.request().method() === "PATCH" &&
-      new URL(candidate.url()).pathname === "/api/v1/backoffice/service/intake",
+      new URL(candidate.url()).pathname === "/api/v2/backoffice/service/intake",
   );
   await intake.click();
   const confirmed = await response;
@@ -519,7 +519,7 @@ async function transitionRequest(
   transition: "accept" | "start-preparing" | "mark-ready" | "issue",
 ): Promise<void> {
   const response = await page.request.post(
-    `${ordersBackendOrigin}/api/v1/backoffice/orders/${orderId}/${transition}`,
+    `${ordersBackendOrigin}/api/v2/backoffice/orders/${orderId}/${transition}`,
     { headers: { authorization: `Bearer ${accessToken}` } },
   );
   expect(response.status()).toBe(200);

@@ -19,9 +19,9 @@ const menu: PublicMenu = {
           type: 'DRINK',
           name: 'Капучино',
           description: 'Кофе с молоком',
-          priceMinor: null,
+          price: null,
           isAvailable: true,
-          variants: [{ id: 'variant-id', size: 'M', priceMinor: 32000, isAvailable: true }],
+          variants: [{ id: 'variant-id', size: 'M', price: 320, isAvailable: true }],
           modifierGroups: [
             {
               id: 'group-id',
@@ -29,7 +29,7 @@ const menu: PublicMenu = {
               selectionType: 'single',
               minSelect: 1,
               maxSelect: 1,
-              options: [{ id: 'option-id', name: 'Обычное', priceDeltaMinor: 0, isDefault: true, isAvailable: true }],
+              options: [{ id: 'option-id', name: 'Обычное', priceDelta: 0, isDefault: true, isAvailable: true }],
             },
           ],
         },
@@ -54,7 +54,7 @@ describe('PublicMenuController', () => {
     expect(Reflect.getMetadata(PATH_METADATA, prototype.getMenu)).toBe('/');
   });
 
-  it('публикует minor-цены и границы выбора как int32', async () => {
+  it('публикует рублёвые цены и границы выбора как int32', async () => {
     const module = await Test.createTestingModule({
       controllers: [PublicMenuController],
       providers: [{ provide: GetPublicMenuUseCase, useValue: { execute: jest.fn() } }],
@@ -65,13 +65,13 @@ describe('PublicMenuController', () => {
       const document = SwaggerModule.createDocument(app, new DocumentBuilder().build());
 
       expect(document.components?.schemas?.PublicMenuProductDto).toMatchObject({
-        properties: { priceMinor: { format: 'int32', nullable: true, type: 'integer' } },
+        properties: { price: { format: 'int32', minimum: 0, nullable: true, type: 'integer' } },
       });
       expect(document.components?.schemas?.PublicMenuVariantDto).toMatchObject({
-        properties: { priceMinor: { format: 'int32', type: 'integer' } },
+        properties: { price: { format: 'int32', minimum: 0, type: 'integer' } },
       });
       expect(document.components?.schemas?.PublicMenuOptionDto).toMatchObject({
-        properties: { priceDeltaMinor: { format: 'int32', type: 'integer' } },
+        properties: { priceDelta: { format: 'int32', minimum: 0, type: 'integer' } },
       });
       expect(document.components?.schemas?.PublicMenuModifierGroupDto).toMatchObject({
         properties: {

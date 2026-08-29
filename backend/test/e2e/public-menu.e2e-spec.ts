@@ -47,7 +47,7 @@ describe("public menu E2E", () => {
   });
 
   it("возвращает без авторизации каноническое вложенное меню", async () => {
-    const response = await fetch(`${url}/api/v1/public/menu`);
+    const response = await fetch(`${url}/api/v2/public/menu`);
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -63,13 +63,13 @@ describe("public menu E2E", () => {
               type: "DRINK",
               name: "Капучино",
               description: "Кофе с молоком",
-              priceMinor: null,
+              price: null,
               isAvailable: true,
               variants: [
                 {
                   id: variantId,
                   size: "M",
-                  priceMinor: 32_000,
+                  price: 320,
                   isAvailable: true,
                 },
               ],
@@ -84,7 +84,7 @@ describe("public menu E2E", () => {
                     {
                       id: optionId,
                       name: "Обычное",
-                      priceDeltaMinor: 0,
+                      priceDelta: 0,
                       isDefault: true,
                       isAvailable: true,
                     },
@@ -106,13 +106,13 @@ async function seedPublicMenu(pool: Pool): Promise<void> {
     [categoryId],
   );
   await pool.query(
-    `INSERT INTO products (id, category_id, type, name, description, price_minor, sort_order)
+    `INSERT INTO products (id, category_id, type, name, description, price, sort_order)
      VALUES ($1, $2, 'DRINK', 'Капучино', 'Кофе с молоком', NULL, 10)`,
     [productId, categoryId],
   );
   await pool.query(
-    `INSERT INTO product_variants (id, product_id, size, price_minor, sort_order)
-     VALUES ($1, $2, 'M', 32000, 10)`,
+    `INSERT INTO product_variants (id, product_id, size, price, sort_order)
+     VALUES ($1, $2, 'M', 320, 10)`,
     [variantId, productId],
   );
   await pool.query(
@@ -121,7 +121,7 @@ async function seedPublicMenu(pool: Pool): Promise<void> {
     [groupId],
   );
   await pool.query(
-    `INSERT INTO modifier_options (id, group_id, name, price_delta_minor, sort_order, is_default)
+    `INSERT INTO modifier_options (id, group_id, name, price_delta, sort_order, is_default)
      VALUES ($1, $2, 'Обычное', 0, 10, true)`,
     [optionId, groupId],
   );

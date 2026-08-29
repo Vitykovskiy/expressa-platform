@@ -93,27 +93,27 @@ test("administrator создаёт и публикует каталог для p
   await createModifierGroup(adminPage);
   await assignModifierGroup(adminPage);
   await createProduct(adminPage, catalogProductNames.drinkSizes, "DRINK", [
-    "24000",
-    "28000",
-    "32000",
+    "240",
+    "280",
+    "320",
   ]);
   await createProduct(
     adminPage,
     catalogProductNames.drinkOnlyS,
     "DRINK",
-    ["20000"],
+    ["200"],
     ["S"],
   );
   const editableDrink = await createProduct(
     adminPage,
     catalogProductNames.editableDrink,
     "DRINK",
-    ["20000", "26000"],
+    ["200", "260"],
     ["S", "M"],
     catalogSecondCategoryName,
   );
   await editProductSizes(adminPage, editableDrink);
-  await createProduct(adminPage, catalogProductNames.other, "OTHER", ["18000"]);
+  await createProduct(adminPage, catalogProductNames.other, "OTHER", ["180"]);
   await reorderCatalog(adminPage);
   const frontContext = await browser.newContext({
     viewport: { height: catalogViewportHeight, width: 1280 },
@@ -130,7 +130,7 @@ test("administrator создаёт и публикует каталог для p
     adminPage,
     "Десерт для визуальной сверки",
     "OTHER",
-    ["22000"],
+    ["220"],
     ["S"],
     visualCategoryName,
   );
@@ -149,7 +149,7 @@ test("administrator создаёт и публикует каталог для p
   await visualModifierOption
     .getByLabel("Название", { exact: true })
     .fill("Ванильный сироп");
-  await visualModifierOption.getByLabel("Изменение цены, коп.").fill("0");
+  await visualModifierOption.getByLabel("Изменение цены, ₽").fill("0");
   await visualModifierEditor
     .getByRole("button", { name: "Сохранить группу" })
     .click();
@@ -497,7 +497,7 @@ async function createCategory(
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/backoffice/catalog/categories"),
+        candidate.url().endsWith("/api/v2/backoffice/catalog/categories"),
     ),
     dialog.getByRole("button", { name: "Добавить категорию" }).click(),
   ]);
@@ -512,7 +512,7 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
   const trackModifierRequests = (request: Request) => {
     if (
       request.method() === "POST" &&
-      request.url().endsWith("/api/v1/backoffice/catalog/modifier-groups")
+      request.url().endsWith("/api/v2/backoffice/catalog/modifier-groups")
     )
       aggregateRequests.push(request);
     if (request.url().includes("/modifier-groups/options/reorder"))
@@ -531,14 +531,14 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
     .nth(0)
     .getByLabel("Название", { exact: true })
     .fill(catalogModifierOptionName);
-  await options.nth(0).getByLabel("Изменение цены, коп.").fill("0");
+  await options.nth(0).getByLabel("Изменение цены, ₽").fill("0");
   await options.nth(0).getByLabel("Выбран по умолчанию").click();
   await editor.getByRole("button", { name: "Добавить вариант" }).click();
   await options
     .nth(1)
     .getByLabel("Название", { exact: true })
     .fill(catalogModifierSecondOptionName);
-  await options.nth(1).getByLabel("Изменение цены, коп.").fill("0");
+  await options.nth(1).getByLabel("Изменение цены, ₽").fill("0");
   await editor
     .getByRole("button", {
       name: `Переместить ${catalogModifierOptionName} вниз`,
@@ -552,7 +552,7 @@ async function createModifierGroup(page: CatalogPage): Promise<void> {
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/backoffice/catalog/modifier-groups"),
+        candidate.url().endsWith("/api/v2/backoffice/catalog/modifier-groups"),
     ),
     editor.getByRole("button", { name: "Сохранить группу" }).click(),
   ]);
@@ -629,16 +629,16 @@ async function createProduct(
         continue;
       }
       const price = prices[configuredSizes.indexOf(size)] ?? "";
-      await dialog.getByLabel(`Цена ${size}, коп.`).fill(price);
+      await dialog.getByLabel(`Цена ${size}, ₽`).fill(price);
     }
   } else {
-    await dialog.getByLabel("Цена, коп.").fill(prices[0] ?? "");
+    await dialog.getByLabel("Цена, ₽").fill(prices[0] ?? "");
   }
   const [response] = await Promise.all([
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/backoffice/catalog/products"),
+        candidate.url().endsWith("/api/v2/backoffice/catalog/products"),
     ),
     dialog.getByRole("button", { name: "Добавить товар" }).click(),
   ]);
@@ -651,7 +651,7 @@ async function createProduct(
     expect(payload.variants).toEqual(
       configuredSizes.map((size, sortOrder) => ({
         isAvailable: true,
-        priceMinor: Number(prices[sortOrder]),
+        price: Number(prices[sortOrder]),
         size,
         sortOrder,
       })),
@@ -684,13 +684,13 @@ async function editProductSizes(
     .click();
   const dialog = page
     .locator(".edit-dialog:visible")
-    .filter({ hasText: "Размеры и цены, коп." });
+    .filter({ hasText: "Размеры и цены, ₽" });
   await dialog.getByLabel("Использовать размер M").click();
   await dialog.getByLabel("Использовать размер L").click();
   const largeSize = dialog
     .locator(".size-row")
     .filter({ hasText: "Использовать размер L" });
-  await largeSize.getByLabel("Цена L, коп.").fill("30000");
+  await largeSize.getByLabel("Цена L, ₽").fill("300");
   await largeSize.getByLabel("Размер L доступен", { exact: true }).click();
   await dialog.getByRole("button", { name: "Поднять размер L" }).click();
   const [response] = await Promise.all([
@@ -703,11 +703,11 @@ async function editProductSizes(
   ]);
   expect(response.status()).toBe(200);
   expect(JSON.parse(response.request().postData() ?? "").variants).toEqual([
-    { isAvailable: true, priceMinor: 30000, size: "L", sortOrder: 0 },
+    { isAvailable: true, price: 300, size: "L", sortOrder: 0 },
     {
       id: initialS?.id,
       isAvailable: true,
-      priceMinor: 20000,
+      price: 200,
       size: "S",
       sortOrder: 1,
     },
@@ -752,8 +752,8 @@ function isCatalogProductResponse(
         typeof variant.id === "string" &&
         "isAvailable" in variant &&
         typeof variant.isAvailable === "boolean" &&
-        "priceMinor" in variant &&
-        typeof variant.priceMinor === "number" &&
+        "price" in variant &&
+        typeof variant.price === "number" &&
         "size" in variant &&
         (variant.size === "S" ||
           variant.size === "M" ||
@@ -772,7 +772,7 @@ async function reorderCatalog(page: CatalogPage): Promise<void> {
         candidate.request().method() === "POST" &&
         candidate
           .url()
-          .endsWith("/api/v1/backoffice/catalog/categories/reorder"),
+          .endsWith("/api/v2/backoffice/catalog/categories/reorder"),
     ),
     page
       .getByRole("button", {
@@ -789,7 +789,7 @@ async function reorderCatalog(page: CatalogPage): Promise<void> {
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/backoffice/catalog/products/reorder"),
+        candidate.url().endsWith("/api/v2/backoffice/catalog/products/reorder"),
     ),
     page
       .getByRole("button", {
@@ -840,13 +840,13 @@ async function updateMediumPrice(page: CatalogPage): Promise<void> {
     .click();
   const dialog = page
     .locator(".edit-dialog:visible")
-    .filter({ hasText: "Размеры и цены, коп." });
+    .filter({ hasText: "Размеры и цены, ₽" });
   await expect(
     dialog.getByLabel("Название товара", { exact: true }),
   ).toBeFocused();
-  const mediumPrice = dialog.getByLabel("Цена M, коп.", { exact: true });
+  const mediumPrice = dialog.getByLabel("Цена M, ₽", { exact: true });
   await mediumPrice.fill(catalogUpdatedMediumPrice);
-  await expect(mediumPrice).toHaveValue("28100");
+  await expect(mediumPrice).toHaveValue("281");
   const [response] = await Promise.all([
     page.waitForResponse(
       (candidate) =>
@@ -894,14 +894,14 @@ async function confirmUpdatedTotal(page: CatalogPage): Promise<void> {
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/orders") &&
+        candidate.url().endsWith("/api/v2/orders") &&
         candidate.status() === 400,
     ),
     page.getByRole("button", { name: "Оформить заказ" }).click(),
   ]);
   expect(await changedResponse.json()).toMatchObject({
     code: "ORDER_TOTAL_CHANGED",
-    details: { totalMinor: Number(catalogUpdatedMediumPrice) },
+    details: { total: Number(catalogUpdatedMediumPrice) },
   });
   await expect(page.getByText("Итог изменился")).toBeVisible();
   const changedTotal = page.getByLabel("Изменение итога заказа");
@@ -913,7 +913,7 @@ async function confirmUpdatedTotal(page: CatalogPage): Promise<void> {
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "POST" &&
-        candidate.url().endsWith("/api/v1/orders") &&
+        candidate.url().endsWith("/api/v2/orders") &&
         candidate.status() === 201,
     ),
     page.getByRole("button", { name: "Подтвердить новый итог" }).click(),
@@ -991,12 +991,12 @@ function collectBrowserIssues(
   page.on("response", (response) => {
     if (
       response.status() === 401 &&
-      new URL(response.url()).pathname === "/api/v1/auth/refresh"
+      new URL(response.url()).pathname === "/api/v2/auth/refresh"
     )
       return;
     if (
       response.status() === 400 &&
-      new URL(response.url()).pathname === "/api/v1/orders"
+      new URL(response.url()).pathname === "/api/v2/orders"
     )
       return;
     if (response.status() >= 400)

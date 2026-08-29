@@ -206,7 +206,7 @@ describe('UnifiedExceptionFilter: platform error envelope', () => {
   }
 
   it('returns the safe generic envelope for an unknown platform exception', () => {
-    const result = runFilter(new Error('database secret'), '/api/v1/orders?token=secret');
+    const result = runFilter(new Error('database secret'), '/api/v2/orders?token=secret');
 
     expect(result.reply).toHaveBeenCalledWith(
       {},
@@ -229,7 +229,7 @@ describe('UnifiedExceptionFilter: platform error envelope', () => {
         { code: 'AUTH_CODE_INVALID', message: 'Invalid code', details: { attempts: 1 } },
         HttpStatus.UNAUTHORIZED,
       ),
-      '/api/v1/auth/otp/request?phone=secret',
+      '/api/v2/auth/otp/request?phone=secret',
       { method: 'POST', requestId: 'request-id' },
     );
 
@@ -245,7 +245,7 @@ describe('UnifiedExceptionFilter: platform error envelope', () => {
       event: 'http_error',
       level: 'info',
       method: 'POST',
-      path: '/api/v1/auth/otp/request',
+      path: '/api/v2/auth/otp/request',
       requestId: 'request-id',
       statusCode: HttpStatus.UNAUTHORIZED,
     });
@@ -270,7 +270,7 @@ describe('UnifiedExceptionFilter: platform error envelope', () => {
 
     const client = runFilter(
       new HttpException('Forbidden', HttpStatus.FORBIDDEN),
-      '/api/v1/admin/orders',
+      '/api/v2/admin/orders',
       { method: 'GET', requestId: 'admin-request' },
     );
     expect(client.reply.mock.calls[0][1]).toEqual({

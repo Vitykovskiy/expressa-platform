@@ -14,7 +14,7 @@ import { expect, OrderStatus, test } from "@fixtures/test";
  * - Customer видит номер и стадию «Оформлен» сохранённого заказа.
  * - Customer видит сохранённые наименование «Капучино», размер M, добавку
  *   «Обычное молоко» и количество 1.
- * - Customer видит сохранённые сумму позиции и итог 320,00 ₽, а также оплату
+ * - Customer видит сохранённые сумму позиции и итог 320 ₽, а также оплату
  *   на кассе при получении.
  */
 test("ORDER-01: customer видит снимок созданного заказа", async ({
@@ -60,13 +60,13 @@ test("ORDER-01: customer видит снимок созданного заказ
     );
     expect(order.quantity, "Показано сохранённое количество.").toBe("1");
   });
-  await test.step("Customer видит сохранённые сумму позиции и итог 320,00 ₽, а также оплату на кассе при получении.", async () => {
+  await test.step("Customer видит сохранённые сумму позиции и итог 320 ₽, а также оплату на кассе при получении.", async () => {
     const order = await customerOrder.details.readSnapshot();
 
     expect(order.lineTotal, "Показана сохранённая сумма позиции.").toBe(
-      "320,00 ₽",
+      "320 ₽",
     );
-    expect(order.total, "Показан сохранённый итог заказа.").toBe("320,00 ₽");
+    expect(order.total, "Показан сохранённый итог заказа.").toBe("320 ₽");
     expect(
       await customerOrder.details.readPaymentMethod(),
       "Показана оплата на кассе при получении.",

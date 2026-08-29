@@ -5,7 +5,6 @@ import {
   cartStorageKey,
   cartStoreId,
   configuredCartProductTypes,
-  minorUnitsPerRub,
 } from "./cart.store.constants";
 import type { CartState, CartStorage, RepeatWarning } from "./cart.store.types";
 import type {
@@ -21,8 +20,8 @@ export const useCartStore = defineStore(cartStoreId, {
   getters: {
     itemCount: (state) =>
       state.items.reduce((total, item) => total + item.quantity, 0),
-    totalMinor: (state) =>
-      state.items.reduce((total, item) => total + getLineTotalMinor(item), 0),
+    total: (state) =>
+      state.items.reduce((total, item) => total + getLineTotal(item), 0),
   },
   actions: {
     addConfigured(
@@ -50,8 +49,8 @@ export const useCartStore = defineStore(cartStoreId, {
         ...item,
         id: existingItem.id,
         quantity,
-        lineTotalMinor: item.unitTotalMinor * quantity,
-        lineTotalRub: (item.unitTotalMinor * quantity) / minorUnitsPerRub,
+        lineTotal: item.unitTotal * quantity,
+        lineTotalRub: item.unitTotal * quantity,
       };
 
       this.replace(
@@ -131,7 +130,7 @@ function isLegacyCartItem(value: unknown): boolean {
       value.type === "extra") &&
     isAddons(value.addons) &&
     isPositiveInteger(value.quantity) &&
-    isFiniteNumber(value.lineTotalRub) &&
+    isInteger(value.lineTotalRub) &&
     (value.size === undefined || typeof value.size === "string") &&
     (value.sizePrice === undefined || isFiniteNumber(value.sizePrice))
   );
@@ -144,7 +143,7 @@ function isConfiguredCartItem(
     return false;
   }
 
-  return value.lineTotalMinor === value.unitTotalMinor * value.quantity;
+  return value.lineTotal === value.unitTotal * value.quantity;
 }
 
 function isConfiguredCartItemShape(
@@ -165,8 +164,8 @@ function isConfiguredCartItemShape(
     return (
       isProductSize(value.size) &&
       value.size === selectedVariant.size &&
-      isNonNegativeFiniteNumber(value.sizePrice) &&
-      value.sizePrice === selectedVariant.priceMinor / minorUnitsPerRub
+      isNonNegativeInteger(value.sizePrice) &&
+      value.sizePrice === selectedVariant.price
     );
   }
 
@@ -184,10 +183,10 @@ function isConfiguredCartItemBase(value: Record<string, unknown>): boolean {
     typeof value.productName === "string" &&
     isAddons(value.addons) &&
     isPositiveInteger(value.quantity) &&
-    isNonNegativeFiniteNumber(value.lineTotalRub) &&
-    isInteger(value.unitTotalMinor) &&
-    isInteger(value.lineTotalMinor) &&
-    value.lineTotalRub === value.lineTotalMinor / minorUnitsPerRub &&
+    isNonNegativeInteger(value.lineTotalRub) &&
+    isInteger(value.unitTotal) &&
+    isInteger(value.lineTotal) &&
+    value.lineTotalRub === value.lineTotal &&
     isSelectedModifierOptions(value.selectedModifierOptions)
   );
 }
@@ -197,7 +196,7 @@ function isVariantSelection(value: unknown): value is CartVariantSelection {
     isRecord(value) &&
     typeof value.id === "string" &&
     isProductSize(value.size) &&
-    isNonNegativeInteger(value.priceMinor)
+    isNonNegativeInteger(value.price)
   );
 }
 
@@ -214,7 +213,7 @@ function isSelectedModifierOptions(value: unknown): boolean {
         typeof option.groupId === "string" &&
         typeof option.id === "string" &&
         typeof option.name === "string" &&
-        isInteger(option.priceDeltaMinor),
+        isInteger(option.priceDelta),
     )
   );
 }
@@ -227,7 +226,7 @@ function isAddons(value: unknown): boolean {
         isRecord(addon) &&
         typeof addon.id === "string" &&
         typeof addon.name === "string" &&
-        isFiniteNumber(addon.priceRub),
+        isInteger(addon.priceRub),
     )
   );
 }
@@ -238,10 +237,6 @@ function isPositiveInteger(value: unknown): value is number {
 
 function isNonNegativeInteger(value: unknown): value is number {
   return isInteger(value) && value >= 0;
-}
-
-function isNonNegativeFiniteNumber(value: unknown): value is number {
-  return isFiniteNumber(value) && value >= 0;
 }
 
 function isInteger(value: unknown): value is number {
@@ -273,10 +268,8 @@ function createCartItemId(item: ConfiguredCartItemDraft): string {
   ].join(cartConfigurationSeparator);
 }
 
-function getLineTotalMinor(item: CartItem): number {
-  return isConfiguredCartItem(item)
-    ? item.lineTotalMinor
-    : Math.round(item.lineTotalRub * minorUnitsPerRub);
+function getLineTotal(item: CartItem): number {
+  return isConfiguredCartItem(item) ? item.lineTotal : item.lineTotalRub;
 }
 
 function createAvailableCartItemId(
@@ -303,11 +296,11 @@ function normalizeCartItem(item: CartItem): CartItem {
     return item;
   }
 
-  const lineTotalMinor = item.unitTotalMinor * item.quantity;
+  const lineTotal = item.unitTotal * item.quantity;
 
   return {
     ...item,
-    lineTotalMinor,
-    lineTotalRub: lineTotalMinor / minorUnitsPerRub,
+    lineTotal,
+    lineTotalRub: lineTotal,
   };
 }

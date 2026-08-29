@@ -45,7 +45,7 @@ describe("CheckoutStore", () => {
     expect(ordersApi.createOrder).toHaveBeenCalledWith(
       "access-token",
       {
-        expectedTotalMinor: 41000,
+        expectedTotal: 410,
         items: [
           {
             modifierOptionIds: [modifierId],
@@ -162,9 +162,7 @@ describe("CheckoutStore", () => {
 
   it("требует отдельного переподтверждения нового итога с новым ключом", async () => {
     vi.mocked(ordersApi.createOrder)
-      .mockRejectedValueOnce(
-        apiError("ORDER_TOTAL_CHANGED", { totalMinor: 45000 }),
-      )
+      .mockRejectedValueOnce(apiError("ORDER_TOTAL_CHANGED", { total: 450 }))
       .mockResolvedValueOnce(order);
     const store = useCheckoutStore();
 
@@ -172,7 +170,7 @@ describe("CheckoutStore", () => {
     await store.confirm(submission);
 
     expect(store.status).toBe(checkoutStatuses.reconfirmationRequired);
-    expect(store.reconfirmedTotalMinor).toBe(45000);
+    expect(store.reconfirmedTotal).toBe(450);
     expect(ordersApi.createOrder).toHaveBeenCalledTimes(1);
 
     await store.reconfirm(submission);
@@ -180,7 +178,7 @@ describe("CheckoutStore", () => {
     expect(ordersApi.createOrder).toHaveBeenNthCalledWith(
       2,
       "access-token",
-      expect.objectContaining({ expectedTotalMinor: 45000 }),
+      expect.objectContaining({ expectedTotal: 450 }),
       "key-2",
     );
   });
@@ -251,7 +249,7 @@ const submission: CheckoutSubmission = {
     {
       addons: [],
       id: "cart-item",
-      lineTotalMinor: 41000,
+      lineTotal: 410,
       lineTotalRub: 410,
       productId,
       productName: "Кофе",
@@ -261,14 +259,14 @@ const submission: CheckoutSubmission = {
           groupId: "milk",
           id: modifierId,
           name: "Овсяное",
-          priceDeltaMinor: 1000,
+          priceDelta: 10,
         },
       ],
-      selectedVariant: { id: variantId, priceMinor: 40000, size: "M" },
+      selectedVariant: { id: variantId, price: 400, size: "M" },
       size: "M",
       sizePrice: 400,
       type: "DRINK",
-      unitTotalMinor: 41000,
+      unitTotal: 410,
     },
   ],
 };
@@ -278,7 +276,7 @@ const order: Order = {
   items: [],
   number: "20300102-001",
   stage: "CREATED",
-  totalMinor: 41000,
+  total: 410,
 };
 
 function apiError(code: string, details: unknown = null): ApiError {

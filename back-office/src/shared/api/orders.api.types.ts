@@ -5,14 +5,14 @@ export type OrderListItem = {
   id: string;
   number: string;
   createdAt: string;
-  totalMinor: number;
+  total: number;
   stage: OrderStage;
 };
 
 export type OrderModifier = {
   modifierOptionId: string;
   modifierName: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };
 
 export type OrderSnapshotItem = {
@@ -21,8 +21,8 @@ export type OrderSnapshotItem = {
   productName: string;
   size: "S" | "M" | "L" | null;
   quantity: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   modifiers: readonly OrderModifier[];
 };
 

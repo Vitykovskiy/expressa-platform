@@ -9,7 +9,7 @@ import {
  * Назначение: customer не подтверждает оформление после изменения итога.
  *
  * Предусловия: изолированный профиль `canonical` предоставляет «Капучино» с
- * ценой размера M 320,00 ₽; корзина нового browser context пуста.
+ * ценой размера M 320 ₽; корзина нового browser context пуста.
  *
  * Сценарий:
  * 1. Customer открывает публичное меню.
@@ -21,7 +21,7 @@ import {
  * 7. Administrator открывает управление меню.
  * 8. Administrator раскрывает категорию «Кофе».
  * 9. Administrator открывает редактирование «Капучино».
- * 10. Administrator устанавливает цену размера M 300,00 ₽.
+ * 10. Administrator устанавливает цену размера M 300 ₽.
  * 11. Administrator сохраняет изменение товара.
  * 12. Customer открывает публичное меню.
  * 13. Customer открывает корзину.
@@ -29,7 +29,7 @@ import {
  * 15. Customer открывает меню без подтверждения нового итога.
  *
  * Ожидаемый результат:
- * - Корзина показывает прежний итог 320,00 ₽ и новый итог 300,00 ₽.
+ * - Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.
  * - Customer видит запрос на подтверждение нового итога.
  * - Заказ не создаётся без подтверждения нового итога.
  */
@@ -67,19 +67,17 @@ test("CHECKOUT-04: customer отменяет оформление после и�
   await menuManagement.open();
   await menuManagement.catalog.expandCategory("Кофе");
   await menuManagement.productEditor.openForEditing("Капучино");
-  await menuManagement.productEditor.setPrice(ProductEditorSize.M, "30000");
+  await menuManagement.productEditor.setPrice(ProductEditorSize.M, "300");
   await menuManagement.productEditor.saveChanges("Капучино");
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await checkout.cart.open();
   await checkout.cart.requestUpdatedTotalConfirmation();
 
-  await test.step("Корзина показывает прежний итог 320,00 ₽ и новый итог 300,00 ₽.", async () => {
+  await test.step("Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.", async () => {
     const totals = await checkout.cart.readUpdatedTotals();
 
-    expect(totals.previousTotal, "Показан прежний итог 320,00 ₽.").toBe(
-      "320,00 ₽",
-    );
-    expect(totals.newTotal, "Показан новый итог 300,00 ₽.").toBe("300,00 ₽");
+    expect(totals.previousTotal, "Показан прежний итог 320 ₽.").toBe("320 ₽");
+    expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe("300 ₽");
   });
   await test.step("Customer видит запрос на подтверждение нового итога.", async () => {
     expect(

@@ -1,6 +1,6 @@
-import { moneyFormatOptions, minorUnitsPerRuble } from "./money.constants";
-import type { MinorAmount } from "./money.types";
+import { moneyFormatOptions } from "./money.constants";
+import type { RubleAmount } from "./money.types";
 const formatter = new Intl.NumberFormat("ru-RU", moneyFormatOptions);
-export function formatMinorAmount(value: MinorAmount): string {
-  return formatter.format(value / minorUnitsPerRuble);
+export function formatRubles(value: RubleAmount): string {
+  return formatter.format(value);
 }

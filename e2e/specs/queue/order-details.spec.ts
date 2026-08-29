@@ -27,8 +27,8 @@ test("QUEUE-05: сотрудник открывает детали заказа"
     size: "M",
     modifierName: "Обычное молоко",
     quantity: "1",
-    lineTotal: "320,00 ₽",
-    total: "320,00 ₽",
+    lineTotal: "320 ₽",
+    total: "320 ₽",
     status: OrderStatus.ACCEPTED,
   };
 
@@ -52,14 +52,14 @@ test("QUEUE-05: сотрудник открывает детали заказа"
       1,
     );
     expect(details.items[0], "Показан снимок позиции заказа.").toBe(
-      "Капучино, M × 1 — 320,00 ₽ (Обычное молоко)",
+      "Капучино, M × 1 — 320 ₽ (Обычное молоко)",
     );
   });
   await test.step("Детали показывают сумму заказа.", async () => {
     expect(
       await staffOrders.queue.readOrderTotal(order),
       "Показана сумма заказа.",
-    ).toBe("320,00 ₽");
+    ).toBe("320 ₽");
   });
   await test.step("История стадий показывает переход «Оформлен» → «Принят», время и автора.", async () => {
     const history = await staffOrders.queue.readTransitionHistory(order);

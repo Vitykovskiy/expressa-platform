@@ -19,9 +19,9 @@ Backend хранит `isAvailable` у товаров, размеров и доб
 непригодные к публикации позиции отсекаются. [Public menu](../../backend/src/catalog/adapters/postgres-public-menu.repository.ts),
 [OpenAPI](../../backend/openapi/openapi.json).
 
-Staff читает `GET /api/v1/backoffice/availability`, изменяет product, variant или
-modifier через `PATCH /api/v1/backoffice/availability/{type}/{id}` и приём через
-`PATCH /api/v1/backoffice/service/intake`. Изменения записывают автора, время и
+Staff читает `GET /api/v2/backoffice/availability`, изменяет product, variant или
+modifier через `PATCH /api/v2/backoffice/availability/{type}/{id}` и приём через
+`PATCH /api/v2/backoffice/service/intake`. Изменения записывают автора, время и
 аудит; ответ сервера остаётся источником истины для back-office.
 [Контроллер](../../backend/src/catalog/transport/backoffice-availability.controller.ts),
 [OpenAPI](../../backend/openapi/openapi.json).

@@ -30,12 +30,12 @@ function toPublicMenuDto(menu: PublicMenu): PublicMenuDto {
         type: product.type,
         name: product.name,
         description: product.description,
-        priceMinor: product.priceMinor,
+        price: product.price,
         isAvailable: product.isAvailable,
         variants: product.variants.map((variant) => ({
           id: variant.id,
           size: variant.size,
-          priceMinor: variant.priceMinor,
+          price: variant.price,
           isAvailable: variant.isAvailable,
         })),
         modifierGroups: product.modifierGroups.map((group) => ({
@@ -47,7 +47,7 @@ function toPublicMenuDto(menu: PublicMenu): PublicMenuDto {
           options: group.options.map((option) => ({
             id: option.id,
             name: option.name,
-            priceDeltaMinor: option.priceDeltaMinor,
+            priceDelta: option.priceDelta,
             isDefault: option.isDefault,
             isAvailable: option.isAvailable,
           })),

@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/api/v1/auth/otp/request": {
+    "/api/v2/auth/otp/request": {
       "post": {
         "operationId": "AuthController_requestCode",
         "parameters": [],
@@ -33,7 +33,7 @@
         ]
       }
     },
-    "/api/v1/auth/otp/verify": {
+    "/api/v2/auth/otp/verify": {
       "post": {
         "operationId": "AuthController_verifyCode",
         "parameters": [],
@@ -65,7 +65,7 @@
         ]
       }
     },
-    "/api/v1/auth/refresh": {
+    "/api/v2/auth/refresh": {
       "post": {
         "operationId": "AuthController_refresh",
         "parameters": [],
@@ -92,7 +92,7 @@
         ]
       }
     },
-    "/api/v1/auth/logout": {
+    "/api/v2/auth/logout": {
       "post": {
         "operationId": "AuthController_logoutSession",
         "parameters": [],
@@ -112,7 +112,7 @@
         ]
       }
     },
-    "/api/v1/me": {
+    "/api/v2/me": {
       "get": {
         "operationId": "MeController_currentUser",
         "parameters": [],
@@ -139,7 +139,7 @@
         ]
       }
     },
-    "/api/v1/public/menu": {
+    "/api/v2/public/menu": {
       "get": {
         "operationId": "PublicMenuController_getMenu",
         "parameters": [],
@@ -161,7 +161,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog": {
+    "/api/v2/backoffice/catalog": {
       "get": {
         "operationId": "AdminCatalogController_getCatalog",
         "parameters": [],
@@ -218,7 +218,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/categories": {
+    "/api/v2/backoffice/catalog/categories": {
       "post": {
         "operationId": "CatalogCategoriesController_create",
         "parameters": [],
@@ -305,7 +305,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/categories/{categoryId}": {
+    "/api/v2/backoffice/catalog/categories/{categoryId}": {
       "patch": {
         "operationId": "CatalogCategoriesController_update",
         "parameters": [
@@ -500,7 +500,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/categories/reorder": {
+    "/api/v2/backoffice/catalog/categories/reorder": {
       "post": {
         "operationId": "CatalogCategoriesController_reorder",
         "parameters": [],
@@ -590,7 +590,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/products": {
+    "/api/v2/backoffice/catalog/products": {
       "post": {
         "operationId": "CatalogProductsController_create",
         "parameters": [],
@@ -687,7 +687,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/products/{productId}": {
+    "/api/v2/backoffice/catalog/products/{productId}": {
       "patch": {
         "operationId": "CatalogProductsController_update",
         "parameters": [
@@ -882,7 +882,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/products/reorder": {
+    "/api/v2/backoffice/catalog/products/reorder": {
       "post": {
         "operationId": "CatalogProductsController_reorder",
         "parameters": [],
@@ -982,7 +982,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/modifier-groups": {
+    "/api/v2/backoffice/catalog/modifier-groups": {
       "post": {
         "operationId": "CatalogModifiersController_createGroup",
         "parameters": [],
@@ -1059,7 +1059,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/modifier-groups/{groupId}": {
+    "/api/v2/backoffice/catalog/modifier-groups/{groupId}": {
       "patch": {
         "operationId": "CatalogModifiersController_updateGroup",
         "parameters": [
@@ -1254,7 +1254,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/modifier-groups/{groupId}/options": {
+    "/api/v2/backoffice/catalog/modifier-groups/{groupId}/options": {
       "post": {
         "operationId": "CatalogModifiersController_createOption",
         "parameters": [
@@ -1361,7 +1361,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/modifier-groups/options/{optionId}": {
+    "/api/v2/backoffice/catalog/modifier-groups/options/{optionId}": {
       "patch": {
         "operationId": "CatalogModifiersController_updateOption",
         "parameters": [
@@ -1556,7 +1556,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/modifier-groups/{groupId}/options/reorder": {
+    "/api/v2/backoffice/catalog/modifier-groups/{groupId}/options/reorder": {
       "post": {
         "operationId": "CatalogModifiersController_reorderOptions",
         "parameters": [
@@ -1666,7 +1666,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/catalog/categories/{categoryId}/modifier-groups": {
+    "/api/v2/backoffice/catalog/categories/{categoryId}/modifier-groups": {
       "put": {
         "operationId": "CatalogCategoryModifiersController_replace",
         "parameters": [
@@ -1766,7 +1766,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/availability": {
+    "/api/v2/backoffice/availability": {
       "get": {
         "operationId": "BackofficeAvailabilityController_getAvailability",
         "parameters": [],
@@ -1823,7 +1823,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/availability/{type}/{id}": {
+    "/api/v2/backoffice/availability/{type}/{id}": {
       "patch": {
         "operationId": "BackofficeAvailabilityController_updateAvailability",
         "parameters": [
@@ -1933,7 +1933,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/service/intake": {
+    "/api/v2/backoffice/service/intake": {
       "patch": {
         "operationId": "BackofficeAvailabilityController_updateIntake",
         "parameters": [],
@@ -2010,7 +2010,7 @@
         ]
       }
     },
-    "/api/v1/orders": {
+    "/api/v2/orders": {
       "get": {
         "operationId": "OrdersController_list",
         "parameters": [
@@ -2172,7 +2172,7 @@
         ]
       }
     },
-    "/api/v1/orders/{orderId}": {
+    "/api/v2/orders/{orderId}": {
       "get": {
         "operationId": "OrdersController_details",
         "parameters": [
@@ -2259,7 +2259,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders": {
+    "/api/v2/backoffice/orders": {
       "get": {
         "operationId": "BackofficeOrdersController_list",
         "parameters": [
@@ -2343,7 +2343,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders/{orderId}": {
+    "/api/v2/backoffice/orders/{orderId}": {
       "get": {
         "operationId": "BackofficeOrdersController_details",
         "parameters": [
@@ -2430,7 +2430,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders/{orderId}/accept": {
+    "/api/v2/backoffice/orders/{orderId}/accept": {
       "post": {
         "operationId": "BackofficeOrdersController_accept",
         "parameters": [
@@ -2527,7 +2527,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders/{orderId}/start-preparing": {
+    "/api/v2/backoffice/orders/{orderId}/start-preparing": {
       "post": {
         "operationId": "BackofficeOrdersController_startPreparing",
         "parameters": [
@@ -2624,7 +2624,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders/{orderId}/mark-ready": {
+    "/api/v2/backoffice/orders/{orderId}/mark-ready": {
       "post": {
         "operationId": "BackofficeOrdersController_markReady",
         "parameters": [
@@ -2721,7 +2721,7 @@
         ]
       }
     },
-    "/api/v1/backoffice/orders/{orderId}/issue": {
+    "/api/v2/backoffice/orders/{orderId}/issue": {
       "post": {
         "operationId": "BackofficeOrdersController_issue",
         "parameters": [
@@ -2818,7 +2818,7 @@
         ]
       }
     },
-    "/api/v1/push/public-key": {
+    "/api/v2/push/public-key": {
       "get": {
         "operationId": "PushSubscriptionsController_publicKey",
         "parameters": [],
@@ -2865,7 +2865,7 @@
         ]
       }
     },
-    "/api/v1/push/subscriptions": {
+    "/api/v2/push/subscriptions": {
       "delete": {
         "operationId": "PushSubscriptionsController_delete",
         "parameters": [],
@@ -3156,9 +3156,10 @@
               "L"
             ]
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "isAvailable": {
             "type": "boolean"
@@ -3167,7 +3168,7 @@
         "required": [
           "id",
           "size",
-          "priceMinor",
+          "price",
           "isAvailable"
         ]
       },
@@ -3181,9 +3182,10 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "isDefault": {
             "type": "boolean"
@@ -3195,7 +3197,7 @@
         "required": [
           "id",
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "isDefault",
           "isAvailable"
         ]
@@ -3261,9 +3263,10 @@
           "description": {
             "type": "string"
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0,
             "nullable": true
           },
           "isAvailable": {
@@ -3287,7 +3290,7 @@
           "type",
           "name",
           "description",
-          "priceMinor",
+          "price",
           "isAvailable",
           "variants",
           "modifierGroups"
@@ -3391,9 +3394,10 @@
           "description": {
             "type": "string"
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0,
             "nullable": true
           },
           "sortOrder": {
@@ -3413,7 +3417,7 @@
           "type",
           "name",
           "description",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isActive",
           "isAvailable"
@@ -3438,9 +3442,10 @@
               "L"
             ]
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
@@ -3454,7 +3459,7 @@
           "id",
           "productId",
           "size",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isAvailable"
         ]
@@ -3511,9 +3516,10 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
@@ -3530,7 +3536,7 @@
           "id",
           "groupId",
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "sortOrder",
           "isDefault",
           "isAvailable"
@@ -3787,7 +3793,7 @@
               "L"
             ]
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
             "minimum": 0
@@ -3803,7 +3809,7 @@
         },
         "required": [
           "size",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isAvailable"
         ]
@@ -3828,9 +3834,10 @@
           "description": {
             "type": "string"
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0,
             "nullable": true
           },
           "sortOrder": {
@@ -3856,7 +3863,7 @@
           "type",
           "name",
           "description",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isActive",
           "isAvailable",
@@ -3878,13 +3885,15 @@
               "L"
             ]
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "isAvailable": {
             "type": "boolean"
@@ -3893,7 +3902,7 @@
         "required": [
           "id",
           "size",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isAvailable"
         ]
@@ -3922,14 +3931,16 @@
           "description": {
             "type": "string"
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0,
             "nullable": true
           },
           "sortOrder": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "isActive": {
             "type": "boolean"
@@ -3950,7 +3961,7 @@
           "type",
           "name",
           "description",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isActive",
           "isAvailable",
@@ -3977,9 +3988,10 @@
           "description": {
             "type": "string"
           },
-          "priceMinor": {
+          "price": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0,
             "nullable": true
           },
           "sortOrder": {
@@ -4005,7 +4017,7 @@
           "type",
           "name",
           "description",
-          "priceMinor",
+          "price",
           "sortOrder",
           "isActive",
           "isAvailable",
@@ -4042,9 +4054,10 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
@@ -4060,7 +4073,7 @@
         },
         "required": [
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "sortOrder",
           "isDefault",
           "isAvailable"
@@ -4122,13 +4135,15 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "isDefault": {
             "type": "boolean"
@@ -4141,7 +4156,7 @@
           "id",
           "groupId",
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "sortOrder",
           "isDefault",
           "isAvailable"
@@ -4240,9 +4255,10 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
@@ -4258,7 +4274,7 @@
         },
         "required": [
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "sortOrder",
           "isDefault",
           "isAvailable"
@@ -4270,9 +4286,10 @@
           "name": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "sortOrder": {
             "type": "integer",
@@ -4288,7 +4305,7 @@
         },
         "required": [
           "name",
-          "priceDeltaMinor",
+          "priceDelta",
           "sortOrder",
           "isDefault",
           "isAvailable"
@@ -4487,15 +4504,16 @@
           "modifierName": {
             "type": "string"
           },
-          "priceDeltaMinor": {
+          "priceDelta": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           }
         },
         "required": [
           "modifierOptionId",
           "modifierName",
-          "priceDeltaMinor"
+          "priceDelta"
         ]
       },
       "OrderItemResponseDto": {
@@ -4526,13 +4544,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "unitTotalMinor": {
+          "unitTotal": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
-          "lineTotalMinor": {
+          "lineTotal": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "modifiers": {
             "type": "array",
@@ -4547,8 +4567,8 @@
           "productName",
           "size",
           "quantity",
-          "unitTotalMinor",
-          "lineTotalMinor",
+          "unitTotal",
+          "lineTotal",
           "modifiers"
         ]
       },
@@ -4577,9 +4597,10 @@
               "ISSUED"
             ]
           },
-          "totalMinor": {
+          "total": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "snapshot": {
             "type": "array",
@@ -4593,7 +4614,7 @@
           "number",
           "createdAt",
           "stage",
-          "totalMinor",
+          "total",
           "snapshot"
         ]
       },
@@ -4653,7 +4674,7 @@
       "CreateOrderDto": {
         "type": "object",
         "properties": {
-          "expectedTotalMinor": {
+          "expectedTotal": {
             "type": "integer",
             "format": "int32",
             "minimum": 0,
@@ -4668,7 +4689,7 @@
           }
         },
         "required": [
-          "expectedTotalMinor",
+          "expectedTotal",
           "items"
         ]
       },
@@ -4689,9 +4710,10 @@
               "CREATED"
             ]
           },
-          "totalMinor": {
+          "total": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "items": {
             "type": "array",
@@ -4704,7 +4726,7 @@
           "id",
           "number",
           "stage",
-          "totalMinor",
+          "total",
           "items"
         ]
       },
@@ -4723,9 +4745,10 @@
             "type": "string",
             "format": "date-time"
           },
-          "totalMinor": {
+          "total": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "stage": {
             "type": "string",
@@ -4742,7 +4765,7 @@
           "id",
           "number",
           "createdAt",
-          "totalMinor",
+          "total",
           "stage"
         ]
       },
@@ -4823,9 +4846,10 @@
             "type": "string",
             "format": "date-time"
           },
-          "totalMinor": {
+          "total": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0
           },
           "stage": {
             "type": "string",
@@ -4857,7 +4881,7 @@
           "id",
           "number",
           "createdAt",
-          "totalMinor",
+          "total",
           "stage",
           "customer",
           "snapshot",

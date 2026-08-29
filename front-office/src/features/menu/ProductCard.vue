@@ -16,11 +16,10 @@
           :key="variant.id"
           class="product-card__price"
           :class="{ 'product-card__price--unavailable': !variant.isAvailable }"
-          >{{ variant.size }} ·
-          {{ formatMinorAmount(variant.priceMinor) }}</span
+          >{{ variant.size }} · {{ formatRubles(variant.price) }}</span
         ></template
       ><span v-else class="product-card__price">{{
-        formatMinorAmount(props.product.priceMinor)
+        formatRubles(props.product.price)
       }}</span></span
     ></ui-btn
   >
@@ -29,7 +28,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
-import { formatMinorAmount } from "@/entities/customer/model/money";
+import { formatRubles } from "@/entities/customer/model/money";
 import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();

@@ -8,7 +8,7 @@
         {{ product.name }}
       </h1>
       <p class="product-detail__total" aria-live="polite">
-        {{ formatMinorAmount(totalMinor) }}
+        {{ formatRubles(total) }}
       </p>
     </header>
 
@@ -33,7 +33,7 @@
             :disabled="!variant.isAvailable"
             @click="selectVariant(variant.id)"
           >
-            {{ variant.size }} · {{ formatMinorAmount(variant.priceMinor) }}
+            {{ variant.size }} · {{ formatRubles(variant.price) }}
           </ui-btn>
         </div>
       </fieldset>
@@ -62,7 +62,7 @@
             "
             @click="toggleOption(group.id, option.id)"
           >
-            {{ option.name }} · {{ formatMinorAmount(option.priceDeltaMinor) }}
+            {{ option.name }} · {{ formatRubles(option.priceDelta) }}
           </ui-btn>
         </div>
       </fieldset>
@@ -95,7 +95,7 @@
       >
         <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
         <span class="product-detail__submit-label">
-          {{ actionLabel }} · {{ formatMinorAmount(totalMinor) }}
+          {{ actionLabel }} · {{ formatRubles(total) }}
         </span>
       </ui-btn>
     </footer>
@@ -107,7 +107,7 @@ import { computed, ref, watch } from "vue";
 import { Minus, Plus, ShoppingCart } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
-import { formatMinorAmount } from "@/entities/customer/model/money";
+import { formatRubles } from "@/entities/customer/model/money";
 import {
   createProductConfiguration,
   getProductConfigurationTotals,
@@ -130,7 +130,7 @@ const configuration = ref(createInitialConfiguration());
 const totals = computed(() =>
   getProductConfigurationTotals(configuration.value),
 );
-const totalMinor = computed(() => totals.value?.lineTotalMinor ?? 0);
+const total = computed(() => totals.value?.lineTotal ?? 0);
 const isValid = computed(() =>
   isProductConfigurationValid(configuration.value),
 );

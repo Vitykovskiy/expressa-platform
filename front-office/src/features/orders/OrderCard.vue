@@ -16,7 +16,7 @@
           <span class="order-card__stage">{{ props.stageLabel }}</span>
         </span>
         <span class="order-card__summary">
-          <strong>{{ formatMinorAmount(props.order.totalMinor) }}</strong>
+          <strong>{{ formatRubles(props.order.total) }}</strong>
           <ChevronUp v-if="isOpen" aria-hidden="true" />
           <ChevronDown v-else aria-hidden="true" />
         </span>
@@ -36,7 +36,7 @@
             >
             <span class="order-card__item-quantity">×{{ item.quantity }}</span>
           </span>
-          <strong>{{ formatMinorAmount(item.lineTotalMinor) }}</strong>
+          <strong>{{ formatRubles(item.lineTotal) }}</strong>
           <span
             v-for="modifier in item.modifiers"
             :key="modifier.modifierOptionId"
@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
-import { formatMinorAmount } from "@/entities/customer/model/money";
+import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import type { OrderCardProps } from "./OrderCard.types";
 import type { OrderItem } from "@/shared/api/orders.api";

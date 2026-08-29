@@ -8,8 +8,8 @@ export class OrderModifierResponseDto implements OrderModifierDto {
   @ApiProperty()
   modifierName!: string;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  priceDeltaMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  priceDelta!: number;
 }
 
 export class OrderItemResponseDto implements OrderItemDto {
@@ -28,11 +28,11 @@ export class OrderItemResponseDto implements OrderItemDto {
   @ApiProperty({ format: 'int32', type: 'integer' })
   quantity!: number;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  unitTotalMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  unitTotal!: number;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  lineTotalMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  lineTotal!: number;
 
   @ApiProperty({ isArray: true, type: () => OrderModifierResponseDto })
   modifiers!: OrderModifierResponseDto[];
@@ -48,8 +48,8 @@ export class OrderDto {
   @ApiProperty({ enum: ['CREATED'] })
   stage!: OrderStageDto;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  totalMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  total!: number;
 
   @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
   items!: OrderItemResponseDto[];
@@ -68,8 +68,8 @@ export class CustomerOrderResponseDto implements CustomerOrderDto {
   @ApiProperty({ enum: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'] })
   stage!: OrderStageDto;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
-  totalMinor!: number;
+  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  total!: number;
 
   @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
   snapshot!: OrderItemDto[];

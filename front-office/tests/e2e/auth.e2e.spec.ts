@@ -92,7 +92,7 @@ test("сохраняет гостевую корзину через вход, re
     ),
   ).toBeNull();
   const oldRefreshResponse = await page.request.post(
-    `${frontOfficeApiOrigin}/api/v1/auth/refresh`,
+    `${frontOfficeApiOrigin}/api/v2/auth/refresh`,
     {
       headers: {
         Cookie: `expressa_refresh=${oldRefresh?.value}`,
@@ -116,14 +116,14 @@ test("фиксирует пустые экраны phone и OTP", async ({ brows
     });
     const page = await context.newPage();
 
-    await page.route("**/api/v1/auth/refresh", (route) =>
+    await page.route("**/api/v2/auth/refresh", (route) =>
       route.fulfill({
         body: "{}",
         contentType: "application/json",
         status: 401,
       }),
     );
-    await page.route("**/api/v1/auth/otp/request", (route) =>
+    await page.route("**/api/v2/auth/otp/request", (route) =>
       route.fulfill({
         body: JSON.stringify({ expiresInSeconds: 300, retryAfterSeconds: 60 }),
         contentType: "application/json",

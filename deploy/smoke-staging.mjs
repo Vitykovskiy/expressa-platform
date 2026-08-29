@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 const backendUrl = 'http://127.0.0.1:3000';
-const apiPrefix = '/api/v1';
+const apiPrefix = '/api/v2';
 
 function passed(name) {
   console.log(`expressa-staging-smoke: check=${name} status=passed`);
@@ -103,8 +103,8 @@ function createOrderRequest(menu) {
     for (const product of category.products) {
       const item = createOrderItem(product);
       if (item !== null) {
-        const { totalMinor, ...orderItem } = item;
-        return { expectedTotalMinor: totalMinor, items: [orderItem] };
+        const { total, ...orderItem } = item;
+        return { expectedTotal: total, items: [orderItem] };
       }
     }
   }
@@ -116,32 +116,32 @@ function createOrderItem(product) {
   if (!isRecord(product) || product.isAvailable !== true || typeof product.id !== 'string') return null;
 
   const variant = product.type === 'DRINK' && Array.isArray(product.variants)
-    ? product.variants.find((candidate) => isRecord(candidate) && candidate.isAvailable === true && typeof candidate.id === 'string' && isMinor(candidate.priceMinor))
+    ? product.variants.find((candidate) => isRecord(candidate) && candidate.isAvailable === true && typeof candidate.id === 'string' && isAmount(candidate.price))
     : null;
-  const priceMinor = variant === null ? product.priceMinor : variant.priceMinor;
+  const price = variant === null ? product.price : variant.price;
   const variantId = variant === null ? null : variant.id;
 
-  if ((product.type !== 'DRINK' && product.type !== 'OTHER') || !isMinor(priceMinor)) return null;
+  if ((product.type !== 'DRINK' && product.type !== 'OTHER') || !isAmount(price)) return null;
   if ((product.type === 'DRINK') !== (variant !== null)) return null;
 
   const modifierOptionIds = [];
-  let modifierTotalMinor = 0;
+  let modifierTotal = 0;
   if (!Array.isArray(product.modifierGroups)) return null;
   for (const group of product.modifierGroups) {
     if (!isRecord(group) || !Number.isInteger(group.minSelect) || !Number.isInteger(group.maxSelect) || !Array.isArray(group.options)) return null;
     if (group.minSelect <= 0) continue;
 
-    const defaults = group.options.filter((option) => isRecord(option) && option.isAvailable === true && option.isDefault === true && typeof option.id === 'string' && isMinor(option.priceDeltaMinor));
+    const defaults = group.options.filter((option) => isRecord(option) && option.isAvailable === true && option.isDefault === true && typeof option.id === 'string' && isAmount(option.priceDelta));
     if (defaults.length < group.minSelect || defaults.length > group.maxSelect) return null;
     for (const option of defaults) {
       modifierOptionIds.push(option.id);
-      modifierTotalMinor += option.priceDeltaMinor;
+      modifierTotal += option.priceDelta;
     }
   }
 
-  const totalMinor = priceMinor + modifierTotalMinor;
-  if (!isMinor(totalMinor)) return null;
-  return { productId: product.id, variantId, modifierOptionIds, quantity: 1, totalMinor };
+  const total = price + modifierTotal;
+  if (!isAmount(total)) return null;
+  return { productId: product.id, variantId, modifierOptionIds, quantity: 1, total };
 }
 
 function assertLifecycleEvents(order) {
@@ -204,7 +204,7 @@ function isRecord(value) {
   return typeof value === 'object' && value !== null;
 }
 
-function isMinor(value) {
+function isAmount(value) {
   return Number.isSafeInteger(value) && value >= 0;
 }
 

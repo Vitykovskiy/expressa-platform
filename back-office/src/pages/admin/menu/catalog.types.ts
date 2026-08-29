@@ -35,7 +35,7 @@ export interface Product {
   type: ProductType;
   name: string;
   description: string;
-  priceMinor: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -46,7 +46,7 @@ export interface ProductVariant {
   id: string;
   productId: string;
   size: ProductSize;
-  priceMinor: number;
+  price: number;
   sortOrder: number;
   isAvailable: boolean;
 }
@@ -65,7 +65,7 @@ export interface ModifierOption {
   id: string;
   groupId: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
   sortOrder: number;
   isDefault: boolean;
   isAvailable: boolean;

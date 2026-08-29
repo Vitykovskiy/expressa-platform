@@ -40,7 +40,7 @@ function createRequest(): OrderRequest {
   const medium = catalogSeed.productVariants[1]!;
   const regularMilk = catalogSeed.modifierOptions[0]!;
   return {
-    totalMinor: 32_000,
+    total: 320,
     items: [{ productId: cappuccino.id, variantId: medium.id, modifierOptionIds: [regularMilk.id], quantity: 1 }],
   };
 }
@@ -75,7 +75,7 @@ describe('PostgreSQL unit of work заказа', () => {
       const request = createRequest();
       const created = await unitOfWork.createOrder({ customerId, idempotencyKey, request, now: new Date('2031-02-03T23:59:59.000Z') });
 
-      expect(created).toMatchObject({ replayed: false, order: { totalMinor: 32_000 } });
+      expect(created).toMatchObject({ replayed: false, order: { total: 320 } });
       expect(created.order.number).toMatch(/^20310203-\d{3}$/);
       await pool.query('UPDATE products SET name = $1, is_available = false WHERE id = $2', ['Новое имя', request.items[0]!.productId]);
 
@@ -91,7 +91,7 @@ describe('PostgreSQL unit of work заказа', () => {
     await pool.query(`UPDATE modifier_groups SET selection_type = 'multiple', max_select = 2 WHERE id = $1`, [catalogSeed.modifierGroups[0]!.id]);
     const customerId = await createCustomer(pool);
     const request: OrderRequest = {
-      totalMinor: 62_000,
+      total: 620,
       items: [
         { productId: catalogSeed.products[0]!.id, variantId: catalogSeed.productVariants[1]!.id, modifierOptionIds: [catalogSeed.modifierOptions[1]!.id, catalogSeed.modifierOptions[0]!.id], quantity: 1 },
         { productId: catalogSeed.products[2]!.id, variantId: null, modifierOptionIds: [], quantity: 1 },
@@ -159,7 +159,7 @@ describe('PostgreSQL unit of work заказа', () => {
 
       expect([first.replayed, second.replayed].sort()).toEqual([false, true]);
       expect(first.order).toEqual(second.order);
-      await expect(unitOfWork.createOrder({ ...command, request: { ...request, totalMinor: 32_001 } })).rejects.toThrow(
+      await expect(unitOfWork.createOrder({ ...command, request: { ...request, total: 321 } })).rejects.toThrow(
         'Ключ идемпотентности уже использован с другим запросом.',
       );
       await expect(pool.query('SELECT count(*)::int AS count FROM orders WHERE customer_id = $1', [customerId])).resolves.toMatchObject({ rows: [{ count: 1 }] });

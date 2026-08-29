@@ -52,11 +52,11 @@ function toCategoryDto(category: AdminCatalogCandidates['categories'][number]): 
 }
 
 function toProductDto(product: AdminCatalogCandidates['products'][number]): AdminCatalogProductDto {
-  return { id: product.id, categoryId: product.categoryId, type: product.type, name: product.name, description: product.description, priceMinor: product.priceMinor, sortOrder: product.sortOrder, isActive: product.isActive, isAvailable: product.isAvailable };
+  return { id: product.id, categoryId: product.categoryId, type: product.type, name: product.name, description: product.description, price: product.price, sortOrder: product.sortOrder, isActive: product.isActive, isAvailable: product.isAvailable };
 }
 
 function toProductVariantDto(variant: AdminCatalogCandidates['productVariants'][number]): AdminCatalogProductVariantDto {
-  return { id: variant.id, productId: variant.productId, size: variant.size, priceMinor: variant.priceMinor, sortOrder: variant.sortOrder, isAvailable: variant.isAvailable };
+  return { id: variant.id, productId: variant.productId, size: variant.size, price: variant.price, sortOrder: variant.sortOrder, isAvailable: variant.isAvailable };
 }
 
 function toModifierGroupDto(group: AdminCatalogCandidates['modifierGroups'][number]): AdminCatalogModifierGroupDto {
@@ -64,7 +64,7 @@ function toModifierGroupDto(group: AdminCatalogCandidates['modifierGroups'][numb
 }
 
 function toModifierOptionDto(option: AdminCatalogCandidates['modifierOptions'][number]): AdminCatalogModifierOptionDto {
-  return { id: option.id, groupId: option.groupId, name: option.name, priceDeltaMinor: option.priceDeltaMinor, sortOrder: option.sortOrder, isDefault: option.isDefault, isAvailable: option.isAvailable };
+  return { id: option.id, groupId: option.groupId, name: option.name, priceDelta: option.priceDelta, sortOrder: option.sortOrder, isDefault: option.isDefault, isAvailable: option.isAvailable };
 }
 
 function toCategoryModifierGroupDto(assignment: AdminCatalogCandidates['categoryModifierGroups'][number]): AdminCatalogCategoryModifierGroupDto {

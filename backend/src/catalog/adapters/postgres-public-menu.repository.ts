@@ -47,12 +47,12 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
              ORDER BY sort_order`,
           ),
           client.query<DatabaseRow>(
-            `SELECT id, category_id, type, name, description, price_minor, sort_order, is_active, is_available, archived_at
+            `SELECT id, category_id, type, name, description, price, sort_order, is_active, is_available, archived_at
              FROM products
              ORDER BY sort_order`,
           ),
           client.query<DatabaseRow>(
-            `SELECT id, product_id, size, price_minor, sort_order, is_available, archived_at
+            `SELECT id, product_id, size, price, sort_order, is_available, archived_at
              FROM product_variants
              ORDER BY sort_order`,
           ),
@@ -61,7 +61,7 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
              FROM modifier_groups`,
           ),
           client.query<DatabaseRow>(
-            `SELECT id, group_id, name, price_delta_minor, sort_order, is_default, is_available, archived_at
+            `SELECT id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at
              FROM modifier_options
              ORDER BY sort_order`,
           ),
@@ -125,7 +125,7 @@ function parseProduct(row: DatabaseRow): CatalogProductCandidate {
     type: readProductType(row),
     name: readString(row, 'name'),
     description: readString(row, 'description'),
-    priceMinor: readNullableInteger(row, 'price_minor'),
+    price: readNullableInteger(row, 'price'),
     sortOrder: readNonNegativeInteger(row, 'sort_order'),
     isActive: readBoolean(row, 'is_active'),
     isAvailable: readBoolean(row, 'is_available'),
@@ -138,7 +138,7 @@ function parseProductVariant(row: DatabaseRow): CatalogProductVariantCandidate {
     id: readString(row, 'id'),
     productId: readString(row, 'product_id'),
     size: readProductSize(row),
-    priceMinor: readNonNegativeInteger(row, 'price_minor'),
+    price: readNonNegativeInteger(row, 'price'),
     sortOrder: readNonNegativeInteger(row, 'sort_order'),
     isAvailable: readBoolean(row, 'is_available'),
     archivedAt: readNullableDate(row, 'archived_at'),
@@ -162,7 +162,7 @@ function parseModifierOption(row: DatabaseRow): CatalogModifierOptionCandidate {
     id: readString(row, 'id'),
     groupId: readString(row, 'group_id'),
     name: readString(row, 'name'),
-    priceDeltaMinor: readInteger(row, 'price_delta_minor'),
+    priceDelta: readInteger(row, 'price_delta'),
     sortOrder: readNonNegativeInteger(row, 'sort_order'),
     isDefault: readBoolean(row, 'is_default'),
     isAvailable: readBoolean(row, 'is_available'),

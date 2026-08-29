@@ -119,7 +119,7 @@ test("auth и роли back-office работают через backend", async (
   const currentRefresh = await refreshCookie(refreshed);
   expect(
     (
-      await page.request.post(`${authBackendUrl}/api/v1/auth/refresh`, {
+      await page.request.post(`${authBackendUrl}/api/v2/auth/refresh`, {
         headers: { cookie: firstRefresh, origin: authOrigin },
       })
     ).status(),
@@ -128,7 +128,7 @@ test("auth и роли back-office работают через backend", async (
   await expect(page).toHaveURL(/\/login$/);
   await expect(
     (
-      await page.request.post(`${authBackendUrl}/api/v1/auth/refresh`, {
+      await page.request.post(`${authBackendUrl}/api/v2/auth/refresh`, {
         headers: { cookie: currentRefresh, origin: authOrigin },
       })
     ).status(),

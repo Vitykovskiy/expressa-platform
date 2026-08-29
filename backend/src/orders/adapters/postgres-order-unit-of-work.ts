@@ -76,7 +76,7 @@ async function findOrderByIdempotencyKey(
   idempotencyKey: string,
 ): Promise<{ fingerprint: string; order: StoredOrder } | null> {
   const result = await client.query<DatabaseRow>(
-    `SELECT id, number, stage, total_minor, request_fingerprint
+    `SELECT id, number, stage, total, request_fingerprint
      FROM orders
      WHERE customer_id = $1 AND idempotency_key = $2`,
     [customerId, idempotencyKey],
@@ -98,7 +98,7 @@ async function findOrderByIdempotencyKey(
       id,
       number: readString(row, 'number'),
       stage: readOrderStage(row),
-      totalMinor: readNonNegativeInteger(row, 'total_minor'),
+      total: readNonNegativeInteger(row, 'total'),
       items,
     },
   };
@@ -106,14 +106,14 @@ async function findOrderByIdempotencyKey(
 
 async function readSnapshotItems(client: TransactionClient, orderId: string): Promise<readonly OrderSnapshotItem[]> {
   const items = await client.query<DatabaseRow>(
-    `SELECT id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor
+    `SELECT id, product_id, variant_id, product_name, size, quantity, unit_total, line_total
      FROM order_items
      WHERE order_id = $1
      ORDER BY sort_order`,
     [orderId],
   );
   const modifiers = await client.query<DatabaseRow>(
-    `SELECT order_item_id, modifier_option_id, modifier_name, price_delta_minor
+    `SELECT order_item_id, modifier_option_id, modifier_name, price_delta
      FROM order_item_modifiers
      WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)
      ORDER BY order_item_id, sort_order`,
@@ -126,7 +126,7 @@ async function readSnapshotItems(client: TransactionClient, orderId: string): Pr
     itemModifiers.push({
       modifierOptionId: readString(row, 'modifier_option_id'),
       modifierName: readString(row, 'modifier_name'),
-      priceDeltaMinor: readInteger(row, 'price_delta_minor'),
+      priceDelta: readInteger(row, 'price_delta'),
     });
     modifiersByItemId.set(itemId, itemModifiers);
   }
@@ -139,8 +139,8 @@ async function readSnapshotItems(client: TransactionClient, orderId: string): Pr
       productName: readString(row, 'product_name'),
       size: readNullableProductSize(row, 'size'),
       quantity: readPositiveInteger(row, 'quantity'),
-      unitTotalMinor: readNonNegativeInteger(row, 'unit_total_minor'),
-      lineTotalMinor: readNonNegativeInteger(row, 'line_total_minor'),
+      unitTotal: readNonNegativeInteger(row, 'unit_total'),
+      lineTotal: readNonNegativeInteger(row, 'line_total'),
       modifiers: modifiersByItemId.get(itemId) ?? [],
     };
   });
@@ -150,7 +150,7 @@ async function readCurrentCatalog(client: TransactionClient, productIds: readonl
   const [setting, products, variants, groups, options] = await Promise.all([
     client.query<DatabaseRow>(`SELECT value FROM service_settings WHERE key = $1`, [acceptsNewOrdersSettingKey]),
     client.query<DatabaseRow>(
-      `SELECT products.id, products.category_id, products.type, products.name, products.price_minor, products.is_available
+      `SELECT products.id, products.category_id, products.type, products.name, products.price, products.is_available
        FROM products
        JOIN categories ON categories.id = products.category_id
        WHERE products.archived_at IS NULL AND products.is_active
@@ -159,7 +159,7 @@ async function readCurrentCatalog(client: TransactionClient, productIds: readonl
       [productIds],
     ),
     client.query<DatabaseRow>(
-      `SELECT variants.id, variants.product_id, variants.size, variants.price_minor, variants.is_available
+      `SELECT variants.id, variants.product_id, variants.size, variants.price, variants.is_available
        FROM product_variants variants
        JOIN products ON products.id = variants.product_id
        JOIN categories ON categories.id = products.category_id
@@ -181,7 +181,7 @@ async function readCurrentCatalog(client: TransactionClient, productIds: readonl
       [productIds],
     ),
     client.query<DatabaseRow>(
-      `SELECT options.group_id, options.id, options.name, options.price_delta_minor, options.is_default, options.is_available
+      `SELECT options.group_id, options.id, options.name, options.price_delta, options.is_default, options.is_available
        FROM modifier_options options
        JOIN modifier_groups groups ON groups.id = options.group_id
        WHERE options.archived_at IS NULL AND groups.archived_at IS NULL AND groups.is_active`,
@@ -207,7 +207,7 @@ function buildCatalogProducts(
     variants.push({
       id: readString(row, 'id'),
       size: readProductSize(row, 'size'),
-      priceMinor: readNonNegativeInteger(row, 'price_minor'),
+      price: readNonNegativeInteger(row, 'price'),
       isAvailable: readBoolean(row, 'is_available'),
     });
     variantsByProductId.set(productId, variants);
@@ -220,7 +220,7 @@ function buildCatalogProducts(
     options.push({
       id: readString(row, 'id'),
       name: readString(row, 'name'),
-      priceDeltaMinor: readInteger(row, 'price_delta_minor'),
+      priceDelta: readInteger(row, 'price_delta'),
       isDefault: readBoolean(row, 'is_default'),
       isAvailable: readBoolean(row, 'is_available'),
     });
@@ -246,7 +246,7 @@ function buildCatalogProducts(
     id: readString(row, 'id'),
     type: readProductType(row),
     name: readString(row, 'name'),
-    priceMinor: readNullableInteger(row, 'price_minor'),
+    price: readNullableInteger(row, 'price'),
     isAvailable: readBoolean(row, 'is_available'),
     variants: variantsByProductId.get(readString(row, 'id')) ?? [],
     modifierGroups: groupsByCategoryId.get(readString(row, 'category_id')) ?? [],
@@ -264,10 +264,10 @@ async function insertOrder(
   const number = orderDay.replaceAll('-', '') + '-' + dailyNumber.toString().padStart(3, '0');
   const insertedOrder = await client.query<DatabaseRow>(
     `INSERT INTO orders (
-       number, customer_id, idempotency_key, request_fingerprint, total_minor, order_day, daily_number
+       number, customer_id, idempotency_key, request_fingerprint, total, order_day, daily_number
      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, number, stage, total_minor`,
-    [number, command.customerId, command.idempotencyKey, fingerprint, snapshot.totalMinor, orderDay, dailyNumber],
+     RETURNING id, number, stage, total`,
+    [number, command.customerId, command.idempotencyKey, fingerprint, snapshot.total, orderDay, dailyNumber],
   );
   const row = requireSingleRow(insertedOrder.rows, 'order insert');
   const orderId = readString(row, 'id');
@@ -275,7 +275,7 @@ async function insertOrder(
   for (const [itemSortOrder, item] of snapshot.items.entries()) {
     const insertedItem = await client.query<DatabaseRow>(
       `INSERT INTO order_items (
-         order_id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor, sort_order
+         order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total, sort_order
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
       [
@@ -285,8 +285,8 @@ async function insertOrder(
         item.productName,
         item.size,
         item.quantity,
-        item.unitTotalMinor,
-        item.lineTotalMinor,
+        item.unitTotal,
+        item.lineTotal,
         itemSortOrder,
       ],
     );
@@ -294,9 +294,9 @@ async function insertOrder(
     for (const [modifierSortOrder, modifier] of item.modifiers.entries()) {
       await client.query(
         `INSERT INTO order_item_modifiers (
-           order_item_id, modifier_option_id, modifier_name, price_delta_minor, sort_order
+           order_item_id, modifier_option_id, modifier_name, price_delta, sort_order
          ) VALUES ($1, $2, $3, $4, $5)`,
-        [itemId, modifier.modifierOptionId, modifier.modifierName, modifier.priceDeltaMinor, modifierSortOrder],
+        [itemId, modifier.modifierOptionId, modifier.modifierName, modifier.priceDelta, modifierSortOrder],
       );
     }
   }
@@ -305,7 +305,7 @@ async function insertOrder(
     id: orderId,
     number: readString(row, 'number'),
     stage: readOrderStage(row),
-    totalMinor: readNonNegativeInteger(row, 'total_minor'),
+    total: readNonNegativeInteger(row, 'total'),
     items: snapshot.items,
   };
 }

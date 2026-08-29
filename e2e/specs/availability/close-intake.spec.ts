@@ -19,7 +19,8 @@ import {
  * 6. Сотрудник открывает раздел доступности.
  * 7. Сотрудник выключает приём новых заказов.
  * 8. Customer открывает публичное меню.
- * 9. Customer открывает корзину.
+ * 9. Customer открывает категорию «Кофе».
+ * 10. Customer открывает корзину.
  *
  * Ожидаемый результат:
  * - Back-office показывает, что приём новых заказов остановлен.
@@ -66,6 +67,7 @@ test("AVAIL-05: сотрудник закрывает приём новых за
     ).toBe(AvailabilityState.UNAVAILABLE);
   });
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
   await test.step("Customer видит публичное меню.", async () => {
     expect(
       await publicMenu.product.isProductVisible("Капучино"),

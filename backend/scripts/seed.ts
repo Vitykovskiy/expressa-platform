@@ -54,7 +54,7 @@ async function seedCatalog(pool: Pool): Promise<void> {
       product.type,
       product.name,
       product.description,
-      product.priceMinor,
+      product.price,
       product.sortOrder,
       product.isActive,
       product.isAvailable,
@@ -66,7 +66,7 @@ async function seedCatalog(pool: Pool): Promise<void> {
       productVariant.id,
       productVariant.productId,
       productVariant.size,
-      productVariant.priceMinor,
+      productVariant.price,
       productVariant.sortOrder,
       productVariant.isAvailable,
     ]);
@@ -77,7 +77,7 @@ async function seedCatalog(pool: Pool): Promise<void> {
       modifierOption.id,
       modifierOption.groupId,
       modifierOption.name,
-      modifierOption.priceDeltaMinor,
+      modifierOption.priceDelta,
       modifierOption.sortOrder,
       modifierOption.isDefault,
       modifierOption.isAvailable,
@@ -205,15 +205,15 @@ async function seedOrder(
   await pool.query("DELETE FROM order_items WHERE order_id = $1", [orderId]);
   await pool.query(
     `INSERT INTO orders (
-       id, number, customer_id, idempotency_key, request_fingerprint, stage, total_minor, order_day, daily_number, created_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, 32000, $7, $8, $9)
+       id, number, customer_id, idempotency_key, request_fingerprint, stage, total, order_day, daily_number, created_at
+     ) VALUES ($1, $2, $3, $4, $5, $6, 320, $7, $8, $9)
      ON CONFLICT (id) DO UPDATE SET
        number = EXCLUDED.number,
        customer_id = EXCLUDED.customer_id,
        idempotency_key = EXCLUDED.idempotency_key,
        request_fingerprint = EXCLUDED.request_fingerprint,
        stage = EXCLUDED.stage,
-       total_minor = EXCLUDED.total_minor,
+       total = EXCLUDED.total,
        order_day = EXCLUDED.order_day,
        daily_number = EXCLUDED.daily_number,
        created_at = EXCLUDED.created_at`,
@@ -232,13 +232,13 @@ async function seedOrder(
   const itemId = seedOrderId(2_000 + index);
   await pool.query(
     `INSERT INTO order_items (
-       id, order_id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor, sort_order
-     ) VALUES ($1, $2, $3, $4, 'Капучино', 'M', 1, 32000, 32000, 0)`,
+       id, order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total, sort_order
+     ) VALUES ($1, $2, $3, $4, 'Капучино', 'M', 1, 320, 320, 0)`,
     [itemId, orderId, e2eSeedIds.cappuccino, e2eSeedIds.cappuccinoMedium],
   );
   await pool.query(
     `INSERT INTO order_item_modifiers (
-       order_item_id, modifier_option_id, modifier_name, price_delta_minor, sort_order
+       order_item_id, modifier_option_id, modifier_name, price_delta, sort_order
      ) VALUES ($1, $2, 'Обычное молоко', 0, 0)`,
     [itemId, e2eSeedIds.regularMilk],
   );
@@ -266,13 +266,13 @@ async function seedOrder(
 
 async function addPartialRepeatItem(pool: Pool): Promise<void> {
   const orderId = seedOrderId(1);
-  await pool.query("UPDATE orders SET total_minor = 60000 WHERE id = $1", [
+  await pool.query("UPDATE orders SET total = 600 WHERE id = $1", [
     orderId,
   ]);
   await pool.query(
     `INSERT INTO order_items (
-       id, order_id, product_id, variant_id, product_name, size, quantity, unit_total_minor, line_total_minor, sort_order
-     ) VALUES ($1, $2, $3, NULL, 'Чизкейк', NULL, 1, 28000, 28000, 1)`,
+       id, order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total, sort_order
+     ) VALUES ($1, $2, $3, NULL, 'Чизкейк', NULL, 1, 280, 280, 1)`,
     [seedOrderId(4_001), orderId, e2eSeedIds.unavailableDessert],
   );
 }

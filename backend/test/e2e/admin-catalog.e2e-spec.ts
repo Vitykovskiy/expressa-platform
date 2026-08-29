@@ -110,8 +110,8 @@ describe("admin catalog E2E", () => {
       await request("/backoffice/catalog/products", administrator, "POST", {
         ...productBody(category.id),
         variants: [
-          { size: "M", priceMinor: 32000, sortOrder: 0, isAvailable: true },
-          { size: "L", priceMinor: 36000, sortOrder: 1, isAvailable: true },
+          { size: "M", price: 320, sortOrder: 0, isAvailable: true },
+          { size: "L", price: 360, sortOrder: 1, isAvailable: true },
         ],
       }),
     );
@@ -135,8 +135,8 @@ describe("admin catalog E2E", () => {
         name: "Капучино большой",
         sortOrder: 0,
         variants: [
-          { size: "M", priceMinor: 32000, sortOrder: 1, isAvailable: true },
-          { size: "L", priceMinor: 36000, sortOrder: 0, isAvailable: true },
+          { size: "M", price: 320, sortOrder: 1, isAvailable: true },
+          { size: "L", price: 360, sortOrder: 0, isAvailable: true },
         ],
       },
     );
@@ -173,8 +173,8 @@ describe("admin catalog E2E", () => {
         name: "Капучино большой",
         sortOrder: 0,
         variants: [
-          { size: "M", priceMinor: 32000, sortOrder: 1, isAvailable: true },
-          { size: "S", priceMinor: 28000, sortOrder: 0, isAvailable: true },
+          { size: "M", price: 320, sortOrder: 1, isAvailable: true },
+          { size: "S", price: 280, sortOrder: 0, isAvailable: true },
         ],
       },
     );
@@ -229,14 +229,14 @@ describe("admin catalog E2E", () => {
           options: [
             {
               name: "Овсяное",
-              priceDeltaMinor: 0,
+              priceDelta: 0,
               sortOrder: 0,
               isDefault: true,
               isAvailable: true,
             },
             {
               name: "Кокосовое",
-              priceDeltaMinor: 5000,
+              priceDelta: 50,
               sortOrder: 1,
               isDefault: false,
               isAvailable: true,
@@ -262,7 +262,7 @@ describe("admin catalog E2E", () => {
           {
             id: secondOption.id,
             name: "Кокосовое",
-            priceDeltaMinor: 5000,
+            priceDelta: 50,
             sortOrder: 0,
             isDefault: false,
             isAvailable: true,
@@ -270,7 +270,7 @@ describe("admin catalog E2E", () => {
           {
             id: option.id,
             name: "Овсяное обновлённое",
-            priceDeltaMinor: 0,
+            priceDelta: 0,
             sortOrder: 1,
             isDefault: true,
             isAvailable: true,
@@ -303,7 +303,7 @@ describe("admin catalog E2E", () => {
     );
     const menu = await json<{
       categories: { id: string; products: { id: string }[] }[];
-    }>(await fetch(`${url}/api/v1/public/menu`), 200);
+    }>(await fetch(`${url}/api/v2/public/menu`), 200);
     expect(menu.categories).toContainEqual(
       expect.objectContaining({
         id: category.id,
@@ -437,7 +437,7 @@ describe("admin catalog E2E", () => {
           options: [
             {
               name: "Сироп",
-              priceDeltaMinor: 0,
+              priceDelta: 0,
               sortOrder: 0,
               isDefault: true,
               isAvailable: true,
@@ -723,14 +723,14 @@ describe("admin catalog E2E", () => {
         phone,
         role,
       ]);
-    await fetch(`${url}/api/v1/auth/otp/request`, {
+    await fetch(`${url}/api/v2/auth/otp/request`, {
       method: "POST",
       headers: headers(),
       body: JSON.stringify({ phone }),
     });
     return (
       await json<{ accessToken: string }>(
-        await fetch(`${url}/api/v1/auth/otp/verify`, {
+        await fetch(`${url}/api/v2/auth/otp/verify`, {
           method: "POST",
           headers: headers(),
           body: JSON.stringify({ phone, code: otp }),
@@ -750,12 +750,12 @@ function productBody(categoryId: string) {
     type: "DRINK",
     name: "Капучино",
     description: "Кофе с молоком",
-    priceMinor: null,
+    price: null,
     sortOrder: 0,
     isActive: true,
     isAvailable: true,
     variants: [
-      { size: "M", priceMinor: 32000, sortOrder: 0, isAvailable: true },
+      { size: "M", price: 320, sortOrder: 0, isAvailable: true },
     ],
   };
 }
@@ -772,7 +772,7 @@ function request(
   method = "GET",
   body?: unknown,
 ): Promise<Response> {
-  return fetch(`${urlPlaceholder}/api/v1${path}`, {
+  return fetch(`${urlPlaceholder}/api/v2${path}`, {
     method,
     headers: headers(token),
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -812,13 +812,13 @@ async function createCatalogGraph(
   const categoryId = category.rows[0]?.id;
   if (categoryId === undefined) throw new Error("Category was not created");
   const product = await pool.query<{ id: string }>(
-    "INSERT INTO products (category_id, type, name, description, price_minor, sort_order) VALUES ($1, 'DRINK', $2, '', NULL, $3) RETURNING id",
+    "INSERT INTO products (category_id, type, name, description, price, sort_order) VALUES ($1, 'DRINK', $2, '', NULL, $3) RETURNING id",
     [categoryId, `Напиток ${sortOrder}`, sortOrder],
   );
   const productId = product.rows[0]?.id;
   if (productId === undefined) throw new Error("Product was not created");
   const variant = await pool.query<{ id: string }>(
-    "INSERT INTO product_variants (product_id, size, price_minor, sort_order) VALUES ($1, 'M', 10000, 0) RETURNING id",
+    "INSERT INTO product_variants (product_id, size, price, sort_order) VALUES ($1, 'M', 100, 0) RETURNING id",
     [productId],
   );
   const variantId = variant.rows[0]?.id;
@@ -830,7 +830,7 @@ async function createCatalogGraph(
   const groupId = group.rows[0]?.id;
   if (groupId === undefined) throw new Error("Modifier group was not created");
   const option = await pool.query<{ id: string }>(
-    "INSERT INTO modifier_options (group_id, name, price_delta_minor, sort_order) VALUES ($1, $2, 0, 0) RETURNING id",
+    "INSERT INTO modifier_options (group_id, name, price_delta, sort_order) VALUES ($1, $2, 0, 0) RETURNING id",
     [groupId, `Опция ${sortOrder}`],
   );
   const optionId = option.rows[0]?.id;

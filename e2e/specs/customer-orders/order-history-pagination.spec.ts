@@ -54,7 +54,7 @@ test("ORDER-04: customer загружает следующую часть ист
       expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
         expectedDate,
       );
-      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320,00 ₽");
+      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
       expect(order.status, `Показана стадия заказа ${index}.`).toBe(
         OrderHistoryStatus.ISSUED,
       );
@@ -85,7 +85,7 @@ test("ORDER-04: customer загружает следующую часть ист
       expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
         expectedDate,
       );
-      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320,00 ₽");
+      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
       expect(order.status, `Показана стадия заказа ${index}.`).toBe(
         OrderHistoryStatus.ISSUED,
       );

@@ -72,22 +72,22 @@ export type ConfiguredCartItemDraftBase = {
   addons: Addon[];
   quantity: number;
   lineTotalRub: number;
-  unitTotalMinor: number;
-  lineTotalMinor: number;
+  unitTotal: number;
+  lineTotal: number;
   selectedModifierOptions: CartSelectedModifierOption[];
 };
 
 export type CartVariantSelection = {
   id: string;
   size: "S" | "M" | "L";
-  priceMinor: number;
+  price: number;
 };
 
 export type CartSelectedModifierOption = {
   groupId: string;
   id: string;
   name: string;
-  priceDeltaMinor: number;
+  priceDelta: number;
 };
 
 export interface TimeSlot {

@@ -138,7 +138,7 @@ function isOrderListItem(value: unknown): value is OrderListItem {
     isString(value.id) &&
     isString(value.number) &&
     isString(value.createdAt) &&
-    isNumber(value.totalMinor) &&
+    isNonNegativeInteger(value.total) &&
     isOrderStage(value.stage)
   );
 }
@@ -154,8 +154,8 @@ function isOrderSnapshotItem(value: unknown): value is OrderSnapshotItem {
       value.size === "L" ||
       value.size === null) &&
     isNumber(value.quantity) &&
-    isNumber(value.unitTotalMinor) &&
-    isNumber(value.lineTotalMinor) &&
+    isNonNegativeInteger(value.unitTotal) &&
+    isNonNegativeInteger(value.lineTotal) &&
     Array.isArray(value.modifiers) &&
     value.modifiers.every(isOrderModifier)
   );
@@ -166,7 +166,7 @@ function isOrderModifier(value: unknown): value is OrderModifier {
     isRecord(value) &&
     isString(value.modifierOptionId) &&
     isString(value.modifierName) &&
-    isNumber(value.priceDeltaMinor)
+    isNonNegativeInteger(value.priceDelta)
   );
 }
 
@@ -220,4 +220,13 @@ function isE164Phone(value: unknown): value is string {
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return (
+    isNumber(value) &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 2_147_483_647
+  );
 }

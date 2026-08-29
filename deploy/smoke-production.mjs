@@ -1,5 +1,5 @@
 const backendUrl = 'http://127.0.0.1:3000';
-const apiPrefix = '/api/v1';
+const apiPrefix = '/api/v2';
 
 function passed(name) {
   console.log(`expressa-production-smoke: check=${name} status=passed`);

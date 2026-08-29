@@ -376,7 +376,7 @@ function toCatalogProduct(product: CatalogProductDto): CatalogProduct {
     isActive: product.isActive,
     isAvailable: product.isAvailable,
     name: product.name,
-    priceMinor: product.priceMinor,
+    price: product.price,
     sortOrder: product.sortOrder,
     type: product.type,
     variants: product.variants.map((variant) =>
@@ -396,7 +396,7 @@ function toCatalogProductFromCatalog(
     isActive: product.isActive,
     isAvailable: product.isAvailable,
     name: product.name,
-    priceMinor: product.priceMinor,
+    price: product.price,
     sortOrder: product.sortOrder,
     type: product.type,
     variants: variants
@@ -421,7 +421,7 @@ function toCatalogProductVariantFromCatalog(
   return {
     id: variant.id,
     isAvailable: variant.isAvailable,
-    priceMinor: variant.priceMinor,
+    price: variant.price,
     productId: variant.productId,
     size: variant.size,
     sortOrder: variant.sortOrder,
@@ -435,7 +435,7 @@ function toCatalogProductVariant(
   return {
     id: variant.id,
     isAvailable: variant.isAvailable,
-    priceMinor: variant.priceMinor,
+    price: variant.price,
     productId,
     size: variant.size,
     sortOrder: variant.sortOrder,
@@ -466,7 +466,7 @@ function toCatalogModifierOption(
     isAvailable: option.isAvailable,
     isDefault: option.isDefault,
     name: option.name,
-    priceDeltaMinor: option.priceDeltaMinor,
+    priceDelta: option.priceDelta,
     sortOrder: option.sortOrder,
   };
 }
@@ -568,7 +568,7 @@ function isCatalogProductFields(value: Record<string, unknown>): boolean {
     isCatalogProductType(value.type) &&
     isString(value.name) &&
     isString(value.description) &&
-    (value.priceMinor === null || isInteger(value.priceMinor)) &&
+    (value.price === null || isNonNegativeInteger(value.price)) &&
     isInteger(value.sortOrder) &&
     typeof value.isActive === "boolean" &&
     typeof value.isAvailable === "boolean"
@@ -607,7 +607,7 @@ function isCatalogProductVariantDto(
     isRecord(value) &&
     isUuid(value.id) &&
     isCatalogProductSize(value.size) &&
-    isInteger(value.priceMinor) &&
+    isNonNegativeInteger(value.price) &&
     isInteger(value.sortOrder) &&
     typeof value.isAvailable === "boolean"
   );
@@ -651,7 +651,7 @@ function isCatalogModifierOptionDto(
     isUuid(value.id) &&
     isUuid(value.groupId) &&
     isString(value.name) &&
-    isInteger(value.priceDeltaMinor) &&
+    isNonNegativeInteger(value.priceDelta) &&
     isInteger(value.sortOrder) &&
     typeof value.isDefault === "boolean" &&
     typeof value.isAvailable === "boolean"
@@ -719,6 +719,10 @@ function isString(value: unknown): value is string {
 
 function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return isInteger(value) && value >= 0 && value <= 2_147_483_647;
 }
 
 function isUndefined(value: unknown): value is undefined {

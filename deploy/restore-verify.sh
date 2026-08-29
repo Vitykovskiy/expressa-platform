@@ -43,7 +43,7 @@ snapshot_timestamp_from_backup_file() {
 
 verify_public_menu() {
   compose exec -T backend /nodejs/bin/node -e "
-    fetch('http://127.0.0.1:3000/api/v1/public/menu')
+    fetch('http://127.0.0.1:3000/api/v2/public/menu')
       .then(async (response) => {
         if (!response.ok) process.exit(1);
         const menu = await response.json();

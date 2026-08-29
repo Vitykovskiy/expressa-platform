@@ -55,7 +55,7 @@ sources:
 intake — в error state.
 [front-office/src/features/checkout/checkout.store.ts:handleError](../../front-office/src/features/checkout/checkout.store.ts).
 
-`createOrdersApi` отправляет `POST /api/v1/orders` с Bearer token и
+`createOrdersApi` отправляет `POST /api/v2/orders` с Bearer token и
 idempotency key; API остаётся источником созданного заказа.
 [front-office/src/shared/api/orders.api.ts:createOrdersApi](../../front-office/src/shared/api/orders.api.ts).
 

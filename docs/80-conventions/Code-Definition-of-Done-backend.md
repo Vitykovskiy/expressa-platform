@@ -91,7 +91,7 @@ TypeScript и PostgreSQL. Он не заменяет [архитектуру bac
 ## Контракты, ошибки и побочные эффекты
 
 - Изменение публичного HTTP-контракта совместимо с правилами
-  [HTTP API](../50-interfaces/HTTP-API-conventions.md). Внутри `/api/v1`
+  [HTTP API](../50-interfaces/HTTP-API-conventions.md). Внутри `/api/v2`
   допустимы добавочные изменения; разрыв контракта требует нового базового пути.
   OpenAPI обновляется и проверяется только когда меняется кодовый HTTP-контракт.
 - HTTP-ошибка имеет установленную форму `{ code, message, details, requestId }`.

@@ -185,12 +185,12 @@ function createMenu(): PublicMenu {
             isAvailable: true,
             modifierGroups: [],
             type: "DRINK",
-            priceMinor: null,
+            price: null,
             variants: [
               {
                 id: "espresso-s",
                 size: "S",
-                priceMinor: 18000,
+                price: 180,
                 isAvailable: true,
               },
             ],

@@ -263,9 +263,9 @@ function assertOption(value: CreateModifierOptionDto): void {
     throw validationError([
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (!int32(value.priceDeltaMinor))
+  if (!nonNegativeInt32(value.priceDelta))
     throw validationError([
-      { path: "priceDeltaMinor", reason: "Must be an int32" },
+      { path: "priceDelta", reason: "Must be a non-negative int32" },
     ]);
   if (!nonNegativeInt32(value.sortOrder))
     throw validationError([
@@ -356,7 +356,7 @@ function toOptionDto(option: AdminModifierOption): ModifierOptionDto {
     id: option.id,
     groupId: option.groupId,
     name: option.name,
-    priceDeltaMinor: option.priceDeltaMinor,
+    priceDelta: option.priceDelta,
     sortOrder: option.sortOrder,
     isDefault: option.isDefault,
     isAvailable: option.isAvailable,

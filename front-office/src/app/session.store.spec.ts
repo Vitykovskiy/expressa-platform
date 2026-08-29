@@ -179,7 +179,7 @@ describe("session store", () => {
     await getSessionDependencies().authApi.requestOtp("+79991234567");
 
     expect(requestedUrl).toBe(
-      "https://api.example.test/api/v1/auth/otp/request",
+      "https://api.example.test/api/v2/auth/otp/request",
     );
   });
 });
