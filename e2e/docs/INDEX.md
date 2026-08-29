@@ -21,5 +21,5 @@ tags: [e2e, playwright, moc]
 ## Первичные источники и поставка
 
 - [Конфигурация Playwright](../playwright.config.ts), [fixtures](../fixtures/test.ts) и [конфигурация окружения](../support/config/e2e-environment.ts) — исполняемая граница набора.
-- [Сквозной сценарий](../specs/journeys/journey-05-full-order-lifecycle.spec.ts) и [проверка границ](../tools/check-e2e-boundaries.mjs) — сценарии и локальная приёмка.
+- [Сквозной сценарий](../specs/journeys/journey-05-full-order-lifecycle.spec.ts) — исполняемый полный пользовательский путь.
 - [Результаты прогонов](../../docs/70-deployment/E2E-on-VPS.md) — постоянный Playwright report на VPS и журнал запусков GitHub Actions.

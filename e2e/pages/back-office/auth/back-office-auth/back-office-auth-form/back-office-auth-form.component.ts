@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
+import type { Locator, Page } from "@playwright/test";
 import type { E2eOtpCredentials } from "@support/config/e2e-environment.types";
 
 export class BackOfficeAuthFormComponent {

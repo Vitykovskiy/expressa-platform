@@ -3,7 +3,7 @@ import { expect, test } from "@fixtures/test";
 /**
  * Назначение: сотрудник видит пустую очередь при отсутствии заказов для показа.
  *
- * Предусловия: barista авторизован в back-office; в профиле E2E `empty` заказы для текущего фильтра отсутствуют.
+ * Предусловия: изолированный профиль `empty` предоставляет доступную роль barista и пустую очередь заказов.
  *
  * Сценарий:
  * 1. Сотрудник открывает раздел заказов.
@@ -18,9 +18,12 @@ test("QUEUE-01: сотрудник видит пустую очередь зак
   e2eEnvironment,
   staffOrders,
 }) => {
-  await test.step("Предусловие: barista входит в back-office.", async () => {
+  await test.step("Подготовка: пользователь авторизуется.", async () => {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.staff);
+    await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);
+    await backOfficeAuth.form.requestCode();
+    await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
+    await backOfficeAuth.form.confirmCode();
   });
   await staffOrders.open();
 

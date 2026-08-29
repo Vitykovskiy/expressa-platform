@@ -1,23 +1,66 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { orderHeadingPattern, orderIdPattern } from "./order-details.constants";
-import { OrderStatus } from "./order-details.types";
+import { OrderPaymentMethod, OrderStatus } from "./order-details.types";
 
 import type { OrderSnapshot } from "@support/data/order-snapshot.types";
 
 export class OrderDetailsComponent {
+  private readonly loadingState: Locator;
+  private readonly orderTitle: Locator;
   private readonly orderItems: Locator;
   private readonly orderTotal: Locator;
   private readonly paymentMethod: Locator;
+  private readonly unavailableMessage: Locator;
+  private readonly enableNotificationsButton: Locator;
+  private readonly disableNotificationsButton: Locator;
+  private readonly notificationsUnsupportedMessage: Locator;
+  private readonly repeatButton: Locator;
+  private readonly cartTitle: Locator;
 
   constructor(private readonly page: Page) {
+    this.loadingState = page.getByRole("status", {
+      name: "Загружаем заказ",
+      exact: true,
+    });
+    this.orderTitle = page.getByRole("heading", { level: 1 });
     this.orderItems = page
       .getByRole("list", { name: "Состав заказа", exact: true })
       .getByRole("listitem");
     this.orderTotal = page.getByTestId("order-total");
-    this.paymentMethod = page.getByText("Оплата на кассе при получении", {
+    this.paymentMethod = page.getByText(OrderPaymentMethod.CASH_ON_PICKUP, {
       exact: true,
     });
+    this.unavailableMessage = page.getByText("Заказ недоступен.", {
+      exact: true,
+    });
+    this.enableNotificationsButton = page.getByRole("button", {
+      name: "Включить уведомления",
+      exact: true,
+    });
+    this.disableNotificationsButton = page.getByRole("button", {
+      name: "Отключить уведомления",
+      exact: true,
+    });
+    this.notificationsUnsupportedMessage = page.getByText(
+      "Уведомления не поддерживаются этим браузером.",
+      { exact: true },
+    );
+    this.repeatButton = page.getByRole("button", {
+      name: "Повторить заказ",
+      exact: true,
+    });
+    this.cartTitle = page.getByRole("heading", {
+      name: "Корзина",
+      exact: true,
+    });
+  }
+
+  async waitReady(): Promise<void> {
+    await expect(this.loadingState, "Загрузка заказа завершена.").toHaveCount(
+      0,
+    );
+    await expect(this.orderTitle, "Страница заказа открыта.").toBeVisible();
   }
 
   async readSnapshot(): Promise<OrderSnapshot> {
@@ -33,9 +76,7 @@ export class OrderDetailsComponent {
       id: this.readId(),
       number: await this.readNumber(),
       ...values,
-      lineTotal: await this.orderItems
-        .getByTestId("order-item-line-total")
-        .innerText(),
+      lineTotal: await this.itemLineTotal(this.orderItems).innerText(),
       total: await this.orderTotal.innerText(),
       status: await this.readStatus(),
     };
@@ -61,23 +102,23 @@ export class OrderDetailsComponent {
       const item = await this.onlyItem();
 
       await expect(
-        item.getByText(snapshot.productName, { exact: true }),
+        this.itemProduct(item, snapshot.productName),
         "Товар соответствует сохранённому снимку.",
       ).toBeVisible();
       await expect(
-        item.getByText(snapshot.size, { exact: true }),
+        this.itemSize(item, snapshot.size),
         "Размер соответствует сохранённому снимку.",
       ).toBeVisible();
       await expect(
-        item.getByText(snapshot.modifierName, { exact: true }),
+        this.itemModifier(item, snapshot.modifierName),
         "Добавка соответствует сохранённому снимку.",
       ).toBeVisible();
       await expect(
-        item.getByText(snapshot.quantity, { exact: true }),
+        this.itemQuantity(item, snapshot.quantity),
         "Количество и цена соответствуют сохранённому снимку.",
       ).toBeVisible();
       await expect(
-        item.getByTestId("order-item-line-total"),
+        this.itemLineTotal(item),
         "Итог позиции соответствует сохранённому снимку.",
       ).toHaveText(snapshot.total);
       await expect(
@@ -90,7 +131,7 @@ export class OrderDetailsComponent {
   async assertIssued(snapshot: OrderSnapshot): Promise<void> {
     await test.step(`Проверить выдачу заказа ${snapshot.number}`, async () => {
       await expect(
-        this.page.getByText(OrderStatus.ISSUED, { exact: true }),
+        this.status(OrderStatus.ISSUED),
         "Заказ выдан клиенту.",
       ).toBeVisible();
       await this.assertMatches(snapshot);
@@ -99,19 +140,23 @@ export class OrderDetailsComponent {
 
   async assertStatus(status: OrderStatus): Promise<void> {
     await expect(
-      this.page.getByText(status, { exact: true }),
+      this.status(status),
       `Заказ находится на стадии «${status}».`,
     ).toBeVisible();
   }
 
-  async readPaymentMethod(): Promise<string> {
-    return this.paymentMethod.innerText();
+  async readPaymentMethod(): Promise<OrderPaymentMethod> {
+    const paymentMethod = await this.paymentMethod.innerText();
+
+    if (paymentMethod !== OrderPaymentMethod.CASH_ON_PICKUP) {
+      throw new Error("Не удалось прочитать способ оплаты заказа.");
+    }
+
+    return paymentMethod;
   }
 
   async isUnavailableMessageVisible(): Promise<boolean> {
-    return this.page
-      .getByText("Заказ недоступен.", { exact: true })
-      .isVisible();
+    return this.unavailableMessage.isVisible();
   }
 
   async areItemsAbsent(): Promise<boolean> {
@@ -124,7 +169,7 @@ export class OrderDetailsComponent {
 
   async areStatusesAbsent(): Promise<boolean> {
     for (const status of Object.values(OrderStatus)) {
-      if ((await this.page.getByText(status, { exact: true }).count()) !== 0) {
+      if ((await this.status(status).count()) !== 0) {
         return false;
       }
     }
@@ -134,7 +179,7 @@ export class OrderDetailsComponent {
 
   async assertUnavailable(): Promise<void> {
     await expect(
-      this.page.getByText("Заказ недоступен.", { exact: true }),
+      this.unavailableMessage,
       "Показано сообщение о недоступности заказа.",
     ).toBeVisible();
     await expect(
@@ -149,21 +194,13 @@ export class OrderDetailsComponent {
 
   async enableNotifications(): Promise<void> {
     await test.step("Включить уведомления о заказе", async () => {
-      const enableButton = this.page.getByRole("button", {
-        name: "Включить уведомления",
-        exact: true,
-      });
-
       await expect(
-        enableButton,
+        this.enableNotificationsButton,
         "Включение уведомлений доступно.",
       ).toBeEnabled();
-      await enableButton.click();
+      await this.enableNotificationsButton.click();
       await expect(
-        this.page.getByRole("button", {
-          name: "Отключить уведомления",
-          exact: true,
-        }),
+        this.disableNotificationsButton,
         "Уведомления о заказе включены.",
       ).toBeVisible();
     });
@@ -171,54 +208,23 @@ export class OrderDetailsComponent {
 
   async assertNotificationsUnsupported(): Promise<void> {
     await expect(
-      this.page.getByText("Уведомления не поддерживаются этим браузером.", {
-        exact: true,
-      }),
+      this.notificationsUnsupportedMessage,
       "Показано ограничение уведомлений браузера.",
     ).toBeVisible();
   }
 
   async repeatOrder(): Promise<void> {
     await test.step("Повторить заказ", async () => {
-      const repeatButton = this.page.getByRole("button", {
-        name: "Повторить заказ",
-        exact: true,
-      });
-
-      await expect(repeatButton, "Повтор заказа доступен.").toBeEnabled();
-      await repeatButton.click();
+      await expect(this.repeatButton, "Повтор заказа доступен.").toBeEnabled();
+      await this.repeatButton.click();
+      await expect(this.page, "Открыт путь корзины.").toHaveURL(
+        (url) => url.pathname === "/cart",
+      );
       await expect(
-        this.page
-          .getByRole("heading", { name: "Корзина", exact: true })
-          .or(this.repeatUnavailableAlert()),
-        "Повтор заказа завершён открытием корзины или сообщением о недоступных позициях.",
+        this.cartTitle,
+        "Повтор заказа завершён открытием корзины.",
       ).toBeVisible();
     });
-  }
-
-  async readRepeatUnavailableProductNames(): Promise<readonly string[]> {
-    await expect(
-      this.repeatUnavailableAlert(),
-      "Показано ограничение повторения заказа.",
-    ).toBeVisible();
-
-    return this.repeatUnavailableAlert().getByRole("listitem").allInnerTexts();
-  }
-
-  async readRepeatUnavailableReason(productName: string): Promise<string> {
-    const item = this.repeatUnavailableAlert()
-      .getByRole("listitem")
-      .filter({ hasText: productName });
-    const text = await item.innerText();
-    const reason = text.replace(productName, "").trim();
-
-    if (reason === "") {
-      throw new Error(
-        `Причина недоступности позиции «${productName}» не показана.`,
-      );
-    }
-
-    return reason;
   }
 
   private heading(number: string): Locator {
@@ -228,8 +234,28 @@ export class OrderDetailsComponent {
     });
   }
 
-  private repeatUnavailableAlert(): Locator {
-    return this.page.getByRole("alert");
+  private status(status: OrderStatus): Locator {
+    return this.page.getByText(status, { exact: true });
+  }
+
+  private itemProduct(item: Locator, productName: string): Locator {
+    return item.getByText(productName, { exact: true });
+  }
+
+  private itemSize(item: Locator, size: string): Locator {
+    return item.getByText(size, { exact: true });
+  }
+
+  private itemModifier(item: Locator, modifierName: string): Locator {
+    return item.getByText(modifierName, { exact: true });
+  }
+
+  private itemQuantity(item: Locator, quantity: string): Locator {
+    return item.getByText(quantity, { exact: true });
+  }
+
+  private itemLineTotal(item: Locator): Locator {
+    return item.getByTestId("order-item-line-total");
   }
 
   private async onlyItem(): Promise<Locator> {
@@ -258,8 +284,7 @@ export class OrderDetailsComponent {
   }
 
   private async readNumber(): Promise<string> {
-    const title = this.page.getByRole("heading", { level: 1 });
-    const heading = await title.innerText();
+    const heading = await this.orderTitle.innerText();
 
     if (!orderHeadingPattern.test(heading)) {
       throw new Error("Заголовок заказа не содержит числовой номер.");
@@ -296,7 +321,7 @@ export class OrderDetailsComponent {
 
   private async readStatus(): Promise<OrderStatus> {
     for (const status of Object.values(OrderStatus)) {
-      if (await this.page.getByText(status, { exact: true }).isVisible()) {
+      if (await this.status(status).isVisible()) {
         return status;
       }
     }

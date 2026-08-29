@@ -1,73 +1,54 @@
-import { ProductType, expect, test } from "@fixtures/test";
+import { expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение порядка товаров внутри категории.
  *
- * Предусловия: администратор авторизован; в категории есть два товара в известном порядке.
+ * Предусловия: изолированный профиль `catalog-mutation` предоставляет роль
+ * администратора и товары «Капучино» и «Эспрессо» в категории «Кофе» в этом
+ * порядке.
  *
  * Сценарий:
  * 1. Администратор открывает управление меню.
- * 2. Администратор раскрывает категорию.
- * 3. Администратор перемещает второй товар вверх.
+ * 2. Администратор раскрывает категорию «Кофе».
+ * 3. Администратор перемещает товар «Эспрессо» вверх.
  *
  * Ожидаемый результат:
- * - Администратор видит второй товар перед первым в выбранной категории.
- * - Для первого товара действие перемещения вверх недоступно.
+ * - Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории
+ *   «Кофе».
+ * - Для товара «Эспрессо» действие перемещения вверх недоступно.
  */
 test("CATALOG-11: администратор меняет порядок товаров", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
   menuManagement,
-}, testInfo) => {
-  const categoryName = `E2E Порядок товаров ${testInfo.testId}`;
-  const firstProductName = `E2E Первый товар ${testInfo.testId}`;
-  const secondProductName = `E2E Второй товар ${testInfo.testId}`;
+}) => {
+  const categoryName = "Кофе";
+  const firstProductName = "Капучино";
+  const secondProductName = "Эспрессо";
+  await test.step("Подготовка: администратор авторизуется.", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  });
+  await menuManagement.open();
+  await menuManagement.catalog.expandCategory(categoryName);
+  await menuManagement.catalog.moveProductUp(secondProductName);
+  await test.step("Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории «Кофе».", async () => {
+    const productOrder = await menuManagement.catalog.readProductOrder();
 
-  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-  await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-
-  try {
-    await menuManagement.open();
-    await menuManagement.categoryEditor.startCreation();
-    await menuManagement.categoryEditor.fillName(categoryName);
-    await menuManagement.categoryEditor.fillDescription("Категория порядка");
-    await menuManagement.categoryEditor.save(categoryName);
-    await menuManagement.productEditor.startCreation();
-    await menuManagement.productEditor.selectCategory(categoryName);
-    await menuManagement.productEditor.selectType(ProductType.OTHER);
-    await menuManagement.productEditor.fillName(firstProductName);
-    await menuManagement.productEditor.setSinglePrice("199");
-    await menuManagement.productEditor.save(firstProductName);
-    await menuManagement.productEditor.startCreation();
-    await menuManagement.productEditor.selectCategory(categoryName);
-    await menuManagement.productEditor.selectType(ProductType.OTHER);
-    await menuManagement.productEditor.fillName(secondProductName);
-    await menuManagement.productEditor.setSinglePrice("299");
-    await menuManagement.productEditor.save(secondProductName);
-
-    await menuManagement.open();
-    await menuManagement.catalog.expandCategory(categoryName);
-    await menuManagement.catalog.moveProductUp(secondProductName);
-
-    await test.step("Администратор видит второй товар перед первым в выбранной категории.", async () => {
-      expect(
-        await menuManagement.catalog.readProductOrder(),
-        "Второй товар показан перед первым в выбранной категории.",
-      ).toEqual([secondProductName, firstProductName]);
-    });
-    await test.step("Для первого товара действие перемещения вверх недоступно.", async () => {
-      expect(
-        await menuManagement.catalog.isProductMoveUpAvailable(
-          secondProductName,
-        ),
-        "Для первого товара действие перемещения вверх недоступно.",
-      ).toBe(false);
-    });
-  } finally {
-    await menuManagement.productEditor.deleteIfPresent(firstProductName);
-    await menuManagement.productEditor.deleteIfPresent(secondProductName);
-    await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-    await backOfficeAuth.form.signOut();
-  }
+    expect(
+      productOrder.indexOf(secondProductName),
+      "Товар «Эспрессо» показан в категории «Кофе».",
+    ).toBeGreaterThanOrEqual(0);
+    expect(
+      productOrder.indexOf(secondProductName),
+      "Товар «Эспрессо» показан перед товаром «Капучино».",
+    ).toBeLessThan(productOrder.indexOf(firstProductName));
+  });
+  await test.step("Для товара «Эспрессо» действие перемещения вверх недоступно.", async () => {
+    expect(
+      await menuManagement.catalog.isProductMoveUpAvailable(secondProductName),
+      "Для товара «Эспрессо» действие перемещения вверх недоступно.",
+    ).toBe(false);
+  });
 });

@@ -13,10 +13,10 @@ describe('BackofficeAvailabilityController', () => {
   const request = { requestId: 'request' };
 
   it('передаёт availability и intake staff-команды', async () => {
-    const catalog = { categories: [], products: [], productVariants: [], modifierGroups: [], modifierOptions: [], categoryModifierGroups: [], intake: { acceptsNewOrders: true, updatedBy: null, updatedAt: null } };
+    const catalog = { categories: [], products: [], productVariants: [], modifierGroups: [], modifierOptions: [], categoryModifierGroups: [], intake: { acceptsNewOrders: true, updatedBy: null, updatedByLabel: null, updatedAt: null } };
     const get = { execute: jest.fn().mockResolvedValue(catalog) };
     const availability = { execute: jest.fn().mockResolvedValue({ type: 'variant', id: 'c9d39eaa-2d6d-4ae1-b69c-5205778ea4bd', isAvailable: false }) };
-    const intake = { execute: jest.fn().mockResolvedValue({ acceptsNewOrders: false, updatedBy: 'staff', updatedAt: new Date('2030-01-01T00:00:00.000Z') }) };
+    const intake = { execute: jest.fn().mockResolvedValue({ acceptsNewOrders: false, updatedBy: 'staff', updatedByLabel: '+79991234567', updatedAt: new Date('2030-01-01T00:00:00.000Z') }) };
     const controller = new BackofficeAvailabilityController(get as unknown as GetAdminCatalogUseCase, availability as unknown as ManageAvailabilityUseCase, intake as unknown as ManageServiceIntakeUseCase);
 
     await expect(controller.getAvailability()).resolves.toEqual(catalog);

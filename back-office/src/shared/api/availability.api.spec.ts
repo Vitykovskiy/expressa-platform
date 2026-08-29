@@ -10,6 +10,7 @@ const variantId = "33333333-3333-4333-8333-333333333333";
 const modifierGroupId = "44444444-4444-4444-8444-444444444444";
 const modifierId = "55555555-5555-4555-8555-555555555555";
 const staffId = "66666666-6666-4666-8666-666666666666";
+const staffPhone = "+79991234567";
 
 function createAvailabilityApi(fetcher: typeof fetch): AvailabilityApi {
   return new AvailabilityApi(
@@ -38,6 +39,7 @@ function availabilityResponse(): AvailabilityResponseDto {
       acceptsNewOrders: true,
       updatedAt: "2030-01-01T10:00:00.000Z",
       updatedBy: staffId,
+      updatedByLabel: staffPhone,
     },
     modifierGroups: [{ id: modifierGroupId, isActive: true, name: "Молоко" }],
     modifierOptions: [
@@ -110,7 +112,11 @@ describe("AvailabilityApi", () => {
           sortOrder: 0,
         },
       ],
-      intake: availabilityResponse().intake,
+      intake: {
+        acceptsNewOrders: true,
+        updatedAt: "2030-01-01T10:00:00.000Z",
+        updatedByLabel: staffPhone,
+      },
     });
   });
 
@@ -129,6 +135,7 @@ describe("AvailabilityApi", () => {
             acceptsNewOrders: false,
             updatedAt: "2030-01-01T10:00:00.000Z",
             updatedBy: staffId,
+            updatedByLabel: staffPhone,
           },
           200,
         ),
@@ -174,6 +181,41 @@ describe("AvailabilityApi", () => {
           {
             ...response,
             products: [{ ...response.products[0], categoryId: staffId }],
+          },
+          200,
+        ),
+      ),
+    );
+
+    await expect(api.get("access-token")).rejects.toMatchObject({
+      code: "API_CONTRACT_ERROR",
+    });
+  });
+
+  it("принимает отсутствие подписи изменившего сотрудника", async () => {
+    const response = availabilityResponse();
+    response.intake.updatedBy = null;
+    response.intake.updatedByLabel = null;
+    const api = createAvailabilityApi(
+      vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(response, 200)),
+    );
+
+    await expect(api.get("access-token")).resolves.toMatchObject({
+      intake: { updatedByLabel: null },
+    });
+  });
+
+  it.each([
+    ["подпись неправильного типа", 42],
+    ["подпись с неверным номером", "79991234567"],
+  ])("не принимает intake, если %s", async (_description, updatedByLabel) => {
+    const response = availabilityResponse();
+    const api = createAvailabilityApi(
+      vi.fn<typeof fetch>().mockResolvedValue(
+        jsonResponse(
+          {
+            ...response,
+            intake: { ...response.intake, updatedByLabel },
           },
           200,
         ),

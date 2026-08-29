@@ -158,8 +158,12 @@ function snapshotItems(items: readonly DatabaseRow[], modifiers: readonly Databa
 }
 
 async function readEvents(client: Queryable, orderId: string): Promise<readonly OrderEvent[]> {
-  const result = await client.query<DatabaseRow>(`SELECT actor_id, occurred_at, from_stage, to_stage FROM order_events WHERE order_id = $1 ORDER BY occurred_at ASC, id ASC`, [orderId]);
-  return result.rows.map((row) => ({ actorId: readString(row, 'actor_id'), occurredAt: readDate(row, 'occurred_at'), from: readStage(row, 'from_stage'), to: readStage(row, 'to_stage') }));
+  const result = await client.query<DatabaseRow>(`SELECT e.actor_id, u.phone_e164 AS actor_label, e.occurred_at, e.from_stage, e.to_stage
+    FROM order_events e
+    INNER JOIN users u ON u.id = e.actor_id
+    WHERE e.order_id = $1
+    ORDER BY e.occurred_at ASC, e.id ASC`, [orderId]);
+  return result.rows.map((row) => ({ actorId: readString(row, 'actor_id'), actorLabel: readString(row, 'actor_label'), occurredAt: readDate(row, 'occurred_at'), from: readStage(row, 'from_stage'), to: readStage(row, 'to_stage') }));
 }
 
 function toQueueItem(row: DatabaseRow): OrderQueueItem { return { id: readString(row, 'id'), number: readString(row, 'number'), createdAt: readDate(row, 'created_at'), totalMinor: readNonNegativeInteger(row, 'total_minor'), stage: readStage(row, 'stage') }; }

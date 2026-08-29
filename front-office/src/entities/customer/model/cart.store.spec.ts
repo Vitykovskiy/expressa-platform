@@ -124,6 +124,152 @@ describe("cart store", () => {
     expect(store.items).toEqual([]);
   });
 
+  it("не сохраняет предупреждения повтора в localStorage", () => {
+    const storage = createStorage(null);
+    const store = useCartStore();
+    const warnings = [
+      {
+        context: "Размер M",
+        productName: "Капучино",
+        reason: "Размер больше недоступен.",
+      },
+    ];
+
+    store.applyRepeat([item], warnings, storage);
+
+    expect(store.repeatWarnings).toEqual(warnings);
+    expect(storage.setItem).toHaveBeenCalledWith(
+      cartStorageKey,
+      JSON.stringify([item]),
+    );
+  });
+
+  it("сбрасывает предупреждения при восстановлении корзины", () => {
+    const store = useCartStore();
+    const storage = createStorage(JSON.stringify([item]));
+
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+    store.restore(storage);
+
+    expect(store.items).toEqual([item]);
+    expect(store.repeatWarnings).toEqual([]);
+  });
+
+  it("заменяет корзину и предупреждения при повторе", () => {
+    const storage = createStorage(null);
+    const store = useCartStore();
+    const repeatItem = { ...item, id: "item-2", productName: "Чай" };
+
+    store.replace([item], storage);
+    store.applyRepeat(
+      [repeatItem],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+
+    expect(store.items).toEqual([repeatItem]);
+    expect(store.repeatWarnings).toEqual([
+      { productName: "Кофе", reason: "Товар больше недоступен." },
+    ]);
+  });
+
+  it("сохраняет корзину при повторе без доступных позиций", () => {
+    const storage = createStorage(null);
+    const store = useCartStore();
+
+    store.replace([item], storage);
+    storage.setItem.mockClear();
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+
+    expect(store.items).toEqual([item]);
+    expect(store.repeatWarnings).toEqual([
+      { productName: "Кофе", reason: "Товар больше недоступен." },
+    ]);
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it("идемпотентно заменяет предупреждения следующим повтором", () => {
+    const store = useCartStore();
+    const storage = createStorage(null);
+
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+
+    expect(store.repeatWarnings).toEqual([
+      { productName: "Кофе", reason: "Товар больше недоступен." },
+    ]);
+
+    store.applyRepeat([item], [], storage);
+
+    expect(store.repeatWarnings).toEqual([]);
+  });
+
+  it("очищает предупреждения при прямом изменении корзины", () => {
+    const store = useCartStore();
+    const storage = createStorage(null);
+
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+    store.replace([item], storage);
+
+    expect(store.repeatWarnings).toEqual([]);
+
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+    store.clear(storage);
+
+    expect(store.repeatWarnings).toEqual([]);
+  });
+
+  it("очищает предупреждения при добавлении позиции", () => {
+    const store = useCartStore();
+    const storage = createStorage(null);
+
+    store.applyRepeat(
+      [],
+      [{ productName: "Кофе", reason: "Товар больше недоступен." }],
+      storage,
+    );
+    store.addConfigured(
+      {
+        addons: [],
+        lineTotalMinor: 30000,
+        lineTotalRub: 300,
+        productId: "product-1",
+        productName: "Кофе",
+        quantity: 1,
+        selectedModifierOptions: [],
+        type: "OTHER",
+        unitTotalMinor: 30000,
+      },
+      storage,
+    );
+
+    expect(store.repeatWarnings).toEqual([]);
+  });
+
   it("merges a matching configured product, variant and sorted option ids", () => {
     const storage = createStorage(null);
     const store = useCartStore();

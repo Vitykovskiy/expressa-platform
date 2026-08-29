@@ -1,18 +1,40 @@
-import { AvailabilityState, expect, ProductType, test } from "@fixtures/test";
+import {
+  AvailabilityItemType,
+  AvailabilityState,
+  expect,
+  ProductConfiguratorSize,
+  test,
+} from "@fixtures/test";
 
 /**
- * Назначение: customer устраняет недоступную позицию перед оформлением.
+ * Назначение: full journey актуализации доступности позиции в сформированной через UI корзине.
+ * Связанные capabilities: добавление позиций в корзину, изменение доступности товара, актуализация доступности и удаление недоступной позиции.
  *
- * Предусловия: customer авторизован; в корзине есть доступная и ставшая недоступной позиции; приём новых заказов открыт.
+ * Предусловия: изолированный запуск `mutating` с seed scenario `canonical` содержит опубликованные доступные «Капучино» и «Эспрессо» в категории «Кофе»; тестовое окружение предоставляет administrator и OTP customer; корзина нового browser context пуста.
  *
  * Сценарий:
- * 1. Customer открывает корзину.
- * 2. Customer начинает оформление заказа.
- * 3. Customer удаляет отмеченную недоступной позицию.
+ * 1. Customer открывает публичное меню.
+ * 2. Customer открывает категорию «Кофе».
+ * 3. Customer открывает «Капучино».
+ * 4. Customer добавляет исходную конфигурацию в корзину.
+ * 5. Customer открывает «Эспрессо».
+ * 6. Customer добавляет исходную конфигурацию в корзину.
+ * 7. Administrator открывает форму входа back-office.
+ * 8. Administrator вводит номер телефона.
+ * 9. Administrator запрашивает одноразовый код.
+ * 10. Administrator вводит одноразовый код.
+ * 11. Administrator подтверждает вход.
+ * 12. Administrator открывает управление доступностью.
+ * 13. Administrator ищет «Капучино».
+ * 14. Administrator выключает «Капучино».
+ * 15. Customer открывает публичное меню.
+ * 16. Customer открывает корзину.
+ * 17. Customer начинает оформление для проверки доступности.
+ * 18. Customer удаляет отмеченный недоступным «Капучино».
  *
  * Ожидаемый результат:
- * - Позиция отмечена как недоступная, а оформление недоступно до её удаления.
- * - После удаления недоступной позиции customer может продолжить оформление с оставшимися доступными позициями.
+ * - «Капучино» отмечен как недоступный, а оформление недоступно до его удаления.
+ * - После удаления «Капучино» customer может продолжить оформление с «Эспрессо».
  */
 test("CART-07: customer устраняет недоступную позицию", async ({
   availabilityManagement,
@@ -21,114 +43,70 @@ test("CART-07: customer устраняет недоступную позицию
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
   publicMenu,
-}, testInfo) => {
-  const categoryName = `Категория корзины ${testInfo.testId}`;
-  const unavailableProductName = `Недоступный товар ${testInfo.testId}`;
-  const availableProductName = `Доступный товар ${testInfo.testId}`;
+}) => {
+  await test.step("Подготовка: customer авторизуется.", async () => {
+    await customerAuth.open(e2eEnvironment.frontOfficeUrl);
+    await customerAuth.phoneVerification.fillPhone(
+      e2eCredentials.customer.phone,
+    );
+    await customerAuth.phoneVerification.requestCode();
+    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await customerAuth.phoneVerification.confirm();
+  });
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
+  await publicMenu.product.openProduct("Капучино");
+  await publicMenu.product.addToCart();
+  await publicMenu.product.openProduct("Эспрессо");
+  await publicMenu.product.addToCart();
+  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+  await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
+  await backOfficeAuth.form.requestCode();
+  await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
+  await backOfficeAuth.form.confirmCode();
+  await availabilityManagement.open();
+  await availabilityManagement.list.search("Капучино");
+  await availabilityManagement.list.setItemAvailability(
+    "Капучино",
+    AvailabilityItemType.PRODUCT,
+    AvailabilityState.UNAVAILABLE,
+  );
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await checkout.cart.open();
+  await checkout.cart.requestAvailabilityRevalidation();
 
-  try {
-    await test.step("Подготовка: administrator публикует два доступных товара, а customer добавляет их в корзину.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.categoryEditor.startCreation();
-      await menuManagement.categoryEditor.fillName(categoryName);
-      await menuManagement.categoryEditor.fillDescription(
-        "Категория проверки доступности корзины",
-      );
-      await menuManagement.categoryEditor.save(categoryName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(categoryName);
-      await menuManagement.productEditor.selectType(ProductType.OTHER);
-      await menuManagement.productEditor.fillName(unavailableProductName);
-      await menuManagement.productEditor.setSinglePrice("25000");
-      await menuManagement.productEditor.save(unavailableProductName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(categoryName);
-      await menuManagement.productEditor.selectType(ProductType.OTHER);
-      await menuManagement.productEditor.fillName(availableProductName);
-      await menuManagement.productEditor.setSinglePrice("25000");
-      await menuManagement.productEditor.save(availableProductName);
-      await backOfficeAuth.form.signOut();
-      await customerAuth.open(e2eEnvironment.frontOfficeUrl);
-      await customerAuth.phoneVerification.fillPhone(
-        e2eCredentials.customer.phone,
-      );
-      await customerAuth.phoneVerification.requestCode();
-      await customerAuth.phoneVerification.fillCode(
-        e2eCredentials.customer.otp,
-      );
-      await customerAuth.phoneVerification.confirm();
-      await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-      await publicMenu.product.openCategory(categoryName);
-      await publicMenu.product.openProduct(unavailableProductName);
-      await publicMenu.product.addToCart();
-      await publicMenu.product.openProduct(availableProductName);
-      await publicMenu.product.addToCart();
-    });
-    await test.step("Подготовка: administrator выключает добавленную позицию через управление доступностью.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(unavailableProductName);
-      await availabilityManagement.list.setProductAvailability(
-        unavailableProductName,
-        AvailabilityState.UNAVAILABLE,
-      );
-      await backOfficeAuth.form.signOut();
-      await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    });
-
-    await checkout.cart.open();
-    await checkout.cart.requestAvailabilityRevalidation();
-
-    await test.step("Позиция отмечена как недоступная, а оформление недоступно до её удаления.", async () => {
-      expect(
-        await checkout.cart.isItemUnavailable(unavailableProductName),
-        "Недоступная позиция отмечена в корзине.",
-      ).toBe(true);
-      expect(
-        await checkout.cart.isCheckoutEnabled(),
-        "Оформление недоступно до удаления позиции.",
-      ).toBe(false);
-    });
-
-    await checkout.cart.remove(unavailableProductName);
-
-    await test.step("После удаления недоступной позиции customer может продолжить оформление с оставшимися доступными позициями.", async () => {
-      expect(
-        await checkout.cart.readItemsCount(),
-        "В корзине остаётся доступная позиция.",
-      ).toBe(1);
-      expect(
-        await checkout.cart.readItemName(availableProductName, undefined, []),
-        "В корзине остаётся доступный товар.",
-      ).toBe(availableProductName);
-      expect(
-        await checkout.cart.isCheckoutEnabled(),
-        "Оформление доступно после удаления недоступной позиции.",
-      ).toBe(true);
-    });
-  } finally {
-    await test.step("Очистка: administrator возвращает доступность и удаляет данные сценария.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(unavailableProductName);
-      await availabilityManagement.list.setProductAvailability(
-        unavailableProductName,
-        AvailabilityState.AVAILABLE,
-      );
-      await menuManagement.open();
-      await menuManagement.catalog.expandCategoryIfPresent(categoryName);
-      await menuManagement.productEditor.deleteIfPresent(
-        unavailableProductName,
-      );
-      await menuManagement.productEditor.deleteIfPresent(availableProductName);
-      await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-      await backOfficeAuth.form.signOut();
-    });
-  }
+  await test.step("«Капучино» отмечен как недоступный, а оформление недоступно до его удаления.", async () => {
+    expect(
+      await checkout.cart.isItemUnavailable(
+        "Капучино",
+        ProductConfiguratorSize.M,
+        ["Обычное молоко"],
+      ),
+      "Капучино отмечен как недоступный.",
+    ).toBe(true);
+    expect(
+      await checkout.cart.isCheckoutEnabled(),
+      "Оформление недоступно до удаления капучино.",
+    ).toBe(false);
+  });
+  await checkout.cart.remove("Капучино", ProductConfiguratorSize.M, [
+    "Обычное молоко",
+  ]);
+  await test.step("После удаления «Капучино» customer может продолжить оформление с «Эспрессо».", async () => {
+    expect(
+      await checkout.cart.readItemsCount(),
+      "В корзине остаётся одна позиция.",
+    ).toBe(1);
+    expect(
+      await checkout.cart.readItemName("Эспрессо", ProductConfiguratorSize.S, [
+        "Обычное молоко",
+      ]),
+      "В корзине остаётся доступный эспрессо.",
+    ).toBe("Эспрессо");
+    expect(
+      await checkout.cart.isCheckoutEnabled(),
+      "Оформление доступно после удаления капучино.",
+    ).toBe(true);
+  });
 });

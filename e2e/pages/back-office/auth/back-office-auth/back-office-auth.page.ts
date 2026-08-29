@@ -1,7 +1,10 @@
-import { test, type Locator, type Page } from "@playwright/test";
+import { test } from "@playwright/test";
 
-import { BackOfficeAuthFormComponent } from "./back-office-auth-form/back-office-auth-form.component";
+import { BackOfficeAuthFormComponent } from "@pages/back-office/auth/back-office-auth/back-office-auth-form/back-office-auth-form.component";
+
 import { BackOfficeWorkspaceSection } from "./back-office-auth.page.types";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class BackOfficeAuthPage {
   public readonly form: BackOfficeAuthFormComponent;

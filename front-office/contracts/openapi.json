@@ -4358,6 +4358,12 @@
             "format": "uuid",
             "nullable": true
           },
+          "updatedByLabel": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^\\+[1-9]\\d{1,14}$",
+            "example": "+79991234567"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -4367,6 +4373,7 @@
         "required": [
           "acceptsNewOrders",
           "updatedBy",
+          "updatedByLabel",
           "updatedAt"
         ]
       },
@@ -4763,6 +4770,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "actorLabel": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{1,14}$",
+            "example": "+79991234567"
+          },
           "occurredAt": {
             "type": "string",
             "format": "date-time"
@@ -4790,6 +4802,7 @@
         },
         "required": [
           "actorId",
+          "actorLabel",
           "occurredAt",
           "from",
           "to"

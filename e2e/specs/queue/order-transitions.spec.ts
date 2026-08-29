@@ -1,366 +1,144 @@
 import {
-  createProductOrderScenarioData,
   expect,
-  ModifierSelectionType,
   OrderQueueStage,
   OrderQueueTransitionAction,
-  ProductConfiguratorSize,
-  ProductEditorSize,
-  ProductType,
-  QueueScenarioStage,
+  OrderStatus,
   test,
 } from "@fixtures/test";
 
 /**
- * Назначение: сотрудник проводит заказ только по разрешённой последовательности стадий до выдачи.
+ * Назначение: сотрудник проводит оформленный заказ по разрешённой последовательности стадий до выдачи.
  *
- * Предусловия: administrator, staff и customer могут войти в свои интерфейсы;
- * customer может подтвердить номер телефона.
+ * Предусловия: изолированный профиль `order-created` содержит оформленный заказ customer №20300102-001; staff может войти через UI.
  *
  * Сценарий:
  * 1. Сотрудник открывает раздел заказов.
- * 2. Сотрудник открывает детали оформленного заказа.
+ * 2. Сотрудник открывает детали заказа №20300102-001.
  * 3. Сотрудник переводит заказ из стадии «Оформлен» в «Принят».
  * 4. Сотрудник переводит заказ из стадии «Принят» в «Готовится».
  * 5. Сотрудник переводит заказ из стадии «Готовится» в «Готов».
- * 6. Сотрудник получает наличную оплату и нажимает «Выдать» для перевода заказа из стадии «Готов» в «Выдан».
+ * 6. Сотрудник выдаёт готовый заказ.
  *
  * Ожидаемый результат:
- * - После каждого действия карточка и детали показывают следующую разрешённую стадию: «Принят», «Готовится», «Готов», «Выдан».
- * - Для оформленного заказа доступен только переход в «Принят»; переходы с пропуском стадии недоступны.
- * - После выдачи действие следующего или повторного перехода не показано.
- * - История фиксирует каждый переход с его автором и временем.
- * - «Выдать» подтверждает наличную оплату и не создаёт отдельную стадию заказа.
+ * - Для оформленного заказа доступен только переход в «Принят».
+ * - После принятия карточка показывает стадию «Принят», а детали предлагают начать приготовление.
+ * - После начала приготовления карточка показывает стадию «Готовится», а детали предлагают отметить готовность.
+ * - После отметки готовности карточка показывает стадию «Готов», а детали предлагают выдачу.
+ * - После выдачи карточка показывает стадию «Выдан», действия в деталях нет, история содержит четыре перехода.
  */
 test("QUEUE-07: сотрудник проводит заказ по разрешённым стадиям", async ({
   backOfficeAuth,
-  checkout,
-  customerOrder,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
-  publicMenu,
   staffOrders,
-}, testInfo) => {
-  const data = createProductOrderScenarioData(testInfo.testId);
-  let administratorSignedIn = false;
-  let staffSignedIn = false;
-  let primaryError: unknown;
-  let hasPrimaryFailure = false;
-  const cleanupErrors: unknown[] = [];
+}) => {
+  const order = {
+    id: "00000000-0000-4000-8000-000000000001",
+    number: "20300102-001",
+    productName: "Капучино",
+    size: "M",
+    modifierName: "Обычное молоко",
+    quantity: "1",
+    lineTotal: "320,00 ₽",
+    total: "320,00 ₽",
+    status: OrderStatus.CREATED,
+  };
 
-  try {
-    const order =
-      await test.step("Подготовка: administrator публикует товар, а customer оформляет заказ через UI.", async () => {
-        await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-        await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-        administratorSignedIn = true;
-        await menuManagement.open();
-        await menuManagement.categoryEditor.startCreation();
-        await menuManagement.categoryEditor.fillName(data.categoryName);
-        await menuManagement.categoryEditor.fillDescription(
-          data.productDescription,
-        );
-        await menuManagement.categoryEditor.save(data.categoryName);
-        await menuManagement.productEditor.startCreation();
-        await menuManagement.productEditor.selectCategory(data.categoryName);
-        await menuManagement.productEditor.selectType(ProductType.DRINK);
-        await menuManagement.productEditor.fillName(data.productName);
-        await menuManagement.productEditor.fillDescription(
-          data.productDescription,
-        );
-        await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
-        await menuManagement.productEditor.setPrice(
-          ProductEditorSize.M,
-          data.productPrice,
-        );
-        await menuManagement.productEditor.save(data.productName);
-        await menuManagement.modifierGroupEditor.openManagement();
-        await menuManagement.modifierGroupEditor.startCreation();
-        await menuManagement.modifierGroupEditor.fillName(
-          data.modifierGroupName,
-        );
-        await menuManagement.modifierGroupEditor.setRequired();
-        await menuManagement.modifierGroupEditor.selectType(
-          ModifierSelectionType.SINGLE,
-        );
-        await menuManagement.modifierGroupEditor.addOption();
-        await menuManagement.modifierGroupEditor.fillOptionName(
-          data.modifierName,
-        );
-        await menuManagement.modifierGroupEditor.setOptionPrice("0");
-        await menuManagement.modifierGroupEditor.setOptionDefault();
-        await menuManagement.modifierGroupEditor.save();
-        await menuManagement.assignments.openCategory(data.categoryName);
-        await menuManagement.assignments.selectGroup(data.modifierGroupName);
-        await menuManagement.assignments.save();
-        await backOfficeAuth.form.signOut();
-        administratorSignedIn = false;
-        await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-        await publicMenu.product.openCategory(data.categoryName);
-        await publicMenu.product.openProduct(data);
-        await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-        await publicMenu.product.selectModifier(data.modifierName);
-        await publicMenu.product.addToCart();
-        await checkout.cart.open();
-        await checkout.cart.setQuantity(data.productName, data.productQuantity);
-        await checkout.cart.startCheckout();
-        await checkout.phoneVerification.fillPhone(
-          e2eCredentials.customer.phone,
-        );
-        await checkout.phoneVerification.requestCode();
-        await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
-        await checkout.phoneVerification.confirm();
-        await checkout.profile.completeProfileIfShown(data.customerName);
-        await checkout.cart.placeOrder();
+  await test.step("Подготовка: staff авторизуется", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);
+    await backOfficeAuth.form.requestCode();
+    await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
+    await backOfficeAuth.form.confirmCode();
+  });
 
-        return customerOrder.details.readSnapshot();
-      });
-    await test.step("Подготовка: staff входит в back-office.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.staff);
-      staffSignedIn = true;
-    });
-
-    await staffOrders.open();
-    await staffOrders.queue.openDetails(order);
-    const initialTransitions =
-      await staffOrders.queue.readAvailableTransitions(order);
-    await staffOrders.queue.transition(
-      order,
-      OrderQueueTransitionAction.ACCEPT,
-    );
-    const acceptedStage = await staffOrders.queue.readCurrentStage(order);
-    const acceptedTransitions =
-      await staffOrders.queue.readAvailableTransitions(order);
-    await staffOrders.queue.transition(
-      order,
-      OrderQueueTransitionAction.START_PREPARING,
-    );
-    const preparingStage = await staffOrders.queue.readCurrentStage(order);
-    const preparingTransitions =
-      await staffOrders.queue.readAvailableTransitions(order);
-    await staffOrders.queue.transition(
-      order,
-      OrderQueueTransitionAction.MARK_READY,
-    );
-    const readyStage = await staffOrders.queue.readCurrentStage(order);
-    const readyTransitions =
-      await staffOrders.queue.readAvailableTransitions(order);
-    await staffOrders.queue.transition(order, OrderQueueTransitionAction.ISSUE);
-    const issuedStage = await staffOrders.queue.readCurrentStage(order);
-    const issuedTransitions =
-      await staffOrders.queue.readAvailableTransitions(order);
+  await staffOrders.open();
+  await staffOrders.queue.openDetails(order);
+  const initialTransitions =
+    await staffOrders.queue.readAvailableTransitions(order);
+  await test.step("Для оформленного заказа доступен только переход в «Принят».", async () => {
+    expect(
+      initialTransitions,
+      "Переходы с пропуском стадии не показаны.",
+    ).toEqual([OrderQueueTransitionAction.ACCEPT]);
+  });
+  await staffOrders.queue.transition(order, OrderQueueTransitionAction.ACCEPT);
+  await test.step("После принятия карточка показывает стадию «Принят», а детали предлагают начать приготовление.", async () => {
+    expect(
+      await staffOrders.queue.readCurrentStage(order),
+      "Карточка показывает стадию «Принят».",
+    ).toBe(OrderQueueStage.ACCEPTED);
+    expect(
+      await staffOrders.queue.readAvailableTransitions(order),
+      "Доступно начало приготовления.",
+    ).toEqual([OrderQueueTransitionAction.START_PREPARING]);
+  });
+  await staffOrders.queue.transition(
+    order,
+    OrderQueueTransitionAction.START_PREPARING,
+  );
+  await test.step("После начала приготовления карточка показывает стадию «Готовится», а детали предлагают отметить готовность.", async () => {
+    expect(
+      await staffOrders.queue.readCurrentStage(order),
+      "Карточка показывает стадию «Готовится».",
+    ).toBe(OrderQueueStage.PREPARING);
+    expect(
+      await staffOrders.queue.readAvailableTransitions(order),
+      "Доступна отметка готовности.",
+    ).toEqual([OrderQueueTransitionAction.MARK_READY]);
+  });
+  await staffOrders.queue.transition(
+    order,
+    OrderQueueTransitionAction.MARK_READY,
+  );
+  await test.step("После отметки готовности карточка показывает стадию «Готов», а детали предлагают выдачу.", async () => {
+    expect(
+      await staffOrders.queue.readCurrentStage(order),
+      "Карточка показывает стадию «Готов».",
+    ).toBe(OrderQueueStage.READY);
+    expect(
+      await staffOrders.queue.readAvailableTransitions(order),
+      "Доступна выдача заказа.",
+    ).toEqual([OrderQueueTransitionAction.ISSUE]);
+  });
+  await staffOrders.queue.transition(order, OrderQueueTransitionAction.ISSUE);
+  await test.step("После выдачи карточка показывает стадию «Выдан», действия в деталях нет, история содержит четыре перехода.", async () => {
     const history = await staffOrders.queue.readTransitionHistory(order);
 
-    await test.step("После каждого действия карточка и детали показывают следующую разрешённую стадию: «Принят», «Готовится», «Готов», «Выдан».", async () => {
-      expect(acceptedStage, "После принятия заказ показан как «Принят».").toBe(
-        OrderQueueStage.ACCEPTED,
-      );
-      expect(
-        acceptedTransitions,
-        "В деталях принятого заказа доступно начало приготовления.",
-      ).toEqual([OrderQueueTransitionAction.START_PREPARING]);
-      expect(
-        preparingStage,
-        "После начала приготовления заказ показан как «Готовится».",
-      ).toBe(OrderQueueStage.PREPARING);
-      expect(
-        preparingTransitions,
-        "В деталях готовящегося заказа доступно завершение приготовления.",
-      ).toEqual([OrderQueueTransitionAction.MARK_READY]);
-      expect(readyStage, "После приготовления заказ показан как «Готов».").toBe(
-        OrderQueueStage.READY,
-      );
-      expect(
-        readyTransitions,
-        "В деталях готового заказа доступна выдача.",
-      ).toEqual([OrderQueueTransitionAction.ISSUE]);
-      expect(issuedStage, "После выдачи заказ показан как «Выдан».").toBe(
-        OrderQueueStage.ISSUED,
-      );
-      expect(
-        issuedTransitions,
-        "В деталях выданного заказа действие перехода отсутствует.",
-      ).toEqual([]);
-    });
-    await test.step("Для оформленного заказа доступен только переход в «Принят»; переходы с пропуском стадии недоступны.", async () => {
-      expect(
-        initialTransitions,
-        "Для оформленного заказа доступно только действие «Принять заказ».",
-      ).toEqual([OrderQueueTransitionAction.ACCEPT]);
-    });
-    await test.step("После выдачи действие следующего или повторного перехода не показано.", async () => {
-      expect(
-        issuedTransitions,
-        "После выдачи действие следующего или повторного перехода отсутствует.",
-      ).toEqual([]);
-    });
-    await test.step("История фиксирует каждый переход с его автором и временем.", async () => {
-      expect(history, "История содержит четыре перехода.").toHaveLength(4);
-      expect(
-        history[0],
-        "История начинается с «Оформлен» → «Принят».",
-      ).toMatchObject({
-        from: QueueScenarioStage.CREATED,
-        to: OrderQueueStage.ACCEPTED,
-      });
-      expect(
-        history[1],
-        "История фиксирует «Принят» → «Готовится».",
-      ).toMatchObject({
-        from: OrderQueueStage.ACCEPTED,
-        to: OrderQueueStage.PREPARING,
-      });
-      expect(
-        history[2],
-        "История фиксирует «Готовится» → «Готов».",
-      ).toMatchObject({
-        from: OrderQueueStage.PREPARING,
-        to: QueueScenarioStage.READY,
-      });
-      expect(
-        history[3],
-        "История завершает путь «Готов» → «Выдан».",
-      ).toMatchObject({
-        from: QueueScenarioStage.READY,
-        to: OrderQueueStage.ISSUED,
-      });
-      for (const [index, transition] of history.entries()) {
-        expect(
-          transition.author,
-          `Автор перехода ${index + 1} показан.`,
-        ).not.toBe("");
-        expect(
-          transition.occurredAt,
-          `Время перехода ${index + 1} показано.`,
-        ).not.toBe("");
-      }
-    });
-    await test.step("«Выдать» подтверждает наличную оплату и не создаёт отдельную стадию заказа.", async () => {
-      expect(
-        readyTransitions,
-        "Перед выдачей показано действие «Выдать заказ» для наличной оплаты.",
-      ).toEqual([OrderQueueTransitionAction.ISSUE]);
-      expect(
-        history[3],
-        "Выдача переводит готовый заказ непосредственно в стадию «Выдан».",
-      ).toMatchObject({
-        from: QueueScenarioStage.READY,
-        to: OrderQueueStage.ISSUED,
-      });
-      expect(issuedStage, "После подтверждения оплаты заказ выдан.").toBe(
-        OrderQueueStage.ISSUED,
-      );
-      expect(
-        issuedTransitions,
-        "После выдачи повторное действие не показано.",
-      ).toEqual([]);
-    });
-  } catch (error) {
-    primaryError = error;
-    hasPrimaryFailure = true;
-  }
+    expect(
+      await staffOrders.queue.readCurrentStage(order),
+      "Карточка показывает стадию «Выдан».",
+    ).toBe(OrderQueueStage.ISSUED);
+    expect(
+      await staffOrders.queue.readAvailableTransitions(order),
+      "Действия перехода нет.",
+    ).toEqual([]);
+    expect(history, "История содержит четыре перехода.").toHaveLength(4);
+    const expectedTransitions = [
+      [OrderQueueStage.CREATED, OrderQueueStage.ACCEPTED],
+      [OrderQueueStage.ACCEPTED, OrderQueueStage.PREPARING],
+      [OrderQueueStage.PREPARING, OrderQueueStage.READY],
+      [OrderQueueStage.READY, OrderQueueStage.ISSUED],
+    ] as const;
 
-  if (staffSignedIn) {
-    try {
-      await test.step("Очистка: staff завершает сессию back-office.", async () => {
-        await backOfficeAuth.form.signOut();
-        staffSignedIn = false;
-      });
-    } catch (error) {
-      cleanupErrors.push(error);
+    for (const [index, [from, to]] of expectedTransitions.entries()) {
+      const transition = history[index];
+
+      expect(
+        transition?.from,
+        `Показана исходная стадия перехода ${index + 1}.`,
+      ).toBe(from);
+      expect(
+        transition?.to,
+        `Показана новая стадия перехода ${index + 1}.`,
+      ).toBe(to);
+      expect(transition?.author, `Показан автор перехода ${index + 1}.`).toBe(
+        e2eCredentials.staff.phone,
+      );
+      expect(
+        transition?.occurredAt,
+        `Показаны допустимые дата и время перехода ${index + 1}.`,
+      ).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/u);
     }
-  }
-
-  if (administratorSignedIn) {
-    try {
-      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
-        await backOfficeAuth.form.signOut();
-        administratorSignedIn = false;
-      });
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-  }
-
-  try {
-    await test.step("Очистка: administrator открывает back-office.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      administratorSignedIn = true;
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  try {
-    await test.step("Очистка: administrator открывает управление меню.", async () => {
-      await menuManagement.open();
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  try {
-    await test.step("Очистка: administrator раскрывает категорию сценария.", async () => {
-      await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  try {
-    await test.step("Очистка: administrator удаляет товар сценария.", async () => {
-      await menuManagement.productEditor.deleteIfPresent(data.productName);
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  try {
-    await test.step("Очистка: administrator архивирует группу добавок сценария.", async () => {
-      await menuManagement.modifierGroupEditor.archiveIfPresent(
-        data.modifierGroupName,
-      );
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  try {
-    await test.step("Очистка: administrator архивирует категорию сценария.", async () => {
-      await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-    });
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-
-  if (administratorSignedIn) {
-    try {
-      await test.step("Очистка: administrator завершает сессию back-office.", async () => {
-        await backOfficeAuth.form.signOut();
-        administratorSignedIn = false;
-      });
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-  }
-
-  for (const cleanupError of cleanupErrors) {
-    try {
-      await testInfo.attach("Ошибка очистки", {
-        body:
-          cleanupError instanceof Error
-            ? (cleanupError.stack ?? cleanupError.message)
-            : String(cleanupError),
-        contentType: "text/plain",
-      });
-    } catch {
-      // Первичная ошибка сценария или очистки сохраняет приоритет.
-    }
-  }
-
-  if (hasPrimaryFailure) throw primaryError;
-  if (cleanupErrors.length > 0) throw cleanupErrors[0];
+  });
 });

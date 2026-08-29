@@ -32,24 +32,23 @@ front-office на `gateway:8081`, back-office на `gateway:8082` и прокс�
 containers, networks, volume PostgreSQL и временные test data. HTML-артефакты
 переносятся в постоянное хранилище отчётов до этой очистки.
 
-## Disposable-профили
+## Изолированные тесты
 
-Runtime последовательно запускает `empty`, `seeded` и `mutating`. Каждый
-профиль получает отдельный Compose project, PostgreSQL volume и сети.
-Подготовка инфраструктурных данных выполняется до запуска Playwright; specs
-взаимодействуют только с front-office и back-office через браузерный UI.
+Runtime запускает каждый тест из явной таблицы
+[`run-e2e-remote.sh`](../../deploy/run-e2e-remote.sh) в отдельном Compose
+project с PostgreSQL volume, сетями и browser execution. Точный заголовок теста
+передаётся Playwright через `--grep`; повтор заголовка, неизвестный профиль или
+состояние seed останавливают запуск до создания стенда.
 
-| Профиль | Начальное состояние | Назначение |
-| --- | --- | --- |
-| `empty` | Миграции, administrator и staff без каталога и заказов. | Пустые состояния и создание базовых данных через UI. |
-| `seeded` | Независимый новый стенд с минимальным опубликованным каталогом. | Основной путь просмотра меню, корзины и оформления заказа. |
-| `mutating` | Независимый новый стенд с минимальным опубликованным каталогом. | Изменение доступности, каталога и стадий заказа без влияния на другие профили. |
+Для каждого теста runner выбирает ровно одно из состояний
+`E2E_SEED_SCENARIO`, которое передаётся только команде seed. Пустые сценарии
+`CATALOG-01`, `MENU-02`, `AVAIL-12` и `QUEUE-01` используют внутреннее
+состояние `no-seed`: после миграций создаются только administrator и barista,
+без вызова seed. `E2E_PROFILE=empty|seeded|mutating` управляет `testMatch` и
+`testIgnore` в Playwright.
 
-Runtime задаёт `E2E_PROFILE=empty|seeded|mutating` для каждого запуска; этот
-ключ выбирает назначенную часть specs в Playwright. Полное покрытие профилей,
-включая потребление fixture и все пустые сценарии, остаётся отдельной работой.
 Workflow передаёт разрешённые учётные данные process-scoped в VPS runtime;
-runtime задаёт профиль, передаёт значения в Compose, а Compose — в E2E-контейнер.
+runtime передаёт их в Compose, а Compose — в E2E-контейнер.
 Контракт E2E-контейнера включает `E2E_ADMIN_PHONE`/`E2E_ADMIN_OTP`,
 `E2E_STAFF_PHONE`/`E2E_STAFF_OTP`, `E2E_CUSTOMER_PHONE`/`E2E_CUSTOMER_OTP` и
 `E2E_CUSTOMER_2_PHONE`/`E2E_CUSTOMER_2_OTP`. Два customer-набора имеют разные
@@ -59,18 +58,19 @@ runtime задаёт профиль, передаёт значения в Compos
 
 Эти переменные разрешены E2E-контейнеру только для входа через UI. Доступы к
 API, БД, PostgreSQL volume, `DATABASE_URL` и seed-данным ему не передаются.
-После каждого профиля, включая ошибку, runtime удаляет profile-scoped
-`E2E_PROFILE` и каталог артефактов, контейнеры, сети, PostgreSQL volume и
-временные данные. Источники контракта — workflow, `e2e-compose.yml` и
-`run-e2e-remote.sh`.
+После каждого теста, включая ошибку, runtime удаляет test-scoped
+`E2E_PROFILE`, каталог артефактов, контейнеры, сети, PostgreSQL volume и
+временные данные. HTML-отчёт содержит отдельную запись на каждый тест.
+Источники контракта — workflow, `e2e-compose.yml` и `run-e2e-remote.sh`.
 
 ## Отчёт и доступ
 
 Результаты смотрят в двух местах:
 
-- [последний опубликованный Playwright report](http://216.57.105.133:8088/) —
-  полный результат последнего завершённого прогона; доступ разрешён только из
-  VPN/IP-сетей списка `E2E_REPORT_ALLOWLIST`;
+- последний опубликованный Playwright report — host берётся из приватного
+  GitHub Environment Secret `EXPRESSA_VPS_HOST`, report-host слушает порт
+  `8088`, доступ разрешён только из VPN/IP-сетей списка
+  `E2E_REPORT_ALLOWLIST`;
 - [Development delivery в GitHub Actions](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml) —
   статус сборки, поставки и E2E-job для каждого commit. Ссылка `Re-run jobs` на
   странице конкретного запуска повторяет проверку того же commit вручную.

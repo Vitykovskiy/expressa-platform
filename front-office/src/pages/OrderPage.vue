@@ -73,12 +73,6 @@
       >
         Повторить заказ
       </ui-btn>
-      <div v-if="impossibleItems.length" class="order-page__alert" role="alert">
-        <p>{{ orderPageMessages.repeatImpossible }}</p>
-        <ul>
-          <li v-for="item in impossibleItems" :key="item">{{ item }}</li>
-        </ul>
-      </div>
     </template>
     <div v-else class="order-page__state" role="status">
       <h1 id="order-title">Заказ</h1>
@@ -107,6 +101,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "@/app/session.store";
 import { useCartStore } from "@/entities/customer/model/cart.store";
+import type { ConfiguredCartItemDraft } from "@/entities/customer/model/customer.types";
 import { formatMinorAmount } from "@/entities/customer/model/money";
 import { toCartItemDraft } from "@/features/menu/product-configuration";
 import {
@@ -127,6 +122,7 @@ import type {
   OrderPageItem,
   OrderPageOrder,
   OrderPagePushSubscription,
+  OrderRepeatPreparation,
 } from "./OrderPage.types";
 
 const route = useRoute();
@@ -137,13 +133,12 @@ const cartStore = useCartStore();
 const order = ref<OrderPageOrder | null>(null);
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
-const impossibleItems = ref<string[]>([]);
 const pushMessage = ref<string | null>(null);
 const pushOperationPending = ref(false);
 const pushSubscription = ref<OrderPagePushSubscription | null>(null);
 const repeatConfirmationOpen = ref(false);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
-let repeatItems: Parameters<typeof cartStore.replace>[0] = [];
+let repeatPreparation: OrderRepeatPreparation | null = null;
 const stageLabel = computed(() =>
   order.value === null ? "" : orderPageStageLabels[order.value.stage],
 );
@@ -295,17 +290,21 @@ async function disablePushNotifications(): Promise<void> {
   }
 }
 async function prepareRepeat(): Promise<void> {
-  impossibleItems.value = [];
+  cartStore.clearRepeatWarnings();
   if (order.value?.stage !== "ISSUED" || apiClient === undefined) return;
   try {
     const menu = await createPublicMenuApi(apiClient).getMenu();
-    const prepared = createRepeatItems(
+    const preparation = createRepeatItems(
       order.value,
       menu.categories.flatMap((category) => category.products),
     );
-    if (prepared === null) return;
-    repeatItems = prepared;
-    if (cartStore.items.length === 0) return cartStore.replace(repeatItems);
+    repeatPreparation = preparation;
+    if (cartStore.items.length === 0) {
+      return applyRepeatAndOpenCart(preparation);
+    }
+    if (preparation.items.length === 0) {
+      return applyRepeatAndOpenCart(preparation);
+    }
     repeatConfirmationOpen.value = true;
   } catch (error) {
     errorMessage.value =
@@ -313,22 +312,32 @@ async function prepareRepeat(): Promise<void> {
   }
 }
 async function confirmRepeat(): Promise<void> {
-  cartStore.replace(repeatItems);
+  if (repeatPreparation === null) return;
+  cartStore.applyRepeat(repeatPreparation.items, repeatPreparation.warnings);
   repeatConfirmationOpen.value = false;
+  await router.push("/cart");
+}
+async function applyRepeatAndOpenCart(
+  preparation: OrderRepeatPreparation,
+): Promise<void> {
+  cartStore.applyRepeat(preparation.items, preparation.warnings);
   await router.push("/cart");
 }
 function createRepeatItems(
   source: CustomerOrder,
   products: PublicMenuProduct[],
-): Parameters<typeof cartStore.replace>[0] | null {
-  const items: Parameters<typeof cartStore.replace>[0] = [];
-  const impossible: string[] = [];
+): OrderRepeatPreparation {
+  const items: OrderRepeatPreparation["items"] = [];
+  const warnings: OrderRepeatPreparation["warnings"] = [];
   for (const item of source.items) {
     const product = products.find(
       (candidate) => candidate.id === item.productId,
     );
-    if (product === undefined) {
-      impossible.push(item.productName);
+    if (product === undefined || !product.isAvailable) {
+      warnings.push({
+        productName: item.productName,
+        reason: orderPageMessages.repeatProductUnavailable,
+      });
       continue;
     }
     const draft = toCartItemDraft({
@@ -346,14 +355,40 @@ function createRepeatItems(
       })),
       selectedVariantId: item.variantId,
     });
-    if (draft === null) {
-      impossible.push(item.productName);
+    if (draft === null || !doesDraftPreserveModifiers(draft, item)) {
+      warnings.push({
+        productName: item.productName,
+        context: getRepeatConfigurationContext(item),
+        reason: orderPageMessages.repeatConfigurationUnavailable,
+      });
       continue;
     }
     items.push({ ...draft, id: `repeat-${items.length}` });
   }
-  impossibleItems.value = impossible;
-  return impossible.length === 0 ? items : null;
+  return { items, warnings };
+}
+function doesDraftPreserveModifiers(
+  draft: ConfiguredCartItemDraft,
+  item: OrderPageItem,
+): boolean {
+  return (
+    draft.selectedModifierOptions.length === item.modifiers.length &&
+    item.modifiers.every((modifier) =>
+      draft.selectedModifierOptions.some(
+        (option) => option.id === modifier.modifierOptionId,
+      ),
+    )
+  );
+}
+function getRepeatConfigurationContext(
+  item: OrderPageItem,
+): string | undefined {
+  const details = [
+    item.size === null ? null : `Размер ${item.size}`,
+    ...item.modifiers.map((modifier) => modifier.modifierName),
+  ].filter((detail): detail is string => detail !== null);
+
+  return details.length === 0 ? undefined : details.join(", ");
 }
 function itemKey(item: OrderPageItem): string {
   return [
@@ -412,9 +447,7 @@ function toBase64(value: ArrayBuffer): string {
 .order-page__header h1,
 .order-page__stage,
 .order-page__payment,
-.order-page__notifications h2,
-.order-page__alert p,
-.order-page__alert ul {
+.order-page__notifications h2 {
   margin: 0;
 }
 .order-page__header h1 {
@@ -536,17 +569,6 @@ function toBase64(value: ArrayBuffer): string {
 .order-page__repeat[color="surface"] {
   color: var(--customer-background);
   background: var(--customer-surface);
-}
-.order-page__alert {
-  display: grid;
-  gap: var(--customer-space-5);
-  padding: var(--customer-space-9) var(--customer-space-10);
-  color: var(--customer-text-on-surface);
-  background: var(--customer-color-warning-surface);
-  border-radius: var(--customer-radius-lg);
-}
-.order-page__alert ul {
-  padding-left: var(--customer-space-10);
 }
 .order-page__dialog {
   display: grid;

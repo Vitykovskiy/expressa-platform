@@ -73,10 +73,10 @@
       <ol class="order-card__events">
         <li
           v-for="event in props.details.events"
-          :key="`${event.occurredAt}-${event.actorId}`"
+          :key="`${event.occurredAt}-${event.actorLabel}`"
         >
           {{ stageLabel(event.from) }} — {{ stageLabel(event.to) }},
-          {{ formatDate(event.occurredAt) }}, Автор: {{ event.actorId }}
+          {{ formatDate(event.occurredAt) }}, Автор: {{ event.actorLabel }}
         </li>
       </ol>
       <AdminButton

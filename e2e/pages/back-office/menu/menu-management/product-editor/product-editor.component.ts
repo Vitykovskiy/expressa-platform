@@ -1,14 +1,90 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
-import { ProductSize, ProductType } from "./product-editor.types";
+import {
+  ProductSize,
+  ProductSizeUsage,
+  ProductType,
+} from "./product-editor.types";
 
 export class ProductEditorComponent {
   private readonly addProductButton: Locator;
+  private readonly dialog: Locator;
+  private readonly confirmationDialog: Locator;
+  private readonly categorySelect: Locator;
+  private readonly selectedCategoryOption: Locator;
+  private readonly productTypeSelect: Locator;
+  private readonly productNameInput: Locator;
+  private readonly descriptionInput: Locator;
+  private readonly activeSwitch: Locator;
+  private readonly availableSwitch: Locator;
+  private readonly singlePriceInput: Locator;
+  private readonly variantsRequiredAlert: Locator;
+  private readonly createSaveButton: Locator;
+  private readonly editSaveButton: Locator;
+  private readonly cancelButton: Locator;
+  private readonly deleteButton: Locator;
+  private readonly cancelArchiveButton: Locator;
+  private readonly confirmArchiveButton: Locator;
 
   constructor(private readonly page: Page) {
     this.addProductButton = page.getByRole("button", {
       name: "Добавить товар",
+      exact: true,
+    });
+    this.dialog = page.getByRole("dialog");
+    this.confirmationDialog = page.getByRole("dialog", {
+      name: "Удалить товар?",
+      exact: true,
+    });
+    this.categorySelect = this.dialog.getByLabel("Категория", {
+      exact: true,
+    });
+    this.selectedCategoryOption = this.categorySelect.getByRole("option", {
+      selected: true,
+    });
+    this.productTypeSelect = this.dialog.getByLabel("Тип товара", {
+      exact: true,
+    });
+    this.productNameInput = this.dialog.getByLabel("Название товара", {
+      exact: true,
+    });
+    this.descriptionInput = this.dialog.getByLabel("Описание", {
+      exact: true,
+    });
+    this.activeSwitch = this.dialog.getByRole("switch", {
+      name: "Товар активен",
+      exact: true,
+    });
+    this.availableSwitch = this.dialog.getByRole("switch", {
+      name: "Товар доступен",
+      exact: true,
+    });
+    this.singlePriceInput = this.dialog.getByLabel("Цена, коп.", {
+      exact: true,
+    });
+    this.variantsRequiredAlert = this.dialog.getByRole("alert");
+    this.createSaveButton = this.dialog.getByRole("button", {
+      name: "Добавить товар",
+      exact: true,
+    });
+    this.editSaveButton = this.dialog.getByRole("button", {
+      name: "Сохранить изменения",
+      exact: true,
+    });
+    this.cancelButton = this.dialog.getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+    this.deleteButton = this.dialog.getByRole("button", {
+      name: "Удалить товар",
+      exact: true,
+    });
+    this.cancelArchiveButton = this.confirmationDialog.getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+    this.confirmArchiveButton = this.confirmationDialog.getByRole("button", {
+      name: "Удалить",
       exact: true,
     });
   }
@@ -20,17 +96,15 @@ export class ProductEditorComponent {
         "Кнопка добавления товара доступна.",
       ).toBeEnabled();
       await this.addProductButton.click();
-      await expect(this.dialog(), "Диалог нового товара открыт.").toBeVisible();
+      await expect(this.dialog, "Диалог нового товара открыт.").toBeVisible();
     });
   }
 
   async cancelCreation(): Promise<void> {
     await test.step("Отменить создание товара", async () => {
-      await this.dialog()
-        .getByRole("button", { name: "Отмена", exact: true })
-        .click();
+      await this.cancelButton.click();
       await expect(
-        this.dialog(),
+        this.dialog,
         "Редактор нового товара закрыт без сохранения.",
       ).toHaveCount(0);
     });
@@ -38,11 +112,8 @@ export class ProductEditorComponent {
 
   async selectCategory(name: string): Promise<void> {
     await test.step(`Выбрать категорию «${name}»`, async () => {
-      const category = this.dialog().getByLabel("Категория", { exact: true });
-      const categoryOption = category.getByRole("option", {
-        name,
-        exact: true,
-      });
+      const category = this.categorySelect;
+      const categoryOption = this.categoryOption(name);
 
       await expect(category, `Категория «${name}» доступна.`).toBeVisible();
       await expect(
@@ -64,9 +135,7 @@ export class ProductEditorComponent {
 
   async selectType(type: ProductType): Promise<void> {
     await test.step(`Выбрать тип товара «${type}»`, async () => {
-      const productType = this.dialog().getByLabel("Тип товара", {
-        exact: true,
-      });
+      const productType = this.productTypeSelect;
 
       await expect(productType, `Тип товара «${type}» доступен.`).toBeVisible();
       await productType.selectOption(type);
@@ -78,9 +147,7 @@ export class ProductEditorComponent {
 
   async fillName(name: string): Promise<void> {
     await test.step(`Указать название товара «${name}»`, async () => {
-      const productName = this.dialog().getByLabel("Название товара", {
-        exact: true,
-      });
+      const productName = this.productNameInput;
 
       await productName.fill(name);
       await expect(productName, "Название товара указано.").toHaveValue(name);
@@ -89,9 +156,7 @@ export class ProductEditorComponent {
 
   async fillDescription(description: string): Promise<void> {
     await test.step("Указать описание товара", async () => {
-      const productDescription = this.dialog().getByLabel("Описание", {
-        exact: true,
-      });
+      const productDescription = this.descriptionInput;
 
       await productDescription.fill(description);
       await expect(productDescription, "Описание товара указано.").toHaveValue(
@@ -117,61 +182,42 @@ export class ProductEditorComponent {
   }
 
   async readSelectedCategoryName(): Promise<string> {
-    return this.dialog()
-      .getByLabel("Категория", { exact: true })
-      .getByRole("option", { selected: true })
-      .innerText();
+    return this.selectedCategoryOption.innerText();
   }
 
   async readName(): Promise<string> {
-    return this.dialog()
-      .getByLabel("Название товара", { exact: true })
-      .inputValue();
+    return this.productNameInput.inputValue();
   }
 
-  async readType(): Promise<string> {
-    return this.dialog().getByLabel("Тип товара", { exact: true }).inputValue();
+  async readType(): Promise<ProductType> {
+    const type = await this.productTypeSelect.inputValue();
+
+    if (!Object.values(ProductType).includes(type as ProductType)) {
+      throw new Error(`Неизвестный тип товара «${type}».`);
+    }
+
+    return type as ProductType;
   }
 
   async isActive(): Promise<boolean> {
-    return this.readSwitchState(
-      this.dialog().getByRole("switch", {
-        name: "Товар активен",
-        exact: true,
-      }),
-    );
+    return this.readSwitchState(this.activeSwitch);
   }
 
   async isAvailable(): Promise<boolean> {
-    return this.readSwitchState(
-      this.dialog().getByRole("switch", {
-        name: "Товар доступен",
-        exact: true,
-      }),
-    );
+    return this.readSwitchState(this.availableSwitch);
   }
 
   async isSizeConfigured(size: ProductSize): Promise<boolean> {
-    return this.readSwitchState(
-      this.dialog().getByRole("switch", {
-        name: `Использовать размер ${size}`,
-        exact: true,
-      }),
-    );
+    return this.readSwitchState(this.sizeEnabledSwitch(size));
   }
 
   async isSizeAvailable(size: ProductSize): Promise<boolean> {
-    return this.readSwitchState(
-      this.dialog().getByRole("switch", {
-        name: `Размер ${size} доступен`,
-        exact: true,
-      }),
-    );
+    return this.readSwitchState(this.sizeAvailableSwitch(size));
   }
 
   async setSinglePrice(price: string): Promise<void> {
     await test.step("Установить единую цену товара", async () => {
-      const priceInput = this.singlePriceInput();
+      const priceInput = this.singlePriceInput;
 
       await priceInput.fill(price);
       await expect(priceInput, "Единая цена товара установлена.").toHaveValue(
@@ -181,53 +227,57 @@ export class ProductEditorComponent {
   }
 
   async readSinglePrice(): Promise<string> {
-    return this.singlePriceInput().inputValue();
+    return this.singlePriceInput.inputValue();
   }
 
   async readSizesPriceValidation(): Promise<string | null> {
-    const alert = this.variantsRequiredAlert();
+    const alert = this.variantsRequiredAlert;
 
     return (await alert.isVisible()) ? alert.innerText() : null;
   }
 
   async isCreateSaveAvailable(): Promise<boolean> {
-    return this.createSaveButton().isEnabled();
+    return this.createSaveButton.isEnabled();
+  }
+
+  async setSizeUsage(
+    size: ProductSize,
+    usage: ProductSizeUsage,
+  ): Promise<void> {
+    await test.step(`Установить использование размера ${size}`, async () => {
+      const sizeSwitch = this.sizeEnabledSwitch(size);
+      const checked = usage === ProductSizeUsage.ENABLED;
+
+      if ((await this.readSwitchState(sizeSwitch)) !== checked) {
+        await sizeSwitch.click();
+      }
+      await expect(
+        sizeSwitch,
+        `Использование размера ${size} установлено.`,
+      ).toHaveAttribute("aria-checked", String(checked));
+    });
   }
 
   async useOnlySize(size: ProductSize): Promise<void> {
     await test.step(`Оставить только размер ${size}`, async () => {
       for (const candidate of Object.values(ProductSize)) {
-        const toggle = this.dialog().getByRole("switch", {
-          name: `Использовать размер ${candidate}`,
-          exact: true,
-        });
-
-        if (candidate === size) {
-          await toggle.check();
-          await expect(
-            toggle,
-            `Размер ${candidate} используется.`,
-          ).toBeChecked();
-        } else {
-          await toggle.uncheck();
-          await expect(
-            toggle,
-            `Размер ${candidate} отключён.`,
-          ).not.toBeChecked();
-        }
+        await this.setSizeUsage(
+          candidate,
+          candidate === size
+            ? ProductSizeUsage.ENABLED
+            : ProductSizeUsage.DISABLED,
+        );
       }
     });
   }
 
   async save(name: string): Promise<void> {
     await test.step(`Сохранить товар «${name}»`, async () => {
-      const selectedCategory = this.dialog()
-        .getByLabel("Категория", { exact: true })
-        .getByRole("option", { selected: true });
+      const selectedCategory = this.selectedCategoryOption;
       const categoryName = await selectedCategory.innerText();
 
-      await this.createSaveButton().click();
-      await expect(this.dialog(), `Товар «${name}» создан.`).toHaveCount(0);
+      await this.createSaveButton.click();
+      await expect(this.dialog, `Товар «${name}» создан.`).toHaveCount(0);
       const categoryToggle = this.categoryToggle(categoryName);
 
       const expanded = await categoryToggle.getAttribute("aria-expanded");
@@ -260,7 +310,7 @@ export class ProductEditorComponent {
       ).toBeEnabled();
       await this.productEditButton(name).click();
       await expect(
-        this.dialog(),
+        this.dialog,
         `Редактор товара «${name}» открыт.`,
       ).toBeVisible();
     });
@@ -268,9 +318,9 @@ export class ProductEditorComponent {
 
   async saveChanges(name: string): Promise<void> {
     await test.step(`Сохранить изменения товара «${name}»`, async () => {
-      await this.editSaveButton().click();
+      await this.editSaveButton.click();
       await expect(
-        this.dialog(),
+        this.dialog,
         `Редактор товара «${name}» закрыт.`,
       ).toHaveCount(0);
       await expect(
@@ -282,11 +332,9 @@ export class ProductEditorComponent {
 
   async cancelEditing(name: string): Promise<void> {
     await test.step(`Отменить редактирование товара «${name}»`, async () => {
-      await this.dialog()
-        .getByRole("button", { name: "Отмена", exact: true })
-        .click();
+      await this.cancelButton.click();
       await expect(
-        this.dialog(),
+        this.dialog,
         `Редактор товара «${name}» закрыт без изменений.`,
       ).toHaveCount(0);
     });
@@ -294,9 +342,9 @@ export class ProductEditorComponent {
 
   async requestArchive(name: string): Promise<void> {
     await test.step(`Запросить архивацию товара «${name}»`, async () => {
-      await this.deleteButton().click();
+      await this.deleteButton.click();
       await expect(
-        this.confirmationDialog(),
+        this.confirmationDialog,
         "Подтверждение архивации товара открыто.",
       ).toBeVisible();
     });
@@ -304,9 +352,9 @@ export class ProductEditorComponent {
 
   async cancelArchive(name: string): Promise<void> {
     await test.step(`Отменить архивацию товара «${name}»`, async () => {
-      await this.cancelArchiveButton().click();
+      await this.cancelArchiveButton.click();
       await expect(
-        this.confirmationDialog(),
+        this.confirmationDialog,
         "Подтверждение архивации товара закрыто.",
       ).toHaveCount(0);
       await expect(
@@ -318,50 +366,12 @@ export class ProductEditorComponent {
 
   async confirmArchive(name: string): Promise<void> {
     await test.step(`Подтвердить архивацию товара «${name}»`, async () => {
-      await this.confirmArchiveButton().click();
+      await this.confirmArchiveButton.click();
       await expect(
         this.productEditButton(name),
         `Товар «${name}» архивирован.`,
       ).toHaveCount(0);
     });
-  }
-
-  async reopen(input: ProductOrderScenarioData): Promise<void> {
-    await test.step(`Повторно открыть товар «${input.productName}»`, async () => {
-      await this.productEditButton(input.productName).click();
-      await expect(
-        this.dialog(),
-        `Редактор товара «${input.productName}» открыт.`,
-      ).toBeVisible();
-      await expect(
-        this.dialog().getByLabel("Цена M, коп.", { exact: true }),
-        "Сохранённая цена среднего размера показана.",
-      ).toHaveValue(input.productPrice);
-      await this.dialog()
-        .getByRole("button", { name: "Отмена", exact: true })
-        .click();
-      await expect(
-        this.dialog(),
-        `Редактор товара «${input.productName}» закрыт.`,
-      ).toHaveCount(0);
-    });
-  }
-
-  async delete(name: string): Promise<void> {
-    await test.step(`Удалить товар «${name}»`, async () => {
-      await this.openForEditing(name);
-      await this.requestArchive(name);
-      await this.confirmArchive(name);
-    });
-  }
-
-  async deleteIfPresent(name: string): Promise<void> {
-    if ((await this.productEditButton(name).count()) === 0) return;
-    await this.delete(name);
-  }
-
-  private dialog(): Locator {
-    return this.page.getByRole("dialog");
   }
 
   private async readSwitchState(switchControl: Locator): Promise<boolean> {
@@ -374,13 +384,6 @@ export class ProductEditorComponent {
     }
 
     return checked === "true";
-  }
-
-  private confirmationDialog(): Locator {
-    return this.page.getByRole("dialog", {
-      name: "Удалить товар?",
-      exact: true,
-    });
   }
 
   private productEditButton(name: string): Locator {
@@ -397,50 +400,25 @@ export class ProductEditorComponent {
     });
   }
 
+  private categoryOption(name: string): Locator {
+    return this.categorySelect.getByRole("option", { name, exact: true });
+  }
+
+  private sizeEnabledSwitch(size: ProductSize): Locator {
+    return this.dialog.getByRole("switch", {
+      name: `Использовать размер ${size}`,
+      exact: true,
+    });
+  }
+
+  private sizeAvailableSwitch(size: ProductSize): Locator {
+    return this.dialog.getByRole("switch", {
+      name: `Размер ${size} доступен`,
+      exact: true,
+    });
+  }
+
   private priceInput(size: ProductSize): Locator {
-    return this.dialog().getByLabel(`Цена ${size}, коп.`, { exact: true });
-  }
-
-  private singlePriceInput(): Locator {
-    return this.dialog().getByLabel("Цена, коп.", { exact: true });
-  }
-
-  private variantsRequiredAlert(): Locator {
-    return this.dialog().getByRole("alert");
-  }
-
-  private createSaveButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Добавить товар",
-      exact: true,
-    });
-  }
-
-  private editSaveButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Сохранить изменения",
-      exact: true,
-    });
-  }
-
-  private deleteButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Удалить товар",
-      exact: true,
-    });
-  }
-
-  private cancelArchiveButton(): Locator {
-    return this.confirmationDialog().getByRole("button", {
-      name: "Отмена",
-      exact: true,
-    });
-  }
-
-  private confirmArchiveButton(): Locator {
-    return this.confirmationDialog().getByRole("button", {
-      name: "Удалить",
-      exact: true,
-    });
+    return this.dialog.getByLabel(`Цена ${size}, коп.`, { exact: true });
   }
 }

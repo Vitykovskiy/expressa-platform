@@ -27,16 +27,24 @@ export type OrderSnapshotItem = {
 };
 
 export type OrderEvent = {
-  actorId: string;
+  actorLabel: string;
   occurredAt: string;
   from: OrderStage;
   to: OrderStage;
+};
+
+export type OrderEventDto = OrderEvent & {
+  actorId: string;
 };
 
 export type OrderDetails = OrderListItem & {
   customer: { id: string; phoneE164: string };
   snapshot: readonly OrderSnapshotItem[];
   events: readonly OrderEvent[];
+};
+
+export type OrderDetailsDto = Omit<OrderDetails, "events"> & {
+  events: readonly OrderEventDto[];
 };
 
 export type QueueQuery = {

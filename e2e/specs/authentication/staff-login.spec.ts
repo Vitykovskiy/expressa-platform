@@ -1,23 +1,22 @@
 import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
 
 /**
- * Назначение: barista получает доступ к своим рабочим разделам back-office.
+ * Назначение: бариста получает доступ к своим рабочим разделам back-office.
  *
- * Предусловия: для номера сотрудника существует пользователь с ролью barista;
- * сотрудник может получить одноразовый код для этого номера.
+ * Предусловия: тестовое окружение предоставляет номер бариста и одноразовый код;
+ * доступная роль бариста имеет права очереди и доступности.
  *
  * Сценарий:
- * 1. Сотрудник открывает форму входа back-office.
- * 2. Сотрудник указывает свой номер телефона.
- * 3. Сотрудник запрашивает одноразовый код.
- * 4. Сотрудник указывает полученный шестизначный одноразовый код.
- * 5. Сотрудник подтверждает одноразовый код.
+ * 1. Бариста открывает форму входа back-office.
+ * 2. Бариста указывает свой номер телефона.
+ * 3. Бариста запрашивает одноразовый код.
+ * 4. Бариста указывает полученный шестизначный одноразовый код.
+ * 5. Бариста подтверждает одноразовый код.
  *
  * Ожидаемый результат:
- * - Barista получает доступ к очереди и доступности.
- * - Сотрудник видит рабочий раздел back-office после входа.
+ * - Бариста получает доступ к очереди и доступности.
  */
-test("AUTH-08 — Barista входит в рабочие разделы back-office", async ({
+test("AUTH-08 — Бариста входит в рабочие разделы back-office", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -28,49 +27,39 @@ test("AUTH-08 — Barista входит в рабочие разделы back-off
   await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Barista получает доступ к очереди и доступности", async () => {
+  await test.step("Бариста получает доступ к очереди и доступности", async () => {
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.QUEUE,
       ),
-      "Очередь доступна barista.",
+      "Очередь доступна бариста.",
     ).toBe(true);
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.AVAILABILITY,
       ),
-      "Доступность доступна barista.",
-    ).toBe(true);
-  });
-
-  await test.step("Сотрудник видит рабочий раздел back-office после входа", async () => {
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.QUEUE,
-      ),
-      "Рабочий раздел back-office виден сотруднику после входа.",
+      "Доступность доступна бариста.",
     ).toBe(true);
   });
 });
 
 /**
- * Назначение: administrator получает доступ к своим рабочим разделам back-office.
+ * Назначение: администратор получает доступ к своим рабочим разделам back-office.
  *
- * Предусловия: для номера сотрудника существует пользователь с ролью administrator;
- * сотрудник может получить одноразовый код для этого номера.
+ * Предусловия: тестовое окружение предоставляет номер администратора и одноразовый код;
+ * доступная роль администратора имеет права очереди, доступности и меню.
  *
  * Сценарий:
- * 1. Сотрудник открывает форму входа back-office.
- * 2. Сотрудник указывает свой номер телефона.
- * 3. Сотрудник запрашивает одноразовый код.
- * 4. Сотрудник указывает полученный шестизначный одноразовый код.
- * 5. Сотрудник подтверждает одноразовый код.
+ * 1. Администратор открывает форму входа back-office.
+ * 2. Администратор указывает свой номер телефона.
+ * 3. Администратор запрашивает одноразовый код.
+ * 4. Администратор указывает полученный шестизначный одноразовый код.
+ * 5. Администратор подтверждает одноразовый код.
  *
  * Ожидаемый результат:
- * - Administrator получает доступ к очереди, доступности и меню.
- * - Сотрудник видит рабочий раздел back-office после входа.
+ * - Администратор получает доступ к очереди, доступности и меню.
  */
-test("AUTH-08 — Administrator входит в рабочие разделы back-office", async ({
+test("AUTH-08 — Администратор входит в рабочие разделы back-office", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -81,33 +70,24 @@ test("AUTH-08 — Administrator входит в рабочие разделы ba
   await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Administrator получает доступ к очереди, доступности и меню", async () => {
+  await test.step("Администратор получает доступ к очереди, доступности и меню", async () => {
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.QUEUE,
       ),
-      "Очередь доступна administrator.",
+      "Очередь доступна администратору.",
     ).toBe(true);
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.AVAILABILITY,
       ),
-      "Доступность доступна administrator.",
+      "Доступность доступна администратору.",
     ).toBe(true);
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.MENU,
       ),
-      "Меню доступно administrator.",
-    ).toBe(true);
-  });
-
-  await test.step("Сотрудник видит рабочий раздел back-office после входа", async () => {
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.QUEUE,
-      ),
-      "Рабочий раздел back-office виден сотруднику после входа.",
+      "Меню доступно администратору.",
     ).toBe(true);
   });
 });

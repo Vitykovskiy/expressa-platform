@@ -1,32 +1,40 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import {
-  OrderHistoryStatus,
-  type OrderHistoryEntry,
-} from "./order-history-list.component.types";
+import { OrderHistoryStatus } from "./order-history-list.types";
 
+import type { Locator, Page } from "@playwright/test";
+import type { OrderHistoryEntry } from "./order-history-list.types";
 import type { OrderSnapshot } from "@support/data/order-snapshot.types";
 
 export class OrderHistoryListComponent {
   private readonly historyList: Locator;
+  private readonly historyItems: Locator;
   private readonly refreshButton: Locator;
+  private readonly loadMoreButton: Locator;
+  private readonly emptyState: Locator;
 
   constructor(private readonly page: Page) {
     this.historyList = page.getByRole("list", {
       name: "История заказов",
       exact: true,
     });
+    this.historyItems = this.historyList.getByRole("listitem");
     this.refreshButton = page.getByRole("button", {
       name: "Обновить историю заказов",
       exact: true,
     });
+    this.loadMoreButton = page.getByRole("button", {
+      name: "Показать ещё",
+      exact: true,
+    });
+    this.emptyState = page.getByText("История заказов пуста", { exact: true });
   }
 
   async refresh(): Promise<void> {
     await test.step("Обновить историю заказов", async () => {
       if ((await this.refreshButton.count()) === 0) {
         await expect(
-          this.emptyState(),
+          this.emptyState,
           "Показано пустое состояние истории заказов.",
         ).toBeVisible();
         return;
@@ -38,7 +46,7 @@ export class OrderHistoryListComponent {
       ).toBeEnabled();
       await this.refreshButton.click();
       await expect(
-        this.historyList.or(this.emptyState()),
+        this.historyList.or(this.emptyState),
         "История заказов или её пустое состояние показаны.",
       ).toBeVisible();
     });
@@ -47,7 +55,7 @@ export class OrderHistoryListComponent {
   async waitUntilLoaded(): Promise<void> {
     await test.step("Дождаться загрузки истории заказов", async () => {
       await expect(
-        this.historyList.or(this.emptyState()),
+        this.historyList.or(this.emptyState),
         "История заказов или её пустое состояние показаны.",
       ).toBeVisible();
     });
@@ -55,21 +63,15 @@ export class OrderHistoryListComponent {
 
   async loadMore(): Promise<void> {
     await test.step("Показать следующую часть истории заказов", async () => {
-      const loadMoreButton = this.page.getByRole("button", {
-        name: "Показать ещё",
-        exact: true,
-      });
-      const displayedOrders = await this.historyList
-        .getByRole("listitem")
-        .count();
+      const displayedOrders = await this.historyItems.count();
 
       await expect(
-        loadMoreButton,
+        this.loadMoreButton,
         "Загрузка следующей части истории доступна.",
       ).toBeEnabled();
-      await loadMoreButton.click();
+      await this.loadMoreButton.click();
       await expect(
-        this.historyList.getByRole("listitem"),
+        this.historyItems,
         "Следующая часть истории заказов добавлена.",
       ).not.toHaveCount(displayedOrders);
     });
@@ -77,7 +79,7 @@ export class OrderHistoryListComponent {
 
   async assertEmpty(): Promise<void> {
     await expect(
-      this.emptyState(),
+      this.emptyState,
       "Показано пустое состояние истории заказов.",
     ).toBeVisible();
     await expect(this.historyList, "Список истории не показан.").toHaveCount(0);
@@ -86,7 +88,7 @@ export class OrderHistoryListComponent {
   async readOrderCount(): Promise<number> {
     if ((await this.historyList.count()) === 0) return 0;
 
-    return this.historyList.getByRole("listitem").count();
+    return this.historyItems.count();
   }
 
   async isOrderAbsent(number: string): Promise<boolean> {
@@ -95,7 +97,7 @@ export class OrderHistoryListComponent {
 
   async assertDoesNotContain(snapshot: OrderSnapshot): Promise<void> {
     await expect(
-      this.order(snapshot),
+      this.orderByNumber(snapshot.number),
       `Заказ ${snapshot.number} не показан в истории.`,
     ).toHaveCount(0);
   }
@@ -104,42 +106,36 @@ export class OrderHistoryListComponent {
     snapshot: Pick<OrderSnapshot, "id" | "number">,
   ): Promise<void> {
     await test.step(`Открыть заказ ${snapshot.number} в истории`, async () => {
-      const order = this.order(snapshot);
-      const openOrder = order.getByRole("link", {
-        name: "Открыть заказ",
-        exact: true,
-      });
-
       await expect(
-        order,
+        this.orderByNumber(snapshot.number),
         `Заказ ${snapshot.number} показан в истории ровно один раз.`,
       ).toHaveCount(1);
-      await expect(openOrder, "Открытие заказа доступно.").toBeEnabled();
-      await openOrder.click();
       await expect(
-        this.page.getByRole("heading", {
-          name: `Заказ №${snapshot.number}`,
-          exact: true,
-        }),
+        this.openOrderLink(snapshot.number),
+        "Открытие заказа доступно.",
+      ).toBeEnabled();
+      await this.openOrderLink(snapshot.number).click();
+      await expect(
+        this.orderHeading(snapshot.number),
         "Открыты детали исходного заказа.",
       ).toBeVisible();
     });
   }
 
   async readOrder(snapshot: OrderSnapshot): Promise<OrderHistoryEntry> {
-    const order = this.order(snapshot);
-
     await expect(
-      order,
+      this.orderByNumber(snapshot.number),
       `Заказ ${snapshot.number} показан в истории ровно один раз.`,
     ).toHaveCount(1);
 
-    return this.readEntry(await order.innerText());
+    return this.readEntry(
+      await this.orderByNumber(snapshot.number).innerText(),
+    );
   }
 
   async readOrders(): Promise<readonly OrderHistoryEntry[]> {
-    return (await this.historyList.getByRole("listitem").allInnerTexts()).map(
-      (entry) => this.readEntry(entry),
+    return (await this.historyItems.allInnerTexts()).map((entry) =>
+      this.readEntry(entry),
     );
   }
 
@@ -155,18 +151,24 @@ export class OrderHistoryListComponent {
     return new Set(numbers).size === numbers.length;
   }
 
-  private order(snapshot: Pick<OrderSnapshot, "id" | "number">): Locator {
-    return this.orderByNumber(snapshot.number);
-  }
-
   private orderByNumber(number: string): Locator {
-    return this.historyList.getByRole("listitem").filter({
+    return this.historyItems.filter({
       has: this.page.getByText(`Заказ №${number}`, { exact: true }),
     });
   }
 
-  private emptyState(): Locator {
-    return this.page.getByText("История заказов пуста", { exact: true });
+  private openOrderLink(number: string): Locator {
+    return this.orderByNumber(number).getByRole("link", {
+      name: "Открыть заказ",
+      exact: true,
+    });
+  }
+
+  private orderHeading(number: string): Locator {
+    return this.page.getByRole("heading", {
+      name: `Заказ №${number}`,
+      exact: true,
+    });
   }
 
   private readEntry(entry: string): OrderHistoryEntry {

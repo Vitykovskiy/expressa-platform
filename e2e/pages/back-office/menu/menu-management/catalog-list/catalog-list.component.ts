@@ -3,18 +3,43 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 export class CatalogListComponent {
-  constructor(private readonly page: Page) {}
+  private readonly emptyState: Locator;
+  private readonly categoryToggles: Locator;
+  private readonly addCategoryButton: Locator;
+  private readonly addProductButton: Locator;
+  private readonly productEditButtons: Locator;
+
+  constructor(private readonly page: Page) {
+    this.emptyState = page.getByText(
+      "Категорий пока нет. Добавьте первую категорию.",
+      { exact: true },
+    );
+    this.categoryToggles = page.getByRole("button", {
+      name: /^Открыть категорию /u,
+    });
+    this.addCategoryButton = page.getByRole("button", {
+      name: "Добавить группу",
+      exact: true,
+    });
+    this.addProductButton = page.getByRole("button", {
+      name: "Добавить товар",
+      exact: true,
+    });
+    this.productEditButtons = page.getByRole("button", {
+      name: /^Редактировать товар /u,
+    });
+  }
 
   async isEmpty(): Promise<boolean> {
-    return this.emptyState().isVisible();
+    return this.emptyState.isVisible();
   }
 
   async isAddCategoryAvailable(): Promise<boolean> {
-    return this.addCategoryButton().isEnabled();
+    return this.addCategoryButton.isEnabled();
   }
 
   async isAddProductAvailable(): Promise<boolean> {
-    return this.addProductButton().isEnabled();
+    return this.addProductButton.isEnabled();
   }
 
   async hasCategory(name: string): Promise<boolean> {
@@ -22,7 +47,7 @@ export class CatalogListComponent {
   }
 
   async readCategoryOrder(): Promise<readonly string[]> {
-    const categoryToggles = await this.categoryToggles().all();
+    const categoryToggles = await this.categoryToggles.all();
 
     return Promise.all(
       categoryToggles.map(async (toggle) => {
@@ -77,12 +102,6 @@ export class CatalogListComponent {
     });
   }
 
-  async expandCategoryIfPresent(name: string): Promise<boolean> {
-    if ((await this.categoryToggle(name).count()) === 0) return false;
-    await this.expandCategory(name);
-    return true;
-  }
-
   async assertProductVisible(name: string): Promise<void> {
     await test.step(`Проверить видимость товара «${name}»`, async () => {
       await expect(
@@ -105,7 +124,7 @@ export class CatalogListComponent {
   }
 
   async readProductOrder(): Promise<readonly string[]> {
-    const productEditButtons = await this.productEditButtons().all();
+    const productEditButtons = await this.productEditButtons.all();
 
     return Promise.all(
       productEditButtons.map(async (button) => {
@@ -164,10 +183,6 @@ export class CatalogListComponent {
     });
   }
 
-  private categoryToggles(): Locator {
-    return this.page.getByRole("button", { name: /^Открыть категорию /u });
-  }
-
   private categoryMoveUpButton(name: string): Locator {
     return this.page.getByRole("button", {
       name: `Переместить категорию ${name} вверх`,
@@ -175,37 +190,10 @@ export class CatalogListComponent {
     });
   }
 
-  private addCategoryButton(): Locator {
-    return this.page.getByRole("button", {
-      name: "Добавить группу",
-      exact: true,
-    });
-  }
-
-  private addProductButton(): Locator {
-    return this.page.getByRole("button", {
-      name: "Добавить товар",
-      exact: true,
-    });
-  }
-
-  private emptyState(): Locator {
-    return this.page.getByText(
-      "Категорий пока нет. Добавьте первую категорию.",
-      { exact: true },
-    );
-  }
-
   private productEditButton(name: string): Locator {
     return this.page.getByRole("button", {
       name: `Редактировать товар ${name}`,
       exact: true,
-    });
-  }
-
-  private productEditButtons(): Locator {
-    return this.page.getByRole("button", {
-      name: /^Редактировать товар /u,
     });
   }
 

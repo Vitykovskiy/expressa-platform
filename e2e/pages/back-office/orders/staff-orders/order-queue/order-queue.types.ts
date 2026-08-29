@@ -22,15 +22,6 @@ export enum OrderQueueTransitionAction {
   ISSUE = "Выдать заказ",
 }
 
-export enum QueueScenarioStage {
-  CREATED = "Оформлен",
-  READY = "Готов",
-}
-
-export enum QueueScenarioFilter {
-  CREATED = "Оформлен",
-}
-
 export interface OrderQueueDetails {
   readonly customer: string;
   readonly items: readonly string[];
@@ -40,5 +31,6 @@ export interface OrderQueueTransition {
   readonly from: OrderQueueStage;
   readonly to: OrderQueueStage;
   readonly occurredAt: string;
+  /** Отображаемая UI-подпись сотрудника, выполнившего переход. */
   readonly author: string;
 }

@@ -1,4 +1,4 @@
-import type { Browser, BrowserContext, Page } from "@playwright/test";
+import type { Browser, BrowserContext } from "@playwright/test";
 
 import { BackOfficeAuthPage } from "@pages/back-office/auth/back-office-auth/back-office-auth.page";
 import { MenuManagementPage } from "@pages/back-office/menu/menu-management/menu-management.page";
@@ -13,7 +13,6 @@ import type { MultiSessionFixture } from "./multi-session.fixture.types";
 
 export async function useMultiSessionFixture(
   browser: Browser,
-  _page: Page,
   use: (fixture: MultiSessionFixture) => Promise<void>,
 ): Promise<void> {
   const staffContext = await browser.newContext();

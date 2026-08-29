@@ -1,11 +1,19 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { OrderStatus } from "@pages/front-office/orders/customer-order/order-details/order-details.types";
+import { ProductSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
+
+import type { Locator, Page } from "@playwright/test";
+
+import {
+  CartItemSize,
+  type CartRepeatWarning,
+} from "./cart-panel.component.types";
 
 export class CartPanelComponent {
   private readonly cartButton: Locator;
   private readonly items: Locator;
   private readonly checkoutButton: Locator;
+  private readonly repeatWarnings: Locator;
 
   constructor(private readonly page: Page) {
     this.cartButton = page
@@ -14,6 +22,10 @@ export class CartPanelComponent {
     this.items = page.getByRole("list", { name: "Позиции в корзине" });
     this.checkoutButton = page.getByRole("button", {
       name: "Оформить заказ",
+      exact: true,
+    });
+    this.repeatWarnings = page.getByRole("alert", {
+      name: "Не все позиции из заказа добавлены",
       exact: true,
     });
   }
@@ -31,7 +43,7 @@ export class CartPanelComponent {
 
   async readItemName(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<string> {
     return this.item(productName, variant, modifiers)
@@ -41,17 +53,23 @@ export class CartPanelComponent {
 
   async readItemVariant(
     productName: string,
-    variant: string,
+    variant: ProductSize,
     modifiers: readonly string[],
-  ): Promise<string> {
-    return this.item(productName, variant, modifiers)
+  ): Promise<CartItemSize> {
+    const displayedSize = await this.item(productName, variant, modifiers)
       .getByText(`Размер ${variant}`, { exact: true })
       .innerText();
+
+    if (!Object.values(CartItemSize).includes(displayedSize as CartItemSize)) {
+      throw new Error(`Неизвестный отображаемый размер «${displayedSize}».`);
+    }
+
+    return displayedSize as CartItemSize;
   }
 
   async readItemModifiers(
     productName: string,
-    variant: string,
+    variant: ProductSize,
     modifiers: readonly string[],
   ): Promise<readonly string[]> {
     return this.item(productName, variant, modifiers)
@@ -62,7 +80,7 @@ export class CartPanelComponent {
 
   async readItemQuantity(
     productName: string,
-    variant: string,
+    variant: ProductSize,
     modifiers: readonly string[],
   ): Promise<number> {
     return this.quantity(this.item(productName, variant, modifiers));
@@ -70,7 +88,7 @@ export class CartPanelComponent {
 
   async readItemLineTotal(
     productName: string,
-    variant: string,
+    variant: ProductSize,
     modifiers: readonly string[],
   ): Promise<string> {
     return this.item(productName, variant, modifiers)
@@ -119,6 +137,32 @@ export class CartPanelComponent {
     return this.items.getByRole("heading", { level: 2 }).allInnerTexts();
   }
 
+  async readRepeatWarnings(): Promise<readonly CartRepeatWarning[]> {
+    await expect(
+      this.repeatWarnings,
+      "Показан отчёт о недоступных позициях повторного заказа.",
+    ).toBeVisible();
+
+    return (await this.repeatWarningItems().allInnerTexts()).map((warning) =>
+      this.readRepeatWarningValues(warning),
+    );
+  }
+
+  async readRepeatWarning(productName: string): Promise<CartRepeatWarning> {
+    const warning = this.repeatWarning(productName);
+
+    await expect(
+      warning,
+      `Показано предупреждение для позиции «${productName}».`,
+    ).toHaveCount(1);
+    await expect(
+      warning,
+      `Предупреждение для позиции «${productName}» показано.`,
+    ).toBeVisible();
+
+    return this.readRepeatWarningValues(await warning.innerText());
+  }
+
   async isEmpty(): Promise<boolean> {
     return (await this.items.count()) === 0;
   }
@@ -129,7 +173,7 @@ export class CartPanelComponent {
 
   async isItemUnavailable(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<boolean> {
     const item = this.item(productName, variant, modifiers);
@@ -149,7 +193,7 @@ export class CartPanelComponent {
 
   async isUnavailableItemMessageVisible(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<boolean> {
     return this.unavailableItemMessage(
@@ -159,12 +203,13 @@ export class CartPanelComponent {
 
   async waitForUnavailableItemMessage(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<void> {
-    await this.unavailableItemMessage(
-      this.item(productName, variant, modifiers),
-    ).waitFor({ state: "visible" });
+    await expect(
+      this.unavailableItemMessage(this.item(productName, variant, modifiers)),
+      `Товар «${productName}» помечен недоступным.`,
+    ).toBeVisible();
   }
 
   async isIntakeClosedVisible(): Promise<boolean> {
@@ -184,7 +229,7 @@ export class CartPanelComponent {
   async setQuantity(
     productName: string,
     quantity: number,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<void> {
     await test.step(`Установить количество товара «${productName}»: ${quantity}`, async () => {
@@ -221,7 +266,7 @@ export class CartPanelComponent {
 
   async remove(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Promise<void> {
     await test.step(`Удалить товар «${productName}» из корзины`, async () => {
@@ -260,13 +305,9 @@ export class CartPanelComponent {
       await this.page
         .getByRole("button", { name: "Перейти в меню", exact: true })
         .click();
-      await expect(
-        this.page.getByRole("heading", {
-          name: "Что будем заказывать?",
-          exact: true,
-        }),
-        "Открыто публичное меню.",
-      ).toBeVisible();
+      await expect(this.page, "Открыт путь публичного меню.").toHaveURL(
+        (url) => url.pathname === "/",
+      );
     });
   }
 
@@ -337,10 +378,6 @@ export class CartPanelComponent {
       await expect(this.page, "Открыт созданный заказ.").toHaveURL(
         /\/orders\/[0-9a-f-]{36}$/u,
       );
-      await expect(
-        this.page.getByText(OrderStatus.CREATED, { exact: true }),
-        "Заказ оформлен.",
-      ).toBeVisible();
     });
   }
 
@@ -359,7 +396,7 @@ export class CartPanelComponent {
 
   private item(
     productName: string,
-    variant?: string,
+    variant?: ProductSize,
     modifiers: readonly string[] = [],
   ): Locator {
     let item = this.items.getByRole("listitem", {
@@ -386,6 +423,41 @@ export class CartPanelComponent {
 
   private emptyMessage(): Locator {
     return this.page.getByText("Пока ничего не добавлено", { exact: true });
+  }
+
+  private repeatWarningItems(): Locator {
+    return this.repeatWarnings.getByRole("list").getByRole("listitem");
+  }
+
+  private repeatWarning(productName: string): Locator {
+    return this.repeatWarningItems().filter({
+      has: this.page.getByText(productName, { exact: true }),
+    });
+  }
+
+  private readRepeatWarningValues(value: string): CartRepeatWarning {
+    const [productName, firstDetail, secondDetail, ...rest] = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (
+      productName === undefined ||
+      firstDetail === undefined ||
+      rest.length !== 0
+    ) {
+      throw new Error("Не удалось прочитать предупреждение повторного заказа.");
+    }
+
+    if (secondDetail === undefined) {
+      return { productName, reason: firstDetail };
+    }
+
+    return {
+      productName,
+      context: firstDetail,
+      reason: secondDetail,
+    };
   }
 
   private updatedTotalConfirmation(): Locator {

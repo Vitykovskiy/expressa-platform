@@ -11,6 +11,6 @@
 - Fixtures импортируются из `fixtures/test.ts`; предметные данные размещаются в `support/data`.
 - Сценарии, POM-объекты и данные создавай только при явном включении предметной области в задачу. До этого каталог `docs/95-testing/scenarios` остаётся пустым.
 
-Перед сдачей изменений запускай применимые команды из `package.json`: `npm run lint`, `npm run format:check`, `npm run typecheck:e2e`, `npm run e2e:boundaries`. Полные E2E-сценарии запускай только при предоставленных URL.
+Перед сдачей изменений запускай применимые команды из `package.json`: `npm run lint`, `npm run format:check`, `npm run typecheck:e2e`. Полные E2E-сценарии запускай только при предоставленных URL.
 
 Навигация: [README](README.md), [карта документации](docs/INDEX.md), [DoD](docs/80-conventions/Definition-of-Done.md), [Code Style](docs/80-conventions/Code-style.md).

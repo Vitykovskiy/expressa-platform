@@ -399,9 +399,11 @@ describe("admin catalog E2E", () => {
   it("AVAIL-14/15/16 — даёт staff атомарно менять доступность и приём заказов с аудитом", async () => {
     const administrator = await accessToken("administrator");
     const barista = await accessToken("barista");
-    const baristaId = (
-      await json<{ id: string }>(await request("/me", barista), 200)
-    ).id;
+    const baristaProfile = await json<{ id: string; phoneE164: string }>(
+      await request("/me", barista),
+      200,
+    );
+    const baristaId = baristaProfile.id;
     const category = await json<{ id: string }>(
       await request(
         "/backoffice/catalog/categories",
@@ -454,6 +456,7 @@ describe("admin catalog E2E", () => {
       intake: {
         acceptsNewOrders: true,
         updatedBy: null,
+        updatedByLabel: null,
         updatedAt: null,
       },
       products: [expect.objectContaining({ id: product.id })],
@@ -496,10 +499,29 @@ describe("admin catalog E2E", () => {
       "PATCH",
       { acceptsNewOrders: false },
     );
-    await expect(intake.json()).resolves.toMatchObject({
+    const intakeResult = await json<{
+      acceptsNewOrders: boolean;
+      updatedBy: string | null;
+      updatedByLabel: string | null;
+      updatedAt: string | null;
+    }>(intake, 200);
+    expect(intakeResult).toMatchObject({
       acceptsNewOrders: false,
-      updatedBy: expect.any(String),
+      updatedBy: baristaId,
+      updatedByLabel: baristaProfile.phoneE164,
       updatedAt: expect.any(String),
+    });
+    const updatedAggregate = await json<{
+      intake: {
+        acceptsNewOrders: boolean;
+        updatedBy: string | null;
+        updatedByLabel: string | null;
+      };
+    }>(await request("/backoffice/availability", barista), 200);
+    expect(updatedAggregate.intake).toMatchObject({
+      acceptsNewOrders: false,
+      updatedBy: baristaId,
+      updatedByLabel: baristaProfile.phoneE164,
     });
     expect(
       (

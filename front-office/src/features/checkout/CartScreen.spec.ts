@@ -15,6 +15,44 @@ describe("CartScreen", () => {
     expect(wrapper.findAll(".cart-screen__checkout")).toHaveLength(0);
   });
 
+  it("показывает предупреждения повтора в пустой корзине", () => {
+    const wrapper = mountCartScreen({
+      items: [],
+      repeatWarnings: [createRepeatWarning()],
+    });
+
+    const warningReport = wrapper.get('[role="alert"]');
+    expect(warningReport.attributes("aria-labelledby")).toBe(
+      "cart-repeat-warnings-title",
+    );
+    expect(warningReport.get("h2").text()).toContain("Не все позиции");
+    expect(warningReport.text()).toContain("Капучино");
+    expect(warningReport.text()).toContain("Размер S, Овсяное молоко");
+    expect(warningReport.text()).toContain("Товар больше недоступен.");
+  });
+
+  it("сохраняет отдельные предупреждения с одинаковым контекстом", () => {
+    const wrapper = mountCartScreen({
+      repeatWarnings: [
+        createRepeatWarning({ reason: "Размер больше недоступен." }),
+        createRepeatWarning({ reason: "Молоко больше недоступно." }),
+      ],
+    });
+
+    const warningReport = wrapper.get('[role="alert"]');
+    expect(warningReport.findAll("li")).toHaveLength(2);
+    expect(warningReport.text()).toContain("Капучино");
+    expect(warningReport.text()).toContain("Размер S, Овсяное молоко");
+    expect(warningReport.text()).toContain("Размер больше недоступен.");
+    expect(warningReport.text()).toContain("Молоко больше недоступно.");
+  });
+
+  it("не показывает отчёт о повторе без предупреждений", () => {
+    const wrapper = mountCartScreen({ repeatWarnings: [] });
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
   it("показывает оплату на кассе в заполненной корзине", () => {
     const wrapper = mountCartScreen();
 
@@ -231,3 +269,12 @@ const cartItem = {
   quantity: 1,
   type: "drink" as const,
 };
+
+function createRepeatWarning(overrides = {}) {
+  return {
+    context: "Размер S, Овсяное молоко",
+    productName: "Капучино",
+    reason: "Товар больше недоступен.",
+    ...overrides,
+  };
+}

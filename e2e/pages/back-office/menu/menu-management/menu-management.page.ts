@@ -1,10 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { CatalogListComponent } from "./catalog-list/catalog-list.component";
-import { CategoryEditorComponent } from "./category-editor/category-editor.component";
-import { ModifierAssignmentComponent } from "./modifier-assignment/modifier-assignment.component";
-import { ModifierGroupEditorComponent } from "./modifier-group-editor/modifier-group-editor.component";
-import { ProductEditorComponent } from "./product-editor/product-editor.component";
+import { CatalogListComponent } from "@pages/back-office/menu/menu-management/catalog-list/catalog-list.component";
+import { CategoryEditorComponent } from "@pages/back-office/menu/menu-management/category-editor/category-editor.component";
+import { ModifierAssignmentComponent } from "@pages/back-office/menu/menu-management/modifier-assignment/modifier-assignment.component";
+import { ModifierGroupEditorComponent } from "@pages/back-office/menu/menu-management/modifier-group-editor/modifier-group-editor.component";
+import { ProductEditorComponent } from "@pages/back-office/menu/menu-management/product-editor/product-editor.component";
 
 export class MenuManagementPage {
   public readonly assignments: ModifierAssignmentComponent;

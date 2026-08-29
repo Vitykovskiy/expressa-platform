@@ -5,19 +5,21 @@ import {
 } from "@fixtures/test";
 
 /**
- * Назначение: customer получает понятный результат повторного запроса кода до разрешённого срока.
+ * Назначение: клиент получает понятный результат повторного запроса кода до разрешённого срока.
  *
- * Предусловия: customer запросил код для своего номера телефона менее 60 секунд назад;
- * customer находится на шаге ввода одноразового кода.
+ * Предусловия: тестовое окружение предоставляет номер клиента и одноразовый код.
  *
  * Сценарий:
- * 1. Customer пытается повторно отправить одноразовый код.
+ * 1. Клиент открывает форму входа.
+ * 2. Клиент указывает номер телефона.
+ * 3. Клиент запрашивает одноразовый код.
+ * 4. Клиент повторно запрашивает одноразовый код.
  *
  * Ожидаемый результат:
- * - Customer видит сообщение об ограничении повторной отправки кода.
- * - Customer остаётся на шаге ввода кода.
+ * - Клиент видит сообщение об ограничении повторной отправки кода.
+ * - Клиент остаётся на шаге ввода кода.
  */
-test("AUTH-06 — Customer видит ограничение повторной отправки кода", async ({
+test("AUTH-06 — Клиент видит ограничение повторной отправки кода", async ({
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -27,19 +29,13 @@ test("AUTH-06 — Customer видит ограничение повторной 
   await customerAuth.phoneVerification.requestCode();
   await customerAuth.phoneVerification.resendCode();
 
-  await test.step("Customer видит сообщение об ограничении повторной отправки кода", async () => {
+  await test.step("Клиент видит сообщение об ограничении повторной отправки кода", async () => {
     await customerAuth.phoneVerification.assertError(
       PhoneVerificationError.RESEND_COOLDOWN,
     );
   });
 
-  await test.step("Customer остаётся на шаге ввода кода", async () => {
+  await test.step("Клиент остаётся на шаге ввода кода", async () => {
     await customerAuth.phoneVerification.assertStep(PhoneVerificationStep.OTP);
-  });
-
-  await test.step("Customer завершает вход и выходит из учётной записи", async () => {
-    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
-    await customerAuth.phoneVerification.confirm();
-    await customerAuth.signOut();
   });
 });

@@ -3,15 +3,16 @@ import { ProductType, expect, test } from "@fixtures/test";
 /**
  * Назначение: подтвердить создание товара с единой ценой без размеров.
  *
- * Предусловия: администратор авторизован; в каталоге есть категория.
+ * Предусловия: изолированный профиль `mutating` содержит категорию «Кофе» и предоставляет доступную роль администратора.
  *
  * Сценарий:
- * 1. Администратор нажимает «Добавить товар».
- * 2. Администратор выбирает категорию товара.
- * 3. Администратор выбирает тип «Товар без размеров».
- * 4. Администратор указывает название товара.
- * 5. Администратор указывает единую цену товара.
- * 6. Администратор сохраняет товар.
+ * 1. Администратор открывает управление меню.
+ * 2. Администратор открывает создание товара.
+ * 3. Администратор выбирает категорию «Кофе».
+ * 4. Администратор выбирает тип товара без размеров.
+ * 5. Администратор указывает название товара.
+ * 6. Администратор указывает единую цену товара.
+ * 7. Администратор сохраняет товар.
  *
  * Ожидаемый результат:
  * - Администратор видит созданный товар в выбранной категории.
@@ -23,46 +24,32 @@ test("CATALOG-08: администратор создаёт товар без р
   e2eEnvironment,
   menuManagement,
 }, testInfo) => {
-  const categoryName = `E2E Закуски ${testInfo.testId}`;
   const productName = `E2E Закуска ${testInfo.testId}`;
-  const price = "349";
 
-  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-  await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  await test.step("Подготовка: администратор авторизуется.", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  });
   await menuManagement.open();
+  await menuManagement.productEditor.startCreation();
+  await menuManagement.productEditor.selectCategory("Кофе");
+  await menuManagement.productEditor.selectType(ProductType.OTHER);
+  await menuManagement.productEditor.fillName(productName);
+  await menuManagement.productEditor.setSinglePrice("349");
+  await menuManagement.productEditor.save(productName);
 
-  try {
-    await menuManagement.categoryEditor.startCreation();
-    await menuManagement.categoryEditor.fillName(categoryName);
-    await menuManagement.categoryEditor.fillDescription("Категория закусок");
-    await menuManagement.categoryEditor.save(categoryName);
+  await test.step("Администратор видит созданный товар в выбранной категории.", async () => {
+    expect(
+      await menuManagement.catalog.isProductVisible(productName),
+      "Созданный товар показан в выбранной категории.",
+    ).toBe(true);
+  });
+  await test.step("У товара показана единая цена без размеров.", async () => {
+    const card = await menuManagement.catalog.readProductPrice(productName);
 
-    await menuManagement.productEditor.startCreation();
-    await menuManagement.productEditor.selectCategory(categoryName);
-    await menuManagement.productEditor.selectType(ProductType.OTHER);
-    await menuManagement.productEditor.fillName(productName);
-    await menuManagement.productEditor.setSinglePrice(price);
-    await menuManagement.productEditor.save(productName);
-
-    await test.step("Администратор видит созданный товар в выбранной категории.", async () => {
-      expect(
-        await menuManagement.catalog.isProductVisible(productName),
-        "Созданный товар показан в выбранной категории.",
-      ).toBe(true);
-    });
-    await test.step("У товара показана единая цена без размеров.", async () => {
-      const card = await menuManagement.catalog.readProductPrice(productName);
-
-      expect(card, "В карточке показана единая цена товара.").toContain(
-        "3.49 ₽",
-      );
-      expect(card, "В карточке не показан размер S.").not.toContain("S:");
-      expect(card, "В карточке не показан размер M.").not.toContain("M:");
-      expect(card, "В карточке не показан размер L.").not.toContain("L:");
-    });
-  } finally {
-    await menuManagement.productEditor.deleteIfPresent(productName);
-    await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-    await backOfficeAuth.form.signOut();
-  }
+    expect(card, "В карточке показана единая цена товара.").toContain("3.49 ₽");
+    expect(card, "В карточке не показан размер S.").not.toContain("S:");
+    expect(card, "В карточке не показан размер M.").not.toContain("M:");
+    expect(card, "В карточке не показан размер L.").not.toContain("L:");
+  });
 });

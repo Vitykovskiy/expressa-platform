@@ -20,6 +20,28 @@ const order = {
   totalMinor: 38000,
   stage: "CREATED" as const,
 };
+const actorId = "22222222-2222-4222-8222-222222222222";
+const actorLabel = "+79991234567";
+
+function detailsResponse() {
+  return {
+    ...order,
+    customer: {
+      id: "33333333-3333-4333-8333-333333333333",
+      phoneE164: "+79990000000",
+    },
+    events: [
+      {
+        actorId,
+        actorLabel,
+        from: "CREATED" as const,
+        occurredAt: "2030-01-02T10:01:00.000Z",
+        to: "ACCEPTED" as const,
+      },
+    ],
+    snapshot: [],
+  };
+}
 
 describe("OrdersApi", () => {
   it("передаёт поиск и стадию каноническому маршруту очереди", async () => {
@@ -43,15 +65,7 @@ describe("OrdersApi", () => {
   });
 
   it("вызывает только следующее действие и сохраняет детали", async () => {
-    const details = {
-      ...order,
-      customer: {
-        id: "22222222-2222-4222-8222-222222222222",
-        phoneE164: "+79991234567",
-      },
-      snapshot: [],
-      events: [],
-    };
+    const details = { ...detailsResponse(), events: [] };
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValue(response({ ...details, stage: "ACCEPTED" }));
@@ -72,6 +86,44 @@ describe("OrdersApi", () => {
 
     await expect(
       createApi(fetcher).list("access-token", { number: "", stage: null }),
+    ).rejects.toMatchObject({ code: "API_CONTRACT_ERROR" });
+  });
+
+  it("преобразует UUID автора в подпись сотрудника", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response(detailsResponse()));
+
+    await expect(
+      createApi(fetcher).details("access-token", order.id),
+    ).resolves.toMatchObject({
+      events: [
+        {
+          actorLabel,
+          from: "CREATED",
+          to: "ACCEPTED",
+        },
+      ],
+    });
+  });
+
+  it.each([
+    ["без подписи автора", undefined],
+    ["с неверной подписью автора", "79991234567"],
+  ])("отклоняет детали %s", async (_description, actorLabelValue) => {
+    const details = detailsResponse();
+    const event = { ...details.events[0] } as Record<string, unknown>;
+    if (actorLabelValue === undefined) {
+      delete event.actorLabel;
+    } else {
+      event.actorLabel = actorLabelValue;
+    }
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response({ ...details, events: [event] }));
+
+    await expect(
+      createApi(fetcher).details("access-token", order.id),
     ).rejects.toMatchObject({ code: "API_CONTRACT_ERROR" });
   });
 });

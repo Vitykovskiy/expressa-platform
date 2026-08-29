@@ -12,7 +12,8 @@ export const orderPageMessages = {
   pushUnsupported: "Уведомления не поддерживаются этим браузером.",
   unavailable: "Заказ недоступен.",
   loadFailed: "Не удалось загрузить заказ.",
-  repeatImpossible: "Некоторые позиции больше недоступны:",
+  repeatProductUnavailable: "Товар больше недоступен.",
+  repeatConfigurationUnavailable: "Выбранная конфигурация больше недоступна.",
 } as const;
 
 export const orderPollingIntervalMs = 10_000;

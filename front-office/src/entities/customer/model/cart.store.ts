@@ -7,7 +7,7 @@ import {
   configuredCartProductTypes,
   minorUnitsPerRub,
 } from "./cart.store.constants";
-import type { CartState, CartStorage } from "./cart.store.types";
+import type { CartState, CartStorage, RepeatWarning } from "./cart.store.types";
 import type {
   CartItem,
   CartVariantSelection,
@@ -17,7 +17,7 @@ import type {
 } from "./customer.types";
 
 export const useCartStore = defineStore(cartStoreId, {
-  state: (): CartState => ({ items: [] }),
+  state: (): CartState => ({ items: [], repeatWarnings: [] }),
   getters: {
     itemCount: (state) =>
       state.items.reduce((total, item) => total + item.quantity, 0),
@@ -62,6 +62,7 @@ export const useCartStore = defineStore(cartStoreId, {
       );
     },
     restore(storage: CartStorage = localStorage): void {
+      this.clearRepeatWarnings();
       const value = storage.getItem(cartStorageKey);
 
       if (value === null) return;
@@ -81,11 +82,28 @@ export const useCartStore = defineStore(cartStoreId, {
     },
     replace(items: CartItem[], storage: CartStorage = localStorage): void {
       this.items = items.map(normalizeCartItem);
+      this.clearRepeatWarnings();
       this.persist(storage);
     },
     clear(storage: CartStorage = localStorage): void {
       this.items = [];
+      this.clearRepeatWarnings();
       storage.removeItem(cartStorageKey);
+    },
+    applyRepeat(
+      items: CartItem[],
+      warnings: RepeatWarning[],
+      storage: CartStorage = localStorage,
+    ): void {
+      this.repeatWarnings = warnings.map((warning) => ({ ...warning }));
+
+      if (items.length === 0) return;
+
+      this.items = items.map(normalizeCartItem);
+      this.persist(storage);
+    },
+    clearRepeatWarnings(): void {
+      this.repeatWarnings = [];
     },
     persist(storage: CartStorage = localStorage): void {
       storage.setItem(cartStorageKey, JSON.stringify(this.items));

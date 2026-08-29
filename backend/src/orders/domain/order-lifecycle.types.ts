@@ -15,6 +15,7 @@ export type OrderQueueItem = {
 
 export type OrderEvent = {
   actorId: string;
+  actorLabel: string;
   occurredAt: Date;
   from: OrderStage;
   to: OrderStage;

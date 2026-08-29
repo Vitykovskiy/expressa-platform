@@ -159,13 +159,13 @@ const groupedItems = computed(() => {
 
 const intakeSublabel = computed(() => {
   if (props.intake === null) return "";
-  if (props.intake.updatedBy === null || props.intake.updatedAt === null) {
+  if (props.intake.updatedAt === null) {
     return props.intake.acceptsNewOrders
       ? availabilityMessages.intakeOn
       : availabilityMessages.intakeOff;
   }
 
-  return `Изменил ${props.intake.updatedBy} ${formatDate(props.intake.updatedAt)}`;
+  return `Изменил ${props.intake.updatedByLabel ?? "Неизвестный сотрудник"} ${formatDate(props.intake.updatedAt)}`;
 });
 
 function updateIntake(value: boolean): void {

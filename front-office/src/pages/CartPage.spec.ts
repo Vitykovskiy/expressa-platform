@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { createMemoryHistory, createRouter, RouterView } from "vue-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useSessionStore } from "../app/session.store";
@@ -11,6 +11,7 @@ import {
 import { setCheckoutStoreDependencies } from "@/features/checkout/checkout.store.dependencies";
 import { useCheckoutStore } from "@/features/checkout/checkout.store";
 import { useCartStore } from "@/entities/customer/model/cart.store";
+import type { RepeatWarning } from "@/entities/customer/model/cart.store.types";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import CartPage from "./CartPage.vue";
 
@@ -29,6 +30,7 @@ vi.mock("@/features/checkout/CartScreen.vue", () => ({
       "errorMessage",
       "items",
       "reconfirmedTotalRub",
+      "repeatWarnings",
       "unavailableItemIds",
     ],
     template: `
@@ -68,13 +70,42 @@ describe("CartPage", () => {
 
   it("изменяет количество и удаляет позицию через cart store", async () => {
     const { cart, wrapper } = await mountPage();
+    cart.applyRepeat([], [createRepeatWarning()]);
 
     await wrapper.get('[data-test="quantity"]').trigger("click");
     expect(cart.items[0]?.quantity).toBe(2);
     expect(cart.items[0]?.lineTotalRub).toBe(8);
+    expect(cart.repeatWarnings).toEqual([]);
 
+    cart.applyRepeat([], [createRepeatWarning()]);
     await wrapper.get('[data-test="remove"]').trigger("click");
     expect(cart.items).toEqual([]);
+    expect(cart.repeatWarnings).toEqual([]);
+  });
+
+  it("передаёт предупреждения повтора в CartScreen после перехода в корзину", async () => {
+    const warnings = [
+      createRepeatWarning(),
+      {
+        ...createRepeatWarning(),
+        reason: "Выбранная конфигурация больше недоступна.",
+      },
+    ];
+    const { wrapper } = await mountPage(warnings);
+
+    expect(wrapper.findComponent({ name: "CartScreen" }).props()).toMatchObject(
+      { repeatWarnings: warnings },
+    );
+  });
+
+  it("очищает предупреждения только после ухода с корзины", async () => {
+    const { cart, router, wrapper } = await mountPage();
+    cart.applyRepeat([], [createRepeatWarning()]);
+    await wrapper.vm.$nextTick();
+
+    expect(cart.repeatWarnings).toHaveLength(1);
+    await router.push("/menu");
+    expect(cart.repeatWarnings).toEqual([]);
   });
 
   it("оформляет заказ, очищает корзину и открывает точный маршрут заказа", async () => {
@@ -169,9 +200,10 @@ describe("CartPage", () => {
   });
 });
 
-async function mountPage() {
+async function mountPage(repeatWarnings: RepeatWarning[] = []) {
   const cart = useCartStore();
   cart.items = [createCartItem()];
+  cart.applyRepeat([], repeatWarnings);
   const checkout = useCheckoutStore();
   const menu = useMenuStore();
   const session = useSessionStore();
@@ -180,12 +212,16 @@ async function mountPage() {
     routes: [
       { component: CartPage, path: "/cart" },
       { component: CartPage, path: "/auth/phone" },
+      { component: { template: "<main />" }, path: "/menu" },
       { component: CartPage, path: "/orders/:id" },
     ],
   });
   await router.push("/cart");
   await router.isReady();
-  const wrapper = mount(CartPage, { global: { plugins: [router] } });
+  const wrapper = mount(
+    { components: { RouterView }, template: "<RouterView />" },
+    { global: { plugins: [router] } },
+  );
 
   return { cart, checkout, menu, router, session, wrapper };
 }
@@ -214,6 +250,14 @@ function createCartItem() {
     sizePrice: 4,
     type: "DRINK" as const,
     unitTotalMinor: 400,
+  };
+}
+
+function createRepeatWarning() {
+  return {
+    context: "Размер S, Овсяное молоко",
+    productName: "Капучино",
+    reason: "Товар больше недоступен.",
   };
 }
 

@@ -1,8 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class GuestCheckoutFormComponent {
-  private readonly nameInput;
-  private readonly continueButton;
+  private readonly nameInput: Locator;
+  private readonly continueButton: Locator;
 
   constructor(page: Page) {
     this.nameInput = page.getByLabel("Ваше имя", { exact: true });

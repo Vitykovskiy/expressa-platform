@@ -1,93 +1,82 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { ProductConfiguratorComponent } from "./product-configurator/product-configurator.component";
 
+import type { Locator, Page } from "@playwright/test";
+
 export class PublicMenuPage {
   public readonly product: ProductConfiguratorComponent;
+  private readonly categoryButtons: Locator;
+  private readonly categoryList: Locator;
+  private readonly emptyMessage: Locator;
+  private readonly intakeClosedMessage: Locator;
+  private readonly menuHeading: Locator;
+  private readonly openedCategoryTitle: Locator;
+  private readonly openedProducts: Locator;
+  private readonly products: Locator;
 
   constructor(private readonly page: Page) {
     this.product = new ProductConfiguratorComponent(page);
+    this.categoryList = page.getByRole("list", { name: "Категории меню" });
+    this.categoryButtons = this.categoryList.getByRole("button");
+    this.emptyMessage = page.getByText("Меню пока пустое", { exact: true });
+    this.intakeClosedMessage = page.getByText(
+      "Новые заказы временно не принимаются",
+      { exact: true },
+    );
+    this.menuHeading = page.getByRole("heading", {
+      name: "Что будем заказывать?",
+      exact: true,
+    });
+    this.openedCategoryTitle = page.getByRole("heading", { level: 1 });
+    this.products = page.getByRole("list", { name: /^Товары категории /u });
+    this.openedProducts = this.products.getByRole("button");
   }
 
   async open(url: string): Promise<void> {
     await test.step("Открыть меню", async () => {
       await this.page.goto(url);
       await expect(
-        this.page
-          .getByRole("heading", {
-            name: "Что будем заказывать?",
-            exact: true,
-          })
-          .or(this.page.getByText("Меню пока пустое", { exact: true })),
+        this.menuHeading.or(this.emptyMessage),
         "Открыто меню для клиента.",
       ).toBeVisible();
     });
   }
 
   async readCategoryNames(): Promise<readonly string[]> {
-    const categoryButtons = await this.categoryButtons().allInnerTexts();
+    const categoryButtons = await this.categoryButtons.allInnerTexts();
 
     return categoryButtons.map((text) => this.categoryName(text));
   }
 
   async readCategoryProductCounts(): Promise<readonly number[]> {
-    const categoryButtons = await this.categoryButtons().allInnerTexts();
+    const categoryButtons = await this.categoryButtons.allInnerTexts();
 
     return categoryButtons.map((text) => this.categoryProductCount(text));
   }
 
   async readOpenedCategoryName(): Promise<string> {
-    return this.openedCategoryTitle().innerText();
+    return this.openedCategoryTitle.innerText();
   }
 
   async readOpenedProductNames(): Promise<readonly string[]> {
-    return this.openedProducts().allInnerTexts();
+    return this.openedProducts.allInnerTexts();
   }
 
   async isEmptyVisible(): Promise<boolean> {
-    return this.emptyMessage().isVisible();
+    return this.emptyMessage.isVisible();
   }
 
   async isCategoriesAbsent(): Promise<boolean> {
-    return (await this.categoryList().count()) === 0;
+    return (await this.categoryList.count()) === 0;
   }
 
   async isProductsAbsent(): Promise<boolean> {
-    return (await this.products().count()) === 0;
+    return (await this.products.count()) === 0;
   }
 
   async isIntakeClosed(): Promise<boolean> {
-    return this.intakeClosedMessage().isVisible();
-  }
-
-  private categoryList(): Locator {
-    return this.page.getByRole("list", { name: "Категории меню" });
-  }
-
-  private categoryButtons(): Locator {
-    return this.categoryList().getByRole("button");
-  }
-
-  private emptyMessage(): Locator {
-    return this.page.getByText("Меню пока пустое", { exact: true });
-  }
-
-  private intakeClosedMessage(): Locator {
-    return this.page.getByText("Новые заказы временно не принимаются", {
-      exact: true,
-    });
-  }
-
-  private openedCategoryTitle(): Locator {
-    return this.page.getByRole("heading", { level: 1 });
-  }
-
-  private openedProducts(): Locator {
-    return this.products().getByRole("button");
-  }
-
-  private products(): Locator {
-    return this.page.getByRole("list", { name: /^Товары категории /u });
+    return this.intakeClosedMessage.isVisible();
   }
 
   private categoryName(text: string): string {

@@ -49,8 +49,8 @@ export const test = base.extend<E2eFixtures>({
   e2eCredentials: async ({}, use) => {
     await use(getE2eCredentials());
   },
-  multiSession: async ({ browser, page }, use) => {
-    await useMultiSessionFixture(browser, page, use);
+  multiSession: async ({ browser }, use) => {
+    await useMultiSessionFixture(browser, use);
   },
   backOfficeAuth: async ({ page }, use) => {
     await use(new BackOfficeAuthPage(page));
@@ -84,6 +84,7 @@ export const test = base.extend<E2eFixtures>({
 export { expect };
 export {
   ProductSize as ProductEditorSize,
+  ProductSizeUsage,
   ProductType,
 } from "@pages/back-office/menu/menu-management/product-editor/product-editor.types";
 export {
@@ -97,11 +98,13 @@ export {
 export { CustomerSessionState } from "@pages/front-office/auth/customer-auth/customer-auth.page.types";
 export { ModifierSelectionType } from "@pages/back-office/menu/menu-management/modifier-group-editor/modifier-group-editor.types";
 export { ProductSize as ProductConfiguratorSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
+export { CartItemSize } from "@pages/front-office/checkout/checkout/cart-panel/cart-panel.component.types";
 export { OrderQueueStage } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
 export { OrderQueueFilter } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
-export { QueueScenarioStage } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
-export { QueueScenarioFilter } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
 export { OrderQueueTransitionAction } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.types";
-export { AvailabilityState } from "@pages/back-office/availability/availability-management/availability-list/availability-list.types";
-export { OrderHistoryStatus } from "@pages/front-office/orders/order-history/order-history-list/order-history-list.component.types";
+export {
+  AvailabilityItemType,
+  AvailabilityState,
+} from "@pages/back-office/availability/availability-management/availability-list/availability-list.types";
+export { OrderHistoryStatus } from "@pages/front-office/orders/order-history/order-history-list/order-history-list.types";
 export { OrderStatus } from "@pages/front-office/orders/customer-order/order-details/order-details.types";

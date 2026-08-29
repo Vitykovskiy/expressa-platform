@@ -53,7 +53,10 @@ export class PostgresAdminCatalogRepository
         categoryModifierGroups,
       ] = await Promise.all([
         client.query<DatabaseRow>(
-          `SELECT value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`,
+          `SELECT s.value, s.updated_by, u.phone_e164 AS updated_by_label, s.updated_at
+             FROM service_settings s
+             LEFT JOIN users u ON u.id = s.updated_by
+             WHERE s.key = 'accepts_new_orders'`,
         ),
         client.query<DatabaseRow>(
           `SELECT c.id, c.name, c.description, c.sort_order, c.is_active, c.archived_at
@@ -178,7 +181,10 @@ export class PostgresAdminCatalogRepository
       await client.query("BEGIN");
       await client.query(publicMenuAdvisoryLockSql, [catalogAdvisoryLockKey]);
       const before = await client.query<DatabaseRow>(
-        `SELECT id, value, updated_by, updated_at FROM service_settings WHERE key = 'accepts_new_orders'`,
+        `SELECT s.id, s.value, s.updated_by, u.phone_e164 AS updated_by_label, s.updated_at
+         FROM service_settings s
+         LEFT JOIN users u ON u.id = s.updated_by
+         WHERE s.key = 'accepts_new_orders'`,
       );
       if (before.rows.length !== 1)
         throw new Error(
@@ -186,8 +192,16 @@ export class PostgresAdminCatalogRepository
         );
       const row = before.rows[0]!;
       const after = await client.query<DatabaseRow>(
-        `UPDATE service_settings SET value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP
-         WHERE key = 'accepts_new_orders' RETURNING id, value, updated_by, updated_at`,
+        `WITH updated AS (
+           UPDATE service_settings
+           SET value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP
+           WHERE key = 'accepts_new_orders'
+           RETURNING id, value, updated_by, updated_at
+         )
+         SELECT updated.id, updated.value, updated.updated_by,
+                users.phone_e164 AS updated_by_label, updated.updated_at
+         FROM updated
+         LEFT JOIN users ON users.id = updated.updated_by`,
         [command.acceptsNewOrders, command.actorId],
       );
       const intake = parseServiceIntake(after.rows);
@@ -220,6 +234,7 @@ function parseServiceIntake(rows: DatabaseRow[]): ServiceIntake {
   return {
     acceptsNewOrders: readBoolean(row, "value"),
     updatedBy: readNullableString(row, "updated_by"),
+    updatedByLabel: readNullableString(row, "updated_by_label"),
     updatedAt: readNullableDate(row, "updated_at"),
   };
 }

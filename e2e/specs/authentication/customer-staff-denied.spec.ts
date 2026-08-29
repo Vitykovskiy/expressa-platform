@@ -1,23 +1,22 @@
 import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
 
 /**
- * Назначение: customer не получает доступ к рабочим разделам back-office.
+ * Назначение: клиент не получает доступ к рабочим разделам back-office.
  *
- * Предусловия: для номера customer существует пользователь с ролью customer;
- * customer может получить одноразовый код для этого номера.
+ * Предусловия: тестовое окружение предоставляет номер клиента и одноразовый код.
  *
  * Сценарий:
- * 1. Customer открывает форму входа back-office.
- * 2. Customer указывает свой номер телефона.
- * 3. Customer запрашивает одноразовый код.
- * 4. Customer указывает полученный шестизначный одноразовый код.
- * 5. Customer подтверждает одноразовый код.
+ * 1. Клиент открывает форму входа back-office.
+ * 2. Клиент указывает свой номер телефона.
+ * 3. Клиент запрашивает одноразовый код.
+ * 4. Клиент указывает полученный шестизначный одноразовый код.
+ * 5. Клиент подтверждает одноразовый код.
  *
  * Ожидаемый результат:
- * - Customer видит отказ в доступе к back-office.
- * - Customer не получает доступ к очереди, доступности или меню back-office.
+ * - Клиент видит отказ в доступе к back-office.
+ * - Клиент не получает доступ к очереди, доступности или меню back-office.
  */
-test("AUTH-09 — Customer получает отказ во входе в back-office", async ({
+test("AUTH-09 — Клиент получает отказ во входе в back-office", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -28,31 +27,31 @@ test("AUTH-09 — Customer получает отказ во входе в back-o
   await backOfficeAuth.form.fillCode(e2eCredentials.customer.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Customer видит отказ в доступе к back-office", async () => {
+  await test.step("Клиент видит отказ в доступе к back-office", async () => {
     await expect(
       await backOfficeAuth.form.isAccessDeniedVisible(),
-      "Customer видит отказ в доступе к back-office.",
+      "Клиент видит отказ в доступе к back-office.",
     ).toBe(true);
   });
 
-  await test.step("Customer не получает доступ к очереди, доступности или меню back-office", async () => {
+  await test.step("Клиент не получает доступ к очереди, доступности или меню back-office", async () => {
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.QUEUE,
       ),
-      "Очередь недоступна customer.",
+      "Очередь недоступна клиенту.",
     ).toBe(false);
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.AVAILABILITY,
       ),
-      "Доступность недоступна customer.",
+      "Доступность недоступна клиенту.",
     ).toBe(false);
     await expect(
       await backOfficeAuth.isWorkspaceSectionVisible(
         BackOfficeWorkspaceSection.MENU,
       ),
-      "Меню недоступно customer.",
+      "Меню недоступно клиенту.",
     ).toBe(false);
   });
 });

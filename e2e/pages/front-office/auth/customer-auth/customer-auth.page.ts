@@ -1,17 +1,29 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { PhoneVerificationComponent } from "@components/front-office/auth/phone-verification/phone-verification.component";
+import { PhoneVerificationStep } from "@components/front-office/auth/phone-verification/phone-verification.component.types";
 import { GuestCheckoutFormComponent } from "@components/front-office/checkout/guest-checkout-form/guest-checkout-form.component";
 
 import { CustomerSessionState } from "./customer-auth.page.types";
 
+import type { Locator, Page } from "@playwright/test";
+
 export class CustomerAuthPage {
   public readonly phoneVerification: PhoneVerificationComponent;
   public readonly profile: GuestCheckoutFormComponent;
+  private readonly accountButton: Locator;
+  private readonly signInButton: Locator;
+  private readonly publicInterface: Locator;
 
   constructor(private readonly page: Page) {
     this.phoneVerification = new PhoneVerificationComponent(page);
     this.profile = new GuestCheckoutFormComponent(page);
+    this.accountButton = page.getByRole("button", { name: /Выйти/ });
+    this.signInButton = page.getByRole("button", {
+      name: "Подтвердить телефон",
+      exact: true,
+    });
+    this.publicInterface = page.getByRole("main");
   }
 
   async open(frontUrl: string): Promise<void> {
@@ -25,10 +37,7 @@ export class CustomerAuthPage {
       await expect(this.page, "Открыт ввод номера телефона.").toHaveURL(
         (url) => url.pathname === "/auth/phone",
       );
-      await expect(
-        this.page.getByLabel("Номер телефона", { exact: true }),
-        "Открыта форма входа клиента.",
-      ).toBeVisible();
+      await this.phoneVerification.assertStep(PhoneVerificationStep.PHONE);
     });
   }
 
@@ -36,17 +45,17 @@ export class CustomerAuthPage {
     await test.step("Перезагрузить публичный интерфейс", async () => {
       await this.page.reload();
       await expect(
-        this.page.getByRole("main"),
+        this.publicInterface,
         "Публичный интерфейс загружен после перезагрузки.",
       ).toBeVisible();
     });
   }
 
   async signOut(): Promise<void> {
-    await test.step("Выйти из учётной записи customer", async () => {
+    await test.step("Выйти из учётной записи клиента", async () => {
       await expect(
         this.accountButton,
-        "Кнопка выхода customer доступна.",
+        "Кнопка выхода из учётной записи доступна.",
       ).toBeEnabled();
       await this.accountButton.click();
       await this.assertSession(CustomerSessionState.GUEST);
@@ -57,39 +66,30 @@ export class CustomerAuthPage {
     if (state === CustomerSessionState.AUTHENTICATED) {
       await expect(
         this.accountButton,
-        "Customer авторизован в публичном интерфейсе.",
+        "Клиент авторизован в публичном интерфейсе.",
       ).toBeVisible();
       return;
     }
 
     await expect(
       this.signInButton,
-      "Публичный интерфейс открыт для гостя.",
+      "Публичный интерфейс открыт для неавторизованного клиента.",
     ).toBeVisible();
   }
 
   async isAuthenticatedAccountVisible(phone: string): Promise<boolean> {
-    return this.page
-      .getByRole("button", {
-        name: new RegExp(
-          `${this.escapeRegularExpression(this.normalizeRussianPhone(phone))}.*Выйти`,
-        ),
-      })
-      .isVisible();
+    return this.accountButtonFor(phone).isVisible();
   }
 
   async isPublicInterfaceVisible(): Promise<boolean> {
-    return this.page.getByRole("main").isVisible();
+    return this.publicInterface.isVisible();
   }
 
-  private get accountButton(): Locator {
-    return this.page.getByRole("button", { name: /Выйти/ });
-  }
-
-  private get signInButton(): Locator {
+  private accountButtonFor(phone: string): Locator {
     return this.page.getByRole("button", {
-      name: "Подтвердить телефон",
-      exact: true,
+      name: new RegExp(
+        `${this.escapeRegularExpression(this.normalizeRussianPhone(phone))}.*Выйти`,
+      ),
     });
   }
 

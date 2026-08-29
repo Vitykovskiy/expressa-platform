@@ -72,12 +72,13 @@ describe('catalog pricing and availability coverage', () => {
   it('writes service intake audit with previous and current operator state', async () => {
     const { client, repository } = adminRepository([
       { rows: [] }, { rows: [] },
-      { rows: [{ id: 'accepts_new_orders', value: true, updated_by: 'owner', updated_at: timestamp }] },
-      { rows: [{ id: 'accepts_new_orders', value: false, updated_by: 'staff', updated_at: timestamp }] },
+      { rows: [{ id: 'accepts_new_orders', value: true, updated_by: 'owner', updated_by_label: null, updated_at: timestamp }] },
+      { rows: [{ id: 'accepts_new_orders', value: false, updated_by: 'staff', updated_by_label: '+79991234567', updated_at: timestamp }] },
       { rows: [] }, { rows: [] },
     ]);
 
-    await expect(repository.updateServiceIntake({ acceptsNewOrders: false, actorId: 'staff', requestId: 'request' })).resolves.toEqual({ acceptsNewOrders: false, updatedBy: 'staff', updatedAt: timestamp });
+    await expect(repository.updateServiceIntake({ acceptsNewOrders: false, actorId: 'staff', requestId: 'request' })).resolves.toEqual({ acceptsNewOrders: false, updatedBy: 'staff', updatedByLabel: '+79991234567', updatedAt: timestamp });
+    expect(client.query.mock.calls[4]?.[1]?.[2]).toContain('"updatedByLabel":null');
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('SERVICE_INTAKE_UPDATED'), expect.arrayContaining(['staff', 'accepts_new_orders']));
   });
 

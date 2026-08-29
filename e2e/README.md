@@ -15,7 +15,6 @@ e2e/
 ├── pages/            # Page и Component Objects экранов двух приложений
 ├── specs/            # браузерные пользовательские сценарии
 ├── support/          # проверка окружения и предметные тестовые данные
-├── tools/            # локальная проверка архитектурных границ
 ├── AGENTS.md         # правила внесения изменений в E2E-набор
 ├── package.json      # команды запуска и статических проверок
 └── playwright.config.ts # конфигурация Playwright
@@ -39,7 +38,6 @@ staff и customer; значения остаются в локальном фа�
 
 ```bash
 npm run e2e:headed
-npm run e2e:boundaries
 npm run typecheck:e2e
 npm run lint
 npm run format:check
@@ -61,9 +59,10 @@ npm run format:check
 Если поставка или сборка E2E-образа неуспешна, workflow публикует
 диагностическую страницу без браузерных сценариев.
 
-Последний [Playwright report](http://216.57.105.133:8088/) доступен из сетей,
-разрешённых `E2E_REPORT_ALLOWLIST`. Повтор того же commit запускается через
-`Re-run jobs` в GitHub Actions.
+Адрес Playwright report не хранится в репозитории: host берётся из приватного
+GitHub Environment Secret `EXPRESSA_VPS_HOST`, доступ ограничивает
+`E2E_REPORT_ALLOWLIST`. Повтор того же commit запускается через `Re-run jobs` в
+GitHub Actions.
 
 Порядок поставки, доступ и очистка стенда — в
 [E2E на VPS](../docs/70-deployment/E2E-on-VPS.md).

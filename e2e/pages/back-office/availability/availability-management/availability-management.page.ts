@@ -1,6 +1,8 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { AvailabilityListComponent } from "./availability-list/availability-list.component";
+import { AvailabilityListComponent } from "@pages/back-office/availability/availability-management/availability-list/availability-list.component";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class AvailabilityManagementPage {
   public readonly list: AvailabilityListComponent;

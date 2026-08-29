@@ -85,7 +85,7 @@ describe("QueuePage", () => {
       customer: { id: "customer", phoneE164: "+79991234567" },
       events: [
         {
-          actorId: "staff-42",
+          actorLabel: "+79991234567",
           from: "CREATED",
           to: "READY",
           occurredAt: "2030-01-02T10:01:00.000Z",
@@ -146,7 +146,7 @@ describe("QueuePage", () => {
       customer: { id: "customer", phoneE164: "+79991234567" },
       events: [
         {
-          actorId: "staff-42",
+          actorLabel: "+79991234567",
           from: "CREATED",
           to: "ACCEPTED",
           occurredAt: "2030-01-02T10:01:00.000Z",
@@ -160,7 +160,8 @@ describe("QueuePage", () => {
     await wrapper.get(".order-card__details-button").trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Автор: staff-42");
+    expect(wrapper.text()).toContain("Автор: +79991234567");
+    expect(wrapper.text()).not.toContain("staff-42");
     wrapper.unmount();
   });
 });

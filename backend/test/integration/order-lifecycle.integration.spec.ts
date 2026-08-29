@@ -25,11 +25,11 @@ function runMigrations(): void {
   });
 }
 
-async function createUser(pool: Pool, role: 'customer' | 'barista'): Promise<string> {
+async function createUser(pool: Pool, role: 'customer' | 'barista'): Promise<{ id: string; phoneE164: string }> {
   const id = randomUUID();
   const phone = '+7999' + Math.floor(Math.random() * 10_000_000).toString().padStart(7, '0');
   await pool.query('INSERT INTO users (id, phone_e164, role) VALUES ($1, $2, $3)', [id, phone, role]);
-  return id;
+  return { id, phoneE164: phone };
 }
 
 async function createOrder(pool: Pool, customerId: string): Promise<string> {
@@ -68,7 +68,7 @@ describe('PostgreSQL lifecycle заказа', () => {
     async () => {
       const customerId = await createUser(pool, 'customer');
       const staffId = await createUser(pool, 'barista');
-      const orderId = await createOrder(pool, customerId);
+      const orderId = await createOrder(pool, customerId.id);
       const acceptedAt = new Date('2030-01-02T03:04:05.000Z');
       const preparingAt = new Date('2030-01-02T03:04:06.000Z');
       const readyAt = new Date('2030-01-02T03:04:07.000Z');
@@ -81,13 +81,14 @@ describe('PostgreSQL lifecycle заказа', () => {
       await expect(pool.query('SELECT stage FROM orders WHERE id = $1', [orderId])).resolves.toMatchObject({ rows: [{ stage: 'CREATED' }] });
       await expect(pool.query('SELECT count(*)::int AS count FROM order_events WHERE order_id = $1', [orderId])).resolves.toMatchObject({ rows: [{ count: 0 }] });
 
-      await repository.transition({ orderId, action: 'accept', actorId: staffId, occurredAt: acceptedAt });
-      await expect(repository.transition({ orderId, action: 'accept', actorId: staffId, occurredAt: acceptedAt })).rejects.toMatchObject({ code: 'ORDER_STAGE_CONFLICT' });
-      await repository.transition({ orderId, action: 'startPreparing', actorId: staffId, occurredAt: preparingAt });
-      await repository.transition({ orderId, action: 'markReady', actorId: staffId, occurredAt: readyAt });
-      const issued = await repository.transition({ orderId, action: 'issue', actorId: staffId, occurredAt: issuedAt });
+      await repository.transition({ orderId, action: 'accept', actorId: staffId.id, occurredAt: acceptedAt });
+      await expect(repository.transition({ orderId, action: 'accept', actorId: staffId.id, occurredAt: acceptedAt })).rejects.toMatchObject({ code: 'ORDER_STAGE_CONFLICT' });
+      await repository.transition({ orderId, action: 'startPreparing', actorId: staffId.id, occurredAt: preparingAt });
+      await repository.transition({ orderId, action: 'markReady', actorId: staffId.id, occurredAt: readyAt });
+      const issued = await repository.transition({ orderId, action: 'issue', actorId: staffId.id, occurredAt: issuedAt });
 
-      expect(issued).toMatchObject({ id: orderId, stage: 'ISSUED', customer: { id: customerId }, snapshot: [] });
+      expect(issued).toMatchObject({ id: orderId, stage: 'ISSUED', customer: { id: customerId.id }, snapshot: [] });
+      expect(issued.events).toEqual(expect.arrayContaining([expect.objectContaining({ actorId: staffId.id, actorLabel: staffId.phoneE164 })]));
       expect(issued.events.map(({ from, to }) => ({ from, to }))).toEqual([
         { from: 'CREATED', to: 'ACCEPTED' },
         { from: 'ACCEPTED', to: 'PREPARING' },

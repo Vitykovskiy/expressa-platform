@@ -1,9 +1,12 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
-  type IntakeChangeMetadata,
+  AvailabilityItemType,
   AvailabilityState,
 } from "./availability-list.types";
+
+import type { Locator, Page } from "@playwright/test";
+import type { IntakeChangeMetadata } from "./availability-list.types";
 
 export class AvailabilityListComponent {
   private readonly screen: Locator;
@@ -72,63 +75,30 @@ export class AvailabilityListComponent {
     });
   }
 
-  async setProductAvailability(
+  async setItemAvailability(
     name: string,
+    type: AvailabilityItemType,
     state: AvailabilityState,
   ): Promise<void> {
-    await this.setItemAvailability(name, state, "товара");
+    await test.step(`Установить доступность ${type} «${name}»: ${state}`, async () => {
+      await this.setToggle(this.itemToggle(name), state, name);
+    });
   }
 
-  async setSizeAvailability(
-    name: string,
-    state: AvailabilityState,
-  ): Promise<void> {
-    await this.setItemAvailability(name, state, "размера");
+  async isItemVisible(name: string): Promise<boolean> {
+    return this.itemToggle(name).isVisible();
   }
 
-  async setModifierAvailability(
-    name: string,
-    state: AvailabilityState,
-  ): Promise<void> {
-    await this.setItemAvailability(name, state, "добавки");
+  async isCategoryVisible(name: string): Promise<boolean> {
+    return this.screen.getByRole("heading", { name, exact: true }).isVisible();
   }
 
-  async assertItemVisible(name: string): Promise<void> {
-    await expect(
-      this.itemToggle(name),
-      `Позиция «${name}» показана.`,
-    ).toBeVisible();
+  async readItemAvailability(name: string): Promise<AvailabilityState> {
+    return this.readAvailability(this.itemToggle(name), name);
   }
 
-  async assertCategoryVisible(name: string): Promise<void> {
-    await expect(
-      this.screen.getByRole("heading", { name, exact: true }),
-      `Категория «${name}» показана.`,
-    ).toBeVisible();
-  }
-
-  async assertItemHidden(name: string): Promise<void> {
-    await expect(
-      this.itemToggle(name),
-      `Позиция «${name}» не показана.`,
-    ).toHaveCount(0);
-  }
-
-  async assertItemAvailability(
-    name: string,
-    state: AvailabilityState,
-  ): Promise<void> {
-    await expect(
-      this.itemToggle(name),
-      `Доступность позиции «${name}» соответствует состоянию ${state}.`,
-    ).toHaveAttribute("aria-checked", state);
-  }
-
-  async assertIntakeAvailability(state: AvailabilityState): Promise<void> {
-    await expect(
-      this.intakeToggle,
-      `Приём заказов соответствует состоянию ${state}.`,
-    ).toHaveAttribute("aria-checked", state);
+  async readIntakeAvailability(): Promise<AvailabilityState> {
+    return this.readAvailability(this.intakeToggle, "Приём новых заказов");
   }
 
   async readIntakeChangeMetadata(): Promise<IntakeChangeMetadata> {
@@ -140,19 +110,30 @@ export class AvailabilityListComponent {
     ).toBeVisible();
 
     const text = await metadata.textContent();
-    const [prefix, actor, ...displayedAt] = text?.split(" ") ?? [];
+    const parsedMetadata = text?.match(
+      /^Изменил (?<actor>.+) (?<displayedAt>(?<day>\d{2})\.(?<month>\d{2})\.(?<year>\d{4}), (?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2}))$/u,
+    );
+
+    const actor = parsedMetadata?.groups?.["actor"];
+    const displayedAt = parsedMetadata?.groups?.["displayedAt"];
+    const day = Number(parsedMetadata?.groups?.["day"]);
+    const month = Number(parsedMetadata?.groups?.["month"]);
+    const year = Number(parsedMetadata?.groups?.["year"]);
+    const hours = Number(parsedMetadata?.groups?.["hours"]);
+    const minutes = Number(parsedMetadata?.groups?.["minutes"]);
+    const seconds = Number(parsedMetadata?.groups?.["seconds"]);
 
     if (
-      prefix !== "Изменил" ||
       actor === undefined ||
-      displayedAt.length === 0
+      displayedAt === undefined ||
+      !this.isValidDateTime(day, month, year, hours, minutes, seconds)
     ) {
       throw new Error(
         "Метаданные изменения приёма заказов имеют неверный формат.",
       );
     }
 
-    return { actor, displayedAt: displayedAt.join(" ") };
+    return { actor, displayedAt };
   }
 
   async readChangedIntakeMetadata(
@@ -176,16 +157,6 @@ export class AvailabilityListComponent {
     return this.emptyDescription().isVisible();
   }
 
-  private async setItemAvailability(
-    name: string,
-    state: AvailabilityState,
-    itemType: string,
-  ): Promise<void> {
-    await test.step(`Установить доступность ${itemType} «${name}»: ${state}`, async () => {
-      await this.setToggle(this.itemToggle(name), state, name);
-    });
-  }
-
   private async setToggle(
     toggle: Locator,
     state: AvailabilityState,
@@ -193,7 +164,7 @@ export class AvailabilityListComponent {
   ): Promise<boolean> {
     await expect(toggle, `Переключатель «${label}» доступен.`).toBeEnabled();
 
-    const changed = (await toggle.getAttribute("aria-checked")) !== state;
+    const changed = (await this.readAvailability(toggle, label)) !== state;
 
     if (changed) {
       await toggle.click();
@@ -209,6 +180,42 @@ export class AvailabilityListComponent {
     ).toBeEnabled();
 
     return changed;
+  }
+
+  private async readAvailability(
+    toggle: Locator,
+    label: string,
+  ): Promise<AvailabilityState> {
+    const state = await toggle.getAttribute("aria-checked");
+
+    if (
+      state !== AvailabilityState.AVAILABLE &&
+      state !== AvailabilityState.UNAVAILABLE
+    ) {
+      throw new Error(`Переключатель «${label}» имеет неизвестное состояние.`);
+    }
+
+    return state;
+  }
+
+  private isValidDateTime(
+    day: number,
+    month: number,
+    year: number,
+    hours: number,
+    minutes: number,
+    seconds: number,
+  ): boolean {
+    const timestamp = new Date(year, month - 1, day, hours, minutes, seconds);
+
+    return (
+      timestamp.getDate() === day &&
+      timestamp.getMonth() === month - 1 &&
+      timestamp.getFullYear() === year &&
+      timestamp.getHours() === hours &&
+      timestamp.getMinutes() === minutes &&
+      timestamp.getSeconds() === seconds
+    );
   }
 
   private itemToggle(name: string): Locator {

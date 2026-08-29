@@ -1,9 +1,11 @@
+import type { RepeatWarning } from "@/entities/customer/model/cart.store.types";
 import type { CartItem } from "@/entities/customer/model/customer.types";
 
 type CartScreenBaseProps = {
   acceptsNewOrders?: boolean;
   items: CartItem[];
   errorMessage?: string | null;
+  repeatWarnings?: RepeatWarning[];
   unavailableItemIds?: string[];
 };
 

@@ -1,6 +1,8 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { OrderQueueComponent } from "./order-queue/order-queue.component";
+import { OrderQueueComponent } from "@pages/back-office/orders/staff-orders/order-queue/order-queue.component";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class StaffOrdersPage {
   public readonly queue: OrderQueueComponent;

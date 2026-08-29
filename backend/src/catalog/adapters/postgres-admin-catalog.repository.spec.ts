@@ -35,7 +35,7 @@ describe("PostgresAdminCatalogRepository", () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
-        rows: [{ value: true, updated_by: null, updated_at: null }],
+        rows: [{ value: true, updated_by: null, updated_by_label: null, updated_at: null }],
       })
       .mockResolvedValueOnce({
         rows: [
@@ -110,7 +110,7 @@ describe("PostgresAdminCatalogRepository", () => {
       });
 
     await expect(repository.findCandidates()).resolves.toEqual({
-      intake: { acceptsNewOrders: true, updatedBy: null, updatedAt: null },
+      intake: { acceptsNewOrders: true, updatedBy: null, updatedByLabel: null, updatedAt: null },
       categories: [
         {
           id: "category",
@@ -260,7 +260,7 @@ describe("PostgresAdminCatalogRepository", () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
-        rows: [{ value: true, updated_by: null, updated_at: null }],
+        rows: [{ value: true, updated_by: null, updated_by_label: null, updated_at: null }],
       })
       .mockResolvedValueOnce({ rows: [{ id: null }] });
 

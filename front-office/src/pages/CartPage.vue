@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
@@ -42,6 +42,7 @@ const screenProps = computed<CartScreenProps>(() => {
         : cartPageMessages.intakeClosed,
       items: cartStore.items,
       reconfirmedTotalRub: getReconfirmedTotalRub(),
+      repeatWarnings: cartStore.repeatWarnings,
       unavailableItemIds: checkoutStore.unavailableCartItemIds,
     };
   }
@@ -53,8 +54,13 @@ const screenProps = computed<CartScreenProps>(() => {
       ? cartPageMessages.intakeClosed
       : checkoutStore.errorMessage,
     items: cartStore.items,
+    repeatWarnings: cartStore.repeatWarnings,
     unavailableItemIds: checkoutStore.unavailableCartItemIds,
   };
+});
+
+onUnmounted(() => {
+  cartStore.clearRepeatWarnings();
 });
 
 function removeItem(itemId: string): void {

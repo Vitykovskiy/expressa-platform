@@ -7,6 +7,28 @@
       <h1 id="cart-title" class="cart-screen__title">Корзина</h1>
     </header>
 
+    <section
+      v-if="hasRepeatWarnings"
+      class="cart-screen__repeat-warnings"
+      role="alert"
+      aria-labelledby="cart-repeat-warnings-title"
+    >
+      <h2 id="cart-repeat-warnings-title" class="cart-screen__repeat-title">
+        Не все позиции из заказа добавлены
+      </h2>
+      <ul class="cart-screen__repeat-warning-list">
+        <li
+          v-for="(warning, index) in repeatWarnings"
+          :key="index"
+          class="cart-screen__repeat-warning"
+        >
+          <strong>{{ warning.productName }}</strong>
+          <span v-if="warning.context">{{ warning.context }}</span>
+          <span>{{ warning.reason }}</span>
+        </li>
+      </ul>
+    </section>
+
     <div v-if="items.length === 0" class="cart-screen__empty" role="status">
       <div class="cart-screen__empty-icon" aria-hidden="true">
         <ShoppingCart class="cart-screen__empty-icon-glyph" />
@@ -141,6 +163,8 @@ const cartItemLabel = computed(() => {
 const totalRub = computed(() =>
   props.items.reduce((sum, item) => sum + item.lineTotalRub, 0),
 );
+const repeatWarnings = computed(() => props.repeatWarnings ?? []);
+const hasRepeatWarnings = computed(() => repeatWarnings.value.length > 0);
 const checkoutTotalRub = computed(() =>
   props.checkoutState === "reconfirmation-required"
     ? props.reconfirmedTotalRub
@@ -256,6 +280,33 @@ function emitCheckout(): void {
   gap: var(--customer-space-11);
   padding: var(--customer-space-18) var(--customer-space-9);
   text-align: center;
+}
+.cart-screen__repeat-warnings {
+  display: grid;
+  gap: var(--customer-space-5);
+  margin: 0 var(--customer-space-9);
+  padding: var(--customer-space-8) var(--customer-space-9);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-color-warning-surface);
+  border-left: var(--customer-space-2) solid var(--customer-color-warning);
+  border-radius: var(--customer-radius-sm);
+}
+.cart-screen__repeat-title {
+  margin: 0;
+  font-size: var(--customer-font-size-md);
+}
+.cart-screen__repeat-warning-list {
+  display: grid;
+  gap: var(--customer-space-4);
+  margin: 0;
+  padding-left: var(--customer-space-7);
+}
+.cart-screen__repeat-warning {
+  display: grid;
+  gap: var(--customer-space-2);
+}
+.cart-screen__repeat-warning span {
+  color: var(--customer-color-text-muted-on-surface);
 }
 .cart-screen__empty-icon {
   display: grid;
@@ -425,6 +476,10 @@ function emitCheckout(): void {
 @media (min-width: 1024px) {
   .cart-screen__header {
     padding: var(--customer-space-13) 0 var(--customer-space-15);
+  }
+  .cart-screen__repeat-warnings {
+    margin-right: 0;
+    margin-left: 0;
   }
   .cart-screen__content {
     display: grid;

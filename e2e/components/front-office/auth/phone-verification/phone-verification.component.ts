@@ -1,9 +1,11 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
   PhoneVerificationError,
   PhoneVerificationStep,
 } from "./phone-verification.component.types";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class PhoneVerificationComponent {
   private readonly phoneInput: Locator;
@@ -77,7 +79,7 @@ export class PhoneVerificationComponent {
       await this.confirmButton.click();
       await expect(
         this.authenticatedAccountButton,
-        "После подтверждения номера customer авторизован.",
+        "После подтверждения номера клиент авторизован.",
       ).toBeVisible();
     });
   }
@@ -92,11 +94,11 @@ export class PhoneVerificationComponent {
       await this.assertError(PhoneVerificationError.INVALID_CODE);
       await expect(
         this.otpInput,
-        "Customer остаётся на шаге ввода кода.",
+        "Клиент остаётся на шаге ввода кода.",
       ).toBeVisible();
       await expect(
         this.authenticatedAccountButton,
-        "Customer не авторизован после неверного кода.",
+        "Клиент не авторизован после неверного кода.",
       ).toBeHidden();
     });
   }
@@ -110,7 +112,7 @@ export class PhoneVerificationComponent {
       await this.resendCodeButton.click();
       await expect(
         this.otpInput,
-        "Customer остаётся на шаге ввода кода.",
+        "Клиент остаётся на шаге ввода кода.",
       ).toBeVisible();
     });
   }
@@ -119,14 +121,14 @@ export class PhoneVerificationComponent {
     if (step === PhoneVerificationStep.PHONE) {
       await expect(
         this.phoneInput,
-        "Customer находится на шаге ввода номера.",
+        "Клиент находится на шаге ввода номера.",
       ).toBeVisible();
       return;
     }
 
     await expect(
       this.otpInput,
-      "Customer находится на шаге ввода кода.",
+      "Клиент находится на шаге ввода кода.",
     ).toBeVisible();
   }
 

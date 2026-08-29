@@ -1,15 +1,21 @@
-import { AvailabilityState, expect, ProductType, test } from "@fixtures/test";
+import {
+  AvailabilityItemType,
+  AvailabilityState,
+  expect,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: сотрудник включает товар, а customer видит его доступность в публичном меню.
  *
- * Предусловия: administrator авторизован в back-office; customer может открыть публичное меню;
- * уникальный товар «Капучино» недоступен.
+ * Предусловия: тестовое окружение предоставляет роли administrator и customer; seed-сценарий `product-unavailable` предоставляет недоступный товар «Капучино» в изолированном запуске.
  *
  * Сценарий:
  * 1. Сотрудник открывает раздел доступности.
- * 2. Сотрудник включает товар «Капучино».
- * 3. Customer открывает публичное меню.
+ * 2. Сотрудник находит товар «Капучино».
+ * 3. Сотрудник включает товар «Капучино».
+ * 4. Customer открывает публичное меню.
+ * 5. Customer открывает категорию «Кофе».
  *
  * Ожидаемый результат:
  * - В back-office товар «Капучино» отображается доступным.
@@ -20,73 +26,34 @@ test("AVAIL-04: сотрудник включает товар", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
   publicMenu,
-}, testInfo) => {
-  const categoryName = `Кофе ${testInfo.testId}`;
-  const productName = `Капучино ${testInfo.testId}`;
-
-  try {
-    await test.step("Подготовка: administrator публикует уникальную категорию и недоступный капучино.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.categoryEditor.startCreation();
-      await menuManagement.categoryEditor.fillName(categoryName);
-      await menuManagement.categoryEditor.fillDescription(
-        "Категория включения товара",
-      );
-      await menuManagement.categoryEditor.save(categoryName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(categoryName);
-      await menuManagement.productEditor.selectType(ProductType.OTHER);
-      await menuManagement.productEditor.fillName(productName);
-      await menuManagement.productEditor.setSinglePrice("25000");
-      await menuManagement.productEditor.save(productName);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(productName);
-      await availabilityManagement.list.setProductAvailability(
-        productName,
-        AvailabilityState.UNAVAILABLE,
-      );
-    });
-
-    await availabilityManagement.open();
-    await availabilityManagement.list.setProductAvailability(
-      productName,
-      AvailabilityState.AVAILABLE,
-    );
-    await test.step("В back-office товар «Капучино» отображается доступным.", async () => {
-      await availabilityManagement.list.assertItemAvailability(
-        productName,
-        AvailabilityState.AVAILABLE,
-      );
-    });
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await test.step("Предусловие интерфейса: customer открывает категорию товара.", async () => {
-      await publicMenu.product.openCategory(categoryName);
-    });
-    await test.step("Customer может выбрать товар «Капучино» в публичном меню.", async () => {
-      expect(
-        await publicMenu.product.isProductOpenable(productName),
-        "Доступный капучино можно выбрать в публичном меню.",
-      ).toBe(true);
-    });
-  } finally {
-    await test.step("Очистка: administrator возвращает доступность и удаляет данные сценария.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(productName);
-      await availabilityManagement.list.setProductAvailability(
-        productName,
-        AvailabilityState.AVAILABLE,
-      );
-      await menuManagement.open();
-      await menuManagement.catalog.expandCategoryIfPresent(categoryName);
-      await menuManagement.productEditor.deleteIfPresent(productName);
-      await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-      await backOfficeAuth.form.signOut();
-    });
-  }
+}) => {
+  await test.step("Подготовка: administrator авторизуется", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
+    await backOfficeAuth.form.requestCode();
+    await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
+    await backOfficeAuth.form.confirmCode();
+  });
+  await availabilityManagement.open();
+  await availabilityManagement.list.search("Капучино");
+  await availabilityManagement.list.setItemAvailability(
+    "Капучино",
+    AvailabilityItemType.PRODUCT,
+    AvailabilityState.AVAILABLE,
+  );
+  await test.step("В back-office товар «Капучино» отображается доступным.", async () => {
+    expect(
+      await availabilityManagement.list.readItemAvailability("Капучино"),
+      "Товар отмечен доступным.",
+    ).toBe(AvailabilityState.AVAILABLE);
+  });
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
+  await test.step("Customer может выбрать товар «Капучино» в публичном меню.", async () => {
+    expect(
+      await publicMenu.product.isProductOpenable("Капучино"),
+      "Доступный капучино можно выбрать в публичном меню.",
+    ).toBe(true);
+  });
 });

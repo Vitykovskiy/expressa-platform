@@ -29,7 +29,7 @@ describe("AvailabilityScreen", () => {
         intake: {
           acceptsNewOrders: true,
           updatedAt: null,
-          updatedBy: null,
+          updatedByLabel: null,
         },
         loading: false,
         saving: false,
@@ -72,6 +72,51 @@ describe("AvailabilityScreen", () => {
     await wrapper.get(".availability-screen__error button").trigger("click");
 
     expect(wrapper.emitted("retry")).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it("показывает телефон сотрудника вместо UUID", () => {
+    const wrapper = mount(AvailabilityScreen, {
+      props: {
+        error: null,
+        groups: [],
+        intake: {
+          acceptsNewOrders: true,
+          updatedAt: "2030-01-01T10:00:00.000Z",
+          updatedByLabel: "+79991234567",
+        },
+        loading: false,
+        saving: false,
+      },
+    });
+
+    expect(wrapper.get(".toggle-row").text()).toContain("+79991234567");
+    expect(wrapper.get(".toggle-row").text()).not.toContain(
+      "66666666-6666-4666-8666-666666666666",
+    );
+
+    wrapper.unmount();
+  });
+
+  it("показывает неизвестного сотрудника при отсутствии подписи", () => {
+    const wrapper = mount(AvailabilityScreen, {
+      props: {
+        error: null,
+        groups: [],
+        intake: {
+          acceptsNewOrders: false,
+          updatedAt: "2030-01-01T10:00:00.000Z",
+          updatedByLabel: null,
+        },
+        loading: false,
+        saving: false,
+      },
+    });
+
+    expect(wrapper.get(".toggle-row").text()).toContain(
+      "Неизвестный сотрудник",
+    );
+
     wrapper.unmount();
   });
 });

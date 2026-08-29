@@ -14,6 +14,7 @@ import type {
   AvailabilityUpdate,
   AvailabilityVariantDto,
   ServiceIntake,
+  ServiceIntakeDto,
 } from "./availability.api.types";
 
 export class AvailabilityApi {
@@ -45,17 +46,19 @@ export class AvailabilityApi {
     );
   }
 
-  updateIntake(
+  async updateIntake(
     accessToken: string,
     acceptsNewOrders: boolean,
   ): Promise<ServiceIntake> {
-    return this.request(
+    const intake = await this.request(
       "/backoffice/service/intake",
-      isServiceIntake,
+      isServiceIntakeDto,
       accessToken,
       "PATCH",
       { acceptsNewOrders },
     );
+
+    return toServiceIntake(intake);
   }
 
   private async request<T>(
@@ -105,7 +108,15 @@ function toAvailability(response: AvailabilityResponseDto): Availability {
     .sort(bySortOrder)
     .map((category) => toAvailabilityGroup(category, response));
 
-  return { groups, intake: response.intake };
+  return { groups, intake: toServiceIntake(response.intake) };
+}
+
+function toServiceIntake(intake: ServiceIntakeDto): ServiceIntake {
+  return {
+    acceptsNewOrders: intake.acceptsNewOrders,
+    updatedAt: intake.updatedAt,
+    updatedByLabel: intake.updatedByLabel,
+  };
 }
 
 function toAvailabilityGroup(
@@ -202,7 +213,7 @@ function isAvailabilityResponseDto(
   if (
     !isAvailabilityCategories(categories) ||
     !isAvailabilityCategoryModifierGroups(categoryModifierGroups) ||
-    !isServiceIntake(intake) ||
+    !isServiceIntakeDto(intake) ||
     !isAvailabilityModifierGroups(modifierGroups) ||
     !isAvailabilityModifiers(modifierOptions) ||
     !isAvailabilityVariants(productVariants) ||
@@ -230,11 +241,12 @@ function isAvailabilityUpdate(value: unknown): value is AvailabilityUpdate {
   );
 }
 
-function isServiceIntake(value: unknown): value is ServiceIntake {
+function isServiceIntakeDto(value: unknown): value is ServiceIntakeDto {
   return (
     isRecord(value) &&
     typeof value.acceptsNewOrders === "boolean" &&
     (value.updatedBy === null || isUuid(value.updatedBy)) &&
+    (value.updatedByLabel === null || isE164Phone(value.updatedByLabel)) &&
     (value.updatedAt === null || isDateTime(value.updatedAt))
   );
 }
@@ -398,6 +410,10 @@ function isUuid(value: unknown): value is string {
       value,
     )
   );
+}
+
+function isE164Phone(value: unknown): value is string {
+  return isString(value) && /^\+[1-9]\d{1,14}$/.test(value);
 }
 
 function isDateTime(value: unknown): value is string {

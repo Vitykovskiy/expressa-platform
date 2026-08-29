@@ -95,6 +95,7 @@ export default defineConfig({
   use: {
     actionTimeout: 15_000,
     navigationTimeout: 15_000,
+    timezoneId: "UTC",
     screenshot: isSafeReportMode ? "off" : "only-on-failure",
     trace: isSafeReportMode ? "off" : "retain-on-failure",
   },

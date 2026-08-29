@@ -3,7 +3,7 @@ import { expect, test } from "@fixtures/test";
 /**
  * Назначение: сотрудник видит понятное состояние при отсутствии позиций для управления.
  *
- * Предусловия: barista авторизован в back-office; в профиле E2E `empty` в меню нет активных категорий с позициями для управления.
+ * Предусловия: тестовое окружение предоставляет роль barista; профиль `empty` без seed-данных не содержит активных категорий с позициями для управления.
  *
  * Сценарий:
  * 1. Сотрудник открывает раздел доступности.
@@ -18,9 +18,12 @@ test("AVAIL-12: сотрудник видит пустое состояние д
   e2eCredentials,
   e2eEnvironment,
 }) => {
-  await test.step("Предусловие: barista входит в back-office.", async () => {
+  await test.step("Подготовка: barista авторизуется", async () => {
     await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.staff);
+    await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);
+    await backOfficeAuth.form.requestCode();
+    await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
+    await backOfficeAuth.form.confirmCode();
   });
   await availabilityManagement.open();
 

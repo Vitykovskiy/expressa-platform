@@ -2,34 +2,92 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 export class CategoryEditorComponent {
   private readonly addCategoryButton: Locator;
+  private readonly dialog: Locator;
+  private readonly createDialog: Locator;
+  private readonly editDialog: Locator;
+  private readonly confirmationDialog: Locator;
+  private readonly nameInput: Locator;
+  private readonly activeSwitch: Locator;
+  private readonly descriptionInput: Locator;
+  private readonly nameRequiredAlert: Locator;
+  private readonly createSaveButton: Locator;
+  private readonly editSaveButton: Locator;
+  private readonly archiveButton: Locator;
+  private readonly cancelArchiveButton: Locator;
+  private readonly confirmArchiveButton: Locator;
 
   constructor(private readonly page: Page) {
     this.addCategoryButton = page.getByRole("button", {
       name: "Добавить группу",
       exact: true,
     });
+    this.dialog = page.getByRole("dialog");
+    this.createDialog = this.dialog.filter({
+      has: page.getByRole("heading", {
+        name: "Новая категория",
+        exact: true,
+      }),
+    });
+    this.editDialog = page.getByRole("dialog", {
+      name: /^Редактировать категорию\s+Закрыть диалог$/u,
+    });
+    this.confirmationDialog = page.getByRole("dialog", {
+      name: "Архивировать категорию?",
+      exact: true,
+    });
+    this.nameInput = this.dialog.getByLabel("Название категории", {
+      exact: true,
+    });
+    this.activeSwitch = this.dialog.getByRole("switch", {
+      name: "Категория активна",
+      exact: true,
+    });
+    this.descriptionInput = this.dialog.getByLabel("Описание", {
+      exact: true,
+    });
+    this.nameRequiredAlert = this.dialog.getByRole("alert");
+    this.createSaveButton = this.dialog.getByRole("button", {
+      name: "Добавить категорию",
+      exact: true,
+    });
+    this.editSaveButton = this.dialog.getByRole("button", {
+      name: "Сохранить изменения",
+      exact: true,
+    });
+    this.archiveButton = this.dialog.getByRole("button", {
+      name: "Архивировать категорию",
+      exact: true,
+    });
+    this.cancelArchiveButton = this.confirmationDialog.getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+    this.confirmArchiveButton = this.confirmationDialog.getByRole("button", {
+      name: "Архивировать",
+      exact: true,
+    });
   }
 
   async readName(): Promise<string> {
-    return this.nameInput().inputValue();
+    return this.nameInput.inputValue();
   }
 
   async readDescription(): Promise<string> {
-    return this.descriptionInput().inputValue();
+    return this.descriptionInput.inputValue();
   }
 
   async isActive(): Promise<boolean> {
-    return (await this.activeSwitch().getAttribute("aria-checked")) === "true";
+    return (await this.activeSwitch.getAttribute("aria-checked")) === "true";
   }
 
   async readNameValidation(): Promise<string | null> {
-    const alert = this.nameRequiredAlert();
+    const alert = this.nameRequiredAlert;
 
     return (await alert.isVisible()) ? alert.innerText() : null;
   }
 
   async isCreateSaveAvailable(): Promise<boolean> {
-    return this.createSaveButton().isEnabled();
+    return this.createSaveButton.isEnabled();
   }
 
   async startCreation(): Promise<void> {
@@ -39,18 +97,13 @@ export class CategoryEditorComponent {
         "Кнопка добавления категории доступна.",
       ).toBeEnabled();
       await this.addCategoryButton.click();
-      await expect(
-        this.dialog(),
-        "Диалог новой категории открыт.",
-      ).toBeVisible();
+      await expect(this.dialog, "Диалог новой категории открыт.").toBeVisible();
     });
   }
 
   async fillName(name: string): Promise<void> {
     await test.step(`Указать название категории «${name}»`, async () => {
-      const nameInput = this.dialog().getByLabel("Название категории", {
-        exact: true,
-      });
+      const nameInput = this.nameInput;
 
       await nameInput.fill(name);
       await expect(nameInput, "Название категории указано.").toHaveValue(name);
@@ -59,16 +112,16 @@ export class CategoryEditorComponent {
 
   async clearName(): Promise<void> {
     await test.step("Очистить название категории", async () => {
-      const nameInput = this.nameInput();
+      const nameInput = this.nameInput;
 
       await nameInput.clear();
       await expect(nameInput, "Название категории очищено.").toHaveValue("");
       await expect(
-        this.nameRequiredAlert(),
+        this.nameRequiredAlert,
         "Показано требование указать название категории.",
       ).toHaveText("Введите название категории");
       await expect(
-        this.createSaveButton(),
+        this.createSaveButton,
         "Сохранение категории без названия недоступно.",
       ).toBeDisabled();
     });
@@ -76,9 +129,7 @@ export class CategoryEditorComponent {
 
   async fillDescription(description: string): Promise<void> {
     await test.step("Указать описание категории", async () => {
-      const descriptionInput = this.dialog().getByLabel("Описание", {
-        exact: true,
-      });
+      const descriptionInput = this.descriptionInput;
 
       await descriptionInput.fill(description);
       await expect(descriptionInput, "Описание категории указано.").toHaveValue(
@@ -89,10 +140,8 @@ export class CategoryEditorComponent {
 
   async save(name: string): Promise<void> {
     await test.step(`Сохранить категорию «${name}»`, async () => {
-      await this.createSaveButton().click();
-      await expect(this.dialog(), `Категория «${name}» создана.`).toHaveCount(
-        0,
-      );
+      await this.createSaveButton.click();
+      await expect(this.dialog, `Категория «${name}» создана.`).toHaveCount(0);
       await expect(
         this.categoryEditButton(name),
         `Созданная категория «${name}» показана в каталоге.`,
@@ -108,7 +157,7 @@ export class CategoryEditorComponent {
       ).toBeEnabled();
       await this.categoryEditButton(name).click();
       await expect(
-        this.dialog(),
+        this.dialog,
         `Редактор категории «${name}» открыт.`,
       ).toBeVisible();
     });
@@ -116,9 +165,9 @@ export class CategoryEditorComponent {
 
   async saveChanges(name: string): Promise<void> {
     await test.step(`Сохранить изменения категории «${name}»`, async () => {
-      await this.editSaveButton().click();
+      await this.editSaveButton.click();
       await expect(
-        this.dialog(),
+        this.dialog,
         `Редактор категории «${name}» закрыт.`,
       ).toHaveCount(0);
       await expect(
@@ -129,7 +178,7 @@ export class CategoryEditorComponent {
   }
 
   async cancelCreation(): Promise<void> {
-    const dialog = this.createDialog();
+    const dialog = this.createDialog;
 
     if (!(await dialog.isVisible())) return;
 
@@ -143,7 +192,7 @@ export class CategoryEditorComponent {
   }
 
   async cancelEditing(name: string): Promise<void> {
-    const dialog = this.editDialog();
+    const dialog = this.editDialog;
 
     if (!(await dialog.isVisible())) return;
 
@@ -158,9 +207,9 @@ export class CategoryEditorComponent {
 
   async requestArchive(name: string): Promise<void> {
     await test.step(`Запросить архивацию категории «${name}»`, async () => {
-      await this.archiveButton().click();
+      await this.archiveButton.click();
       await expect(
-        this.confirmationDialog(),
+        this.confirmationDialog,
         "Подтверждение архивации категории открыто.",
       ).toBeVisible();
     });
@@ -168,9 +217,9 @@ export class CategoryEditorComponent {
 
   async cancelArchive(name: string): Promise<void> {
     await test.step(`Отменить архивацию категории «${name}»`, async () => {
-      await this.cancelArchiveButton().click();
+      await this.cancelArchiveButton.click();
       await expect(
-        this.confirmationDialog(),
+        this.confirmationDialog,
         "Подтверждение архивации категории закрыто.",
       ).toHaveCount(0);
       await expect(
@@ -182,10 +231,8 @@ export class CategoryEditorComponent {
 
   async confirmArchive(name: string): Promise<void> {
     await test.step(`Подтвердить архивацию категории «${name}»`, async () => {
-      await this.confirmArchiveButton().click();
-      await expect(this.dialog(), "Редакторы категории закрыты.").toHaveCount(
-        0,
-      );
+      await this.confirmArchiveButton.click();
+      await expect(this.dialog, "Редакторы категории закрыты.").toHaveCount(0);
       await expect(
         this.addCategoryButton,
         "Каталог доступен для следующего действия.",
@@ -194,68 +241,6 @@ export class CategoryEditorComponent {
         this.categoryEditButton(name),
         `Категория «${name}» архивирована.`,
       ).toHaveCount(0);
-    });
-  }
-
-  async archive(name: string): Promise<void> {
-    await test.step(`Архивировать категорию «${name}»`, async () => {
-      await this.categoryEditButton(name).click();
-      await expect(
-        this.dialog(),
-        `Открыт редактор категории «${name}».`,
-      ).toBeVisible();
-      await this.dialog()
-        .getByRole("button", { name: "Архивировать категорию", exact: true })
-        .click();
-      await expect(
-        this.confirmationDialog(),
-        "Подтверждение архивации категории открыто.",
-      ).toBeVisible();
-      await this.confirmationDialog()
-        .getByRole("button", { name: "Архивировать", exact: true })
-        .click();
-      await expect(this.dialog(), "Редакторы категории закрыты.").toHaveCount(
-        0,
-      );
-      await expect(
-        this.addCategoryButton,
-        "Каталог доступен для следующего действия.",
-      ).toBeEnabled();
-      await expect(
-        this.categoryEditButton(name),
-        `Категория «${name}» архивирована.`,
-      ).toHaveCount(0);
-    });
-  }
-
-  async archiveIfPresent(name: string): Promise<void> {
-    if ((await this.categoryEditButton(name).count()) === 0) return;
-    await this.archive(name);
-  }
-
-  private dialog(): Locator {
-    return this.page.getByRole("dialog");
-  }
-
-  private createDialog(): Locator {
-    return this.dialog().filter({
-      has: this.page.getByRole("heading", {
-        name: "Новая категория",
-        exact: true,
-      }),
-    });
-  }
-
-  private editDialog(): Locator {
-    return this.page.getByRole("dialog", {
-      name: /^Редактировать категорию\s+Закрыть диалог$/u,
-    });
-  }
-
-  private confirmationDialog(): Locator {
-    return this.page.getByRole("dialog", {
-      name: "Архивировать категорию?",
-      exact: true,
     });
   }
 
@@ -266,63 +251,9 @@ export class CategoryEditorComponent {
     });
   }
 
-  private nameInput(): Locator {
-    return this.dialog().getByLabel("Название категории", { exact: true });
-  }
-
-  private activeSwitch(): Locator {
-    return this.dialog().getByRole("switch", {
-      name: "Категория активна",
-      exact: true,
-    });
-  }
-
-  private descriptionInput(): Locator {
-    return this.dialog().getByLabel("Описание", { exact: true });
-  }
-
-  private nameRequiredAlert(): Locator {
-    return this.dialog().getByRole("alert");
-  }
-
-  private createSaveButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Добавить категорию",
-      exact: true,
-    });
-  }
-
-  private editSaveButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Сохранить изменения",
-      exact: true,
-    });
-  }
-
   private cancelEditorButton(dialog: Locator): Locator {
     return dialog.getByRole("button", {
       name: "Отмена",
-      exact: true,
-    });
-  }
-
-  private archiveButton(): Locator {
-    return this.dialog().getByRole("button", {
-      name: "Архивировать категорию",
-      exact: true,
-    });
-  }
-
-  private cancelArchiveButton(): Locator {
-    return this.confirmationDialog().getByRole("button", {
-      name: "Отмена",
-      exact: true,
-    });
-  }
-
-  private confirmArchiveButton(): Locator {
-    return this.confirmationDialog().getByRole("button", {
-      name: "Архивировать",
       exact: true,
     });
   }

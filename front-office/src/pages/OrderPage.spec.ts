@@ -78,6 +78,191 @@ describe("OrderPage", () => {
     expect(cart.items).toMatchObject([
       { productId: orderResponse.snapshot[0].productId },
     ]);
+    expect(cart.repeatWarnings).toEqual([]);
+  });
+
+  it("повторяет полный заказ в пустую корзину по текущей цене", async () => {
+    const repeatedItem = {
+      ...orderResponse.snapshot[0],
+      quantity: 3,
+      size: "S" as const,
+      variantId: "00000000-0000-4000-8000-000000000008",
+    };
+    const menu = createMenu({
+      priceMinor: 72_000,
+      variants: [
+        {
+          id: repeatedItem.variantId,
+          isAvailable: true,
+          priceMinor: 72_000,
+          size: "S",
+        },
+      ],
+    });
+    const { cart, router, wrapper } = await mountOrder(
+      { ...orderResponse, snapshot: [repeatedItem], stage: "ISSUED" },
+      200,
+      menu,
+    );
+
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/cart");
+    expect(cart.items).toEqual([
+      {
+        addons: [
+          {
+            id: orderResponse.snapshot[0].modifiers[0].modifierOptionId,
+            name: "Овсяное молоко",
+            priceRub: 0.6,
+          },
+        ],
+        id: "repeat-0",
+        lineTotalMinor: 216_180,
+        lineTotalRub: 2161.8,
+        productId: orderResponse.snapshot[0].productId,
+        productName: "Капучино",
+        quantity: 3,
+        selectedModifierOptions: [
+          {
+            groupId: "00000000-0000-4000-8000-000000000010",
+            id: orderResponse.snapshot[0].modifiers[0].modifierOptionId,
+            name: "Овсяное молоко",
+            priceDeltaMinor: 60,
+          },
+        ],
+        selectedVariant: {
+          id: repeatedItem.variantId,
+          priceMinor: 72_000,
+          size: "S",
+        },
+        size: "S",
+        sizePrice: 720,
+        type: "DRINK",
+        unitTotalMinor: 72_060,
+      },
+    ]);
+    expect(cart.repeatWarnings).toEqual([]);
+  });
+
+  it("повторяет доступные позиции и сохраняет предупреждение о недоступном товаре", async () => {
+    const unavailableItem = {
+      ...orderResponse.snapshot[0],
+      productId: "00000000-0000-4000-8000-000000000007",
+      productName: "Чизкейк",
+      variantId: null,
+      size: null,
+      modifiers: [],
+    };
+    const { cart, router, wrapper } = await mountOrder(
+      {
+        ...orderResponse,
+        snapshot: [orderResponse.snapshot[0], unavailableItem],
+        stage: "ISSUED",
+      },
+      200,
+      menuResponse,
+    );
+
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/cart");
+    expect(cart.items).toHaveLength(1);
+    expect(cart.repeatWarnings).toEqual([
+      {
+        productName: "Чизкейк",
+        reason: "Товар больше недоступен.",
+      },
+    ]);
+  });
+
+  it("не заменяет непустую корзину, если повторить нечего", async () => {
+    const { cart, router, wrapper } = await mountOrder(
+      { ...orderResponse, stage: "ISSUED" },
+      200,
+      createMenu({ isAvailable: false }),
+    );
+    cart.replace([existingCartItem]);
+
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/cart");
+    expect(cart.items).toEqual([existingCartItem]);
+    expect(cart.repeatWarnings).toEqual([
+      {
+        productName: "Капучино",
+        reason: "Товар больше недоступен.",
+      },
+    ]);
+    expect(wrapper.text()).not.toContain("Заменить корзину?");
+  });
+
+  it("оставляет непустую корзину без изменений при отмене повтора", async () => {
+    const { cart, router, wrapper } = await mountOrder(
+      { ...orderResponse, stage: "ISSUED" },
+      200,
+      menuResponse,
+    );
+    cart.replace([existingCartItem]);
+
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    await getButtonByText(wrapper, "Отмена").trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe(`/orders/${orderId}`);
+    expect(cart.items).toEqual([existingCartItem]);
+    expect(cart.repeatWarnings).toEqual([]);
+  });
+
+  it("различает недоступные конфигурации одинакового товара", async () => {
+    const firstItem = {
+      ...orderResponse.snapshot[0],
+      size: "S" as const,
+      variantId: "00000000-0000-4000-8000-000000000008",
+    };
+    const secondItem = {
+      ...orderResponse.snapshot[0],
+      size: "M" as const,
+    };
+    const { cart, router, wrapper } = await mountOrder(
+      {
+        ...orderResponse,
+        snapshot: [firstItem, secondItem],
+        stage: "ISSUED",
+      },
+      200,
+      createMenu({
+        variants: [
+          {
+            id: "00000000-0000-4000-8000-000000000009",
+            isAvailable: true,
+            priceMinor: 80_000,
+            size: "L",
+          },
+        ],
+      }),
+    );
+
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/cart");
+    expect(cart.repeatWarnings).toEqual([
+      {
+        context: "Размер S, Овсяное молоко",
+        productName: "Капучино",
+        reason: "Выбранная конфигурация больше недоступна.",
+      },
+      {
+        context: "Размер M, Овсяное молоко",
+        productName: "Капучино",
+        reason: "Выбранная конфигурация больше недоступна.",
+      },
+    ]);
   });
 
   it("запрашивает разрешение только после явного включения уведомлений", async () => {
@@ -210,6 +395,14 @@ async function mountOrder(
   return { cart, requests, router, wrapper };
 }
 
+function getButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
+  const button = wrapper.findAll("button").find((item) => item.text() === text);
+
+  if (button === undefined) throw new Error(`Кнопка «${text}» не найдена.`);
+
+  return button;
+}
+
 function installPushSupport({
   getSubscription,
   subscribe,
@@ -242,6 +435,13 @@ type PushOptions = {
   publicKey?: unknown;
   publicKeyStatus?: number;
   subscriptionStatus?: number;
+};
+
+type MenuVariant = {
+  id: string;
+  isAvailable: boolean;
+  priceMinor: number;
+  size: "S" | "M" | "L";
 };
 
 const validVapidPublicKey =
@@ -291,7 +491,24 @@ const menuResponse = {
           description: "",
           id: orderResponse.snapshot[0].productId,
           isAvailable: true,
-          modifierGroups: [],
+          modifierGroups: [
+            {
+              id: "00000000-0000-4000-8000-000000000010",
+              maxSelect: 1,
+              minSelect: 0,
+              name: "Молоко",
+              options: [
+                {
+                  id: orderResponse.snapshot[0].modifiers[0].modifierOptionId,
+                  isAvailable: true,
+                  isDefault: false,
+                  name: "Овсяное молоко",
+                  priceDeltaMinor: 60,
+                },
+              ],
+              selectionType: "single",
+            },
+          ],
           name: "Капучино",
           priceMinor: null,
           type: "DRINK",
@@ -308,6 +525,41 @@ const menuResponse = {
     },
   ],
 };
+
+function createMenu({
+  isAvailable = true,
+  priceMinor = 56_000,
+  variants = defaultMenuVariants,
+}: {
+  isAvailable?: boolean;
+  priceMinor?: number;
+  variants?: MenuVariant[];
+}) {
+  return {
+    ...menuResponse,
+    categories: [
+      {
+        ...menuResponse.categories[0],
+        products: [
+          {
+            ...menuResponse.categories[0].products[0],
+            isAvailable,
+            variants: variants.map((variant) => ({ ...variant, priceMinor })),
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const defaultMenuVariants: MenuVariant[] = [
+  {
+    id: orderResponse.snapshot[0].variantId,
+    isAvailable: true,
+    priceMinor: 56_000,
+    size: "M",
+  },
+];
 
 const existingCartItem = {
   addons: [],

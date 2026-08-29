@@ -10,16 +10,17 @@ describe('PostgresOrderLifecycleRepository', () => {
       if (sql.includes('FROM orders JOIN users')) return Promise.resolve({ rows: [{ id: orderId, number: '20300102-001', created_at: new Date('2030-01-02T03:04:05.000Z'), total_minor: 450, stage: 'ACCEPTED', customer_id: 'customer-id', customer_phone_e164: '+79991234567' }] });
       if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [] });
       if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
-      if (sql.includes('FROM order_events')) return Promise.resolve({ rows: [{ actor_id: 'actor-id', occurred_at: new Date('2030-01-02T03:04:05.000Z'), from_stage: 'CREATED', to_stage: 'ACCEPTED' }] });
+      if (sql.includes('FROM order_events')) return Promise.resolve({ rows: [{ actor_id: 'actor-id', actor_label: '+79991234567', occurred_at: new Date('2030-01-02T03:04:05.000Z'), from_stage: 'CREATED', to_stage: 'ACCEPTED' }] });
       return Promise.resolve({ rows: [] });
     });
     const client = { query, release: jest.fn() } as unknown as PoolClient;
     const repository = new PostgresOrderLifecycleRepository({ pool: { connect: jest.fn().mockResolvedValue(client) } as unknown as Pool });
 
-    await expect(repository.transition({ orderId, action: 'accept', actorId: 'actor-id', occurredAt: new Date('2030-01-02T03:04:05.000Z') })).resolves.toMatchObject({ stage: 'ACCEPTED', events: [{ from: 'CREATED', to: 'ACCEPTED' }] });
+    await expect(repository.transition({ orderId, action: 'accept', actorId: 'actor-id', occurredAt: new Date('2030-01-02T03:04:05.000Z') })).resolves.toMatchObject({ stage: 'ACCEPTED', events: [{ actorId: 'actor-id', actorLabel: '+79991234567', from: 'CREATED', to: 'ACCEPTED' }] });
     expect(query).toHaveBeenCalledWith('BEGIN');
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE orders SET stage'), [orderId, 'CREATED', 'ACCEPTED']);
     expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO order_events'), [orderId, 'actor-id', expect.any(Date), 'CREATED', 'ACCEPTED']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('INNER JOIN users u ON u.id = e.actor_id'), [orderId]);
     expect(query).toHaveBeenCalledWith('COMMIT');
   });
 

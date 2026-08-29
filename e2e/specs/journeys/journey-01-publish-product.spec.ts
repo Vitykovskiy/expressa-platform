@@ -9,45 +9,56 @@ import {
 import { createProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 /**
- * Назначение: administrator публикует напиток, доступный customer в публичном меню.
+ * Назначение: администратор публикует напиток, доступный клиенту в публичном меню.
  *
- * Предусловия: administrator и customer могут войти в свои приложения; для сценария выбраны уникальные данные.
+ * Предусловия: в тестовом окружении доступны роли администратора и клиента с одноразовыми кодами; изолированный профиль предоставляет уникальный идентификатор сценария.
  *
  * Сценарий:
- * 1. Administrator входит в back-office.
- * 2. Administrator открывает управление меню.
- * 3. Administrator начинает создание категории.
- * 4. Administrator указывает название категории.
- * 5. Administrator указывает описание категории.
- * 6. Administrator сохраняет категорию.
- * 7. Administrator начинает создание напитка.
- * 8. Administrator выбирает категорию напитка.
- * 9. Administrator выбирает тип напитка.
- * 10. Administrator указывает название напитка.
- * 11. Administrator указывает описание напитка.
- * 12. Administrator устанавливает цену размера M.
- * 13. Administrator сохраняет напиток.
- * 14. Administrator открывает управление группами добавок.
- * 15. Administrator начинает создание группы добавок.
- * 16. Administrator указывает название группы добавок.
- * 17. Administrator делает выбор обязательным.
- * 18. Administrator выбирает одиночный тип группы.
- * 19. Administrator добавляет вариант добавки.
- * 20. Administrator указывает название добавки.
- * 21. Administrator устанавливает нулевую цену добавки.
- * 22. Administrator выбирает добавку по умолчанию.
- * 23. Administrator сохраняет группу добавок.
- * 24. Administrator открывает назначения категории.
- * 25. Administrator выбирает группу добавок категории.
- * 26. Administrator сохраняет назначения категории.
- * 27. Customer открывает публичное меню.
- * 28. Customer открывает категорию.
- * 29. Customer открывает напиток.
+ * 1. Администратор открывает административное приложение.
+ * 1.1. Администратор указывает номер телефона.
+ * 1.2. Администратор запрашивает одноразовый код.
+ * 1.3. Администратор указывает одноразовый код.
+ * 1.4. Администратор подтверждает номер телефона.
+ * 2. Администратор открывает управление меню.
+ * 3. Администратор начинает создание категории.
+ * 4. Администратор указывает название категории.
+ * 5. Администратор указывает описание категории.
+ * 6. Администратор сохраняет категорию.
+ * 7. Администратор начинает создание напитка.
+ * 8. Администратор выбирает категорию напитка.
+ * 9. Администратор выбирает тип напитка.
+ * 10. Администратор указывает название напитка.
+ * 11. Администратор указывает описание напитка.
+ * 12. Администратор оставляет единственный размер M.
+ * 12.1. Администратор устанавливает цену размера M.
+ * 13. Администратор сохраняет напиток.
+ * 14. Администратор открывает управление группами добавок.
+ * 15. Администратор начинает создание группы добавок.
+ * 16. Администратор указывает название группы добавок.
+ * 17. Администратор делает выбор обязательным.
+ * 18. Администратор выбирает одиночный тип группы.
+ * 19. Администратор добавляет вариант добавки.
+ * 20. Администратор указывает название добавки.
+ * 21. Администратор устанавливает нулевую цену добавки.
+ * 22. Администратор выбирает добавку по умолчанию.
+ * 23. Администратор сохраняет группу добавок.
+ * 24. Администратор открывает назначения категории.
+ * 25. Администратор выбирает группу добавок категории.
+ * 26. Администратор сохраняет назначения категории.
+ * 26.1. Администратор выходит из административного приложения.
+ * 27. Клиент открывает публичное меню.
+ * 28. Клиент открывает категорию.
+ * 29. Клиент открывает напиток.
+ * 30. Клиент выбирает размер M.
  *
  * Ожидаемый результат:
- * - В публичном меню показаны созданные напиток, размер M, его цена и обязательная добавка.
+ * - Созданная категория открывает опубликованный напиток.
+ * - Публичное меню показывает созданный напиток.
+ * - Обязательная добавка выбрана по умолчанию.
+ * - Карточка напитка содержит размер M.
+ * - Цена напитка соответствует опубликованной.
  */
-test("JOURNEY-01: administrator публикует напиток", async ({
+test("JOURNEY-01: администратор публикует напиток", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -55,98 +66,79 @@ test("JOURNEY-01: administrator публикует напиток", async ({
   publicMenu,
 }, testInfo) => {
   const data = createProductOrderScenarioData(testInfo.testId);
-  let primaryError: unknown;
-  let hasPrimaryFailure = false;
 
-  try {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-    await menuManagement.open();
-    await menuManagement.categoryEditor.startCreation();
-    await menuManagement.categoryEditor.fillName(data.categoryName);
-    await menuManagement.categoryEditor.fillDescription(
-      data.productDescription,
-    );
-    await menuManagement.categoryEditor.save(data.categoryName);
-    await menuManagement.productEditor.startCreation();
-    await menuManagement.productEditor.selectCategory(data.categoryName);
-    await menuManagement.productEditor.selectType(ProductType.DRINK);
-    await menuManagement.productEditor.fillName(data.productName);
-    await menuManagement.productEditor.fillDescription(data.productDescription);
-    await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
-    await menuManagement.productEditor.setPrice(
-      ProductEditorSize.M,
-      data.productPrice,
-    );
-    await menuManagement.productEditor.save(data.productName);
-    await menuManagement.modifierGroupEditor.openManagement();
-    await menuManagement.modifierGroupEditor.startCreation();
-    await menuManagement.modifierGroupEditor.fillName(data.modifierGroupName);
-    await menuManagement.modifierGroupEditor.setRequired();
-    await menuManagement.modifierGroupEditor.selectType(
-      ModifierSelectionType.SINGLE,
-    );
-    await menuManagement.modifierGroupEditor.addOption();
-    await menuManagement.modifierGroupEditor.fillOptionName(data.modifierName);
-    await menuManagement.modifierGroupEditor.setOptionPrice("0");
-    await menuManagement.modifierGroupEditor.setOptionDefault();
-    await menuManagement.modifierGroupEditor.save();
-    await menuManagement.assignments.openCategory(data.categoryName);
-    await menuManagement.assignments.selectGroup(data.modifierGroupName);
-    await menuManagement.assignments.save();
-    await backOfficeAuth.form.signOut();
+  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+  await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
+  await backOfficeAuth.form.requestCode();
+  await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
+  await backOfficeAuth.form.confirmCode();
+  await menuManagement.open();
+  await menuManagement.categoryEditor.startCreation();
+  await menuManagement.categoryEditor.fillName(data.categoryName);
+  await menuManagement.categoryEditor.fillDescription(data.productDescription);
+  await menuManagement.categoryEditor.save(data.categoryName);
+  await menuManagement.productEditor.startCreation();
+  await menuManagement.productEditor.selectCategory(data.categoryName);
+  await menuManagement.productEditor.selectType(ProductType.DRINK);
+  await menuManagement.productEditor.fillName(data.productName);
+  await menuManagement.productEditor.fillDescription(data.productDescription);
+  await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
+  await menuManagement.productEditor.setPrice(
+    ProductEditorSize.M,
+    data.productPrice,
+  );
+  await menuManagement.productEditor.save(data.productName);
+  await menuManagement.modifierGroupEditor.openManagement();
+  await menuManagement.modifierGroupEditor.startCreation();
+  await menuManagement.modifierGroupEditor.fillName(data.modifierGroupName);
+  await menuManagement.modifierGroupEditor.setRequired();
+  await menuManagement.modifierGroupEditor.selectType(
+    ModifierSelectionType.SINGLE,
+  );
+  await menuManagement.modifierGroupEditor.addOption();
+  await menuManagement.modifierGroupEditor.fillOptionName(data.modifierName);
+  await menuManagement.modifierGroupEditor.setOptionPrice("0");
+  await menuManagement.modifierGroupEditor.setOptionDefault();
+  await menuManagement.modifierGroupEditor.save();
+  await menuManagement.assignments.openCategory(data.categoryName);
+  await menuManagement.assignments.selectGroup(data.modifierGroupName);
+  await menuManagement.assignments.save();
+  await backOfficeAuth.form.signOut();
 
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await publicMenu.product.openCategory(data.categoryName);
-    await publicMenu.product.openProduct(data);
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory(data.categoryName);
+  await test.step("Результат: созданная категория открывает опубликованный напиток.", async () => {
+    expect(
+      await publicMenu.product.isProductVisible(data.productName),
+      "Созданный напиток показан в категории.",
+    ).toBe(true);
+  });
+  await publicMenu.product.openProduct(data);
 
-    await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-    await publicMenu.product.selectModifier(data.modifierName);
+  await test.step("Результат: публичное меню показывает созданный напиток.", async () => {
+    expect(
+      await publicMenu.product.readOpenedProductTitle(),
+      "Открыт созданный напиток.",
+    ).toBe(data.productName);
+  });
+  await test.step("Результат: обязательная добавка выбрана по умолчанию.", async () => {
+    expect(
+      await publicMenu.product.readSelectedRequiredModifier(
+        data.modifierGroupName,
+      ),
+      "Обязательная добавка выбрана по умолчанию.",
+    ).toBe(data.modifierName);
+  });
+  await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
+  await test.step("Результат: карточка напитка содержит размер M.", async () => {
+    expect(
+      await publicMenu.product.readSelectedSize(),
+      "Выбран размер M.",
+    ).toBe(ProductConfiguratorSize.M);
+  });
+  await test.step("Результат: цена напитка соответствует опубликованной.", async () => {
+    const price = await publicMenu.product.readProductPrice();
 
-    await test.step("Результат: публичное меню показывает созданные напиток, размер, цену и обязательную добавку.", async () => {
-      const [price, size, modifierName] = await Promise.all([
-        publicMenu.product.readProductPrice(),
-        publicMenu.product.readSelectedSize(),
-        publicMenu.product.readSelectedRequiredModifier(data.modifierGroupName),
-      ]);
-
-      expect(size, "Выбран размер M.").toBe(ProductConfiguratorSize.M);
-      expect(price, "Цена напитка показана.").toContain("1,99");
-      expect(modifierName, "Обязательная добавка выбрана.").toBe(
-        data.modifierName,
-      );
-    });
-  } catch (error) {
-    primaryError = error;
-    hasPrimaryFailure = true;
-  }
-
-  try {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-    await menuManagement.open();
-    await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-    await menuManagement.productEditor.deleteIfPresent(data.productName);
-    await menuManagement.modifierGroupEditor.archiveIfPresent(
-      data.modifierGroupName,
-    );
-    await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-    await menuManagement.catalog.assertScenarioAbsent(data);
-  } catch (cleanupError) {
-    if (!hasPrimaryFailure) throw cleanupError;
-
-    try {
-      await testInfo.attach("Ошибка очистки", {
-        body:
-          cleanupError instanceof Error
-            ? (cleanupError.stack ?? cleanupError.message)
-            : String(cleanupError),
-        contentType: "text/plain",
-      });
-    } catch {
-      // Исходная ошибка сценария сохраняет приоритет.
-    }
-  }
-
-  if (hasPrimaryFailure) throw primaryError;
+    expect(price, "Цена напитка показана.").toContain("1,99");
+  });
 });

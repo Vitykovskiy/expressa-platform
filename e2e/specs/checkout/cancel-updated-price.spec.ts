@@ -1,24 +1,35 @@
 import {
-  createProductOrderScenarioData,
   expect,
   ProductConfiguratorSize,
   ProductEditorSize,
-  ProductType,
   test,
 } from "@fixtures/test";
 
 /**
- * Назначение: customer не подтверждает оформление после изменения итога корзины.
+ * Назначение: customer не подтверждает оформление после изменения итога.
  *
- * Предусловия: customer авторизован; в корзине есть капучино размера M с прежней ценой 250 ₽; актуальная цена капучино размера M составляет 300 ₽; приём новых заказов открыт.
+ * Предусловия: изолированный профиль `canonical` предоставляет «Капучино» с
+ * ценой размера M 320,00 ₽; корзина нового browser context пуста.
  *
  * Сценарий:
- * 1. Customer открывает корзину.
- * 2. Customer выбирает оформление заказа.
- * 3. Customer открывает меню.
+ * 1. Customer открывает публичное меню.
+ * 2. Customer открывает категорию «Кофе».
+ * 3. Customer открывает «Капучино».
+ * 4. Customer выбирает размер M.
+ * 5. Customer выбирает добавку «Обычное молоко».
+ * 6. Customer добавляет товар в корзину.
+ * 7. Administrator открывает управление меню.
+ * 8. Administrator раскрывает категорию «Кофе».
+ * 9. Administrator открывает редактирование «Капучино».
+ * 10. Administrator устанавливает цену размера M 300,00 ₽.
+ * 11. Administrator сохраняет изменение товара.
+ * 12. Customer открывает публичное меню.
+ * 13. Customer открывает корзину.
+ * 14. Customer выбирает оформление заказа.
+ * 15. Customer открывает меню без подтверждения нового итога.
  *
  * Ожидаемый результат:
- * - Корзина показывает прежний итог 250 ₽ и новый итог 300 ₽.
+ * - Корзина показывает прежний итог 320,00 ₽ и новый итог 300,00 ₽.
  * - Customer видит запрос на подтверждение нового итога.
  * - Заказ не создаётся без подтверждения нового итога.
  */
@@ -31,106 +42,57 @@ test("CHECKOUT-04: customer отменяет оформление после и�
   menuManagement,
   orderHistory,
   publicMenu,
-}, testInfo) => {
-  const data = createProductOrderScenarioData(testInfo.testId);
-  const productName = `Капучино ${testInfo.testId}`;
-  const formatter = new Intl.NumberFormat("ru-RU", {
-    currency: "RUB",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-    style: "currency",
+}) => {
+  await test.step("Подготовка: customer авторизуется", async () => {
+    await customerAuth.open(e2eEnvironment.frontOfficeUrl);
+    await customerAuth.phoneVerification.fillPhone(
+      e2eCredentials.customer.phone,
+    );
+    await customerAuth.phoneVerification.requestCode();
+    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await customerAuth.phoneVerification.confirm();
   });
-  let ordersBefore = 0;
+  await orderHistory.open();
+  const ordersBefore = await orderHistory.history.readOrderCount();
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
+  await publicMenu.product.openProduct("Капучино");
+  await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
+  await publicMenu.product.selectModifier("Обычное молоко");
+  await publicMenu.product.addToCart();
+  await test.step("Подготовка: administrator авторизуется", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  });
+  await menuManagement.open();
+  await menuManagement.catalog.expandCategory("Кофе");
+  await menuManagement.productEditor.openForEditing("Капучино");
+  await menuManagement.productEditor.setPrice(ProductEditorSize.M, "30000");
+  await menuManagement.productEditor.saveChanges("Капучино");
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await checkout.cart.open();
+  await checkout.cart.requestUpdatedTotalConfirmation();
 
-  try {
-    await test.step("Подготовка: administrator публикует капучино размера M стоимостью 250 ₽.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.categoryEditor.startCreation();
-      await menuManagement.categoryEditor.fillName(data.categoryName);
-      await menuManagement.categoryEditor.fillDescription(
-        data.productDescription,
-      );
-      await menuManagement.categoryEditor.save(data.categoryName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(data.categoryName);
-      await menuManagement.productEditor.selectType(ProductType.DRINK);
-      await menuManagement.productEditor.fillName(productName);
-      await menuManagement.productEditor.fillDescription(
-        data.productDescription,
-      );
-      await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
-      await menuManagement.productEditor.setPrice(ProductEditorSize.M, "25000");
-      await menuManagement.productEditor.save(productName);
-      await backOfficeAuth.form.signOut();
-      await customerAuth.open(e2eEnvironment.frontOfficeUrl);
-      await customerAuth.phoneVerification.fillPhone(
-        e2eCredentials.customer.phone,
-      );
-      await customerAuth.phoneVerification.requestCode();
-      await customerAuth.phoneVerification.fillCode(
-        e2eCredentials.customer.otp,
-      );
-      await customerAuth.phoneVerification.confirm();
-      await orderHistory.open();
-      ordersBefore = await orderHistory.history.readOrderCount();
-      await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-      await publicMenu.product.openCategory(data.categoryName);
-      await publicMenu.product.openProduct(productName);
-      await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-      await publicMenu.product.addToCart();
-    });
-    await test.step("Подготовка: administrator меняет цену капучино размера M на 300 ₽ через интерфейс управления меню.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.productEditor.openForEditing(productName);
-      await menuManagement.productEditor.setPrice(ProductEditorSize.M, "30000");
-      await menuManagement.productEditor.saveChanges(productName);
-      await backOfficeAuth.form.signOut();
-    });
+  await test.step("Корзина показывает прежний итог 320,00 ₽ и новый итог 300,00 ₽.", async () => {
+    const totals = await checkout.cart.readUpdatedTotals();
 
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await checkout.cart.open();
-    await checkout.cart.requestUpdatedTotalConfirmation();
-    await test.step("Корзина показывает прежний итог 250 ₽ и новый итог 300 ₽.", async () => {
-      const totals = await checkout.cart.readUpdatedTotals();
-
-      expect(totals.previousTotal, "Показан прежний итог 250 ₽.").toBe(
-        formatter.format(250),
-      );
-      expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe(
-        formatter.format(300),
-      );
-    });
-    await test.step("Customer видит запрос на подтверждение нового итога.", async () => {
-      expect(
-        await checkout.cart.isUpdatedTotalConfirmationVisible(),
-        "Кнопка подтверждения нового итога показана.",
-      ).toBe(true);
-    });
-
-    await checkout.navigation.openMenu();
-    await orderHistory.open();
-    await test.step("Заказ не создаётся без подтверждения нового итога.", async () => {
-      expect(
-        await orderHistory.history.readOrderCount(),
-        "Количество заказов не изменилось без подтверждения нового итога.",
-      ).toBe(ordersBefore);
-    });
-  } finally {
-    await test.step("Очистка: administrator восстанавливает цену и удаляет данные сценария.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-      await menuManagement.productEditor.openForEditing(productName);
-      await menuManagement.productEditor.setPrice(ProductEditorSize.M, "25000");
-      await menuManagement.productEditor.saveChanges(productName);
-      await menuManagement.productEditor.deleteIfPresent(productName);
-      await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-      await backOfficeAuth.form.signOut();
-    });
-  }
+    expect(totals.previousTotal, "Показан прежний итог 320,00 ₽.").toBe(
+      "320,00 ₽",
+    );
+    expect(totals.newTotal, "Показан новый итог 300,00 ₽.").toBe("300,00 ₽");
+  });
+  await test.step("Customer видит запрос на подтверждение нового итога.", async () => {
+    expect(
+      await checkout.cart.isUpdatedTotalConfirmationVisible(),
+      "Кнопка подтверждения нового итога показана.",
+    ).toBe(true);
+  });
+  await checkout.navigation.openMenu();
+  await orderHistory.open();
+  await test.step("Заказ не создаётся без подтверждения нового итога.", async () => {
+    expect(
+      await orderHistory.history.readOrderCount(),
+      "Количество заказов не изменилось без подтверждения нового итога.",
+    ).toBe(ordersBefore);
+  });
 });

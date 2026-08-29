@@ -24,9 +24,7 @@ report_container='expressa-e2e-report-host'
 project=''
 run_directory=''
 suite_directory=''
-empty_status='not-run'
-seeded_status='not-run'
-mutating_status='not-run'
+report_entries=()
 suite_published=0
 suite_diagnostic=''
 cleanup_failure=0
@@ -231,32 +229,15 @@ for path in root.rglob("*"):
 PY
 }
 
-set_profile_status() {
-  local profile="$1" status="$2"
-  case "$profile" in
-    empty|seeded|mutating) ;;
-    *) fail 'E2E profile is invalid' ;;
-  esac
-  case "$status" in
-    passed|failed|not-run) ;;
-    *) fail 'E2E profile status is invalid' ;;
-  esac
-  printf -v "${profile}_status" '%s' "$status"
-}
-
 write_suite_index() {
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
   printf '<!doctype html><meta charset="utf-8"><title>E2E suite report</title><h1>E2E suite report</h1><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p><ul>' \
     "$E2E_REVISION" "$E2E_RUN_URL" > "$suite_directory/index.html"
   [[ -z "$suite_diagnostic" ]] || printf '<p>Diagnostic: %s</p>' "$suite_diagnostic" >> "$suite_directory/index.html"
-  local profile status
-  for profile in empty seeded mutating; do
-    case "$profile" in
-      empty) status="$empty_status" ;;
-      seeded) status="$seeded_status" ;;
-      mutating) status="$mutating_status" ;;
-    esac
-    printf '<li>%s: %s — <a href="%s/">report</a></li>' "$profile" "$status" "$profile" >> "$suite_directory/index.html"
+  local entry case_id status
+  for entry in "${report_entries[@]}"; do
+    IFS='|' read -r case_id status <<< "$entry"
+    printf '<li>%s: %s — <a href="%s/">report</a></li>' "$case_id" "$status" "$case_id" >> "$suite_directory/index.html"
   done
   printf '</ul>' >> "$suite_directory/index.html"
 }
@@ -276,13 +257,6 @@ publish_diagnostic() {
 
 finalize_suite_report() {
   [[ -n "$suite_directory" ]] || return 0
-  local profile
-  for profile in empty seeded mutating; do
-    if [[ ! -d "$suite_directory/$profile" ]]; then
-      install -d -m 700 "$suite_directory/$profile"
-      printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Profile did not run.</p>' > "$suite_directory/$profile/index.html"
-    fi
-  done
   write_suite_index
   sanitize_e2e_report "$suite_directory"
   assert_no_e2e_secret "$suite_directory"
@@ -309,118 +283,10 @@ copy_playwright_output() {
   cp -- "$output_file" "$target_directory/playwright-output.log"
 }
 
-append_temporary_catalog_diagnostic() {
-  local output_file="$E2E_ARTIFACT_DIRECTORY/playwright-output.log"
-  [[ -f "$output_file" && ! -L "$output_file" ]] || return
-
-  if ! {
-    printf '\nTEMPORARY E2E catalog diagnostic: profile=%s\n' "$E2E_PROFILE"
-    compose exec -T postgres psql --quiet --tuples-only --no-align --field-separator='|' \
-      --set=ON_ERROR_STOP=on --username=expressa --dbname=expressa <<'SQL'
-WITH catalog_diagnostic AS (
-  SELECT
-    'category'::text AS entity,
-    c.id::text AS id,
-    NULL::text AS foreign_id,
-    NULL::text AS type,
-    NULL::integer AS price_minor,
-    c.is_active,
-    NULL::boolean AS is_available,
-    c.archived_at IS NULL AS archived_at_is_null,
-    NULL::boolean AS variants_configured
-  FROM categories c
-  WHERE c.name LIKE 'E2E %'
-
-  UNION ALL
-
-  SELECT
-    'product'::text,
-    p.id::text,
-    p.category_id::text,
-    p.type::text,
-    p.price_minor,
-    p.is_active,
-    p.is_available,
-    p.archived_at IS NULL,
-    EXISTS (
-      SELECT 1
-      FROM product_variants pv
-      WHERE pv.product_id = p.id AND pv.archived_at IS NULL
-    )
-  FROM products p
-  WHERE p.name LIKE 'E2E %'
-
-  UNION ALL
-
-  SELECT
-    'product_variant'::text,
-    pv.id::text,
-    pv.product_id::text,
-    pv.product_type::text,
-    pv.price_minor,
-    NULL::boolean,
-    pv.is_available,
-    pv.archived_at IS NULL,
-    NULL::boolean
-  FROM product_variants pv
-  JOIN products p ON p.id = pv.product_id
-  WHERE p.name LIKE 'E2E %'
-
-  UNION ALL
-
-  SELECT
-    'modifier_group'::text,
-    mg.id::text,
-    NULL::text,
-    mg.selection_type::text,
-    NULL::integer,
-    mg.is_active,
-    NULL::boolean,
-    mg.archived_at IS NULL,
-    NULL::boolean
-  FROM modifier_groups mg
-  WHERE mg.name LIKE 'E2E %'
-
-  UNION ALL
-
-  SELECT
-    'category_modifier_group'::text,
-    cmg.category_id::text,
-    cmg.group_id::text,
-    NULL::text,
-    NULL::integer,
-    NULL::boolean,
-    NULL::boolean,
-    NULL::boolean,
-    NULL::boolean
-  FROM category_modifier_groups cmg
-  JOIN categories c ON c.id = cmg.category_id
-  JOIN modifier_groups mg ON mg.id = cmg.group_id
-  WHERE c.name LIKE 'E2E %' AND mg.name LIKE 'E2E %'
-)
-SELECT
-  entity,
-  id,
-  foreign_id,
-  type,
-  price_minor,
-  is_active,
-  is_available,
-  archived_at_is_null,
-  variants_configured
-FROM catalog_diagnostic
-ORDER BY entity, id
-LIMIT 100;
-SQL
-  }; then
-    printf 'TEMPORARY E2E catalog diagnostic: unavailable\n'
-  fi >> "$output_file" 2>/dev/null
-}
-
-publish_profile_report() {
-  local profile="$1" status="$2" diagnostic_stage="$3" publication_directory
+publish_case_report() {
+  local case_id="$1" status="$2" diagnostic_stage="$3" publication_directory
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
-  publication_directory="$suite_directory/$profile"
+  publication_directory="$suite_directory/$case_id"
   install -d -m 700 "$publication_directory"
   if [[ -d "${E2E_ARTIFACT_DIRECTORY:-}/report" && -f "${E2E_ARTIFACT_DIRECTORY:-}/report/index.html" ]]; then
     copy_playwright_report "$publication_directory"
@@ -432,7 +298,7 @@ publish_profile_report() {
   fi
   sanitize_e2e_report "$publication_directory"
   assert_no_e2e_secret "$publication_directory"
-  set_profile_status "$profile" "$status"
+  report_entries+=("$case_id|$status")
 }
 
 compose() {
@@ -467,11 +333,17 @@ cleanup_runtime() {
 
 on_exit() {
   local exit_status=$?
+  trap - EXIT
+  trap '' INT TERM HUP
   if (( suite_published == 0 )) && [[ -n "$suite_directory" ]]; then
     finalize_suite_report >/dev/null 2>&1 || true
   fi
   cleanup_runtime || exit_status=1
   exit "$exit_status"
+}
+
+on_signal() {
+  exit "$1"
 }
 
 wait_for_health() {
@@ -515,7 +387,9 @@ prepare_runtime_environment() {
 }
 
 run_suite() {
-  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
+  local test_title="$1" escaped_test_title
+  escaped_test_title="$(printf '%s' "$test_title" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
+  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e -- --grep "${escaped_test_title}$" > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
 }
 
 run_readiness_step() {
@@ -530,49 +404,49 @@ run_readiness_step() {
   return 1
 }
 
-seed_catalog_if_needed() {
-  [[ "$E2E_PROFILE" == empty ]] || compose run --rm --no-deps -e BOOTSTRAP_ADMIN_PHONE="$E2E_ADMIN_PHONE" backend dist/scripts/seed.js
+seed_catalog_for_scenario() {
+  local scenario="$1"
+  [[ "$scenario" == no-seed ]] && return
+  compose run --rm --no-deps \
+    -e BOOTSTRAP_ADMIN_PHONE="$E2E_ADMIN_PHONE" \
+    -e E2E_SEED_SCENARIO="$scenario" \
+    backend dist/scripts/seed.js
 }
 
-provision_customer_if_needed() {
-  [[ "$E2E_PROFILE" == empty ]] || compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_CUSTOMER_PHONE" --role customer
-}
-
-run_profile() {
-  local profile="$1"
-  project="expressa-e2e-$E2E_RUN_ID-$profile"
-  [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*-(empty|seeded|mutating)$ ]] || fail 'compose project is invalid'
+run_case() {
+  local case_id="$1" profile="$2" scenario="$3" test_title="$4" case_number="$5"
+  project="expressa-e2e-$E2E_RUN_ID-$case_number"
+  [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*-[1-9][0-9]*$ ]] || fail 'compose project is invalid'
   E2E_PROFILE="$profile"
   export E2E_PROFILE
   install -d -m 700 "$work_root"
-  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$profile.XXXXXX")"
+  run_directory="$(mktemp -d "$work_root/$E2E_RUN_ID.$case_number.XXXXXX")"
   export E2E_ARTIFACT_DIRECTORY="$run_directory/artifacts"
   install -d -m 700 "$E2E_ARTIFACT_DIRECTORY"
 
-  # A re-run cleans only the exact GitHub-run/profile project left by an interrupted attempt.
+  # A re-run cleans only the exact GitHub-run/test project left by an interrupted attempt.
   compose down --volumes --remove-orphans >/dev/null
   if docker ps --all --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
     docker network ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet . ||
     docker volume ls --quiet --filter "label=com.docker.compose.project=$project" | grep --quiet .; then
-    fail 'Compose project resources remain before profile startup'
+    fail 'Compose project resources remain before test startup'
   fi
 
-  stage="$profile-readiness"
+  stage="$case_id-readiness"
   if ! run_readiness_step 'compose configuration' compose config -q ||
     ! run_readiness_step 'image pull' compose pull ||
     ! run_readiness_step 'PostgreSQL startup' compose up -d postgres ||
     ! run_readiness_step 'PostgreSQL health' wait_for_health postgres ||
     ! run_readiness_step 'database migration' compose run --rm --no-deps backend dist/scripts/migrate.js ||
-    ! run_readiness_step 'customer provisioning' provision_customer_if_needed ||
     ! run_readiness_step 'administrator provisioning' compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_ADMIN_PHONE" --role administrator ||
-    ! run_readiness_step 'catalog seeding' seed_catalog_if_needed ||
+    ! run_readiness_step 'scenario seeding' seed_catalog_for_scenario "$scenario" ||
     ! run_readiness_step 'barista provisioning' compose run --rm --no-deps backend dist/scripts/staff.js upsert --phone "$E2E_STAFF_PHONE" --role barista ||
     ! run_readiness_step 'application startup' compose up -d backend front back gateway ||
     ! run_readiness_step 'backend health' wait_for_health backend ||
     ! run_readiness_step 'front-office health' wait_for_health front ||
     ! run_readiness_step 'back-office health' wait_for_health back ||
     ! run_readiness_step 'gateway health' wait_for_health gateway; then
-    publish_profile_report "$profile" failed "$stage"
+    publish_case_report "$case_id" failed "$stage"
     cleanup_runtime || return 1
     project=''
     run_directory=''
@@ -580,10 +454,9 @@ run_profile() {
     return 1
   fi
 
-  stage="$profile-playwright"
-  if ! run_suite; then
-    append_temporary_catalog_diagnostic
-    publish_profile_report "$profile" failed "$stage"
+  stage="$case_id-playwright"
+  if ! run_suite "$test_title"; then
+    publish_case_report "$case_id" failed "$stage"
     cleanup_runtime || return 1
     project=''
     run_directory=''
@@ -591,9 +464,8 @@ run_profile() {
     return 1
   fi
 
-  publish_profile_report "$profile" passed "$stage"
+  publish_case_report "$case_id" passed "$stage"
   if ! cleanup_runtime; then
-    set_profile_status "$profile" failed
     return 1
   fi
   project=''
@@ -601,16 +473,120 @@ run_profile() {
   unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
 }
 
+test_cases=(
+  'AUTH-01|empty|customer-new|AUTH-01: новый клиент входит по номеру телефона'
+  'AUTH-02|seeded|customer-existing|AUTH-02 — Зарегистрированный клиент повторно входит по номеру телефона'
+  'AUTH-03|seeded|canonical|AUTH-03 — Клиент не запрашивает код для неполного номера'
+  'AUTH-04|seeded|customer-new|AUTH-04 — Клиент видит результат пяти неверных одноразовых кодов'
+  'AUTH-06|seeded|customer-new|AUTH-06 — Клиент видит ограничение повторной отправки кода'
+  'AUTH-07|seeded|customer-new|AUTH-07 — Клиент восстанавливает и завершает сессию'
+  'AUTH-08-barista|seeded|canonical|AUTH-08 — Бариста входит в рабочие разделы back-office'
+  'AUTH-08-administrator|seeded|canonical|AUTH-08 — Администратор входит в рабочие разделы back-office'
+  'AUTH-09|seeded|customer-existing|AUTH-09 — Клиент получает отказ во входе в back-office'
+  'MENU-01|seeded|canonical|MENU-01: покупатель видит опубликованное меню'
+  'MENU-02|empty|no-seed|MENU-02: покупатель видит пустое публичное меню'
+  'MENU-03|mutating|intake-closed|MENU-03: customer видит меню при закрытом приёме заказов'
+  'MENU-04|seeded|canonical|MENU-04: покупатель открывает категорию и товар'
+  'MENU-05|seeded|canonical|MENU-05: покупатель видит конфигурацию напитка по умолчанию'
+  'MENU-06|mutating|canonical|MENU-06: покупатель не может открыть недоступный товар'
+  'MENU-07|mutating|canonical|MENU-07: покупатель не видит неактивный товар'
+  'CART-01|seeded|canonical|CART-01: customer добавляет товар в корзину'
+  'CART-02|seeded|canonical|CART-02: customer объединяет одинаковые конфигурации'
+  'CART-03|seeded|canonical|CART-03: customer видит раздельные конфигурации'
+  'CART-04|seeded|canonical|CART-04: customer изменяет количество и итог'
+  'CART-05|seeded|canonical|CART-05: customer удаляет позиции и очищает корзину'
+  'CART-06|seeded|customer-new|CART-06: customer сохраняет корзину после перезагрузки и входа'
+  'CART-07|mutating|canonical|CART-07: customer устраняет недоступную позицию'
+  'CHECKOUT-01|mutating|customer-existing|CHECKOUT-01: авторизованный customer оформляет заказ'
+  'CHECKOUT-02|mutating|customer-new|CHECKOUT-02: гость возвращается к оформлению после OTP'
+  'CHECKOUT-03|mutating|canonical|CHECKOUT-03: customer подтверждает актуальную цену'
+  'CHECKOUT-04|mutating|canonical|CHECKOUT-04: customer отменяет оформление после изменения цены'
+  'CHECKOUT-05|mutating|canonical|CHECKOUT-05: customer не оформляет корзину с недоступной позицией'
+  'CHECKOUT-06|mutating|canonical|CHECKOUT-06: customer видит закрытый приём заказов'
+  'CHECKOUT-07|mutating|canonical|CHECKOUT-07: customer не получает второй заказ при повторном оформлении'
+  'ORDER-01|mutating|order-snapshot|ORDER-01: customer видит снимок созданного заказа'
+  'ORDER-02|mutating|customer-history|ORDER-02: customer не открывает чужой заказ'
+  'ORDER-03|mutating|order-created|ORDER-03: customer видит текущий заказ'
+  'ORDER-04|mutating|customer-history|ORDER-04: customer загружает следующую часть истории заказов'
+  'ORDER-05|mutating|customer-history|ORDER-05: история customer изолирована от заказов другого customer'
+  'ORDER-06|mutating|order-issued|ORDER-06: customer повторяет полностью доступный выданный заказ'
+  'ORDER-07|mutating|order-repeat-partial|ORDER-07: customer повторяет доступную часть выданного заказа'
+  'ORDER-08|mutating|order-repeat-unavailable|ORDER-08: customer не повторяет полностью недоступный выданный заказ'
+  'QUEUE-01|empty|no-seed|QUEUE-01: сотрудник видит пустую очередь заказов'
+  'QUEUE-02|mutating|queue-populated|QUEUE-02: сотрудник видит заполненную очередь заказов'
+  'QUEUE-03|mutating|queue-populated|QUEUE-03: сотрудник фильтрует очередь по стадии'
+  'QUEUE-04|mutating|queue-populated|QUEUE-04: сотрудник ищет заказ по номеру'
+  'QUEUE-05|mutating|queue-populated|QUEUE-05: сотрудник открывает детали заказа'
+  'QUEUE-06|mutating|queue-populated|QUEUE-06: очередь автоматически показывает новый заказ'
+  'QUEUE-07|mutating|order-created|QUEUE-07: сотрудник проводит заказ по разрешённым стадиям'
+  'AVAIL-01|mutating|canonical|AVAIL-01: сотрудник видит список позиций'
+  'AVAIL-02|mutating|canonical|AVAIL-02: сотрудник ищет позицию'
+  'AVAIL-03|mutating|canonical|AVAIL-03: сотрудник выключает товар'
+  'AVAIL-04|mutating|product-unavailable|AVAIL-04: сотрудник включает товар'
+  'AVAIL-05|mutating|canonical|AVAIL-05: сотрудник закрывает приём новых заказов'
+  'AVAIL-06|mutating|canonical|AVAIL-06: сотрудник видит метаданные изменения приёма заказов'
+  'AVAIL-07|mutating|canonical|AVAIL-07: сотрудник выключает размер напитка'
+  'AVAIL-08|mutating|size-unavailable|AVAIL-08: сотрудник включает размер напитка'
+  'AVAIL-09|mutating|canonical|AVAIL-09: сотрудник выключает добавку'
+  'AVAIL-10|mutating|modifier-unavailable|AVAIL-10: сотрудник включает добавку'
+  'AVAIL-11|mutating|intake-closed|AVAIL-11: сотрудник возобновляет приём новых заказов'
+  'AVAIL-12|empty|no-seed|AVAIL-12: сотрудник видит пустое состояние доступности'
+  'AVAIL-13|mutating|canonical|AVAIL-13: сотрудник фильтрует позиции по категории'
+  'CATALOG-01|empty|no-seed|CATALOG-01: администратор видит пустой каталог'
+  'CATALOG-02|mutating|canonical|CATALOG-02: администратор создаёт активную категорию'
+  'CATALOG-03|mutating|canonical|CATALOG-03: администратор видит валидацию категории'
+  'CATALOG-04|mutating|catalog-mutation|CATALOG-04: администратор редактирует категорию'
+  'CATALOG-05|mutating|catalog-mutation|CATALOG-05: администратор меняет порядок категорий'
+  'CATALOG-06|mutating|catalog-mutation|CATALOG-06: администратор архивирует категорию'
+  'CATALOG-07|mutating|canonical|CATALOG-07: администратор создаёт напиток с размерами'
+  'CATALOG-08|mutating|canonical|CATALOG-08: администратор создаёт товар без размеров'
+  'CATALOG-09|mutating|canonical|CATALOG-09: администратор видит валидацию цены напитка'
+  'CATALOG-10|mutating|catalog-mutation|CATALOG-10: администратор редактирует товар'
+  'CATALOG-11|mutating|catalog-mutation|CATALOG-11: администратор меняет порядок товаров'
+  'CATALOG-12|mutating|catalog-mutation|CATALOG-12: администратор архивирует товар'
+  'CATALOG-13|mutating|canonical|CATALOG-13: администратор создаёт группу добавок с вариантом по умолчанию'
+  'CATALOG-14|mutating|catalog-mutation|CATALOG-14: администратор меняет порядок вариантов добавок'
+  'CATALOG-15|mutating|catalog-mutation|CATALOG-15: администратор назначает группе добавок категорию'
+  'JOURNEY-01|mutating|canonical|JOURNEY-01: администратор публикует напиток'
+  'JOURNEY-02|mutating|customer-new|JOURNEY-02: клиент оформляет заказ через одноразовый код'
+  'JOURNEY-03|mutating|customer-new|JOURNEY-03: сотрудник выдаёт готовый заказ'
+  'JOURNEY-04|mutating|customer-new|JOURNEY-04: клиент открывает выданный заказ в истории'
+  'JOURNEY-05|mutating|customer-new|JOURNEY-05: публикация, заказ, выдача и история'
+)
+
+validate_test_cases() {
+  local index other_index record case_id profile scenario test_title other_record other_case_id other_test_title
+  for (( index = 0; index < ${#test_cases[@]}; index += 1 )); do
+    record="${test_cases[index]}"
+    IFS='|' read -r case_id profile scenario test_title <<< "$record"
+    [[ "$case_id" =~ ^[A-Z]+-[0-9]+(-[a-z]+)?$ && -n "$test_title" ]] || fail 'E2E test mapping is invalid'
+    case "$profile" in empty|seeded|mutating) ;; *) fail 'E2E test mapping profile is invalid' ;; esac
+    case "$scenario" in
+      no-seed|canonical|customer-new|customer-existing|intake-closed|modifier-unavailable|product-unavailable|size-unavailable|catalog-mutation|order-created|order-accepted|order-preparing|order-ready|order-issued|order-snapshot|order-repeat-unavailable|order-repeat-partial|customer-history|queue-populated) ;;
+      *) fail 'E2E test mapping seed scenario is invalid' ;;
+    esac
+    for (( other_index = index + 1; other_index < ${#test_cases[@]}; other_index += 1 )); do
+      other_record="${test_cases[other_index]}"
+      IFS='|' read -r other_case_id _ _ other_test_title <<< "$other_record"
+      [[ "$case_id" != "$other_case_id" ]] || fail 'E2E test mapping contains a duplicate test id'
+      [[ "$test_title" != "$other_test_title" ]] || fail 'E2E test mapping contains a duplicate test title'
+    done
+  done
+}
+
 run() {
   validate_metadata
   prepare_runtime_environment
   prepare_suite_report
-  local profile suite_failed=0
-  for profile in empty seeded mutating; do
-    if ! run_profile "$profile"; then
+  validate_test_cases
+  local record case_id profile scenario test_title case_number=0 suite_failed=0
+  for record in "${test_cases[@]}"; do
+    IFS='|' read -r case_id profile scenario test_title <<< "$record"
+    (( case_number += 1 ))
+    if ! run_case "$case_id" "$profile" "$scenario" "$test_title" "$case_number"; then
       suite_failed=1
       if (( cleanup_failure != 0 )); then
-        suite_diagnostic="Profile: $profile. Stage: $stage. Cleanup failed; suite stopped."
+        suite_diagnostic="Test: $case_id. Stage: $stage. Cleanup failed; suite stopped."
         finalize_suite_report
         return 1
       fi
@@ -629,6 +605,9 @@ case "$1" in
   run)
     [[ "$#" == 1 ]] || usage
     trap on_exit EXIT
+    trap 'on_signal 130' INT
+    trap 'on_signal 143' TERM
+    trap 'on_signal 129' HUP
     run
     ;;
   diagnostic)

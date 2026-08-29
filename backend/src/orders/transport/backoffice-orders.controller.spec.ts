@@ -5,7 +5,7 @@ import { TransitionOrderUseCase } from '../application/transition-order.use-case
 
 const orderId = '6f7ef502-6ee5-4b27-84db-a118d9c710de';
 const auth = { userId: 'ccca6117-9fa5-4d9a-986d-8d02747cc6d5', sessionId: 'session-id', phoneE164: '+79991234567', role: 'barista' as const };
-const details = { id: orderId, number: '20300102-001', createdAt: new Date('2030-01-02T03:04:05.000Z'), totalMinor: 450, stage: 'CREATED' as const, customer: { id: 'customer-id', phoneE164: '+79990000000' }, snapshot: [], events: [] };
+const details = { id: orderId, number: '20300102-001', createdAt: new Date('2030-01-02T03:04:05.000Z'), totalMinor: 450, stage: 'CREATED' as const, customer: { id: 'customer-id', phoneE164: '+79990000000' }, snapshot: [], events: [{ actorId: auth.userId, actorLabel: auth.phoneE164, occurredAt: new Date('2030-01-02T03:04:05.000Z'), from: 'CREATED' as const, to: 'ACCEPTED' as const }] };
 
 describe('BackofficeOrdersController', () => {
   it('отдаёт staff-очередь и детали в каноническом DTO', async () => {
@@ -13,7 +13,7 @@ describe('BackofficeOrdersController', () => {
     const controller = new BackofficeOrdersController(getOrders as unknown as GetOrdersUseCase, { execute: jest.fn() } as unknown as TransitionOrderUseCase, { now: () => new Date() });
 
     await expect(controller.list('CREATED', '001')).resolves.toEqual([{ id: orderId, number: '20300102-001', createdAt: '2030-01-02T03:04:05.000Z', totalMinor: 450, stage: 'CREATED' }]);
-    await expect(controller.details(orderId)).resolves.toMatchObject({ customer: details.customer, snapshot: [], events: [] });
+    await expect(controller.details(orderId)).resolves.toMatchObject({ customer: details.customer, snapshot: [], events: [{ actorId: auth.userId, actorLabel: auth.phoneE164 }] });
     expect(getOrders.list).toHaveBeenCalledWith({ stage: 'CREATED', number: '001' });
   });
 

@@ -1,22 +1,23 @@
 import {
+  AvailabilityItemType,
   AvailabilityState,
   expect,
   ProductConfiguratorSize,
-  ProductEditorSize,
-  ProductType,
   test,
 } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник выключает размер напитка, а customer видит его недоступность.
  *
- * Предусловия: administrator авторизован в back-office; customer может открыть публичное меню;
- * размер «Капучино · M» уникального напитка доступен.
+ * Предусловия: тестовое окружение предоставляет роли administrator и customer; seed-сценарий `canonical` предоставляет доступный размер «Капучино · M» в изолированном запуске.
  *
  * Сценарий:
  * 1. Сотрудник открывает раздел доступности.
- * 2. Сотрудник выключает размер «Капучино · M».
- * 3. Customer открывает карточку товара «Капучино».
+ * 2. Сотрудник находит размер «Капучино · M».
+ * 3. Сотрудник выключает размер «Капучино · M».
+ * 4. Customer открывает публичное меню.
+ * 5. Customer открывает категорию «Кофе».
+ * 6. Customer открывает карточку товара «Капучино».
  *
  * Ожидаемый результат:
  * - В back-office размер «Капучино · M» отображается недоступным.
@@ -27,72 +28,36 @@ test("AVAIL-07: сотрудник выключает размер напитк�
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
   publicMenu,
-}, testInfo) => {
-  const categoryName = `Кофе ${testInfo.testId}`;
-  const productName = `Капучино ${testInfo.testId}`;
-  const sizeName = `${productName} · ${ProductConfiguratorSize.M}`;
-
-  try {
-    await test.step("Подготовка: administrator публикует уникальную категорию и капучино с размерами S, M и L.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.categoryEditor.startCreation();
-      await menuManagement.categoryEditor.fillName(categoryName);
-      await menuManagement.categoryEditor.fillDescription(
-        "Категория выключения размера напитка",
-      );
-      await menuManagement.categoryEditor.save(categoryName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(categoryName);
-      await menuManagement.productEditor.selectType(ProductType.DRINK);
-      await menuManagement.productEditor.fillName(productName);
-      await menuManagement.productEditor.setPrice(ProductEditorSize.S, "25000");
-      await menuManagement.productEditor.setPrice(ProductEditorSize.M, "25000");
-      await menuManagement.productEditor.setPrice(ProductEditorSize.L, "25000");
-      await menuManagement.productEditor.save(productName);
-    });
-
-    await availabilityManagement.open();
-    await availabilityManagement.list.search(productName);
-    await availabilityManagement.list.setSizeAvailability(
-      sizeName,
-      AvailabilityState.UNAVAILABLE,
-    );
-    await test.step("В back-office размер «Капучино · M» отображается недоступным.", async () => {
-      await availabilityManagement.list.assertItemAvailability(
-        sizeName,
-        AvailabilityState.UNAVAILABLE,
-      );
-    });
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await test.step("Предусловие интерфейса: customer открывает категорию товара.", async () => {
-      await publicMenu.product.openCategory(categoryName);
-    });
-    await publicMenu.product.openProduct(productName);
-    await test.step("Customer не может выбрать размер M для «Капучино».", async () => {
-      expect(
-        await publicMenu.product.isVariantSelectable(ProductConfiguratorSize.M),
-        "Размер M недоступен для выбора.",
-      ).toBe(false);
-    });
-  } finally {
-    await test.step("Очистка: administrator возвращает доступность размера и удаляет данные сценария.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await availabilityManagement.open();
-      await availabilityManagement.list.search(productName);
-      await availabilityManagement.list.setSizeAvailability(
-        sizeName,
-        AvailabilityState.AVAILABLE,
-      );
-      await menuManagement.open();
-      await menuManagement.catalog.expandCategoryIfPresent(categoryName);
-      await menuManagement.productEditor.deleteIfPresent(productName);
-      await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-      await backOfficeAuth.form.signOut();
-    });
-  }
+}) => {
+  const sizeName = "Капучино · M";
+  await test.step("Подготовка: administrator авторизуется", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
+    await backOfficeAuth.form.requestCode();
+    await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
+    await backOfficeAuth.form.confirmCode();
+  });
+  await availabilityManagement.open();
+  await availabilityManagement.list.search("Капучино");
+  await availabilityManagement.list.setItemAvailability(
+    sizeName,
+    AvailabilityItemType.SIZE,
+    AvailabilityState.UNAVAILABLE,
+  );
+  await test.step("В back-office размер «Капучино · M» отображается недоступным.", async () => {
+    expect(
+      await availabilityManagement.list.readItemAvailability(sizeName),
+      "Размер отмечен недоступным.",
+    ).toBe(AvailabilityState.UNAVAILABLE);
+  });
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
+  await publicMenu.product.openProduct("Капучино");
+  await test.step("Customer не может выбрать размер M для «Капучино».", async () => {
+    expect(
+      await publicMenu.product.isVariantSelectable(ProductConfiguratorSize.M),
+      "Размер M недоступен для выбора.",
+    ).toBe(false);
+  });
 });

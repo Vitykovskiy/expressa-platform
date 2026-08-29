@@ -9,6 +9,13 @@ export class ModifierGroupEditorComponent {
   private readonly groupNameInput: Locator;
   private readonly addOptionButton: Locator;
   private readonly saveGroupButton: Locator;
+  private readonly confirmationDialog: Locator;
+  private readonly optionNameInputs: Locator;
+  private readonly selectionTypeSelect: Locator;
+  private readonly requiredSwitch: Locator;
+  private readonly cancelButton: Locator;
+  private readonly archiveButton: Locator;
+  private readonly confirmArchiveButton: Locator;
   private newOption: Locator | undefined;
 
   constructor(private readonly page: Page) {
@@ -35,6 +42,30 @@ export class ModifierGroupEditorComponent {
       name: "Сохранить группу",
       exact: true,
     });
+    this.confirmationDialog = page.getByRole("dialog", {
+      name: "Архивировать группу добавок?",
+      exact: true,
+    });
+    this.optionNameInputs = this.editorRegion.getByTestId(
+      "modifier-option-name",
+    );
+    this.selectionTypeSelect = this.editorRegion.getByRole("combobox");
+    this.requiredSwitch = this.editorRegion.getByRole("switch", {
+      name: "Выбор обязателен",
+      exact: true,
+    });
+    this.cancelButton = this.editorRegion.getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+    this.archiveButton = this.editorRegion.getByRole("button", {
+      name: "Архивировать группу",
+      exact: true,
+    });
+    this.confirmArchiveButton = this.confirmationDialog.getByRole("button", {
+      name: "Архивировать",
+      exact: true,
+    });
   }
 
   async isGroupVisible(name: string): Promise<boolean> {
@@ -54,7 +85,7 @@ export class ModifierGroupEditorComponent {
   }
 
   async readOptionOrder(): Promise<readonly string[]> {
-    const optionNames = await this.optionNameInputs().all();
+    const optionNames = await this.optionNameInputs.all();
 
     return Promise.all(
       optionNames.map((optionName) => optionName.inputValue()),
@@ -148,7 +179,7 @@ export class ModifierGroupEditorComponent {
 
   async selectType(type: ModifierSelectionType): Promise<void> {
     await test.step(`Выбрать тип группы добавок «${type}»`, async () => {
-      const selectionType = this.editorRegion.getByRole("combobox");
+      const selectionType = this.selectionTypeSelect;
 
       await selectionType.selectOption(type);
       await expect(selectionType, "Тип группы добавок выбран.").toHaveValue(
@@ -159,10 +190,7 @@ export class ModifierGroupEditorComponent {
 
   async setRequired(): Promise<void> {
     await test.step("Сделать выбор добавки обязательным", async () => {
-      const required = this.editorRegion.getByRole("switch", {
-        name: "Выбор обязателен",
-        exact: true,
-      });
+      const required = this.requiredSwitch;
 
       await required.click();
       await expect(required, "Выбор добавки обязателен.").toHaveAttribute(
@@ -197,10 +225,7 @@ export class ModifierGroupEditorComponent {
 
   async setOptionPrice(price: string): Promise<void> {
     await test.step(`Указать цену варианта добавки «${price}»`, async () => {
-      const optionPriceInput = this.addedOption().getByLabel(
-        "Изменение цены, коп.",
-        { exact: true },
-      );
+      const optionPriceInput = this.optionPriceInput(this.addedOption());
 
       await optionPriceInput.fill(price);
       await expect(
@@ -212,10 +237,7 @@ export class ModifierGroupEditorComponent {
 
   async setOptionDefault(): Promise<void> {
     await test.step("Выбрать вариант добавки по умолчанию", async () => {
-      const optionDefault = this.editorRegion.getByRole("switch", {
-        name: "Выбран по умолчанию",
-        exact: true,
-      });
+      const optionDefault = this.optionDefaultSwitchFor(this.editorRegion);
 
       await optionDefault.click();
       await expect(
@@ -239,9 +261,7 @@ export class ModifierGroupEditorComponent {
     if ((await this.editorRegion.count()) === 0) return;
 
     await test.step(`Отменить редактирование группы добавок «${name}»`, async () => {
-      await this.editorRegion
-        .getByRole("button", { name: "Отмена", exact: true })
-        .click();
+      await this.cancelButton.click();
       await expect(
         this.editorRegion,
         `Редактор группы добавок «${name}» закрыт без изменений.`,
@@ -249,41 +269,23 @@ export class ModifierGroupEditorComponent {
     });
   }
 
-  async archive(name: string): Promise<void> {
-    await test.step(`Архивировать группу добавок «${name}»`, async () => {
-      await this.openManagement();
-      await this.modifierGroupEditButton(name).click();
+  async requestArchive(): Promise<void> {
+    await test.step("Запросить архивацию группы добавок", async () => {
+      await this.archiveButton.click();
       await expect(
-        this.editorRegion,
-        `Редактор группы добавок «${name}» открыт.`,
-      ).toBeVisible();
-      await this.editorRegion
-        .getByRole("button", { name: "Архивировать группу", exact: true })
-        .click();
-      await expect(
-        this.confirmationDialog(),
+        this.confirmationDialog,
         "Подтверждение архивации группы добавок открыто.",
       ).toBeVisible();
-      await this.confirmationDialog()
-        .getByRole("button", { name: "Архивировать", exact: true })
-        .click();
+    });
+  }
+
+  async confirmArchive(name: string): Promise<void> {
+    await test.step(`Подтвердить архивацию группы добавок «${name}»`, async () => {
+      await this.confirmArchiveButton.click();
       await expect(
         this.modifierGroupEditButton(name),
         `Группа добавок «${name}» архивирована.`,
       ).toHaveCount(0);
-    });
-  }
-
-  async archiveIfPresent(name: string): Promise<void> {
-    await this.openManagement();
-    if ((await this.modifierGroupEditButton(name).count()) === 0) return;
-    await this.archive(name);
-  }
-
-  private confirmationDialog(): Locator {
-    return this.page.getByRole("dialog", {
-      name: "Архивировать группу добавок?",
-      exact: true,
     });
   }
 
@@ -294,8 +296,15 @@ export class ModifierGroupEditorComponent {
     });
   }
 
-  private optionNameInputs(): Locator {
-    return this.editorRegion.getByTestId("modifier-option-name");
+  private optionPriceInput(option: Locator): Locator {
+    return option.getByLabel("Изменение цены, коп.", { exact: true });
+  }
+
+  private optionDefaultSwitchFor(option: Locator): Locator {
+    return option.getByRole("switch", {
+      name: "Выбран по умолчанию",
+      exact: true,
+    });
   }
 
   private addedOptionNameInput(): Locator {
@@ -346,16 +355,11 @@ export class ModifierGroupEditorComponent {
   }
 
   private async optionPriceInputByName(name: string): Promise<Locator> {
-    return (await this.optionByName(name)).getByLabel("Изменение цены, коп.", {
-      exact: true,
-    });
+    return this.optionPriceInput(await this.optionByName(name));
   }
 
   private async optionDefaultSwitch(name: string): Promise<Locator> {
-    return (await this.optionByName(name)).getByRole("switch", {
-      name: "Выбран по умолчанию",
-      exact: true,
-    });
+    return this.optionDefaultSwitchFor(await this.optionByName(name));
   }
 
   private optionMoveUpButton(name: string): Locator {

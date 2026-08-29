@@ -1,18 +1,37 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { ProductSize } from "./product-configurator.types";
 
+import type { Locator, Page } from "@playwright/test";
 import type { ProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 export class ProductConfiguratorComponent {
-  private readonly categoryList;
-  private readonly addToCartButton;
+  private readonly categoryList: Locator;
+  private readonly addToCartButton: Locator;
+  private readonly modifierGroups: Locator;
+  private readonly productTitle: Locator;
+  private readonly products: Locator;
+  private readonly quantity: Locator;
+  private readonly selectedSize: Locator;
+  private readonly variants: Locator;
 
   constructor(private readonly page: Page) {
     this.categoryList = page.getByRole("list", { name: "Категории меню" });
     this.addToCartButton = page.getByRole("button", {
       name: /^Добавить ·/u,
     });
+    this.modifierGroups = page.getByRole("group");
+    this.productTitle = page.getByRole("heading", { level: 1 });
+    this.products = page.getByRole("list", {
+      name: /^Товары категории /u,
+    });
+    this.quantity = page.getByLabel("Количество", { exact: true });
+    this.selectedSize = page
+      .getByRole("group", { name: "Размер", exact: true })
+      .getByRole("button", { pressed: true });
+    this.variants = page
+      .getByRole("group", { name: "Размер", exact: true })
+      .getByRole("button");
   }
 
   async openCategory(categoryName: string): Promise<void> {
@@ -27,7 +46,7 @@ export class ProductConfiguratorComponent {
       ).toBeEnabled();
       await category.click();
       await expect(
-        this.page.getByRole("heading", { name: categoryName, exact: true }),
+        this.openedCategoryTitle(categoryName),
         `Открыта категория «${categoryName}».`,
       ).toBeVisible();
     });
@@ -46,10 +65,7 @@ export class ProductConfiguratorComponent {
       ).toBeVisible();
       await this.productButton(productName).click();
       await expect(
-        this.page.getByRole("heading", {
-          name: productName,
-          exact: true,
-        }),
+        this.openedProductTitle(productName),
         `Открыта конфигурация товара «${productName}».`,
       ).toBeVisible();
     });
@@ -105,7 +121,7 @@ export class ProductConfiguratorComponent {
   }
 
   async readProductPrice(): Promise<string> {
-    const [, price] = (await this.selectedSize().innerText()).split(" · ");
+    const [, price] = (await this.selectedSize.innerText()).split(" · ");
 
     if (price === undefined) {
       throw new Error("Цена выбранного размера не найдена.");
@@ -115,9 +131,7 @@ export class ProductConfiguratorComponent {
   }
 
   async readConfigurationTotal(): Promise<string> {
-    const [, total] = (await this.configurationTotal().innerText()).split(
-      " · ",
-    );
+    const [, total] = (await this.addToCartButton.innerText()).split(" · ");
 
     if (total === undefined) {
       throw new Error("Итог конфигурации товара не найден.");
@@ -127,7 +141,7 @@ export class ProductConfiguratorComponent {
   }
 
   async readOpenedProductTitle(): Promise<string> {
-    return this.productTitle().innerText();
+    return this.productTitle.innerText();
   }
 
   async isProductDescriptionVisible(expected: string): Promise<boolean> {
@@ -135,13 +149,13 @@ export class ProductConfiguratorComponent {
   }
 
   async readVariants(): Promise<readonly ProductSize[]> {
-    const variants = await this.variants().allInnerTexts();
+    const variants = await this.variants.allInnerTexts();
 
     return variants.map((variant) => this.variantSize(variant));
   }
 
   async readModifierGroupNames(): Promise<readonly string[]> {
-    const groups = await this.modifierGroups().allInnerTexts();
+    const groups = await this.modifierGroups.allInnerTexts();
 
     return groups
       .map((group) => group.split("\n")[0]?.trim())
@@ -152,7 +166,7 @@ export class ProductConfiguratorComponent {
   }
 
   async readSelectedSize(): Promise<ProductSize> {
-    const [size] = (await this.selectedSize().innerText()).split(" · ");
+    const [size] = (await this.selectedSize.innerText()).split(" · ");
 
     if (!this.isProductSize(size)) {
       throw new Error("Выбранный размер товара не распознан.");
@@ -174,7 +188,7 @@ export class ProductConfiguratorComponent {
   }
 
   async readQuantity(): Promise<number> {
-    const value = await this.quantity().textContent();
+    const value = await this.quantity.textContent();
     const quantity = Number(value);
 
     if (!Number.isSafeInteger(quantity) || quantity < 1) {
@@ -197,13 +211,11 @@ export class ProductConfiguratorComponent {
         value !== quantity;
         value += quantity > currentQuantity ? 1 : -1
       ) {
-        await this.page
-          .getByRole("button", { name: buttonName, exact: true })
-          .click();
+        await this.quantityButton(buttonName).click();
       }
 
       await expect(
-        this.page.getByLabel("Количество", { exact: true }),
+        this.quantity,
         `Количество товара равно ${quantity}.`,
       ).toContainText(String(quantity));
     });
@@ -224,13 +236,9 @@ export class ProductConfiguratorComponent {
   }
 
   private productCard(productName: string): Locator {
-    const products = this.page.getByRole("list", {
-      name: /^Товары категории /u,
-    });
-
-    return products.getByRole("listitem").filter({
-      has: this.productButton(productName),
-    });
+    return this.products
+      .getByRole("listitem")
+      .filter({ has: this.productButton(productName) });
   }
 
   private productButton(productName: string): Locator {
@@ -244,18 +252,16 @@ export class ProductConfiguratorComponent {
     return this.page.getByRole("button", { name: productButtonName });
   }
 
-  private productTitle(): Locator {
-    return this.page.getByRole("heading", { level: 1 });
+  private openedCategoryTitle(categoryName: string): Locator {
+    return this.page.getByRole("heading", { name: categoryName, exact: true });
+  }
+
+  private openedProductTitle(productName: string): Locator {
+    return this.page.getByRole("heading", { name: productName, exact: true });
   }
 
   private productDescription(expected: string): Locator {
     return this.page.getByText(expected, { exact: true });
-  }
-
-  private variants(): Locator {
-    return this.page
-      .getByRole("group", { name: "Размер", exact: true })
-      .getByRole("button");
   }
 
   private variant(size: ProductSize): Locator {
@@ -270,22 +276,8 @@ export class ProductConfiguratorComponent {
     });
   }
 
-  private modifierGroups(): Locator {
-    return this.page.getByRole("group");
-  }
-
-  private quantity(): Locator {
-    return this.page.getByLabel("Количество", { exact: true });
-  }
-
-  private configurationTotal(): Locator {
-    return this.addToCartButton;
-  }
-
-  private selectedSize(): Locator {
-    return this.page
-      .getByRole("group", { name: "Размер", exact: true })
-      .getByRole("button", { pressed: true });
+  private quantityButton(name: string): Locator {
+    return this.page.getByRole("button", { name, exact: true });
   }
 
   private selectedRequiredModifier(groupName: string): Locator {

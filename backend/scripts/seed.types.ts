@@ -1,8 +1,8 @@
-export type ProductType = 'DRINK' | 'OTHER';
+export type ProductType = "DRINK" | "OTHER";
 
-export type ProductSize = 'S' | 'M' | 'L';
+export type ProductSize = "S" | "M" | "L";
 
-export type ModifierSelectionType = 'single' | 'multiple';
+export type ModifierSelectionType = "single" | "multiple";
 
 export interface CategorySeed {
   id: string;
@@ -65,4 +65,37 @@ export interface CatalogSeed {
   modifierGroups: readonly ModifierGroupSeed[];
   modifierOptions: readonly ModifierOptionSeed[];
   categoryModifierGroups: readonly CategoryModifierGroupSeed[];
+}
+
+export type E2eSeedScenario =
+  | "canonical"
+  | "customer-new"
+  | "customer-existing"
+  | "intake-closed"
+  | "modifier-unavailable"
+  | "product-unavailable"
+  | "size-unavailable"
+  | "catalog-mutation"
+  | "order-created"
+  | "order-accepted"
+  | "order-preparing"
+  | "order-ready"
+  | "order-issued"
+  | "order-snapshot"
+  | "order-repeat-unavailable"
+  | "order-repeat-partial"
+  | "customer-history"
+  | "queue-populated";
+
+export type SeedOrderStage =
+  "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "ISSUED";
+
+export interface E2eSeedScenarioDefinition {
+  customerState: "new" | "existing";
+  secondCustomerState: "new" | "existing";
+  acceptsNewOrders: boolean;
+  unavailableTarget: "none" | "modifier" | "product" | "size";
+  orderStages: readonly SeedOrderStage[];
+  customerHistoryCount: number;
+  includeForeignOrder: boolean;
 }

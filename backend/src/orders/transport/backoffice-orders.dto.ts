@@ -4,6 +4,7 @@ import { OrderItemResponseDto } from './order.dto';
 
 export class BackofficeOrderEventResponseDto implements BackofficeOrderEventDto {
   @ApiProperty({ format: 'uuid' }) actorId!: string;
+  @ApiProperty({ pattern: '^\\+[1-9]\\d{1,14}$', example: '+79991234567' }) actorLabel!: string;
   @ApiProperty({ format: 'date-time' }) occurredAt!: string;
   @ApiProperty({ enum: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'] }) from!: 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'ISSUED';
   @ApiProperty({ enum: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'] }) to!: 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'ISSUED';

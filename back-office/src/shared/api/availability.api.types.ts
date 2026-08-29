@@ -18,7 +18,14 @@ export type AvailabilityGroup = {
 export type ServiceIntake = {
   acceptsNewOrders: boolean;
   updatedAt: string | null;
+  updatedByLabel: string | null;
+};
+
+export type ServiceIntakeDto = {
+  acceptsNewOrders: boolean;
+  updatedAt: string | null;
   updatedBy: string | null;
+  updatedByLabel: string | null;
 };
 
 export type Availability = {
@@ -87,7 +94,7 @@ export type AvailabilityCategoryModifierGroupDto = {
 export type AvailabilityResponseDto = {
   categories: readonly AvailabilityCategoryDto[];
   categoryModifierGroups: readonly AvailabilityCategoryModifierGroupDto[];
-  intake: ServiceIntake;
+  intake: ServiceIntakeDto;
   modifierGroups: readonly AvailabilityModifierGroupDto[];
   modifierOptions: readonly AvailabilityModifierDto[];
   productVariants: readonly AvailabilityVariantDto[];

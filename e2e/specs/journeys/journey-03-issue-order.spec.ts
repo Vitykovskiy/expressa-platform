@@ -11,68 +11,78 @@ import {
 import { createProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 /**
- * Назначение: staff переводит оформленный заказ до выдачи через UI.
+ * Назначение: сотрудник переводит оформленный заказ до выдачи через интерфейс.
  *
- * Предусловия: сценарий публикует уникальный напиток и создаёт заказ customer.
+ * Предусловия: в тестовом окружении доступны роли администратора, сотрудника и клиента с одноразовыми кодами; изолированный профиль предоставляет уникальный идентификатор сценария.
  *
  * Сценарий:
- * 1. Administrator открывает back-office.
- * 2. Administrator входит в back-office.
- * 3. Administrator открывает управление меню.
- * 4. Administrator начинает создание категории.
- * 5. Administrator указывает название категории.
- * 6. Administrator указывает описание категории.
- * 7. Administrator сохраняет категорию.
- * 8. Administrator начинает создание напитка.
- * 9. Administrator выбирает категорию напитка.
- * 10. Administrator выбирает тип напитка.
- * 11. Administrator указывает название напитка.
- * 12. Administrator указывает описание напитка.
- * 13. Administrator устанавливает цену размера M.
- * 14. Administrator сохраняет напиток.
- * 15. Administrator открывает управление группами добавок.
- * 16. Administrator начинает создание группы добавок.
- * 17. Administrator указывает название группы добавок.
- * 18. Administrator делает выбор обязательным.
- * 19. Administrator выбирает одиночный тип группы.
- * 20. Administrator добавляет вариант добавки.
- * 21. Administrator указывает название добавки.
- * 22. Administrator устанавливает нулевую цену добавки.
- * 23. Administrator выбирает добавку по умолчанию.
- * 24. Administrator сохраняет группу добавок.
- * 25. Administrator открывает назначения категории.
- * 26. Administrator выбирает группу добавок категории.
- * 27. Administrator сохраняет назначения категории.
- * 28. Administrator выходит из back-office.
- * 29. Customer открывает публичное меню.
- * 30. Customer открывает категорию.
- * 31. Customer открывает напиток.
- * 32. Customer выбирает размер M.
- * 33. Customer выбирает обязательную добавку.
- * 34. Customer добавляет напиток в корзину.
- * 35. Customer открывает корзину.
- * 36. Customer устанавливает количество два.
- * 37. Customer начинает оформление заказа.
- * 38. Customer указывает номер телефона.
- * 39. Customer запрашивает одноразовый код.
- * 40. Customer указывает одноразовый код.
- * 41. Customer подтверждает номер телефона.
- * 42. Customer указывает имя при первой регистрации.
- * 43. Customer подтверждает оформление заказа.
- * 44. Customer читает созданный заказ.
- * 45. Staff открывает back-office.
- * 46. Staff входит в back-office.
- * 47. Staff ожидает загрузки очереди.
- * 48. Staff открывает детали оформленного заказа.
- * 49. Staff принимает заказ.
- * 50. Staff начинает приготовление заказа.
- * 51. Staff отмечает заказ готовым.
- * 52. После внешней оплаты customer staff выдаёт заказ.
+ * 1. Администратор открывает административное приложение.
+ * 2. Администратор указывает номер телефона.
+ * 2.1. Администратор запрашивает одноразовый код.
+ * 2.2. Администратор указывает одноразовый код.
+ * 2.3. Администратор подтверждает номер телефона.
+ * 3. Администратор открывает управление меню.
+ * 4. Администратор начинает создание категории.
+ * 5. Администратор указывает название категории.
+ * 6. Администратор указывает описание категории.
+ * 7. Администратор сохраняет категорию.
+ * 8. Администратор начинает создание напитка.
+ * 9. Администратор выбирает категорию напитка.
+ * 10. Администратор выбирает тип напитка.
+ * 11. Администратор указывает название напитка.
+ * 12. Администратор указывает описание напитка.
+ * 13. Администратор оставляет единственный размер M.
+ * 13.1. Администратор устанавливает цену размера M.
+ * 14. Администратор сохраняет напиток.
+ * 15. Администратор открывает управление группами добавок.
+ * 16. Администратор начинает создание группы добавок.
+ * 17. Администратор указывает название группы добавок.
+ * 18. Администратор делает выбор обязательным.
+ * 19. Администратор выбирает одиночный тип группы.
+ * 20. Администратор добавляет вариант добавки.
+ * 21. Администратор указывает название добавки.
+ * 22. Администратор устанавливает нулевую цену добавки.
+ * 23. Администратор выбирает добавку по умолчанию.
+ * 24. Администратор сохраняет группу добавок.
+ * 25. Администратор открывает назначения категории.
+ * 26. Администратор выбирает группу добавок категории.
+ * 27. Администратор сохраняет назначения категории.
+ * 28. Администратор выходит из административного приложения.
+ * 29. Клиент открывает публичное меню.
+ * 30. Клиент открывает категорию.
+ * 31. Клиент открывает напиток.
+ * 32. Клиент выбирает размер M.
+ * 33. Клиент выбирает обязательную добавку.
+ * 34. Клиент добавляет напиток в корзину.
+ * 35. Клиент открывает корзину.
+ * 36. Клиент устанавливает количество два.
+ * 37. Клиент начинает оформление заказа.
+ * 38. Клиент указывает номер телефона.
+ * 39. Клиент запрашивает одноразовый код.
+ * 40. Клиент указывает одноразовый код.
+ * 41. Клиент подтверждает номер телефона.
+ * 42. Клиент указывает имя при первой регистрации.
+ * 43. Клиент подтверждает оформление заказа.
+ * 44. Клиент читает созданный заказ.
+ * 45. Сотрудник открывает административное приложение.
+ * 46. Сотрудник указывает номер телефона.
+ * 46.1. Сотрудник запрашивает одноразовый код.
+ * 46.2. Сотрудник указывает одноразовый код.
+ * 46.3. Сотрудник подтверждает номер телефона.
+ * 47. Сотрудник ожидает загрузки очереди.
+ * 48. Сотрудник открывает детали оформленного заказа.
+ * 49. Сотрудник принимает заказ.
+ * 50. Сотрудник начинает приготовление заказа.
+ * 51. Сотрудник отмечает заказ готовым.
+ * 52. Сотрудник выдаёт готовый заказ.
  *
  * Ожидаемый результат:
- * - Заказ последовательно проходит стадии «Принят», «Готовится», «Готов» и «Выдан».
+ * - Заказ принят.
+ * - Заказ готовится.
+ * - Готовый заказ доступен для выдачи.
+ * - Готовый заказ выдан, а история содержит четыре перехода с автором и временем.
  */
-test("JOURNEY-03: staff выдаёт готовый заказ", async ({
+test("JOURNEY-03: сотрудник выдаёт готовый заказ", async ({
   backOfficeAuth,
   checkout,
   customerOrder,
@@ -83,138 +93,143 @@ test("JOURNEY-03: staff выдаёт готовый заказ", async ({
   staffOrders,
 }, testInfo) => {
   const data = createProductOrderScenarioData(testInfo.testId);
-  let primaryError: unknown;
-  let hasPrimaryFailure = false;
 
-  try {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-    await menuManagement.open();
-    await menuManagement.categoryEditor.startCreation();
-    await menuManagement.categoryEditor.fillName(data.categoryName);
-    await menuManagement.categoryEditor.fillDescription(
-      data.productDescription,
+  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+  await backOfficeAuth.form.fillPhone(e2eCredentials.administrator.phone);
+  await backOfficeAuth.form.requestCode();
+  await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
+  await backOfficeAuth.form.confirmCode();
+  await menuManagement.open();
+  await menuManagement.categoryEditor.startCreation();
+  await menuManagement.categoryEditor.fillName(data.categoryName);
+  await menuManagement.categoryEditor.fillDescription(data.productDescription);
+  await menuManagement.categoryEditor.save(data.categoryName);
+  await menuManagement.productEditor.startCreation();
+  await menuManagement.productEditor.selectCategory(data.categoryName);
+  await menuManagement.productEditor.selectType(ProductType.DRINK);
+  await menuManagement.productEditor.fillName(data.productName);
+  await menuManagement.productEditor.fillDescription(data.productDescription);
+  await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
+  await menuManagement.productEditor.setPrice(
+    ProductEditorSize.M,
+    data.productPrice,
+  );
+  await menuManagement.productEditor.save(data.productName);
+  await menuManagement.modifierGroupEditor.openManagement();
+  await menuManagement.modifierGroupEditor.startCreation();
+  await menuManagement.modifierGroupEditor.fillName(data.modifierGroupName);
+  await menuManagement.modifierGroupEditor.setRequired();
+  await menuManagement.modifierGroupEditor.selectType(
+    ModifierSelectionType.SINGLE,
+  );
+  await menuManagement.modifierGroupEditor.addOption();
+  await menuManagement.modifierGroupEditor.fillOptionName(data.modifierName);
+  await menuManagement.modifierGroupEditor.setOptionPrice("0");
+  await menuManagement.modifierGroupEditor.setOptionDefault();
+  await menuManagement.modifierGroupEditor.save();
+  await menuManagement.assignments.openCategory(data.categoryName);
+  await menuManagement.assignments.selectGroup(data.modifierGroupName);
+  await menuManagement.assignments.save();
+  await backOfficeAuth.form.signOut();
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory(data.categoryName);
+  await publicMenu.product.openProduct(data);
+  await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
+  await publicMenu.product.selectModifier(data.modifierName);
+  await publicMenu.product.addToCart();
+  await checkout.cart.open();
+  await checkout.cart.setQuantity(data.productName, data.productQuantity);
+  await checkout.cart.startCheckout();
+  await checkout.phoneVerification.fillPhone(e2eCredentials.customer.phone);
+  await checkout.phoneVerification.requestCode();
+  await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
+  await checkout.phoneVerification.confirm();
+  await checkout.profile.completeProfileIfShown(data.customerName);
+  await checkout.cart.placeOrder();
+  const snapshot = await customerOrder.details.readSnapshot();
+  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+  await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);
+  await backOfficeAuth.form.requestCode();
+  await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
+  await backOfficeAuth.form.confirmCode();
+  await staffOrders.queue.waitReady();
+  await staffOrders.queue.openDetails(snapshot);
+  await staffOrders.queue.transition(
+    snapshot,
+    OrderQueueTransitionAction.ACCEPT,
+  );
+  await test.step("Результат: заказ принят.", async () => {
+    const stage = await staffOrders.queue.readCurrentStage(snapshot);
+
+    expect(stage, "В карточке показана стадия «Принят».").toBe(
+      OrderQueueStage.ACCEPTED,
     );
-    await menuManagement.categoryEditor.save(data.categoryName);
-    await menuManagement.productEditor.startCreation();
-    await menuManagement.productEditor.selectCategory(data.categoryName);
-    await menuManagement.productEditor.selectType(ProductType.DRINK);
-    await menuManagement.productEditor.fillName(data.productName);
-    await menuManagement.productEditor.fillDescription(data.productDescription);
-    await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
-    await menuManagement.productEditor.setPrice(
-      ProductEditorSize.M,
-      data.productPrice,
+  });
+  await staffOrders.queue.transition(
+    snapshot,
+    OrderQueueTransitionAction.START_PREPARING,
+  );
+  await test.step("Результат: заказ готовится.", async () => {
+    const stage = await staffOrders.queue.readCurrentStage(snapshot);
+
+    expect(stage, "В карточке показана стадия «Готовится».").toBe(
+      OrderQueueStage.PREPARING,
     );
-    await menuManagement.productEditor.save(data.productName);
-    await menuManagement.modifierGroupEditor.openManagement();
-    await menuManagement.modifierGroupEditor.startCreation();
-    await menuManagement.modifierGroupEditor.fillName(data.modifierGroupName);
-    await menuManagement.modifierGroupEditor.setRequired();
-    await menuManagement.modifierGroupEditor.selectType(
-      ModifierSelectionType.SINGLE,
+  });
+  await staffOrders.queue.transition(
+    snapshot,
+    OrderQueueTransitionAction.MARK_READY,
+  );
+  await test.step("Результат: готовый заказ доступен для выдачи.", async () => {
+    const [stage, actions] = await Promise.all([
+      staffOrders.queue.readCurrentStage(snapshot),
+      staffOrders.queue.readAvailableTransitions(snapshot),
+    ]);
+
+    expect(stage, "В карточке показана стадия «Готов».").toBe(
+      OrderQueueStage.READY,
     );
-    await menuManagement.modifierGroupEditor.addOption();
-    await menuManagement.modifierGroupEditor.fillOptionName(data.modifierName);
-    await menuManagement.modifierGroupEditor.setOptionPrice("0");
-    await menuManagement.modifierGroupEditor.setOptionDefault();
-    await menuManagement.modifierGroupEditor.save();
-    await menuManagement.assignments.openCategory(data.categoryName);
-    await menuManagement.assignments.selectGroup(data.modifierGroupName);
-    await menuManagement.assignments.save();
-    await backOfficeAuth.form.signOut();
-    await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-    await publicMenu.product.openCategory(data.categoryName);
-    await publicMenu.product.openProduct(data);
-    await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-    await publicMenu.product.selectModifier(data.modifierName);
-    await publicMenu.product.addToCart();
-    await checkout.cart.open();
-    await checkout.cart.setQuantity(data.productName, data.productQuantity);
-    await checkout.cart.startCheckout();
-    await checkout.phoneVerification.fillPhone(e2eCredentials.customer.phone);
-    await checkout.phoneVerification.requestCode();
-    await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
-    await checkout.phoneVerification.confirm();
-    await checkout.profile.completeProfileIfShown(data.customerName);
-    await checkout.cart.placeOrder();
-    const snapshot = await customerOrder.details.readSnapshot();
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.staff);
-    await staffOrders.queue.waitReady();
-    await staffOrders.queue.openDetails(snapshot);
-    await staffOrders.queue.transition(
-      snapshot,
-      OrderQueueTransitionAction.ACCEPT,
-    );
-    await staffOrders.queue.transition(
-      snapshot,
-      OrderQueueTransitionAction.START_PREPARING,
-    );
-    await staffOrders.queue.transition(
-      snapshot,
-      OrderQueueTransitionAction.MARK_READY,
-    );
-    await staffOrders.queue.transition(
-      snapshot,
+    expect(actions, "Выдача доступна после готовности.").toContain(
       OrderQueueTransitionAction.ISSUE,
     );
-    await test.step("Результат: готовый заказ выдан после внешней оплаты.", async () => {
-      const stage = await staffOrders.queue.readCurrentStage(snapshot);
-      const transitions =
-        await staffOrders.queue.readTransitionHistory(snapshot);
+  });
+  await staffOrders.queue.transition(
+    snapshot,
+    OrderQueueTransitionAction.ISSUE,
+  );
+  await test.step("Результат: готовый заказ выдан, а история содержит четыре перехода с автором и временем.", async () => {
+    const stage = await staffOrders.queue.readCurrentStage(snapshot);
+    const transitions = await staffOrders.queue.readTransitionHistory(snapshot);
 
-      expect(stage, "Текущая стадия заказа — «Выдан».").toBe(
-        OrderQueueStage.ISSUED,
-      );
-      expect(transitions, "Заказ принят staff.").toContainEqual({
-        from: OrderQueueStage.CREATED,
-        to: OrderQueueStage.ACCEPTED,
-      });
-      expect(transitions, "Заказ передан в приготовление.").toContainEqual({
-        from: OrderQueueStage.ACCEPTED,
-        to: OrderQueueStage.PREPARING,
-      });
-      expect(transitions, "Заказ отмечен готовым.").toContainEqual({
-        from: OrderQueueStage.PREPARING,
-        to: OrderQueueStage.READY,
-      });
-      expect(transitions, "Заказ выдан customer.").toContainEqual({
-        from: OrderQueueStage.READY,
-        to: OrderQueueStage.ISSUED,
-      });
-    });
-  } catch (error) {
-    primaryError = error;
-    hasPrimaryFailure = true;
-  }
-
-  try {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-    await menuManagement.open();
-    await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-    await menuManagement.productEditor.deleteIfPresent(data.productName);
-    await menuManagement.modifierGroupEditor.archiveIfPresent(
-      data.modifierGroupName,
+    expect(stage, "Текущая стадия заказа — «Выдан».").toBe(
+      OrderQueueStage.ISSUED,
     );
-    await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-    await menuManagement.catalog.assertScenarioAbsent(data);
-  } catch (cleanupError) {
-    if (!hasPrimaryFailure) throw cleanupError;
+    expect(transitions, "История содержит четыре перехода.").toHaveLength(4);
+    const expectedTransitions = [
+      [OrderQueueStage.CREATED, OrderQueueStage.ACCEPTED],
+      [OrderQueueStage.ACCEPTED, OrderQueueStage.PREPARING],
+      [OrderQueueStage.PREPARING, OrderQueueStage.READY],
+      [OrderQueueStage.READY, OrderQueueStage.ISSUED],
+    ] as const;
 
-    try {
-      await testInfo.attach("Ошибка очистки", {
-        body:
-          cleanupError instanceof Error
-            ? (cleanupError.stack ?? cleanupError.message)
-            : String(cleanupError),
-        contentType: "text/plain",
-      });
-    } catch {
-      // Исходная ошибка сценария сохраняет приоритет.
+    for (const [index, [from, to]] of expectedTransitions.entries()) {
+      const transition = transitions[index];
+
+      expect(
+        transition?.from,
+        `Показана исходная стадия перехода ${index + 1}.`,
+      ).toBe(from);
+      expect(
+        transition?.to,
+        `Показана новая стадия перехода ${index + 1}.`,
+      ).toBe(to);
+      expect(transition?.author, `Показан автор перехода ${index + 1}.`).toBe(
+        e2eCredentials.staff.phone,
+      );
+      expect(
+        transition?.occurredAt,
+        `Показаны допустимые дата и время перехода ${index + 1}.`,
+      ).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/u);
     }
-  }
-
-  if (hasPrimaryFailure) throw primaryError;
+  });
 });

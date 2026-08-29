@@ -1,4 +1,6 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class ShellNavigationComponent {
   private readonly menuButton: Locator;
@@ -14,13 +16,9 @@ export class ShellNavigationComponent {
     await test.step("Открыть меню через основную навигацию", async () => {
       await expect(this.menuButton, "Переход в меню доступен.").toBeEnabled();
       await this.menuButton.click();
-      await expect(
-        this.page.getByRole("heading", {
-          name: "Что будем заказывать?",
-          exact: true,
-        }),
-        "Открыто публичное меню.",
-      ).toBeVisible();
+      await expect(this.page, "Открыт путь публичного меню.").toHaveURL(
+        (url) => url.pathname === "/",
+      );
     });
   }
 

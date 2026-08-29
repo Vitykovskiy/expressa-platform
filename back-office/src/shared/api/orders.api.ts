@@ -8,7 +8,8 @@ import {
 import type {
   OrderApiError,
   OrderDetails,
-  OrderEvent,
+  OrderDetailsDto,
+  OrderEventDto,
   OrderListItem,
   OrderModifier,
   OrderSnapshotItem,
@@ -36,13 +37,15 @@ export class OrdersApi {
     );
   }
 
-  details(accessToken: string, orderId: string): Promise<OrderDetails> {
-    return this.request(
+  async details(accessToken: string, orderId: string): Promise<OrderDetails> {
+    const details = await this.request(
       `${ordersApiPaths.orders}/${orderId}`,
-      isOrderDetails,
+      isOrderDetailsDto,
       accessToken,
       "GET",
     );
+
+    return toOrderDetails(details);
   }
 
   transition(accessToken: string, order: OrderDetails): Promise<OrderDetails> {
@@ -59,10 +62,10 @@ export class OrdersApi {
 
     return this.request(
       `${ordersApiPaths.orders}/${order.id}/${transition}`,
-      isOrderDetails,
+      isOrderDetailsDto,
       accessToken,
       "POST",
-    );
+    ).then(toOrderDetails);
   }
 
   private async request<T>(
@@ -102,7 +105,19 @@ function isOrderList(value: unknown): value is readonly OrderListItem[] {
   return Array.isArray(value) && value.every(isOrderListItem);
 }
 
-function isOrderDetails(value: unknown): value is OrderDetails {
+function toOrderDetails(details: OrderDetailsDto): OrderDetails {
+  return {
+    ...details,
+    events: details.events.map((event) => ({
+      actorLabel: event.actorLabel,
+      from: event.from,
+      occurredAt: event.occurredAt,
+      to: event.to,
+    })),
+  };
+}
+
+function isOrderDetailsDto(value: unknown): value is OrderDetailsDto {
   if (!isRecord(value) || !isOrderListItem(value)) return false;
 
   const record = value as Record<string, unknown>;
@@ -155,10 +170,11 @@ function isOrderModifier(value: unknown): value is OrderModifier {
   );
 }
 
-function isOrderEvent(value: unknown): value is OrderEvent {
+function isOrderEvent(value: unknown): value is OrderEventDto {
   return (
     isRecord(value) &&
-    isString(value.actorId) &&
+    isUuid(value.actorId) &&
+    isE164Phone(value.actorLabel) &&
     isString(value.occurredAt) &&
     isOrderStage(value.from) &&
     isOrderStage(value.to)
@@ -187,6 +203,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    isString(value) &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
+}
+
+function isE164Phone(value: unknown): value is string {
+  return isString(value) && /^\+[1-9]\d{1,14}$/.test(value);
 }
 
 function isNumber(value: unknown): value is number {

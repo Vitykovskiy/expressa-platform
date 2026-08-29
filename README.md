@@ -55,6 +55,7 @@ expressa/
 
 ## Состояние и проверка
 
-- [Последний отчёт Playwright](http://216.57.105.133:8088/).
 - [Development delivery в GitHub Actions](https://github.com/Vitykovskiy/expressa-platform/actions/workflows/development-delivery.yml).
+- [Доступ к отчёту Playwright](docs/70-deployment/E2E-on-VPS.md) — адрес
+  формируется из приватной конфигурации development-окружения.
 - Проверка документации: `node scripts/check-docs.mjs`.

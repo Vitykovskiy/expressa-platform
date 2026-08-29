@@ -3,98 +3,51 @@ import { expect, test } from "@fixtures/test";
 /**
  * Назначение: подтвердить изменение данных существующей категории.
  *
- * Предусловия: administrator авторизован; в каталоге есть категория.
+ * Предусловия: изолированный профиль `catalog-mutation` предоставляет роль
+ * администратора и категорию «Кофе».
  *
  * Сценарий:
- * 1. Administrator открывает управление меню.
- * 2. Administrator открывает редактирование категории.
- * 3. Administrator изменяет название категории.
- * 4. Administrator изменяет описание категории.
- * 5. Administrator сохраняет изменения.
- * 6. Administrator открывает редактирование категории.
+ * 1. Администратор открывает управление меню.
+ * 2. Администратор открывает редактирование категории «Кофе».
+ * 3. Администратор изменяет название категории на «Кофе — обновлено».
+ * 4. Администратор изменяет описание категории на «Обновлённое описание
+ *    категории кофе.».
+ * 5. Администратор сохраняет изменения.
+ * 6. Администратор открывает редактирование категории «Кофе — обновлено».
  *
  * Ожидаемый результат:
- * - Administrator видит категорию с новыми названием и описанием.
+ * - Администратор видит категорию «Кофе — обновлено» с описанием
+ *   «Обновлённое описание категории кофе.».
  */
-test("CATALOG-04: administrator редактирует категорию", async ({
+test("CATALOG-04: администратор редактирует категорию", async ({
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
   menuManagement,
-}, testInfo) => {
-  const initialName = `E2E Исходная ${testInfo.testId}`;
-  const categoryName = `E2E Изменённая ${testInfo.testId}`;
-  const description = `Новое описание ${testInfo.testId}`;
-  let primaryError: unknown;
-  let hasPrimaryFailure = false;
-  const cleanupErrors: unknown[] = [];
+}) => {
+  const initialName = "Кофе";
+  const categoryName = "Кофе — обновлено";
+  const description = "Обновлённое описание категории кофе.";
 
-  await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-  await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  await test.step("Подготовка: администратор авторизуется.", async () => {
+    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
+    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+  });
   await menuManagement.open();
-  try {
-    await menuManagement.categoryEditor.startCreation();
-    await menuManagement.categoryEditor.fillName(initialName);
-    await menuManagement.categoryEditor.fillDescription("Исходное описание");
-    await menuManagement.categoryEditor.save(initialName);
+  await menuManagement.categoryEditor.openForEditing(initialName);
+  await menuManagement.categoryEditor.fillName(categoryName);
+  await menuManagement.categoryEditor.fillDescription(description);
+  await menuManagement.categoryEditor.saveChanges(categoryName);
+  await menuManagement.categoryEditor.openForEditing(categoryName);
 
-    await menuManagement.open();
-    await menuManagement.categoryEditor.openForEditing(initialName);
-    await menuManagement.categoryEditor.fillName(categoryName);
-    await menuManagement.categoryEditor.fillDescription(description);
-    await menuManagement.categoryEditor.saveChanges(categoryName);
-    await menuManagement.categoryEditor.openForEditing(categoryName);
-
-    await test.step("Administrator видит категорию с новыми названием и описанием.", async () => {
-      expect(
-        await menuManagement.categoryEditor.readName(),
-        "Новое название категории сохранено.",
-      ).toBe(categoryName);
-      expect(
-        await menuManagement.categoryEditor.readDescription(),
-        "Новое описание категории сохранено.",
-      ).toBe(description);
-    });
-  } catch (error) {
-    primaryError = error;
-    hasPrimaryFailure = true;
-  } finally {
-    try {
-      await menuManagement.categoryEditor.cancelEditing(categoryName);
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-    try {
-      await menuManagement.categoryEditor.archiveIfPresent(categoryName);
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-    try {
-      await menuManagement.categoryEditor.archiveIfPresent(initialName);
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-    try {
-      await backOfficeAuth.form.signOut();
-    } catch (error) {
-      cleanupErrors.push(error);
-    }
-  }
-
-  for (const cleanupError of cleanupErrors) {
-    try {
-      await testInfo.attach("Ошибка очистки", {
-        body:
-          cleanupError instanceof Error
-            ? (cleanupError.stack ?? cleanupError.message)
-            : String(cleanupError),
-        contentType: "text/plain",
-      });
-    } catch {
-      // Первичная ошибка сценария или очистки сохраняет приоритет.
-    }
-  }
-
-  if (hasPrimaryFailure) throw primaryError;
-  if (cleanupErrors.length > 0) throw cleanupErrors[0];
+  await test.step("Администратор видит категорию «Кофе — обновлено» с описанием «Обновлённое описание категории кофе.».", async () => {
+    expect(
+      await menuManagement.categoryEditor.readName(),
+      "Название категории «Кофе — обновлено» сохранено.",
+    ).toBe(categoryName);
+    expect(
+      await menuManagement.categoryEditor.readDescription(),
+      "Описание категории «Обновлённое описание категории кофе.» сохранено.",
+    ).toBe(description);
+  });
 });

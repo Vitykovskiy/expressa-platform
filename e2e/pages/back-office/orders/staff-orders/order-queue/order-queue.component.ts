@@ -1,15 +1,17 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
   OrderQueueFilter,
   OrderQueueStage,
   OrderQueueTransitionAction,
-  QueueScenarioFilter,
-  type OrderQueueDetails,
-  type OrderQueueTransition,
 } from "./order-queue.types";
 
+import type { Locator, Page } from "@playwright/test";
 import type { OrderSnapshot } from "@support/data/order-snapshot.types";
+import type {
+  OrderQueueDetails,
+  OrderQueueTransition,
+} from "./order-queue.types";
 
 export class OrderQueueComponent {
   private readonly queue: Locator;
@@ -36,9 +38,7 @@ export class OrderQueueComponent {
     );
   }
 
-  async selectFilter(
-    filter: OrderQueueFilter | QueueScenarioFilter,
-  ): Promise<void> {
+  async selectFilter(filter: OrderQueueFilter): Promise<void> {
     await test.step(`Выбрать фильтр «${filter}»`, async () => {
       const filterButton = this.filterButton(filter);
 
@@ -157,9 +157,18 @@ export class OrderQueueComponent {
   }
 
   async isOrderCreatedAtVisible(order: OrderSnapshot): Promise<boolean> {
-    return this.orderCard(order)
-      .getByText(/^\d{2}\.\d{2}\.\d{2,4}, \d{2}:\d{2}$/u)
-      .isVisible();
+    return this.orderCreatedAt(order).isVisible();
+  }
+
+  async readOrderCreatedAt(order: OrderSnapshot): Promise<string> {
+    const createdAt = this.orderCreatedAt(order);
+
+    await expect(
+      createdAt,
+      `Дата и время заказа ${order.number} показаны.`,
+    ).toBeVisible();
+
+    return createdAt.innerText();
   }
 
   async readOrderTotal(order: OrderSnapshot): Promise<string> {
@@ -191,10 +200,21 @@ export class OrderQueueComponent {
   async readCurrentStage(order: OrderSnapshot): Promise<OrderQueueStage> {
     const card = this.orderCard(order);
 
+    await expect(
+      card,
+      `Карточка заказа ${order.number} показана перед чтением стадии.`,
+    ).toBeVisible();
+
     for (const stage of Object.values(OrderQueueStage)) {
-      if (await card.getByText(stage, { exact: true }).isVisible()) {
-        return stage;
-      }
+      const stageLocator = card.getByText(stage, { exact: true });
+
+      if ((await stageLocator.count()) === 0) continue;
+
+      await expect(
+        stageLocator,
+        `Показана стадия «${stage}» заказа ${order.number}.`,
+      ).toBeVisible();
+      return stage;
     }
 
     throw new Error("Не удалось прочитать отображаемую стадию заказа.");
@@ -257,9 +277,13 @@ export class OrderQueueComponent {
     });
   }
 
-  private filterButton(
-    filter: OrderQueueFilter | QueueScenarioFilter,
-  ): Locator {
+  private orderCreatedAt(order: Pick<OrderSnapshot, "id" | "number">): Locator {
+    return this.orderCard(order).getByText(
+      /^\d{2}\.\d{2}\.\d{2,4}, \d{2}:\d{2}$/u,
+    );
+  }
+
+  private filterButton(filter: OrderQueueFilter): Locator {
     return this.queue.getByRole("button", { name: filter, exact: true });
   }
 
@@ -297,23 +321,49 @@ export class OrderQueueComponent {
   }
 
   private readTransition(event: string): OrderQueueTransition {
-    const [fromValue, toValue] = event.split(" — ");
-    const [to, ...metadata] = toValue?.split(", ") ?? [];
-    const authorValue = metadata.pop();
-    const occurredAt = metadata.join(", ");
-    const author = authorValue?.replace("Автор:", "").trim();
+    const parsedTransition = event.match(
+      /^(?<from>.+) — (?<to>.+), (?<occurredAt>(?<day>\d{2})\.(?<month>\d{2})\.(?<year>\d{4}), (?<hours>\d{2}):(?<minutes>\d{2})), Автор: (?<author>.+)$/u,
+    );
+    const from = parsedTransition?.groups?.["from"];
+    const to = parsedTransition?.groups?.["to"];
+    const occurredAt = parsedTransition?.groups?.["occurredAt"];
+    const author = parsedTransition?.groups?.["author"];
+    const day = Number(parsedTransition?.groups?.["day"]);
+    const month = Number(parsedTransition?.groups?.["month"]);
+    const year = Number(parsedTransition?.groups?.["year"]);
+    const hours = Number(parsedTransition?.groups?.["hours"]);
+    const minutes = Number(parsedTransition?.groups?.["minutes"]);
 
     if (
-      !this.isOrderQueueStage(fromValue) ||
+      !this.isOrderQueueStage(from) ||
       !this.isOrderQueueStage(to) ||
-      occurredAt === "" ||
+      occurredAt === undefined ||
       author === undefined ||
-      author === ""
+      author === "" ||
+      !this.isValidDateTime(day, month, year, hours, minutes)
     ) {
       throw new Error("Не удалось прочитать переход статуса заказа.");
     }
 
-    return { author, from: fromValue, occurredAt, to };
+    return { author, from, occurredAt, to };
+  }
+
+  private isValidDateTime(
+    day: number,
+    month: number,
+    year: number,
+    hours: number,
+    minutes: number,
+  ): boolean {
+    const timestamp = new Date(year, month - 1, day, hours, minutes);
+
+    return (
+      timestamp.getDate() === day &&
+      timestamp.getMonth() === month - 1 &&
+      timestamp.getFullYear() === year &&
+      timestamp.getHours() === hours &&
+      timestamp.getMinutes() === minutes
+    );
   }
 
   private isOrderQueueStage(

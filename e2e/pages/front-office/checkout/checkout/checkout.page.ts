@@ -1,10 +1,9 @@
-import { type Locator, type Page } from "@playwright/test";
-
 import { PhoneVerificationComponent } from "@components/front-office/auth/phone-verification/phone-verification.component";
 import { GuestCheckoutFormComponent } from "@components/front-office/checkout/guest-checkout-form/guest-checkout-form.component";
+import { CartPanelComponent } from "@pages/front-office/checkout/checkout/cart-panel/cart-panel.component";
+import { ShellNavigationComponent } from "@pages/front-office/checkout/checkout/shell-navigation/shell-navigation.component";
 
-import { CartPanelComponent } from "./cart-panel/cart-panel.component";
-import { ShellNavigationComponent } from "./shell-navigation/shell-navigation.component";
+import type { Locator, Page } from "@playwright/test";
 
 export class CheckoutPage {
   public readonly cart: CartPanelComponent;

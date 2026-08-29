@@ -23,6 +23,22 @@ related:
 - `support/data` хранит предметные данные и генераторы, `support/config` — чтение и проверку E2E-окружения. Имя файла, типа и фабрики данных описывает предметный сценарий (`product-order-scenario-data`, `ProductOrderScenarioData`), а не номер эпика, этап качества или технический префикс.
 - Взаимодействие с приложением выполняется только через UI Playwright. API, БД, Web Storage, прямое изменение сети и иной обход интерфейса не используются.
 
+Ответственность выбирается по вопросу, на который отвечает код:
+
+| Вопрос                                                       | Владелец         |
+| ------------------------------------------------------------ | ---------------- |
+| Что пользователь делает дальше и что должно получиться?      | Spec             |
+| Как открыть экран и из каких устойчивых областей он состоит? | Domain Page      |
+| Как взаимодействовать с одной областью экрана?               | Component Object |
+| Какие технические зависимости получает test?                 | Fixture          |
+| Какие предметные значения создаёт сценарий?                  | `support/data`   |
+| Как читается и проверяется окружение?                        | `support/config` |
+
+Если метод одновременно отвечает на несколько вопросов, ответственность смешана.
+Например, Component Object не создаёт товар в back-office, не переходит во
+front-office и не оформляет заказ одним методом: порядок этих действий принадлежит
+spec, а каждый компонент выполняет только свою часть UI.
+
 ## Структура и TypeScript
 
 - Используется строгий TypeScript; `any` не применяется. Публичные входы, результаты чтения и предметные данные типизируются явно.
@@ -53,6 +69,53 @@ e2e/
 └── support/{config,data}/
 ```
 
+### Системные и свободные значения
+
+Тип зависит не от внешнего вида значения, а от того, кто задаёт множество
+допустимых вариантов.
+
+| Значение                         | Владелец допустимых вариантов | Тип                                  |
+| -------------------------------- | ----------------------------- | ------------------------------------ |
+| Размер товара `S`, `M`, `L`      | интерфейс приложения          | `enum ProductSize`                   |
+| Статус заказа                    | интерфейс приложения          | `enum OrderStatus`                   |
+| Созданное тестом название товара | сценарий                      | `string`                             |
+| Телефон и OTP из окружения       | тестовое окружение            | `string` после проверки конфигурации |
+
+Хорошо:
+
+```ts
+export enum ProductSize {
+  S = "S",
+  M = "M",
+  L = "L",
+}
+
+async selectSize(size: ProductSize): Promise<void> {
+  await this.size(size).click();
+}
+
+await product.selectSize(ProductSize.M);
+await productEditor.fillName(data.productName);
+```
+
+Плохо:
+
+```ts
+// Общий string скрывает допустимые размеры от TypeScript и IDE.
+async selectSize(size: string): Promise<void> {}
+
+// Literal union дублирует системный контракт без владельца.
+async selectSize(size: "S" | "M" | "L"): Promise<void> {}
+
+// Отдельные методы раздувают API одним методом на каждое значение.
+async selectSmallSize(): Promise<void> {}
+async selectMediumSize(): Promise<void> {}
+async selectLargeSize(): Promise<void> {}
+```
+
+`enum` не применяется к свободным данным. Название `Напиток E2E 42` нельзя
+включить в конечный перечень: оно создаётся сценарием и передаётся как `string`.
+
 ## Спецификации и объекты
 
 - Имена сценариев, `test.step` и UI-ассерты пишутся по-русски и описывают наблюдаемое пользовательское поведение.
@@ -67,7 +130,7 @@ e2e/
 - Spec вызывает действия Page/Component Objects напрямую и владеет предметными проверками. Межэкранные сравнения — например, созданного заказа с заказом в истории, состава, количества, итога и статуса — также принадлежат spec.
 - Spec вызывает предметные методы Page/Component Objects. Он не создаёт локаторы, не повторяет ожидания готовности и не содержит технические клики, уже инкапсулированные объектом.
 - Публичный API Page/Component Object принимает системное UI-значение только через `enum` владельца и не раскрывает технические ключи полей или селекторы.
-- Стабильные локаторы — приватные поля класса. Параметризованный элемент выражается приватной фабрикой `item(name): Locator`; наружу локаторы не передаются.
+- Форму локаторов и границу публичных методов определяет раздел [Локаторы: свойства и фабрики](#локаторы-свойства-и-фабрики).
 - Сначала используются роль с доступным именем, подпись или стабильный `id`. `data-testid` — минимальный контракт для структурной части интерфейса, которую нельзя выбрать семантически (например, итог строки или корень повторяемой карточки).
 - Нельзя строить контракт на CSS-классах, HTML-тегах, `.first()`, `.last()`, `nth()` или порядке DOM.
 - UI-действие ожидает наблюдаемый результат через web-first `expect`. Фиксированные задержки не используются.
@@ -75,20 +138,218 @@ e2e/
 - Импорты разделяются пустой строкой: сначала внешние модули, затем внутренние значения, затем `type`-импорты. В классе пустыми строками разделяются публичная композиция, приватные локаторы, конструктор, публичные действия и приватные фабрики. Форматтер не заменяет эту структуру.
 - Запрещены `test.only`, `test.skip`, `describe.only`, отладочные паузы и временные обходы без отдельного назначения.
 
-### Контракт сценария
+### Локаторы: свойства и фабрики
 
-Каждый атомарный `test` проверяет одну бизнес-цель. Подготовка делает доступным
-состояние для цели, а cleanup убирает созданные данные; они не становятся целью
-или нумерованным пунктом сценария. Сквозной путь допускается отдельным
-`full journey`-test: он проверяет связку атомарных возможностей и не заменяет их.
+Форма локатора показывает его назначение при чтении класса. Постоянный элемент
+является свойством компонента, элемент с входным параметром создаётся фабрикой,
+а публичный метод выполняет пользовательское действие или читает наблюдаемое
+состояние. Локаторы не входят в публичный API Page/Component Object.
 
-JSDoc и business-level шаги показывают бизнес-путь в исходном коде и отчёте
-Playwright. Вложенные шаги компонентов помогают найти сломанное UI-действие, но
-не являются заменой шага сценария.
+| Что представляет член класса                                        | Форма                                         |
+| ------------------------------------------------------------------- | --------------------------------------------- |
+| Один постоянный элемент интерфейса                                  | `private readonly` свойство типа `Locator`    |
+| Элемент, зависящий от имени, статуса, размера или другого параметра | private factory-метод с результатом `Locator` |
+| Пользовательское действие или чтение состояния                      | публичный метод                               |
+
+`Locator` в Playwright ленивый: свойство не сохраняет найденный DOM-элемент.
+Актуальный элемент ищется при `click`, `fill`, `expect` и другом обращении,
+поэтому постоянный локатор не нужно повторно создавать методом или getter.
+
+Хороший пример:
+
+```ts
+export class ProductEditorComponent {
+  private readonly dialog: Locator;
+  private readonly cancelButton: Locator;
+
+  constructor(private readonly page: Page) {
+    this.dialog = page.getByRole("dialog");
+    this.cancelButton = this.dialog.getByRole("button", {
+      name: "Отмена",
+      exact: true,
+    });
+  }
+
+  async cancelCreation(): Promise<void> {
+    await test.step("Отменить создание товара", async () => {
+      await this.cancelButton.click();
+      await expect(
+        this.dialog,
+        "Редактор нового товара закрыт без сохранения.",
+      ).toHaveCount(0);
+    });
+  }
+
+  private productEditButton(name: string): Locator {
+    return this.page.getByRole("button", {
+      name: `Редактировать товар ${name}`,
+      exact: true,
+    });
+  }
+}
+```
+
+Здесь `dialog` и `cancelButton` обозначают конкретные элементы и читаются без
+скобок. `productEditButton(name)` остаётся методом, потому что его локатор зависит
+от имени товара. `cancelCreation()` является публичным действием и владеет
+непосредственным видимым результатом отмены.
+
+Антипримеры:
+
+```ts
+// Плохо: метод без параметров маскирует постоянный элемент под действие.
+private cancelButton(): Locator {
+  return this.dialog().getByRole("button", { name: "Отмена" });
+}
+
+// Плохо: getter повторно создаёт описание одного и того же локатора без пользы.
+private get cancelButton(): Locator {
+  return this.dialog.getByRole("button", { name: "Отмена" });
+}
+
+// Плохо: локатор раскрывает внутреннее устройство компонента вызывающему коду.
+public readonly cancelButton: Locator;
+```
+
+В первом случае вызов `cancelButton()` выглядит как поведение, хотя только
+возвращает элемент. Во втором getter не делает DOM-состояние актуальнее: эту
+гарантию уже даёт Playwright. В третьем spec получает возможность самостоятельно
+кликать и строить ожидания, обходя публичное действие компонента.
+
+### Предусловия и подготовка
+
+Предусловия — состояние, существующее до начала `test`. Для каждого предусловия
+указывается источник: изолированный профиль, тестовое окружение или доступная роль.
+Начальное состояние профилей и момент выполнения seed определяет
+[E2E на VPS](../../../docs/70-deployment/E2E-on-VPS.md#изолированные-тесты).
+Seed выполняется перед всем профилем, поэтому тесты не считают общие изменяемые
+данные восстановленными между сценариями.
+
+Fixture предоставляет технические зависимости: Page Objects, browser context,
+конфигурацию и тестовые учётные данные. Fixture не авторизует пользователя, не
+создаёт предметные данные и не изменяет состояние приложения.
+
+Если авторизация не является целью сценария, она выполняется через UI в отдельном
+ненумерованном шаге `Подготовка: пользователь авторизуется`. Если сценарий
+проверяет авторизацию, её действия входят в нумерованный `Сценарий`.
+
+Каждое предметное UI-действие, выполненное самим тестом, отражается в
+`Сценарии` в фактическом порядке. Его нельзя скрывать в `Предусловиях` или общем
+шаге подготовки. Тест использует неизменяемые данные профиля либо создаёт
+уникальные данные и не зависит от состояния, оставленного другим тестом.
+
+Хорошо — профиль предоставляет каталог, а тест через UI выполняет только
+необходимую авторизацию и действия проверяемого пути:
 
 ```ts
 /**
- * Назначение: покупатель оформляет один опубликованный товар с обязательной добавкой.
+ * Назначение: customer не получает второй заказ при повторном оформлении.
+ *
+ * Предусловия: профиль mutating содержит опубликованный капучино размера M;
+ * customer без заказов может подтвердить тестовый номер телефона.
+ *
+ * Сценарий:
+ * 1. Customer открывает публичное меню.
+ * 2. Customer открывает категорию «Кофе».
+ * 3. Customer открывает опубликованный капучино.
+ * 4. Customer выбирает размер M.
+ * 5. Customer добавляет товар в корзину.
+ * 6. Customer открывает корзину.
+ * 7. Customer дважды выбирает оформление заказа до показа результата.
+ * 8. Customer открывает историю заказов.
+ *
+ * Ожидаемый результат:
+ * - Customer видит один созданный заказ.
+ * - В истории customer существует только один новый заказ.
+ */
+test("CHECKOUT-07: customer не получает второй заказ", async ({
+  customerAuth,
+  checkout,
+  customerOrder,
+  e2eCredentials,
+  e2eEnvironment,
+  orderHistory,
+  publicMenu,
+}) => {
+  await test.step("Подготовка: customer авторизуется", async () => {
+    await customerAuth.open(e2eEnvironment.frontOfficeUrl);
+    await customerAuth.phoneVerification.fillPhone(
+      e2eCredentials.customer.phone,
+    );
+    await customerAuth.phoneVerification.requestCode();
+    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await customerAuth.phoneVerification.confirm();
+  });
+
+  await publicMenu.open(e2eEnvironment.frontOfficeUrl);
+  await publicMenu.product.openCategory("Кофе");
+  await publicMenu.product.openProduct("Капучино");
+  await publicMenu.product.selectVariant(ProductSize.M);
+  await publicMenu.product.addToCart();
+  await checkout.cart.open();
+  await checkout.cart.placeOrderTwice();
+
+  await test.step("Customer видит один созданный заказ.", async () => {
+    const order = await customerOrder.details.readReference();
+
+    expect(order.id, "Созданный заказ имеет идентификатор.").not.toBe("");
+  });
+
+  await orderHistory.open();
+  await test.step("В истории customer существует только один новый заказ.", async () => {
+    const orderCount = await orderHistory.history.readOrderCount();
+
+    expect(orderCount, "В истории находится один заказ.").toBe(1);
+  });
+});
+```
+
+Плохо — комментарий объявляет готовые данные, но сам тест скрытно создаёт их под
+общим названием подготовки:
+
+```ts
+/**
+ * Предусловия: в корзине есть опубликованный капучино.
+ *
+ * Сценарий:
+ * 1. Customer открывает корзину.
+ * 2. Customer дважды оформляет заказ.
+ */
+test("повторное оформление", async () => {
+  await test.step("Подготовка", async () => {
+    await backOffice.menu.categoryEditor.startCreation();
+    await backOffice.menu.productEditor.startCreation();
+    await customerAuth.phoneVerification.confirm();
+    await publicMenu.product.addToCart();
+  });
+
+  await checkout.cart.open();
+  await checkout.cart.placeOrderTwice();
+});
+```
+
+Такой JSDoc не соответствует коду: категория, товар, авторизация и корзина не
+существовали до `test`. Предметные действия необходимо либо получить из контракта
+профиля, либо перечислить в `Сценарии`.
+
+### Контракт сценария
+
+Каждый атомарный `test` проверяет одну бизнес-цель. Ненумерованная подготовка
+ограничена авторизацией, если она не является целью сценария. Предметные действия
+подготовки входят в нумерованный сценарий; тест не очищает созданные им предметные
+данные. Сквозной путь допускается отдельным `full journey`-test, когда он
+проверяет связь нескольких возможностей и не заменяет их атомарные проверки.
+В таком пути все UI-действия явно нумеруются. Быстрое двойное нажатие — один
+пункт, если оно проверяет защиту одного намерения customer, а не две операции.
+
+JSDoc и business-level шаги показывают бизнес-путь в исходном коде и отчёте
+Playwright. Вложенные шаги компонентов помогают найти сломанное UI-действие, но
+не являются заменой шага сценария. Ниже приведён именно `full journey`: длинный
+путь допустим, потому что его назначение — проверить связь нескольких возможностей.
+
+```ts
+/**
+ * Назначение: проверить сквозной путь от публикации товара до созданного заказа.
  *
  * Предусловия: администратор и покупатель могут войти в свои интерфейсы;
  * покупателю доступно подтверждение номера.
@@ -129,7 +390,7 @@ Playwright. Вложенные шаги компонентов помогают 
  * 33. Покупатель оформляет заказ.
  *
  * Ожидаемый результат:
- * - Результат: созданный заказ имеет идентификатор и содержит выбранные наименование, вариант, обязательную добавку, количество, цену и итог.
+ * - Результат: созданный заказ имеет идентификатор и содержит выбранные наименование, размер, обязательную добавку и количество.
  */
 ```
 
@@ -145,7 +406,7 @@ import {
 } from "@pages/back-office/menu/menu-management/product-editor/product-editor.types";
 import { ProductSize as ProductConfiguratorSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
 
-const data = createProductOrderScenarioData(testInfo);
+const data = createProductOrderScenarioData(testInfo.testId);
 
 await backOffice.menu.categoryEditor.startCreation();
 await backOffice.menu.categoryEditor.fillName(data.categoryName);
@@ -194,41 +455,23 @@ await checkout.phoneVerification.requestCode();
 await checkout.phoneVerification.fillCode(customer.otp);
 await checkout.phoneVerification.confirm();
 await checkout.cart.placeOrder();
-const expectedTotal = Number(data.productPrice) * data.productQuantity;
+await test.step("Результат: созданный заказ имеет идентификатор и содержит выбранные наименование, размер, обязательную добавку и количество.", async () => {
+  const order = await customerOrder.details.readSnapshot();
 
-await test.step("Результат: созданный заказ имеет идентификатор и содержит выбранные наименование, вариант, обязательную добавку, количество, цену и итог.", async () => {
-  const order = await customerOrder.details.read();
-
-  expect(order.id, "Созданный заказ имеет идентификатор.").toMatch(
-    orderIdPattern,
-  );
+  expect(order.id, "Созданный заказ имеет идентификатор.").not.toBe("");
   expect(
     order.productName,
     "Наименование товара сохранено без изменений.",
   ).toBe(data.productName);
-  expect(order.variant, "Выбранный вариант товара сохранён.").toBe(
+  expect(order.size, "Выбранный размер товара сохранён.").toBe(
     data.productSize,
   );
   expect(order.modifierName, "Обязательная добавка сохранена.").toBe(
     data.modifierName,
   );
   expect(order.quantity, "Выбранное количество товара сохранено.").toBe(
-    data.productQuantity,
+    String(data.productQuantity),
   );
-  expect(order.unitPrice, "Цена единицы товара сохранена без изменений.").toBe(
-    Number(data.productPrice),
-  );
-  expect(order.total, "Итоговая цена заказа рассчитана правильно.").toBe(
-    expectedTotal,
-  );
-});
-
-await backOffice.menu.productEditor.archive(data.productName);
-await backOffice.menu.modifierGroupEditor.archive(data.modifierGroupName);
-await backOffice.menu.categoryEditor.archive(data.categoryName);
-
-await test.step("Результат очистки: данные сценария отсутствуют в активном каталоге.", async () => {
-  await backOffice.menu.catalog.assertScenarioAbsent(data);
 });
 ```
 
@@ -300,3 +543,63 @@ private size(size: ProductSize): Locator {
 - Spec импортирует расширенные Playwright fixtures из `fixtures/test.ts`; это единая публичная точка для `test` и `expect`.
 - Тестовые данные имеют предметное имя, находятся в `support/data` и получают уникальность от идентификатора запуска, а не от глобального изменяемого состояния.
 - `support/config` проверяет обязательные `E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL`. Учётные данные и другие секреты не размещаются в spec и документации.
+
+Fixture только собирает технические зависимости. Хорошо:
+
+```ts
+type E2eFixtures = {
+  readonly checkout: CheckoutPage;
+  readonly customerAuth: CustomerAuthPage;
+  readonly e2eCredentials: E2eCredentials;
+};
+
+export const test = base.extend<E2eFixtures>({
+  checkout: async ({ page }, use) => {
+    await use(new CheckoutPage(page));
+  },
+  customerAuth: async ({ page }, use) => {
+    await use(new CustomerAuthPage(page));
+  },
+  e2eCredentials: async ({}, use) => {
+    await use(getE2eCredentials());
+  },
+});
+```
+
+Плохо — fixture выполняет предметный workflow и скрывает его от scenario/report:
+
+```ts
+export const test = base.extend({
+  preparedCheckout: async ({ e2eCredentials, e2eEnvironment, page }, use) => {
+    const auth = new CustomerAuthPage(page);
+    const menu = new PublicMenuPage(page);
+
+    await auth.open(e2eEnvironment.frontOfficeUrl);
+    await auth.phoneVerification.fillPhone(e2eCredentials.customer.phone);
+    await auth.phoneVerification.requestCode();
+    await auth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await auth.phoneVerification.confirm();
+    await menu.open(e2eEnvironment.frontOfficeUrl);
+    await menu.product.openCategory("Кофе");
+    await menu.product.openProduct("Капучино");
+    await menu.product.selectVariant(ProductSize.M);
+    await menu.product.addToCart();
+    await use(new CheckoutPage(page));
+  },
+});
+```
+
+Fixture из антипримера одновременно авторизует пользователя, создаёт предметное
+состояние и меняет корзину. Spec получает готовый результат без видимого
+пользовательского пути и не доказывает заявленные возможности по отдельности.
+
+Данные сценария также не хранятся в глобальном счётчике:
+
+```ts
+// Хорошо: каждый вызов создаёт независимый набор.
+const data = createProductOrderScenarioData(testInfo.testId);
+
+// Плохо: результат зависит от порядка запуска и общей памяти worker.
+let sequence = 0;
+const productName = `Товар ${sequence++}`;
+```

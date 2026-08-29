@@ -1,209 +1,71 @@
-import {
-  expect,
-  ModifierSelectionType,
-  OrderQueueTransitionAction,
-  ProductConfiguratorSize,
-  ProductEditorSize,
-  ProductType,
-  test,
-} from "@fixtures/test";
-import { createProductOrderScenarioData } from "@support/data/product-order-scenario-data";
+import { expect, OrderHistoryStatus, test } from "@fixtures/test";
 
 /**
  * Назначение: история содержит только заказы авторизованного customer.
  *
- * Предусловия: два customer имеют разные завершённые заказы; первый customer авторизован.
+ * Предусловия: изолированный профиль `customer-history` содержит 21 выданный заказ customer и заказ второго customer №20300102-022; customer может войти через UI.
  *
  * Сценарий:
- * 1. Первый customer открывает раздел «История».
+ * 1. Customer открывает раздел «История».
+ * 2. Customer нажимает «Показать ещё».
  *
  * Ожидаемый результат:
- * - Первый customer видит только собственные заказы.
- * - Первый customer не видит номер, состав, сумму и стадию заказа второго customer.
+ * - Customer видит все собственные заказы.
+ * - Customer не видит карточку заказа второго customer.
  */
 test("ORDER-05: история customer изолирована от заказов другого customer", async ({
-  backOfficeAuth,
-  checkout,
   customerAuth,
-  customerOrder,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
-  multiSession,
   orderHistory,
-  publicMenu,
-}, testInfo) => {
-  const data = createProductOrderScenarioData(testInfo.testId);
+}) => {
+  await test.step("Подготовка: customer авторизуется", async () => {
+    await customerAuth.open(e2eEnvironment.frontOfficeUrl);
+    await customerAuth.phoneVerification.fillPhone(
+      e2eCredentials.customer.phone,
+    );
+    await customerAuth.phoneVerification.requestCode();
+    await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
+    await customerAuth.phoneVerification.confirm();
+  });
 
-  try {
-    await test.step("Подготовка: administrator публикует напиток с обязательной добавкой.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.categoryEditor.startCreation();
-      await menuManagement.categoryEditor.fillName(data.categoryName);
-      await menuManagement.categoryEditor.fillDescription(
-        data.productDescription,
-      );
-      await menuManagement.categoryEditor.save(data.categoryName);
-      await menuManagement.productEditor.startCreation();
-      await menuManagement.productEditor.selectCategory(data.categoryName);
-      await menuManagement.productEditor.selectType(ProductType.DRINK);
-      await menuManagement.productEditor.fillName(data.productName);
-      await menuManagement.productEditor.fillDescription(
-        data.productDescription,
-      );
-      await menuManagement.productEditor.useOnlySize(ProductEditorSize.M);
-      await menuManagement.productEditor.setPrice(
-        ProductEditorSize.M,
-        data.productPrice,
-      );
-      await menuManagement.productEditor.save(data.productName);
-      await menuManagement.modifierGroupEditor.openManagement();
-      await menuManagement.modifierGroupEditor.startCreation();
-      await menuManagement.modifierGroupEditor.fillName(data.modifierGroupName);
-      await menuManagement.modifierGroupEditor.setRequired();
-      await menuManagement.modifierGroupEditor.selectType(
-        ModifierSelectionType.SINGLE,
-      );
-      await menuManagement.modifierGroupEditor.addOption();
-      await menuManagement.modifierGroupEditor.fillOptionName(
-        data.modifierName,
-      );
-      await menuManagement.modifierGroupEditor.setOptionPrice("0");
-      await menuManagement.modifierGroupEditor.setOptionDefault();
-      await menuManagement.modifierGroupEditor.save();
-      await menuManagement.assignments.openCategory(data.categoryName);
-      await menuManagement.assignments.selectGroup(data.modifierGroupName);
-      await menuManagement.assignments.save();
-      await backOfficeAuth.form.signOut();
-    });
-    const ownOrder =
-      await test.step("Подготовка: первый customer оформляет собственный заказ.", async () => {
-        await publicMenu.open(e2eEnvironment.frontOfficeUrl);
-        await publicMenu.product.openCategory(data.categoryName);
-        await publicMenu.product.openProduct(data);
-        await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-        await publicMenu.product.selectModifier(data.modifierName);
-        await publicMenu.product.addToCart();
-        await checkout.cart.open();
-        await checkout.cart.startCheckout();
-        await checkout.phoneVerification.fillPhone(
-          e2eCredentials.customer.phone,
-        );
-        await checkout.phoneVerification.requestCode();
-        await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
-        await checkout.phoneVerification.confirm();
-        await checkout.profile.completeProfileIfShown(data.customerName);
-        await checkout.cart.placeOrder();
-        return customerOrder.details.readSnapshot();
-      });
-    const foreignOrder =
-      await test.step("Подготовка: второй customer оформляет другой заказ.", async () => {
-        const secondCustomer = multiSession.secondCustomer;
+  await orderHistory.open();
+  await orderHistory.history.waitUntilLoaded();
+  await orderHistory.history.loadMore();
+  await test.step("Customer видит все собственные заказы.", async () => {
+    const orders = await orderHistory.history.readOrders();
 
-        await secondCustomer.menu.open(e2eEnvironment.frontOfficeUrl);
-        await secondCustomer.menu.product.openCategory(data.categoryName);
-        await secondCustomer.menu.product.openProduct(data);
-        await secondCustomer.menu.product.selectVariant(
-          ProductConfiguratorSize.M,
-        );
-        await secondCustomer.menu.product.selectModifier(data.modifierName);
-        await secondCustomer.menu.product.addToCart();
-        await secondCustomer.checkout.cart.open();
-        await secondCustomer.checkout.cart.startCheckout();
-        await secondCustomer.checkout.phoneVerification.fillPhone(
-          e2eCredentials.secondCustomer.phone,
-        );
-        await secondCustomer.checkout.phoneVerification.requestCode();
-        await secondCustomer.checkout.phoneVerification.fillCode(
-          e2eCredentials.secondCustomer.otp,
-        );
-        await secondCustomer.checkout.phoneVerification.confirm();
-        await secondCustomer.checkout.profile.completeProfileIfShown(
-          `Гость ${testInfo.testId}`,
-        );
-        await secondCustomer.checkout.cart.placeOrder();
-        return secondCustomer.order.details.readSnapshot();
-      });
-    await test.step("Подготовка: staff выдаёт оба заказа через UI.", async () => {
-      const staff = multiSession.staff;
-
-      await staff.auth.open(e2eEnvironment.backOfficeUrl);
-      await staff.auth.form.signIn(e2eCredentials.staff);
-      await staff.orders.queue.waitReady();
-      for (const order of [ownOrder, foreignOrder]) {
-        await staff.orders.queue.openDetails(order);
-        await staff.orders.queue.transition(
-          order,
-          OrderQueueTransitionAction.ACCEPT,
-        );
-        await staff.orders.queue.transition(
-          order,
-          OrderQueueTransitionAction.START_PREPARING,
-        );
-        await staff.orders.queue.transition(
-          order,
-          OrderQueueTransitionAction.MARK_READY,
-        );
-        await staff.orders.queue.transition(
-          order,
-          OrderQueueTransitionAction.ISSUE,
-        );
-      }
-      await staff.auth.form.signOut();
-    });
-    await test.step("Подготовка: первый customer авторизуется для просмотра истории.", async () => {
-      await customerAuth.open(e2eEnvironment.frontOfficeUrl);
-      await customerAuth.phoneVerification.fillPhone(
-        e2eCredentials.customer.phone,
+    expect(orders, "Показан двадцать один собственный заказ.").toHaveLength(21);
+    for (const [position, order] of orders.entries()) {
+      const index = 21 - position;
+      const expectedDate = new Intl.DateTimeFormat("ru-RU", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }).format(
+        new Date(`2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`),
       );
-      await customerAuth.phoneVerification.requestCode();
-      await customerAuth.phoneVerification.fillCode(
-        e2eCredentials.customer.otp,
+
+      expect(order.number, `Показан номер собственного заказа ${index}.`).toBe(
+        `20300102-${index.toString().padStart(3, "0")}`,
       );
-      await customerAuth.phoneVerification.confirm();
-    });
-
-    await orderHistory.open();
-
-    await test.step("Первый customer видит только собственные заказы.", async () => {
-      const entry = await orderHistory.history.readOrder(ownOrder);
-
-      expect(entry.number, "Собственный заказ показан в истории.").toBe(
-        ownOrder.number,
-      );
-    });
-    await test.step("Первый customer не видит номер, состав, сумму и стадию заказа второго customer.", async () => {
       expect(
-        await orderHistory.history.isOrderAbsent(foreignOrder.number),
-        "Номер чужого заказа не показан в истории.",
-      ).toBe(true);
-      expect(
-        await orderHistory.history.isOrderAbsent(foreignOrder.number),
-        "Состав чужого заказа не показан в истории.",
-      ).toBe(true);
-      expect(
-        await orderHistory.history.isOrderAbsent(foreignOrder.number),
-        "Сумма чужого заказа не показана в истории.",
-      ).toBe(true);
-      expect(
-        await orderHistory.history.isOrderAbsent(foreignOrder.number),
-        "Стадия чужого заказа не показана в истории.",
-      ).toBe(true);
-    });
-  } finally {
-    await test.step("Очистка: administrator удаляет созданные позиции каталога через UI.", async () => {
-      await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-      await backOfficeAuth.form.signIn(e2eCredentials.administrator);
-      await menuManagement.open();
-      await menuManagement.catalog.expandCategoryIfPresent(data.categoryName);
-      await menuManagement.productEditor.deleteIfPresent(data.productName);
-      await menuManagement.modifierGroupEditor.archiveIfPresent(
-        data.modifierGroupName,
+        order.displayedDate,
+        `Показана дата собственного заказа ${index}.`,
+      ).toBe(expectedDate);
+      expect(order.total, `Показана сумма собственного заказа ${index}.`).toBe(
+        "320,00 ₽",
       );
-      await menuManagement.categoryEditor.archiveIfPresent(data.categoryName);
-      await backOfficeAuth.form.signOut();
-    });
-  }
+      expect(
+        order.status,
+        `Показана стадия собственного заказа ${index}.`,
+      ).toBe(OrderHistoryStatus.ISSUED);
+    }
+  });
+  await test.step("Customer не видит карточку заказа второго customer.", async () => {
+    expect(
+      await orderHistory.history.isOrderAbsent("20300102-022"),
+      "Карточка чужого заказа не показана.",
+    ).toBe(true);
+  });
 });

@@ -24,7 +24,6 @@ E2E_BACK_OFFICE_URL=http://localhost:5174
 Обе переменные обязательны. Каждая принимает только абсолютный HTTP(S)-адрес без credentials, query и fragment. Файл `.env.e2e.local` не попадает в Git.
 
 ```bash
-npm run e2e:boundaries
 npm run typecheck:e2e
 npm run e2e
 ```

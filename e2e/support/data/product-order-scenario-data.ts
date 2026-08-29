@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 
+import { ProductSize } from "@pages/front-office/menu/public-menu/product-configurator/product-configurator.types";
+
 export interface ProductOrderScenarioData {
   readonly categoryName: string;
   readonly productName: string;
   readonly productDescription: string;
   readonly productPrice: string;
-  readonly productSize: "M";
-  readonly productQuantity: 2;
+  readonly productSize: ProductSize;
+  readonly productQuantity: number;
   readonly modifierGroupName: string;
   readonly modifierName: string;
   readonly customerName: string;
@@ -22,7 +24,7 @@ export function createProductOrderScenarioData(
     productName: `Напиток E2E ${suffix}`,
     productDescription: `Проверка E2E ${suffix}`,
     productPrice: "199",
-    productSize: "M",
+    productSize: ProductSize.M,
     productQuantity: 2,
     modifierGroupName: `Добавки E2E ${suffix}`,
     modifierName: `Добавка E2E ${suffix}`,
