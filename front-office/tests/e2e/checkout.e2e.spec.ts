@@ -392,11 +392,10 @@ test("issued заказ показывает history, скрывает чужо�
     await page.getByRole("button", { name: "Повторить заказ" }).click();
     const unavailableItems = page.getByRole("alert");
     await expect(unavailableItems).toContainText(
-      "Некоторые позиции больше недоступны:",
+      "Не все позиции из заказа добавлены",
     );
     await expect(unavailableItems).toContainText(checkoutProductName);
-    await expect(page).toHaveURL(`/orders/${order.id}`);
-    await page.goto("/cart");
+    await expect(page).toHaveURL(/\/cart$/);
     await expect(
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
     ).toContainText(

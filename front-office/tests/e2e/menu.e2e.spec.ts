@@ -240,7 +240,7 @@ async function expectCartConfiguration(page: Page): Promise<void> {
   await expect(
     croissant.getByLabel("Количество", { exact: true }),
   ).toContainText("2");
-  await expect(page.getByLabel("Итого заказа")).toContainText("1160 ₽");
+  await expect(page.getByLabel("Итого заказа")).toContainText("1 160 ₽");
 }
 
 async function expectControlNotOccluded(
