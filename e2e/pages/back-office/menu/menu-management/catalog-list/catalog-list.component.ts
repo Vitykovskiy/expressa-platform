@@ -76,7 +76,29 @@ export class CatalogListComponent {
         moveUp,
         `Категорию «${name}» можно переместить вверх.`,
       ).toBeEnabled();
+      const categoryOrder = await this.readCategoryOrder();
+      const categoryIndex = categoryOrder.indexOf(name);
+
+      if (categoryIndex < 1) {
+        throw new Error(
+          `Категорию «${name}» нельзя переместить вверх в текущем порядке.`,
+        );
+      }
+
+      const expectedCategoryOrder = [...categoryOrder];
+      const previousCategory = expectedCategoryOrder[categoryIndex - 1];
+
+      if (previousCategory === undefined) {
+        throw new Error("Не удалось прочитать предыдущую категорию.");
+      }
+
+      expectedCategoryOrder[categoryIndex - 1] = name;
+      expectedCategoryOrder[categoryIndex] = previousCategory;
       await moveUp.click();
+      await expect(
+        this.categoryToggles,
+        `Категория «${name}» перемещена вверх в каталоге.`,
+      ).toContainText(expectedCategoryOrder);
       await expect(
         moveUp,
         `Категория «${name}» стала первой в каталоге.`,
@@ -147,7 +169,29 @@ export class CatalogListComponent {
         moveUp,
         `Товар «${name}» можно переместить вверх.`,
       ).toBeEnabled();
+      const productOrder = await this.readProductOrder();
+      const productIndex = productOrder.indexOf(name);
+
+      if (productIndex < 1) {
+        throw new Error(
+          `Товар «${name}» нельзя переместить вверх в текущем порядке.`,
+        );
+      }
+
+      const expectedProductOrder = [...productOrder];
+      const previousProduct = expectedProductOrder[productIndex - 1];
+
+      if (previousProduct === undefined) {
+        throw new Error("Не удалось прочитать предыдущий товар.");
+      }
+
+      expectedProductOrder[productIndex - 1] = name;
+      expectedProductOrder[productIndex] = previousProduct;
       await moveUp.click();
+      await expect(
+        this.productEditButtons,
+        `Товар «${name}» перемещён вверх в категории.`,
+      ).toContainText(expectedProductOrder);
       await expect(
         moveUp,
         `Товар «${name}» стал первым в категории.`,

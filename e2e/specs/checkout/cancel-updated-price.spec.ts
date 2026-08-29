@@ -34,12 +34,11 @@ import {
  * - Заказ не создаётся без подтверждения нового итога.
  */
 test("CHECKOUT-04: customer отменяет оформление после изменения цены", async ({
-  backOfficeAuth,
   checkout,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
-  menuManagement,
+  multiSession,
   orderHistory,
   publicMenu,
 }) => {
@@ -61,14 +60,19 @@ test("CHECKOUT-04: customer отменяет оформление после и�
   await publicMenu.product.selectModifier("Обычное молоко");
   await publicMenu.product.addToCart();
   await test.step("Подготовка: administrator авторизуется", async () => {
-    await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
-    await backOfficeAuth.form.signIn(e2eCredentials.administrator);
+    await multiSession.staff.auth.open(e2eEnvironment.backOfficeUrl);
+    await multiSession.staff.auth.form.signIn(e2eCredentials.administrator);
   });
-  await menuManagement.open();
-  await menuManagement.catalog.expandCategory("Кофе");
-  await menuManagement.productEditor.openForEditing("Капучино");
-  await menuManagement.productEditor.setPrice(ProductEditorSize.M, "300");
-  await menuManagement.productEditor.saveChanges("Капучино");
+  await multiSession.staff.menuManagement.open();
+  await multiSession.staff.menuManagement.catalog.expandCategory("Кофе");
+  await multiSession.staff.menuManagement.productEditor.openForEditing(
+    "Капучино",
+  );
+  await multiSession.staff.menuManagement.productEditor.setPrice(
+    ProductEditorSize.M,
+    "300",
+  );
+  await multiSession.staff.menuManagement.productEditor.saveChanges("Капучино");
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await checkout.cart.open();
   await checkout.cart.requestUpdatedTotalConfirmation();
