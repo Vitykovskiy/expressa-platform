@@ -24,5 +24,8 @@ const app = createApp(App);
 installPlugins(app);
 app.use(router);
 app.provide(apiClientKey, apiClient);
+
+await router.isReady();
+
 app.mount("#app");
 registerPwa();

@@ -64,9 +64,13 @@ export class OrderDetailsComponent {
   }
 
   async readSnapshot(): Promise<OrderSnapshot> {
+    await expect(
+      this.orderItems,
+      "В заказе показана ровно одна позиция.",
+    ).toHaveCount(1);
     const [item] = await this.orderItems.allInnerTexts();
 
-    if (item === undefined || (await this.orderItems.count()) !== 1) {
+    if (item === undefined) {
       throw new Error("Не удалось прочитать единственную позицию заказа.");
     }
 
@@ -287,7 +291,9 @@ export class OrderDetailsComponent {
     const heading = await this.orderTitle.innerText();
 
     if (!orderHeadingPattern.test(heading)) {
-      throw new Error("Заголовок заказа не содержит числовой номер.");
+      throw new Error(
+        "Заголовок заказа не содержит номер формата YYYYMMDD-NNN.",
+      );
     }
 
     const number = heading.replace("Заказ №", "");

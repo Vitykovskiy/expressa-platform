@@ -107,21 +107,13 @@ export class CartPanelComponent {
     readonly previousTotal: string;
     readonly newTotal: string;
   }> {
-    const totals = (await this.updatedTotals().innerText())
-      .split("\n")
-      .map((value) => value.trim())
-      .filter(Boolean);
-    const [previousLabel, previousTotal, newLabel, newTotal, ...rest] = totals;
+    const summary = this.orderSummary();
 
-    if (
-      previousLabel !== "Предыдущий итог" ||
-      previousTotal === undefined ||
-      newLabel !== "Новый итог" ||
-      newTotal === undefined ||
-      rest.length !== 0
-    ) {
-      throw new Error("Не удалось прочитать изменение итога заказа.");
-    }
+    await expect(summary, "Показана единственная сводка заказа.").toHaveCount(
+      1,
+    );
+    const previousTotal = await this.totalValue(summary, "Предыдущий итог");
+    const newTotal = await this.totalValue(summary, "Новый итог");
 
     return { previousTotal, newTotal };
   }
@@ -472,8 +464,23 @@ export class CartPanelComponent {
     });
   }
 
-  private updatedTotals(): Locator {
-    return this.page.getByLabel("Изменение итога заказа", { exact: true });
+  private orderSummary(): Locator {
+    return this.page
+      .getByRole("complementary", { name: "Сводка заказа", exact: true })
+      .filter({ visible: true });
+  }
+
+  private async totalValue(summary: Locator, label: string): Promise<string> {
+    const total = summary
+      .getByText(label, { exact: true })
+      .locator("..")
+      .getByText(/^\d{1,3}(?:\u00a0\d{3})*\u00a0₽$/u, { exact: true });
+
+    await expect(total, `Показан итог «${label}» в целых рублях.`).toHaveCount(
+      1,
+    );
+
+    return total.innerText();
   }
 
   private modifierList(modifiers: readonly string[]): Locator {
