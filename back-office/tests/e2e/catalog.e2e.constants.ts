@@ -6,7 +6,7 @@ export const catalogSecondCategoryName =
 export const catalogModifierGroupName = "Выберите молоко";
 export const catalogModifierOptionName = "Обычное молоко";
 export const catalogModifierSecondOptionName = "Овсяное молоко";
-export const catalogUpdatedMediumPrice = "28100";
+export const catalogUpdatedMediumPrice = "281";
 export const catalogProductNames = {
   editableDrink: "Латте с редактируемыми размерами",
   drinkOnlyS: "Эспрессо только S",

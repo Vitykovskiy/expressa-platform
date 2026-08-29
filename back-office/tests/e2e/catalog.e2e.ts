@@ -697,7 +697,7 @@ async function editProductSizes(
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "PATCH" &&
-        /\/api\/v1\/backoffice\/catalog\/products\/.+/.test(candidate.url()),
+        /\/api\/v2\/backoffice\/catalog\/products\/.+/.test(candidate.url()),
     ),
     dialog.getByRole("button", { name: "Сохранить изменения" }).click(),
   ]);
@@ -851,7 +851,7 @@ async function updateMediumPrice(page: CatalogPage): Promise<void> {
     page.waitForResponse(
       (candidate) =>
         candidate.request().method() === "PATCH" &&
-        /\/api\/v1\/backoffice\/catalog\/products\/.+/.test(candidate.url()),
+        /\/api\/v2\/backoffice\/catalog\/products\/.+/.test(candidate.url()),
     ),
     dialog.getByRole("button", { name: "Сохранить изменения" }).click(),
   ]);
