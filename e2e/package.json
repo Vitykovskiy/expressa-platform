@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "playwright test",
+    "e2e": "node tools/run-e2e-sequential.mjs",
     "e2e:boundaries": "node tools/check-e2e-boundaries.mjs",
-    "e2e:headed": "playwright test --headed",
+    "e2e:desktop": "playwright test --project=chromium",
+    "e2e:headed": "node tools/run-e2e-sequential.mjs --headed",
+    "e2e:mobile": "playwright test --project=mobile-chromium",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write --ignore-path .prettierignore --ignore-path .gitignore --no-error-on-unmatched-pattern \"{components,pages,fixtures,specs,support,tools,docs}/**/*.{ts,md}\" \"*.{ts,json,md}\"",

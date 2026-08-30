@@ -29,6 +29,11 @@ cp .env.example .env.e2e.local
 npm run e2e
 ```
 
+`npm run e2e` запускает полный набор последовательно: сначала проект
+`chromium` для desktop, затем `mobile-chromium` с эмуляцией `Pixel 5`. Оба
+прохода объединяются в один Playwright HTML report. Для диагностики одного
+проекта доступны `npm run e2e:desktop` и `npm run e2e:mobile`.
+
 `E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL` обязательны. Они принимают
 абсолютные HTTP(S)-адреса без учётных данных, query-параметров и fragment.
 Сквозные сценарии также используют телефоны и OTP для ролей administrator,
@@ -38,6 +43,8 @@ staff и customer; значения остаются в локальном фа�
 
 ```bash
 npm run e2e:headed
+npm run e2e:desktop
+npm run e2e:mobile
 npm run typecheck:e2e
 npm run lint
 npm run format:check

@@ -89,6 +89,9 @@ if b'"otp":"123456"' in sanitized or b'"otpNumeric":123456' in sanitized or b'+7
 if json.loads(sanitized)["amount"] != json.loads(source)["amount"] or json.loads(sanitized)["otpNumeric"] != 0:
     raise SystemExit(1)
 PY
+  validate_playwright_projects
+  validate_test_cases
+  (( ${#test_cases[@]} * ${#playwright_projects[@]} == 156 )) || fail 'E2E test pair count is invalid'
 }
 
 validate_metadata() {
@@ -232,15 +235,15 @@ PY
 write_suite_summary() {
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
   local total=0 passed=0 failed=0
-  local entry case_id status failed_case_ids=()
+  local entry case_id playwright_project status failed_case_ids=()
   for entry in "${report_entries[@]}"; do
-    IFS='|' read -r case_id status <<< "$entry"
+    IFS='|' read -r case_id playwright_project status <<< "$entry"
     (( total += 1 ))
     if [[ "$status" == passed ]]; then
       (( passed += 1 ))
     else
       (( failed += 1 ))
-      failed_case_ids+=("$case_id")
+      failed_case_ids+=("$playwright_project:$case_id")
     fi
   done
   {
@@ -269,9 +272,9 @@ publish_suite_directory() {
 }
 
 validate_playwright_blob() {
-  local blob_file="$1" expected_test_title="$2"
+  local blob_file="$1" expected_test_title="$2" expected_playwright_project="$3"
   [[ -f "$blob_file" && ! -L "$blob_file" ]] || return 1
-  python3 - "$blob_file" "$expected_test_title" <<'PY'
+  python3 - "$blob_file" "$expected_test_title" "$expected_playwright_project" <<'PY'
 import json
 import sys
 import zipfile
@@ -286,28 +289,30 @@ def test_titles(entries):
 with zipfile.ZipFile(sys.argv[1]) as archive:
     if "report.jsonl" not in archive.namelist():
         raise SystemExit(1)
+    project_names = []
     titles = []
     for line in archive.read("report.jsonl").splitlines():
         event = json.loads(line)
         if event.get("method") != "onProject":
             continue
+        project_names.append(event["params"]["project"]["name"])
         for suite in event["params"]["project"]["suites"]:
             titles.extend(test_titles(suite["entries"]))
-    if titles != [sys.argv[2]]:
+    if project_names != [sys.argv[3]] or titles != [sys.argv[2]]:
         raise SystemExit(1)
 PY
 }
 
 collect_case_blob() {
-  local case_id="$1" test_title="$2" source_directory="$E2E_ARTIFACT_DIRECTORY/blob" blob_files=()
+  local case_id="$1" test_title="$2" playwright_project="$3" source_directory="$E2E_ARTIFACT_DIRECTORY/blob" blob_files=()
   [[ -n "$suite_directory" && -d "$source_directory" && ! -L "$source_directory" ]] || return 1
   if find "$source_directory" -type l -print -quit | grep --quiet .; then
     return 1
   fi
   mapfile -t blob_files < <(find "$source_directory" -mindepth 1 -maxdepth 1 -type f -name '*.zip' -print | sort)
   (( ${#blob_files[@]} == 1 )) || return 1
-  validate_playwright_blob "${blob_files[0]}" "$test_title" || return 1
-  cp -- "${blob_files[0]}" "$suite_directory/blobs/$case_id.zip"
+  validate_playwright_blob "${blob_files[0]}" "$test_title" "$playwright_project" || return 1
+  cp -- "${blob_files[0]}" "$suite_directory/blobs/$case_id--$playwright_project.zip"
 }
 
 validate_suite_blobs() {
@@ -315,22 +320,24 @@ validate_suite_blobs() {
   if find "$suite_directory/blobs" -type l -print -quit | grep --quiet .; then
     return 1
   fi
-  local record case_id _ profile scenario test_title matching_entries blob_files=()
+  local record case_id _ profile scenario test_title playwright_project matching_entries blob_files=()
   for record in "${test_cases[@]}"; do
     IFS='|' read -r case_id profile scenario test_title <<< "$record"
-    matching_entries=0
-    local entry recorded_case_id status
-    for entry in "${report_entries[@]}"; do
-      IFS='|' read -r recorded_case_id status <<< "$entry"
-      [[ "$recorded_case_id" == "$case_id" ]] || continue
-      [[ "$status" == passed || "$status" == failed ]] || return 1
-      (( matching_entries += 1 ))
+    for playwright_project in "${playwright_projects[@]}"; do
+      matching_entries=0
+      local entry recorded_case_id recorded_playwright_project status
+      for entry in "${report_entries[@]}"; do
+        IFS='|' read -r recorded_case_id recorded_playwright_project status <<< "$entry"
+        [[ "$recorded_case_id" == "$case_id" && "$recorded_playwright_project" == "$playwright_project" ]] || continue
+        [[ "$status" == passed || "$status" == failed ]] || return 1
+        (( matching_entries += 1 ))
+      done
+      (( matching_entries == 1 )) || return 1
+      validate_playwright_blob "$suite_directory/blobs/$case_id--$playwright_project.zip" "$test_title" "$playwright_project" || return 1
     done
-    (( matching_entries == 1 )) || return 1
-    validate_playwright_blob "$suite_directory/blobs/$case_id.zip" "$test_title" || return 1
   done
   mapfile -t blob_files < <(find "$suite_directory/blobs" -mindepth 1 -maxdepth 1 -type f -name '*.zip' -print | sort)
-  (( ${#blob_files[@]} == ${#test_cases[@]} ))
+  (( ${#blob_files[@]} == ${#test_cases[@]} * ${#playwright_projects[@]} ))
 }
 
 merge_suite_reports() {
@@ -522,12 +529,12 @@ prepare_runtime_environment() {
 }
 
 run_suite() {
-  local test_title="$1" escaped_test_title
+  local test_title="$1" playwright_project="$2" escaped_test_title
   escaped_test_title="$(printf '%s' "$test_title" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
   compose run --rm \
     -e E2E_SAFE_REPORT=1 \
     -e PLAYWRIGHT_BLOB_OUTPUT_DIR=/artifacts/blob \
-    e2e npm run e2e -- --reporter=blob --grep "${escaped_test_title}$" > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
+    e2e npm exec -- playwright test --project "$playwright_project" --reporter=blob --grep "${escaped_test_title}$" > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
 }
 
 run_readiness_step() {
@@ -555,7 +562,7 @@ seed_catalog_for_scenario() {
 }
 
 run_case() {
-  local case_id="$1" profile="$2" scenario="$3" test_title="$4" case_number="$5"
+  local case_id="$1" profile="$2" scenario="$3" test_title="$4" playwright_project="$5" case_number="$6"
   project="expressa-e2e-$E2E_RUN_ID-$case_number"
   [[ "$project" =~ ^expressa-e2e-[1-9][0-9]*-[1-9][0-9]*$ ]] || fail 'compose project is invalid'
   E2E_PROFILE="$profile"
@@ -587,7 +594,7 @@ run_case() {
     ! run_readiness_step 'front-office health' wait_for_health front ||
     ! run_readiness_step 'back-office health' wait_for_health back ||
     ! run_readiness_step 'gateway health' wait_for_health gateway; then
-    suite_diagnostic="Test: $case_id. Stage: $stage. Playwright blob is unavailable."
+    suite_diagnostic="Test: $playwright_project:$case_id. Stage: $stage. Playwright blob is unavailable."
     cleanup_runtime || return 1
     project=''
     run_directory=''
@@ -597,14 +604,14 @@ run_case() {
 
   stage="$case_id-playwright"
   local case_status=passed blob_collected=1
-  if ! run_suite "$test_title"; then
+  if ! run_suite "$test_title" "$playwright_project"; then
     case_status=failed
   fi
-  if ! collect_case_blob "$case_id" "$test_title"; then
+  if ! collect_case_blob "$case_id" "$test_title" "$playwright_project"; then
     blob_collected=0
-    suite_diagnostic="Test: $case_id. Stage: $stage. Playwright blob is unavailable."
+    suite_diagnostic="Test: $playwright_project:$case_id. Stage: $stage. Playwright blob is unavailable."
   else
-    report_entries+=("$case_id|$case_status")
+    report_entries+=("$case_id|$playwright_project|$case_status")
   fi
   if ! cleanup_runtime; then
     return 1
@@ -696,6 +703,13 @@ test_cases=(
   'JOURNEY-05|mutating|customer-new|JOURNEY-05: публикация, заказ, выдача и история'
 )
 
+playwright_projects=(chromium mobile-chromium)
+
+validate_playwright_projects() {
+  (( ${#playwright_projects[@]} == 2 )) || fail 'E2E Playwright project count is invalid'
+  [[ "${playwright_projects[0]}" == chromium && "${playwright_projects[1]}" == mobile-chromium ]] || fail 'E2E Playwright project order is invalid'
+}
+
 validate_test_cases() {
   local index other_index record case_id profile scenario test_title other_record other_case_id other_test_title
   for (( index = 0; index < ${#test_cases[@]}; index += 1 )); do
@@ -721,18 +735,21 @@ run() {
   prepare_suite_report
   prepare_runtime_environment
   validate_test_cases
-  local record case_id profile scenario test_title case_number=0 suite_failed=0
-  for record in "${test_cases[@]}"; do
-    IFS='|' read -r case_id profile scenario test_title <<< "$record"
-    (( case_number += 1 ))
-    if ! run_case "$case_id" "$profile" "$scenario" "$test_title" "$case_number"; then
-      suite_failed=1
-      if (( cleanup_failure != 0 )); then
-        suite_diagnostic="Test: $case_id. Stage: $stage. Cleanup failed; suite stopped."
-        finalize_suite_report
-        return 1
+  validate_playwright_projects
+  local record case_id profile scenario test_title playwright_project case_number=0 suite_failed=0
+  for playwright_project in "${playwright_projects[@]}"; do
+    for record in "${test_cases[@]}"; do
+      IFS='|' read -r case_id profile scenario test_title <<< "$record"
+      (( case_number += 1 ))
+      if ! run_case "$case_id" "$profile" "$scenario" "$test_title" "$playwright_project" "$case_number"; then
+        suite_failed=1
+        if (( cleanup_failure != 0 )); then
+          suite_diagnostic="Test: $playwright_project:$case_id. Stage: $stage. Cleanup failed; suite stopped."
+          finalize_suite_report
+          return 1
+        fi
       fi
-    fi
+    done
   done
   finalize_suite_report
   [[ -z "$suite_diagnostic" && "$suite_failed" == 0 ]]

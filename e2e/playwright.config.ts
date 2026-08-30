@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 import { getE2eEnvironment } from "@support/config/e2e-environment";
 
@@ -103,6 +103,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: { browserName: "chromium" },
+    },
+    {
+      name: "mobile-chromium",
+      use: { ...devices["Pixel 5"], browserName: "chromium" },
     },
   ],
 });
