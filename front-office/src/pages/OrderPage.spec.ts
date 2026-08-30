@@ -54,6 +54,21 @@ describe("OrderPage", () => {
     expect(wrapper.text()).not.toContain("Капучино");
   });
 
+  it("показывает каноническую недоступность для отсутствующего заказа", async () => {
+    const { wrapper } = await mountOrder(
+      {
+        code: "ORDER_NOT_FOUND",
+        details: null,
+        message: "Заказ не найден.",
+        requestId: null,
+      },
+      404,
+    );
+
+    expect(wrapper.text()).toContain("Заказ недоступен.");
+    expect(wrapper.text()).not.toContain("Заказ не найден.");
+  });
+
   it("после подтверждения повтора заменяет корзину и открывает её", async () => {
     const { cart, router, wrapper } = await mountOrder(
       { ...orderResponse, stage: "ISSUED" },

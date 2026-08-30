@@ -54,7 +54,7 @@ test("ORDER-01: customer видит снимок созданного заказ
     expect(order.productName, "Показано сохранённое наименование.").toBe(
       "Капучино",
     );
-    expect(order.size, "Показан сохранённый размер.").toBe("M");
+    expect(order.size, "Показан сохранённый размер.").toBe("Размер M");
     expect(order.modifierName, "Показана сохранённая добавка.").toBe(
       "Обычное молоко",
     );

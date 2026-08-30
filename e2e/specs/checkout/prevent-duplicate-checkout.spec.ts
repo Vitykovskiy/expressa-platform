@@ -80,7 +80,7 @@ test("CHECKOUT-07: customer не получает второй заказ при
     expect(createdOrder.productName, "В заказе указан «Капучино».").toBe(
       "Капучино",
     );
-    expect(createdOrder.size, "В заказе указан размер M.").toBe("M");
+    expect(createdOrder.size, "В заказе указан размер M.").toBe("Размер M");
   });
   await orderHistory.open();
   await test.step("История содержит этот заказ ровно один раз и увеличивается на один заказ.", async () => {

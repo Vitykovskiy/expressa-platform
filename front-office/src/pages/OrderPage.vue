@@ -107,7 +107,7 @@ import {
   createPublicMenuApi,
   type PublicMenuProduct,
 } from "@/shared/api/public-menu.api";
-import { apiClientKey } from "@/shared/api/client";
+import { ApiError, apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
 import { createPushApi } from "@/shared/api/push.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
@@ -180,7 +180,11 @@ async function loadOrder(): Promise<void> {
   } catch (error) {
     order.value = null;
     errorMessage.value =
-      error instanceof Error ? error.message : orderPageMessages.loadFailed;
+      error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
+        ? orderPageMessages.unavailable
+        : error instanceof Error
+          ? error.message
+          : orderPageMessages.loadFailed;
   } finally {
     loading.value = false;
     syncPolling();
