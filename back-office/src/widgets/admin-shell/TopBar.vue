@@ -1,6 +1,6 @@
 <template>
   <header class="top-bar">
-    <h2 class="top-bar-title">{{ title }}</h2>
+    <h1 class="top-bar-title">{{ title }}</h1>
     <AdminButton
       v-if="slots.action"
       :aria-label="actionLabel"

@@ -32,7 +32,7 @@ export class PhoneVerificationComponent {
     });
     this.errorMessage = page.getByRole("alert");
     this.authenticatedAccountButton = page.getByRole("button", {
-      name: /Выйти/,
+      name: /Выйти$/u,
     });
   }
 

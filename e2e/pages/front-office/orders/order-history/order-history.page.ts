@@ -13,8 +13,7 @@ export class OrderHistoryPage {
   constructor(private readonly page: Page) {
     this.history = new OrderHistoryListComponent(page);
     this.historyNavigation = page.getByRole("button", {
-      name: "История",
-      exact: true,
+      name: /^(История|\+\d{11}: история заказов)$/u,
     });
     this.historyHeading = page.getByRole("heading", {
       name: "История",

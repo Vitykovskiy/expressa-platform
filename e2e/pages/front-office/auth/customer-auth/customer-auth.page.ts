@@ -11,14 +11,16 @@ import type { Locator, Page } from "@playwright/test";
 export class CustomerAuthPage {
   public readonly phoneVerification: PhoneVerificationComponent;
   public readonly profile: GuestCheckoutFormComponent;
-  private readonly accountButton: Locator;
+  private readonly signOutButton: Locator;
   private readonly signInButton: Locator;
   private readonly publicInterface: Locator;
 
   constructor(private readonly page: Page) {
     this.phoneVerification = new PhoneVerificationComponent(page);
     this.profile = new GuestCheckoutFormComponent(page);
-    this.accountButton = page.getByRole("button", { name: /Выйти/ });
+    this.signOutButton = page.getByRole("button", {
+      name: /Выйти$/u,
+    });
     this.signInButton = page.getByRole("button", {
       name: "Подтвердить телефон",
       exact: true,
@@ -54,10 +56,10 @@ export class CustomerAuthPage {
   async signOut(): Promise<void> {
     await test.step("Выйти из учётной записи клиента", async () => {
       await expect(
-        this.accountButton,
+        this.signOutButton,
         "Кнопка выхода из учётной записи доступна.",
       ).toBeEnabled();
-      await this.accountButton.click();
+      await this.signOutButton.click();
       await this.assertSession(CustomerSessionState.GUEST);
     });
   }
@@ -65,7 +67,7 @@ export class CustomerAuthPage {
   async assertSession(state: CustomerSessionState): Promise<void> {
     if (state === CustomerSessionState.AUTHENTICATED) {
       await expect(
-        this.accountButton,
+        this.signOutButton,
         "Клиент авторизован в публичном интерфейсе.",
       ).toBeVisible();
       return;
@@ -78,17 +80,19 @@ export class CustomerAuthPage {
   }
 
   async isAuthenticatedAccountVisible(phone: string): Promise<boolean> {
-    return this.accountButtonFor(phone).isVisible();
+    return this.authenticatedAccountControl(phone).isVisible();
   }
 
   async isPublicInterfaceVisible(): Promise<boolean> {
     return this.publicInterface.isVisible();
   }
 
-  private accountButtonFor(phone: string): Locator {
+  private authenticatedAccountControl(phone: string): Locator {
+    const normalizedPhone = this.normalizeRussianPhone(phone);
     return this.page.getByRole("button", {
       name: new RegExp(
-        `${this.escapeRegularExpression(this.normalizeRussianPhone(phone))}.*Выйти`,
+        `^${this.escapeRegularExpression(normalizedPhone)}(?:: история заказов| Выйти)$`,
+        "u",
       ),
     });
   }

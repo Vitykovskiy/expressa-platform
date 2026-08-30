@@ -169,7 +169,7 @@ const navigationItems = [
 const accountControl = computed(() => {
   if (props.isAuthenticated) {
     return {
-      ariaLabel: "История заказов",
+      ariaLabel: `${props.accountLabel}: история заказов`,
       destination: "orders" as const,
       mobileIcon: History,
       sidebarIcon: Phone,
