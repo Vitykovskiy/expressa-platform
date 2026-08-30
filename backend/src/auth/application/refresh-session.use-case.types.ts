@@ -1,4 +1,4 @@
-import type { AuthUser } from './auth-repository.types';
+import type { AuthUser } from "./auth-repository.types";
 
 export type RefreshSessionConfiguration = {
   accessTokenAudience: string;

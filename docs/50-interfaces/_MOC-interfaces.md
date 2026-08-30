@@ -5,6 +5,7 @@ last_verified: 2026-08-15
 sources:
   - ../../backend/openapi/openapi.json
 ---
+
 # Контракты и интерфейсы
 
 HTTP: [соглашения](HTTP-API-conventions.md), [ошибки и идемпотентность](Error-model-and-idempotency.md),

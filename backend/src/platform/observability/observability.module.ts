@@ -1,11 +1,11 @@
-import { Controller, Get, Header, Module } from '@nestjs/common';
-import { DatabaseModule } from '../database/database.module';
-import { DatabaseService } from '../database/database.service';
-import { ObservabilityLogger } from './observability-logger.service';
-import { ObservabilityMetrics } from './observability-metrics.service';
-import { RequestObservabilityMiddleware } from './request-observability.middleware';
+import { Controller, Get, Header, Module } from "@nestjs/common";
+import { DatabaseModule } from "../database/database.module";
+import { DatabaseService } from "../database/database.service";
+import { ObservabilityLogger } from "./observability-logger.service";
+import { ObservabilityMetrics } from "./observability-metrics.service";
+import { RequestObservabilityMiddleware } from "./request-observability.middleware";
 
-@Controller('metrics')
+@Controller("metrics")
 export class MetricsController {
   constructor(
     private readonly database: DatabaseService,
@@ -13,10 +13,10 @@ export class MetricsController {
   ) {}
 
   @Get()
-  @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+  @Header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
   async getMetrics(): Promise<string> {
     try {
-      await this.database.connectionPool.query('SELECT 1');
+      await this.database.connectionPool.query("SELECT 1");
       this.metrics.recordBackendReadiness(true);
     } catch {
       this.metrics.recordBackendReadiness(false);

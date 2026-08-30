@@ -1,5 +1,12 @@
-import { createParamDecorator, type ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import type { AuthenticatedRequest, CurrentAuth as CurrentAuthData } from './current-auth.decorator.types';
+import {
+  createParamDecorator,
+  type ExecutionContext,
+  UnauthorizedException,
+} from "@nestjs/common";
+import type {
+  AuthenticatedRequest,
+  CurrentAuth as CurrentAuthData,
+} from "./current-auth.decorator.types";
 
 export const CurrentAuth = createParamDecorator(
   (_data: unknown, context: ExecutionContext): CurrentAuthData => {
@@ -15,10 +22,10 @@ export const CurrentAuth = createParamDecorator(
 
 function isAuthenticatedRequest(value: unknown): value is AuthenticatedRequest {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'headers' in value &&
-    typeof value.headers === 'object' &&
+    "headers" in value &&
+    typeof value.headers === "object" &&
     value.headers !== null
   );
 }

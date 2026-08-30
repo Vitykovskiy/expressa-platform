@@ -4,22 +4,28 @@ import {
   randomBytes,
   randomUUID,
   timingSafeEqual,
-} from 'node:crypto';
+} from "node:crypto";
 import type {
   AccessTokenClaims,
   AccessTokenIssue,
   AccessTokenVerification,
   AuthCrypto,
-} from '../application/auth-crypto.types';
-import { jwtHeader, refreshTokenByteLength } from './node-auth-crypto.adapter.constants';
-import type { JwtHeader, NodeAuthCryptoConfiguration } from './node-auth-crypto.adapter.types';
+} from "../application/auth-crypto.types";
+import {
+  jwtHeader,
+  refreshTokenByteLength,
+} from "./node-auth-crypto.adapter.constants";
+import type {
+  JwtHeader,
+  NodeAuthCryptoConfiguration,
+} from "./node-auth-crypto.adapter.types";
 
 export class NodeAuthCryptoAdapter implements AuthCrypto {
   constructor(private readonly configuration: NodeAuthCryptoConfiguration) {}
 
   createAccessToken(input: AccessTokenIssue): string {
     if (!isValidAccessTokenIssue(input)) {
-      throw new Error('Invalid access token input.');
+      throw new Error("Invalid access token input.");
     }
 
     const iat = Math.floor(input.now.getTime() / 1000);
@@ -39,20 +45,20 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
   }
 
   createOtpHash(challengeId: string, phone: string, code: string): string {
-    return createHmac('sha256', this.configuration.otpPepper)
+    return createHmac("sha256", this.configuration.otpPepper)
       .update(`${challengeId}|${phone}|${code}`)
-      .digest('base64url');
+      .digest("base64url");
   }
 
   generateRefreshSecret(): string {
-    return randomBytes(refreshTokenByteLength).toString('base64url');
+    return randomBytes(refreshTokenByteLength).toString("base64url");
   }
 
   generateSessionId(): string {
     const sessionId = randomUUID();
 
     if (!isUuid(sessionId)) {
-      throw new Error('Could not generate session ID.');
+      throw new Error("Could not generate session ID.");
     }
 
     return sessionId;
@@ -63,7 +69,7 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
       return null;
     }
 
-    return createHash('sha256').update(token).digest('hex');
+    return createHash("sha256").update(token).digest("hex");
   }
 
   verifyAccessToken(
@@ -74,7 +80,7 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
       return null;
     }
 
-    const parts = token.split('.');
+    const parts = token.split(".");
     const [encodedHeader, encodedPayload, signature] = parts;
     if (
       parts.length !== 3 ||
@@ -123,28 +129,38 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
     }
 
     const actualHash = this.createOtpHash(challengeId, phone, code);
-    const actual = Buffer.from(actualHash, 'base64url');
-    const expected = Buffer.from(expectedHash, 'base64url');
+    const actual = Buffer.from(actualHash, "base64url");
+    const expected = Buffer.from(expectedHash, "base64url");
 
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
+    return (
+      actual.length === expected.length && timingSafeEqual(actual, expected)
+    );
   }
 
   private createJwtSignature(signedContent: string): string {
-    return createHmac('sha256', this.configuration.jwtSecret)
+    return createHmac("sha256", this.configuration.jwtSecret)
       .update(signedContent)
-      .digest('base64url');
+      .digest("base64url");
   }
 
-  private matchesJwtSignature(signedContent: string, signature: string): boolean {
-    const actual = Buffer.from(this.createJwtSignature(signedContent), 'base64url');
-    const expected = Buffer.from(signature, 'base64url');
+  private matchesJwtSignature(
+    signedContent: string,
+    signature: string,
+  ): boolean {
+    const actual = Buffer.from(
+      this.createJwtSignature(signedContent),
+      "base64url",
+    );
+    const expected = Buffer.from(signature, "base64url");
 
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
+    return (
+      actual.length === expected.length && timingSafeEqual(actual, expected)
+    );
   }
 }
 
 function encodeBase64Url(value: string): string {
-  return Buffer.from(value).toString('base64url');
+  return Buffer.from(value).toString("base64url");
 }
 
 function isAccessTokenClaims(value: unknown): value is AccessTokenClaims {
@@ -165,34 +181,34 @@ function isBase64Url(value: string): boolean {
 }
 
 function isJwtHeader(value: unknown): value is JwtHeader {
-  return isRecord(value) && value.alg === 'HS256' && value.typ === 'JWT';
+  return isRecord(value) && value.alg === "HS256" && value.typ === "JWT";
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
+  return typeof value === "string" && value.length > 0;
 }
 
 function isUnixTimestamp(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 function isRefreshToken(value: string): boolean {
-  const [sessionId, secret] = value.split('.');
+  const [sessionId, secret] = value.split(".");
   if (
     sessionId === undefined ||
     secret === undefined ||
-    value.split('.').length !== 2 ||
+    value.split(".").length !== 2 ||
     !isUuid(sessionId) ||
     !isBase64Url(secret)
   ) {
     return false;
   }
 
-  return Buffer.from(secret, 'base64url').length === refreshTokenByteLength;
+  return Buffer.from(secret, "base64url").length === refreshTokenByteLength;
 }
 
 function isUuid(value: string): boolean {
@@ -215,7 +231,9 @@ function isValidAccessTokenIssue(value: AccessTokenIssue): boolean {
   );
 }
 
-function isValidAccessTokenVerification(value: AccessTokenVerification): boolean {
+function isValidAccessTokenVerification(
+  value: AccessTokenVerification,
+): boolean {
   return (
     isNonEmptyString(value.audience) &&
     isNonEmptyString(value.issuer) &&
@@ -226,7 +244,7 @@ function isValidAccessTokenVerification(value: AccessTokenVerification): boolean
 
 function parseJson(value: string): unknown {
   try {
-    return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    return JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
   } catch {
     return null;
   }

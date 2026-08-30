@@ -1,7 +1,7 @@
-import { SecureOtpCodeGenerator } from './secure-otp-code.generator';
+import { SecureOtpCodeGenerator } from "./secure-otp-code.generator";
 
-describe('SecureOtpCodeGenerator', () => {
-  it('выдаёт шестизначный числовой код', () => {
+describe("SecureOtpCodeGenerator", () => {
+  it("выдаёт шестизначный числовой код", () => {
     const generator = new SecureOtpCodeGenerator();
 
     for (let index = 0; index < 100; index += 1) {

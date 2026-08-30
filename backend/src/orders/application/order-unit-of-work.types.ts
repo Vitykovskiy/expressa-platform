@@ -1,4 +1,4 @@
-import type { OrderRequest, OrderSnapshotItem } from '../domain/order.types';
+import type { OrderRequest, OrderSnapshotItem } from "../domain/order.types";
 
 export type CreateOrderCommand = {
   customerId: string;
@@ -10,7 +10,7 @@ export type CreateOrderCommand = {
 export type StoredOrder = {
   id: string;
   number: string;
-  stage: 'CREATED';
+  stage: "CREATED";
   total: number;
   items: readonly OrderSnapshotItem[];
 };

@@ -6,6 +6,7 @@ sources:
   - ../../backend/openapi/openapi.json
   - ../../backend/src/orders/transport/orders.controller.ts
 ---
+
 # API заказов
 
 Customer использует `POST /api/v2/orders`, `GET /api/v2/orders` и

@@ -10,7 +10,11 @@ source_mode: normative
 sources: [Expressa_MVP_Техническое_задание.md]
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
-related: ["[../00-meta/Update-protocol](../00-meta/Update-protocol.md)", "[../README](../README.md)"]
+related:
+  [
+    "[../00-meta/Update-protocol](../00-meta/Update-protocol.md)",
+    "[../README](../README.md)",
+  ]
 ---
 
 # Журнал документации

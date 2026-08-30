@@ -1,8 +1,8 @@
-import type { AuthCrypto } from './auth-crypto.types';
-import type { AuthRepository } from './auth-repository.types';
-import type { Clock } from './clock.types';
-import { AccessDeniedError } from '../domain/auth.errors';
-import type { RefreshTokenParts } from './logout.use-case.types';
+import type { AuthCrypto } from "./auth-crypto.types";
+import type { AuthRepository } from "./auth-repository.types";
+import type { Clock } from "./clock.types";
+import { AccessDeniedError } from "../domain/auth.errors";
+import type { RefreshTokenParts } from "./logout.use-case.types";
 
 export class LogoutUseCase {
   constructor(
@@ -28,7 +28,7 @@ export class LogoutUseCase {
 }
 
 function parseRefreshToken(value: string): RefreshTokenParts {
-  const parts = value.split('.');
+  const parts = value.split(".");
   const [sessionId, secret] = parts;
 
   if (
@@ -36,7 +36,7 @@ function parseRefreshToken(value: string): RefreshTokenParts {
     sessionId === undefined ||
     secret === undefined ||
     !isUuid(sessionId) ||
-    secret === ''
+    secret === ""
   ) {
     throw new AccessDeniedError();
   }

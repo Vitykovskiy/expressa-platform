@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import type { Pool, PoolClient } from 'pg';
+import { createHash } from "node:crypto";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import type { Pool, PoolClient } from "pg";
 
 const migrationFilePattern = /^\d{4}_[a-z0-9_]+\.sql$/;
 
@@ -25,11 +25,11 @@ async function readMigrations(directory: string): Promise<Migration[]> {
 
   return Promise.all(
     names.map(async (name) => {
-      const sql = await readFile(join(directory, name), 'utf8');
+      const sql = await readFile(join(directory, name), "utf8");
 
       return {
         name,
-        checksum: createHash('sha256').update(sql).digest('hex'),
+        checksum: createHash("sha256").update(sql).digest("hex"),
         sql,
       };
     }),
@@ -50,17 +50,17 @@ async function applyMigration(
   client: PoolClient,
   migration: Migration,
 ): Promise<void> {
-  await client.query('BEGIN');
+  await client.query("BEGIN");
 
   try {
     await client.query(migration.sql);
     await client.query(
-      'INSERT INTO schema_migrations (name, checksum) VALUES ($1, $2)',
+      "INSERT INTO schema_migrations (name, checksum) VALUES ($1, $2)",
       [migration.name, migration.checksum],
     );
-    await client.query('COMMIT');
+    await client.query("COMMIT");
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   }
 }
@@ -75,10 +75,13 @@ export async function migrateDatabase(
     await ensureMigrationTable(client);
 
     const appliedResult = await client.query<AppliedMigration>(
-      'SELECT name, checksum FROM schema_migrations',
+      "SELECT name, checksum FROM schema_migrations",
     );
     const appliedMigrations = new Map(
-      appliedResult.rows.map((migration) => [migration.name, migration.checksum]),
+      appliedResult.rows.map((migration) => [
+        migration.name,
+        migration.checksum,
+      ]),
     );
 
     for (const migration of await readMigrations(migrationsDirectory)) {

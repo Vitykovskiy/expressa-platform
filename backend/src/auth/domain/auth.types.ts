@@ -1,4 +1,4 @@
-import type { rolePolicies, userRoles } from './auth.constants';
+import type { rolePolicies, userRoles } from "./auth.constants";
 
 export type UserRole = (typeof userRoles)[number];
 

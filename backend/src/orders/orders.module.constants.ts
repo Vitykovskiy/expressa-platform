@@ -1,4 +1,6 @@
-export const orderUnitOfWorkPort = Symbol('orderUnitOfWorkPort');
-export const orderReadRepositoryPort = Symbol('orderReadRepositoryPort');
-export const orderTransitionUnitOfWorkPort = Symbol('orderTransitionUnitOfWorkPort');
-export const orderMetricsPort = Symbol('orderMetricsPort');
+export const orderUnitOfWorkPort = Symbol("orderUnitOfWorkPort");
+export const orderReadRepositoryPort = Symbol("orderReadRepositoryPort");
+export const orderTransitionUnitOfWorkPort = Symbol(
+  "orderTransitionUnitOfWorkPort",
+);
+export const orderMetricsPort = Symbol("orderMetricsPort");

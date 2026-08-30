@@ -1,4 +1,5 @@
-export type OrderStageDto = 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'ISSUED';
+export type OrderStageDto =
+  "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "ISSUED";
 
 export type OrderModifierDto = {
   modifierOptionId: string;
@@ -10,7 +11,7 @@ export type OrderItemDto = {
   productId: string;
   variantId: string | null;
   productName: string;
-  size: 'S' | 'M' | 'L' | null;
+  size: "S" | "M" | "L" | null;
   quantity: number;
   unitTotal: number;
   lineTotal: number;

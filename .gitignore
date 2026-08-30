@@ -1,2 +1,3 @@
 .codex/
 deploy/stand-urls.env
+node_modules/

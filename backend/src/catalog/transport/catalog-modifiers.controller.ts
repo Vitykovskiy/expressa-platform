@@ -62,7 +62,10 @@ import { validationError } from "./catalog-validation-error";
 @ApiBearerAuth()
 @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ApiHttpErrorDto })
 @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ApiHttpErrorDto })
-@ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ApiHttpErrorDto })
+@ApiResponse({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  type: ApiHttpErrorDto,
+})
 export class CatalogModifiersController {
   constructor(private readonly manageModifiers: ManageModifiersUseCase) {}
   @Post()
@@ -254,10 +257,38 @@ function assertGroup(value: CreateModifierGroupDto): void {
     ]);
   if (typeof value.isActive !== "boolean")
     throw validationError([{ path: "isActive", reason: "Must be a boolean" }]);
-  if (!Array.isArray(value.options)) throw validationError([{ path: "options", reason: "Must be an array" }]);
-  value.options.forEach((option, index) => assertAggregateOption(option, index));
+  if (!Array.isArray(value.options))
+    throw validationError([{ path: "options", reason: "Must be an array" }]);
+  value.options.forEach((option, index) =>
+    assertAggregateOption(option, index),
+  );
 }
-function assertAggregateOption(value: { id?: unknown } & CreateModifierOptionDto, index: number): void { try { assertOption(value); } catch (error) { if (error instanceof HttpException) { const response = error.getResponse() as { details?: { fields?: { path: string; reason: string }[] } }; const field = response.details?.fields?.[0]; throw validationError([{ path: `options.${index}.${field?.path ?? "value"}`, reason: field?.reason ?? "Invalid option" }]); } throw error; } if (value.id !== undefined && !isUuid(value.id)) throw validationError([{ path: `options.${index}.id`, reason: "Must be a UUID" }]); }
+function assertAggregateOption(
+  value: { id?: unknown } & CreateModifierOptionDto,
+  index: number,
+): void {
+  try {
+    assertOption(value);
+  } catch (error) {
+    if (error instanceof HttpException) {
+      const response = error.getResponse() as {
+        details?: { fields?: { path: string; reason: string }[] };
+      };
+      const field = response.details?.fields?.[0];
+      throw validationError([
+        {
+          path: `options.${index}.${field?.path ?? "value"}`,
+          reason: field?.reason ?? "Invalid option",
+        },
+      ]);
+    }
+    throw error;
+  }
+  if (value.id !== undefined && !isUuid(value.id))
+    throw validationError([
+      { path: `options.${index}.id`, reason: "Must be a UUID" },
+    ]);
+}
 function assertOption(value: CreateModifierOptionDto): void {
   if (typeof value?.name !== "string" || value.name.trim() === "")
     throw validationError([

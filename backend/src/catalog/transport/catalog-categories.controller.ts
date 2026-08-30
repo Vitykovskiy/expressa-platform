@@ -55,7 +55,10 @@ import type {
 @ApiBearerAuth()
 @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ApiHttpErrorDto })
 @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ApiHttpErrorDto })
-@ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ApiHttpErrorDto })
+@ApiResponse({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  type: ApiHttpErrorDto,
+})
 export class CatalogCategoriesController {
   constructor(private readonly manageCategories: ManageCategoriesUseCase) {}
 

@@ -1,23 +1,23 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 import {
   modifierSelectionTypes,
   productSizes,
   productTypes,
-} from '../domain/catalog.constants';
+} from "../domain/catalog.constants";
 import type {
   PublicMenuModifierSelectionType,
   PublicMenuProductSize,
   PublicMenuProductType,
-} from './public-menu.dto.types';
+} from "./public-menu.dto.types";
 
 export class PublicMenuOptionDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id!: string;
 
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
   priceDelta!: number;
 
   @ApiProperty()
@@ -28,7 +28,7 @@ export class PublicMenuOptionDto {
 }
 
 export class PublicMenuModifierGroupDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id!: string;
 
   @ApiProperty()
@@ -37,10 +37,10 @@ export class PublicMenuModifierGroupDto {
   @ApiProperty({ enum: modifierSelectionTypes })
   selectionType!: PublicMenuModifierSelectionType;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
+  @ApiProperty({ format: "int32", type: "integer" })
   minSelect!: number;
 
-  @ApiProperty({ format: 'int32', type: 'integer' })
+  @ApiProperty({ format: "int32", type: "integer" })
   maxSelect!: number;
 
   @ApiProperty({ isArray: true, type: () => PublicMenuOptionDto })
@@ -48,13 +48,13 @@ export class PublicMenuModifierGroupDto {
 }
 
 export class PublicMenuVariantDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id!: string;
 
   @ApiProperty({ enum: productSizes })
   size!: PublicMenuProductSize;
 
-  @ApiProperty({ format: 'int32', minimum: 0, type: 'integer' })
+  @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
   price!: number;
 
   @ApiProperty()
@@ -62,7 +62,7 @@ export class PublicMenuVariantDto {
 }
 
 export class PublicMenuProductDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id!: string;
 
   @ApiProperty({ enum: productTypes })
@@ -74,7 +74,7 @@ export class PublicMenuProductDto {
   @ApiProperty()
   description!: string;
 
-  @ApiProperty({ format: 'int32', minimum: 0, nullable: true, type: 'integer' })
+  @ApiProperty({ format: "int32", minimum: 0, nullable: true, type: "integer" })
   price!: number | null;
 
   @ApiProperty()
@@ -88,7 +88,7 @@ export class PublicMenuProductDto {
 }
 
 export class PublicMenuCategoryDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id!: string;
 
   @ApiProperty()

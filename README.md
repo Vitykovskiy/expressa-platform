@@ -22,7 +22,7 @@ expressa/
 ├── deploy/           # конфигурация окружений и поставки
 ├── scripts/          # общие проверки и служебные команды
 ├── .github/          # CI/CD workflows
-├── .githooks/        # общие Git hooks
+├── .husky/           # общие Git hooks
 ├── AGENTS.md         # правила работы агентов
 └── CHANGELOG.md      # журнал изменений
 ```
@@ -31,6 +31,15 @@ expressa/
 структура и локальная документация находятся в собственном README:
 [backend](backend/README.md), [front-office](front-office/README.md),
 [back-office](back-office/README.md), [e2e](e2e/README.md).
+
+## Форматирование и Git hooks
+
+Установите корневые зависимости командой `npm install`. Она подключает Husky —
+обработчики Git hooks, которые перед коммитом форматируют staged-файлы и
+проверяют пробелы и секреты.
+
+- `npm run format` форматирует поддерживаемые текстовые файлы во всех каталогах.
+- `npm run format:check` проверяет форматирование без изменений файлов.
 
 ## Как работает продукт
 

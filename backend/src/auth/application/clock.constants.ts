@@ -1,1 +1,1 @@
-export const clockPort = Symbol('clockPort');
+export const clockPort = Symbol("clockPort");

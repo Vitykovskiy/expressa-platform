@@ -1,4 +1,4 @@
-import type { OrderRequest } from './order.types';
+import type { OrderRequest } from "./order.types";
 
 export function createOrderFingerprint(request: OrderRequest): string {
   return JSON.stringify({
@@ -10,7 +10,9 @@ export function createOrderFingerprint(request: OrderRequest): string {
         modifierOptionIds: item.modifierOptionIds.toSorted(compareCodeUnits),
         quantity: item.quantity,
       }))
-      .toSorted((left, right) => compareCodeUnits(JSON.stringify(left), JSON.stringify(right))),
+      .toSorted((left, right) =>
+        compareCodeUnits(JSON.stringify(left), JSON.stringify(right)),
+      ),
   });
 }
 

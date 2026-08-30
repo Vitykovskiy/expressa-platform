@@ -266,9 +266,7 @@ async function seedOrder(
 
 async function addPartialRepeatItem(pool: Pool): Promise<void> {
   const orderId = seedOrderId(1);
-  await pool.query("UPDATE orders SET total = 600 WHERE id = $1", [
-    orderId,
-  ]);
+  await pool.query("UPDATE orders SET total = 600 WHERE id = $1", [orderId]);
   await pool.query(
     `INSERT INTO order_items (
        id, order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total, sort_order

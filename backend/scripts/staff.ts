@@ -1,12 +1,14 @@
-import { Pool } from 'pg';
-import { validateEnvironment } from '../src/platform/config/environment';
+import { Pool } from "pg";
+import { validateEnvironment } from "../src/platform/config/environment";
 
 const phonePattern = /^\+7\d{10}$/;
-const staffRoles = ['barista', 'administrator', 'customer'] as const;
+const staffRoles = ["barista", "administrator", "customer"] as const;
 type StaffRole = (typeof staffRoles)[number];
 
 function exitWithUsage(): never {
-  process.stderr.write('Usage: npm run staff -- upsert --phone +7XXXXXXXXXX --role barista|administrator|customer\n');
+  process.stderr.write(
+    "Usage: npm run staff -- upsert --phone +7XXXXXXXXXX --role barista|administrator|customer\n",
+  );
   process.exit(2);
 }
 
@@ -16,7 +18,7 @@ function isStaffRole(value: string): value is StaffRole {
 
 function parseCommandArguments(): { phone: string; role: StaffRole } {
   const arguments_ = process.argv.slice(2);
-  if (arguments_[0] !== 'upsert' || arguments_.length !== 5) {
+  if (arguments_[0] !== "upsert" || arguments_.length !== 5) {
     return exitWithUsage();
   }
 
@@ -26,15 +28,15 @@ function parseCommandArguments(): { phone: string; role: StaffRole } {
   for (let index = 1; index < arguments_.length; index += 2) {
     const name = arguments_[index];
     const value = arguments_[index + 1];
-    if (name === undefined || value === undefined || value.startsWith('--')) {
+    if (name === undefined || value === undefined || value.startsWith("--")) {
       return exitWithUsage();
     }
 
-    if (name === '--phone' && phone === undefined) {
+    if (name === "--phone" && phone === undefined) {
       phone = value;
       continue;
     }
-    if (name === '--role' && role === undefined && isStaffRole(value)) {
+    if (name === "--role" && role === undefined && isStaffRole(value)) {
       role = value;
       continue;
     }

@@ -5,6 +5,7 @@ last_verified: 2026-08-11
 sources:
   - ../../backend/openapi/openapi.json
 ---
+
 # Доменные контракты
 
 Корневые ноты фиксируют межконтурную семантику; runtime-детали находятся в

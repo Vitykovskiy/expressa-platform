@@ -3,22 +3,22 @@ name: Delivery static checks
 on:
   pull_request:
     paths:
-      - 'deploy/**'
-      - 'docs/**'
-      - 'README.md'
-      - 'AGENTS.md'
-      - 'backend/docs/**'
-      - 'backend/**/README.md'
-      - 'backend/**/AGENTS.md'
-      - 'front-office/docs/**'
-      - 'front-office/**/README.md'
-      - 'front-office/**/AGENTS.md'
-      - 'back-office/docs/**'
-      - 'back-office/**/README.md'
-      - 'back-office/**/AGENTS.md'
-      - 'scripts/**'
-      - 'e2e/Dockerfile'
-      - '.github/workflows/**'
+      - "deploy/**"
+      - "docs/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "backend/docs/**"
+      - "backend/**/README.md"
+      - "backend/**/AGENTS.md"
+      - "front-office/docs/**"
+      - "front-office/**/README.md"
+      - "front-office/**/AGENTS.md"
+      - "back-office/docs/**"
+      - "back-office/**/README.md"
+      - "back-office/**/AGENTS.md"
+      - "scripts/**"
+      - "e2e/Dockerfile"
+      - ".github/workflows/**"
 
 permissions:
   contents: read

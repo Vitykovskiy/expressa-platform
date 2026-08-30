@@ -1,3 +1,3 @@
-export const publicMenuControllerPath = 'public/menu';
+export const publicMenuControllerPath = "public/menu";
 
-export const publicMenuApiTag = 'menu';
+export const publicMenuApiTag = "menu";

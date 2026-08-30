@@ -1,4 +1,4 @@
-import type { UserRole } from '../domain/auth.types';
+import type { UserRole } from "../domain/auth.types";
 
 export type CurrentAuth = {
   phoneE164: string;

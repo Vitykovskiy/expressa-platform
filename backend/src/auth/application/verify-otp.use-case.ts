@@ -1,24 +1,27 @@
-import type { AuthCrypto } from './auth-crypto.types';
+import type { AuthCrypto } from "./auth-crypto.types";
 import type {
   AuthRepository,
   OtpAuthentication,
   StoredOtpChallenge,
-} from './auth-repository.types';
-import type { Clock } from './clock.types';
-import { InvalidOtpCodeError } from '../domain/auth.errors';
-import { assertOtpChallengeCanBeVerified, assertValidOtpCode } from '../domain/otp-policy';
-import { normalizeRussianPhone } from '../domain/phone';
+} from "./auth-repository.types";
+import type { Clock } from "./clock.types";
+import { InvalidOtpCodeError } from "../domain/auth.errors";
+import {
+  assertOtpChallengeCanBeVerified,
+  assertValidOtpCode,
+} from "../domain/otp-policy";
+import { normalizeRussianPhone } from "../domain/phone";
 import {
   accessTokenAudience,
   accessTokenIssuer,
   accessTokenLifetimeMs,
   sessionLifetimeMs,
-} from './verify-otp.use-case.constants';
-import type { VerifyOtpResult } from './verify-otp.use-case.types';
+} from "./verify-otp.use-case.constants";
+import type { VerifyOtpResult } from "./verify-otp.use-case.types";
 
 export class SessionCreationUnavailableError extends Error {
   constructor() {
-    super('Session creation is unavailable.');
+    super("Session creation is unavailable.");
   }
 }
 
@@ -49,11 +52,11 @@ export class VerifyOtpUseCase {
       : this.crypto.createOtpHash(challenge.id, phoneE164, code);
     const sessionId = this.crypto.generateSessionId();
     const refreshSecret = this.crypto.generateRefreshSecret();
-    const refreshToken = sessionId + '.' + refreshSecret;
+    const refreshToken = sessionId + "." + refreshSecret;
     const refreshTokenHash = this.crypto.hashRefreshToken(refreshToken);
 
     if (refreshTokenHash === null) {
-      throw new Error('Could not hash refresh token.');
+      throw new Error("Could not hash refresh token.");
     }
 
     const authentication = await this.repository.verifyOtpAndCreateSession(
@@ -74,15 +77,18 @@ export class VerifyOtpUseCase {
     now: Date,
     refreshToken: string,
   ): VerifyOtpResult {
-    if (authentication.status === 'invalid') {
+    if (authentication.status === "invalid") {
       throw new InvalidOtpCodeError();
     }
 
-    if (authentication.status === 'unavailable') {
-      this.throwUnavailableChallenge(authentication.challenge ?? initialChallenge, now);
+    if (authentication.status === "unavailable") {
+      this.throwUnavailableChallenge(
+        authentication.challenge ?? initialChallenge,
+        now,
+      );
     }
 
-    if (authentication.status === 'session_conflict') {
+    if (authentication.status === "session_conflict") {
       throw new SessionCreationUnavailableError();
     }
 
@@ -100,7 +106,10 @@ export class VerifyOtpUseCase {
     };
   }
 
-  private throwUnavailableChallenge(challenge: StoredOtpChallenge, now: Date): never {
+  private throwUnavailableChallenge(
+    challenge: StoredOtpChallenge,
+    now: Date,
+  ): never {
     assertOtpChallengeCanBeVerified(challenge, now);
 
     throw new InvalidOtpCodeError();

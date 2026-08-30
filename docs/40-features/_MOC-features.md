@@ -5,6 +5,7 @@ last_verified: 2026-08-11
 sources:
   - ../../front-office/src/app/router.ts
 ---
+
 # Пользовательские сценарии
 
 Current: [просмотр меню и корзина](Browse-menu-and-build-cart.md),

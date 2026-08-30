@@ -1,5 +1,5 @@
-export type PublicMenuProductType = 'DRINK' | 'OTHER';
+export type PublicMenuProductType = "DRINK" | "OTHER";
 
-export type PublicMenuProductSize = 'S' | 'M' | 'L';
+export type PublicMenuProductSize = "S" | "M" | "L";
 
-export type PublicMenuModifierSelectionType = 'single' | 'multiple';
+export type PublicMenuModifierSelectionType = "single" | "multiple";

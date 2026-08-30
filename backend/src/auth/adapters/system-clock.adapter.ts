@@ -1,4 +1,4 @@
-import type { Clock } from '../application/clock.types';
+import type { Clock } from "../application/clock.types";
 
 export class SystemClockAdapter implements Clock {
   now(): Date {

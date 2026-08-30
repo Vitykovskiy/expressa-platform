@@ -4,6 +4,6 @@ export type NodeAuthCryptoConfiguration = {
 };
 
 export type JwtHeader = {
-  alg: 'HS256';
-  typ: 'JWT';
+  alg: "HS256";
+  typ: "JWT";
 };

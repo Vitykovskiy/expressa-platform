@@ -15,7 +15,13 @@ sources:
   - ../10-overview/Backlog-coverage.md
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
-related: ["[_MOC-meta](_MOC-meta.md)", "[Coverage-model](Coverage-model.md)", "[Update-protocol](Update-protocol.md)", "[../20-architecture/ADR/ADR-001-Root-repository-structure](../20-architecture/ADR/ADR-001-Root-repository-structure.md)"]
+related:
+  [
+    "[_MOC-meta](_MOC-meta.md)",
+    "[Coverage-model](Coverage-model.md)",
+    "[Update-protocol](Update-protocol.md)",
+    "[../20-architecture/ADR/ADR-001-Root-repository-structure](../20-architecture/ADR/ADR-001-Root-repository-structure.md)",
+  ]
 ---
 
 # Приоритет источников

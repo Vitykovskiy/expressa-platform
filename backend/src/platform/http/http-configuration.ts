@@ -1,23 +1,29 @@
-import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { getCorsOrigins } from '../config/environment';
+import type { INestApplication } from "@nestjs/common";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { getCorsOrigins } from "../config/environment";
 import {
   apiPrefix,
   apiPrefixExclusions,
   bearerSecuritySchemeName,
   refreshCookieSecuritySchemeName,
-} from './http-configuration.constants';
+} from "./http-configuration.constants";
 
-export function isApiDocumentationEnabled(environment: string | undefined): boolean {
-  return environment === 'local' || environment === 'development';
+export function isApiDocumentationEnabled(
+  environment: string | undefined,
+): boolean {
+  return environment === "local" || environment === "development";
 }
 
 export function createOpenApiDocument(app: INestApplication) {
   const configuration = new DocumentBuilder()
-    .setTitle('Expressa API')
-    .setVersion('1.0.0')
+    .setTitle("Expressa API")
+    .setVersion("1.0.0")
     .addBearerAuth(undefined, bearerSecuritySchemeName)
-    .addCookieAuth(refreshCookieSecuritySchemeName, undefined, refreshCookieSecuritySchemeName)
+    .addCookieAuth(
+      refreshCookieSecuritySchemeName,
+      undefined,
+      refreshCookieSecuritySchemeName,
+    )
     .build();
 
   return SwaggerModule.createDocument(app, configuration);
@@ -39,8 +45,8 @@ export function configureHttp(
     return;
   }
 
-  SwaggerModule.setup('docs', app, createOpenApiDocument(app), {
-    jsonDocumentUrl: 'docs/openapi.json',
-    raw: ['json'],
+  SwaggerModule.setup("docs", app, createOpenApiDocument(app), {
+    jsonDocumentUrl: "docs/openapi.json",
+    raw: ["json"],
   });
 }

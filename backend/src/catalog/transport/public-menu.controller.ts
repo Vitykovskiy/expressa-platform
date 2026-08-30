@@ -1,9 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { GetPublicMenuUseCase } from '../application/get-public-menu.use-case';
-import type { PublicMenu } from '../domain/catalog.types';
-import { publicMenuApiTag, publicMenuControllerPath } from './public-menu.controller.constants';
-import { PublicMenuDto } from './public-menu.dto';
+import { Controller, Get } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { GetPublicMenuUseCase } from "../application/get-public-menu.use-case";
+import type { PublicMenu } from "../domain/catalog.types";
+import {
+  publicMenuApiTag,
+  publicMenuControllerPath,
+} from "./public-menu.controller.constants";
+import { PublicMenuDto } from "./public-menu.dto";
 
 @ApiTags(publicMenuApiTag)
 @Controller(publicMenuControllerPath)
@@ -11,7 +14,7 @@ export class PublicMenuController {
   constructor(private readonly getPublicMenu: GetPublicMenuUseCase) {}
 
   @Get()
-  @ApiOperation({ summary: 'Получить публичное меню' })
+  @ApiOperation({ summary: "Получить публичное меню" })
   @ApiResponse({ status: 200, type: PublicMenuDto })
   async getMenu(): Promise<PublicMenuDto> {
     return toPublicMenuDto(await this.getPublicMenu.execute());

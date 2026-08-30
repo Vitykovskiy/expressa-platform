@@ -26,11 +26,11 @@ MVP обеспечивает полный контур:
 
 Система состоит из трёх автономных репозиториев:
 
-| Репозиторий | Назначение | Основной стек |
-|---|---|---|
-| `backend` | API, бизнес-логика, данные, авторизация, аудит | NestJS, TypeScript, PostgreSQL |
-| `front-office` | Клиентское мобильное PWA | Vue 3, Vuetify, TypeScript, Vite |
-| `back-office` | Рабочее PWA бариста и администратора | Vue 3, Vuetify, TypeScript, Vite |
+| Репозиторий    | Назначение                                     | Основной стек                    |
+| -------------- | ---------------------------------------------- | -------------------------------- |
+| `backend`      | API, бизнес-логика, данные, авторизация, аудит | NestJS, TypeScript, PostgreSQL   |
+| `front-office` | Клиентское мобильное PWA                       | Vue 3, Vuetify, TypeScript, Vite |
+| `back-office`  | Рабочее PWA бариста и администратора           | Vue 3, Vuetify, TypeScript, Vite |
 
 Каждый репозиторий содержит собственные зависимости, типы, компоненты, конфигурацию, тесты, документацию и конвейер поставки.
 
@@ -65,25 +65,25 @@ MVP обеспечивает полный контур:
 
 Общий каркас для трёх репозиториев:
 
-| Путь | Назначение |
-|---|---|
-| `docs/README.md` | Назначение базы знаний и ссылка на главную карту |
-| `docs/INDEX.md` | Главная карта документации |
-| `docs/00-meta/` | Правила использования, именования и обновления, словарь |
-| `docs/10-overview/` | Обзор проекта, запуск и стек |
-| `docs/20-architecture/` | Архитектура и `ADR/` с записями архитектурных решений |
-| `docs/70-deployment/` | Окружения, сборка, поставка и восстановление |
-| `docs/80-conventions/` | Инженерные соглашения |
-| `docs/95-testing/` | Стек, уровни, паттерны и покрытие тестами |
-| `docs/_journal/` | Краткие записи о существенных изменениях |
-| `docs/_sources/` | Зафиксированные исходные контракты и другие внешние источники, если они нужны репозиторию |
+| Путь                    | Назначение                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `docs/README.md`        | Назначение базы знаний и ссылка на главную карту                                          |
+| `docs/INDEX.md`         | Главная карта документации                                                                |
+| `docs/00-meta/`         | Правила использования, именования и обновления, словарь                                   |
+| `docs/10-overview/`     | Обзор проекта, запуск и стек                                                              |
+| `docs/20-architecture/` | Архитектура и `ADR/` с записями архитектурных решений                                     |
+| `docs/70-deployment/`   | Окружения, сборка, поставка и восстановление                                              |
+| `docs/80-conventions/`  | Инженерные соглашения                                                                     |
+| `docs/95-testing/`      | Стек, уровни, паттерны и покрытие тестами                                                 |
+| `docs/_journal/`        | Краткие записи о существенных изменениях                                                  |
+| `docs/_sources/`        | Зафиксированные исходные контракты и другие внешние источники, если они нужны репозиторию |
 
 Предметные разделы адаптируются к ответственности репозитория:
 
-| Репозиторий | Разделы |
-|---|---|
+| Репозиторий                   | Разделы                                                                                                                                                                                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `front-office`, `back-office` | `30-core-layer/` — инфраструктура клиента; `40-features/` — пользовательские области; `50-api-integration/` — использование backend API и зафиксированного снимка OpenAPI из `docs/_sources/`; `60-ui-kit/` — компоненты, токены, темы и адаптивность |
-| `backend` | `30-platform/` — общая серверная инфраструктура; `40-domain-modules/` — бизнес-модули; `50-http-api/` — публичный HTTP API; `60-data-and-integrations/` — хранение данных и внешние интеграции |
+| `backend`                     | `30-platform/` — общая серверная инфраструктура; `40-domain-modules/` — бизнес-модули; `50-http-api/` — публичный HTTP API; `60-data-and-integrations/` — хранение данных и внешние интеграции                                                        |
 
 Раздел `90-agents/` создаётся только при наличии проектных инструкций или рабочих процессов агентов. Он ссылается на их первичные файлы и не становится вторым источником истины.
 
@@ -153,18 +153,18 @@ Storybook используется для согласования компон�
 
 ## 5. Роли и права
 
-| Возможность | Customer | Barista | Administrator |
-|---|:---:|:---:|:---:|
-| Просмотр публичного меню | ✓ | ✓ | ✓ |
-| Оформление заказа | ✓ |  |  |
-| Просмотр собственных заказов | ✓ |  |  |
-| Повтор собственного заказа | ✓ |  |  |
-| Получение push-уведомлений о собственном заказе | ✓ |  |  |
-| Просмотр очереди заказов |  | ✓ | ✓ |
-| Получение push-уведомления о новом заказе |  | ✓ |  |
-| Изменение этапа приготовления |  | ✓ | ✓ |
-| Управление доступностью |  | ✓ | ✓ |
-| Управление категориями, товарами, размерами напитков, добавками и ценами |  |  | ✓ |
+| Возможность                                                              | Customer | Barista | Administrator |
+| ------------------------------------------------------------------------ | :------: | :-----: | :-----------: |
+| Просмотр публичного меню                                                 |    ✓     |    ✓    |       ✓       |
+| Оформление заказа                                                        |    ✓     |         |               |
+| Просмотр собственных заказов                                             |    ✓     |         |               |
+| Повтор собственного заказа                                               |    ✓     |         |               |
+| Получение push-уведомлений о собственном заказе                          |    ✓     |         |               |
+| Просмотр очереди заказов                                                 |          |    ✓    |       ✓       |
+| Получение push-уведомления о новом заказе                                |          |    ✓    |               |
+| Изменение этапа приготовления                                            |          |    ✓    |       ✓       |
+| Управление доступностью                                                  |          |    ✓    |       ✓       |
+| Управление категориями, товарами, размерами напитков, добавками и ценами |          |         |       ✓       |
 
 Учётные записи сотрудников создаются эксплуатационной командой backend. Первый administrator задаётся переменной окружения `BOOTSTRAP_ADMIN_PHONE`. Команда управления сотрудниками поддерживает создание и обновление ролей `barista` и `administrator`.
 
@@ -382,13 +382,13 @@ Storybook используется для согласования компон�
 
 ### 9.1. Стадия исполнения
 
-| Код | Отображение | Следующая стадия | Исполнитель |
-|---|---|---|---|
-| `CREATED` | Оформлен | `ACCEPTED` | Barista, Administrator |
-| `ACCEPTED` | Принят | `PREPARING` | Barista, Administrator |
-| `PREPARING` | Готовится | `READY` | Barista, Administrator |
-| `READY` | Готов | `ISSUED` | Barista, Administrator |
-| `ISSUED` | Выдан | терминальная стадия | — |
+| Код         | Отображение | Следующая стадия    | Исполнитель            |
+| ----------- | ----------- | ------------------- | ---------------------- |
+| `CREATED`   | Оформлен    | `ACCEPTED`          | Barista, Administrator |
+| `ACCEPTED`  | Принят      | `PREPARING`         | Barista, Administrator |
+| `PREPARING` | Готовится   | `READY`             | Barista, Administrator |
+| `READY`     | Готов       | `ISSUED`            | Barista, Administrator |
+| `ISSUED`    | Выдан       | терминальная стадия | —                      |
 
 ### 9.2. Полный рабочий маршрут
 
@@ -398,23 +398,23 @@ Storybook используется для согласования компон�
 
 ### 10.1. Основные сущности
 
-| Сущность | Ключевые поля |
-|---|---|
-| `User` | `id`, `phone`, `role`, `created_at`, `updated_at` |
-| `OtpChallenge` | `id`, `phone`, `code_hash`, `expires_at`, `attempts`, `consumed_at` |
-| `Session` | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at` |
-| `Category` | `id`, `name`, `description`, `sort_order`, `is_active`, `archived_at` |
-| `Product` | `id`, `category_id`, `type`, `name`, `description`, `price`, `sort_order`, `is_active`, `is_available`, `archived_at` |
-| `ProductVariant` | `id`, `product_id`, `size`, `price`, `sort_order`, `is_available`, `archived_at` |
-| `ModifierGroup` | `id`, `name`, `selection_type`, `min_select`, `max_select`, `is_active`, `archived_at` |
-| `ModifierOption` | `id`, `group_id`, `name`, `price_delta`, `sort_order`, `is_default`, `is_available`, `archived_at` |
-| `CategoryModifierGroup` | `category_id`, `group_id`, `sort_order` |
-| `Order` | `id`, `number`, `customer_id`, `stage`, `total`, timestamps |
-| `OrderItem` | `id`, `order_id`, `product_id`, `variant_id` при наличии, snapshot-поля товара и размера напитка при наличии, `quantity`, `unit_total`, `line_total` |
-| `OrderItemModifier` | `id`, `order_item_id`, `modifier_option_id`, snapshot-поля добавки и цены |
-| `OrderEvent` | `id`, `order_id`, `event_type`, `actor_id`, payload, `created_at` |
-| `AuditEvent` | `id`, `actor_id`, `entity_type`, `entity_id`, `action`, payload, `created_at` |
-| `ServiceSetting` | `key`, `value`, `updated_by`, `updated_at` |
+| Сущность                | Ключевые поля                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `User`                  | `id`, `phone`, `role`, `created_at`, `updated_at`                                                                                                    |
+| `OtpChallenge`          | `id`, `phone`, `code_hash`, `expires_at`, `attempts`, `consumed_at`                                                                                  |
+| `Session`               | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at`                                                                                    |
+| `Category`              | `id`, `name`, `description`, `sort_order`, `is_active`, `archived_at`                                                                                |
+| `Product`               | `id`, `category_id`, `type`, `name`, `description`, `price`, `sort_order`, `is_active`, `is_available`, `archived_at`                                |
+| `ProductVariant`        | `id`, `product_id`, `size`, `price`, `sort_order`, `is_available`, `archived_at`                                                                     |
+| `ModifierGroup`         | `id`, `name`, `selection_type`, `min_select`, `max_select`, `is_active`, `archived_at`                                                               |
+| `ModifierOption`        | `id`, `group_id`, `name`, `price_delta`, `sort_order`, `is_default`, `is_available`, `archived_at`                                                   |
+| `CategoryModifierGroup` | `category_id`, `group_id`, `sort_order`                                                                                                              |
+| `Order`                 | `id`, `number`, `customer_id`, `stage`, `total`, timestamps                                                                                          |
+| `OrderItem`             | `id`, `order_id`, `product_id`, `variant_id` при наличии, snapshot-поля товара и размера напитка при наличии, `quantity`, `unit_total`, `line_total` |
+| `OrderItemModifier`     | `id`, `order_item_id`, `modifier_option_id`, snapshot-поля добавки и цены                                                                            |
+| `OrderEvent`            | `id`, `order_id`, `event_type`, `actor_id`, payload, `created_at`                                                                                    |
+| `AuditEvent`            | `id`, `actor_id`, `entity_type`, `entity_id`, `action`, payload, `created_at`                                                                        |
+| `ServiceSetting`        | `key`, `value`, `updated_by`, `updated_at`                                                                                                           |
 
 Расшифровка неочевидных полей:
 
@@ -474,56 +474,56 @@ Storybook используется для согласования компон�
 
 ### 11.3. Маршруты
 
-| Метод и путь | Роль | Назначение |
-|---|---|---|
-| `GET /public/menu` | Public | Публичное меню и состояние приёма новых заказов |
-| `POST /auth/otp/request` | Public | Запрос кода |
-| `POST /auth/otp/verify` | Public | Проверка кода и создание сессии |
-| `POST /auth/refresh` | Session | Обновление access token |
-| `POST /auth/logout` | Session | Завершение сессии |
-| `GET /me` | Session | Текущий пользователь |
-| `POST /orders` | Customer | Создание заказа |
-| `GET /orders` | Customer | История заказов |
-| `GET /orders/{id}` | Customer | Детали собственного заказа |
-| `GET /backoffice/orders` | Staff | Очередь и фильтры |
-| `GET /backoffice/orders/{id}` | Staff | Детали заказа |
-| `POST /backoffice/orders/{id}/accept` | Staff | Стадия `Принят` |
-| `POST /backoffice/orders/{id}/start-preparing` | Staff | Стадия `Готовится` |
-| `POST /backoffice/orders/{id}/mark-ready` | Staff | Стадия `Готов` |
-| `POST /backoffice/orders/{id}/issue` | Staff | Стадия `Выдан` |
-| `GET /backoffice/catalog/*` | Administrator | Чтение структуры меню |
-| `POST/PATCH/DELETE /backoffice/catalog/*` | Administrator | Управление структурой меню |
-| `PATCH /backoffice/availability/{type}/{id}` | Staff | Оперативная доступность |
-| `PATCH /backoffice/service/intake` | Staff | Включение и выключение приёма новых заказов |
-| `GET /health/live` | Infrastructure | Проверка процесса |
-| `GET /health/ready` | Infrastructure | Проверка зависимостей |
+| Метод и путь                                   | Роль           | Назначение                                      |
+| ---------------------------------------------- | -------------- | ----------------------------------------------- |
+| `GET /public/menu`                             | Public         | Публичное меню и состояние приёма новых заказов |
+| `POST /auth/otp/request`                       | Public         | Запрос кода                                     |
+| `POST /auth/otp/verify`                        | Public         | Проверка кода и создание сессии                 |
+| `POST /auth/refresh`                           | Session        | Обновление access token                         |
+| `POST /auth/logout`                            | Session        | Завершение сессии                               |
+| `GET /me`                                      | Session        | Текущий пользователь                            |
+| `POST /orders`                                 | Customer       | Создание заказа                                 |
+| `GET /orders`                                  | Customer       | История заказов                                 |
+| `GET /orders/{id}`                             | Customer       | Детали собственного заказа                      |
+| `GET /backoffice/orders`                       | Staff          | Очередь и фильтры                               |
+| `GET /backoffice/orders/{id}`                  | Staff          | Детали заказа                                   |
+| `POST /backoffice/orders/{id}/accept`          | Staff          | Стадия `Принят`                                 |
+| `POST /backoffice/orders/{id}/start-preparing` | Staff          | Стадия `Готовится`                              |
+| `POST /backoffice/orders/{id}/mark-ready`      | Staff          | Стадия `Готов`                                  |
+| `POST /backoffice/orders/{id}/issue`           | Staff          | Стадия `Выдан`                                  |
+| `GET /backoffice/catalog/*`                    | Administrator  | Чтение структуры меню                           |
+| `POST/PATCH/DELETE /backoffice/catalog/*`      | Administrator  | Управление структурой меню                      |
+| `PATCH /backoffice/availability/{type}/{id}`   | Staff          | Оперативная доступность                         |
+| `PATCH /backoffice/service/intake`             | Staff          | Включение и выключение приёма новых заказов     |
+| `GET /health/live`                             | Infrastructure | Проверка процесса                               |
+| `GET /health/ready`                            | Infrastructure | Проверка зависимостей                           |
 
 ### 11.4. Ключевые коды ошибок
 
-| Код | Смысл |
-|---|---|
-| `VALIDATION_ERROR` | Ошибка входных данных |
-| `AUTH_CODE_INVALID` | Ошибка одноразового кода |
-| `AUTH_CODE_EXPIRED` | Завершён срок кода |
-| `AUTH_RATE_LIMITED` | Достигнут лимит запросов |
-| `ACCESS_DENIED` | Роль ограничивает действие |
+| Код                     | Смысл                        |
+| ----------------------- | ---------------------------- |
+| `VALIDATION_ERROR`      | Ошибка входных данных        |
+| `AUTH_CODE_INVALID`     | Ошибка одноразового кода     |
+| `AUTH_CODE_EXPIRED`     | Завершён срок кода           |
+| `AUTH_RATE_LIMITED`     | Достигнут лимит запросов     |
+| `ACCESS_DENIED`         | Роль ограничивает действие   |
 | `MENU_ITEM_UNAVAILABLE` | Позиция выключена из продажи |
-| `ORDER_TOTAL_CHANGED` | Сервер пересчитал стоимость |
-| `ORDER_INTAKE_CLOSED` | Приём новых заказов выключен |
-| `RESOURCE_ARCHIVED` | Объект архивирован |
+| `ORDER_TOTAL_CHANGED`   | Сервер пересчитал стоимость  |
+| `ORDER_INTAKE_CLOSED`   | Приём новых заказов выключен |
+| `RESOURCE_ARCHIVED`     | Объект архивирован           |
 
 ## 12. Требования к front-office
 
 ### 12.1. Маршруты
 
-| Путь | Экран |
-|---|---|
-| `/` | Меню |
-| `/cart` | Корзина |
-| `/auth/phone` | Ввод телефона |
-| `/auth/code` | Ввод кода |
+| Путь          | Экран                           |
+| ------------- | ------------------------------- |
+| `/`           | Меню                            |
+| `/cart`       | Корзина                         |
+| `/auth/phone` | Ввод телефона                   |
+| `/auth/code`  | Ввод кода                       |
 | `/orders/:id` | Текущий либо исторический заказ |
-| `/orders` | История заказов |
+| `/orders`     | История заказов                 |
 
 ### 12.2. Экран меню
 
@@ -574,11 +574,11 @@ Storybook используется для согласования компон�
 
 ### 13.1. Разделы
 
-| Раздел | Barista | Administrator |
-|---|:---:|:---:|
-| Заказы | ✓ | ✓ |
-| Доступность | ✓ | ✓ |
-| Меню |  | ✓ |
+| Раздел      | Barista | Administrator |
+| ----------- | :-----: | :-----------: |
+| Заказы      |    ✓    |       ✓       |
+| Доступность |    ✓    |       ✓       |
+| Меню        |         |       ✓       |
 
 ### 13.2. Очередь заказов
 
@@ -826,14 +826,14 @@ Front-office и back-office устанавливаются как PWA и под�
 
 ### 19.1. Уровни
 
-| Уровень | Backend | Front-office | Back-office |
-|---|---|---|---|
-| Модульные тесты | доменные правила, сервисы | stores, composables, форматирование | stores, composables, права |
-| Интеграционные тесты | PostgreSQL, транзакции, адаптеры | API-клиент с mock server | API-клиент с mock server |
-| Компонентные тесты | — | состояния компонентов | состояния компонентов |
-| Контрактные тесты | OpenAPI и схемы | снимок OpenAPI | снимок OpenAPI |
-| E2E | API-сценарии | пользовательский браузерный путь | рабочий браузерный путь |
-| Smoke | полный API-маршрут | меню → заказ → история | очередь → выдача |
+| Уровень              | Backend                          | Front-office                        | Back-office                |
+| -------------------- | -------------------------------- | ----------------------------------- | -------------------------- |
+| Модульные тесты      | доменные правила, сервисы        | stores, composables, форматирование | stores, composables, права |
+| Интеграционные тесты | PostgreSQL, транзакции, адаптеры | API-клиент с mock server            | API-клиент с mock server   |
+| Компонентные тесты   | —                                | состояния компонентов               | состояния компонентов      |
+| Контрактные тесты    | OpenAPI и схемы                  | снимок OpenAPI                      | снимок OpenAPI             |
+| E2E                  | API-сценарии                     | пользовательский браузерный путь    | рабочий браузерный путь    |
+| Smoke                | полный API-маршрут               | меню → заказ → история              | очередь → выдача           |
 
 ### 19.2. Обязательные сценарии
 
@@ -944,15 +944,15 @@ Backend выпускает добавочные изменения API до вы
 
 Примеры связи:
 
-| Изменение | Документация задачи |
-|---|---|
-| Новый endpoint | OpenAPI, нота в `50-http-api/` backend и, если клиент использует endpoint, затронутая нота в его `50-api-integration/` |
-| Новая переменная окружения | Нота окружения в `70-deployment/` и `.env.example` |
-| Новая миграция | Нота в `60-data-and-integrations/`; при изменении процедуры поставки — нота в `70-deployment/` |
-| Новый UI-компонент | Storybook и нота в `60-ui-kit/` |
-| Новый пользовательский сценарий | Нота в `40-features/` и затронутая нота в `95-testing/` |
-| Новая эксплуатационная команда | Корневой `README.md` и затронутая нота в `70-deployment/` |
-| Новое архитектурное решение | Новый ADR в `20-architecture/ADR/` |
+| Изменение                       | Документация задачи                                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Новый endpoint                  | OpenAPI, нота в `50-http-api/` backend и, если клиент использует endpoint, затронутая нота в его `50-api-integration/` |
+| Новая переменная окружения      | Нота окружения в `70-deployment/` и `.env.example`                                                                     |
+| Новая миграция                  | Нота в `60-data-and-integrations/`; при изменении процедуры поставки — нота в `70-deployment/`                         |
+| Новый UI-компонент              | Storybook и нота в `60-ui-kit/`                                                                                        |
+| Новый пользовательский сценарий | Нота в `40-features/` и затронутая нота в `95-testing/`                                                                |
+| Новая эксплуатационная команда  | Корневой `README.md` и затронутая нота в `70-deployment/`                                                              |
+| Новое архитектурное решение     | Новый ADR в `20-architecture/ADR/`                                                                                     |
 
 ## 22. Definition of Ready
 
@@ -986,20 +986,20 @@ Backend выпускает добавочные изменения API до вы
 
 ## 24. Эпики и порядок реализации
 
-| Эпик | Название | Результат | Зависимости |
-|---|---|---|---|
-| E01 | Фундаменты репозиториев и поставки | Три автономных проекта и воспроизводимые pipeline | ТЗ и бэклог |
-| E02 | Storybook front-office | Согласованный клиентский UI-каталог | E01 |
-| E03 | Storybook back-office | Согласованный рабочий UI-каталог | E01 |
-| E04 | Телефонная авторизация и доступ | Customer и сотрудники входят по телефону | E02, E03 |
-| E05 | Каталог и публичное меню | Backend-каталог и клиентский просмотр | E02, E03 |
-| E06 | Управление меню | Administrator ведёт структуру и цены | E03, E05 |
-| E07 | Корзина и создание заказа | Customer оформляет заказ | E04, E05 |
-| E08 | Очередь и стадии заказа | Barista получает push-уведомление о новом заказе и ведёт приготовление | E07, E03 |
-| E09 | Оплата при получении и выдача | Сотрудник выдаёт готовый заказ после получения оплаты | E08 |
-| E10 | Текущий заказ, история, повтор и уведомления | Customer наблюдает состояние заказа, повторяет выданный заказ и получает push-уведомления | E07, E08 |
-| E11 | Оперативная доступность | Сотрудник управляет продажей и приёмом новых заказов | E05, E06 |
-| E12 | Приёмка и выпуск | Полный E2E, эксплуатационная готовность | E04–E11 |
+| Эпик | Название                                     | Результат                                                                                 | Зависимости |
+| ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
+| E01  | Фундаменты репозиториев и поставки           | Три автономных проекта и воспроизводимые pipeline                                         | ТЗ и бэклог |
+| E02  | Storybook front-office                       | Согласованный клиентский UI-каталог                                                       | E01         |
+| E03  | Storybook back-office                        | Согласованный рабочий UI-каталог                                                          | E01         |
+| E04  | Телефонная авторизация и доступ              | Customer и сотрудники входят по телефону                                                  | E02, E03    |
+| E05  | Каталог и публичное меню                     | Backend-каталог и клиентский просмотр                                                     | E02, E03    |
+| E06  | Управление меню                              | Administrator ведёт структуру и цены                                                      | E03, E05    |
+| E07  | Корзина и создание заказа                    | Customer оформляет заказ                                                                  | E04, E05    |
+| E08  | Очередь и стадии заказа                      | Barista получает push-уведомление о новом заказе и ведёт приготовление                    | E07, E03    |
+| E09  | Оплата при получении и выдача                | Сотрудник выдаёт готовый заказ после получения оплаты                                     | E08         |
+| E10  | Текущий заказ, история, повтор и уведомления | Customer наблюдает состояние заказа, повторяет выданный заказ и получает push-уведомления | E07, E08    |
+| E11  | Оперативная доступность                      | Сотрудник управляет продажей и приёмом новых заказов                                      | E05, E06    |
+| E12  | Приёмка и выпуск                             | Полный E2E, эксплуатационная готовность                                                   | E04–E11     |
 
 Полная декомпозиция и критерии приёмки находятся в [бэклоге](../10-overview/Backlog.md), трассировка требований — в [покрытии бэклога](../10-overview/Backlog-coverage.md).
 

@@ -1,11 +1,65 @@
-import { ApiProperty } from '@nestjs/swagger';
-import type { CatalogModifierSelectionType } from '../domain/catalog.types';
-import type { ModifierGroupDto, ModifierOptionDto } from './catalog-modifiers.controller.dto.types';
-export class ModifierOptionAggregateDto { @ApiProperty({ format: 'uuid', required: false }) id?: string; @ApiProperty() name!: string; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) priceDelta!: number; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) sortOrder!: number; @ApiProperty() isDefault!: boolean; @ApiProperty() isAvailable!: boolean; }
-export class CreateModifierGroupDto { @ApiProperty() name!: string; @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: CatalogModifierSelectionType; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) minSelect!: number; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) maxSelect!: number; @ApiProperty() isActive!: boolean; @ApiProperty({ type: () => ModifierOptionAggregateDto, isArray: true }) options!: ModifierOptionAggregateDto[]; }
+import { ApiProperty } from "@nestjs/swagger";
+import type { CatalogModifierSelectionType } from "../domain/catalog.types";
+import type {
+  ModifierGroupDto,
+  ModifierOptionDto,
+} from "./catalog-modifiers.controller.dto.types";
+export class ModifierOptionAggregateDto {
+  @ApiProperty({ format: "uuid", required: false }) id?: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  priceDelta!: number;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  sortOrder!: number;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}
+export class CreateModifierGroupDto {
+  @ApiProperty() name!: string;
+  @ApiProperty({ enum: ["single", "multiple"] })
+  selectionType!: CatalogModifierSelectionType;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  minSelect!: number;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  maxSelect!: number;
+  @ApiProperty() isActive!: boolean;
+  @ApiProperty({ type: () => ModifierOptionAggregateDto, isArray: true })
+  options!: ModifierOptionAggregateDto[];
+}
 export class UpdateModifierGroupDto extends CreateModifierGroupDto {}
-export class CreateModifierOptionDto { @ApiProperty() name!: string; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) priceDelta!: number; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) sortOrder!: number; @ApiProperty() isDefault!: boolean; @ApiProperty() isAvailable!: boolean; }
+export class CreateModifierOptionDto {
+  @ApiProperty() name!: string;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  priceDelta!: number;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  sortOrder!: number;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}
 export class UpdateModifierOptionDto extends CreateModifierOptionDto {}
-export class ReorderModifierOptionsDto { @ApiProperty({ type: 'string', format: 'uuid', isArray: true }) optionIds!: string[]; }
-export class ModifierGroupResponseDto implements ModifierGroupDto { @ApiProperty({ format: 'uuid' }) id!: string; @ApiProperty() name!: string; @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: CatalogModifierSelectionType; @ApiProperty({ format: 'int32', type: 'integer' }) minSelect!: number; @ApiProperty({ format: 'int32', type: 'integer' }) maxSelect!: number; @ApiProperty() isActive!: boolean; @ApiProperty({ type: () => ModifierOptionResponseDto, isArray: true }) options!: ModifierOptionResponseDto[]; }
-export class ModifierOptionResponseDto implements ModifierOptionDto { @ApiProperty({ format: 'uuid' }) id!: string; @ApiProperty({ format: 'uuid' }) groupId!: string; @ApiProperty() name!: string; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) priceDelta!: number; @ApiProperty({ format: 'int32', type: 'integer', minimum: 0 }) sortOrder!: number; @ApiProperty() isDefault!: boolean; @ApiProperty() isAvailable!: boolean; }
+export class ReorderModifierOptionsDto {
+  @ApiProperty({ type: "string", format: "uuid", isArray: true })
+  optionIds!: string[];
+}
+export class ModifierGroupResponseDto implements ModifierGroupDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ enum: ["single", "multiple"] })
+  selectionType!: CatalogModifierSelectionType;
+  @ApiProperty({ format: "int32", type: "integer" }) minSelect!: number;
+  @ApiProperty({ format: "int32", type: "integer" }) maxSelect!: number;
+  @ApiProperty() isActive!: boolean;
+  @ApiProperty({ type: () => ModifierOptionResponseDto, isArray: true })
+  options!: ModifierOptionResponseDto[];
+}
+export class ModifierOptionResponseDto implements ModifierOptionDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty({ format: "uuid" }) groupId!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  priceDelta!: number;
+  @ApiProperty({ format: "int32", type: "integer", minimum: 0 })
+  sortOrder!: number;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}

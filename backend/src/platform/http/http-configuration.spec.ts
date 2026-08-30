@@ -1,55 +1,65 @@
-import { Controller, Get } from '@nestjs/common';
-import { Test, type TestingModule } from '@nestjs/testing';
-import type { AddressInfo } from 'node:net';
-import { authCryptoPort } from '../../auth/application/auth-crypto.constants';
-import { clockPort } from '../../auth/application/clock.constants';
-import { GetCurrentUserUseCase } from '../../auth/application/get-current-user.use-case';
-import { LogoutUseCase } from '../../auth/application/logout.use-case';
-import { RefreshSessionUseCase } from '../../auth/application/refresh-session.use-case';
-import { RequestOtpUseCase } from '../../auth/application/request-otp.use-case';
-import { VerifyOtpUseCase } from '../../auth/application/verify-otp.use-case';
-import { AuthController } from '../../auth/transport/auth.controller';
-import { MeController } from '../../auth/transport/me.controller';
+import { Controller, Get } from "@nestjs/common";
+import { Test, type TestingModule } from "@nestjs/testing";
+import type { AddressInfo } from "node:net";
+import { authCryptoPort } from "../../auth/application/auth-crypto.constants";
+import { clockPort } from "../../auth/application/clock.constants";
+import { GetCurrentUserUseCase } from "../../auth/application/get-current-user.use-case";
+import { LogoutUseCase } from "../../auth/application/logout.use-case";
+import { RefreshSessionUseCase } from "../../auth/application/refresh-session.use-case";
+import { RequestOtpUseCase } from "../../auth/application/request-otp.use-case";
+import { VerifyOtpUseCase } from "../../auth/application/verify-otp.use-case";
+import { AuthController } from "../../auth/transport/auth.controller";
+import { MeController } from "../../auth/transport/me.controller";
 import {
   authRepositoryPort,
   originGuardConfigurationToken,
   sessionGuardConfigurationToken,
-} from '../../auth/auth.constants';
+} from "../../auth/auth.constants";
 import {
   apiPrefix,
   bearerSecuritySchemeName,
   refreshCookieSecuritySchemeName,
-} from './http-configuration.constants';
-import { configureHttp, createOpenApiDocument, isApiDocumentationEnabled } from './http-configuration';
+} from "./http-configuration.constants";
+import {
+  configureHttp,
+  createOpenApiDocument,
+  isApiDocumentationEnabled,
+} from "./http-configuration";
 
-@Controller('probe')
+@Controller("probe")
 class ProbeController {
   @Get()
   getProbe(): { status: string } {
-    return { status: 'ok' };
+    return { status: "ok" };
   }
 }
 
-@Controller('health')
+@Controller("health")
 class HealthProbeController {
-  @Get('live')
+  @Get("live")
   getLiveness(): { status: string } {
-    return { status: 'ok' };
+    return { status: "ok" };
   }
 }
 
-@Controller('metrics')
+@Controller("metrics")
 class MetricsProbeController {
   @Get()
   getMetrics(): { status: string } {
-    return { status: 'ok' };
+    return { status: "ok" };
   }
 }
 
 async function createApplication(environment: string, withAuth = false) {
   const module: TestingModule = await Test.createTestingModule({
     controllers: withAuth
-      ? [ProbeController, HealthProbeController, MetricsProbeController, AuthController, MeController]
+      ? [
+          ProbeController,
+          HealthProbeController,
+          MetricsProbeController,
+          AuthController,
+          MeController,
+        ]
       : [ProbeController, HealthProbeController, MetricsProbeController],
     providers: withAuth
       ? [
@@ -61,7 +71,10 @@ async function createApplication(environment: string, withAuth = false) {
           { provide: authRepositoryPort, useValue: {} },
           { provide: authCryptoPort, useValue: {} },
           { provide: clockPort, useValue: {} },
-          { provide: originGuardConfigurationToken, useValue: { allowedOrigins: [] } },
+          {
+            provide: originGuardConfigurationToken,
+            useValue: { allowedOrigins: [] },
+          },
           { provide: sessionGuardConfigurationToken, useValue: {} },
         ]
       : [],
@@ -69,7 +82,7 @@ async function createApplication(environment: string, withAuth = false) {
   const app = module.createNestApplication();
 
   configureHttp(app, environment);
-  await app.listen(0, '127.0.0.1');
+  await app.listen(0, "127.0.0.1");
 
   const address = app.getHttpServer().address() as AddressInfo;
 
@@ -79,11 +92,12 @@ async function createApplication(environment: string, withAuth = false) {
   };
 }
 
-describe('HTTP configuration', () => {
+describe("HTTP configuration", () => {
   const originalCorsOrigins = process.env.CORS_ORIGINS;
 
   beforeEach(() => {
-    process.env.CORS_ORIGINS = 'http://customer.expressa.test,https://backoffice.expressa.test';
+    process.env.CORS_ORIGINS =
+      "http://customer.expressa.test,https://backoffice.expressa.test";
   });
 
   afterAll(() => {
@@ -95,8 +109,8 @@ describe('HTTP configuration', () => {
     process.env.CORS_ORIGINS = originalCorsOrigins;
   });
 
-  it.each(['local', 'development'])(
-    'публикует Swagger и OpenAPI в %s',
+  it.each(["local", "development"])(
+    "публикует Swagger и OpenAPI в %s",
     async (environment) => {
       const { app, url } = await createApplication(environment);
 
@@ -111,7 +125,7 @@ describe('HTTP configuration', () => {
         expect(openApi.status).toBe(200);
         expect(probe.status).toBe(200);
         await expect(openApi.json()).resolves.toMatchObject({
-          paths: { '/api/v2/probe': expect.any(Object) },
+          paths: { "/api/v2/probe": expect.any(Object) },
         });
       } finally {
         await app.close();
@@ -119,8 +133,8 @@ describe('HTTP configuration', () => {
     },
   );
 
-  it.each(['staging', 'production'])(
-    'не публикует Swagger и OpenAPI в %s',
+  it.each(["staging", "production"])(
+    "не публикует Swagger и OpenAPI в %s",
     async (environment) => {
       const { app, url } = await createApplication(environment);
 
@@ -138,24 +152,25 @@ describe('HTTP configuration', () => {
     },
   );
 
-  it('включает документацию только в local и development', () => {
-    expect(isApiDocumentationEnabled('local')).toBe(true);
-    expect(isApiDocumentationEnabled('development')).toBe(true);
-    expect(isApiDocumentationEnabled('staging')).toBe(false);
-    expect(isApiDocumentationEnabled('production')).toBe(false);
+  it("включает документацию только в local и development", () => {
+    expect(isApiDocumentationEnabled("local")).toBe(true);
+    expect(isApiDocumentationEnabled("development")).toBe(true);
+    expect(isApiDocumentationEnabled("staging")).toBe(false);
+    expect(isApiDocumentationEnabled("production")).toBe(false);
   });
 
-  it('оставляет health и metrics вне префикса API', async () => {
-    const { app, url } = await createApplication('production');
+  it("оставляет health и metrics вне префикса API", async () => {
+    const { app, url } = await createApplication("production");
 
     try {
-      const [health, prefixedHealth, metrics, prefixedMetrics, probe] = await Promise.all([
-        fetch(`${url}/health/live`),
-        fetch(`${url}/${apiPrefix}/health/live`),
-        fetch(`${url}/metrics`),
-        fetch(`${url}/${apiPrefix}/metrics`),
-        fetch(`${url}/${apiPrefix}/probe`),
-      ]);
+      const [health, prefixedHealth, metrics, prefixedMetrics, probe] =
+        await Promise.all([
+          fetch(`${url}/health/live`),
+          fetch(`${url}/${apiPrefix}/health/live`),
+          fetch(`${url}/metrics`),
+          fetch(`${url}/${apiPrefix}/metrics`),
+          fetch(`${url}/${apiPrefix}/probe`),
+        ]);
 
       expect(health.status).toBe(200);
       expect(prefixedHealth.status).toBe(404);
@@ -167,41 +182,59 @@ describe('HTTP configuration', () => {
     }
   });
 
-  it('разрешает credentials только exact CORS allowlist', async () => {
-    const { app, url } = await createApplication('production');
+  it("разрешает credentials только exact CORS allowlist", async () => {
+    const { app, url } = await createApplication("production");
 
     try {
       const [allowed, denied] = await Promise.all([
-        fetch(`${url}/${apiPrefix}/probe`, { headers: { origin: 'http://customer.expressa.test' } }),
-        fetch(`${url}/${apiPrefix}/probe`, { headers: { origin: 'https://evil.example' } }),
+        fetch(`${url}/${apiPrefix}/probe`, {
+          headers: { origin: "http://customer.expressa.test" },
+        }),
+        fetch(`${url}/${apiPrefix}/probe`, {
+          headers: { origin: "https://evil.example" },
+        }),
       ]);
 
-      expect(allowed.headers.get('access-control-allow-origin')).toBe('http://customer.expressa.test');
-      expect(allowed.headers.get('access-control-allow-credentials')).toBe('true');
-      expect(denied.headers.get('access-control-allow-origin')).toBeNull();
+      expect(allowed.headers.get("access-control-allow-origin")).toBe(
+        "http://customer.expressa.test",
+      );
+      expect(allowed.headers.get("access-control-allow-credentials")).toBe(
+        "true",
+      );
+      expect(denied.headers.get("access-control-allow-origin")).toBeNull();
     } finally {
       await app.close();
     }
   });
 
-  it('описывает Bearer и refresh cookie security schemes на auth routes', async () => {
-    const { app } = await createApplication('local', true);
+  it("описывает Bearer и refresh cookie security schemes на auth routes", async () => {
+    const { app } = await createApplication("local", true);
 
     try {
       const document = createOpenApiDocument(app);
 
       expect(document.components?.securitySchemes).toMatchObject({
-        [bearerSecuritySchemeName]: { bearerFormat: 'JWT', scheme: 'bearer', type: 'http' },
-        [refreshCookieSecuritySchemeName]: { in: 'cookie', name: 'expressa_refresh', type: 'apiKey' },
+        [bearerSecuritySchemeName]: {
+          bearerFormat: "JWT",
+          scheme: "bearer",
+          type: "http",
+        },
+        [refreshCookieSecuritySchemeName]: {
+          in: "cookie",
+          name: "expressa_refresh",
+          type: "apiKey",
+        },
       });
-      expect(document.paths['/api/v2/auth/refresh']?.post?.security).toEqual([
+      expect(document.paths["/api/v2/auth/refresh"]?.post?.security).toEqual([
         { expressa_refresh: [] },
       ]);
-      expect(document.paths['/api/v2/auth/logout']?.post?.security).toEqual([
+      expect(document.paths["/api/v2/auth/logout"]?.post?.security).toEqual([
         { expressa_refresh: [] },
       ]);
-      expect(document.paths['/api/v2/me']?.get?.security).toEqual([{ bearer: [] }]);
-      expect(document.paths['/api/v2/auth/me']).toBeUndefined();
+      expect(document.paths["/api/v2/me"]?.get?.security).toEqual([
+        { bearer: [] },
+      ]);
+      expect(document.paths["/api/v2/auth/me"]).toBeUndefined();
     } finally {
       await app.close();
     }

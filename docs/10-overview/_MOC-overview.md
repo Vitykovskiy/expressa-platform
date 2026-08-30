@@ -10,7 +10,12 @@ source_mode: normative
 sources: [Expressa_MVP_Техническое_задание.md]
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
-related: ["[Project-overview](Project-overview.md)", "[MVP-scope](MVP-scope.md)", "[Roles-and-access](Roles-and-access.md)"]
+related:
+  [
+    "[Project-overview](Project-overview.md)",
+    "[MVP-scope](MVP-scope.md)",
+    "[Roles-and-access](Roles-and-access.md)",
+  ]
 ---
 
 # Карта обзора

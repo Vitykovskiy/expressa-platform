@@ -1,7 +1,10 @@
-import type { SmsSender } from '../application/sms-sender.types';
-import type { RussianPhone } from '../domain/phone.types';
-import { smsRuEndpoint, smsRuTimeoutMs } from './sms-ru-sms.sender.constants';
-import type { SmsRuConfiguration, SmsRuMessageResponse } from './sms-ru-sms.sender.types';
+import type { SmsSender } from "../application/sms-sender.types";
+import type { RussianPhone } from "../domain/phone.types";
+import { smsRuEndpoint, smsRuTimeoutMs } from "./sms-ru-sms.sender.constants";
+import type {
+  SmsRuConfiguration,
+  SmsRuMessageResponse,
+} from "./sms-ru-sms.sender.types";
 
 export class SmsRuSmsSender implements SmsSender {
   constructor(
@@ -19,21 +22,24 @@ export class SmsRuSmsSender implements SmsSender {
         body: new URLSearchParams({
           api_id: this.configuration.apiId,
           from: this.configuration.from,
-          json: '1',
+          json: "1",
           msg: `Код подтверждения Expressa: ${code}`,
           to: recipient,
-          ttl: '5',
+          ttl: "5",
         }),
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        method: 'POST',
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        method: "POST",
         signal: controller.signal,
       });
 
-      if (!response.ok || !(await isSuccessfulSmsRuResponse(response, recipient))) {
-        throw new Error('SMS provider did not accept the message.');
+      if (
+        !response.ok ||
+        !(await isSuccessfulSmsRuResponse(response, recipient))
+      ) {
+        throw new Error("SMS provider did not accept the message.");
       }
     } catch {
-      throw new Error('SMS delivery failed.');
+      throw new Error("SMS delivery failed.");
     } finally {
       clearTimeout(timeout);
     }
@@ -52,28 +58,27 @@ async function isSuccessfulSmsRuResponse(
     return false;
   }
 
-  if (!isRecord(body) || body.status !== 'OK' || body.status_code !== 100) {
+  if (!isRecord(body) || body.status !== "OK" || body.status_code !== 100) {
     return false;
   }
 
   const message = body.sms;
 
-  return (
-    isRecord(message) &&
-    isSuccessfulSmsRuMessage(message[recipient])
-  );
+  return isRecord(message) && isSuccessfulSmsRuMessage(message[recipient]);
 }
 
-function isSuccessfulSmsRuMessage(value: unknown): value is SmsRuMessageResponse {
+function isSuccessfulSmsRuMessage(
+  value: unknown,
+): value is SmsRuMessageResponse {
   return (
     isRecord(value) &&
-    value.status === 'OK' &&
+    value.status === "OK" &&
     value.status_code === 100 &&
-    typeof value.sms_id === 'string' &&
-    value.sms_id !== ''
+    typeof value.sms_id === "string" &&
+    value.sms_id !== ""
   );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

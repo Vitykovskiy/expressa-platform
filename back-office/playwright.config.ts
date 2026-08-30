@@ -35,10 +35,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: authTarget
-        ? authFrontendUrl
-        : catalogTarget
-          ? catalogOrigin
-          : backOfficeAppUrl,
+      ? authFrontendUrl
+      : catalogTarget
+        ? catalogOrigin
+        : backOfficeAppUrl,
     trace: backOfficePlaywrightTrace,
   },
   projects: [

@@ -1,1 +1,1 @@
-export const rolesMetadataKey = 'auth:role-policy';
+export const rolesMetadataKey = "auth:role-policy";

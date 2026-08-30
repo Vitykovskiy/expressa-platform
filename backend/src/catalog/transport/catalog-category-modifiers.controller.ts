@@ -53,7 +53,10 @@ import { validationError } from "./catalog-validation-error";
 @ApiBearerAuth()
 @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ApiHttpErrorDto })
 @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ApiHttpErrorDto })
-@ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ApiHttpErrorDto })
+@ApiResponse({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  type: ApiHttpErrorDto,
+})
 export class CatalogCategoryModifiersController {
   constructor(
     private readonly manageCategoryModifiers: ManageCategoryModifiersUseCase,

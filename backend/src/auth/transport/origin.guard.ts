@@ -6,9 +6,12 @@ import {
   Inject,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import type { OriginGuardConfiguration, OriginRequest } from './origin.guard.types';
-import { originGuardConfigurationToken } from '../auth.constants';
+} from "@nestjs/common";
+import type {
+  OriginGuardConfiguration,
+  OriginRequest,
+} from "./origin.guard.types";
+import { originGuardConfigurationToken } from "../auth.constants";
 
 @Injectable()
 export class OriginGuard implements CanActivate {
@@ -19,15 +22,21 @@ export class OriginGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<unknown>();
-    const origin = isOriginRequest(request) ? normalizeOrigin(request.headers.origin) : null;
+    const origin = isOriginRequest(request)
+      ? normalizeOrigin(request.headers.origin)
+      : null;
 
     if (origin === null) {
       throw new UnauthorizedException();
     }
 
-    if (!this.configuration.allowedOrigins.some((allowed) => normalizeOrigin(allowed) === origin)) {
+    if (
+      !this.configuration.allowedOrigins.some(
+        (allowed) => normalizeOrigin(allowed) === origin,
+      )
+    ) {
       throw new HttpException(
-        { code: 'ACCESS_DENIED', details: null, message: 'Access denied' },
+        { code: "ACCESS_DENIED", details: null, message: "Access denied" },
         HttpStatus.FORBIDDEN,
       );
     }
@@ -38,23 +47,26 @@ export class OriginGuard implements CanActivate {
 
 function isOriginRequest(value: unknown): value is OriginRequest {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'headers' in value &&
-    typeof value.headers === 'object' &&
+    "headers" in value &&
+    typeof value.headers === "object" &&
     value.headers !== null
   );
 }
 
 function normalizeOrigin(value: unknown): string | null {
-  if (typeof value !== 'string' || value === 'null') {
+  if (typeof value !== "string" || value === "null") {
     return null;
   }
 
   try {
     const origin = new URL(value);
 
-    if ((origin.protocol !== 'http:' && origin.protocol !== 'https:') || origin.origin !== value) {
+    if (
+      (origin.protocol !== "http:" && origin.protocol !== "https:") ||
+      origin.origin !== value
+    ) {
       return null;
     }
 

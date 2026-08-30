@@ -8,6 +8,8 @@ repository_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 cd "$repository_root"
 
+lint-staged
+
 if ! git diff --cached --check; then
   printf '%s\n' 'pre-commit: staged diff contains whitespace errors.' >&2
   exit 1

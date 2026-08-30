@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from "pg";
 import type {
   AuthRepository,
   AuthSession,
@@ -9,18 +9,20 @@ import type {
   SessionRotation,
   SessionWithUser,
   StoredOtpChallenge,
-} from '../application/auth-repository.types';
-import { userRoles } from '../domain/auth.constants';
-import type { UserRole } from '../domain/auth.types';
-import { otpResendIntervalMs } from '../domain/otp-policy.constants';
-import type { DatabaseRow } from './postgres-auth.repository.types';
+} from "../application/auth-repository.types";
+import { userRoles } from "../domain/auth.constants";
+import type { UserRole } from "../domain/auth.types";
+import { otpResendIntervalMs } from "../domain/otp-policy.constants";
+import type { DatabaseRow } from "./postgres-auth.repository.types";
 
 class SessionIdConflictError extends Error {}
 
 export class PostgresAuthRepository implements AuthRepository {
   constructor(private readonly pool: Pool) {}
 
-  async findOpenOtpChallenge(phoneE164: string): Promise<StoredOtpChallenge | null> {
+  async findOpenOtpChallenge(
+    phoneE164: string,
+  ): Promise<StoredOtpChallenge | null> {
     const result = await this.pool.query<DatabaseRow>(
       `SELECT id, code_hash, expires_at, consumed_at, sent_at, attempts
        FROM otp_challenges
@@ -41,7 +43,10 @@ export class PostgresAuthRepository implements AuthRepository {
     challengeId: string,
   ): Promise<OtpChallengeReservation> {
     return this.withTransaction(async (client) => {
-      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [phoneE164]);
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+        [phoneE164],
+      );
 
       const latest = await client.query<DatabaseRow>(
         `SELECT sent_at
@@ -51,13 +56,16 @@ export class PostgresAuthRepository implements AuthRepository {
          LIMIT 1`,
         [phoneE164],
       );
-      const latestSentAt = latest.rows[0] === undefined ? null : readDate(latest.rows[0], 'sent_at');
+      const latestSentAt =
+        latest.rows[0] === undefined
+          ? null
+          : readDate(latest.rows[0], "sent_at");
 
       if (
         latestSentAt !== null &&
         sentAt.getTime() - latestSentAt.getTime() < otpResendIntervalMs
       ) {
-        return { status: 'rate_limited' };
+        return { status: "rate_limited" };
       }
 
       await client.query(
@@ -74,7 +82,10 @@ export class PostgresAuthRepository implements AuthRepository {
         [challengeId, phoneE164, codeHash, expiresAt, sentAt],
       );
 
-      return { status: 'created', challenge: parseRequiredRow(result.rows[0], parseOtpChallenge) };
+      return {
+        status: "created",
+        challenge: parseRequiredRow(result.rows[0], parseOtpChallenge),
+      };
     });
   }
 
@@ -97,73 +108,80 @@ export class PostgresAuthRepository implements AuthRepository {
   ): Promise<OtpAuthentication> {
     try {
       return await this.withTransaction(async (client) => {
-      const selected = await client.query<DatabaseRow>(
-        `SELECT id, code_hash, expires_at, consumed_at, sent_at, attempts
+        const selected = await client.query<DatabaseRow>(
+          `SELECT id, code_hash, expires_at, consumed_at, sent_at, attempts
          FROM otp_challenges
          WHERE phone_e164 = $1 AND consumed_at IS NULL
          ORDER BY sent_at DESC
          LIMIT 1
          FOR UPDATE`,
-        [phoneE164],
-      );
-      const challenge = parseOptionalRow(selected.rows[0], parseOtpChallenge);
+          [phoneE164],
+        );
+        const challenge = parseOptionalRow(selected.rows[0], parseOtpChallenge);
 
-      if (challenge === null || challenge.expiresAt <= now || challenge.attempts >= 5) {
-        return { status: 'unavailable', challenge };
-      }
+        if (
+          challenge === null ||
+          challenge.expiresAt <= now ||
+          challenge.attempts >= 5
+        ) {
+          return { status: "unavailable", challenge };
+        }
 
-      if (challenge.codeHash !== codeHash) {
-        const attempted = await client.query<DatabaseRow>(
-          `UPDATE otp_challenges
+        if (challenge.codeHash !== codeHash) {
+          const attempted = await client.query<DatabaseRow>(
+            `UPDATE otp_challenges
            SET attempts = attempts + 1
            WHERE id = $1
            RETURNING id, code_hash, expires_at, consumed_at, sent_at, attempts`,
-          [challenge.id],
-        );
+            [challenge.id],
+          );
 
-        return { status: 'invalid', challenge: parseRequiredRow(attempted.rows[0], parseOtpChallenge) };
-      }
+          return {
+            status: "invalid",
+            challenge: parseRequiredRow(attempted.rows[0], parseOtpChallenge),
+          };
+        }
 
-      await client.query(
-        `UPDATE otp_challenges
+        await client.query(
+          `UPDATE otp_challenges
          SET consumed_at = GREATEST($2, sent_at)
          WHERE id = $1`,
-        [challenge.id, now],
-      );
-      await client.query(
-        `INSERT INTO users (phone_e164, role)
+          [challenge.id, now],
+        );
+        await client.query(
+          `INSERT INTO users (phone_e164, role)
          VALUES ($1, 'customer')
          ON CONFLICT (phone_e164) DO NOTHING`,
-        [phoneE164],
-      );
-      const userResult = await client.query<DatabaseRow>(
-        `SELECT id, phone_e164, role
+          [phoneE164],
+        );
+        const userResult = await client.query<DatabaseRow>(
+          `SELECT id, phone_e164, role
          FROM users
          WHERE phone_e164 = $1
          FOR UPDATE`,
-        [phoneE164],
-      );
-      const user = parseRequiredRow(userResult.rows[0], parseAuthUser);
-      const sessionResult = await client.query<DatabaseRow>(
-        `INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
+          [phoneE164],
+        );
+        const user = parseRequiredRow(userResult.rows[0], parseAuthUser);
+        const sessionResult = await client.query<DatabaseRow>(
+          `INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (id) DO NOTHING
          RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
-        [sessionId, user.id, refreshTokenHash, sessionExpiresAt],
-      );
-      if (sessionResult.rows[0] === undefined) {
-        throw new SessionIdConflictError();
-      }
+          [sessionId, user.id, refreshTokenHash, sessionExpiresAt],
+        );
+        if (sessionResult.rows[0] === undefined) {
+          throw new SessionIdConflictError();
+        }
 
-      return {
-        status: 'authenticated',
-        user,
-        session: parseRequiredRow(sessionResult.rows[0], parseSession),
-      };
+        return {
+          status: "authenticated",
+          user,
+          session: parseRequiredRow(sessionResult.rows[0], parseSession),
+        };
       });
     } catch (error) {
       if (error instanceof SessionIdConflictError) {
-        return { status: 'session_conflict' };
+        return { status: "session_conflict" };
       }
 
       throw error;
@@ -191,7 +209,9 @@ export class PostgresAuthRepository implements AuthRepository {
     });
   }
 
-  async findSessionByRefreshTokenHash(refreshTokenHash: string): Promise<AuthSession | null> {
+  async findSessionByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<AuthSession | null> {
     const result = await this.pool.query<DatabaseRow>(
       `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
        FROM sessions
@@ -202,7 +222,10 @@ export class PostgresAuthRepository implements AuthRepository {
     return parseOptionalRow(result.rows[0], parseSession);
   }
 
-  async findSessionWithUser(sessionId: string, now: Date): Promise<SessionWithUser | null> {
+  async findSessionWithUser(
+    sessionId: string,
+    now: Date,
+  ): Promise<SessionWithUser | null> {
     const result = await this.pool.query<DatabaseRow>(
       `SELECT sessions.id, sessions.user_id, sessions.refresh_token_hash, sessions.expires_at,
               sessions.revoked_at, sessions.created_at, sessions.rotated_at,
@@ -242,7 +265,7 @@ export class PostgresAuthRepository implements AuthRepository {
         found.session.revokedAt !== null ||
         found.session.expiresAt <= now
       ) {
-        return { status: 'unavailable' };
+        return { status: "unavailable" };
       }
 
       if (found.session.refreshTokenHash !== expectedRefreshTokenHash) {
@@ -255,7 +278,7 @@ export class PostgresAuthRepository implements AuthRepository {
         );
 
         return {
-          status: 'mismatch',
+          status: "mismatch",
           session: parseRequiredRow(revoked.rows[0], parseSession),
           user: found.user,
         };
@@ -270,14 +293,17 @@ export class PostgresAuthRepository implements AuthRepository {
       );
 
       return {
-        status: 'rotated',
+        status: "rotated",
         session: parseRequiredRow(rotated.rows[0], parseSession),
         user: found.user,
       };
     });
   }
 
-  async revokeSession(sessionId: string, now: Date): Promise<AuthSession | null> {
+  async revokeSession(
+    sessionId: string,
+    now: Date,
+  ): Promise<AuthSession | null> {
     return this.withTransaction(async (client) => {
       const selected = await client.query<DatabaseRow>(
         `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
@@ -324,7 +350,7 @@ export class PostgresAuthRepository implements AuthRepository {
         session.revokedAt !== null ||
         session.refreshTokenHash !== expectedRefreshTokenHash
       ) {
-        return { status: 'unavailable' };
+        return { status: "unavailable" };
       }
 
       const revoked = await client.query<DatabaseRow>(
@@ -335,11 +361,17 @@ export class PostgresAuthRepository implements AuthRepository {
         [session.id, now],
       );
 
-      return { status: 'revoked', session: parseRequiredRow(revoked.rows[0], parseSession) };
+      return {
+        status: "revoked",
+        session: parseRequiredRow(revoked.rows[0], parseSession),
+      };
     });
   }
 
-  async findCurrentUser(sessionId: string, now: Date): Promise<AuthUser | null> {
+  async findCurrentUser(
+    sessionId: string,
+    now: Date,
+  ): Promise<AuthUser | null> {
     const result = await this.pool.query<DatabaseRow>(
       `SELECT users.id, users.phone_e164, users.role
        FROM sessions
@@ -357,12 +389,12 @@ export class PostgresAuthRepository implements AuthRepository {
     const client = await this.pool.connect();
 
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
       const result = await operation(client);
-      await client.query('COMMIT');
+      await client.query("COMMIT");
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
@@ -382,7 +414,7 @@ function parseRequiredRow<Result>(
   parser: (row: DatabaseRow) => Result,
 ): Result {
   if (row === undefined) {
-    throw new Error('PostgreSQL returned no row');
+    throw new Error("PostgreSQL returned no row");
   }
 
   return parser(row);
@@ -390,32 +422,32 @@ function parseRequiredRow<Result>(
 
 function parseOtpChallenge(row: DatabaseRow): StoredOtpChallenge {
   return {
-    id: readString(row, 'id'),
-    codeHash: readString(row, 'code_hash'),
-    expiresAt: readDate(row, 'expires_at'),
-    consumedAt: readNullableDate(row, 'consumed_at'),
-    sentAt: readDate(row, 'sent_at'),
+    id: readString(row, "id"),
+    codeHash: readString(row, "code_hash"),
+    expiresAt: readDate(row, "expires_at"),
+    consumedAt: readNullableDate(row, "consumed_at"),
+    sentAt: readDate(row, "sent_at"),
     attempts: readAttempts(row),
   };
 }
 
 function parseAuthUser(row: DatabaseRow): AuthUser {
   return {
-    id: readString(row, 'id'),
-    phoneE164: readString(row, 'phone_e164'),
+    id: readString(row, "id"),
+    phoneE164: readString(row, "phone_e164"),
     role: readUserRole(row),
   };
 }
 
 function parseSession(row: DatabaseRow): AuthSession {
   return {
-    id: readString(row, 'id'),
-    userId: readString(row, 'user_id'),
-    refreshTokenHash: readString(row, 'refresh_token_hash'),
-    expiresAt: readDate(row, 'expires_at'),
-    revokedAt: readNullableDate(row, 'revoked_at'),
-    createdAt: readDate(row, 'created_at'),
-    rotatedAt: readNullableDate(row, 'rotated_at'),
+    id: readString(row, "id"),
+    userId: readString(row, "user_id"),
+    refreshTokenHash: readString(row, "refresh_token_hash"),
+    expiresAt: readDate(row, "expires_at"),
+    revokedAt: readNullableDate(row, "revoked_at"),
+    createdAt: readDate(row, "created_at"),
+    rotatedAt: readNullableDate(row, "rotated_at"),
   };
 }
 
@@ -423,9 +455,9 @@ function parseSessionWithUser(row: DatabaseRow): SessionWithUser {
   return {
     session: parseSession(row),
     user: {
-      id: readString(row, 'current_user_id'),
-      phoneE164: readString(row, 'current_user_phone_e164'),
-      role: readUserRoleFromKey(row, 'current_user_role'),
+      id: readString(row, "current_user_id"),
+      phoneE164: readString(row, "current_user_phone_e164"),
+      role: readUserRoleFromKey(row, "current_user_role"),
     },
   };
 }
@@ -433,8 +465,8 @@ function parseSessionWithUser(row: DatabaseRow): SessionWithUser {
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
 
-  if (typeof value !== 'string') {
-    throw new Error('Invalid PostgreSQL row field: ' + key);
+  if (typeof value !== "string") {
+    throw new Error("Invalid PostgreSQL row field: " + key);
   }
 
   return value;
@@ -444,7 +476,7 @@ function readDate(row: DatabaseRow, key: string): Date {
   const value = row[key];
 
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-    throw new Error('Invalid PostgreSQL row field: ' + key);
+    throw new Error("Invalid PostgreSQL row field: " + key);
   }
 
   return value;
@@ -463,22 +495,27 @@ function readNullableDate(row: DatabaseRow, key: string): Date | null {
 function readAttempts(row: DatabaseRow): number {
   const value = row.attempts;
 
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 5) {
-    throw new Error('Invalid PostgreSQL row field: attempts');
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 0 ||
+    value > 5
+  ) {
+    throw new Error("Invalid PostgreSQL row field: attempts");
   }
 
   return value;
 }
 
 function readUserRole(row: DatabaseRow): UserRole {
-  return readUserRoleFromKey(row, 'role');
+  return readUserRoleFromKey(row, "role");
 }
 
 function readUserRoleFromKey(row: DatabaseRow, key: string): UserRole {
   const value = readString(row, key);
 
   if (!isUserRole(value)) {
-    throw new Error('Invalid PostgreSQL row field: ' + key);
+    throw new Error("Invalid PostgreSQL row field: " + key);
   }
 
   return value;

@@ -1,8 +1,15 @@
-import type { PoolClient } from 'pg';
-import type { CategoriesRepository, CategoriesUnitOfWork, CategoryAuditEvent } from '../application/categories.repository.types';
-import type { AdminCategory, CategoryDetails } from '../domain/category-admin.policy.types';
-import { PostgresCatalogCommandRunner } from './postgres-catalog-command.runner';
-import type { DatabaseRow } from './postgres-categories.repository.types';
+import type { PoolClient } from "pg";
+import type {
+  CategoriesRepository,
+  CategoriesUnitOfWork,
+  CategoryAuditEvent,
+} from "../application/categories.repository.types";
+import type {
+  AdminCategory,
+  CategoryDetails,
+} from "../domain/category-admin.policy.types";
+import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import type { DatabaseRow } from "./postgres-categories.repository.types";
 
 export class PostgresCategoriesRepository implements CategoriesUnitOfWork {
   constructor(private readonly runner: PostgresCatalogCommandRunner) {}
@@ -13,7 +20,8 @@ export class PostgresCategoriesRepository implements CategoriesUnitOfWork {
   ): Promise<Result> {
     return this.runner.run(
       (client) => command(new PostgresCategoriesTransactionRepository(client)),
-      (client, result) => audit(new PostgresCategoriesTransactionRepository(client), result),
+      (client, result) =>
+        audit(new PostgresCategoriesTransactionRepository(client), result),
     );
   }
 }
@@ -58,14 +66,25 @@ class PostgresCategoriesTransactionRepository implements CategoriesRepository {
        SET name = $2, description = $3, sort_order = $4, is_active = $5
        WHERE id = $1 AND archived_at IS NULL
        RETURNING id, name, description, sort_order, is_active, archived_at`,
-      [id, details.name, details.description, details.sortOrder, details.isActive],
+      [
+        id,
+        details.name,
+        details.description,
+        details.sortOrder,
+        details.isActive,
+      ],
     );
     return parseRequiredCategory(result.rows[0]);
   }
 
-  async reorder(categories: readonly AdminCategory[], categoryIds: readonly string[]): Promise<AdminCategory[]> {
+  async reorder(
+    categories: readonly AdminCategory[],
+    categoryIds: readonly string[],
+  ): Promise<AdminCategory[]> {
     const client = this.client;
-    const activeCategoryIds = categories.filter((category) => category.isActive).map((category) => category.id);
+    const activeCategoryIds = categories
+      .filter((category) => category.isActive)
+      .map((category) => category.id);
     await client.query(
       `UPDATE categories SET is_active = false
        WHERE id = ANY($1::uuid[]) AND archived_at IS NULL`,
@@ -114,43 +133,52 @@ class PostgresCategoriesTransactionRepository implements CategoriesRepository {
     await client.query(
       `INSERT INTO audit_events (actor_id, entity_type, entity_id, action, before_state, after_state, request_id)
        VALUES ($1, 'category', $2, $3, $4::jsonb, $5::jsonb, $6)`,
-      [event.actorId, event.categoryId, event.action, JSON.stringify(event.before), JSON.stringify(event.after), event.requestId],
+      [
+        event.actorId,
+        event.categoryId,
+        event.action,
+        JSON.stringify(event.before),
+        JSON.stringify(event.after),
+        event.requestId,
+      ],
     );
   }
 }
 
 function parseRequiredCategory(row: DatabaseRow | undefined): AdminCategory {
-  if (row === undefined) throw new Error('Category command returned no row');
+  if (row === undefined) throw new Error("Category command returned no row");
   return parseCategory(row);
 }
 
 function parseCategory(row: DatabaseRow): AdminCategory {
   return {
-    id: readString(row, 'id'),
-    name: readString(row, 'name'),
-    description: readString(row, 'description'),
-    sortOrder: readNonNegativeInteger(row, 'sort_order'),
-    isActive: readBoolean(row, 'is_active'),
-    archivedAt: readNullableDate(row, 'archived_at'),
+    id: readString(row, "id"),
+    name: readString(row, "name"),
+    description: readString(row, "description"),
+    sortOrder: readNonNegativeInteger(row, "sort_order"),
+    isActive: readBoolean(row, "is_active"),
+    archivedAt: readNullableDate(row, "archived_at"),
   };
 }
 
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
-  if (typeof value !== 'string') throw new Error('Invalid PostgreSQL row field: ' + key);
+  if (typeof value !== "string")
+    throw new Error("Invalid PostgreSQL row field: " + key);
   return value;
 }
 
 function readBoolean(row: DatabaseRow, key: string): boolean {
   const value = row[key];
-  if (typeof value !== 'boolean') throw new Error('Invalid PostgreSQL row field: ' + key);
+  if (typeof value !== "boolean")
+    throw new Error("Invalid PostgreSQL row field: " + key);
   return value;
 }
 
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
-    throw new Error('Invalid PostgreSQL row field: ' + key);
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error("Invalid PostgreSQL row field: " + key);
   }
   return value;
 }
@@ -159,7 +187,7 @@ function readNullableDate(row: DatabaseRow, key: string): Date | null {
   const value = row[key];
   if (value === null) return null;
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-    throw new Error('Invalid PostgreSQL row field: ' + key);
+    throw new Error("Invalid PostgreSQL row field: " + key);
   }
   return value;
 }

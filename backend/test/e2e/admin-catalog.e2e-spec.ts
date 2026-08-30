@@ -754,9 +754,7 @@ function productBody(categoryId: string) {
     sortOrder: 0,
     isActive: true,
     isAvailable: true,
-    variants: [
-      { size: "M", price: 320, sortOrder: 0, isAvailable: true },
-    ],
+    variants: [{ size: "M", price: 320, sortOrder: 0, isAvailable: true }],
   };
 }
 function headers(token?: string): Record<string, string> {

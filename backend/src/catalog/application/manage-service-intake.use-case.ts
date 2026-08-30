@@ -1,4 +1,7 @@
-import type { AvailabilityRepository, ServiceIntake } from './admin-catalog.repository.types';
+import type {
+  AvailabilityRepository,
+  ServiceIntake,
+} from "./admin-catalog.repository.types";
 
 export class ManageServiceIntakeUseCase {
   constructor(private readonly repository: AvailabilityRepository) {}

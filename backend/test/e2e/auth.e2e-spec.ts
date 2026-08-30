@@ -309,6 +309,8 @@ describe("auth E2E", () => {
 
     const responses = await Promise.all([requestOtp(value), requestOtp(value)]);
 
-    expect(responses.map((response) => response.status).sort()).toEqual([202, 429]);
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      202, 429,
+    ]);
   });
 });

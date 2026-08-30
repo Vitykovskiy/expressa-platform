@@ -1,10 +1,10 @@
-import type { INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import type { NextFunction, Request, Response } from 'express';
-import { AppModule } from './app.module';
-import { validateEnvironment } from './platform/config/environment';
-import { configureHttp } from './platform/http/http-configuration';
-import { configureObservability } from './platform/observability/observability-configuration';
+import type { INestApplication } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import type { NextFunction, Request, Response } from "express";
+import { AppModule } from "./app.module";
+import { validateEnvironment } from "./platform/config/environment";
+import { configureHttp } from "./platform/http/http-configuration";
+import { configureObservability } from "./platform/observability/observability-configuration";
 
 export async function createApplication(): Promise<INestApplication> {
   validateEnvironment(process.env);
@@ -27,7 +27,7 @@ export async function startServer(app: INestApplication): Promise<void> {
     next();
   });
 
-  process.once('SIGTERM', () => {
+  process.once("SIGTERM", () => {
     if (isShuttingDown) {
       return;
     }

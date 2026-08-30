@@ -1,4 +1,7 @@
-import type { AdminCatalogCandidates, AdminCatalogRepository } from './admin-catalog.repository.types';
+import type {
+  AdminCatalogCandidates,
+  AdminCatalogRepository,
+} from "./admin-catalog.repository.types";
 
 export class GetAdminCatalogUseCase {
   constructor(private readonly repository: AdminCatalogRepository) {}

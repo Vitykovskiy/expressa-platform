@@ -1,8 +1,11 @@
-import { GetAdminCatalogUseCase } from './get-admin-catalog.use-case';
-import type { AdminCatalogCandidates, AdminCatalogRepository } from './admin-catalog.repository.types';
+import { GetAdminCatalogUseCase } from "./get-admin-catalog.use-case";
+import type {
+  AdminCatalogCandidates,
+  AdminCatalogRepository,
+} from "./admin-catalog.repository.types";
 
-describe('GetAdminCatalogUseCase', () => {
-  it('возвращает полный неархивированный каталог без фильтрации активности', async () => {
+describe("GetAdminCatalogUseCase", () => {
+  it("возвращает полный неархивированный каталог без фильтрации активности", async () => {
     const catalog: AdminCatalogCandidates = {
       categories: [],
       products: [],
@@ -11,9 +14,13 @@ describe('GetAdminCatalogUseCase', () => {
       modifierOptions: [],
       categoryModifierGroups: [],
     };
-    const repository: AdminCatalogRepository = { findCandidates: jest.fn().mockResolvedValue(catalog) };
+    const repository: AdminCatalogRepository = {
+      findCandidates: jest.fn().mockResolvedValue(catalog),
+    };
 
-    await expect(new GetAdminCatalogUseCase(repository).execute()).resolves.toBe(catalog);
+    await expect(
+      new GetAdminCatalogUseCase(repository).execute(),
+    ).resolves.toBe(catalog);
     expect(repository.findCandidates).toHaveBeenCalledTimes(1);
   });
 });

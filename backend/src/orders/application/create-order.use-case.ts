@@ -1,6 +1,10 @@
-import type { CreateOrderCommand, CreateOrderResult, OrderUnitOfWork } from './order-unit-of-work.types';
-import type { OrderMetricsPort } from './order-metrics.types';
-import type { OrderNotificationPort } from './order-notification-port.types';
+import type {
+  CreateOrderCommand,
+  CreateOrderResult,
+  OrderUnitOfWork,
+} from "./order-unit-of-work.types";
+import type { OrderMetricsPort } from "./order-metrics.types";
+import type { OrderNotificationPort } from "./order-notification-port.types";
 
 export class CreateOrderUseCase {
   constructor(
@@ -15,7 +19,15 @@ export class CreateOrderUseCase {
       this.metrics.recordOrderCreated();
     }
     if (!result.replayed) {
-      void this.push.execute({ recipient: 'staff', orderId: result.order.id, number: result.order.number, stage: 'CREATED', customerId: command.customerId }).catch(() => undefined);
+      void this.push
+        .execute({
+          recipient: "staff",
+          orderId: result.order.id,
+          number: result.order.number,
+          stage: "CREATED",
+          customerId: command.customerId,
+        })
+        .catch(() => undefined);
     }
     return result;
   }

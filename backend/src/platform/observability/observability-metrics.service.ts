@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Counter, Gauge, Registry } from 'prom-client';
+import { Injectable } from "@nestjs/common";
+import { Counter, Gauge, Registry } from "prom-client";
 
 export type ObservabilityMetricsSnapshot = {
   apiErrorsTotal: number;
@@ -12,40 +12,40 @@ export type ObservabilityMetricsSnapshot = {
 export class ObservabilityMetrics {
   private static readonly registry = new Registry();
   private static readonly apiErrors = new Counter({
-    name: 'expressa_api_errors_total',
-    help: 'Total API errors returned by Expressa.',
+    name: "expressa_api_errors_total",
+    help: "Total API errors returned by Expressa.",
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly httpResponses = new Counter({
-    name: 'expressa_http_responses_total',
-    help: 'Total HTTP responses returned by Expressa.',
-    labelNames: ['path', 'status_class'] as const,
+    name: "expressa_http_responses_total",
+    help: "Total HTTP responses returned by Expressa.",
+    labelNames: ["path", "status_class"] as const,
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly otpFailures = new Counter({
-    name: 'expressa_otp_failures_total',
-    help: 'Total failed OTP request and verification responses.',
+    name: "expressa_otp_failures_total",
+    help: "Total failed OTP request and verification responses.",
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly readinessFailures = new Counter({
-    name: 'expressa_readiness_failures_total',
-    help: 'Total failed PostgreSQL readiness checks.',
+    name: "expressa_readiness_failures_total",
+    help: "Total failed PostgreSQL readiness checks.",
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly backendReadiness = new Gauge({
-    name: 'expressa_backend_readiness',
-    help: 'Current PostgreSQL readiness observed by the metrics scrape.',
+    name: "expressa_backend_readiness",
+    help: "Current PostgreSQL readiness observed by the metrics scrape.",
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly ordersCreated = new Counter({
-    name: 'expressa_orders_created_total',
-    help: 'Total newly created orders, excluding idempotency replays.',
+    name: "expressa_orders_created_total",
+    help: "Total newly created orders, excluding idempotency replays.",
     registers: [ObservabilityMetrics.registry],
   });
   private static readonly orderTransitions = new Counter({
-    name: 'expressa_order_transitions_total',
-    help: 'Total committed order transitions by resulting stage.',
-    labelNames: ['stage'] as const,
+    name: "expressa_order_transitions_total",
+    help: "Total committed order transitions by resulting stage.",
+    labelNames: ["stage"] as const,
     registers: [ObservabilityMetrics.registry],
   });
   private apiErrorsTotal = 0;
@@ -58,7 +58,7 @@ export class ObservabilityMetrics {
     ObservabilityMetrics.apiErrors.inc();
   }
 
-  recordHttpResponse(statusCode: number, requestPath = '/'): void {
+  recordHttpResponse(statusCode: number, requestPath = "/"): void {
     this.httpRequestsTotal += 1;
     const statusClass = `${Math.floor(statusCode / 100)}xx`;
 

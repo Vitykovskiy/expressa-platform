@@ -1,9 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 import type {
   ApiErrorDetails,
   ApiValidationErrorDetails,
   ApiValidationField,
-} from './http-error.dto.types';
+} from "./http-error.dto.types";
 
 export class ApiHttpErrorDto {
   @ApiProperty()
@@ -12,7 +12,7 @@ export class ApiHttpErrorDto {
   @ApiProperty()
   message!: string;
 
-  @ApiProperty({ additionalProperties: true, nullable: true, type: 'object' })
+  @ApiProperty({ additionalProperties: true, nullable: true, type: "object" })
   details!: ApiErrorDetails;
 
   @ApiProperty()

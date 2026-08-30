@@ -18,10 +18,10 @@ sources:
 
 ## Адреса стендов
 
-| Среда | Customer | Admin | API |
-| --- | --- | --- | --- |
-| development | <https://dev.expressa.vitykovskiy.ru/> | <https://admin.dev.expressa.vitykovskiy.ru/> | <https://api.dev.expressa.vitykovskiy.ru> |
-| staging | <https://staging.expressa.vitykovskiy.ru/> | <https://admin.staging.expressa.vitykovskiy.ru/> | <https://api.staging.expressa.vitykovskiy.ru> |
+| Среда       | Customer                                   | Admin                                            | API                                           |
+| ----------- | ------------------------------------------ | ------------------------------------------------ | --------------------------------------------- |
+| development | <https://dev.expressa.vitykovskiy.ru/>     | <https://admin.dev.expressa.vitykovskiy.ru/>     | <https://api.dev.expressa.vitykovskiy.ru>     |
+| staging     | <https://staging.expressa.vitykovskiy.ru/> | <https://admin.staging.expressa.vitykovskiy.ru/> | <https://api.staging.expressa.vitykovskiy.ru> |
 
 Для обоих API проверка доступности выполняется по `/health/live` и
 `/health/ready`. Swagger и OpenAPI публикуются только в `development`:

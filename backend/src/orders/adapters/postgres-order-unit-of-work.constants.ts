@@ -1,1 +1,2 @@
-export const idempotencyLockSql = 'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))';
+export const idempotencyLockSql =
+  "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))";

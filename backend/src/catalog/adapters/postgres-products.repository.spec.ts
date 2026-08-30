@@ -188,14 +188,12 @@ describe("PostgresProductsRepository", () => {
       sortOrder: 0,
       isActive: true,
       isAvailable: true,
-      variants: variants.map(
-        ({ size, price, sort_order, is_available }) => ({
-          size: size as "S" | "M" | "L",
-          price: price,
-          sortOrder: sort_order,
-          isAvailable: is_available,
-        }),
-      ),
+      variants: variants.map(({ size, price, sort_order, is_available }) => ({
+        size: size as "S" | "M" | "L",
+        price: price,
+        sortOrder: sort_order,
+        isAvailable: is_available,
+      })),
     };
     await expect(
       repository.run(

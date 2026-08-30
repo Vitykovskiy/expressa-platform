@@ -76,13 +76,13 @@ workflow, `runtime.env` и `deploy.sh`; последний задаёт един
 
 ## Публичные тестовые доступы
 
-| Среда       | Роль              | Телефон                         | OTP                    | Источник конфигурации                                                |
-| ----------- | ----------------- | ------------------------------- | ---------------------- | -------------------------------------------------------------------- |
-| development | E2E administrator | значение `BOOTSTRAP_ADMIN_PHONE` | `AUTH_DEVELOPMENT_OTP` | GitHub Environment `development`                                    |
+| Среда       | Роль              | Телефон                                | OTP                    | Источник конфигурации                                               |
+| ----------- | ----------------- | -------------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| development | E2E administrator | значение `BOOTSTRAP_ADMIN_PHONE`       | `AUTH_DEVELOPMENT_OTP` | GitHub Environment `development`                                    |
 | development | E2E staff         | первый свободный номер резервного пула | `AUTH_DEVELOPMENT_OTP` | выбирается с исключением administrator                              |
 | development | E2E customer      | второй свободный номер резервного пула | `AUTH_DEVELOPMENT_OTP` | выбирается с исключением administrator                              |
-| staging     | customer          | `+79990000001`                  | `000000`               | фиксированный контракт `staging_test`                                |
-| staging     | administrator     | значение `BOOTSTRAP_ADMIN_PHONE` | `000000`               | GitHub Environment `staging`; фиксированный контракт `staging_test` |
+| staging     | customer          | `+79990000001`                         | `000000`               | фиксированный контракт `staging_test`                               |
+| staging     | administrator     | значение `BOOTSTRAP_ADMIN_PHONE`       | `000000`               | GitHub Environment `staging`; фиксированный контракт `staging_test` |
 
 `BOOTSTRAP_ADMIN_PHONE` в GitHub Environments `development` и `staging`
 создаёт или обновляет administrator при каждом seed. Временный E2E-стенд затем

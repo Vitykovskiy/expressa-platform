@@ -7,9 +7,16 @@ repository_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
   exit 1
 }
 
+hook_binaries="$repository_root/node_modules/.bin"
+if [ ! -x "$hook_binaries/lint-staged" ]; then
+  printf '%s\n' 'test-git-hooks: install root dependencies before running this script.' >&2
+  exit 1
+fi
+export PATH="$hook_binaries:$PATH"
+
 if ! (
   cd "$repository_root"
-  .githooks/pre-commit
+  .husky/pre-commit
 ); then
   printf '%s\n' 'test-git-hooks: current staged diff was rejected.' >&2
   exit 1
@@ -28,29 +35,32 @@ trap cleanup EXIT HUP INT TERM
 git init -q "$temporary_repository"
 git -C "$temporary_repository" config user.email hook-test@example.invalid
 git -C "$temporary_repository" config user.name hook-test
-mkdir -p "$temporary_repository/.githooks" "$temporary_repository/scripts"
-cp "$repository_root/.githooks/pre-commit" "$temporary_repository/.githooks/pre-commit"
-cp "$repository_root/.githooks/pre-push" "$temporary_repository/.githooks/pre-push"
-cp "$repository_root/scripts/install-git-hooks.sh" "$temporary_repository/scripts/install-git-hooks.sh"
-cp "$repository_root/scripts/test-git-hooks.sh" "$temporary_repository/scripts/test-git-hooks.sh"
-chmod +x "$temporary_repository/.githooks/pre-commit" \
-  "$temporary_repository/.githooks/pre-push" \
-  "$temporary_repository/scripts/install-git-hooks.sh" \
-  "$temporary_repository/scripts/test-git-hooks.sh"
+mkdir -p "$temporary_repository/.husky"
+cp "$repository_root/package.json" "$temporary_repository/package.json"
+cp "$repository_root/.husky/pre-commit" "$temporary_repository/.husky/pre-commit"
+cp "$repository_root/.husky/pre-push" "$temporary_repository/.husky/pre-push"
+chmod +x "$temporary_repository/.husky/pre-commit" \
+  "$temporary_repository/.husky/pre-push"
 
 (
   cd "$temporary_repository"
-  ./scripts/install-git-hooks.sh
+  npm run prepare
 )
 
-if [ "$(git -C "$temporary_repository" config --get core.hooksPath)" != '.githooks' ]; then
-  printf '%s\n' 'test-git-hooks: installer did not configure core.hooksPath.' >&2
+if [ ! -x "$temporary_repository/.husky/_/pre-commit" ]; then
+  printf '%s\n' 'test-git-hooks: Husky did not install pre-commit.' >&2
   exit 1
 fi
 
-git -C "$temporary_repository" add scripts/test-git-hooks.sh
-if ! git -C "$temporary_repository" commit -qm allow-hook-test-source >/dev/null 2>&1; then
-  printf '%s\n' 'test-git-hooks: hook test source was rejected.' >&2
+printf '%s\n' 'const formatted = {value: 1};' > "$temporary_repository/format.ts"
+git -C "$temporary_repository" add format.ts
+if ! git -C "$temporary_repository" commit -qm format-staged-file >/dev/null 2>&1; then
+  printf '%s\n' 'test-git-hooks: staged source was rejected.' >&2
+  exit 1
+fi
+
+if [ "$(git -C "$temporary_repository" show HEAD:format.ts)" != 'const formatted = { value: 1 };' ]; then
+  printf '%s\n' 'test-git-hooks: staged file was not formatted and re-staged.' >&2
   exit 1
 fi
 
@@ -111,12 +121,15 @@ fi
 
 git -C "$temporary_repository" reset -q
 mkdir -p "$temporary_repository/.trusted-hooks"
-cp "$temporary_repository/.githooks/pre-commit" "$temporary_repository/.trusted-hooks/pre-commit"
+cp "$temporary_repository/.husky/pre-commit" "$temporary_repository/.trusted-hooks/pre-commit"
 malicious_hook_line="  | grep -Fvx '+const accessToken = \""
 malicious_hook_line="${malicious_hook_line}production-secret-token\";'"
-printf '%s\n' "$malicious_hook_line" >> "$temporary_repository/.githooks/pre-commit"
-git -C "$temporary_repository" add .githooks/pre-commit
-if git -C "$temporary_repository" -c core.hooksPath=.trusted-hooks commit -qm reject-malicious-hook >/dev/null 2>&1; then
+printf '%s\n' "$malicious_hook_line" >> "$temporary_repository/.husky/pre-commit"
+git -C "$temporary_repository" add .husky/pre-commit
+if (
+  cd "$temporary_repository"
+  .trusted-hooks/pre-commit
+); then
   printf '%s\n' 'test-git-hooks: malicious hook literal was accepted.' >&2
   exit 1
 fi

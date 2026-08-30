@@ -1,10 +1,13 @@
-import { GetPublicMenuUseCase } from './get-public-menu.use-case';
-import type { PublicMenuCandidates, PublicMenuRepository } from './public-menu.repository.types';
+import { GetPublicMenuUseCase } from "./get-public-menu.use-case";
+import type {
+  PublicMenuCandidates,
+  PublicMenuRepository,
+} from "./public-menu.repository.types";
 
-const categoryId = 'category';
-const drinkId = 'drink';
-const otherId = 'other';
-const groupId = 'milk';
+const categoryId = "category";
+const drinkId = "drink";
+const otherId = "other";
+const groupId = "milk";
 
 function createCandidates(): PublicMenuCandidates {
   return {
@@ -12,8 +15,8 @@ function createCandidates(): PublicMenuCandidates {
     categories: [
       {
         id: categoryId,
-        name: 'Кофе',
-        description: 'Напитки',
+        name: "Кофе",
+        description: "Напитки",
         sortOrder: 10,
         isActive: true,
         archivedAt: null,
@@ -23,9 +26,9 @@ function createCandidates(): PublicMenuCandidates {
       {
         id: drinkId,
         categoryId,
-        type: 'DRINK',
-        name: 'Капучино',
-        description: 'Кофе с молоком',
+        type: "DRINK",
+        name: "Капучино",
+        description: "Кофе с молоком",
         price: null,
         sortOrder: 10,
         isActive: true,
@@ -35,9 +38,9 @@ function createCandidates(): PublicMenuCandidates {
       {
         id: otherId,
         categoryId,
-        type: 'OTHER',
-        name: 'Круассан',
-        description: 'Выпечка',
+        type: "OTHER",
+        name: "Круассан",
+        description: "Выпечка",
         price: 220,
         sortOrder: 20,
         isActive: true,
@@ -47,27 +50,27 @@ function createCandidates(): PublicMenuCandidates {
     ],
     productVariants: [
       {
-        id: 'small',
+        id: "small",
         productId: drinkId,
-        size: 'S',
+        size: "S",
         price: 280,
         sortOrder: 10,
         isAvailable: true,
         archivedAt: null,
       },
       {
-        id: 'medium',
+        id: "medium",
         productId: drinkId,
-        size: 'M',
+        size: "M",
         price: 320,
         sortOrder: 20,
         isAvailable: false,
         archivedAt: null,
       },
       {
-        id: 'large',
+        id: "large",
         productId: drinkId,
-        size: 'L',
+        size: "L",
         price: 360,
         sortOrder: 30,
         isAvailable: true,
@@ -77,8 +80,8 @@ function createCandidates(): PublicMenuCandidates {
     modifierGroups: [
       {
         id: groupId,
-        name: 'Молоко',
-        selectionType: 'single',
+        name: "Молоко",
+        selectionType: "single",
         minSelect: 1,
         maxSelect: 1,
         isActive: true,
@@ -87,9 +90,9 @@ function createCandidates(): PublicMenuCandidates {
     ],
     modifierOptions: [
       {
-        id: 'regular',
+        id: "regular",
         groupId,
-        name: 'Обычное',
+        name: "Обычное",
         priceDelta: 0,
         sortOrder: 10,
         isDefault: true,
@@ -97,9 +100,9 @@ function createCandidates(): PublicMenuCandidates {
         archivedAt: null,
       },
       {
-        id: 'oat',
+        id: "oat",
         groupId,
-        name: 'Овсяное',
+        name: "Овсяное",
         priceDelta: 80,
         sortOrder: 20,
         isDefault: false,
@@ -119,8 +122,8 @@ function createUseCase(candidates: PublicMenuCandidates): GetPublicMenuUseCase {
   return new GetPublicMenuUseCase(repository);
 }
 
-describe('GetPublicMenuUseCase', () => {
-  it('возвращает отсортированный агрегат с наследуемыми группами и оперативной доступностью', async () => {
+describe("GetPublicMenuUseCase", () => {
+  it("возвращает отсортированный агрегат с наследуемыми группами и оперативной доступностью", async () => {
     const result = await createUseCase(createCandidates()).execute();
 
     expect(result).toEqual({
@@ -128,39 +131,39 @@ describe('GetPublicMenuUseCase', () => {
       categories: [
         {
           id: categoryId,
-          name: 'Кофе',
-          description: 'Напитки',
+          name: "Кофе",
+          description: "Напитки",
           products: [
             {
               id: drinkId,
-              type: 'DRINK',
-              name: 'Капучино',
-              description: 'Кофе с молоком',
+              type: "DRINK",
+              name: "Капучино",
+              description: "Кофе с молоком",
               price: null,
               isAvailable: true,
               variants: [
-                { id: 'small', size: 'S', price: 280, isAvailable: true },
-                { id: 'medium', size: 'M', price: 320, isAvailable: false },
-                { id: 'large', size: 'L', price: 360, isAvailable: true },
+                { id: "small", size: "S", price: 280, isAvailable: true },
+                { id: "medium", size: "M", price: 320, isAvailable: false },
+                { id: "large", size: "L", price: 360, isAvailable: true },
               ],
               modifierGroups: [
                 {
                   id: groupId,
-                  name: 'Молоко',
-                  selectionType: 'single',
+                  name: "Молоко",
+                  selectionType: "single",
                   minSelect: 1,
                   maxSelect: 1,
                   options: [
                     {
-                      id: 'regular',
-                      name: 'Обычное',
+                      id: "regular",
+                      name: "Обычное",
                       priceDelta: 0,
                       isDefault: true,
                       isAvailable: true,
                     },
                     {
-                      id: 'oat',
-                      name: 'Овсяное',
+                      id: "oat",
+                      name: "Овсяное",
                       priceDelta: 80,
                       isDefault: false,
                       isAvailable: true,
@@ -171,9 +174,9 @@ describe('GetPublicMenuUseCase', () => {
             },
             {
               id: otherId,
-              type: 'OTHER',
-              name: 'Круассан',
-              description: 'Выпечка',
+              type: "OTHER",
+              name: "Круассан",
+              description: "Выпечка",
               price: 220,
               isAvailable: false,
               variants: [],
@@ -185,19 +188,19 @@ describe('GetPublicMenuUseCase', () => {
     });
   });
 
-  it('исключает неактивные и архивированные сущности, напиток без доступного размера и OTHER с размером', async () => {
+  it("исключает неактивные и архивированные сущности, напиток без доступного размера и OTHER с размером", async () => {
     const candidates = createCandidates();
     candidates.categories.push({
       ...candidates.categories[0]!,
-      id: 'archived-category',
-      archivedAt: new Date('2026-08-04T00:00:00.000Z'),
+      id: "archived-category",
+      archivedAt: new Date("2026-08-04T00:00:00.000Z"),
     });
     candidates.products[0]!.isActive = false;
-    candidates.products[1]!.id = 'other-with-variant';
+    candidates.products[1]!.id = "other-with-variant";
     candidates.productVariants.push({
       ...candidates.productVariants[0]!,
-      id: 'other-size',
-      productId: 'other-with-variant',
+      id: "other-size",
+      productId: "other-with-variant",
     });
 
     await expect(createUseCase(candidates).execute()).resolves.toEqual({
@@ -206,7 +209,7 @@ describe('GetPublicMenuUseCase', () => {
     });
   });
 
-  it('возвращает значение приёма новых заказов из кандидатов репозитория', async () => {
+  it("возвращает значение приёма новых заказов из кандидатов репозитория", async () => {
     const candidates = createCandidates();
     candidates.acceptsNewOrders = false;
 
@@ -215,7 +218,7 @@ describe('GetPublicMenuUseCase', () => {
     });
   });
 
-  it('исключает все товары категории при некорректной обязательной группе', async () => {
+  it("исключает все товары категории при некорректной обязательной группе", async () => {
     const candidates = createCandidates();
     candidates.modifierOptions[0]!.priceDelta = 1;
 
@@ -225,7 +228,7 @@ describe('GetPublicMenuUseCase', () => {
     });
   });
 
-  it('исключает категорию, когда платная добавка отмечена default в обязательной группе', async () => {
+  it("исключает категорию, когда платная добавка отмечена default в обязательной группе", async () => {
     const candidates = createCandidates();
     candidates.modifierOptions[1]!.isDefault = true;
 
@@ -235,7 +238,7 @@ describe('GetPublicMenuUseCase', () => {
     });
   });
 
-  it('не применяет неактивную группу добавок как запасной вариант', async () => {
+  it("не применяет неактивную группу добавок как запасной вариант", async () => {
     const candidates = createCandidates();
     candidates.modifierGroups[0]!.isActive = false;
 

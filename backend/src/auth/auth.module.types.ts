@@ -1,4 +1,4 @@
-import type { DeliveryEnvironment } from '../platform/config/environment.types';
+import type { DeliveryEnvironment } from "../platform/config/environment.types";
 
 export type AuthModuleConfiguration = {
   allowedOrigins: readonly string[];

@@ -21,15 +21,25 @@ export type ReplaceCategoryModifierGroupsCommand = {
 
 export interface CategoryModifiersRepository {
   categoryExists(categoryId: string): Promise<boolean>;
-  findCurrentModifierGroupIds(groupIds: readonly string[]): Promise<readonly string[]>;
-  findByCategoryId(categoryId: string): Promise<readonly CategoryModifierGroup[]>;
-  replace(categoryId: string, groupIds: readonly string[]): Promise<readonly CategoryModifierGroup[]>;
+  findCurrentModifierGroupIds(
+    groupIds: readonly string[],
+  ): Promise<readonly string[]>;
+  findByCategoryId(
+    categoryId: string,
+  ): Promise<readonly CategoryModifierGroup[]>;
+  replace(
+    categoryId: string,
+    groupIds: readonly string[],
+  ): Promise<readonly CategoryModifierGroup[]>;
   writeAudit(event: CategoryModifierGroupsAuditEvent): Promise<void>;
 }
 
 export interface CategoryModifiersUnitOfWork {
   run<Result>(
     command: (repository: CategoryModifiersRepository) => Promise<Result>,
-    audit: (repository: CategoryModifiersRepository, result: Result) => Promise<void>,
+    audit: (
+      repository: CategoryModifiersRepository,
+      result: Result,
+    ) => Promise<void>,
   ): Promise<Result>;
 }

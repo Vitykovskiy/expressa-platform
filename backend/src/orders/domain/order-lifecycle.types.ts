@@ -1,5 +1,9 @@
-import type { orderLifecycleErrorCodes, orderStages, orderTransitions } from './order-lifecycle.constants';
-import type { OrderSnapshotItem } from './order.types';
+import type {
+  orderLifecycleErrorCodes,
+  orderStages,
+  orderTransitions,
+} from "./order-lifecycle.constants";
+import type { OrderSnapshotItem } from "./order.types";
 
 export type OrderStage = (typeof orderStages)[number];
 export type OrderTransitionAction = keyof typeof orderTransitions;

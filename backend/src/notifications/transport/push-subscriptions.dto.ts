@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class PushSubscriptionKeysDto {
   @ApiProperty() p256dh!: string;
@@ -6,8 +6,9 @@ export class PushSubscriptionKeysDto {
 }
 
 export class PushSubscriptionDto {
-  @ApiProperty({ format: 'uri' }) endpoint!: string;
-  @ApiProperty({ type: () => PushSubscriptionKeysDto }) keys!: PushSubscriptionKeysDto;
+  @ApiProperty({ format: "uri" }) endpoint!: string;
+  @ApiProperty({ type: () => PushSubscriptionKeysDto })
+  keys!: PushSubscriptionKeysDto;
 }
 
 export class PushPublicKeyDto {

@@ -173,7 +173,9 @@ describe("CatalogModifiersController", () => {
       prototype.createOption,
       prototype.reorderOptions,
     ]) {
-      expect(Reflect.getMetadata(swaggerParametersMetadataKey, method)).toContainEqual({
+      expect(
+        Reflect.getMetadata(swaggerParametersMetadataKey, method),
+      ).toContainEqual({
         name: "groupId",
         in: "path",
         required: true,
@@ -181,14 +183,22 @@ describe("CatalogModifiersController", () => {
       });
     }
     for (const method of [prototype.updateOption, prototype.archiveOption]) {
-      expect(Reflect.getMetadata(swaggerParametersMetadataKey, method)).toContainEqual({
+      expect(
+        Reflect.getMetadata(swaggerParametersMetadataKey, method),
+      ).toContainEqual({
         name: "optionId",
         in: "path",
         required: true,
         format: "uuid",
       });
     }
-    expect(Reflect.getMetadata(swaggerModelPropertyMetadataKey, ReorderModifierOptionsDto.prototype, "optionIds")).toMatchObject({
+    expect(
+      Reflect.getMetadata(
+        swaggerModelPropertyMetadataKey,
+        ReorderModifierOptionsDto.prototype,
+        "optionIds",
+      ),
+    ).toMatchObject({
       type: "string",
       format: "uuid",
       isArray: true,
@@ -197,5 +207,7 @@ describe("CatalogModifiersController", () => {
 });
 
 function responseStatuses(target: object): string[] {
-  return Object.keys(Reflect.getMetadata(swaggerResponsesMetadataKey, target)).sort();
+  return Object.keys(
+    Reflect.getMetadata(swaggerResponsesMetadataKey, target),
+  ).sort();
 }

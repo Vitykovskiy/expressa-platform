@@ -6,6 +6,7 @@ sources:
   - ../../back-office/src/pages/QueuePage.vue
   - ../../backend/src/orders/transport/backoffice-orders.controller.ts
 ---
+
 # Приготовление и выдача заказа
 
 ## 6.3. Приготовление и выдача

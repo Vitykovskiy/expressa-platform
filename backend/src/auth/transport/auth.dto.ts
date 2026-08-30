@@ -1,15 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class RequestOtpDto {
-  @ApiProperty({ example: '+79991234567' })
+  @ApiProperty({ example: "+79991234567" })
   phone!: string;
 }
 
 export class VerifyOtpDto {
-  @ApiProperty({ example: '+79991234567' })
+  @ApiProperty({ example: "+79991234567" })
   phone!: string;
 
-  @ApiProperty({ pattern: '^\\d{6}$' })
+  @ApiProperty({ pattern: "^\\d{6}$" })
   code!: string;
 }
 
@@ -17,8 +17,8 @@ export class AccessTokenDto {
   @ApiProperty()
   accessToken!: string;
 
-  @ApiProperty({ enum: ['Bearer'] })
-  tokenType!: 'Bearer';
+  @ApiProperty({ enum: ["Bearer"] })
+  tokenType!: "Bearer";
 
   @ApiProperty({ example: 900 })
   expiresInSeconds!: number;
@@ -39,6 +39,6 @@ export class CurrentUserDto {
   @ApiProperty()
   phoneE164!: string;
 
-  @ApiProperty({ enum: ['customer', 'barista', 'administrator'] })
+  @ApiProperty({ enum: ["customer", "barista", "administrator"] })
   role!: string;
 }

@@ -5,6 +5,7 @@ last_verified: 2026-08-11
 sources:
   - ../../backend/src/orders/adapters/postgres-order-unit-of-work.ts
 ---
+
 # Снимки заказа
 
 Создание сохраняет заказ, позиции и выбранные добавки как snapshot: исходные id,

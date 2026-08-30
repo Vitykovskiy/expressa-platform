@@ -1,14 +1,160 @@
-import type { Pool, PoolClient } from 'pg';
-import { PostgresCatalogCommandRunner } from './postgres-catalog-command.runner';
-import { PostgresModifiersRepository } from './postgres-modifiers.repository';
-describe('PostgresModifiersRepository', () => {
-  it('сохраняет аудит варианта в транзакции и безопасно меняет порядок', async () => { const query = jest.fn().mockResolvedValue({ rows: [] }); const client = { query, release: jest.fn() } as unknown as PoolClient; const repository = new PostgresModifiersRepository(new PostgresCatalogCommandRunner({ connect: jest.fn().mockResolvedValue(client) } as unknown as Pool)); await repository.run(async (transaction) => transaction.reorderOptions([{ id: 'option', groupId: 'group', name: 'Овсяное', priceDelta: 0, sortOrder: 0, isDefault: true, isAvailable: true, archivedAt: null }], ['option']), (transaction) => transaction.writeAudit({ actorId: 'actor', requestId: 'request', action: 'MODIFIER_OPTION_REORDERED', entityType: 'modifier_option', entityId: 'option', before: null, after: null })); expect(query.mock.calls.some(([sql]) => String(sql).includes('SET archived_at = CURRENT_TIMESTAMP'))).toBe(true); expect(query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO audit_events'))).toBe(true); });
+import type { Pool, PoolClient } from "pg";
+import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import { PostgresModifiersRepository } from "./postgres-modifiers.repository";
+describe("PostgresModifiersRepository", () => {
+  it("сохраняет аудит варианта в транзакции и безопасно меняет порядок", async () => {
+    const query = jest.fn().mockResolvedValue({ rows: [] });
+    const client = { query, release: jest.fn() } as unknown as PoolClient;
+    const repository = new PostgresModifiersRepository(
+      new PostgresCatalogCommandRunner({
+        connect: jest.fn().mockResolvedValue(client),
+      } as unknown as Pool),
+    );
+    await repository.run(
+      async (transaction) =>
+        transaction.reorderOptions(
+          [
+            {
+              id: "option",
+              groupId: "group",
+              name: "Овсяное",
+              priceDelta: 0,
+              sortOrder: 0,
+              isDefault: true,
+              isAvailable: true,
+              archivedAt: null,
+            },
+          ],
+          ["option"],
+        ),
+      (transaction) =>
+        transaction.writeAudit({
+          actorId: "actor",
+          requestId: "request",
+          action: "MODIFIER_OPTION_REORDERED",
+          entityType: "modifier_option",
+          entityId: "option",
+          before: null,
+          after: null,
+        }),
+    );
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET archived_at = CURRENT_TIMESTAMP"),
+      ),
+    ).toBe(true);
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("INSERT INTO audit_events"),
+      ),
+    ).toBe(true);
+  });
   it.each([
-    ['id', { id: 'wrong', name: 'Молоко', selection_type: 'multiple', min_select: 0, max_select: 1, is_active: true, archived_at: null }],
-    ['name', { id: '73444b86-4c6f-459e-871d-0f7995c1af36', name: ' ', selection_type: 'multiple', min_select: 0, max_select: 1, is_active: true, archived_at: null }],
-    ['selection_type', { id: '73444b86-4c6f-459e-871d-0f7995c1af36', name: 'Молоко', selection_type: 'many', min_select: 0, max_select: 1, is_active: true, archived_at: null }],
-    ['modifier group invariant', { id: '73444b86-4c6f-459e-871d-0f7995c1af36', name: 'Молоко', selection_type: 'single', min_select: 0, max_select: 2, is_active: true, archived_at: null }],
-    ['is_active', { id: '73444b86-4c6f-459e-871d-0f7995c1af36', name: 'Молоко', selection_type: 'multiple', min_select: 0, max_select: 1, is_active: 'true', archived_at: null }],
-  ])('отклоняет некорректную строку группы: %s', async (field, row) => { const query = jest.fn().mockResolvedValue({ rows: [row] }); const client = { query, release: jest.fn() } as unknown as PoolClient; const repository = new PostgresModifiersRepository(new PostgresCatalogCommandRunner({ connect: jest.fn().mockResolvedValue(client) } as unknown as Pool)); await expect(repository.run((transaction) => transaction.findGroupById('73444b86-4c6f-459e-871d-0f7995c1af36'), async () => undefined)).rejects.toThrow('Invalid PostgreSQL row field: ' + field); });
-  it('отклоняет некорректную строку варианта и откатывает транзакцию', async () => { const row = { id: '73444b86-4c6f-459e-871d-0f7995c1af36', group_id: 'wrong', name: 'Овсяное', price_delta: 0, sort_order: 0, is_default: true, is_available: true, archived_at: null }; const query = jest.fn((sql: string) => sql.includes('SELECT id, group_id') ? Promise.resolve({ rows: [row] }) : Promise.resolve({ rows: [] })); const client = { query, release: jest.fn() } as unknown as PoolClient; const repository = new PostgresModifiersRepository(new PostgresCatalogCommandRunner({ connect: jest.fn().mockResolvedValue(client) } as unknown as Pool)); await expect(repository.run((transaction) => transaction.findOptionById('73444b86-4c6f-459e-871d-0f7995c1af36'), async () => undefined)).rejects.toThrow('Invalid PostgreSQL row field: group_id'); expect(query).toHaveBeenCalledWith('ROLLBACK'); });
+    [
+      "id",
+      {
+        id: "wrong",
+        name: "Молоко",
+        selection_type: "multiple",
+        min_select: 0,
+        max_select: 1,
+        is_active: true,
+        archived_at: null,
+      },
+    ],
+    [
+      "name",
+      {
+        id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+        name: " ",
+        selection_type: "multiple",
+        min_select: 0,
+        max_select: 1,
+        is_active: true,
+        archived_at: null,
+      },
+    ],
+    [
+      "selection_type",
+      {
+        id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+        name: "Молоко",
+        selection_type: "many",
+        min_select: 0,
+        max_select: 1,
+        is_active: true,
+        archived_at: null,
+      },
+    ],
+    [
+      "modifier group invariant",
+      {
+        id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+        name: "Молоко",
+        selection_type: "single",
+        min_select: 0,
+        max_select: 2,
+        is_active: true,
+        archived_at: null,
+      },
+    ],
+    [
+      "is_active",
+      {
+        id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+        name: "Молоко",
+        selection_type: "multiple",
+        min_select: 0,
+        max_select: 1,
+        is_active: "true",
+        archived_at: null,
+      },
+    ],
+  ])("отклоняет некорректную строку группы: %s", async (field, row) => {
+    const query = jest.fn().mockResolvedValue({ rows: [row] });
+    const client = { query, release: jest.fn() } as unknown as PoolClient;
+    const repository = new PostgresModifiersRepository(
+      new PostgresCatalogCommandRunner({
+        connect: jest.fn().mockResolvedValue(client),
+      } as unknown as Pool),
+    );
+    await expect(
+      repository.run(
+        (transaction) =>
+          transaction.findGroupById("73444b86-4c6f-459e-871d-0f7995c1af36"),
+        async () => undefined,
+      ),
+    ).rejects.toThrow("Invalid PostgreSQL row field: " + field);
+  });
+  it("отклоняет некорректную строку варианта и откатывает транзакцию", async () => {
+    const row = {
+      id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+      group_id: "wrong",
+      name: "Овсяное",
+      price_delta: 0,
+      sort_order: 0,
+      is_default: true,
+      is_available: true,
+      archived_at: null,
+    };
+    const query = jest.fn((sql: string) =>
+      sql.includes("SELECT id, group_id")
+        ? Promise.resolve({ rows: [row] })
+        : Promise.resolve({ rows: [] }),
+    );
+    const client = { query, release: jest.fn() } as unknown as PoolClient;
+    const repository = new PostgresModifiersRepository(
+      new PostgresCatalogCommandRunner({
+        connect: jest.fn().mockResolvedValue(client),
+      } as unknown as Pool),
+    );
+    await expect(
+      repository.run(
+        (transaction) =>
+          transaction.findOptionById("73444b86-4c6f-459e-871d-0f7995c1af36"),
+        async () => undefined,
+      ),
+    ).rejects.toThrow("Invalid PostgreSQL row field: group_id");
+    expect(query).toHaveBeenCalledWith("ROLLBACK");
+  });
 });

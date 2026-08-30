@@ -27,12 +27,12 @@ domain/application не знают HTTP, декораторы или драйв�
 [Auth module](../../src/auth/auth.module.ts), [Catalog module](../../src/catalog/catalog.module.ts),
 [Orders module](../../src/orders/orders.module.ts).
 
-| Вход | Сценарий и порт | Адаптер/выход |
-| --- | --- | --- |
-| `AuthController`, `MeController` | OTP, verify, refresh, logout, current user; `AuthRepository`, crypto, clock, sender | PostgreSQL, Node crypto, development OTP/SMS.ru; HTTP token/cookie. [auth](../../src/auth/auth.module.ts) |
-| catalog controllers | чтение меню и управление категориями, товарами, модификаторами; репозитории и command runner | PostgreSQL, аудит в той же транзакции. [catalog](../../src/catalog/catalog.module.ts) |
-| `OrdersController` | создание заказа; `OrderUnitOfWork` | PostgreSQL-транзакция, снимок заказа. [orders](../../src/orders/orders.module.ts) |
-| health controller | liveness/readiness | процесс и PostgreSQL. [health](../../src/platform/health/health.controller.ts) |
+| Вход                             | Сценарий и порт                                                                              | Адаптер/выход                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `AuthController`, `MeController` | OTP, verify, refresh, logout, current user; `AuthRepository`, crypto, clock, sender          | PostgreSQL, Node crypto, development OTP/SMS.ru; HTTP token/cookie. [auth](../../src/auth/auth.module.ts) |
+| catalog controllers              | чтение меню и управление категориями, товарами, модификаторами; репозитории и command runner | PostgreSQL, аудит в той же транзакции. [catalog](../../src/catalog/catalog.module.ts)                     |
+| `OrdersController`               | создание заказа; `OrderUnitOfWork`                                                           | PostgreSQL-транзакция, снимок заказа. [orders](../../src/orders/orders.module.ts)                         |
+| health controller                | liveness/readiness                                                                           | процесс и PostgreSQL. [health](../../src/platform/health/health.controller.ts)                            |
 
 Границы проверяют unit-спеки use case и адаптеров; e2e проверяют HTTP-цепочку.
 [Тесты auth](../../src/auth/application/verify-otp.use-case.spec.ts),

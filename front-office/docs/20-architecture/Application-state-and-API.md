@@ -13,12 +13,12 @@ Pinia хранит только клиентское состояние; HTTP-с
 передачи его экрану. [Источники: session store](../../src/app/session.store.ts),
 [client](../../src/shared/api/client.ts).
 
-| Владелец | Переходы и граница | Источник |
-|---|---|---|
-| `session` | `unknown` восстанавливается через refresh; customer-токен и `/me` дают `authenticated`; logout очищает сессию и корзину | [store](../../src/app/session.store.ts) |
-| `menu` | `idle/loading/ready/error`; параллельная загрузка объединяется, ready не загружается повторно | [store](../../src/entities/customer/model/menu.store.ts) |
-| `cart` | конфигурации с одинаковыми товаром, вариантом и опциями объединяются; localStorage восстанавливается только после проверки формы | [store](../../src/entities/customer/model/cart.store.ts) |
-| `checkout` | submit блокирует повтор; успех хранит заказ; network можно повторить, изменение суммы требует подтверждения | [store](../../src/features/checkout/checkout.store.ts) |
+| Владелец   | Переходы и граница                                                                                                               | Источник                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `session`  | `unknown` восстанавливается через refresh; customer-токен и `/me` дают `authenticated`; logout очищает сессию и корзину          | [store](../../src/app/session.store.ts)                  |
+| `menu`     | `idle/loading/ready/error`; параллельная загрузка объединяется, ready не загружается повторно                                    | [store](../../src/entities/customer/model/menu.store.ts) |
+| `cart`     | конфигурации с одинаковыми товаром, вариантом и опциями объединяются; localStorage восстанавливается только после проверки формы | [store](../../src/entities/customer/model/cart.store.ts) |
+| `checkout` | submit блокирует повтор; успех хранит заказ; network можно повторить, изменение суммы требует подтверждения                      | [store](../../src/features/checkout/checkout.store.ts)   |
 
 `auth.api` отправляет OTP, refresh/logout с credentials и `/me` с Bearer;
 `public-menu.api` получает публичное меню; `orders.api` создаёт заказ с

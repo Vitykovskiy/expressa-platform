@@ -1,4 +1,8 @@
-import type { AvailabilityEntityType, AvailabilityRepository, AvailabilityTarget } from './admin-catalog.repository.types';
+import type {
+  AvailabilityEntityType,
+  AvailabilityRepository,
+  AvailabilityTarget,
+} from "./admin-catalog.repository.types";
 
 export class ManageAvailabilityUseCase {
   constructor(private readonly repository: AvailabilityRepository) {}

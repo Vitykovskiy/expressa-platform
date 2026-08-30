@@ -10,7 +10,11 @@ source_mode: normative
 sources: [Expressa_MVP_Техническое_задание.md]
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
-related: ["[How-to-use-this-vault](How-to-use-this-vault.md)", "[Source-precedence](Source-precedence.md)"]
+related:
+  [
+    "[How-to-use-this-vault](How-to-use-this-vault.md)",
+    "[Source-precedence](Source-precedence.md)",
+  ]
 ---
 
 # Карта метаданных

@@ -101,17 +101,48 @@ export function assertModifierGroupAggregate(
   const orders = new Set<number>();
   const ids = new Set<string>();
   options.forEach((option, index) => {
-    try { assertModifierOptionDetails(option); } catch (error) {
-      if (error instanceof ModifierAdminError) errors.push(...error.fields.map((field) => ({ ...field, path: `options.${index}.${field.path}` })));
+    try {
+      assertModifierOptionDetails(option);
+    } catch (error) {
+      if (error instanceof ModifierAdminError)
+        errors.push(
+          ...error.fields.map((field) => ({
+            ...field,
+            path: `options.${index}.${field.path}`,
+          })),
+        );
     }
-    if (orders.has(option.sortOrder)) errors.push({ path: `options.${index}.sortOrder`, reason: "Must be unique" });
+    if (orders.has(option.sortOrder))
+      errors.push({
+        path: `options.${index}.sortOrder`,
+        reason: "Must be unique",
+      });
     orders.add(option.sortOrder);
-    if (option.id !== undefined && (ids.has(option.id) || option.id === "")) errors.push({ path: `options.${index}.id`, reason: "Must be unique when present" });
+    if (option.id !== undefined && (ids.has(option.id) || option.id === ""))
+      errors.push({
+        path: `options.${index}.id`,
+        reason: "Must be unique when present",
+      });
     if (option.id !== undefined) ids.add(option.id);
   });
-  if (errors.length > 0) throw new ModifierAdminError("MODIFIER_INVALID", errors as unknown as CatalogValidationFields);
-  try { assertPublishableModifierGroup(group, options); } catch (error) {
-    if (error instanceof ModifierAdminError && error.code === "MODIFIER_INVALID") throw new ModifierAdminError("MODIFIER_INVALID", error.fields.map((field) => field.path === "options" ? { ...field, path: "options" } : field) as unknown as CatalogValidationFields);
+  if (errors.length > 0)
+    throw new ModifierAdminError(
+      "MODIFIER_INVALID",
+      errors as unknown as CatalogValidationFields,
+    );
+  try {
+    assertPublishableModifierGroup(group, options);
+  } catch (error) {
+    if (
+      error instanceof ModifierAdminError &&
+      error.code === "MODIFIER_INVALID"
+    )
+      throw new ModifierAdminError(
+        "MODIFIER_INVALID",
+        error.fields.map((field) =>
+          field.path === "options" ? { ...field, path: "options" } : field,
+        ) as unknown as CatalogValidationFields,
+      );
     throw error;
   }
 }

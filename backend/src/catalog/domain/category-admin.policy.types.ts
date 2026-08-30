@@ -1,4 +1,4 @@
-import type { categoryAdminErrorCodes } from './category-admin.policy.constants';
+import type { categoryAdminErrorCodes } from "./category-admin.policy.constants";
 
 export type CategoryAdminErrorCode = (typeof categoryAdminErrorCodes)[number];
 
@@ -11,4 +11,4 @@ export type AdminCategory = {
   archivedAt: Date | null;
 };
 
-export type CategoryDetails = Omit<AdminCategory, 'id' | 'archivedAt'>;
+export type CategoryDetails = Omit<AdminCategory, "id" | "archivedAt">;

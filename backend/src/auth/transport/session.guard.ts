@@ -4,16 +4,22 @@ import {
   Inject,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { authCryptoPort } from '../application/auth-crypto.constants';
-import type { AuthCrypto } from '../application/auth-crypto.types';
-import type { AuthRepository, SessionWithUser } from '../application/auth-repository.types';
-import { clockPort } from '../application/clock.constants';
-import type { Clock } from '../application/clock.types';
-import type { UserRole } from '../domain/auth.types';
-import type { AuthenticatedRequest } from './current-auth.decorator.types';
-import type { SessionGuardConfiguration } from './session.guard.types';
-import { authRepositoryPort, sessionGuardConfigurationToken } from '../auth.constants';
+} from "@nestjs/common";
+import { authCryptoPort } from "../application/auth-crypto.constants";
+import type { AuthCrypto } from "../application/auth-crypto.types";
+import type {
+  AuthRepository,
+  SessionWithUser,
+} from "../application/auth-repository.types";
+import { clockPort } from "../application/clock.constants";
+import type { Clock } from "../application/clock.types";
+import type { UserRole } from "../domain/auth.types";
+import type { AuthenticatedRequest } from "./current-auth.decorator.types";
+import type { SessionGuardConfiguration } from "./session.guard.types";
+import {
+  authRepositoryPort,
+  sessionGuardConfigurationToken,
+} from "../auth.constants";
 
 @Injectable()
 export class SessionGuard implements CanActivate {
@@ -47,7 +53,10 @@ export class SessionGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const sessionWithUser = await this.repository.findSessionWithUser(claims.sid, now);
+    const sessionWithUser = await this.repository.findSessionWithUser(
+      claims.sid,
+      now,
+    );
     if (!isCurrentSession(sessionWithUser, claims.sid, claims.sub, now)) {
       throw new UnauthorizedException();
     }
@@ -65,10 +74,10 @@ export class SessionGuard implements CanActivate {
 
 function isAuthenticatedRequest(value: unknown): value is AuthenticatedRequest {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'headers' in value &&
-    typeof value.headers === 'object' &&
+    "headers" in value &&
+    typeof value.headers === "object" &&
     value.headers !== null
   );
 }
@@ -87,17 +96,19 @@ function isCurrentSession(
     value.session.expiresAt instanceof Date &&
     value.session.expiresAt > now &&
     value.user.id === userId &&
-    typeof value.user.phoneE164 === 'string' &&
+    typeof value.user.phoneE164 === "string" &&
     isUserRole(value.user.role)
   );
 }
 
 function isUserRole(value: unknown): value is UserRole {
-  return value === 'customer' || value === 'barista' || value === 'administrator';
+  return (
+    value === "customer" || value === "barista" || value === "administrator"
+  );
 }
 
 function parseBearerToken(value: unknown): string | null {
-  return typeof value === 'string' && /^Bearer [^\s]+$/.test(value)
-    ? value.slice('Bearer '.length)
+  return typeof value === "string" && /^Bearer [^\s]+$/.test(value)
+    ? value.slice("Bearer ".length)
     : null;
 }

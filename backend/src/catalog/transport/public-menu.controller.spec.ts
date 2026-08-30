@@ -1,35 +1,45 @@
-import { PATH_METADATA } from '@nestjs/common/constants';
-import { Test } from '@nestjs/testing';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { GetPublicMenuUseCase } from '../application/get-public-menu.use-case';
-import type { PublicMenu } from '../domain/catalog.types';
-import { publicMenuControllerPath } from './public-menu.controller.constants';
-import { PublicMenuController } from './public-menu.controller';
+import { PATH_METADATA } from "@nestjs/common/constants";
+import { Test } from "@nestjs/testing";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { GetPublicMenuUseCase } from "../application/get-public-menu.use-case";
+import type { PublicMenu } from "../domain/catalog.types";
+import { publicMenuControllerPath } from "./public-menu.controller.constants";
+import { PublicMenuController } from "./public-menu.controller";
 
 const menu: PublicMenu = {
   acceptsNewOrders: true,
   categories: [
     {
-      id: 'category-id',
-      name: 'Кофе',
-      description: 'Напитки',
+      id: "category-id",
+      name: "Кофе",
+      description: "Напитки",
       products: [
         {
-          id: 'product-id',
-          type: 'DRINK',
-          name: 'Капучино',
-          description: 'Кофе с молоком',
+          id: "product-id",
+          type: "DRINK",
+          name: "Капучино",
+          description: "Кофе с молоком",
           price: null,
           isAvailable: true,
-          variants: [{ id: 'variant-id', size: 'M', price: 320, isAvailable: true }],
+          variants: [
+            { id: "variant-id", size: "M", price: 320, isAvailable: true },
+          ],
           modifierGroups: [
             {
-              id: 'group-id',
-              name: 'Молоко',
-              selectionType: 'single',
+              id: "group-id",
+              name: "Молоко",
+              selectionType: "single",
               minSelect: 1,
               maxSelect: 1,
-              options: [{ id: 'option-id', name: 'Обычное', priceDelta: 0, isDefault: true, isAvailable: true }],
+              options: [
+                {
+                  id: "option-id",
+                  name: "Обычное",
+                  priceDelta: 0,
+                  isDefault: true,
+                  isAvailable: true,
+                },
+              ],
             },
           ],
         },
@@ -38,45 +48,65 @@ const menu: PublicMenu = {
   ],
 };
 
-describe('PublicMenuController', () => {
-  it('возвращает точный публичный агрегат без transport-правил', async () => {
+describe("PublicMenuController", () => {
+  it("возвращает точный публичный агрегат без transport-правил", async () => {
     const getPublicMenu = { execute: jest.fn().mockResolvedValue(menu) };
-    const controller = new PublicMenuController(getPublicMenu as unknown as GetPublicMenuUseCase);
+    const controller = new PublicMenuController(
+      getPublicMenu as unknown as GetPublicMenuUseCase,
+    );
 
     await expect(controller.getMenu()).resolves.toEqual(menu);
     expect(getPublicMenu.execute).toHaveBeenCalledTimes(1);
   });
 
-  it('регистрирует публичный GET /public/menu', () => {
+  it("регистрирует публичный GET /public/menu", () => {
     const prototype = PublicMenuController.prototype;
 
-    expect(Reflect.getMetadata(PATH_METADATA, PublicMenuController)).toBe(publicMenuControllerPath);
-    expect(Reflect.getMetadata(PATH_METADATA, prototype.getMenu)).toBe('/');
+    expect(Reflect.getMetadata(PATH_METADATA, PublicMenuController)).toBe(
+      publicMenuControllerPath,
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, prototype.getMenu)).toBe("/");
   });
 
-  it('публикует рублёвые цены и границы выбора как int32', async () => {
+  it("публикует рублёвые цены и границы выбора как int32", async () => {
     const module = await Test.createTestingModule({
       controllers: [PublicMenuController],
-      providers: [{ provide: GetPublicMenuUseCase, useValue: { execute: jest.fn() } }],
+      providers: [
+        { provide: GetPublicMenuUseCase, useValue: { execute: jest.fn() } },
+      ],
     }).compile();
     const app = module.createNestApplication();
 
     try {
-      const document = SwaggerModule.createDocument(app, new DocumentBuilder().build());
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().build(),
+      );
 
       expect(document.components?.schemas?.PublicMenuProductDto).toMatchObject({
-        properties: { price: { format: 'int32', minimum: 0, nullable: true, type: 'integer' } },
+        properties: {
+          price: {
+            format: "int32",
+            minimum: 0,
+            nullable: true,
+            type: "integer",
+          },
+        },
       });
       expect(document.components?.schemas?.PublicMenuVariantDto).toMatchObject({
-        properties: { price: { format: 'int32', minimum: 0, type: 'integer' } },
+        properties: { price: { format: "int32", minimum: 0, type: "integer" } },
       });
       expect(document.components?.schemas?.PublicMenuOptionDto).toMatchObject({
-        properties: { priceDelta: { format: 'int32', minimum: 0, type: 'integer' } },
-      });
-      expect(document.components?.schemas?.PublicMenuModifierGroupDto).toMatchObject({
         properties: {
-          minSelect: { format: 'int32', type: 'integer' },
-          maxSelect: { format: 'int32', type: 'integer' },
+          priceDelta: { format: "int32", minimum: 0, type: "integer" },
+        },
+      });
+      expect(
+        document.components?.schemas?.PublicMenuModifierGroupDto,
+      ).toMatchObject({
+        properties: {
+          minSelect: { format: "int32", type: "integer" },
+          maxSelect: { format: "int32", type: "integer" },
         },
       });
     } finally {

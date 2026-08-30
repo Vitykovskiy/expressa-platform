@@ -2,8 +2,8 @@ import type {
   CatalogModifierSelectionType,
   CatalogProductSize,
   CatalogProductType,
-} from '../../catalog/domain/catalog.types';
-import type { orderErrorCodes } from './order.constants';
+} from "../../catalog/domain/catalog.types";
+import type { orderErrorCodes } from "./order.constants";
 
 export type OrderErrorCode = (typeof orderErrorCodes)[number];
 

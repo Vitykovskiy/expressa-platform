@@ -1,4 +1,8 @@
-import type { AvailabilityEntityType, AvailabilityTarget, ServiceIntake } from '../application/admin-catalog.repository.types';
+import type {
+  AvailabilityEntityType,
+  AvailabilityTarget,
+  ServiceIntake,
+} from "../application/admin-catalog.repository.types";
 
 export type AvailabilityUpdateDto = AvailabilityTarget;
 export type ServiceIntakeDto = ServiceIntake;

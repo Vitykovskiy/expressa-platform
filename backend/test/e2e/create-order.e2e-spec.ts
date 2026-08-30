@@ -144,17 +144,28 @@ describe("create order E2E", () => {
 
     expect(created.status).toBe(201);
     const { id: orderId } = (await created.json()) as { id: string };
-    for (const action of ["accept", "start-preparing", "mark-ready", "issue"] as const) {
+    for (const action of [
+      "accept",
+      "start-preparing",
+      "mark-ready",
+      "issue",
+    ] as const) {
       const transition = await transitionOrder(barista, orderId, action);
       expect(transition.status).toBe(200);
     }
 
-    const detail = await getOrder(customer, orderId, "q-smoke-history-request-id");
+    const detail = await getOrder(
+      customer,
+      orderId,
+      "q-smoke-history-request-id",
+    );
     expect(detail.status).toBe(200);
     await expect(detail.json()).resolves.toMatchObject({
       id: orderId,
       stage: "ISSUED",
-      snapshot: [{ productId: seededCappuccinoId, variantId: seededMediumVariantId }],
+      snapshot: [
+        { productId: seededCappuccinoId, variantId: seededMediumVariantId },
+      ],
     });
   });
 
@@ -199,31 +210,85 @@ describe("create order E2E", () => {
       accessToken("customer"),
       accessToken("barista"),
     ]);
-    const first = await createOrder(owner, orderBody(320), randomUUID(), "owner-first-request-id");
+    const first = await createOrder(
+      owner,
+      orderBody(320),
+      randomUUID(),
+      "owner-first-request-id",
+    );
     expect(first.status).toBe(201);
     const firstOrder = (await first.json()) as { id: string };
-    await pool.query("UPDATE products SET name = 'Новое имя каталога' WHERE id = $1", [productId]);
+    await pool.query(
+      "UPDATE products SET name = 'Новое имя каталога' WHERE id = $1",
+      [productId],
+    );
     for (let index = 0; index < 20; index += 1) {
-      const created = await createOrder(owner, orderBody(320), randomUUID(), `owner-page-${index}-request-id`);
+      const created = await createOrder(
+        owner,
+        orderBody(320),
+        randomUUID(),
+        `owner-page-${index}-request-id`,
+      );
       expect(created.status).toBe(201);
     }
 
     const firstPage = await getOrders(owner);
     expect(firstPage.status).toBe(200);
-    const firstPageBody = (await firstPage.json()) as { orders: Array<{ id: string; snapshot: Array<{ productName: string }> }>; nextCursor: string | null };
+    const firstPageBody = (await firstPage.json()) as {
+      orders: Array<{ id: string; snapshot: Array<{ productName: string }> }>;
+      nextCursor: string | null;
+    };
     expect(firstPageBody.orders).toHaveLength(20);
     expect(firstPageBody.nextCursor).toEqual(expect.any(String));
     const secondPage = await getOrders(owner, firstPageBody.nextCursor!);
-    const secondPageBody = (await secondPage.json()) as { orders: Array<{ id: string }>; nextCursor: string | null };
+    const secondPageBody = (await secondPage.json()) as {
+      orders: Array<{ id: string }>;
+      nextCursor: string | null;
+    };
     expect(secondPageBody.orders).toHaveLength(1);
-    expect([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).toHaveLength(21);
-    expect(new Set([...firstPageBody.orders, ...secondPageBody.orders].map((order) => order.id)).size).toBe(21);
+    expect(
+      [...firstPageBody.orders, ...secondPageBody.orders].map(
+        (order) => order.id,
+      ),
+    ).toHaveLength(21);
+    expect(
+      new Set(
+        [...firstPageBody.orders, ...secondPageBody.orders].map(
+          (order) => order.id,
+        ),
+      ).size,
+    ).toBe(21);
 
-    const detail = await getOrder(owner, firstOrder.id, "get-order-owner-request-id");
-    await expect(detail.json()).resolves.toMatchObject({ id: firstOrder.id, snapshot: [{ productName: 'Капучино' }] });
-    await expectStructuredError(await getOrder(undefined, firstOrder.id, "get-order-guest-request-id"), 401, "UNAUTHORIZED", null, "get-order-guest-request-id");
-    await expectStructuredError(await getOrder(barista, firstOrder.id, "get-order-barista-request-id"), 403, "ACCESS_DENIED", null, "get-order-barista-request-id");
-    await expectStructuredError(await getOrder(stranger, firstOrder.id, "get-order-stranger-request-id"), 404, "ORDER_NOT_FOUND", null, "get-order-stranger-request-id");
+    const detail = await getOrder(
+      owner,
+      firstOrder.id,
+      "get-order-owner-request-id",
+    );
+    await expect(detail.json()).resolves.toMatchObject({
+      id: firstOrder.id,
+      snapshot: [{ productName: "Капучино" }],
+    });
+    await expectStructuredError(
+      await getOrder(undefined, firstOrder.id, "get-order-guest-request-id"),
+      401,
+      "UNAUTHORIZED",
+      null,
+      "get-order-guest-request-id",
+    );
+    await expectStructuredError(
+      await getOrder(barista, firstOrder.id, "get-order-barista-request-id"),
+      403,
+      "ACCESS_DENIED",
+      null,
+      "get-order-barista-request-id",
+    );
+    await expectStructuredError(
+      await getOrder(stranger, firstOrder.id, "get-order-stranger-request-id"),
+      404,
+      "ORDER_NOT_FOUND",
+      null,
+      "get-order-stranger-request-id",
+    );
   });
 
   it("отклоняет изменённый итог, недоступность, неверную конфигурацию и закрытый приём без заказа", async () => {
@@ -276,7 +341,7 @@ describe("create order E2E", () => {
       null,
       "configuration-request-id",
     );
-    const barista = await accessToken('barista');
+    const barista = await accessToken("barista");
     expect((await updateIntake(barista, false)).status).toBe(200);
     await expectStructuredError(
       await createOrder(
@@ -299,12 +364,7 @@ describe("create order E2E", () => {
     const customer = await accessToken("customer");
     const key = randomUUID();
     const [first, second] = await Promise.all([
-      createOrder(
-        customer,
-        orderBody(320),
-        key,
-        "concurrent-first-request-id",
-      ),
+      createOrder(customer, orderBody(320), key, "concurrent-first-request-id"),
       createOrder(
         customer,
         orderBody(320),
@@ -336,10 +396,9 @@ describe("create order E2E", () => {
       "UPDATE products SET name = 'Изменённый капучино' WHERE id = $1",
       [productId],
     );
-    await pool.query(
-      "UPDATE product_variants SET price = 450 WHERE id = $1",
-      [variantId],
-    );
+    await pool.query("UPDATE product_variants SET price = 450 WHERE id = $1", [
+      variantId,
+    ]);
     await pool.query(
       "UPDATE modifier_options SET name = 'Изменённое молоко', price_delta = 50 WHERE id = $1",
       [optionId],
@@ -549,9 +608,12 @@ describe("create order E2E", () => {
     });
   }
 
-  function updateIntake(token: string, acceptsNewOrders: boolean): Promise<Response> {
+  function updateIntake(
+    token: string,
+    acceptsNewOrders: boolean,
+  ): Promise<Response> {
     return fetch(`${url}/api/v2/backoffice/service/intake`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: headers(randomUUID(), { authorization: `Bearer ${token}` }),
       body: JSON.stringify({ acceptsNewOrders }),
     });
@@ -585,15 +647,25 @@ describe("create order E2E", () => {
   }
 
   function getOrders(token: string, cursor?: string): Promise<Response> {
-    const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
+    const query =
+      cursor === undefined ? "" : `?cursor=${encodeURIComponent(cursor)}`;
     return fetch(`${url}/api/v2/orders${query}`, {
-      headers: headers('get-orders-request-id', { authorization: `Bearer ${token}` }),
+      headers: headers("get-orders-request-id", {
+        authorization: `Bearer ${token}`,
+      }),
     });
   }
 
-  function getOrder(token: string | undefined, orderId: string, requestId: string): Promise<Response> {
+  function getOrder(
+    token: string | undefined,
+    orderId: string,
+    requestId: string,
+  ): Promise<Response> {
     return fetch(`${url}/api/v2/orders/${orderId}`, {
-      headers: headers(requestId, token === undefined ? {} : { authorization: `Bearer ${token}` }),
+      headers: headers(
+        requestId,
+        token === undefined ? {} : { authorization: `Bearer ${token}` },
+      ),
     });
   }
 

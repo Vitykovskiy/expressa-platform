@@ -5,7 +5,7 @@ import type {
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
   CatalogProductVariantCandidate,
-} from '../domain/catalog.types';
+} from "../domain/catalog.types";
 
 export type PublicMenuCandidates = {
   acceptsNewOrders: boolean;

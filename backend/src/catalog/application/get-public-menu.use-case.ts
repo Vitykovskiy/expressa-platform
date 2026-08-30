@@ -10,8 +10,11 @@ import type {
   PublicMenuModifierOption,
   PublicMenuProduct,
   PublicMenuProductVariant,
-} from '../domain/catalog.types';
-import type { PublicMenuCandidates, PublicMenuRepository } from './public-menu.repository.types';
+} from "../domain/catalog.types";
+import type {
+  PublicMenuCandidates,
+  PublicMenuRepository,
+} from "./public-menu.repository.types";
 
 export class GetPublicMenuUseCase {
   constructor(private readonly repository: PublicMenuRepository) {}
@@ -24,7 +27,9 @@ export class GetPublicMenuUseCase {
       acceptsNewOrders: candidates.acceptsNewOrders,
       categories: candidates.categories
         .filter(isPublishedCatalogEntity)
-        .map((category) => createCategory(category, candidates, publishableGroups))
+        .map((category) =>
+          createCategory(category, candidates, publishableGroups),
+        )
         .filter((category) => category.products.length > 0),
     };
   }
@@ -41,18 +46,27 @@ function createCategory(
     candidates.modifierGroups,
     publishableGroups,
   );
-  const hasInvalidRequiredGroup = modifierGroups.some((group) => !isValidRequiredGroup(group));
+  const hasInvalidRequiredGroup = modifierGroups.some(
+    (group) => !isValidRequiredGroup(group),
+  );
 
   return {
     id: category.id,
     name: category.name,
     description: category.description,
-    products: hasInvalidGroup || hasInvalidRequiredGroup
-      ? []
-      : candidates.products
-          .filter((product) => product.categoryId === category.id)
-          .filter(isPublishedCatalogEntity)
-          .flatMap((product) => createProduct(product, candidates.productVariants, modifierGroups)),
+    products:
+      hasInvalidGroup || hasInvalidRequiredGroup
+        ? []
+        : candidates.products
+            .filter((product) => product.categoryId === category.id)
+            .filter(isPublishedCatalogEntity)
+            .flatMap((product) =>
+              createProduct(
+                product,
+                candidates.productVariants,
+                modifierGroups,
+              ),
+            ),
   };
 }
 
@@ -66,12 +80,22 @@ function createProduct(
     .filter(isCurrentCatalogEntity)
     .map(toPublicVariant);
 
-  if (product.type === 'DRINK') {
-    if (product.price !== null || !productVariants.some((variant) => variant.isAvailable)) {
+  if (product.type === "DRINK") {
+    if (
+      product.price !== null ||
+      !productVariants.some((variant) => variant.isAvailable)
+    ) {
       return [];
     }
 
-    return [{ ...toPublicProduct(product), price: null, variants: productVariants, modifierGroups }];
+    return [
+      {
+        ...toPublicProduct(product),
+        price: null,
+        variants: productVariants,
+        modifierGroups,
+      },
+    ];
   }
 
   if (product.price === null || productVariants.length > 0) {
@@ -85,7 +109,9 @@ function createPublishableModifierGroups(candidates: PublicMenuCandidates) {
   return new Map(
     candidates.modifierGroups
       .filter(isPublishedCatalogEntity)
-      .flatMap((group) => createModifierGroup(group, candidates.modifierOptions)),
+      .flatMap((group) =>
+        createModifierGroup(group, candidates.modifierOptions),
+      ),
   );
 }
 
@@ -116,12 +142,16 @@ function getCategoryModifierGroups(
   groups: Map<string, PublicMenuModifierGroup>,
 ): { modifierGroups: PublicMenuModifierGroup[]; hasInvalidGroup: boolean } {
   const activeGroups = new Map(
-    candidates.filter(isPublishedCatalogEntity).map((candidate) => [candidate.id, candidate]),
+    candidates
+      .filter(isPublishedCatalogEntity)
+      .map((candidate) => [candidate.id, candidate]),
   );
   const modifierGroups: PublicMenuModifierGroup[] = [];
   let hasInvalidGroup = false;
 
-  for (const assignment of assignments.filter((item) => item.categoryId === categoryId)) {
+  for (const assignment of assignments.filter(
+    (item) => item.categoryId === categoryId,
+  )) {
     if (!activeGroups.has(assignment.groupId)) {
       continue;
     }
@@ -138,11 +168,16 @@ function getCategoryModifierGroups(
   return { modifierGroups, hasInvalidGroup };
 }
 
-function isPublishedCatalogEntity(candidate: { isActive: boolean; archivedAt: Date | null }): boolean {
+function isPublishedCatalogEntity(candidate: {
+  isActive: boolean;
+  archivedAt: Date | null;
+}): boolean {
   return candidate.isActive && candidate.archivedAt === null;
 }
 
-function isCurrentCatalogEntity(candidate: { archivedAt: Date | null }): boolean {
+function isCurrentCatalogEntity(candidate: {
+  archivedAt: Date | null;
+}): boolean {
   return candidate.archivedAt === null;
 }
 
@@ -152,7 +187,7 @@ function isValidModifierGroup(group: PublicMenuModifierGroup): boolean {
     !Number.isInteger(group.maxSelect) ||
     group.minSelect < 0 ||
     group.maxSelect < group.minSelect ||
-    (group.selectionType === 'single' && group.maxSelect !== 1)
+    (group.selectionType === "single" && group.maxSelect !== 1)
   ) {
     return false;
   }
@@ -178,7 +213,9 @@ function isValidRequiredGroup(group: PublicMenuModifierGroup): boolean {
   );
 }
 
-function toPublicProduct(product: CatalogProductCandidate): Omit<PublicMenuProduct, 'variants' | 'modifierGroups'> {
+function toPublicProduct(
+  product: CatalogProductCandidate,
+): Omit<PublicMenuProduct, "variants" | "modifierGroups"> {
   return {
     id: product.id,
     type: product.type,
@@ -189,7 +226,9 @@ function toPublicProduct(product: CatalogProductCandidate): Omit<PublicMenuProdu
   };
 }
 
-function toPublicVariant(variant: CatalogProductVariantCandidate): PublicMenuProductVariant {
+function toPublicVariant(
+  variant: CatalogProductVariantCandidate,
+): PublicMenuProductVariant {
   return {
     id: variant.id,
     size: variant.size,
@@ -198,7 +237,9 @@ function toPublicVariant(variant: CatalogProductVariantCandidate): PublicMenuPro
   };
 }
 
-function toPublicModifierOption(option: CatalogModifierOptionCandidate): PublicMenuModifierOption {
+function toPublicModifierOption(
+  option: CatalogModifierOptionCandidate,
+): PublicMenuModifierOption {
   return {
     id: option.id,
     name: option.name,

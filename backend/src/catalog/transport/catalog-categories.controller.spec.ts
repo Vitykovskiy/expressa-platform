@@ -167,13 +167,21 @@ describe("CatalogCategoriesController", () => {
       "404",
       "409",
     ]);
-    expect(Reflect.getMetadata(swaggerParametersMetadataKey, prototype.update)).toContainEqual({
+    expect(
+      Reflect.getMetadata(swaggerParametersMetadataKey, prototype.update),
+    ).toContainEqual({
       name: "categoryId",
       in: "path",
       required: true,
       format: "uuid",
     });
-    expect(Reflect.getMetadata(swaggerModelPropertyMetadataKey, ReorderCategoriesDto.prototype, "categoryIds")).toMatchObject({
+    expect(
+      Reflect.getMetadata(
+        swaggerModelPropertyMetadataKey,
+        ReorderCategoriesDto.prototype,
+        "categoryIds",
+      ),
+    ).toMatchObject({
       type: "string",
       format: "uuid",
       isArray: true,
@@ -182,5 +190,7 @@ describe("CatalogCategoriesController", () => {
 });
 
 function responseStatuses(target: object): string[] {
-  return Object.keys(Reflect.getMetadata(swaggerResponsesMetadataKey, target)).sort();
+  return Object.keys(
+    Reflect.getMetadata(swaggerResponsesMetadataKey, target),
+  ).sort();
 }

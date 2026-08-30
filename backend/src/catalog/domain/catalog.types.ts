@@ -2,13 +2,14 @@ import type {
   modifierSelectionTypes,
   productSizes,
   productTypes,
-} from './catalog.constants';
+} from "./catalog.constants";
 
 export type CatalogProductType = (typeof productTypes)[number];
 
 export type CatalogProductSize = (typeof productSizes)[number];
 
-export type CatalogModifierSelectionType = (typeof modifierSelectionTypes)[number];
+export type CatalogModifierSelectionType =
+  (typeof modifierSelectionTypes)[number];
 
 export type CatalogCategoryCandidate = {
   id: string;

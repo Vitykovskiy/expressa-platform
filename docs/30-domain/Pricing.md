@@ -5,6 +5,7 @@ last_verified: 2026-08-11
 sources:
   - ../../backend/src/orders/domain/order-revalidation.ts
 ---
+
 # Цены
 
 Backend пересчитывает конфигурацию по актуальному каталогу в целых рублях.

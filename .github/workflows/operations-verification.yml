@@ -2,7 +2,7 @@ name: Development operations verification
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       confirm_operations_verification:

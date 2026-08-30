@@ -1,12 +1,12 @@
-import type { AuthCrypto } from './auth-crypto.types';
-import type { AuthRepository } from './auth-repository.types';
-import type { Clock } from './clock.types';
-import { AccessDeniedError } from '../domain/auth.errors';
+import type { AuthCrypto } from "./auth-crypto.types";
+import type { AuthRepository } from "./auth-repository.types";
+import type { Clock } from "./clock.types";
+import { AccessDeniedError } from "../domain/auth.errors";
 import type {
   RefreshedSession,
   RefreshSessionConfiguration,
   RefreshTokenParts,
-} from './refresh-session.use-case.types';
+} from "./refresh-session.use-case.types";
 
 export class RefreshSessionUseCase {
   constructor(
@@ -40,7 +40,7 @@ export class RefreshSessionUseCase {
       now,
     );
 
-    if (result.status !== 'rotated') {
+    if (result.status !== "rotated") {
       throw new AccessDeniedError();
     }
 
@@ -61,7 +61,7 @@ export class RefreshSessionUseCase {
 }
 
 function parseRefreshToken(value: string): RefreshTokenParts {
-  const parts = value.split('.');
+  const parts = value.split(".");
   const [sessionId, secret] = parts;
 
   if (
@@ -69,7 +69,7 @@ function parseRefreshToken(value: string): RefreshTokenParts {
     sessionId === undefined ||
     secret === undefined ||
     !isUuid(sessionId) ||
-    secret === ''
+    secret === ""
   ) {
     throw new AccessDeniedError();
   }

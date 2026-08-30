@@ -6,6 +6,7 @@ sources:
   - ../../backend/src/orders/domain/order-lifecycle.constants.ts
   - ../../backend/src/orders/adapters/postgres-order-lifecycle.repository.ts
 ---
+
 # Жизненный цикл заказа
 
 ## 9. Модель состояний заказа

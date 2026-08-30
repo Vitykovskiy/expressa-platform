@@ -1,4 +1,4 @@
-import type { OtpChallenge, UserRole } from '../domain/auth.types';
+import type { OtpChallenge, UserRole } from "../domain/auth.types";
 
 export type AuthUser = {
   id: string;
@@ -12,8 +12,8 @@ export type StoredOtpChallenge = OtpChallenge & {
 };
 
 export type OtpChallengeReservation =
-  | { status: 'created'; challenge: StoredOtpChallenge }
-  | { status: 'rate_limited' };
+  | { status: "created"; challenge: StoredOtpChallenge }
+  | { status: "rate_limited" };
 
 export type AuthSession = {
   id: string;
@@ -26,10 +26,10 @@ export type AuthSession = {
 };
 
 export type OtpAuthentication =
-  | { status: 'authenticated'; user: AuthUser; session: AuthSession }
-  | { status: 'invalid'; challenge: StoredOtpChallenge }
-  | { status: 'unavailable'; challenge: StoredOtpChallenge | null }
-  | { status: 'session_conflict' };
+  | { status: "authenticated"; user: AuthUser; session: AuthSession }
+  | { status: "invalid"; challenge: StoredOtpChallenge }
+  | { status: "unavailable"; challenge: StoredOtpChallenge | null }
+  | { status: "session_conflict" };
 
 export type SessionWithUser = {
   session: AuthSession;
@@ -37,13 +37,12 @@ export type SessionWithUser = {
 };
 
 export type SessionRotation =
-  | { status: 'rotated'; session: AuthSession; user: AuthUser }
-  | { status: 'mismatch'; session: AuthSession; user: AuthUser }
-  | { status: 'unavailable' };
+  | { status: "rotated"; session: AuthSession; user: AuthUser }
+  | { status: "mismatch"; session: AuthSession; user: AuthUser }
+  | { status: "unavailable" };
 
 export type SessionLogout =
-  | { status: 'revoked'; session: AuthSession }
-  | { status: 'unavailable' };
+  { status: "revoked"; session: AuthSession } | { status: "unavailable" };
 
 export interface AuthRepository {
   findOpenOtpChallenge(phoneE164: string): Promise<StoredOtpChallenge | null>;
@@ -64,8 +63,13 @@ export interface AuthRepository {
     sessionExpiresAt: Date,
   ): Promise<OtpAuthentication>;
   findOrCreateCustomer(phoneE164: string): Promise<AuthUser>;
-  findSessionByRefreshTokenHash(refreshTokenHash: string): Promise<AuthSession | null>;
-  findSessionWithUser(sessionId: string, now: Date): Promise<SessionWithUser | null>;
+  findSessionByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<AuthSession | null>;
+  findSessionWithUser(
+    sessionId: string,
+    now: Date,
+  ): Promise<SessionWithUser | null>;
   rotateSession(
     sessionId: string,
     expectedRefreshTokenHash: string,

@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 sources:
   - ../../front-office/src/pages/CartPage.vue
 ---
+
 # Авторизация и оформление заказа
 
 ## 6.2. Авторизация и оформление

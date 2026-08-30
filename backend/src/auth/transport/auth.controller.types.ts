@@ -1,8 +1,8 @@
 export type AuthCookieOptions = {
   httpOnly: true;
   maxAge: number;
-  path: '/api/v2/auth';
-  sameSite: 'strict';
+  path: "/api/v2/auth";
+  sameSite: "strict";
   secure: boolean;
 };
 
@@ -17,5 +17,5 @@ export type AuthHeaderResponse = AuthCookieResponse & {
 export type AccessTokenResponse = {
   accessToken: string;
   expiresInSeconds: number;
-  tokenType: 'Bearer';
+  tokenType: "Bearer";
 };

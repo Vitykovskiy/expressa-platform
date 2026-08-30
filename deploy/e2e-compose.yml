@@ -9,7 +9,8 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks: [data]
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 3s
       retries: 24
@@ -18,7 +19,7 @@ services:
     image: "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"
     environment:
       NODE_ENV: local
-      PORT: '3000'
+      PORT: "3000"
       DATABASE_URL: "postgresql://expressa:${POSTGRES_PASSWORD}@postgres:5432/expressa"
       AUTH_ACCESS_TOKEN_SECRET: "${AUTH_ACCESS_TOKEN_SECRET:?AUTH_ACCESS_TOKEN_SECRET is required}"
       AUTH_OTP_PEPPER: "${AUTH_OTP_PEPPER:?AUTH_OTP_PEPPER is required}"
@@ -32,7 +33,13 @@ services:
         condition: service_healthy
     networks: [edge, data]
     healthcheck:
-      test: ['CMD', '/nodejs/bin/node', '-e', "fetch('http://127.0.0.1:3000/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "/nodejs/bin/node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -41,7 +48,11 @@ services:
     image: "${FRONT_IMAGE:?FRONT_IMAGE is required}"
     networks: [edge]
     healthcheck:
-      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1",
+        ]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -50,7 +61,11 @@ services:
     image: "${BACK_IMAGE:?BACK_IMAGE is required}"
     networks: [edge]
     healthcheck:
-      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1']
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1",
+        ]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -68,7 +83,11 @@ services:
         condition: service_healthy
     networks: [edge]
     healthcheck:
-      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8081/health && wget --no-verbose --tries=1 --spider http://127.0.0.1:8082/health']
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:8081/health && wget --no-verbose --tries=1 --spider http://127.0.0.1:8082/health",
+        ]
       interval: 5s
       timeout: 3s
       retries: 24

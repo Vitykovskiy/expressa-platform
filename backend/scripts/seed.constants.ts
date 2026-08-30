@@ -1,199 +1,199 @@
-import type { CatalogSeed, E2eSeedScenarioDefinition } from './seed.types';
+import type { CatalogSeed, E2eSeedScenarioDefinition } from "./seed.types";
 
-const coffeeCategoryId = '00000000-0000-4000-8000-000000000001';
-const bakeryCategoryId = '00000000-0000-4000-8000-000000000002';
-const cappuccinoId = '00000000-0000-4000-8000-000000000010';
-const espressoId = '00000000-0000-4000-8000-000000000020';
-const croissantId = '00000000-0000-4000-8000-000000000030';
-const unavailableDessertId = '00000000-0000-4000-8000-000000000040';
-const unpublishedDrinkId = '00000000-0000-4000-8000-000000000050';
-const milkGroupId = '00000000-0000-4000-8000-000000000100';
+const coffeeCategoryId = "00000000-0000-4000-8000-000000000001";
+const bakeryCategoryId = "00000000-0000-4000-8000-000000000002";
+const cappuccinoId = "00000000-0000-4000-8000-000000000010";
+const espressoId = "00000000-0000-4000-8000-000000000020";
+const croissantId = "00000000-0000-4000-8000-000000000030";
+const unavailableDessertId = "00000000-0000-4000-8000-000000000040";
+const unpublishedDrinkId = "00000000-0000-4000-8000-000000000050";
+const milkGroupId = "00000000-0000-4000-8000-000000000100";
 
-export const e2eSeedScenarioEnvironmentVariable = 'E2E_SEED_SCENARIO';
+export const e2eSeedScenarioEnvironmentVariable = "E2E_SEED_SCENARIO";
 
 export const e2eSeedScenarios = [
-  'canonical',
-  'customer-new',
-  'customer-existing',
-  'intake-closed',
-  'modifier-unavailable',
-  'product-unavailable',
-  'size-unavailable',
-  'catalog-mutation',
-  'order-created',
-  'order-accepted',
-  'order-preparing',
-  'order-ready',
-  'order-issued',
-  'order-snapshot',
-  'order-repeat-unavailable',
-  'order-repeat-partial',
-  'customer-history',
-  'queue-populated',
+  "canonical",
+  "customer-new",
+  "customer-existing",
+  "intake-closed",
+  "modifier-unavailable",
+  "product-unavailable",
+  "size-unavailable",
+  "catalog-mutation",
+  "order-created",
+  "order-accepted",
+  "order-preparing",
+  "order-ready",
+  "order-issued",
+  "order-snapshot",
+  "order-repeat-unavailable",
+  "order-repeat-partial",
+  "customer-history",
+  "queue-populated",
 ] as const;
 
 export const e2eSeedScenarioDefinitions: Readonly<
   Record<(typeof e2eSeedScenarios)[number], E2eSeedScenarioDefinition>
 > = {
   canonical: {
-    customerState: 'new',
-    secondCustomerState: 'new',
+    customerState: "new",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'customer-new': {
-    customerState: 'new',
-    secondCustomerState: 'new',
+  "customer-new": {
+    customerState: "new",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'customer-existing': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "customer-existing": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'intake-closed': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "intake-closed": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: false,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'modifier-unavailable': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "modifier-unavailable": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'modifier',
+    unavailableTarget: "modifier",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'product-unavailable': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "product-unavailable": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'product',
+    unavailableTarget: "product",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'size-unavailable': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "size-unavailable": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'size',
+    unavailableTarget: "size",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'catalog-mutation': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "catalog-mutation": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-created': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "order-created": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['CREATED'],
+    unavailableTarget: "none",
+    orderStages: ["CREATED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-accepted': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "order-accepted": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['ACCEPTED'],
+    unavailableTarget: "none",
+    orderStages: ["ACCEPTED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-preparing': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "order-preparing": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['PREPARING'],
+    unavailableTarget: "none",
+    orderStages: ["PREPARING"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-ready': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "order-ready": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['READY'],
+    unavailableTarget: "none",
+    orderStages: ["READY"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-issued': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "order-issued": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['ISSUED'],
+    unavailableTarget: "none",
+    orderStages: ["ISSUED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-snapshot': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "order-snapshot": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['CREATED'],
+    unavailableTarget: "none",
+    orderStages: ["CREATED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-repeat-unavailable': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "order-repeat-unavailable": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['ISSUED'],
+    unavailableTarget: "none",
+    orderStages: ["ISSUED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'order-repeat-partial': {
-    customerState: 'existing',
-    secondCustomerState: 'new',
+  "order-repeat-partial": {
+    customerState: "existing",
+    secondCustomerState: "new",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['ISSUED'],
+    unavailableTarget: "none",
+    orderStages: ["ISSUED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
-  'customer-history': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "customer-history": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
+    unavailableTarget: "none",
     orderStages: [],
     customerHistoryCount: 21,
     includeForeignOrder: true,
   },
-  'queue-populated': {
-    customerState: 'existing',
-    secondCustomerState: 'existing',
+  "queue-populated": {
+    customerState: "existing",
+    secondCustomerState: "existing",
     acceptsNewOrders: true,
-    unavailableTarget: 'none',
-    orderStages: ['CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED'],
+    unavailableTarget: "none",
+    orderStages: ["CREATED", "ACCEPTED", "PREPARING", "READY", "ISSUED"],
     customerHistoryCount: 0,
     includeForeignOrder: false,
   },
@@ -202,25 +202,25 @@ export const e2eSeedScenarioDefinitions: Readonly<
 export const e2eSeedIds = {
   coffeeCategory: coffeeCategoryId,
   cappuccino: cappuccinoId,
-  cappuccinoMedium: '00000000-0000-4000-8000-000000000012',
+  cappuccinoMedium: "00000000-0000-4000-8000-000000000012",
   unavailableDessert: unavailableDessertId,
-  regularMilk: '00000000-0000-4000-8000-000000000101',
-  oatMilk: '00000000-0000-4000-8000-000000000102',
+  regularMilk: "00000000-0000-4000-8000-000000000101",
+  oatMilk: "00000000-0000-4000-8000-000000000102",
 } as const;
 
 export const catalogSeed: CatalogSeed = {
   categories: [
     {
       id: coffeeCategoryId,
-      name: 'Кофе',
-      description: 'Кофейные напитки.',
+      name: "Кофе",
+      description: "Кофейные напитки.",
       sortOrder: 10,
       isActive: true,
     },
     {
       id: bakeryCategoryId,
-      name: 'Выпечка',
-      description: 'Свежая выпечка.',
+      name: "Выпечка",
+      description: "Свежая выпечка.",
       sortOrder: 20,
       isActive: true,
     },
@@ -229,9 +229,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: cappuccinoId,
       categoryId: coffeeCategoryId,
-      type: 'DRINK',
-      name: 'Капучино',
-      description: 'Эспрессо с молочной пеной.',
+      type: "DRINK",
+      name: "Капучино",
+      description: "Эспрессо с молочной пеной.",
       price: null,
       sortOrder: 10,
       isActive: true,
@@ -240,9 +240,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: espressoId,
       categoryId: coffeeCategoryId,
-      type: 'DRINK',
-      name: 'Эспрессо',
-      description: 'Классический двойной эспрессо.',
+      type: "DRINK",
+      name: "Эспрессо",
+      description: "Классический двойной эспрессо.",
       price: null,
       sortOrder: 20,
       isActive: true,
@@ -251,9 +251,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: croissantId,
       categoryId: bakeryCategoryId,
-      type: 'OTHER',
-      name: 'Круассан',
-      description: 'Слоёный круассан из масляного теста.',
+      type: "OTHER",
+      name: "Круассан",
+      description: "Слоёный круассан из масляного теста.",
       price: 220,
       sortOrder: 10,
       isActive: true,
@@ -262,9 +262,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: unavailableDessertId,
       categoryId: bakeryCategoryId,
-      type: 'OTHER',
-      name: 'Чизкейк',
-      description: 'Десерт временно недоступен.',
+      type: "OTHER",
+      name: "Чизкейк",
+      description: "Десерт временно недоступен.",
       price: 280,
       sortOrder: 20,
       isActive: true,
@@ -273,9 +273,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: unpublishedDrinkId,
       categoryId: coffeeCategoryId,
-      type: 'DRINK',
-      name: 'Тестовый напиток',
-      description: 'Непубликуемый кандидат без размеров.',
+      type: "DRINK",
+      name: "Тестовый напиток",
+      description: "Непубликуемый кандидат без размеров.",
       price: null,
       sortOrder: 30,
       isActive: false,
@@ -284,33 +284,33 @@ export const catalogSeed: CatalogSeed = {
   ],
   productVariants: [
     {
-      id: '00000000-0000-4000-8000-000000000011',
+      id: "00000000-0000-4000-8000-000000000011",
       productId: cappuccinoId,
-      size: 'S',
+      size: "S",
       price: 280,
       sortOrder: 10,
       isAvailable: true,
     },
     {
-      id: '00000000-0000-4000-8000-000000000012',
+      id: "00000000-0000-4000-8000-000000000012",
       productId: cappuccinoId,
-      size: 'M',
+      size: "M",
       price: 320,
       sortOrder: 20,
       isAvailable: true,
     },
     {
-      id: '00000000-0000-4000-8000-000000000013',
+      id: "00000000-0000-4000-8000-000000000013",
       productId: cappuccinoId,
-      size: 'L',
+      size: "L",
       price: 360,
       sortOrder: 30,
       isAvailable: true,
     },
     {
-      id: '00000000-0000-4000-8000-000000000021',
+      id: "00000000-0000-4000-8000-000000000021",
       productId: espressoId,
-      size: 'S',
+      size: "S",
       price: 200,
       sortOrder: 10,
       isAvailable: true,
@@ -319,8 +319,8 @@ export const catalogSeed: CatalogSeed = {
   modifierGroups: [
     {
       id: milkGroupId,
-      name: 'Молоко',
-      selectionType: 'single',
+      name: "Молоко",
+      selectionType: "single",
       minSelect: 1,
       maxSelect: 1,
       isActive: true,
@@ -328,18 +328,18 @@ export const catalogSeed: CatalogSeed = {
   ],
   modifierOptions: [
     {
-      id: '00000000-0000-4000-8000-000000000101',
+      id: "00000000-0000-4000-8000-000000000101",
       groupId: milkGroupId,
-      name: 'Обычное молоко',
+      name: "Обычное молоко",
       priceDelta: 0,
       sortOrder: 10,
       isDefault: true,
       isAvailable: true,
     },
     {
-      id: '00000000-0000-4000-8000-000000000102',
+      id: "00000000-0000-4000-8000-000000000102",
       groupId: milkGroupId,
-      name: 'Овсяное молоко',
+      name: "Овсяное молоко",
       priceDelta: 80,
       sortOrder: 20,
       isDefault: false,

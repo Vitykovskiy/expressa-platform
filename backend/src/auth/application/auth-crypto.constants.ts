@@ -1,1 +1,1 @@
-export const authCryptoPort = Symbol('authCryptoPort');
+export const authCryptoPort = Symbol("authCryptoPort");

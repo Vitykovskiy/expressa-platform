@@ -1,7 +1,11 @@
-import { AccessDeniedError, ExpiredOtpCodeError, InvalidOtpCodeError } from './auth.errors';
-import type { OtpChallenge, RolePolicy, UserRole } from './auth.types';
-import { rolePolicies } from './auth.constants';
-import { otpCodePattern, otpMaxAttempts } from './otp-policy.constants';
+import {
+  AccessDeniedError,
+  ExpiredOtpCodeError,
+  InvalidOtpCodeError,
+} from "./auth.errors";
+import type { OtpChallenge, RolePolicy, UserRole } from "./auth.types";
+import { rolePolicies } from "./auth.constants";
+import { otpCodePattern, otpMaxAttempts } from "./otp-policy.constants";
 
 export function isOtpCode(value: string): boolean {
   return otpCodePattern.test(value);

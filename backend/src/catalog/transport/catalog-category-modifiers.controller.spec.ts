@@ -150,18 +150,22 @@ describe("CatalogCategoryModifiersController", () => {
       "403",
       "500",
     ]);
-    expect(responseStatuses(prototype.replace)).toEqual([
-      "200",
-      "400",
-      "404",
-    ]);
-    expect(Reflect.getMetadata(swaggerParametersMetadataKey, prototype.replace)).toContainEqual({
+    expect(responseStatuses(prototype.replace)).toEqual(["200", "400", "404"]);
+    expect(
+      Reflect.getMetadata(swaggerParametersMetadataKey, prototype.replace),
+    ).toContainEqual({
       name: "categoryId",
       in: "path",
       required: true,
       format: "uuid",
     });
-    expect(Reflect.getMetadata(swaggerModelPropertyMetadataKey, ReplaceCategoryModifierGroupsDto.prototype, "groupIds")).toMatchObject({
+    expect(
+      Reflect.getMetadata(
+        swaggerModelPropertyMetadataKey,
+        ReplaceCategoryModifierGroupsDto.prototype,
+        "groupIds",
+      ),
+    ).toMatchObject({
       type: "string",
       format: "uuid",
       isArray: true,
@@ -171,5 +175,7 @@ describe("CatalogCategoryModifiersController", () => {
 });
 
 function responseStatuses(target: object): string[] {
-  return Object.keys(Reflect.getMetadata(swaggerResponsesMetadataKey, target)).sort();
+  return Object.keys(
+    Reflect.getMetadata(swaggerResponsesMetadataKey, target),
+  ).sort();
 }

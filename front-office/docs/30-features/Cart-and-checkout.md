@@ -13,12 +13,12 @@ sources:
 `/cart` показывает сохранённые позиции, меняет количество и отправляет заказ
 после customer-аутентификации. [Источники: page](../../src/pages/CartPage.vue), [screen](../../src/features/checkout/CartScreen.vue).
 
-| Область | Действия, состояния и результат | Источник |
-|---|---|---|
-| Корзина | пустая корзина ведёт к меню; удаление или количество сбрасывают checkout-ошибку и сохраняют новое содержимое | [CartPage](../../src/pages/CartPage.vue) |
-| Позиция | удалить, плюс/минус, unavailable и прежняя цена видимы; количество объявляется live | [CartItem](../../src/features/checkout/CartItem.vue) |
-| Отправка | anonymous идёт на `/auth/phone?returnTo=/cart`; submitting блокирует кнопку; success очищает корзину и открывает `/orders/:id` | [CartPage](../../src/pages/CartPage.vue) |
-| Ошибка | network повторяется; totalChanged предлагает подтверждение; itemUnavailable выделяет позиции; intakeClosed запрещает отправку | [checkout store](../../src/features/checkout/checkout.store.ts) |
+| Область  | Действия, состояния и результат                                                                                                | Источник                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Корзина  | пустая корзина ведёт к меню; удаление или количество сбрасывают checkout-ошибку и сохраняют новое содержимое                   | [CartPage](../../src/pages/CartPage.vue)                        |
+| Позиция  | удалить, плюс/минус, unavailable и прежняя цена видимы; количество объявляется live                                            | [CartItem](../../src/features/checkout/CartItem.vue)            |
+| Отправка | anonymous идёт на `/auth/phone?returnTo=/cart`; submitting блокирует кнопку; success очищает корзину и открывает `/orders/:id` | [CartPage](../../src/pages/CartPage.vue)                        |
+| Ошибка   | network повторяется; totalChanged предлагает подтверждение; itemUnavailable выделяет позиции; intakeClosed запрещает отправку  | [checkout store](../../src/features/checkout/checkout.store.ts) |
 
 Экран имеет мобильную фиксированную кнопку и desktop summary на 1024px; списки,
 итог и сообщения имеют именованные регионы и status. Переполнение имени позиции
