@@ -229,7 +229,7 @@ for path in root.rglob("*"):
 PY
 }
 
-write_suite_index() {
+write_suite_summary() {
   [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
   local total=0 passed=0 failed=0
   local entry case_id status failed_case_ids=()
@@ -250,15 +250,120 @@ write_suite_index() {
     (IFS=,; printf '%s' "${failed_case_ids[*]:-}")
     printf '\n'
   } > "$suite_directory/summary.txt"
-  printf '<!doctype html><meta charset="utf-8"><title>E2E suite report</title><h1>E2E suite report</h1><p>Revision: %s</p><p><a href="%s">GitHub Actions run</a></p><ul>' \
-    "$E2E_REVISION" "$E2E_RUN_URL" > "$suite_directory/index.html"
-  printf '<p>Total: %d. Passed: %d. Failed: %d.</p>' "$total" "$passed" "$failed" >> "$suite_directory/index.html"
-  [[ -z "$suite_diagnostic" ]] || printf '<p>Diagnostic: %s</p>' "$suite_diagnostic" >> "$suite_directory/index.html"
-  for entry in "${report_entries[@]}"; do
-    IFS='|' read -r case_id status <<< "$entry"
-    printf '<li>%s: %s — <a href="%s/">report</a></li>' "$case_id" "$status" "$case_id" >> "$suite_directory/index.html"
+}
+
+write_diagnostic_report() {
+  [[ -n "$suite_directory" && -n "$suite_diagnostic" ]] || fail 'suite diagnostic is unavailable'
+  printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Revision: %s</p><p>Stage: %s</p><p><a href="%s">GitHub Actions run</a></p>' \
+    "$E2E_REVISION" "$suite_diagnostic" "$E2E_RUN_URL" > "$suite_directory/index.html"
+}
+
+publish_suite_directory() {
+  [[ -n "$suite_directory" ]] || return 0
+  sanitize_e2e_report "$suite_directory"
+  assert_no_e2e_secret "$suite_directory"
+  chmod -R a+rX "$suite_directory"
+  ln -s "$(basename -- "$suite_directory")" "$report_root/current.next"
+  mv -Tf "$report_root/current.next" "$report_root/current"
+  suite_published=1
+}
+
+validate_playwright_blob() {
+  local blob_file="$1" expected_test_title="$2"
+  [[ -f "$blob_file" && ! -L "$blob_file" ]] || return 1
+  python3 - "$blob_file" "$expected_test_title" <<'PY'
+import json
+import sys
+import zipfile
+
+def test_titles(entries):
+    for entry in entries:
+        if "testId" in entry:
+            yield entry["title"]
+        else:
+            yield from test_titles(entry.get("entries", []))
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    if "report.jsonl" not in archive.namelist():
+        raise SystemExit(1)
+    titles = []
+    for line in archive.read("report.jsonl").splitlines():
+        event = json.loads(line)
+        if event.get("method") != "onProject":
+            continue
+        for suite in event["params"]["project"]["suites"]:
+            titles.extend(test_titles(suite["entries"]))
+    if titles != [sys.argv[2]]:
+        raise SystemExit(1)
+PY
+}
+
+collect_case_blob() {
+  local case_id="$1" test_title="$2" source_directory="$E2E_ARTIFACT_DIRECTORY/blob" blob_files=()
+  [[ -n "$suite_directory" && -d "$source_directory" && ! -L "$source_directory" ]] || return 1
+  if find "$source_directory" -type l -print -quit | grep --quiet .; then
+    return 1
+  fi
+  mapfile -t blob_files < <(find "$source_directory" -mindepth 1 -maxdepth 1 -type f -name '*.zip' -print | sort)
+  (( ${#blob_files[@]} == 1 )) || return 1
+  validate_playwright_blob "${blob_files[0]}" "$test_title" || return 1
+  cp -- "${blob_files[0]}" "$suite_directory/blobs/$case_id.zip"
+}
+
+validate_suite_blobs() {
+  [[ -d "$suite_directory/blobs" && ! -L "$suite_directory/blobs" ]] || return 1
+  if find "$suite_directory/blobs" -type l -print -quit | grep --quiet .; then
+    return 1
+  fi
+  local record case_id _ profile scenario test_title matching_entries blob_files=()
+  for record in "${test_cases[@]}"; do
+    IFS='|' read -r case_id profile scenario test_title <<< "$record"
+    matching_entries=0
+    local entry recorded_case_id status
+    for entry in "${report_entries[@]}"; do
+      IFS='|' read -r recorded_case_id status <<< "$entry"
+      [[ "$recorded_case_id" == "$case_id" ]] || continue
+      [[ "$status" == passed || "$status" == failed ]] || return 1
+      (( matching_entries += 1 ))
+    done
+    (( matching_entries == 1 )) || return 1
+    validate_playwright_blob "$suite_directory/blobs/$case_id.zip" "$test_title" || return 1
   done
-  printf '</ul>' >> "$suite_directory/index.html"
+  mapfile -t blob_files < <(find "$suite_directory/blobs" -mindepth 1 -maxdepth 1 -type f -name '*.zip' -print | sort)
+  (( ${#blob_files[@]} == ${#test_cases[@]} ))
+}
+
+merge_suite_reports() {
+  local report_directory="$suite_directory/report" report_entry
+  project="expressa-e2e-$E2E_RUN_ID-merge"
+  E2E_PROFILE=seeded
+  E2E_ARTIFACT_DIRECTORY="$suite_directory"
+  export E2E_PROFILE E2E_ARTIFACT_DIRECTORY
+  if ! compose run --rm --no-deps \
+    -e PLAYWRIGHT_HTML_OPEN=never \
+    -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report \
+    e2e npm exec -- playwright merge-reports --reporter html /artifacts/blobs; then
+    cleanup_runtime || true
+    project=''
+    unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+    return 1
+  fi
+  if ! cleanup_runtime; then
+    project=''
+    unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+    return 1
+  fi
+  project=''
+  unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+  [[ -d "$report_directory" && ! -L "$report_directory" && -f "$report_directory/index.html" ]] || return 1
+  if find "$report_directory" -type l -print -quit | grep --quiet .; then
+    return 1
+  fi
+  while IFS= read -r -d '' report_entry; do
+    mv -- "$report_entry" "$suite_directory/"
+  done < <(find "$report_directory" -mindepth 1 -maxdepth 1 -print0)
+  rmdir "$report_directory"
+  [[ -f "$suite_directory/index.html" && ! -L "$suite_directory/index.html" ]]
 }
 
 published_suite_directory() {
@@ -298,6 +403,7 @@ export_published_report() {
 prepare_suite_report() {
   ensure_report_host
   suite_directory="$(mktemp -d "$report_root/.incoming.${E2E_RUN_ID}.XXXXXX")"
+  install -d -m 700 "$suite_directory/blobs"
 }
 
 publish_diagnostic() {
@@ -305,44 +411,28 @@ publish_diagnostic() {
   validate_metadata
   prepare_suite_report
   suite_diagnostic="Stage: $diagnostic_stage. Playwright did not run."
-  finalize_suite_report
+  write_suite_summary
+  rm -rf -- "$suite_directory/blobs"
+  write_diagnostic_report
+  publish_suite_directory
 }
 
 finalize_suite_report() {
   [[ -n "$suite_directory" ]] || return 0
-  write_suite_index
-  sanitize_e2e_report "$suite_directory"
-  assert_no_e2e_secret "$suite_directory"
-  chmod -R a+rX "$suite_directory"
-  ln -s "$(basename -- "$suite_directory")" "$report_root/current.next"
-  mv -Tf "$report_root/current.next" "$report_root/current"
-  suite_published=1
-}
-
-copy_playwright_report() {
-  local target_directory="$1"
-  local source_directory="$E2E_ARTIFACT_DIRECTORY/report"
-  [[ -d "$source_directory" && ! -L "$source_directory" && -f "$source_directory/index.html" ]] || fail 'Playwright report is unavailable'
-  if find "$source_directory" -type l -print -quit | grep --quiet .; then
-    fail 'Playwright report contains a symbolic link'
+  if [[ -z "$suite_diagnostic" ]]; then
+    if ! validate_suite_blobs || ! merge_suite_reports; then
+      suite_diagnostic='Full Playwright report merge failed.'
+    else
+      rm -rf -- "$suite_directory/blobs"
+      write_suite_summary
+    fi
   fi
-  cp -a -- "$source_directory/." "$target_directory/"
-}
-
-publish_case_report() {
-  local case_id="$1" status="$2" diagnostic_stage="$3" publication_directory
-  [[ -n "$suite_directory" ]] || fail 'suite publication is unavailable'
-  publication_directory="$suite_directory/$case_id"
-  install -d -m 700 "$publication_directory"
-  if [[ -d "${E2E_ARTIFACT_DIRECTORY:-}/report" && -f "${E2E_ARTIFACT_DIRECTORY:-}/report/index.html" ]]; then
-    copy_playwright_report "$publication_directory"
-  else
-    printf '<!doctype html><meta charset="utf-8"><title>E2E diagnostic</title><h1>E2E diagnostic</h1><p>Stage: %s. Playwright report is unavailable.</p>' \
-      "$diagnostic_stage" > "$publication_directory/index.html"
+  if [[ -n "$suite_diagnostic" ]]; then
+    write_suite_summary
+    rm -rf -- "$suite_directory/blobs"
+    write_diagnostic_report
   fi
-  sanitize_e2e_report "$publication_directory"
-  assert_no_e2e_secret "$publication_directory"
-  report_entries+=("$case_id|$status")
+  publish_suite_directory
 }
 
 compose() {
@@ -433,7 +523,10 @@ prepare_runtime_environment() {
 run_suite() {
   local test_title="$1" escaped_test_title
   escaped_test_title="$(printf '%s' "$test_title" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
-  compose run --rm -e E2E_SAFE_REPORT=1 -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report e2e npm run e2e -- --grep "${escaped_test_title}$" > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
+  compose run --rm \
+    -e E2E_SAFE_REPORT=1 \
+    -e PLAYWRIGHT_BLOB_OUTPUT_DIR=/artifacts/blob \
+    e2e npm run e2e -- --reporter=blob --grep "${escaped_test_title}$" > "$E2E_ARTIFACT_DIRECTORY/playwright-output.log" 2>&1
 }
 
 run_readiness_step() {
@@ -493,7 +586,7 @@ run_case() {
     ! run_readiness_step 'front-office health' wait_for_health front ||
     ! run_readiness_step 'back-office health' wait_for_health back ||
     ! run_readiness_step 'gateway health' wait_for_health gateway; then
-    publish_case_report "$case_id" failed "$stage"
+    suite_diagnostic="Test: $case_id. Stage: $stage. Playwright blob is unavailable."
     cleanup_runtime || return 1
     project=''
     run_directory=''
@@ -502,22 +595,23 @@ run_case() {
   fi
 
   stage="$case_id-playwright"
+  local case_status=passed blob_collected=1
   if ! run_suite "$test_title"; then
-    publish_case_report "$case_id" failed "$stage"
-    cleanup_runtime || return 1
-    project=''
-    run_directory=''
-    unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
-    return 1
+    case_status=failed
   fi
-
-  publish_case_report "$case_id" passed "$stage"
+  if ! collect_case_blob "$case_id" "$test_title"; then
+    blob_collected=0
+    suite_diagnostic="Test: $case_id. Stage: $stage. Playwright blob is unavailable."
+  else
+    report_entries+=("$case_id|$case_status")
+  fi
   if ! cleanup_runtime; then
     return 1
   fi
   project=''
   run_directory=''
   unset E2E_ARTIFACT_DIRECTORY E2E_PROFILE
+  [[ "$case_status" == passed && "$blob_collected" == 1 ]]
 }
 
 test_cases=(
@@ -640,7 +734,7 @@ run() {
     fi
   done
   finalize_suite_report
-  (( suite_failed == 0 ))
+  [[ -z "$suite_diagnostic" && "$suite_failed" == 0 ]]
 }
 
 [[ "$#" -ge 1 ]] || usage
