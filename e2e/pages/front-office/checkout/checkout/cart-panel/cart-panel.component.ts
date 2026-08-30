@@ -466,6 +466,7 @@ export class CartPanelComponent {
   private orderSummary(): Locator {
     return this.page
       .getByRole("complementary", { name: "Сводка заказа", exact: true })
+      .or(this.page.getByLabel("Изменение итога заказа", { exact: true }))
       .filter({ visible: true });
   }
 
