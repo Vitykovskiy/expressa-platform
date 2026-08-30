@@ -7,6 +7,7 @@ import type { CheckoutPage } from "@pages/front-office/checkout/checkout/checkou
 import type { PublicMenuPage } from "@pages/front-office/menu/public-menu/public-menu.page";
 import type { CustomerOrderPage } from "@pages/front-office/orders/customer-order/customer-order.page";
 import type { OrderHistoryPage } from "@pages/front-office/orders/order-history/order-history.page";
+import type { Page } from "@playwright/test";
 
 export interface MultiSessionFixture {
   readonly secondCustomer: SecondCustomerSession;
@@ -14,6 +15,7 @@ export interface MultiSessionFixture {
 }
 
 interface SecondCustomerSession {
+  readonly page: Page;
   readonly auth: CustomerAuthPage;
   readonly menu: PublicMenuPage;
   readonly checkout: CheckoutPage;
@@ -22,6 +24,7 @@ interface SecondCustomerSession {
 }
 
 interface StaffSession {
+  readonly page: Page;
   readonly auth: BackOfficeAuthPage;
   readonly availabilityManagement: AvailabilityManagementPage;
   readonly menuManagement: MenuManagementPage;

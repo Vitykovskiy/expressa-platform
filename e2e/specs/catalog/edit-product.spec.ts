@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение данных существующего товара.
@@ -17,6 +17,7 @@ import { expect, test } from "@fixtures/test";
  * - Администратор видит товар «Эспрессо — обновлено».
  */
 test("CATALOG-10: администратор редактирует товар", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -35,10 +36,14 @@ test("CATALOG-10: администратор редактирует товар",
   await menuManagement.productEditor.fillName(productName);
   await menuManagement.productEditor.saveChanges(productName);
 
-  await test.step("Администратор видит товар «Эспрессо — обновлено».", async () => {
-    expect(
-      await menuManagement.catalog.isProductVisible(productName),
-      "Товар «Эспрессо — обновлено» показан в исходной категории.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор видит товар «Эспрессо — обновлено».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductVisible(productName),
+        "Товар «Эспрессо — обновлено» показан в исходной категории.",
+      ).toBe(true);
+    },
+  );
 });

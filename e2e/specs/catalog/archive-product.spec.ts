@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить отмену и подтверждение архивирования товара.
@@ -20,6 +20,7 @@ import { expect, test } from "@fixtures/test";
  * - После подтверждения товар отсутствует среди активных товаров.
  */
 test("CATALOG-12: администратор архивирует товар", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -36,18 +37,26 @@ test("CATALOG-12: администратор архивирует товар", a
   await menuManagement.productEditor.openForEditing(productName);
   await menuManagement.productEditor.requestArchive(productName);
   await menuManagement.productEditor.cancelArchive(productName);
-  await test.step("После отмены товар остаётся в категории.", async () => {
-    expect(
-      await menuManagement.catalog.isProductVisible(productName),
-      "После отмены товар остаётся в активной категории.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "После отмены товар остаётся в категории.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductVisible(productName),
+        "После отмены товар остаётся в активной категории.",
+      ).toBe(true);
+    },
+  );
   await menuManagement.productEditor.requestArchive(productName);
   await menuManagement.productEditor.confirmArchive(productName);
-  await test.step("После подтверждения товар отсутствует среди активных товаров.", async () => {
-    expect(
-      await menuManagement.catalog.isProductAbsent(productName),
-      "После подтверждения товар отсутствует среди активных товаров.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "После подтверждения товар отсутствует среди активных товаров.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductAbsent(productName),
+        "После подтверждения товар отсутствует среди активных товаров.",
+      ).toBe(true);
+    },
+  );
 });

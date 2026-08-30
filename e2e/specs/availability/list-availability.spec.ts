@@ -1,4 +1,5 @@
 import { AvailabilityState, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник видит доступные для управления товары, размеры и добавки.
@@ -14,6 +15,7 @@ import { AvailabilityState, expect, test } from "@fixtures/test";
  * - Каждая позиция показывает текущее состояние доступности.
  */
 test("AVAIL-01: сотрудник видит список позиций", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -27,42 +29,50 @@ test("AVAIL-01: сотрудник видит список позиций", asyn
     await backOfficeAuth.form.confirmCode();
   });
   await availabilityManagement.open();
-  await test.step("Сотрудник видит категорию «Кофе».", async () => {
+  await expectedResult("Сотрудник видит категорию «Кофе».", page, async () => {
     expect(
       await availabilityManagement.list.isCategoryVisible("Кофе"),
       "Категория «Кофе» показана.",
     ).toBe(true);
   });
-  await test.step("Сотрудник видит отдельные строки товара, размера и добавки.", async () => {
-    expect(
-      await availabilityManagement.list.isItemVisible("Капучино"),
-      "Строка товара показана.",
-    ).toBe(true);
-    expect(
-      await availabilityManagement.list.isItemVisible("Капучино · M"),
-      "Строка размера показана.",
-    ).toBe(true);
-    expect(
-      await availabilityManagement.list.isItemVisible(
-        "Молоко · Овсяное молоко",
-      ),
-      "Строка добавки показана.",
-    ).toBe(true);
-  });
-  await test.step("Каждая позиция показывает текущее состояние доступности.", async () => {
-    expect(
-      await availabilityManagement.list.readItemAvailability("Капучино"),
-      "Товар доступен.",
-    ).toBe(AvailabilityState.AVAILABLE);
-    expect(
-      await availabilityManagement.list.readItemAvailability("Капучино · M"),
-      "Размер доступен.",
-    ).toBe(AvailabilityState.AVAILABLE);
-    expect(
-      await availabilityManagement.list.readItemAvailability(
-        "Молоко · Овсяное молоко",
-      ),
-      "Добавка доступна.",
-    ).toBe(AvailabilityState.AVAILABLE);
-  });
+  await expectedResult(
+    "Сотрудник видит отдельные строки товара, размера и добавки.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isItemVisible("Капучино"),
+        "Строка товара показана.",
+      ).toBe(true);
+      expect(
+        await availabilityManagement.list.isItemVisible("Капучино · M"),
+        "Строка размера показана.",
+      ).toBe(true);
+      expect(
+        await availabilityManagement.list.isItemVisible(
+          "Молоко · Овсяное молоко",
+        ),
+        "Строка добавки показана.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Каждая позиция показывает текущее состояние доступности.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readItemAvailability("Капучино"),
+        "Товар доступен.",
+      ).toBe(AvailabilityState.AVAILABLE);
+      expect(
+        await availabilityManagement.list.readItemAvailability("Капучино · M"),
+        "Размер доступен.",
+      ).toBe(AvailabilityState.AVAILABLE);
+      expect(
+        await availabilityManagement.list.readItemAvailability(
+          "Молоко · Овсяное молоко",
+        ),
+        "Добавка доступна.",
+      ).toBe(AvailabilityState.AVAILABLE);
+    },
+  );
 });

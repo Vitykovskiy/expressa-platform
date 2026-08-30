@@ -1,4 +1,5 @@
 import { CustomerSessionState, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: зарегистрированный клиент снова получает доступ по своему номеру телефона.
@@ -23,6 +24,7 @@ import { CustomerSessionState, expect, test } from "@fixtures/test";
  * - Клиент возвращается в публичный интерфейс.
  */
 test("AUTH-02 — Зарегистрированный клиент повторно входит по номеру телефона", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -48,14 +50,22 @@ test("AUTH-02 — Зарегистрированный клиент повтор
   );
   await customerAuth.phoneVerification.confirm();
 
-  await test.step("Клиент становится авторизованным пользователем своей существующей учётной записи", async () => {
-    await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
-  });
+  await expectedResult(
+    "Клиент становится авторизованным пользователем своей существующей учётной записи",
+    page,
+    async () => {
+      await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
+    },
+  );
 
-  await test.step("Клиент возвращается в публичный интерфейс", async () => {
-    await expect(
-      await customerAuth.isPublicInterfaceVisible(),
-      "Публичный интерфейс открыт для авторизованного клиента.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Клиент возвращается в публичный интерфейс",
+    page,
+    async () => {
+      await expect(
+        await customerAuth.isPublicInterfaceVisible(),
+        "Публичный интерфейс открыт для авторизованного клиента.",
+      ).toBe(true);
+    },
+  );
 });

@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   CartItemSize,
   expect,
   ProductConfiguratorSize,
@@ -32,6 +33,7 @@ import {
  * - Customer может продолжить оформление заказа.
  */
 test("CHECKOUT-02: гость возвращается к оформлению после OTP", async ({
+  page,
   checkout,
   e2eCredentials,
   e2eEnvironment,
@@ -50,53 +52,71 @@ test("CHECKOUT-02: гость возвращается к оформлению �
   await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
   await checkout.phoneVerification.confirm();
 
-  await test.step("Customer возвращается к корзине после подтверждения номера.", async () => {
-    expect(
-      await checkout.isCartOpen(),
-      "После подтверждения номера снова открыта корзина.",
-    ).toBe(true);
-  });
-  await test.step("Корзина содержит «Капучино» размера M с «Обычным молоком».", async () => {
-    expect(
-      await checkout.cart.readItemName("Капучино", ProductConfiguratorSize.M, [
-        "Обычное молоко",
-      ]),
-      "В корзине сохранён добавленный до входа товар.",
-    ).toBe("Капучино");
-    expect(
-      await checkout.cart.readItemVariant(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "В корзине сохранён размер M.",
-    ).toBe(CartItemSize.M);
-    expect(
-      await checkout.cart.readItemModifiers(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "В корзине сохранена добавка.",
-    ).toEqual(["+ Обычное молоко"]);
-  });
-  await test.step("Корзина показывает количество 1 и итог 320 ₽.", async () => {
-    expect(
-      await checkout.cart.readItemQuantity(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показано количество один.",
-    ).toBe(1);
-    expect(await checkout.cart.readTotal(), "Показан итог 320 ₽.").toBe(
-      "320 ₽",
-    );
-  });
-  await test.step("Customer может продолжить оформление заказа.", async () => {
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Кнопка оформления заказа доступна после подтверждения номера.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Customer возвращается к корзине после подтверждения номера.",
+    page,
+    async () => {
+      expect(
+        await checkout.isCartOpen(),
+        "После подтверждения номера снова открыта корзина.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Корзина содержит «Капучино» размера M с «Обычным молоком».",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemName(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "В корзине сохранён добавленный до входа товар.",
+      ).toBe("Капучино");
+      expect(
+        await checkout.cart.readItemVariant(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "В корзине сохранён размер M.",
+      ).toBe(CartItemSize.M);
+      expect(
+        await checkout.cart.readItemModifiers(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "В корзине сохранена добавка.",
+      ).toEqual(["+ Обычное молоко"]);
+    },
+  );
+  await expectedResult(
+    "Корзина показывает количество 1 и итог 320 ₽.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemQuantity(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показано количество один.",
+      ).toBe(1);
+      expect(await checkout.cart.readTotal(), "Показан итог 320 ₽.").toBe(
+        "320 ₽",
+      );
+    },
+  );
+  await expectedResult(
+    "Customer может продолжить оформление заказа.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Кнопка оформления заказа доступна после подтверждения номера.",
+      ).toBe(true);
+    },
+  );
 });

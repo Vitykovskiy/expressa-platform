@@ -4,6 +4,7 @@ import {
   PhoneVerificationStep,
   test,
 } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: клиент получает понятный результат неверного ввода одноразового кода.
@@ -37,6 +38,7 @@ import {
  * - После пятой неверной попытки настроенный корректный код остаётся недоступным.
  */
 test("AUTH-04 — Клиент видит результат пяти неверных одноразовых кодов", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -46,50 +48,80 @@ test("AUTH-04 — Клиент видит результат пяти невер
   await customerAuth.phoneVerification.requestCode();
   await customerAuth.phoneVerification.fillCode("111111");
   await customerAuth.phoneVerification.confirmInvalidCode();
-  await test.step("После первого неверного кода клиент видит сообщение о неверном коде", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После первого неверного кода клиент видит сообщение о неверном коде",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
   await customerAuth.phoneVerification.fillCode("222222");
   await customerAuth.phoneVerification.confirmInvalidCode();
-  await test.step("После второго неверного кода клиент видит сообщение о неверном коде", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После второго неверного кода клиент видит сообщение о неверном коде",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
   await customerAuth.phoneVerification.fillCode("333333");
   await customerAuth.phoneVerification.confirmInvalidCode();
-  await test.step("После третьего неверного кода клиент видит сообщение о неверном коде", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После третьего неверного кода клиент видит сообщение о неверном коде",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
   await customerAuth.phoneVerification.fillCode("444444");
   await customerAuth.phoneVerification.confirmInvalidCode();
-  await test.step("После четвёртого неверного кода клиент видит сообщение о неверном коде", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После четвёртого неверного кода клиент видит сообщение о неверном коде",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
   await customerAuth.phoneVerification.fillCode("555555");
   await customerAuth.phoneVerification.confirmInvalidCode();
-  await test.step("После пятого неверного кода клиент видит сообщение о неверном коде", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После пятого неверного кода клиент видит сообщение о неверном коде",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
   await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
   await customerAuth.phoneVerification.confirmInvalidCode();
 
-  await test.step("Клиент не становится авторизованным", async () => {
-    await customerAuth.assertSession(CustomerSessionState.GUEST);
-  });
+  await expectedResult(
+    "Клиент не становится авторизованным",
+    page,
+    async () => {
+      await customerAuth.assertSession(CustomerSessionState.GUEST);
+    },
+  );
 
-  await test.step("После пятой неверной попытки настроенный корректный код остаётся недоступным", async () => {
-    await customerAuth.phoneVerification.assertStep(PhoneVerificationStep.OTP);
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.INVALID_CODE,
-    );
-  });
+  await expectedResult(
+    "После пятой неверной попытки настроенный корректный код остаётся недоступным",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertStep(
+        PhoneVerificationStep.OTP,
+      );
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.INVALID_CODE,
+      );
+    },
+  );
 });

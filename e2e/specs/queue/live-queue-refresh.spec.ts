@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   OrderQueueStage,
   OrderStatus,
@@ -125,18 +126,26 @@ test("QUEUE-06: очередь автоматически показывает �
   const createdOrder =
     await multiSession.secondCustomer.order.details.readSnapshot();
 
-  await test.step("Новый оформленный заказ появляется в открытой очереди.", async () => {
-    expect(
-      await multiSession.staff.orders.queue.readCurrentStage(createdOrder),
-      "Новый заказ показан в открытой очереди на стадии «Оформлен».",
-    ).toBe(OrderQueueStage.CREATED);
-  });
-  await test.step("Подготовленные активные заказы остаются в очереди.", async () => {
-    for (const { order, stage } of preparedOrders) {
+  await expectedResult(
+    "Новый оформленный заказ появляется в открытой очереди.",
+    multiSession.staff.page,
+    async () => {
       expect(
-        await multiSession.staff.orders.queue.readCurrentStage(order),
-        `Подготовленный заказ ${order.number} остаётся в очереди.`,
-      ).toBe(stage);
-    }
-  });
+        await multiSession.staff.orders.queue.readCurrentStage(createdOrder),
+        "Новый заказ показан в открытой очереди на стадии «Оформлен».",
+      ).toBe(OrderQueueStage.CREATED);
+    },
+  );
+  await expectedResult(
+    "Подготовленные активные заказы остаются в очереди.",
+    multiSession.staff.page,
+    async () => {
+      for (const { order, stage } of preparedOrders) {
+        expect(
+          await multiSession.staff.orders.queue.readCurrentStage(order),
+          `Подготовленный заказ ${order.number} остаётся в очереди.`,
+        ).toBe(stage);
+      }
+    },
+  );
 });

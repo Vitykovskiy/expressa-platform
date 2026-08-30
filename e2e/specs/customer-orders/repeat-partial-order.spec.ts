@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   CartItemSize,
   expect,
   ProductConfiguratorSize,
@@ -23,6 +24,7 @@ import {
  * - Customer видит предупреждение о «Чизкейке» с причиной непереноса.
  */
 test("ORDER-07: customer повторяет доступную часть выданного заказа", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -49,51 +51,67 @@ test("ORDER-07: customer повторяет доступную часть выд
   await orderHistory.history.openOrder(order);
   await customerOrder.details.repeatOrder();
 
-  await test.step("Customer видит корзину с одним «Капучино».", async () => {
-    expect(await checkout.isCartOpen(), "Корзина открыта.").toBe(true);
-    expect(
-      await checkout.cart.readItemsCount(),
-      "В корзине показана одна доступная позиция.",
-    ).toBe(1);
-    expect(
-      await checkout.cart.readItemName("Капучино", ProductConfiguratorSize.M, [
-        "Обычное молоко",
-      ]),
-      "В корзине показан «Капучино».",
-    ).toBe("Капучино");
-  });
-  await test.step("Customer видит сохранённые размер M, добавку «Обычное молоко» и количество 1.", async () => {
-    expect(
-      await checkout.cart.readItemVariant(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показан сохранённый размер M.",
-    ).toBe(CartItemSize.M);
-    expect(
-      await checkout.cart.readItemModifiers(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показана сохранённая добавка.",
-    ).toEqual(["+ Обычное молоко"]);
-    expect(
-      await checkout.cart.readItemQuantity(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показано сохранённое количество.",
-    ).toBe(1);
-  });
-  await test.step("Customer видит предупреждение о «Чизкейке» с причиной непереноса.", async () => {
-    const warning = await checkout.cart.readRepeatWarning("Чизкейк");
+  await expectedResult(
+    "Customer видит корзину с одним «Капучино».",
+    page,
+    async () => {
+      expect(await checkout.isCartOpen(), "Корзина открыта.").toBe(true);
+      expect(
+        await checkout.cart.readItemsCount(),
+        "В корзине показана одна доступная позиция.",
+      ).toBe(1);
+      expect(
+        await checkout.cart.readItemName(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "В корзине показан «Капучино».",
+      ).toBe("Капучино");
+    },
+  );
+  await expectedResult(
+    "Customer видит сохранённые размер M, добавку «Обычное молоко» и количество 1.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemVariant(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показан сохранённый размер M.",
+      ).toBe(CartItemSize.M);
+      expect(
+        await checkout.cart.readItemModifiers(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показана сохранённая добавка.",
+      ).toEqual(["+ Обычное молоко"]);
+      expect(
+        await checkout.cart.readItemQuantity(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показано сохранённое количество.",
+      ).toBe(1);
+    },
+  );
+  await expectedResult(
+    "Customer видит предупреждение о «Чизкейке» с причиной непереноса.",
+    page,
+    async () => {
+      const warning = await checkout.cart.readRepeatWarning("Чизкейк");
 
-    expect(warning.productName, "Показано имя недоступной позиции.").toBe(
-      "Чизкейк",
-    );
-    expect(warning.reason, "Показана причина непереноса позиции.").not.toBe("");
-  });
+      expect(warning.productName, "Показано имя недоступной позиции.").toBe(
+        "Чизкейк",
+      );
+      expect(warning.reason, "Показана причина непереноса позиции.").not.toBe(
+        "",
+      );
+    },
+  );
 });

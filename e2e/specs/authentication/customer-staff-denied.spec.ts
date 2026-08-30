@@ -1,4 +1,5 @@
 import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: клиент не получает доступ к рабочим разделам back-office.
@@ -17,6 +18,7 @@ import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
  * - Клиент не получает доступ к очереди, доступности или меню back-office.
  */
 test("AUTH-09 — Клиент получает отказ во входе в back-office", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -27,31 +29,39 @@ test("AUTH-09 — Клиент получает отказ во входе в ba
   await backOfficeAuth.form.fillCode(e2eCredentials.customer.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Клиент видит отказ в доступе к back-office", async () => {
-    await expect(
-      await backOfficeAuth.form.isAccessDeniedVisible(),
-      "Клиент видит отказ в доступе к back-office.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Клиент видит отказ в доступе к back-office",
+    page,
+    async () => {
+      await expect(
+        await backOfficeAuth.form.isAccessDeniedVisible(),
+        "Клиент видит отказ в доступе к back-office.",
+      ).toBe(true);
+    },
+  );
 
-  await test.step("Клиент не получает доступ к очереди, доступности или меню back-office", async () => {
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.QUEUE,
-      ),
-      "Очередь недоступна клиенту.",
-    ).toBe(false);
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.AVAILABILITY,
-      ),
-      "Доступность недоступна клиенту.",
-    ).toBe(false);
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.MENU,
-      ),
-      "Меню недоступно клиенту.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Клиент не получает доступ к очереди, доступности или меню back-office",
+    page,
+    async () => {
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.QUEUE,
+        ),
+        "Очередь недоступна клиенту.",
+      ).toBe(false);
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.AVAILABILITY,
+        ),
+        "Доступность недоступна клиенту.",
+      ).toBe(false);
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.MENU,
+        ),
+        "Меню недоступно клиенту.",
+      ).toBe(false);
+    },
+  );
 });

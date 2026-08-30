@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityItemType,
   AvailabilityState,
   expect,
@@ -22,6 +23,7 @@ import {
  * - Customer не может выбрать недоступный товар «Капучино» в публичном меню.
  */
 test("AVAIL-03: сотрудник выключает товар", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -42,18 +44,26 @@ test("AVAIL-03: сотрудник выключает товар", async ({
     AvailabilityItemType.PRODUCT,
     AvailabilityState.UNAVAILABLE,
   );
-  await test.step("В back-office товар «Капучино» отображается недоступным.", async () => {
-    expect(
-      await availabilityManagement.list.readItemAvailability("Капучино"),
-      "Товар отмечен недоступным.",
-    ).toBe(AvailabilityState.UNAVAILABLE);
-  });
+  await expectedResult(
+    "В back-office товар «Капучино» отображается недоступным.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readItemAvailability("Капучино"),
+        "Товар отмечен недоступным.",
+      ).toBe(AvailabilityState.UNAVAILABLE);
+    },
+  );
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory("Кофе");
-  await test.step("Customer не может выбрать недоступный товар «Капучино» в публичном меню.", async () => {
-    expect(
-      await publicMenu.product.isProductOpenable("Капучино"),
-      "Недоступный капучино нельзя выбрать в публичном меню.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Customer не может выбрать недоступный товар «Капучино» в публичном меню.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isProductOpenable("Капучино"),
+        "Недоступный капучино нельзя выбрать в публичном меню.",
+      ).toBe(false);
+    },
+  );
 });

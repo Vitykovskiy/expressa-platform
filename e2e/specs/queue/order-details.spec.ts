@@ -1,4 +1,10 @@
-import { expect, OrderQueueStage, OrderStatus, test } from "@fixtures/test";
+import {
+  expectedResult,
+  expect,
+  OrderQueueStage,
+  OrderStatus,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: сотрудник открывает состав и историю изменения стадии заказа.
@@ -15,6 +21,7 @@ import { expect, OrderQueueStage, OrderStatus, test } from "@fixtures/test";
  * - История стадий показывает переход «Оформлен» → «Принят», время и автора.
  */
 test("QUEUE-05: сотрудник открывает детали заказа", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -42,38 +49,47 @@ test("QUEUE-05: сотрудник открывает детали заказа"
 
   await staffOrders.open();
   await staffOrders.queue.openDetails(order);
-  await test.step("Детали показывают клиента, состав, количество, размер и добавку позиции.", async () => {
-    const details = await staffOrders.queue.readDetails(order);
+  await expectedResult(
+    "Детали показывают клиента, состав, количество, размер и добавку позиции.",
+    page,
+    async () => {
+      const details = await staffOrders.queue.readDetails(order);
 
-    expect(details.customer, "Показан телефон клиента заказа.").toBe(
-      e2eCredentials.customer.phone,
-    );
-    expect(details.items, "Показана единственная позиция заказа.").toHaveLength(
-      1,
-    );
-    expect(details.items[0], "Показан снимок позиции заказа.").toBe(
-      "Капучино, M × 1 — 320 ₽ (Обычное молоко)",
-    );
-  });
-  await test.step("Детали показывают сумму заказа.", async () => {
+      expect(details.customer, "Показан телефон клиента заказа.").toBe(
+        e2eCredentials.customer.phone,
+      );
+      expect(
+        details.items,
+        "Показана единственная позиция заказа.",
+      ).toHaveLength(1);
+      expect(details.items[0], "Показан снимок позиции заказа.").toBe(
+        "Капучино, M × 1 — 320 ₽ (Обычное молоко)",
+      );
+    },
+  );
+  await expectedResult("Детали показывают сумму заказа.", page, async () => {
     expect(
       await staffOrders.queue.readOrderTotal(order),
       "Показана сумма заказа.",
     ).toBe("320 ₽");
   });
-  await test.step("История стадий показывает переход «Оформлен» → «Принят», время и автора.", async () => {
-    const history = await staffOrders.queue.readTransitionHistory(order);
+  await expectedResult(
+    "История стадий показывает переход «Оформлен» → «Принят», время и автора.",
+    page,
+    async () => {
+      const history = await staffOrders.queue.readTransitionHistory(order);
 
-    expect(history, "История содержит один переход.").toHaveLength(1);
-    expect(history[0]?.from, "Показана исходная стадия.").toBe(
-      OrderQueueStage.CREATED,
-    );
-    expect(history[0]?.to, "Показана новая стадия.").toBe(
-      OrderQueueStage.ACCEPTED,
-    );
-    expect(history[0]?.occurredAt, "Показано точное время перехода.").toBe(
-      "02.01.2030, 00:02",
-    );
-    expect(history[0]?.author, "Показан автор перехода.").not.toBe("");
-  });
+      expect(history, "История содержит один переход.").toHaveLength(1);
+      expect(history[0]?.from, "Показана исходная стадия.").toBe(
+        OrderQueueStage.CREATED,
+      );
+      expect(history[0]?.to, "Показана новая стадия.").toBe(
+        OrderQueueStage.ACCEPTED,
+      );
+      expect(history[0]?.occurredAt, "Показано точное время перехода.").toBe(
+        "02.01.2030, 00:02",
+      );
+      expect(history[0]?.author, "Показан автор перехода.").not.toBe("");
+    },
+  );
 });

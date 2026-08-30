@@ -1,4 +1,5 @@
 import { AvailabilityState, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник видит автора и время последнего изменения приёма новых заказов.
@@ -14,6 +15,7 @@ import { AvailabilityState, expect, test } from "@fixtures/test";
  * - Рядом с приёмом новых заказов указаны фактические дата и время действия.
  */
 test("AVAIL-06: сотрудник видит метаданные изменения приёма заказов", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -29,18 +31,26 @@ test("AVAIL-06: сотрудник видит метаданные измене�
   await availabilityManagement.open();
   await availabilityManagement.list.setIntake(AvailabilityState.UNAVAILABLE);
   const metadata = await availabilityManagement.list.readIntakeChangeMetadata();
-  await test.step("Рядом с приёмом новых заказов указан сотрудник, выполнивший действие.", async () => {
-    expect(
-      metadata.actor,
-      "Показан номер staff, выполнившего изменение приёма заказов.",
-    ).toBe(e2eCredentials.staff.phone);
-  });
-  await test.step("Рядом с приёмом новых заказов указаны фактические дата и время действия.", async () => {
-    expect(
-      metadata.displayedAt,
-      "Показаны допустимые дата и время последнего изменения приёма заказов.",
-    ).toMatch(
-      /^(?:(?:0[1-9]|[12]\d|3[01])\.(?:0[1-9]|1[0-2])\.\d{4}, (?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d)$/u,
-    );
-  });
+  await expectedResult(
+    "Рядом с приёмом новых заказов указан сотрудник, выполнивший действие.",
+    page,
+    async () => {
+      expect(
+        metadata.actor,
+        "Показан номер staff, выполнившего изменение приёма заказов.",
+      ).toBe(e2eCredentials.staff.phone);
+    },
+  );
+  await expectedResult(
+    "Рядом с приёмом новых заказов указаны фактические дата и время действия.",
+    page,
+    async () => {
+      expect(
+        metadata.displayedAt,
+        "Показаны допустимые дата и время последнего изменения приёма заказов.",
+      ).toMatch(
+        /^(?:(?:0[1-9]|[12]\d|3[01])\.(?:0[1-9]|1[0-2])\.\d{4}, (?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d)$/u,
+      );
+    },
+  );
 });

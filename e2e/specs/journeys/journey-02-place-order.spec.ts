@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ModifierSelectionType,
   OrderStatus,
@@ -69,6 +70,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * - Страница заказа показывает сохранённый состав и итог.
  */
 test("JOURNEY-02: клиент оформляет заказ через одноразовый код", async ({
+  page,
   backOfficeAuth,
   checkout,
   customerOrder,
@@ -129,59 +131,71 @@ test("JOURNEY-02: клиент оформляет заказ через одно
   await checkout.phoneVerification.requestCode();
   await checkout.phoneVerification.fillCode(e2eCredentials.customer.otp);
   await checkout.phoneVerification.confirm();
-  await test.step("Результат: после подтверждения телефона корзина сохраняет конфигурацию и количество.", async () => {
-    const [name, size, modifiers, quantity] = await Promise.all([
-      checkout.cart.readItemName(data.productName),
-      checkout.cart.readItemVariant(
-        data.productName,
-        ProductConfiguratorSize.M,
-        [data.modifierName],
-      ),
-      checkout.cart.readItemModifiers(
-        data.productName,
-        ProductConfiguratorSize.M,
-        [data.modifierName],
-      ),
-      checkout.cart.readItemQuantity(
-        data.productName,
-        ProductConfiguratorSize.M,
-        [data.modifierName],
-      ),
-    ]);
+  await expectedResult(
+    "Результат: после подтверждения телефона корзина сохраняет конфигурацию и количество.",
+    page,
+    async () => {
+      const [name, size, modifiers, quantity] = await Promise.all([
+        checkout.cart.readItemName(data.productName),
+        checkout.cart.readItemVariant(
+          data.productName,
+          ProductConfiguratorSize.M,
+          [data.modifierName],
+        ),
+        checkout.cart.readItemModifiers(
+          data.productName,
+          ProductConfiguratorSize.M,
+          [data.modifierName],
+        ),
+        checkout.cart.readItemQuantity(
+          data.productName,
+          ProductConfiguratorSize.M,
+          [data.modifierName],
+        ),
+      ]);
 
-    expect(name, "Товар сохранён в корзине.").toBe(data.productName);
-    expect(size, "Размер сохранён в корзине.").toBe("Размер M");
-    expect(modifiers, "Добавка сохранена в корзине.").toEqual([
-      `+ ${data.modifierName}`,
-    ]);
-    expect(quantity, "Количество сохранено в корзине.").toBe(
-      data.productQuantity,
-    );
-  });
+      expect(name, "Товар сохранён в корзине.").toBe(data.productName);
+      expect(size, "Размер сохранён в корзине.").toBe("Размер M");
+      expect(modifiers, "Добавка сохранена в корзине.").toEqual([
+        `+ ${data.modifierName}`,
+      ]);
+      expect(quantity, "Количество сохранено в корзине.").toBe(
+        data.productQuantity,
+      );
+    },
+  );
   await checkout.profile.completeProfileIfShown(data.customerName);
   await checkout.cart.placeOrder();
   const snapshot = await customerOrder.details.readSnapshot();
 
-  await test.step("Результат: создан заказ со стадией «Оформлен».", async () => {
-    expect(snapshot.id, "Созданный заказ имеет идентификатор.").not.toBe("");
-    expect(snapshot.number, "Созданный заказ имеет номер.").not.toBe("");
-    expect(snapshot.status, "Созданный заказ оформлен.").toBe(
-      OrderStatus.CREATED,
-    );
-  });
-  await test.step("Результат: страница заказа показывает сохранённый состав и итог.", async () => {
-    expect(snapshot.productName, "Наименование товара сохранено.").toBe(
-      data.productName,
-    );
-    expect(snapshot.size, "Выбранный размер сохранён.").toBe(
-      `Размер ${data.productSize}`,
-    );
-    expect(snapshot.modifierName, "Обязательная добавка сохранена.").toBe(
-      `+ ${data.modifierName}`,
-    );
-    expect(snapshot.quantity, "Количество товара сохранено.").toContain(
-      String(data.productQuantity),
-    );
-    expect(snapshot.total, "Итог заказа сохранён.").toBe("398 ₽");
-  });
+  await expectedResult(
+    "Результат: создан заказ со стадией «Оформлен».",
+    page,
+    async () => {
+      expect(snapshot.id, "Созданный заказ имеет идентификатор.").not.toBe("");
+      expect(snapshot.number, "Созданный заказ имеет номер.").not.toBe("");
+      expect(snapshot.status, "Созданный заказ оформлен.").toBe(
+        OrderStatus.CREATED,
+      );
+    },
+  );
+  await expectedResult(
+    "Результат: страница заказа показывает сохранённый состав и итог.",
+    page,
+    async () => {
+      expect(snapshot.productName, "Наименование товара сохранено.").toBe(
+        data.productName,
+      );
+      expect(snapshot.size, "Выбранный размер сохранён.").toBe(
+        `Размер ${data.productSize}`,
+      );
+      expect(snapshot.modifierName, "Обязательная добавка сохранена.").toBe(
+        `+ ${data.modifierName}`,
+      );
+      expect(snapshot.quantity, "Количество товара сохранено.").toContain(
+        String(data.productQuantity),
+      );
+      expect(snapshot.total, "Итог заказа сохранён.").toBe("398 ₽");
+    },
+  );
 });

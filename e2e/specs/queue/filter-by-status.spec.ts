@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   OrderQueueFilter,
   OrderQueueStage,
@@ -23,6 +24,7 @@ import {
  * - После выбора «Все» показаны все подготовленные заказы №20300102-001—005.
  */
 test("QUEUE-03: сотрудник фильтрует очередь по стадии", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -94,33 +96,45 @@ test("QUEUE-03: сотрудник фильтрует очередь по ста
 
   await staffOrders.open();
   await staffOrders.queue.selectFilter(OrderQueueFilter.CREATED);
-  await test.step("После выбора «Новые» показан только оформленный заказ.", async () => {
-    expect(
-      await staffOrders.queue.readCurrentStage(created),
-      "Показана стадия «Оформлен».",
-    ).toBe(OrderQueueStage.CREATED);
-    await staffOrders.queue.assertOrderHidden(accepted);
-    await staffOrders.queue.assertOrderHidden(preparing);
-    await staffOrders.queue.assertOrderHidden(ready);
-    await staffOrders.queue.assertOrderHidden(issued);
-  });
+  await expectedResult(
+    "После выбора «Новые» показан только оформленный заказ.",
+    page,
+    async () => {
+      expect(
+        await staffOrders.queue.readCurrentStage(created),
+        "Показана стадия «Оформлен».",
+      ).toBe(OrderQueueStage.CREATED);
+      await staffOrders.queue.assertOrderHidden(accepted);
+      await staffOrders.queue.assertOrderHidden(preparing);
+      await staffOrders.queue.assertOrderHidden(ready);
+      await staffOrders.queue.assertOrderHidden(issued);
+    },
+  );
   await staffOrders.queue.selectFilter(OrderQueueFilter.PREPARING);
-  await test.step("После выбора «Готовятся» показан только готовящийся заказ.", async () => {
-    expect(
-      await staffOrders.queue.readCurrentStage(preparing),
-      "Показана стадия «Готовится».",
-    ).toBe(OrderQueueStage.PREPARING);
-    await staffOrders.queue.assertOrderHidden(created);
-    await staffOrders.queue.assertOrderHidden(accepted);
-    await staffOrders.queue.assertOrderHidden(ready);
-    await staffOrders.queue.assertOrderHidden(issued);
-  });
+  await expectedResult(
+    "После выбора «Готовятся» показан только готовящийся заказ.",
+    page,
+    async () => {
+      expect(
+        await staffOrders.queue.readCurrentStage(preparing),
+        "Показана стадия «Готовится».",
+      ).toBe(OrderQueueStage.PREPARING);
+      await staffOrders.queue.assertOrderHidden(created);
+      await staffOrders.queue.assertOrderHidden(accepted);
+      await staffOrders.queue.assertOrderHidden(ready);
+      await staffOrders.queue.assertOrderHidden(issued);
+    },
+  );
   await staffOrders.queue.selectFilter(OrderQueueFilter.ALL);
-  await test.step("После выбора «Все» показаны все подготовленные заказы №20300102-001—005.", async () => {
-    await staffOrders.queue.assertOrderVisible(created);
-    await staffOrders.queue.assertOrderVisible(accepted);
-    await staffOrders.queue.assertOrderVisible(preparing);
-    await staffOrders.queue.assertOrderVisible(ready);
-    await staffOrders.queue.assertOrderVisible(issued);
-  });
+  await expectedResult(
+    "После выбора «Все» показаны все подготовленные заказы №20300102-001—005.",
+    page,
+    async () => {
+      await staffOrders.queue.assertOrderVisible(created);
+      await staffOrders.queue.assertOrderVisible(accepted);
+      await staffOrders.queue.assertOrderVisible(preparing);
+      await staffOrders.queue.assertOrderVisible(ready);
+      await staffOrders.queue.assertOrderVisible(issued);
+    },
+  );
 });

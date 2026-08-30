@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить отмену и подтверждение архивирования категории.
@@ -19,6 +19,7 @@ import { expect, test } from "@fixtures/test";
  * - После подтверждения категория отсутствует среди активных категорий.
  */
 test("CATALOG-06: администратор архивирует категорию", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -34,18 +35,26 @@ test("CATALOG-06: администратор архивирует категор
   await menuManagement.categoryEditor.openForEditing(categoryName);
   await menuManagement.categoryEditor.requestArchive(categoryName);
   await menuManagement.categoryEditor.cancelArchive(categoryName);
-  await test.step("После отмены категория остаётся в каталоге.", async () => {
-    expect(
-      await menuManagement.catalog.hasCategory(categoryName),
-      "После отмены категория остаётся в активном каталоге.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "После отмены категория остаётся в каталоге.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.hasCategory(categoryName),
+        "После отмены категория остаётся в активном каталоге.",
+      ).toBe(true);
+    },
+  );
   await menuManagement.categoryEditor.requestArchive(categoryName);
   await menuManagement.categoryEditor.confirmArchive(categoryName);
-  await test.step("После подтверждения категория отсутствует среди активных категорий.", async () => {
-    expect(
-      await menuManagement.catalog.hasCategory(categoryName),
-      "После подтверждения категория отсутствует среди активных категорий.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "После подтверждения категория отсутствует среди активных категорий.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.hasCategory(categoryName),
+        "После подтверждения категория отсутствует среди активных категорий.",
+      ).toBe(false);
+    },
+  );
 });

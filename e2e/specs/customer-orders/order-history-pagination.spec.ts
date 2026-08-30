@@ -1,4 +1,5 @@
 import { expect, OrderHistoryStatus, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: customer загружает следующую часть собственной истории заказов.
@@ -14,6 +15,7 @@ import { expect, OrderHistoryStatus, test } from "@fixtures/test";
  * - Customer видит следующую часть истории без повторов заказов.
  */
 test("ORDER-04: customer загружает следующую часть истории заказов", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -31,72 +33,84 @@ test("ORDER-04: customer загружает следующую часть ист
 
   await orderHistory.open();
   await orderHistory.history.waitUntilLoaded();
-  await test.step("Customer видит первую часть собственной истории от новых заказов к старым.", async () => {
-    const orders = await orderHistory.history.readOrders();
+  await expectedResult(
+    "Customer видит первую часть собственной истории от новых заказов к старым.",
+    page,
+    async () => {
+      const orders = await orderHistory.history.readOrders();
 
-    expect(
-      orders,
-      "Первая часть истории содержит двадцать заказов.",
-    ).toHaveLength(20);
-    for (const [position, order] of orders.entries()) {
-      const index = 21 - position;
-      const expectedDate = new Intl.DateTimeFormat("ru-RU", {
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
-      }).format(
-        new Date(`2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`),
-      );
+      expect(
+        orders,
+        "Первая часть истории содержит двадцать заказов.",
+      ).toHaveLength(20);
+      for (const [position, order] of orders.entries()) {
+        const index = 21 - position;
+        const expectedDate = new Intl.DateTimeFormat("ru-RU", {
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "UTC",
+        }).format(
+          new Date(
+            `2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`,
+          ),
+        );
 
-      expect(order.number, `Показан номер заказа ${index}.`).toBe(
-        `20300102-${index.toString().padStart(3, "0")}`,
-      );
-      expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
-        expectedDate,
-      );
-      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
-      expect(order.status, `Показана стадия заказа ${index}.`).toBe(
-        OrderHistoryStatus.ISSUED,
-      );
-    }
-  });
+        expect(order.number, `Показан номер заказа ${index}.`).toBe(
+          `20300102-${index.toString().padStart(3, "0")}`,
+        );
+        expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
+          expectedDate,
+        );
+        expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
+        expect(order.status, `Показана стадия заказа ${index}.`).toBe(
+          OrderHistoryStatus.ISSUED,
+        );
+      }
+    },
+  );
 
   await orderHistory.history.loadMore();
-  await test.step("Customer видит следующую часть истории без повторов заказов.", async () => {
-    const orders = await orderHistory.history.readOrders();
+  await expectedResult(
+    "Customer видит следующую часть истории без повторов заказов.",
+    page,
+    async () => {
+      const orders = await orderHistory.history.readOrders();
 
-    expect(
-      orders,
-      "История содержит все двадцать один заказ customer.",
-    ).toHaveLength(21);
-    for (const [position, order] of orders.entries()) {
-      const index = 21 - position;
-      const expectedDate = new Intl.DateTimeFormat("ru-RU", {
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
-      }).format(
-        new Date(`2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`),
-      );
+      expect(
+        orders,
+        "История содержит все двадцать один заказ customer.",
+      ).toHaveLength(21);
+      for (const [position, order] of orders.entries()) {
+        const index = 21 - position;
+        const expectedDate = new Intl.DateTimeFormat("ru-RU", {
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "UTC",
+        }).format(
+          new Date(
+            `2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`,
+          ),
+        );
 
-      expect(order.number, `Показан номер заказа ${index}.`).toBe(
-        `20300102-${index.toString().padStart(3, "0")}`,
-      );
-      expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
-        expectedDate,
-      );
-      expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
-      expect(order.status, `Показана стадия заказа ${index}.`).toBe(
-        OrderHistoryStatus.ISSUED,
-      );
-    }
-    expect(
-      await orderHistory.history.hasUniqueOrderNumbers(),
-      "Повторяющихся заказов нет.",
-    ).toBe(true);
-  });
+        expect(order.number, `Показан номер заказа ${index}.`).toBe(
+          `20300102-${index.toString().padStart(3, "0")}`,
+        );
+        expect(order.displayedDate, `Показана дата заказа ${index}.`).toBe(
+          expectedDate,
+        );
+        expect(order.total, `Показана сумма заказа ${index}.`).toBe("320 ₽");
+        expect(order.status, `Показана стадия заказа ${index}.`).toBe(
+          OrderHistoryStatus.ISSUED,
+        );
+      }
+      expect(
+        await orderHistory.history.hasUniqueOrderNumbers(),
+        "Повторяющихся заказов нет.",
+      ).toBe(true);
+    },
+  );
 });

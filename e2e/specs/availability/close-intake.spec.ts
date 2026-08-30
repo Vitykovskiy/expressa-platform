@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityState,
   expect,
   ProductConfiguratorSize,
@@ -29,6 +30,7 @@ import {
  * - Customer не может выбрать оформление заказа.
  */
 test("AVAIL-05: сотрудник закрывает приём новых заказов", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   checkout,
@@ -60,31 +62,43 @@ test("AVAIL-05: сотрудник закрывает приём новых за
   });
   await availabilityManagement.open();
   await availabilityManagement.list.setIntake(AvailabilityState.UNAVAILABLE);
-  await test.step("Back-office показывает, что приём новых заказов остановлен.", async () => {
-    expect(
-      await availabilityManagement.list.readIntakeAvailability(),
-      "Приём новых заказов остановлен.",
-    ).toBe(AvailabilityState.UNAVAILABLE);
-  });
+  await expectedResult(
+    "Back-office показывает, что приём новых заказов остановлен.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readIntakeAvailability(),
+        "Приём новых заказов остановлен.",
+      ).toBe(AvailabilityState.UNAVAILABLE);
+    },
+  );
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory("Кофе");
-  await test.step("Customer видит публичное меню.", async () => {
+  await expectedResult("Customer видит публичное меню.", page, async () => {
     expect(
       await publicMenu.product.isProductVisible("Капучино"),
       "Доступный капучино показан в публичном меню.",
     ).toBe(true);
   });
   await checkout.cart.open();
-  await test.step("Customer видит сообщение о закрытом приёме новых заказов.", async () => {
-    expect(
-      await checkout.cart.isIntakeClosedVisible(),
-      "Сообщение о закрытом приёме новых заказов показано.",
-    ).toBe(true);
-  });
-  await test.step("Customer не может выбрать оформление заказа.", async () => {
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Кнопка оформления заказа недоступна.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Customer видит сообщение о закрытом приёме новых заказов.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isIntakeClosedVisible(),
+        "Сообщение о закрытом приёме новых заказов показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Customer не может выбрать оформление заказа.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Кнопка оформления заказа недоступна.",
+      ).toBe(false);
+    },
+  );
 });

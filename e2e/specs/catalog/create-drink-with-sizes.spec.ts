@@ -1,4 +1,10 @@
-import { ProductEditorSize, ProductType, expect, test } from "@fixtures/test";
+import {
+  ProductEditorSize,
+  ProductType,
+  expect,
+  expectedResult,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: подтвердить создание напитка с доступными размерами и ценами.
@@ -21,6 +27,7 @@ import { ProductEditorSize, ProductType, expect, test } from "@fixtures/test";
  * - В карточке товара показаны размеры S, M и L с указанными ценами.
  */
 test("CATALOG-07: администратор создаёт напиток с размерами", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -42,23 +49,31 @@ test("CATALOG-07: администратор создаёт напиток с р
   await menuManagement.productEditor.setPrice(ProductEditorSize.L, "299");
   await menuManagement.productEditor.save(productName);
 
-  await test.step("Администратор видит созданный напиток в выбранной категории.", async () => {
-    expect(
-      await menuManagement.catalog.isProductVisible(productName),
-      "Созданный напиток показан в выбранной категории.",
-    ).toBe(true);
-  });
-  await test.step("В карточке товара показаны размеры S, M и L с указанными ценами.", async () => {
-    const card = await menuManagement.catalog.readProductPrice(productName);
+  await expectedResult(
+    "Администратор видит созданный напиток в выбранной категории.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductVisible(productName),
+        "Созданный напиток показан в выбранной категории.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "В карточке товара показаны размеры S, M и L с указанными ценами.",
+    page,
+    async () => {
+      const card = await menuManagement.catalog.readProductPrice(productName);
 
-    expect(card, "В карточке показан размер S с указанной ценой.").toContain(
-      "S: 199 ₽",
-    );
-    expect(card, "В карточке показан размер M с указанной ценой.").toContain(
-      "M: 249 ₽",
-    );
-    expect(card, "В карточке показан размер L с указанной ценой.").toContain(
-      "L: 299 ₽",
-    );
-  });
+      expect(card, "В карточке показан размер S с указанной ценой.").toContain(
+        "S: 199 ₽",
+      );
+      expect(card, "В карточке показан размер M с указанной ценой.").toContain(
+        "M: 249 ₽",
+      );
+      expect(card, "В карточке показан размер L с указанной ценой.").toContain(
+        "L: 299 ₽",
+      );
+    },
+  );
 });

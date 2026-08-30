@@ -1,4 +1,5 @@
 import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: бариста получает доступ к своим рабочим разделам back-office.
@@ -17,6 +18,7 @@ import { BackOfficeWorkspaceSection, expect, test } from "@fixtures/test";
  * - Бариста получает доступ к очереди и доступности.
  */
 test("AUTH-08 — Бариста входит в рабочие разделы back-office", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -27,20 +29,24 @@ test("AUTH-08 — Бариста входит в рабочие разделы b
   await backOfficeAuth.form.fillCode(e2eCredentials.staff.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Бариста получает доступ к очереди и доступности", async () => {
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.QUEUE,
-      ),
-      "Очередь доступна бариста.",
-    ).toBe(true);
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.AVAILABILITY,
-      ),
-      "Доступность доступна бариста.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Бариста получает доступ к очереди и доступности",
+    page,
+    async () => {
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.QUEUE,
+        ),
+        "Очередь доступна бариста.",
+      ).toBe(true);
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.AVAILABILITY,
+        ),
+        "Доступность доступна бариста.",
+      ).toBe(true);
+    },
+  );
 });
 
 /**
@@ -60,6 +66,7 @@ test("AUTH-08 — Бариста входит в рабочие разделы b
  * - Администратор получает доступ к очереди, доступности и меню.
  */
 test("AUTH-08 — Администратор входит в рабочие разделы back-office", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -70,24 +77,28 @@ test("AUTH-08 — Администратор входит в рабочие ра
   await backOfficeAuth.form.fillCode(e2eCredentials.administrator.otp);
   await backOfficeAuth.form.confirmCode();
 
-  await test.step("Администратор получает доступ к очереди, доступности и меню", async () => {
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.QUEUE,
-      ),
-      "Очередь доступна администратору.",
-    ).toBe(true);
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.AVAILABILITY,
-      ),
-      "Доступность доступна администратору.",
-    ).toBe(true);
-    await expect(
-      await backOfficeAuth.isWorkspaceSectionVisible(
-        BackOfficeWorkspaceSection.MENU,
-      ),
-      "Меню доступно администратору.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор получает доступ к очереди, доступности и меню",
+    page,
+    async () => {
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.QUEUE,
+        ),
+        "Очередь доступна администратору.",
+      ).toBe(true);
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.AVAILABILITY,
+        ),
+        "Доступность доступна администратору.",
+      ).toBe(true);
+      await expect(
+        await backOfficeAuth.isWorkspaceSectionVisible(
+          BackOfficeWorkspaceSection.MENU,
+        ),
+        "Меню доступно администратору.",
+      ).toBe(true);
+    },
+  );
 });

@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityState,
   expect,
   ProductConfiguratorSize,
@@ -27,6 +28,7 @@ import {
  * - Customer может выбрать оформление заказа.
  */
 test("AVAIL-11: сотрудник возобновляет приём новых заказов", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   checkout,
@@ -58,24 +60,36 @@ test("AVAIL-11: сотрудник возобновляет приём новы�
   });
   await availabilityManagement.open();
   await availabilityManagement.list.setIntake(AvailabilityState.AVAILABLE);
-  await test.step("Back-office показывает, что приём новых заказов открыт.", async () => {
-    expect(
-      await availabilityManagement.list.readIntakeAvailability(),
-      "Приём новых заказов открыт.",
-    ).toBe(AvailabilityState.AVAILABLE);
-  });
+  await expectedResult(
+    "Back-office показывает, что приём новых заказов открыт.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readIntakeAvailability(),
+        "Приём новых заказов открыт.",
+      ).toBe(AvailabilityState.AVAILABLE);
+    },
+  );
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await checkout.cart.open();
-  await test.step("Customer не видит сообщение о закрытом приёме новых заказов.", async () => {
-    expect(
-      await checkout.cart.isIntakeClosedVisible(),
-      "Сообщение о закрытом приёме не показано.",
-    ).toBe(false);
-  });
-  await test.step("Customer может выбрать оформление заказа.", async () => {
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Оформление доступно.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Customer не видит сообщение о закрытом приёме новых заказов.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isIntakeClosedVisible(),
+        "Сообщение о закрытом приёме не показано.",
+      ).toBe(false);
+    },
+  );
+  await expectedResult(
+    "Customer может выбрать оформление заказа.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Оформление доступно.",
+      ).toBe(true);
+    },
+  );
 });

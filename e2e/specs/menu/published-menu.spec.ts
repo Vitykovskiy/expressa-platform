@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: покупатель видит опубликованные категории публичного меню.
@@ -13,21 +14,30 @@ import { expect, test } from "@fixtures/test";
  * - Для каждой категории показано количество товаров.
  */
 test("MENU-01: покупатель видит опубликованное меню", async ({
+  page,
   e2eEnvironment,
   publicMenu,
 }) => {
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
 
-  await test.step("Покупатель видит активные категории в заданном порядке.", async () => {
-    expect(
-      await publicMenu.readCategoryNames(),
-      "Активные категории показаны в порядке профиля.",
-    ).toEqual(["Кофе", "Выпечка"]);
-  });
-  await test.step("Для каждой категории показано количество товаров.", async () => {
-    expect(
-      await publicMenu.readCategoryProductCounts(),
-      "Для категорий показано количество опубликованных товаров.",
-    ).toEqual([2, 2]);
-  });
+  await expectedResult(
+    "Покупатель видит активные категории в заданном порядке.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.readCategoryNames(),
+        "Активные категории показаны в порядке профиля.",
+      ).toEqual(["Кофе", "Выпечка"]);
+    },
+  );
+  await expectedResult(
+    "Для каждой категории показано количество товаров.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.readCategoryProductCounts(),
+        "Для категорий показано количество опубликованных товаров.",
+      ).toEqual([2, 2]);
+    },
+  );
 });

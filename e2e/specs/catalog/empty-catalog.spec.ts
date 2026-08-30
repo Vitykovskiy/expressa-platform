@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: администратор видит понятное состояние каталога без категорий.
@@ -13,6 +13,7 @@ import { expect, test } from "@fixtures/test";
  * - Администратор видит действия добавления категории и товара.
  */
 test("CATALOG-01: администратор видит пустой каталог", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -23,20 +24,28 @@ test("CATALOG-01: администратор видит пустой катал�
     await backOfficeAuth.form.signIn(e2eCredentials.administrator);
   });
   await menuManagement.open();
-  await test.step("Администратор видит сообщение «Категорий пока нет. Добавьте первую категорию».", async () => {
-    expect(
-      await menuManagement.catalog.isEmpty(),
-      "Сообщение о пустом каталоге показано.",
-    ).toBe(true);
-  });
-  await test.step("Администратор видит действия добавления категории и товара.", async () => {
-    expect(
-      await menuManagement.catalog.isAddCategoryAvailable(),
-      "Действие добавления категории доступно.",
-    ).toBe(true);
-    expect(
-      await menuManagement.catalog.isAddProductAvailable(),
-      "Действие добавления товара доступно.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор видит сообщение «Категорий пока нет. Добавьте первую категорию».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isEmpty(),
+        "Сообщение о пустом каталоге показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Администратор видит действия добавления категории и товара.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isAddCategoryAvailable(),
+        "Действие добавления категории доступно.",
+      ).toBe(true);
+      expect(
+        await menuManagement.catalog.isAddProductAvailable(),
+        "Действие добавления товара доступно.",
+      ).toBe(true);
+    },
+  );
 });

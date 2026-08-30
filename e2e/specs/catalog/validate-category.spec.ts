@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить, что категория не сохраняется без обязательного названия.
@@ -15,6 +15,7 @@ import { expect, test } from "@fixtures/test";
  * - Действие сохранения категории недоступно.
  */
 test("CATALOG-03: администратор видит валидацию категории", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -28,16 +29,24 @@ test("CATALOG-03: администратор видит валидацию ка�
   await menuManagement.categoryEditor.startCreation();
   await menuManagement.categoryEditor.clearName();
 
-  await test.step("Администратор видит сообщение «Введите название категории».", async () => {
-    expect(
-      await menuManagement.categoryEditor.readNameValidation(),
-      "Показано сообщение «Введите название категории».",
-    ).toBe("Введите название категории");
-  });
-  await test.step("Действие сохранения категории недоступно.", async () => {
-    expect(
-      await menuManagement.categoryEditor.isCreateSaveAvailable(),
-      "Действие сохранения категории недоступно.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Администратор видит сообщение «Введите название категории».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.categoryEditor.readNameValidation(),
+        "Показано сообщение «Введите название категории».",
+      ).toBe("Введите название категории");
+    },
+  );
+  await expectedResult(
+    "Действие сохранения категории недоступно.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.categoryEditor.isCreateSaveAvailable(),
+        "Действие сохранения категории недоступно.",
+      ).toBe(false);
+    },
+  );
 });

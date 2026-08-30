@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ModifierSelectionType,
   OrderHistoryStatus,
@@ -91,6 +92,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * - Детали сохраняют состав и итог выданного заказа.
  */
 test("JOURNEY-04: клиент открывает выданный заказ в истории", async ({
+  page,
   backOfficeAuth,
   checkout,
   customerAuth,
@@ -192,33 +194,48 @@ test("JOURNEY-04: клиент открывает выданный заказ в
   await orderHistory.history.openOrder(snapshot);
   const issuedOrder = await customerOrder.details.readSnapshot();
 
-  await test.step("Результат: история показывает выданный заказ с датой и итогом.", async () => {
-    expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(
-      snapshot.number,
-    );
-    expect(historyOrder.status, "В истории показана стадия «Выдан».").toBe(
-      OrderHistoryStatus.ISSUED,
-    );
-    expect(historyOrder.total, "Итог в истории сохранён.").toBe(snapshot.total);
-    expect(
-      historyOrder.displayedDate,
-      "Дата заказа показана в истории.",
-    ).not.toBe("");
-  });
-  await test.step("Результат: детали сохраняют состав и итог выданного заказа.", async () => {
-    expect(issuedOrder.productName, "Наименование товара не изменилось.").toBe(
-      snapshot.productName,
-    );
-    expect(issuedOrder.size, "Размер товара не изменился.").toBe(snapshot.size);
-    expect(issuedOrder.modifierName, "Добавка не изменилась.").toBe(
-      snapshot.modifierName,
-    );
-    expect(issuedOrder.quantity, "Количество товара не изменилось.").toBe(
-      snapshot.quantity,
-    );
-    expect(issuedOrder.total, "Итог в деталях сохранён.").toBe(snapshot.total);
-    expect(issuedOrder.status, "В деталях показана стадия «Выдан».").toBe(
-      OrderStatus.ISSUED,
-    );
-  });
+  await expectedResult(
+    "Результат: история показывает выданный заказ с датой и итогом.",
+    page,
+    async () => {
+      expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(
+        snapshot.number,
+      );
+      expect(historyOrder.status, "В истории показана стадия «Выдан».").toBe(
+        OrderHistoryStatus.ISSUED,
+      );
+      expect(historyOrder.total, "Итог в истории сохранён.").toBe(
+        snapshot.total,
+      );
+      expect(
+        historyOrder.displayedDate,
+        "Дата заказа показана в истории.",
+      ).not.toBe("");
+    },
+  );
+  await expectedResult(
+    "Результат: детали сохраняют состав и итог выданного заказа.",
+    page,
+    async () => {
+      expect(
+        issuedOrder.productName,
+        "Наименование товара не изменилось.",
+      ).toBe(snapshot.productName);
+      expect(issuedOrder.size, "Размер товара не изменился.").toBe(
+        snapshot.size,
+      );
+      expect(issuedOrder.modifierName, "Добавка не изменилась.").toBe(
+        snapshot.modifierName,
+      );
+      expect(issuedOrder.quantity, "Количество товара не изменилось.").toBe(
+        snapshot.quantity,
+      );
+      expect(issuedOrder.total, "Итог в деталях сохранён.").toBe(
+        snapshot.total,
+      );
+      expect(issuedOrder.status, "В деталях показана стадия «Выдан».").toBe(
+        OrderStatus.ISSUED,
+      );
+    },
+  );
 });

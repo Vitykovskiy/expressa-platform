@@ -12,6 +12,7 @@ const fixtures = [
   resolve(packageRoot, "specs", "a7-empty-fixture.spec.ts"),
   resolve(packageRoot, "specs", "a7-raw-page.spec.ts"),
   resolve(packageRoot, "specs", "a7-raw-alias-page.spec.ts"),
+  resolve(packageRoot, "specs", "a7-relative-expected-result.spec.ts"),
 ];
 const multiSessionFiles = [
   resolve(packageRoot, "specs", "a7-multi-session.spec.ts"),
@@ -40,7 +41,10 @@ test("boundary checker принимает fixture по alias и отклоняе
       'import { test } from "../fixtures/test";\n\ntest("Прямой Page", async ({ page }) => { await page.locator("button").click(); });\n',
     );
     await assert.rejects(runBoundaryCheck(), (error) => {
-      assert.match(error.stderr, /прямой Page запрещён/u);
+      assert.match(
+        error.stderr,
+        /прямой Page разрешён только вторым аргументом expectedResult/u,
+      );
       assert.match(error.stderr, /raw locator в E2E spec запрещён/u);
       return true;
     });
@@ -59,6 +63,24 @@ test("boundary checker принимает fixture по alias и отклоняе
     });
   } finally {
     await Promise.all(fixtures.map((fixture) => rm(fixture, { force: true })));
+  }
+});
+
+test("boundary checker принимает expectedResult только из @fixtures/test", async () => {
+  try {
+    await writeFile(
+      fixtures[3],
+      'import { expectedResult, test } from "../fixtures/test";\n\ntest("Relative expectedResult", async ({ page }) => {\n  await expectedResult("Состояние", page, async () => {});\n});\n',
+    );
+    await assert.rejects(runBoundaryCheck(), (error) => {
+      assert.match(
+        error.stderr,
+        /expectedResult импортируется только из fixtures\/test\.ts/u,
+      );
+      return true;
+    });
+  } finally {
+    await rm(fixtures[3], { force: true });
   }
 });
 

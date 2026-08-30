@@ -1,4 +1,5 @@
 import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: повторное добавление одинаковой конфигурации увеличивает её количество, а не создаёт вторую позицию.
@@ -20,6 +21,7 @@ import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
  * - Стоимость позиции и итог корзины равны 640 ₽.
  */
 test("CART-02: customer объединяет одинаковые конфигурации", async ({
+  page,
   checkout,
   e2eEnvironment,
   publicMenu,
@@ -32,13 +34,17 @@ test("CART-02: customer объединяет одинаковые конфигу
   await publicMenu.product.addToCart();
   await checkout.cart.open();
 
-  await test.step("В корзине показана одна позиция «Капучино».", async () => {
-    expect(
-      await checkout.cart.readItemsCount(),
-      "В корзине показана одна позиция товара.",
-    ).toBe(1);
-  });
-  await test.step("Количество позиции равно двум.", async () => {
+  await expectedResult(
+    "В корзине показана одна позиция «Капучино».",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemsCount(),
+        "В корзине показана одна позиция товара.",
+      ).toBe(1);
+    },
+  );
+  await expectedResult("Количество позиции равно двум.", page, async () => {
     expect(
       await checkout.cart.readItemQuantity(
         "Капучино",
@@ -48,17 +54,21 @@ test("CART-02: customer объединяет одинаковые конфигу
       "Количество позиции равно двум.",
     ).toBe(2);
   });
-  await test.step("Стоимость позиции и итог корзины равны 640 ₽.", async () => {
-    expect(
-      await checkout.cart.readItemLineTotal(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Стоимость позиции равна 640 ₽.",
-    ).toBe("640 ₽");
-    expect(await checkout.cart.readTotal(), "Итог корзины равен 640 ₽.").toBe(
-      "640 ₽",
-    );
-  });
+  await expectedResult(
+    "Стоимость позиции и итог корзины равны 640 ₽.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemLineTotal(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Стоимость позиции равна 640 ₽.",
+      ).toBe("640 ₽");
+      expect(await checkout.cart.readTotal(), "Итог корзины равен 640 ₽.").toBe(
+        "640 ₽",
+      );
+    },
+  );
 });

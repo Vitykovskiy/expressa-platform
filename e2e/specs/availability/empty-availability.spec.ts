@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник видит понятное состояние при отсутствии позиций для управления.
@@ -13,6 +14,7 @@ import { expect, test } from "@fixtures/test";
  * - Сотрудник видит пояснение, что позиции появятся после добавления в меню.
  */
 test("AVAIL-12: сотрудник видит пустое состояние доступности", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -27,16 +29,24 @@ test("AVAIL-12: сотрудник видит пустое состояние д
   });
   await availabilityManagement.open();
 
-  await test.step("Сотрудник видит сообщение «Меню пусто».", async () => {
-    expect(
-      await availabilityManagement.list.isEmptyVisible(),
-      "Сообщение «Меню пусто» показано.",
-    ).toBe(true);
-  });
-  await test.step("Сотрудник видит пояснение, что позиции появятся после добавления в меню.", async () => {
-    expect(
-      await availabilityManagement.list.isEmptyDescriptionVisible(),
-      "Пояснение о появлении позиций после добавления в меню показано.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Сотрудник видит сообщение «Меню пусто».",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isEmptyVisible(),
+        "Сообщение «Меню пусто» показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Сотрудник видит пояснение, что позиции появятся после добавления в меню.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isEmptyDescriptionVisible(),
+        "Пояснение о появлении позиций после добавления в меню показано.",
+      ).toBe(true);
+    },
+  );
 });

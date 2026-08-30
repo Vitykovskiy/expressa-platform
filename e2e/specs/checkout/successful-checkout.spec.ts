@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   OrderStatus,
   ProductConfiguratorSize,
@@ -28,6 +29,7 @@ import {
  * - Корзина customer очищается.
  */
 test("CHECKOUT-01: авторизованный customer оформляет заказ", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -53,29 +55,41 @@ test("CHECKOUT-01: авторизованный customer оформляет за
   await checkout.cart.open();
   await checkout.cart.placeOrder();
 
-  await test.step("Customer видит страницу созданного заказа.", async () => {
-    expect(
-      (await customerOrder.details.readReference()).id,
-      "Страница показывает идентификатор созданного заказа.",
-    ).toMatch(/^[0-9a-f-]{36}$/u);
-  });
-  await test.step("Заказ имеет номер и стадию «Оформлен».", async () => {
-    const order = await customerOrder.details.readSnapshot();
+  await expectedResult(
+    "Customer видит страницу созданного заказа.",
+    page,
+    async () => {
+      expect(
+        (await customerOrder.details.readReference()).id,
+        "Страница показывает идентификатор созданного заказа.",
+      ).toMatch(/^[0-9a-f-]{36}$/u);
+    },
+  );
+  await expectedResult(
+    "Заказ имеет номер и стадию «Оформлен».",
+    page,
+    async () => {
+      const order = await customerOrder.details.readSnapshot();
 
-    expect(order.number, "Заказ имеет человекочитаемый номер.").toMatch(
-      /^\d{8}-\d{3}$/u,
-    );
-    expect(order.status, "Заказ находится на стадии «Оформлен».").toBe(
-      OrderStatus.CREATED,
-    );
-  });
-  await test.step("Страница показывает оплату на кассе при получении.", async () => {
-    expect(
-      await customerOrder.details.readPaymentMethod(),
-      "Показан способ оплаты на кассе при получении.",
-    ).toBe("Оплата на кассе при получении");
-  });
-  await test.step("Корзина customer очищается.", async () => {
+      expect(order.number, "Заказ имеет человекочитаемый номер.").toMatch(
+        /^\d{8}-\d{3}$/u,
+      );
+      expect(order.status, "Заказ находится на стадии «Оформлен».").toBe(
+        OrderStatus.CREATED,
+      );
+    },
+  );
+  await expectedResult(
+    "Страница показывает оплату на кассе при получении.",
+    page,
+    async () => {
+      expect(
+        await customerOrder.details.readPaymentMethod(),
+        "Показан способ оплаты на кассе при получении.",
+      ).toBe("Оплата на кассе при получении");
+    },
+  );
+  await expectedResult("Корзина customer очищается.", page, async () => {
     expect(
       await checkout.navigation.isCartEmpty(),
       "Навигация не показывает позиций в корзине.",

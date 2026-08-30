@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   OrderHistoryStatus,
   OrderStatus,
@@ -30,6 +31,7 @@ import {
  * - История содержит этот заказ ровно один раз и увеличивается на один заказ.
  */
 test("CHECKOUT-07: customer не получает второй заказ при повторном оформлении", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -60,45 +62,57 @@ test("CHECKOUT-07: customer не получает второй заказ при
   await checkout.cart.placeOrderTwice();
   const createdOrder = await customerOrder.details.readSnapshot();
 
-  await test.step("Customer видит страницу одного созданного заказа.", async () => {
-    expect(
-      createdOrder.id,
-      "Страница показывает идентификатор заказа.",
-    ).toMatch(/^[0-9a-f-]{36}$/u);
-    expect(createdOrder.number, "Страница показывает номер заказа.").toMatch(
-      /^\d{8}-\d{3}$/u,
-    );
-    expect(createdOrder.status, "Заказ находится на стадии «Оформлен».").toBe(
-      OrderStatus.CREATED,
-    );
-  });
-  await test.step("В созданном заказе один «Капучино» размера M.", async () => {
-    expect(
-      await customerOrder.details.readItemsCount(),
-      "В заказе одна позиция.",
-    ).toBe(1);
-    expect(createdOrder.productName, "В заказе указан «Капучино».").toBe(
-      "Капучино",
-    );
-    expect(createdOrder.size, "В заказе указан размер M.").toBe("Размер M");
-  });
+  await expectedResult(
+    "Customer видит страницу одного созданного заказа.",
+    page,
+    async () => {
+      expect(
+        createdOrder.id,
+        "Страница показывает идентификатор заказа.",
+      ).toMatch(/^[0-9a-f-]{36}$/u);
+      expect(createdOrder.number, "Страница показывает номер заказа.").toMatch(
+        /^\d{8}-\d{3}$/u,
+      );
+      expect(createdOrder.status, "Заказ находится на стадии «Оформлен».").toBe(
+        OrderStatus.CREATED,
+      );
+    },
+  );
+  await expectedResult(
+    "В созданном заказе один «Капучино» размера M.",
+    page,
+    async () => {
+      expect(
+        await customerOrder.details.readItemsCount(),
+        "В заказе одна позиция.",
+      ).toBe(1);
+      expect(createdOrder.productName, "В заказе указан «Капучино».").toBe(
+        "Капучино",
+      );
+      expect(createdOrder.size, "В заказе указан размер M.").toBe("Размер M");
+    },
+  );
   await orderHistory.open();
-  await test.step("История содержит этот заказ ровно один раз и увеличивается на один заказ.", async () => {
-    await orderHistory.history.waitUntilLoaded();
-    const entry = await orderHistory.history.readOrder(createdOrder);
+  await expectedResult(
+    "История содержит этот заказ ровно один раз и увеличивается на один заказ.",
+    page,
+    async () => {
+      await orderHistory.history.waitUntilLoaded();
+      const entry = await orderHistory.history.readOrder(createdOrder);
 
-    expect(entry.number, "История содержит номер созданного заказа.").toBe(
-      createdOrder.number,
-    );
-    expect(entry.status, "История содержит стадию «Оформлен».").toBe(
-      OrderHistoryStatus.CREATED,
-    );
-    expect(entry.total, "История содержит итог созданного заказа.").toBe(
-      createdOrder.total,
-    );
-    expect(
-      await orderHistory.history.readOrderCount(),
-      "История увеличилась только на один заказ.",
-    ).toBe(ordersBefore + 1);
-  });
+      expect(entry.number, "История содержит номер созданного заказа.").toBe(
+        createdOrder.number,
+      );
+      expect(entry.status, "История содержит стадию «Оформлен».").toBe(
+        OrderHistoryStatus.CREATED,
+      );
+      expect(entry.total, "История содержит итог созданного заказа.").toBe(
+        createdOrder.total,
+      );
+      expect(
+        await orderHistory.history.readOrderCount(),
+        "История увеличилась только на один заказ.",
+      ).toBe(ordersBefore + 1);
+    },
+  );
 });

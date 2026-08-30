@@ -1,4 +1,5 @@
 import { CustomerSessionState, expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: новый клиент подтверждает номер телефона и получает доступ к публичному интерфейсу.
@@ -18,6 +19,7 @@ import { CustomerSessionState, expect, test } from "@fixtures/test";
  * - Клиент возвращается в публичный интерфейс.
  */
 test("AUTH-01: новый клиент входит по номеру телефона", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -28,21 +30,33 @@ test("AUTH-01: новый клиент входит по номеру телеф
   await customerAuth.phoneVerification.fillCode(e2eCredentials.customer.otp);
   await customerAuth.phoneVerification.confirm();
 
-  await test.step("Клиент становится авторизованным пользователем", async () => {
-    await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
-  });
-  await test.step("Первый вход создаёт учётную запись клиента для указанного номера", async () => {
-    await expect(
-      await customerAuth.isAuthenticatedAccountVisible(
-        e2eCredentials.customer.phone,
-      ),
-      "Учётная запись создана для указанного номера.",
-    ).toBe(true);
-  });
-  await test.step("Клиент возвращается в публичный интерфейс", async () => {
-    await expect(
-      await customerAuth.isPublicInterfaceVisible(),
-      "Публичный интерфейс открыт для авторизованного клиента.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Клиент становится авторизованным пользователем",
+    page,
+    async () => {
+      await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
+    },
+  );
+  await expectedResult(
+    "Первый вход создаёт учётную запись клиента для указанного номера",
+    page,
+    async () => {
+      await expect(
+        await customerAuth.isAuthenticatedAccountVisible(
+          e2eCredentials.customer.phone,
+        ),
+        "Учётная запись создана для указанного номера.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Клиент возвращается в публичный интерфейс",
+    page,
+    async () => {
+      await expect(
+        await customerAuth.isPublicInterfaceVisible(),
+        "Публичный интерфейс открыт для авторизованного клиента.",
+      ).toBe(true);
+    },
+  );
 });

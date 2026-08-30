@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить создание активной категории с корректными данными.
@@ -18,6 +18,7 @@ import { expect, test } from "@fixtures/test";
  * - Администратор видит включённый переключатель «Категория активна».
  */
 test("CATALOG-02: администратор создаёт активную категорию", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -37,20 +38,28 @@ test("CATALOG-02: администратор создаёт активную к�
   await menuManagement.categoryEditor.save(categoryName);
   await menuManagement.categoryEditor.openForEditing(categoryName);
 
-  await test.step("Администратор видит созданную категорию с указанными названием и описанием.", async () => {
-    expect(
-      await menuManagement.categoryEditor.readName(),
-      "Название созданной категории сохранено.",
-    ).toBe(categoryName);
-    expect(
-      await menuManagement.categoryEditor.readDescription(),
-      "Описание созданной категории сохранено.",
-    ).toBe(description);
-  });
-  await test.step("Администратор видит включённый переключатель «Категория активна».", async () => {
-    expect(
-      await menuManagement.categoryEditor.isActive(),
-      "Переключатель «Категория активна» включён.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор видит созданную категорию с указанными названием и описанием.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.categoryEditor.readName(),
+        "Название созданной категории сохранено.",
+      ).toBe(categoryName);
+      expect(
+        await menuManagement.categoryEditor.readDescription(),
+        "Описание созданной категории сохранено.",
+      ).toBe(description);
+    },
+  );
+  await expectedResult(
+    "Администратор видит включённый переключатель «Категория активна».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.categoryEditor.isActive(),
+        "Переключатель «Категория активна» включён.",
+      ).toBe(true);
+    },
+  );
 });

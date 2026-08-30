@@ -1,4 +1,5 @@
 import { PhoneVerificationStep, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: клиент не может запросить код для неполного российского номера.
@@ -14,19 +15,28 @@ import { PhoneVerificationStep, test } from "@fixtures/test";
  * - Кнопка запроса одноразового кода недоступна.
  */
 test("AUTH-03 — Клиент не запрашивает код для неполного номера", async ({
+  page,
   customerAuth,
   e2eEnvironment,
 }) => {
   await customerAuth.open(e2eEnvironment.frontOfficeUrl);
   await customerAuth.phoneVerification.fillPhone("+7 999 123-45");
 
-  await test.step("Клиент остаётся на шаге ввода номера", async () => {
-    await customerAuth.phoneVerification.assertStep(
-      PhoneVerificationStep.PHONE,
-    );
-  });
+  await expectedResult(
+    "Клиент остаётся на шаге ввода номера",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertStep(
+        PhoneVerificationStep.PHONE,
+      );
+    },
+  );
 
-  await test.step("Кнопка запроса одноразового кода недоступна", async () => {
-    await customerAuth.phoneVerification.assertCodeRequestDisabled();
-  });
+  await expectedResult(
+    "Кнопка запроса одноразового кода недоступна",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertCodeRequestDisabled();
+    },
+  );
 });

@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ModifierSelectionType,
   ProductConfiguratorSize,
@@ -59,6 +60,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * - Цена напитка соответствует опубликованной.
  */
 test("JOURNEY-01: администратор публикует напиток", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -107,38 +109,58 @@ test("JOURNEY-01: администратор публикует напиток",
 
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory(data.categoryName);
-  await test.step("Результат: созданная категория открывает опубликованный напиток.", async () => {
-    expect(
-      await publicMenu.product.isProductVisible(data.productName),
-      "Созданный напиток показан в категории.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Результат: созданная категория открывает опубликованный напиток.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isProductVisible(data.productName),
+        "Созданный напиток показан в категории.",
+      ).toBe(true);
+    },
+  );
   await publicMenu.product.openProduct(data);
 
-  await test.step("Результат: публичное меню показывает созданный напиток.", async () => {
-    expect(
-      await publicMenu.product.readOpenedProductTitle(),
-      "Открыт созданный напиток.",
-    ).toBe(data.productName);
-  });
-  await test.step("Результат: обязательная добавка выбрана по умолчанию.", async () => {
-    expect(
-      await publicMenu.product.readSelectedRequiredModifier(
-        data.modifierGroupName,
-      ),
-      "Обязательная добавка выбрана по умолчанию.",
-    ).toBe(data.modifierName);
-  });
+  await expectedResult(
+    "Результат: публичное меню показывает созданный напиток.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readOpenedProductTitle(),
+        "Открыт созданный напиток.",
+      ).toBe(data.productName);
+    },
+  );
+  await expectedResult(
+    "Результат: обязательная добавка выбрана по умолчанию.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readSelectedRequiredModifier(
+          data.modifierGroupName,
+        ),
+        "Обязательная добавка выбрана по умолчанию.",
+      ).toBe(data.modifierName);
+    },
+  );
   await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
-  await test.step("Результат: карточка напитка содержит размер M.", async () => {
-    expect(
-      await publicMenu.product.readSelectedSize(),
-      "Выбран размер M.",
-    ).toBe(ProductConfiguratorSize.M);
-  });
-  await test.step("Результат: цена напитка соответствует опубликованной.", async () => {
-    const price = await publicMenu.product.readProductPrice();
+  await expectedResult(
+    "Результат: карточка напитка содержит размер M.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readSelectedSize(),
+        "Выбран размер M.",
+      ).toBe(ProductConfiguratorSize.M);
+    },
+  );
+  await expectedResult(
+    "Результат: цена напитка соответствует опубликованной.",
+    page,
+    async () => {
+      const price = await publicMenu.product.readProductPrice();
 
-    expect(price, "Цена напитка показана.").toBe("199 ₽");
-  });
+      expect(price, "Цена напитка показана.").toBe("199 ₽");
+    },
+  );
 });

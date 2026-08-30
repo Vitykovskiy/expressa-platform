@@ -1,4 +1,5 @@
 import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: customer удаляет позицию, а удаление последней позиции очищает корзину.
@@ -24,6 +25,7 @@ import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
  * - Customer видит меню после перехода из пустой корзины.
  */
 test("CART-05: customer удаляет позиции и очищает корзину", async ({
+  page,
   checkout,
   e2eEnvironment,
   publicMenu,
@@ -40,46 +42,58 @@ test("CART-05: customer удаляет позиции и очищает корз
     "Обычное молоко",
   ]);
 
-  await test.step("После первого удаления в корзине остаётся только позиция размера S со стоимостью 280 ₽.", async () => {
-    expect(
-      await checkout.cart.readItemsCount(),
-      "В корзине осталась одна позиция.",
-    ).toBe(1);
-    expect(
-      await checkout.cart.readItemQuantity(
-        "Капучино",
-        ProductConfiguratorSize.S,
-        ["Обычное молоко"],
-      ),
-      "Количество оставшейся позиции равно одному.",
-    ).toBe(1);
-    expect(
-      await checkout.cart.readItemLineTotal(
-        "Капучино",
-        ProductConfiguratorSize.S,
-        ["Обычное молоко"],
-      ),
-      "Стоимость оставшейся позиции равна 280 ₽.",
-    ).toBe("280 ₽");
-  });
+  await expectedResult(
+    "После первого удаления в корзине остаётся только позиция размера S со стоимостью 280 ₽.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemsCount(),
+        "В корзине осталась одна позиция.",
+      ).toBe(1);
+      expect(
+        await checkout.cart.readItemQuantity(
+          "Капучино",
+          ProductConfiguratorSize.S,
+          ["Обычное молоко"],
+        ),
+        "Количество оставшейся позиции равно одному.",
+      ).toBe(1);
+      expect(
+        await checkout.cart.readItemLineTotal(
+          "Капучино",
+          ProductConfiguratorSize.S,
+          ["Обычное молоко"],
+        ),
+        "Стоимость оставшейся позиции равна 280 ₽.",
+      ).toBe("280 ₽");
+    },
+  );
   await checkout.cart.remove("Капучино", ProductConfiguratorSize.S, [
     "Обычное молоко",
   ]);
-  await test.step("После удаления последней позиции показано пустое состояние корзины.", async () => {
-    expect(
-      await checkout.cart.isEmptyStateVisible(),
-      "Показано пустое состояние корзины.",
-    ).toBe(true);
-    expect(
-      await checkout.cart.readItemsCount(),
-      "Список позиций отсутствует.",
-    ).toBe(0);
-  });
+  await expectedResult(
+    "После удаления последней позиции показано пустое состояние корзины.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isEmptyStateVisible(),
+        "Показано пустое состояние корзины.",
+      ).toBe(true);
+      expect(
+        await checkout.cart.readItemsCount(),
+        "Список позиций отсутствует.",
+      ).toBe(0);
+    },
+  );
   await checkout.cart.continueToMenu();
-  await test.step("Customer видит меню после перехода из пустой корзины.", async () => {
-    expect(
-      await publicMenu.readCategoryNames(),
-      "В меню показана категория «Кофе».",
-    ).toContain("Кофе");
-  });
+  await expectedResult(
+    "Customer видит меню после перехода из пустой корзины.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.readCategoryNames(),
+        "В меню показана категория «Кофе».",
+      ).toContain("Кофе");
+    },
+  );
 });

@@ -1,4 +1,4 @@
-import { ProductType, expect, test } from "@fixtures/test";
+import { ProductType, expect, expectedResult, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить создание товара с единой ценой без размеров.
@@ -19,6 +19,7 @@ import { ProductType, expect, test } from "@fixtures/test";
  * - У товара показана единая цена без размеров.
  */
 test("CATALOG-08: администратор создаёт товар без размеров", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -38,18 +39,28 @@ test("CATALOG-08: администратор создаёт товар без р
   await menuManagement.productEditor.setSinglePrice("349");
   await menuManagement.productEditor.save(productName);
 
-  await test.step("Администратор видит созданный товар в выбранной категории.", async () => {
-    expect(
-      await menuManagement.catalog.isProductVisible(productName),
-      "Созданный товар показан в выбранной категории.",
-    ).toBe(true);
-  });
-  await test.step("У товара показана единая цена без размеров.", async () => {
-    const card = await menuManagement.catalog.readProductPrice(productName);
+  await expectedResult(
+    "Администратор видит созданный товар в выбранной категории.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductVisible(productName),
+        "Созданный товар показан в выбранной категории.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "У товара показана единая цена без размеров.",
+    page,
+    async () => {
+      const card = await menuManagement.catalog.readProductPrice(productName);
 
-    expect(card, "В карточке показана единая цена товара.").toContain("349 ₽");
-    expect(card, "В карточке не показан размер S.").not.toContain("S:");
-    expect(card, "В карточке не показан размер M.").not.toContain("M:");
-    expect(card, "В карточке не показан размер L.").not.toContain("L:");
-  });
+      expect(card, "В карточке показана единая цена товара.").toContain(
+        "349 ₽",
+      );
+      expect(card, "В карточке не показан размер S.").not.toContain("S:");
+      expect(card, "В карточке не показан размер M.").not.toContain("M:");
+      expect(card, "В карточке не показан размер L.").not.toContain("L:");
+    },
+  );
 });

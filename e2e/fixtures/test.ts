@@ -21,6 +21,8 @@ import type {
 import { useMultiSessionFixture } from "./multi-session.fixture";
 import type { MultiSessionFixture } from "./multi-session.fixture.types";
 
+export { expectedResult } from "./expected-result";
+
 export { createProductOrderScenarioData } from "@support/data/product-order-scenario-data";
 
 type E2eFixtures = {

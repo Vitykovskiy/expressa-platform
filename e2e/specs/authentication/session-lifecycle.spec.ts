@@ -1,4 +1,5 @@
 import { CustomerSessionState, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: клиент сохраняет вход после перезагрузки и может явно завершить сессию.
@@ -19,6 +20,7 @@ import { CustomerSessionState, test } from "@fixtures/test";
  * - После выхода клиент возвращается на главную страницу как гость.
  */
 test("AUTH-07 — Клиент восстанавливает и завершает сессию", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -31,13 +33,21 @@ test("AUTH-07 — Клиент восстанавливает и заверша�
 
   await customerAuth.reload();
 
-  await test.step("После перезагрузки клиент остаётся авторизованным", async () => {
-    await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
-  });
+  await expectedResult(
+    "После перезагрузки клиент остаётся авторизованным",
+    page,
+    async () => {
+      await customerAuth.assertSession(CustomerSessionState.AUTHENTICATED);
+    },
+  );
 
   await customerAuth.signOut();
 
-  await test.step("После выхода клиент возвращается на главную страницу как гость", async () => {
-    await customerAuth.assertSession(CustomerSessionState.GUEST);
-  });
+  await expectedResult(
+    "После выхода клиент возвращается на главную страницу как гость",
+    page,
+    async () => {
+      await customerAuth.assertSession(CustomerSessionState.GUEST);
+    },
+  );
 });

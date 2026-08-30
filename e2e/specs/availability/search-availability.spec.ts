@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник находит позицию по названию.
@@ -14,6 +15,7 @@ import { expect, test } from "@fixtures/test";
  * - Список не содержит товар «Капучино».
  */
 test("AVAIL-02: сотрудник ищет позицию", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -28,18 +30,26 @@ test("AVAIL-02: сотрудник ищет позицию", async ({
   });
   await availabilityManagement.open();
   await availabilityManagement.list.search("Овсяное");
-  await test.step("Список содержит добавку «Молоко · Овсяное молоко».", async () => {
-    expect(
-      await availabilityManagement.list.isItemVisible(
-        "Молоко · Овсяное молоко",
-      ),
-      "Найденная добавка показана в списке.",
-    ).toBe(true);
-  });
-  await test.step("Список не содержит товар «Капучино».", async () => {
-    expect(
-      await availabilityManagement.list.isItemVisible("Капучино"),
-      "Товар, не совпадающий с поиском, не показан.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Список содержит добавку «Молоко · Овсяное молоко».",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isItemVisible(
+          "Молоко · Овсяное молоко",
+        ),
+        "Найденная добавка показана в списке.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Список не содержит товар «Капучино».",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isItemVisible("Капучино"),
+        "Товар, не совпадающий с поиском, не показан.",
+      ).toBe(false);
+    },
+  );
 });

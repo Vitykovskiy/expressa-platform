@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: покупатель видит понятное пустое состояние публичного меню.
@@ -13,25 +14,34 @@ import { expect, test } from "@fixtures/test";
  * - Покупатель не видит списка категорий и товаров.
  */
 test("MENU-02: покупатель видит пустое публичное меню", async ({
+  page,
   e2eEnvironment,
   publicMenu,
 }) => {
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
 
-  await test.step("Покупатель видит сообщение «Меню пока пустое».", async () => {
-    expect(
-      await publicMenu.isEmptyVisible(),
-      "Сообщение «Меню пока пустое» показано.",
-    ).toBe(true);
-  });
-  await test.step("Покупатель не видит списка категорий и товаров.", async () => {
-    expect(
-      await publicMenu.isCategoriesAbsent(),
-      "Список категорий не показан.",
-    ).toBe(true);
-    expect(
-      await publicMenu.isProductsAbsent(),
-      "Список товаров не показан.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Покупатель видит сообщение «Меню пока пустое».",
+    page,
+    async () => {
+      expect(
+        await publicMenu.isEmptyVisible(),
+        "Сообщение «Меню пока пустое» показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Покупатель не видит списка категорий и товаров.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.isCategoriesAbsent(),
+        "Список категорий не показан.",
+      ).toBe(true);
+      expect(
+        await publicMenu.isProductsAbsent(),
+        "Список товаров не показан.",
+      ).toBe(true);
+    },
+  );
 });

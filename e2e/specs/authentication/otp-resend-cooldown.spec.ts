@@ -3,6 +3,7 @@ import {
   PhoneVerificationStep,
   test,
 } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: клиент получает понятный результат повторного запроса кода до разрешённого срока.
@@ -20,6 +21,7 @@ import {
  * - Клиент остаётся на шаге ввода кода.
  */
 test("AUTH-06 — Клиент видит ограничение повторной отправки кода", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -29,13 +31,17 @@ test("AUTH-06 — Клиент видит ограничение повторн�
   await customerAuth.phoneVerification.requestCode();
   await customerAuth.phoneVerification.resendCode();
 
-  await test.step("Клиент видит сообщение об ограничении повторной отправки кода", async () => {
-    await customerAuth.phoneVerification.assertError(
-      PhoneVerificationError.RESEND_COOLDOWN,
-    );
-  });
+  await expectedResult(
+    "Клиент видит сообщение об ограничении повторной отправки кода",
+    page,
+    async () => {
+      await customerAuth.phoneVerification.assertError(
+        PhoneVerificationError.RESEND_COOLDOWN,
+      );
+    },
+  );
 
-  await test.step("Клиент остаётся на шаге ввода кода", async () => {
+  await expectedResult("Клиент остаётся на шаге ввода кода", page, async () => {
     await customerAuth.phoneVerification.assertStep(PhoneVerificationStep.OTP);
   });
 });

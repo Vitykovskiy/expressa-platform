@@ -25,6 +25,7 @@ export async function useMultiSessionFixture(
     const secondCustomerPage = await secondCustomerContext.newPage();
     const multiSession: MultiSessionFixture = {
       secondCustomer: {
+        page: secondCustomerPage,
         auth: new CustomerAuthPage(secondCustomerPage),
         menu: new PublicMenuPage(secondCustomerPage),
         checkout: new CheckoutPage(secondCustomerPage),
@@ -32,6 +33,7 @@ export async function useMultiSessionFixture(
         orderHistory: new OrderHistoryPage(secondCustomerPage),
       },
       staff: {
+        page: staffPage,
         auth: new BackOfficeAuthPage(staffPage),
         availabilityManagement: new AvailabilityManagementPage(staffPage),
         menuManagement: new MenuManagementPage(staffPage),

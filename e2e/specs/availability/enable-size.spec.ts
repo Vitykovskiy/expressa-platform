@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityItemType,
   AvailabilityState,
   expect,
@@ -24,6 +25,7 @@ import {
  * - Customer может выбрать размер M для «Капучино».
  */
 test("AVAIL-08: сотрудник включает размер напитка", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -45,19 +47,27 @@ test("AVAIL-08: сотрудник включает размер напитка"
     AvailabilityItemType.SIZE,
     AvailabilityState.AVAILABLE,
   );
-  await test.step("В back-office размер «Капучино · M» отображается доступным.", async () => {
-    expect(
-      await availabilityManagement.list.readItemAvailability(sizeName),
-      "Размер отмечен доступным.",
-    ).toBe(AvailabilityState.AVAILABLE);
-  });
+  await expectedResult(
+    "В back-office размер «Капучино · M» отображается доступным.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readItemAvailability(sizeName),
+        "Размер отмечен доступным.",
+      ).toBe(AvailabilityState.AVAILABLE);
+    },
+  );
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory("Кофе");
   await publicMenu.product.openProduct("Капучино");
-  await test.step("Customer может выбрать размер M для «Капучино».", async () => {
-    expect(
-      await publicMenu.product.isVariantSelectable(ProductConfiguratorSize.M),
-      "Размер M доступен для выбора.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Customer может выбрать размер M для «Капучино».",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isVariantSelectable(ProductConfiguratorSize.M),
+        "Размер M доступен для выбора.",
+      ).toBe(true);
+    },
+  );
 });

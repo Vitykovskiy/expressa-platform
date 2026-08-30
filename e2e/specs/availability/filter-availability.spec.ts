@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник показывает позиции только выбранной категории.
@@ -14,6 +15,7 @@ import { expect, test } from "@fixtures/test";
  * - Список не содержит товар «Круассан».
  */
 test("AVAIL-13: сотрудник фильтрует позиции по категории", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -28,16 +30,20 @@ test("AVAIL-13: сотрудник фильтрует позиции по кат
   });
   await availabilityManagement.open();
   await availabilityManagement.list.selectCategory("Кофе");
-  await test.step("Список содержит товар «Капучино».", async () => {
+  await expectedResult("Список содержит товар «Капучино».", page, async () => {
     expect(
       await availabilityManagement.list.isItemVisible("Капучино"),
       "Товар «Капучино» показан.",
     ).toBe(true);
   });
-  await test.step("Список не содержит товар «Круассан».", async () => {
-    expect(
-      await availabilityManagement.list.isItemVisible("Круассан"),
-      "Товар «Круассан» не показан.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Список не содержит товар «Круассан».",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.isItemVisible("Круассан"),
+        "Товар «Круассан» не показан.",
+      ).toBe(false);
+    },
+  );
 });

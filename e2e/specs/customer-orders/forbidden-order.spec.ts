@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: customer не открывает заказ другого customer.
@@ -13,6 +14,7 @@ import { expect, test } from "@fixtures/test";
  * - Customer не видит состав, сумму и стадию чужого заказа.
  */
 test("ORDER-02: customer не открывает чужой заказ", async ({
+  page,
   customerAuth,
   customerOrder,
   e2eCredentials,
@@ -33,24 +35,32 @@ test("ORDER-02: customer не открывает чужой заказ", async (
     "00000000-0000-4000-8000-000000000022",
   );
 
-  await test.step("Customer видит сообщение о недоступности чужого заказа.", async () => {
-    expect(
-      await customerOrder.details.isUnavailableMessageVisible(),
-      "Показано сообщение о недоступности чужого заказа.",
-    ).toBe(true);
-  });
-  await test.step("Customer не видит состав, сумму и стадию чужого заказа.", async () => {
-    expect(
-      await customerOrder.details.areItemsAbsent(),
-      "Состав не показан.",
-    ).toBe(true);
-    expect(
-      await customerOrder.details.isTotalAbsent(),
-      "Сумма не показана.",
-    ).toBe(true);
-    expect(
-      await customerOrder.details.areStatusesAbsent(),
-      "Стадия не показана.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Customer видит сообщение о недоступности чужого заказа.",
+    page,
+    async () => {
+      expect(
+        await customerOrder.details.isUnavailableMessageVisible(),
+        "Показано сообщение о недоступности чужого заказа.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Customer не видит состав, сумму и стадию чужого заказа.",
+    page,
+    async () => {
+      expect(
+        await customerOrder.details.areItemsAbsent(),
+        "Состав не показан.",
+      ).toBe(true);
+      expect(
+        await customerOrder.details.isTotalAbsent(),
+        "Сумма не показана.",
+      ).toBe(true);
+      expect(
+        await customerOrder.details.areStatusesAbsent(),
+        "Стадия не показана.",
+      ).toBe(true);
+    },
+  );
 });

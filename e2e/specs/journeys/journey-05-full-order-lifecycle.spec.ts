@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ModifierSelectionType,
   OrderHistoryStatus,
@@ -97,6 +98,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * - История показывает неизменяемый выданный заказ.
  */
 test("JOURNEY-05: публикация, заказ, выдача и история", async ({
+  page,
   backOfficeAuth,
   checkout,
   customerAuth,
@@ -152,21 +154,25 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
   await publicMenu.product.openProduct(data);
   await publicMenu.product.selectVariant(ProductConfiguratorSize.M);
   await publicMenu.product.selectModifier(data.modifierName);
-  await test.step("Результат: опубликованный напиток доступен клиенту.", async () => {
-    const [name, price, size, modifierName] = await Promise.all([
-      publicMenu.product.readOpenedProductTitle(),
-      publicMenu.product.readProductPrice(),
-      publicMenu.product.readSelectedSize(),
-      publicMenu.product.readSelectedRequiredModifier(data.modifierGroupName),
-    ]);
+  await expectedResult(
+    "Результат: опубликованный напиток доступен клиенту.",
+    page,
+    async () => {
+      const [name, price, size, modifierName] = await Promise.all([
+        publicMenu.product.readOpenedProductTitle(),
+        publicMenu.product.readProductPrice(),
+        publicMenu.product.readSelectedSize(),
+        publicMenu.product.readSelectedRequiredModifier(data.modifierGroupName),
+      ]);
 
-    expect(name, "Открыт опубликованный напиток.").toBe(data.productName);
-    expect(price, "Цена напитка опубликована.").toBe("199 ₽");
-    expect(size, "Доступен размер M.").toBe(ProductConfiguratorSize.M);
-    expect(modifierName, "Выбрана обязательная добавка.").toBe(
-      data.modifierName,
-    );
-  });
+      expect(name, "Открыт опубликованный напиток.").toBe(data.productName);
+      expect(price, "Цена напитка опубликована.").toBe("199 ₽");
+      expect(size, "Доступен размер M.").toBe(ProductConfiguratorSize.M);
+      expect(modifierName, "Выбрана обязательная добавка.").toBe(
+        data.modifierName,
+      );
+    },
+  );
   await publicMenu.product.addToCart();
   await checkout.cart.open();
   await checkout.cart.setQuantity(data.productName, data.productQuantity);
@@ -178,16 +184,20 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
   await checkout.profile.completeProfileIfShown(data.customerName);
   await checkout.cart.placeOrder();
   const snapshot = await customerOrder.details.readSnapshot();
-  await test.step("Результат: создан оформленный заказ с выбранным составом.", async () => {
-    expect(snapshot.status, "Заказ оформлен.").toBe(OrderStatus.CREATED);
-    expect(snapshot.productName, "Напиток сохранён в заказе.").toBe(
-      data.productName,
-    );
-    expect(snapshot.quantity, "Количество сохранено в заказе.").toContain(
-      String(data.productQuantity),
-    );
-    expect(snapshot.total, "Итог сохранён в заказе.").toBe("398 ₽");
-  });
+  await expectedResult(
+    "Результат: создан оформленный заказ с выбранным составом.",
+    page,
+    async () => {
+      expect(snapshot.status, "Заказ оформлен.").toBe(OrderStatus.CREATED);
+      expect(snapshot.productName, "Напиток сохранён в заказе.").toBe(
+        data.productName,
+      );
+      expect(snapshot.quantity, "Количество сохранено в заказе.").toContain(
+        String(data.productQuantity),
+      );
+      expect(snapshot.total, "Итог сохранён в заказе.").toBe("398 ₽");
+    },
+  );
   await backOfficeAuth.open(e2eEnvironment.backOfficeUrl);
   await backOfficeAuth.form.fillPhone(e2eCredentials.staff.phone);
   await backOfficeAuth.form.requestCode();
@@ -199,7 +209,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     snapshot,
     OrderQueueTransitionAction.ACCEPT,
   );
-  await test.step("Результат: заказ принят.", async () => {
+  await expectedResult("Результат: заказ принят.", page, async () => {
     expect(
       await staffOrders.queue.readCurrentStage(snapshot),
       "Заказ принят.",
@@ -209,7 +219,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     snapshot,
     OrderQueueTransitionAction.START_PREPARING,
   );
-  await test.step("Результат: заказ готовится.", async () => {
+  await expectedResult("Результат: заказ готовится.", page, async () => {
     expect(
       await staffOrders.queue.readCurrentStage(snapshot),
       "Заказ готовится.",
@@ -219,7 +229,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     snapshot,
     OrderQueueTransitionAction.MARK_READY,
   );
-  await test.step("Результат: заказ готов.", async () => {
+  await expectedResult("Результат: заказ готов.", page, async () => {
     expect(
       await staffOrders.queue.readCurrentStage(snapshot),
       "Заказ готов.",
@@ -229,7 +239,7 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
     snapshot,
     OrderQueueTransitionAction.ISSUE,
   );
-  await test.step("Результат: заказ выдан.", async () => {
+  await expectedResult("Результат: заказ выдан.", page, async () => {
     expect(
       await staffOrders.queue.readCurrentStage(snapshot),
       "Заказ выдан.",
@@ -245,29 +255,40 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
   await orderHistory.history.refresh();
   const historyOrder = await orderHistory.history.readOrder(snapshot);
   await orderHistory.history.openOrder(snapshot);
-  await test.step("Результат: история показывает неизменяемый выданный заказ.", async () => {
-    const issuedOrder = await customerOrder.details.readSnapshot();
+  await expectedResult(
+    "Результат: история показывает неизменяемый выданный заказ.",
+    page,
+    async () => {
+      const issuedOrder = await customerOrder.details.readSnapshot();
 
-    expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(
-      snapshot.number,
-    );
-    expect(historyOrder.status, "В истории показана стадия «Выдан».").toBe(
-      OrderHistoryStatus.ISSUED,
-    );
-    expect(historyOrder.total, "Итог в истории сохранён.").toBe(snapshot.total);
-    expect(issuedOrder.productName, "Наименование товара не изменилось.").toBe(
-      snapshot.productName,
-    );
-    expect(issuedOrder.size, "Размер товара не изменился.").toBe(snapshot.size);
-    expect(issuedOrder.modifierName, "Добавка не изменилась.").toBe(
-      snapshot.modifierName,
-    );
-    expect(issuedOrder.quantity, "Количество товара не изменилось.").toBe(
-      snapshot.quantity,
-    );
-    expect(issuedOrder.total, "Итог в деталях сохранён.").toBe(snapshot.total);
-    expect(issuedOrder.status, "В деталях показана стадия «Выдан».").toBe(
-      OrderStatus.ISSUED,
-    );
-  });
+      expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(
+        snapshot.number,
+      );
+      expect(historyOrder.status, "В истории показана стадия «Выдан».").toBe(
+        OrderHistoryStatus.ISSUED,
+      );
+      expect(historyOrder.total, "Итог в истории сохранён.").toBe(
+        snapshot.total,
+      );
+      expect(
+        issuedOrder.productName,
+        "Наименование товара не изменилось.",
+      ).toBe(snapshot.productName);
+      expect(issuedOrder.size, "Размер товара не изменился.").toBe(
+        snapshot.size,
+      );
+      expect(issuedOrder.modifierName, "Добавка не изменилась.").toBe(
+        snapshot.modifierName,
+      );
+      expect(issuedOrder.quantity, "Количество товара не изменилось.").toBe(
+        snapshot.quantity,
+      );
+      expect(issuedOrder.total, "Итог в деталях сохранён.").toBe(
+        snapshot.total,
+      );
+      expect(issuedOrder.status, "В деталях показана стадия «Выдан».").toBe(
+        OrderStatus.ISSUED,
+      );
+    },
+  );
 });

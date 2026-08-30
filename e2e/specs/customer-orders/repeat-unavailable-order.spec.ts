@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: customer не повторяет полностью недоступный выданный заказ.
@@ -17,6 +18,7 @@ import { expect, test } from "@fixtures/test";
  * - Customer видит предупреждение о «Капучино» с причиной непереноса.
  */
 test("ORDER-08: customer не повторяет полностью недоступный выданный заказ", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -43,7 +45,7 @@ test("ORDER-08: customer не повторяет полностью недост
   await orderHistory.history.openOrder(order);
   await customerOrder.details.repeatOrder();
 
-  await test.step("Customer видит пустую корзину.", async () => {
+  await expectedResult("Customer видит пустую корзину.", page, async () => {
     expect(await checkout.isCartOpen(), "Корзина открыта.").toBe(true);
     expect(await checkout.cart.isEmpty(), "В корзине нет позиций.").toBe(true);
     expect(
@@ -51,12 +53,18 @@ test("ORDER-08: customer не повторяет полностью недост
       "Показано пустое состояние корзины.",
     ).toBe(true);
   });
-  await test.step("Customer видит предупреждение о «Капучино» с причиной непереноса.", async () => {
-    const warning = await checkout.cart.readRepeatWarning("Капучино");
+  await expectedResult(
+    "Customer видит предупреждение о «Капучино» с причиной непереноса.",
+    page,
+    async () => {
+      const warning = await checkout.cart.readRepeatWarning("Капучино");
 
-    expect(warning.productName, "Показано имя недоступной позиции.").toBe(
-      "Капучино",
-    );
-    expect(warning.reason, "Показана причина непереноса позиции.").not.toBe("");
-  });
+      expect(warning.productName, "Показано имя недоступной позиции.").toBe(
+        "Капучино",
+      );
+      expect(warning.reason, "Показана причина непереноса позиции.").not.toBe(
+        "",
+      );
+    },
+  );
 });

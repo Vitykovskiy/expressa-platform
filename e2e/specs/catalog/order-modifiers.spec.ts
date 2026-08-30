@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение порядка вариантов добавок в группе.
@@ -20,6 +20,7 @@ import { expect, test } from "@fixtures/test";
  * - Для варианта «Овсяное молоко» действие перемещения вверх недоступно.
  */
 test("CATALOG-14: администратор меняет порядок вариантов добавок", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -37,18 +38,26 @@ test("CATALOG-14: администратор меняет порядок вар�
   await menuManagement.modifierGroupEditor.moveOptionUp(secondOptionName);
   await menuManagement.modifierGroupEditor.save();
   await menuManagement.modifierGroupEditor.openForEditing(groupName);
-  await test.step("Администратор видит вариант «Овсяное молоко» перед вариантом «Обычное молоко» в группе добавок.", async () => {
-    expect(
-      await menuManagement.modifierGroupEditor.readOptionOrder(),
-      "Вариант «Овсяное молоко» показан перед вариантом «Обычное молоко».",
-    ).toEqual([secondOptionName, firstOptionName]);
-  });
-  await test.step("Для варианта «Овсяное молоко» действие перемещения вверх недоступно.", async () => {
-    expect(
-      await menuManagement.modifierGroupEditor.isOptionMoveUpAvailable(
-        secondOptionName,
-      ),
-      "Для варианта «Овсяное молоко» действие перемещения вверх недоступно.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Администратор видит вариант «Овсяное молоко» перед вариантом «Обычное молоко» в группе добавок.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.modifierGroupEditor.readOptionOrder(),
+        "Вариант «Овсяное молоко» показан перед вариантом «Обычное молоко».",
+      ).toEqual([secondOptionName, firstOptionName]);
+    },
+  );
+  await expectedResult(
+    "Для варианта «Овсяное молоко» действие перемещения вверх недоступно.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.modifierGroupEditor.isOptionMoveUpAvailable(
+          secondOptionName,
+        ),
+        "Для варианта «Овсяное молоко» действие перемещения вверх недоступно.",
+      ).toBe(false);
+    },
+  );
 });

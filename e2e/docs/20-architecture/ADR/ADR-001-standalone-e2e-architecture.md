@@ -5,6 +5,7 @@ type: adr
 area: e2e
 status: accepted
 sources:
+  - ../../../fixtures/expected-result.ts
   - ../../../playwright.config.ts
   - ../../../fixtures/test.ts
 related:
@@ -24,7 +25,7 @@ Standalone E2E связывает пользовательские действ�
 
 ## Решение
 
-- Набор использует Playwright Test с одним проектом Chromium, одним worker, без retries, HTML-отчётом и screenshot только при ошибке.
+- Набор использует Playwright Test с одним проектом Chromium, одним worker, без retries и HTML-отчётом. Каждый успешный expected-result checkpoint прикладывает full-page screenshot к своему business-level шагу; при необработанной ошибке Playwright сохраняет full-page screenshot всех открытых страниц. Скриншоты доступны и в safe remote report, а trace в нём отключён.
 - `E2E_FRONT_OFFICE_URL` и `E2E_BACK_OFFICE_URL` обязательны и проходят проверку в `support/config` до исполнения сценария.
 - Domain Page — тонкий корень композиции экрана: он открывает страницу и предоставляет её устойчивые области как Component Objects. Component Object владеет локаторами, ожиданиями готовности и атомарными UI-действиями; `fixtures/test.ts` собирает зависимости сценария. Только `fixtures/multi-session.fixture.ts` создаёт дополнительный Playwright context и Page, закрывает их в lifecycle fixture и не содержит предметного workflow.
 - Предметные данные находятся в `support/data`. Взаимодействие с приложениями выполняется только через UI Playwright: API, БД, Web Storage, прямое изменение сети и запуск приложений не используются.
@@ -33,6 +34,7 @@ Standalone E2E связывает пользовательские действ�
 - Каждый Page и Component имеет собственный каталог. Локальные файлы имеют вид `pages/<office>/<area>/<page-name>/<page-name>.page.ts` и `pages/<office>/<area>/<page-name>/<local-component-name>/<local-component-name>.component.ts`; shared Component — `components/<office>/<area>/<component-name>/<component-name>.component.ts`.
 - `*.constants.ts` и `*.types.ts` принадлежат ровно одному Page или Component, лежат в его каталоге и имеют его базовое имя. Любой именованный module-scope `const`, задающий статический UI-контракт или конфигурацию владельца, выносится в `<owner>.constants.ts`, а любой именованный module-scope `type` или `interface` владельца — в `<owner>.types.ts`, независимо от `export` и повторного использования; локальные переменные, параметры и private Locator-поля остаются в классе.
 - `e2e/tsconfig.json` задаёт алиасы `@pages/*`, `@components/*`, `@fixtures/*` и `@support/*`. Межкаталожные импорты используют алиасы; относительный импорт допустим только между файлами одного владельца.
+- Общий `expectedResult` создаёт business-level шаг по русскому заголовку контрольной точки, выполняет её assertions и после успеха прикладывает PNG с описанием `Ожидается: <заголовок>`. Spec передаёт в него Page интерфейса, на котором виден ожидаемый результат; multi-session fixture предоставляет Page staff и второго customer для этого выбора.
 
 ## Последствия
 

@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityItemType,
   AvailabilityState,
   expect,
@@ -31,6 +32,7 @@ import {
  * - Customer не может оформить корзину, пока не удалит недоступную позицию.
  */
 test("CHECKOUT-05: customer не оформляет корзину с недоступной позицией", async ({
+  page,
   checkout,
   customerAuth,
   e2eCredentials,
@@ -67,30 +69,42 @@ test("CHECKOUT-05: customer не оформляет корзину с недос
   await checkout.cart.open();
   await checkout.cart.requestAvailabilityRevalidation();
 
-  await test.step("Customer видит сообщение о недоступной позиции.", async () => {
-    expect(
-      await checkout.cart.isUnavailableItemMessageVisible(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Сообщение о недоступности «Капучино» показано.",
-    ).toBe(true);
-  });
-  await test.step("Корзина выделяет недоступный «Капучино» размера M.", async () => {
-    expect(
-      await checkout.cart.isItemUnavailable(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Позиция связана с сообщением о недоступности.",
-    ).toBe(true);
-  });
-  await test.step("Customer не может оформить корзину, пока не удалит недоступную позицию.", async () => {
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Кнопка оформления недоступна.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Customer видит сообщение о недоступной позиции.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isUnavailableItemMessageVisible(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Сообщение о недоступности «Капучино» показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Корзина выделяет недоступный «Капучино» размера M.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isItemUnavailable(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Позиция связана с сообщением о недоступности.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Customer не может оформить корзину, пока не удалит недоступную позицию.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Кнопка оформления недоступна.",
+      ).toBe(false);
+    },
+  );
 });

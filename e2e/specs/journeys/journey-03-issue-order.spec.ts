@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ModifierSelectionType,
   ProductConfiguratorSize,
@@ -83,6 +84,7 @@ import { createProductOrderScenarioData } from "@support/data/product-order-scen
  * - Готовый заказ выдан, а история содержит четыре перехода с автором и временем.
  */
 test("JOURNEY-03: сотрудник выдаёт готовый заказ", async ({
+  page,
   backOfficeAuth,
   checkout,
   customerOrder,
@@ -158,7 +160,7 @@ test("JOURNEY-03: сотрудник выдаёт готовый заказ", as
     snapshot,
     OrderQueueTransitionAction.ACCEPT,
   );
-  await test.step("Результат: заказ принят.", async () => {
+  await expectedResult("Результат: заказ принят.", page, async () => {
     const stage = await staffOrders.queue.readCurrentStage(snapshot);
 
     expect(stage, "В карточке показана стадия «Принят».").toBe(
@@ -169,7 +171,7 @@ test("JOURNEY-03: сотрудник выдаёт готовый заказ", as
     snapshot,
     OrderQueueTransitionAction.START_PREPARING,
   );
-  await test.step("Результат: заказ готовится.", async () => {
+  await expectedResult("Результат: заказ готовится.", page, async () => {
     const stage = await staffOrders.queue.readCurrentStage(snapshot);
 
     expect(stage, "В карточке показана стадия «Готовится».").toBe(
@@ -180,56 +182,65 @@ test("JOURNEY-03: сотрудник выдаёт готовый заказ", as
     snapshot,
     OrderQueueTransitionAction.MARK_READY,
   );
-  await test.step("Результат: готовый заказ доступен для выдачи.", async () => {
-    const [stage, actions] = await Promise.all([
-      staffOrders.queue.readCurrentStage(snapshot),
-      staffOrders.queue.readAvailableTransitions(snapshot),
-    ]);
+  await expectedResult(
+    "Результат: готовый заказ доступен для выдачи.",
+    page,
+    async () => {
+      const [stage, actions] = await Promise.all([
+        staffOrders.queue.readCurrentStage(snapshot),
+        staffOrders.queue.readAvailableTransitions(snapshot),
+      ]);
 
-    expect(stage, "В карточке показана стадия «Готов».").toBe(
-      OrderQueueStage.READY,
-    );
-    expect(actions, "Выдача доступна после готовности.").toContain(
-      OrderQueueTransitionAction.ISSUE,
-    );
-  });
+      expect(stage, "В карточке показана стадия «Готов».").toBe(
+        OrderQueueStage.READY,
+      );
+      expect(actions, "Выдача доступна после готовности.").toContain(
+        OrderQueueTransitionAction.ISSUE,
+      );
+    },
+  );
   await staffOrders.queue.transition(
     snapshot,
     OrderQueueTransitionAction.ISSUE,
   );
-  await test.step("Результат: готовый заказ выдан, а история содержит четыре перехода с автором и временем.", async () => {
-    const stage = await staffOrders.queue.readCurrentStage(snapshot);
-    const transitions = await staffOrders.queue.readTransitionHistory(snapshot);
+  await expectedResult(
+    "Результат: готовый заказ выдан, а история содержит четыре перехода с автором и временем.",
+    page,
+    async () => {
+      const stage = await staffOrders.queue.readCurrentStage(snapshot);
+      const transitions =
+        await staffOrders.queue.readTransitionHistory(snapshot);
 
-    expect(stage, "Текущая стадия заказа — «Выдан».").toBe(
-      OrderQueueStage.ISSUED,
-    );
-    expect(transitions, "История содержит четыре перехода.").toHaveLength(4);
-    const expectedTransitions = [
-      [OrderQueueStage.CREATED, OrderQueueStage.ACCEPTED],
-      [OrderQueueStage.ACCEPTED, OrderQueueStage.PREPARING],
-      [OrderQueueStage.PREPARING, OrderQueueStage.READY],
-      [OrderQueueStage.READY, OrderQueueStage.ISSUED],
-    ] as const;
-
-    for (const [index, [from, to]] of expectedTransitions.entries()) {
-      const transition = transitions[index];
-
-      expect(
-        transition?.from,
-        `Показана исходная стадия перехода ${index + 1}.`,
-      ).toBe(from);
-      expect(
-        transition?.to,
-        `Показана новая стадия перехода ${index + 1}.`,
-      ).toBe(to);
-      expect(transition?.author, `Показан автор перехода ${index + 1}.`).toBe(
-        e2eCredentials.staff.phone,
+      expect(stage, "Текущая стадия заказа — «Выдан».").toBe(
+        OrderQueueStage.ISSUED,
       );
-      expect(
-        transition?.occurredAt,
-        `Показаны допустимые дата и время перехода ${index + 1}.`,
-      ).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/u);
-    }
-  });
+      expect(transitions, "История содержит четыре перехода.").toHaveLength(4);
+      const expectedTransitions = [
+        [OrderQueueStage.CREATED, OrderQueueStage.ACCEPTED],
+        [OrderQueueStage.ACCEPTED, OrderQueueStage.PREPARING],
+        [OrderQueueStage.PREPARING, OrderQueueStage.READY],
+        [OrderQueueStage.READY, OrderQueueStage.ISSUED],
+      ] as const;
+
+      for (const [index, [from, to]] of expectedTransitions.entries()) {
+        const transition = transitions[index];
+
+        expect(
+          transition?.from,
+          `Показана исходная стадия перехода ${index + 1}.`,
+        ).toBe(from);
+        expect(
+          transition?.to,
+          `Показана новая стадия перехода ${index + 1}.`,
+        ).toBe(to);
+        expect(transition?.author, `Показан автор перехода ${index + 1}.`).toBe(
+          e2eCredentials.staff.phone,
+        );
+        expect(
+          transition?.occurredAt,
+          `Показаны допустимые дата и время перехода ${index + 1}.`,
+        ).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/u);
+      }
+    },
+  );
 });

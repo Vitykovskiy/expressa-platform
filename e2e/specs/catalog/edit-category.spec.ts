@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение данных существующей категории.
@@ -20,6 +20,7 @@ import { expect, test } from "@fixtures/test";
  *   «Обновлённое описание категории кофе.».
  */
 test("CATALOG-04: администратор редактирует категорию", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -40,14 +41,18 @@ test("CATALOG-04: администратор редактирует катего
   await menuManagement.categoryEditor.saveChanges(categoryName);
   await menuManagement.categoryEditor.openForEditing(categoryName);
 
-  await test.step("Администратор видит категорию «Кофе — обновлено» с описанием «Обновлённое описание категории кофе.».", async () => {
-    expect(
-      await menuManagement.categoryEditor.readName(),
-      "Название категории «Кофе — обновлено» сохранено.",
-    ).toBe(categoryName);
-    expect(
-      await menuManagement.categoryEditor.readDescription(),
-      "Описание категории «Обновлённое описание категории кофе.» сохранено.",
-    ).toBe(description);
-  });
+  await expectedResult(
+    "Администратор видит категорию «Кофе — обновлено» с описанием «Обновлённое описание категории кофе.».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.categoryEditor.readName(),
+        "Название категории «Кофе — обновлено» сохранено.",
+      ).toBe(categoryName);
+      expect(
+        await menuManagement.categoryEditor.readDescription(),
+        "Описание категории «Обновлённое описание категории кофе.» сохранено.",
+      ).toBe(description);
+    },
+  );
 });

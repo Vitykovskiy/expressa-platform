@@ -1,4 +1,5 @@
 import { expect, OrderHistoryStatus, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: история содержит только заказы авторизованного customer.
@@ -14,6 +15,7 @@ import { expect, OrderHistoryStatus, test } from "@fixtures/test";
  * - Customer не видит карточку заказа второго customer.
  */
 test("ORDER-05: история customer изолирована от заказов другого customer", async ({
+  page,
   customerAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -32,42 +34,56 @@ test("ORDER-05: история customer изолирована от заказо
   await orderHistory.open();
   await orderHistory.history.waitUntilLoaded();
   await orderHistory.history.loadMore();
-  await test.step("Customer видит все собственные заказы.", async () => {
-    const orders = await orderHistory.history.readOrders();
+  await expectedResult(
+    "Customer видит все собственные заказы.",
+    page,
+    async () => {
+      const orders = await orderHistory.history.readOrders();
 
-    expect(orders, "Показан двадцать один собственный заказ.").toHaveLength(21);
-    for (const [position, order] of orders.entries()) {
-      const index = 21 - position;
-      const expectedDate = new Intl.DateTimeFormat("ru-RU", {
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
-      }).format(
-        new Date(`2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`),
+      expect(orders, "Показан двадцать один собственный заказ.").toHaveLength(
+        21,
       );
+      for (const [position, order] of orders.entries()) {
+        const index = 21 - position;
+        const expectedDate = new Intl.DateTimeFormat("ru-RU", {
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "UTC",
+        }).format(
+          new Date(
+            `2030-01-02T00:${index.toString().padStart(2, "0")}:00.000Z`,
+          ),
+        );
 
-      expect(order.number, `Показан номер собственного заказа ${index}.`).toBe(
-        `20300102-${index.toString().padStart(3, "0")}`,
-      );
+        expect(
+          order.number,
+          `Показан номер собственного заказа ${index}.`,
+        ).toBe(`20300102-${index.toString().padStart(3, "0")}`);
+        expect(
+          order.displayedDate,
+          `Показана дата собственного заказа ${index}.`,
+        ).toBe(expectedDate);
+        expect(
+          order.total,
+          `Показана сумма собственного заказа ${index}.`,
+        ).toBe("320 ₽");
+        expect(
+          order.status,
+          `Показана стадия собственного заказа ${index}.`,
+        ).toBe(OrderHistoryStatus.ISSUED);
+      }
+    },
+  );
+  await expectedResult(
+    "Customer не видит карточку заказа второго customer.",
+    page,
+    async () => {
       expect(
-        order.displayedDate,
-        `Показана дата собственного заказа ${index}.`,
-      ).toBe(expectedDate);
-      expect(order.total, `Показана сумма собственного заказа ${index}.`).toBe(
-        "320 ₽",
-      );
-      expect(
-        order.status,
-        `Показана стадия собственного заказа ${index}.`,
-      ).toBe(OrderHistoryStatus.ISSUED);
-    }
-  });
-  await test.step("Customer не видит карточку заказа второго customer.", async () => {
-    expect(
-      await orderHistory.history.isOrderAbsent("20300102-022"),
-      "Карточка чужого заказа не показана.",
-    ).toBe(true);
-  });
+        await orderHistory.history.isOrderAbsent("20300102-022"),
+        "Карточка чужого заказа не показана.",
+      ).toBe(true);
+    },
+  );
 });

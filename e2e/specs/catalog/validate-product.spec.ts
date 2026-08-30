@@ -1,4 +1,10 @@
-import { ProductEditorSize, ProductType, expect, test } from "@fixtures/test";
+import {
+  ProductEditorSize,
+  ProductType,
+  expect,
+  expectedResult,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: подтвердить, что напиток не сохраняется без корректной цены каждого выбранного размера.
@@ -20,6 +26,7 @@ import { ProductEditorSize, ProductType, expect, test } from "@fixtures/test";
  * - Действие сохранения товара недоступно.
  */
 test("CATALOG-09: администратор видит валидацию цены напитка", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -38,16 +45,24 @@ test("CATALOG-09: администратор видит валидацию це�
   await menuManagement.productEditor.setPrice(ProductEditorSize.L, "299");
   await menuManagement.productEditor.setPrice(ProductEditorSize.S, "-1");
 
-  await test.step("Администратор видит сообщение «Укажите цену для каждого выбранного размера».", async () => {
-    expect(
-      await menuManagement.productEditor.readSizesPriceValidation(),
-      "Показано сообщение «Укажите цену для каждого выбранного размера».",
-    ).toBe("Укажите цену для каждого выбранного размера");
-  });
-  await test.step("Действие сохранения товара недоступно.", async () => {
-    expect(
-      await menuManagement.productEditor.isCreateSaveAvailable(),
-      "Действие сохранения товара недоступно.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Администратор видит сообщение «Укажите цену для каждого выбранного размера».",
+    page,
+    async () => {
+      expect(
+        await menuManagement.productEditor.readSizesPriceValidation(),
+        "Показано сообщение «Укажите цену для каждого выбранного размера».",
+      ).toBe("Укажите цену для каждого выбранного размера");
+    },
+  );
+  await expectedResult(
+    "Действие сохранения товара недоступно.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.productEditor.isCreateSaveAvailable(),
+        "Действие сохранения товара недоступно.",
+      ).toBe(false);
+    },
+  );
 });

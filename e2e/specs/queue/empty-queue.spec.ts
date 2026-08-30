@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник видит пустую очередь при отсутствии заказов для показа.
@@ -13,6 +13,7 @@ import { expect, test } from "@fixtures/test";
  * - Пустое состояние сообщает, что активные заказы появятся в очереди.
  */
 test("QUEUE-01: сотрудник видит пустую очередь заказов", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -27,16 +28,24 @@ test("QUEUE-01: сотрудник видит пустую очередь зак
   });
   await staffOrders.open();
 
-  await test.step("В разделе показано пустое состояние «Заказов нет».", async () => {
-    expect(
-      await staffOrders.queue.isEmptyVisible(),
-      "Пустое состояние «Заказов нет» показано.",
-    ).toBe(true);
-  });
-  await test.step("Пустое состояние сообщает, что активные заказы появятся в очереди.", async () => {
-    expect(
-      await staffOrders.queue.isEmptyDescriptionVisible(),
-      "Пояснение о появлении активных заказов показано.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "В разделе показано пустое состояние «Заказов нет».",
+    page,
+    async () => {
+      expect(
+        await staffOrders.queue.isEmptyVisible(),
+        "Пустое состояние «Заказов нет» показано.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Пустое состояние сообщает, что активные заказы появятся в очереди.",
+    page,
+    async () => {
+      expect(
+        await staffOrders.queue.isEmptyDescriptionVisible(),
+        "Пояснение о появлении активных заказов показано.",
+      ).toBe(true);
+    },
+  );
 });

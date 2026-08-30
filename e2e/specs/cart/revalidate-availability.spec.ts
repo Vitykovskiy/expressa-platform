@@ -5,6 +5,7 @@ import {
   ProductConfiguratorSize,
   test,
 } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: full journey актуализации доступности позиции в сформированной через UI корзине.
@@ -37,6 +38,7 @@ import {
  * - После удаления «Капучино» customer может продолжить оформление с «Эспрессо».
  */
 test("CART-07: customer устраняет недоступную позицию", async ({
+  page,
   checkout,
   customerAuth,
   e2eCredentials,
@@ -77,37 +79,47 @@ test("CART-07: customer устраняет недоступную позицию
   await checkout.cart.open();
   await checkout.cart.requestAvailabilityRevalidation();
 
-  await test.step("«Капучино» отмечен как недоступный, а оформление недоступно до его удаления.", async () => {
-    expect(
-      await checkout.cart.isItemUnavailable(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Капучино отмечен как недоступный.",
-    ).toBe(true);
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Оформление недоступно до удаления капучино.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "«Капучино» отмечен как недоступный, а оформление недоступно до его удаления.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isItemUnavailable(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Капучино отмечен как недоступный.",
+      ).toBe(true);
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Оформление недоступно до удаления капучино.",
+      ).toBe(false);
+    },
+  );
   await checkout.cart.remove("Капучино", ProductConfiguratorSize.M, [
     "Обычное молоко",
   ]);
-  await test.step("После удаления «Капучино» customer может продолжить оформление с «Эспрессо».", async () => {
-    expect(
-      await checkout.cart.readItemsCount(),
-      "В корзине остаётся одна позиция.",
-    ).toBe(1);
-    expect(
-      await checkout.cart.readItemName("Эспрессо", ProductConfiguratorSize.S, [
-        "Обычное молоко",
-      ]),
-      "В корзине остаётся доступный эспрессо.",
-    ).toBe("Эспрессо");
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Оформление доступно после удаления капучино.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "После удаления «Капучино» customer может продолжить оформление с «Эспрессо».",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemsCount(),
+        "В корзине остаётся одна позиция.",
+      ).toBe(1);
+      expect(
+        await checkout.cart.readItemName(
+          "Эспрессо",
+          ProductConfiguratorSize.S,
+          ["Обычное молоко"],
+        ),
+        "В корзине остаётся доступный эспрессо.",
+      ).toBe("Эспрессо");
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Оформление доступно после удаления капучино.",
+      ).toBe(true);
+    },
+  );
 });

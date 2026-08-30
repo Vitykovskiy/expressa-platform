@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   CartItemSize,
   expect,
   ProductConfiguratorSize,
@@ -21,6 +22,7 @@ import {
  * - Корзина показывает актуальные цену позиции и итоговую сумму.
  */
 test("ORDER-06: customer повторяет полностью доступный выданный заказ", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -46,53 +48,67 @@ test("ORDER-06: customer повторяет полностью доступны�
   await orderHistory.open();
   await orderHistory.history.openOrder(order);
   await customerOrder.details.repeatOrder();
-  await test.step("Customer видит открывшуюся корзину.", async () => {
-    expect(await checkout.isCartOpen(), "Корзина открыта.").toBe(true);
-  });
-  await test.step("Корзина содержит прежние наименование, размер, добавку и количество позиции.", async () => {
-    expect(
-      await checkout.cart.readItemName("Капучино", ProductConfiguratorSize.M, [
-        "Обычное молоко",
-      ]),
-      "Показано наименование позиции.",
-    ).toBe("Капучино");
-    expect(
-      await checkout.cart.readItemVariant(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показан размер позиции.",
-    ).toBe(CartItemSize.M);
-    expect(
-      await checkout.cart.readItemModifiers(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показана добавка позиции.",
-    ).toEqual(["+ Обычное молоко"]);
-    expect(
-      await checkout.cart.readItemQuantity(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показано количество позиции.",
-    ).toBe(1);
-  });
-  await test.step("Корзина показывает актуальные цену позиции и итоговую сумму.", async () => {
-    expect(
-      await checkout.cart.readItemLineTotal(
-        "Капучино",
-        ProductConfiguratorSize.M,
-        ["Обычное молоко"],
-      ),
-      "Показана цена позиции.",
-    ).toBe("320 ₽");
-    expect(
-      await checkout.cart.readTotal(),
-      "Показана итоговая сумма корзины.",
-    ).toBe("320 ₽");
-  });
+  await expectedResult(
+    "Customer видит открывшуюся корзину.",
+    page,
+    async () => {
+      expect(await checkout.isCartOpen(), "Корзина открыта.").toBe(true);
+    },
+  );
+  await expectedResult(
+    "Корзина содержит прежние наименование, размер, добавку и количество позиции.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemName(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показано наименование позиции.",
+      ).toBe("Капучино");
+      expect(
+        await checkout.cart.readItemVariant(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показан размер позиции.",
+      ).toBe(CartItemSize.M);
+      expect(
+        await checkout.cart.readItemModifiers(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показана добавка позиции.",
+      ).toEqual(["+ Обычное молоко"]);
+      expect(
+        await checkout.cart.readItemQuantity(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показано количество позиции.",
+      ).toBe(1);
+    },
+  );
+  await expectedResult(
+    "Корзина показывает актуальные цену позиции и итоговую сумму.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.readItemLineTotal(
+          "Капучино",
+          ProductConfiguratorSize.M,
+          ["Обычное молоко"],
+        ),
+        "Показана цена позиции.",
+      ).toBe("320 ₽");
+      expect(
+        await checkout.cart.readTotal(),
+        "Показана итоговая сумма корзины.",
+      ).toBe("320 ₽");
+    },
+  );
 });

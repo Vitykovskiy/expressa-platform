@@ -1,4 +1,9 @@
-import { ModifierSelectionType, expect, test } from "@fixtures/test";
+import {
+  ModifierSelectionType,
+  expect,
+  expectedResult,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: подтвердить создание обязательной группы добавок с вариантом по умолчанию.
@@ -23,6 +28,7 @@ import { ModifierSelectionType, expect, test } from "@fixtures/test";
  * - Администратор видит созданный бесплатный вариант, выбранный по умолчанию.
  */
 test("CATALOG-13: администратор создаёт группу добавок с вариантом по умолчанию", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -46,21 +52,29 @@ test("CATALOG-13: администратор создаёт группу доб�
   await menuManagement.modifierGroupEditor.setOptionPrice("0");
   await menuManagement.modifierGroupEditor.setOptionDefault();
   await menuManagement.modifierGroupEditor.save();
-  await test.step("Администратор видит созданную группу добавок.", async () => {
-    expect(
-      await menuManagement.modifierGroupEditor.isGroupVisible(groupName),
-      "Созданная группа добавок показана в управлении меню.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор видит созданную группу добавок.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.modifierGroupEditor.isGroupVisible(groupName),
+        "Созданная группа добавок показана в управлении меню.",
+      ).toBe(true);
+    },
+  );
   await menuManagement.modifierGroupEditor.openForEditing(groupName);
-  await test.step("Администратор видит созданный бесплатный вариант, выбранный по умолчанию.", async () => {
-    expect(
-      await menuManagement.modifierGroupEditor.isOptionFree(optionName),
-      "У созданного варианта указано нулевое изменение цены.",
-    ).toBe(true);
-    expect(
-      await menuManagement.modifierGroupEditor.isOptionDefault(optionName),
-      "Созданный вариант выбран по умолчанию.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Администратор видит созданный бесплатный вариант, выбранный по умолчанию.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.modifierGroupEditor.isOptionFree(optionName),
+        "У созданного варианта указано нулевое изменение цены.",
+      ).toBe(true);
+      expect(
+        await menuManagement.modifierGroupEditor.isOptionDefault(optionName),
+        "Созданный вариант выбран по умолчанию.",
+      ).toBe(true);
+    },
+  );
 });

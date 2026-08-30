@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityItemType,
   AvailabilityState,
   expect,
@@ -23,6 +24,7 @@ import {
  * - Customer не может выбрать добавку «Овсяное молоко» для «Капучино».
  */
 test("AVAIL-09: сотрудник выключает добавку", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   e2eCredentials,
@@ -44,19 +46,27 @@ test("AVAIL-09: сотрудник выключает добавку", async ({
     AvailabilityItemType.MODIFIER,
     AvailabilityState.UNAVAILABLE,
   );
-  await test.step("В back-office добавка «Молоко · Овсяное молоко» отображается недоступной.", async () => {
-    expect(
-      await availabilityManagement.list.readItemAvailability(modifierName),
-      "Добавка отмечена недоступной.",
-    ).toBe(AvailabilityState.UNAVAILABLE);
-  });
+  await expectedResult(
+    "В back-office добавка «Молоко · Овсяное молоко» отображается недоступной.",
+    page,
+    async () => {
+      expect(
+        await availabilityManagement.list.readItemAvailability(modifierName),
+        "Добавка отмечена недоступной.",
+      ).toBe(AvailabilityState.UNAVAILABLE);
+    },
+  );
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory("Кофе");
   await publicMenu.product.openProduct("Капучино");
-  await test.step("Customer не может выбрать добавку «Овсяное молоко» для «Капучино».", async () => {
-    expect(
-      await publicMenu.product.isModifierSelectable("Овсяное молоко"),
-      "Добавка «Овсяное молоко» недоступна для выбора.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Customer не может выбрать добавку «Овсяное молоко» для «Капучино».",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isModifierSelectable("Овсяное молоко"),
+        "Добавка «Овсяное молоко» недоступна для выбора.",
+      ).toBe(false);
+    },
+  );
 });

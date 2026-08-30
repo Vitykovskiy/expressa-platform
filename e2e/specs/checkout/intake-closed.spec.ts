@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   AvailabilityState,
   expect,
   ProductConfiguratorSize,
@@ -28,6 +29,7 @@ import {
  * - Customer не может выбрать оформление заказа.
  */
 test("CHECKOUT-06: customer видит закрытый приём заказов", async ({
+  page,
   availabilityManagement,
   backOfficeAuth,
   checkout,
@@ -60,16 +62,24 @@ test("CHECKOUT-06: customer видит закрытый приём заказо�
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await checkout.cart.open();
 
-  await test.step("Customer видит сообщение о закрытом приёме новых заказов.", async () => {
-    expect(
-      await checkout.cart.isIntakeClosedVisible(),
-      "Показано сообщение о временно закрытом приёме заказов.",
-    ).toBe(true);
-  });
-  await test.step("Customer не может выбрать оформление заказа.", async () => {
-    expect(
-      await checkout.cart.isCheckoutEnabled(),
-      "Кнопка оформления заказа недоступна.",
-    ).toBe(false);
-  });
+  await expectedResult(
+    "Customer видит сообщение о закрытом приёме новых заказов.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isIntakeClosedVisible(),
+        "Показано сообщение о временно закрытом приёме заказов.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Customer не может выбрать оформление заказа.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isCheckoutEnabled(),
+        "Кнопка оформления заказа недоступна.",
+      ).toBe(false);
+    },
+  );
 });

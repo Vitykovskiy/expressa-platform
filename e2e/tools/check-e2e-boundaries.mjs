@@ -143,6 +143,10 @@ function isFixtureTestModule(moduleSpecifier) {
   );
 }
 
+function isExpectedResultFixtureModule(moduleSpecifier) {
+  return moduleSpecifier === "@fixtures/test";
+}
+
 function isPOMModule(moduleSpecifier) {
   return (
     /(?:^|\/)(?:pages|components)(?:\/|$)/u.test(moduleSpecifier) ||
@@ -153,6 +157,7 @@ function isPOMModule(moduleSpecifier) {
 function collectImports(sourceFile) {
   const testNames = new Set();
   const expectNames = new Set();
+  const expectedResultNames = new Set();
   const errors = [];
 
   for (const statement of sourceFile.statements) {
@@ -178,10 +183,19 @@ function collectImports(sourceFile) {
     }
     for (const element of clause.namedBindings.elements) {
       const importedName = element.propertyName?.text ?? element.name.text;
-      if (importedName !== "test" && importedName !== "expect") {
+      if (
+        importedName !== "test" &&
+        importedName !== "expect" &&
+        importedName !== "expectedResult"
+      ) {
         continue;
       }
-      if (!isFixtureTestModule(moduleSpecifier)) {
+      const isExpectedResult = importedName === "expectedResult";
+      if (
+        isExpectedResult
+          ? !isExpectedResultFixtureModule(moduleSpecifier)
+          : !isFixtureTestModule(moduleSpecifier)
+      ) {
         addError(
           errors,
           sourceFile,
@@ -192,13 +206,15 @@ function collectImports(sourceFile) {
       }
       if (importedName === "test") {
         testNames.add(element.name.text);
-      } else {
+      } else if (importedName === "expect") {
         expectNames.add(element.name.text);
+      } else {
+        expectedResultNames.add(element.name.text);
       }
     }
   }
 
-  return { errors, expectNames, testNames };
+  return { errors, expectNames, expectedResultNames, testNames };
 }
 
 function isFixtureTestExpression(expression, testNames) {
@@ -351,6 +367,35 @@ function isExpectPollCallback(node, expectNames) {
   );
 }
 
+function isExpectedResultCall(node, expectedResultNames) {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    expectedResultNames.has(node.expression.text)
+  );
+}
+
+function isExpectedResultCallback(node, expectedResultNames) {
+  return (
+    (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
+    ts.isCallExpression(node.parent) &&
+    node.parent.arguments[2] === node &&
+    isExpectedResultCall(node.parent, expectedResultNames)
+  );
+}
+
+function isExpectedResultPageArgument(node, expectedResultNames) {
+  const pageExpression =
+    ts.isPropertyAccessExpression(node.parent) && node.parent.name === node
+      ? node.parent
+      : node;
+  return (
+    ts.isCallExpression(pageExpression.parent) &&
+    pageExpression.parent.arguments[1] === pageExpression &&
+    isExpectedResultCall(pageExpression.parent, expectedResultNames)
+  );
+}
+
 function validateSpec(path) {
   return readFile(path, "utf8").then((source) => {
     const sourceFile = ts.createSourceFile(
@@ -373,28 +418,30 @@ function validateSpec(path) {
           "прямое создание Page Object или компонента запрещено: используй fixture",
         );
       }
-      if (
-        ts.isVariableDeclaration(node) &&
-        ts.isIdentifier(node.name) &&
-        node.name.text === "page"
-      ) {
-        addError(
-          errors,
-          sourceFile,
-          node,
-          "прямой Page запрещён: используй Page Object fixture",
-        );
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+        if (node.name.text === "page") {
+          addError(
+            errors,
+            sourceFile,
+            node,
+            "прямой Page запрещён: используй Page Object fixture",
+          );
+        }
       }
       if (
-        ts.isBindingElement(node) &&
-        (bindingName(node.name) === "page" ||
-          bindingName(node.propertyName) === "page")
+        ts.isIdentifier(node) &&
+        node.text === "page" &&
+        !(
+          ts.isBindingElement(node.parent) &&
+          (node.parent.name === node || node.parent.propertyName === node)
+        ) &&
+        !isExpectedResultPageArgument(node, imports.expectedResultNames)
       ) {
         addError(
           errors,
           sourceFile,
           node,
-          "прямой Page запрещён: используй Page Object fixture",
+          "прямой Page разрешён только вторым аргументом expectedResult",
         );
       }
       if (ts.isCallExpression(node) && isRawSelectorAccess(node.expression)) {
@@ -454,7 +501,8 @@ function validateSpec(path) {
         ts.isClassDeclaration(node) ||
         ((ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
           !isTestCallback(node, imports.testNames) &&
-          !isExpectPollCallback(node, imports.expectNames))
+          !isExpectPollCallback(node, imports.expectNames) &&
+          !isExpectedResultCallback(node, imports.expectedResultNames))
       ) {
         addError(
           errors,

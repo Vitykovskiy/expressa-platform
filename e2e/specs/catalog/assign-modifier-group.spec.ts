@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить назначение группы добавок категории и валидацию порядка.
@@ -19,6 +19,7 @@ import { expect, test } from "@fixtures/test";
  * - После исправления администратор видит назначенную группе добавок категорию и её порядок.
  */
 test("CATALOG-15: администратор назначает группе добавок категорию", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -34,22 +35,30 @@ test("CATALOG-15: администратор назначает группе д�
   await menuManagement.assignments.openCategory(categoryName);
   await menuManagement.assignments.selectGroup(groupName);
   await menuManagement.assignments.setOrder("-1");
-  await test.step("Администратор видит сообщение о необходимости указать неотрицательный порядок.", async () => {
-    expect(
-      await menuManagement.assignments.readOrderValidation(),
-      "Показано требование указать неотрицательный порядок группы добавок.",
-    ).toBe("Укажите неотрицательный порядок для каждой группы");
-  });
+  await expectedResult(
+    "Администратор видит сообщение о необходимости указать неотрицательный порядок.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.assignments.readOrderValidation(),
+        "Показано требование указать неотрицательный порядок группы добавок.",
+      ).toBe("Укажите неотрицательный порядок для каждой группы");
+    },
+  );
   await menuManagement.assignments.setOrder("0");
   await menuManagement.assignments.save();
-  await test.step("После исправления администратор видит назначенную группе добавок категорию и её порядок.", async () => {
-    expect(
-      await menuManagement.assignments.isGroupAssigned(groupName),
-      "Группа добавок назначена выбранной категории.",
-    ).toBe(true);
-    expect(
-      await menuManagement.assignments.readOrder(),
-      "Для назначенной группы добавок сохранён указанный порядок.",
-    ).toBe("0");
-  });
+  await expectedResult(
+    "После исправления администратор видит назначенную группе добавок категорию и её порядок.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.assignments.isGroupAssigned(groupName),
+        "Группа добавок назначена выбранной категории.",
+      ).toBe(true);
+      expect(
+        await menuManagement.assignments.readOrder(),
+        "Для назначенной группы добавок сохранён указанный порядок.",
+      ).toBe("0");
+    },
+  );
 });

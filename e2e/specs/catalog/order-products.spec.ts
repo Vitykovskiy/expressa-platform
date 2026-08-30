@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение порядка товаров внутри категории.
@@ -19,6 +19,7 @@ import { expect, test } from "@fixtures/test";
  * - Для товара «Эспрессо» действие перемещения вверх недоступно.
  */
 test("CATALOG-11: администратор меняет порядок товаров", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -35,22 +36,32 @@ test("CATALOG-11: администратор меняет порядок тов�
   await menuManagement.ensureManagementExpanded();
   await menuManagement.catalog.expandCategory(categoryName);
   await menuManagement.catalog.moveProductUp(secondProductName);
-  await test.step("Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории «Кофе».", async () => {
-    const productOrder = await menuManagement.catalog.readProductOrder();
+  await expectedResult(
+    "Администратор видит товар «Эспрессо» перед товаром «Капучино» в категории «Кофе».",
+    page,
+    async () => {
+      const productOrder = await menuManagement.catalog.readProductOrder();
 
-    expect(
-      productOrder.indexOf(secondProductName),
-      "Товар «Эспрессо» показан в категории «Кофе».",
-    ).toBeGreaterThanOrEqual(0);
-    expect(
-      productOrder.indexOf(secondProductName),
-      "Товар «Эспрессо» показан перед товаром «Капучино».",
-    ).toBeLessThan(productOrder.indexOf(firstProductName));
-  });
-  await test.step("Для товара «Эспрессо» действие перемещения вверх недоступно.", async () => {
-    expect(
-      await menuManagement.catalog.isProductMoveUpAvailable(secondProductName),
-      "Для товара «Эспрессо» действие перемещения вверх недоступно.",
-    ).toBe(false);
-  });
+      expect(
+        productOrder.indexOf(secondProductName),
+        "Товар «Эспрессо» показан в категории «Кофе».",
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        productOrder.indexOf(secondProductName),
+        "Товар «Эспрессо» показан перед товаром «Капучино».",
+      ).toBeLessThan(productOrder.indexOf(firstProductName));
+    },
+  );
+  await expectedResult(
+    "Для товара «Эспрессо» действие перемещения вверх недоступно.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isProductMoveUpAvailable(
+          secondProductName,
+        ),
+        "Для товара «Эспрессо» действие перемещения вверх недоступно.",
+      ).toBe(false);
+    },
+  );
 });

@@ -1,4 +1,4 @@
-import { OrderStatus, test } from "@fixtures/test";
+import { OrderStatus, expectedResult, test } from "@fixtures/test";
 
 /**
  * Назначение: сотрудник находит заказ по его номеру.
@@ -16,6 +16,7 @@ import { OrderStatus, test } from "@fixtures/test";
  * - После очистки поиска очередь снова показывает заказы №20300102-001—005.
  */
 test("QUEUE-04: сотрудник ищет заказ по номеру", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -87,21 +88,33 @@ test("QUEUE-04: сотрудник ищет заказ по номеру", async
 
   await staffOrders.open();
   await staffOrders.queue.searchByNumber(target.number);
-  await test.step("Поиск показывает карточку заказа №20300102-001.", async () => {
-    await staffOrders.queue.assertOrderVisible(target);
-  });
-  await test.step("Карточка заказа №20300102-002 не показана во время поиска.", async () => {
-    await staffOrders.queue.assertOrderHidden(other);
-    await staffOrders.queue.assertOrderHidden(preparing);
-    await staffOrders.queue.assertOrderHidden(ready);
-    await staffOrders.queue.assertOrderHidden(issued);
-  });
+  await expectedResult(
+    "Поиск показывает карточку заказа №20300102-001.",
+    page,
+    async () => {
+      await staffOrders.queue.assertOrderVisible(target);
+    },
+  );
+  await expectedResult(
+    "Карточка заказа №20300102-002 не показана во время поиска.",
+    page,
+    async () => {
+      await staffOrders.queue.assertOrderHidden(other);
+      await staffOrders.queue.assertOrderHidden(preparing);
+      await staffOrders.queue.assertOrderHidden(ready);
+      await staffOrders.queue.assertOrderHidden(issued);
+    },
+  );
   await staffOrders.queue.clearSearch();
-  await test.step("После очистки поиска очередь снова показывает заказы №20300102-001—005.", async () => {
-    await staffOrders.queue.assertOrderVisible(target);
-    await staffOrders.queue.assertOrderVisible(other);
-    await staffOrders.queue.assertOrderVisible(preparing);
-    await staffOrders.queue.assertOrderVisible(ready);
-    await staffOrders.queue.assertOrderVisible(issued);
-  });
+  await expectedResult(
+    "После очистки поиска очередь снова показывает заказы №20300102-001—005.",
+    page,
+    async () => {
+      await staffOrders.queue.assertOrderVisible(target);
+      await staffOrders.queue.assertOrderVisible(other);
+      await staffOrders.queue.assertOrderVisible(preparing);
+      await staffOrders.queue.assertOrderVisible(ready);
+      await staffOrders.queue.assertOrderVisible(issued);
+    },
+  );
 });

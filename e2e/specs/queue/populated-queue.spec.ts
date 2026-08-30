@@ -1,4 +1,10 @@
-import { expect, OrderQueueStage, OrderStatus, test } from "@fixtures/test";
+import {
+  expectedResult,
+  expect,
+  OrderQueueStage,
+  OrderStatus,
+  test,
+} from "@fixtures/test";
 
 /**
  * Назначение: сотрудник видит подготовленные заказы в очереди.
@@ -13,6 +19,7 @@ import { expect, OrderQueueStage, OrderStatus, test } from "@fixtures/test";
  * - Карточки показывают номер, дату и время, текущую стадию и сумму заказа.
  */
 test("QUEUE-02: сотрудник видит заполненную очередь заказов", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -90,24 +97,32 @@ test("QUEUE-02: сотрудник видит заполненную очере�
   });
 
   await staffOrders.open();
-  await test.step("Для каждого подготовленного заказа показана карточка.", async () => {
-    for (const order of orders)
-      await staffOrders.queue.assertOrderVisible(order);
-  });
-  await test.step("Карточки показывают номер, дату и время, текущую стадию и сумму заказа.", async () => {
-    for (const [position, order] of orders.entries()) {
-      expect(
-        await staffOrders.queue.readOrderCreatedAt(order),
-        `Показаны дата и время заказа ${order.number}.`,
-      ).toBe(`02.01.2030, 00:${(position + 1).toString().padStart(2, "0")}`);
-      expect(
-        await staffOrders.queue.readCurrentStage(order),
-        `Показана стадия заказа ${order.number}.`,
-      ).toBe(order.stage);
-      expect(
-        await staffOrders.queue.readOrderTotal(order),
-        `Показана сумма заказа ${order.number}.`,
-      ).toBe("320 ₽");
-    }
-  });
+  await expectedResult(
+    "Для каждого подготовленного заказа показана карточка.",
+    page,
+    async () => {
+      for (const order of orders)
+        await staffOrders.queue.assertOrderVisible(order);
+    },
+  );
+  await expectedResult(
+    "Карточки показывают номер, дату и время, текущую стадию и сумму заказа.",
+    page,
+    async () => {
+      for (const [position, order] of orders.entries()) {
+        expect(
+          await staffOrders.queue.readOrderCreatedAt(order),
+          `Показаны дата и время заказа ${order.number}.`,
+        ).toBe(`02.01.2030, 00:${(position + 1).toString().padStart(2, "0")}`);
+        expect(
+          await staffOrders.queue.readCurrentStage(order),
+          `Показана стадия заказа ${order.number}.`,
+        ).toBe(order.stage);
+        expect(
+          await staffOrders.queue.readOrderTotal(order),
+          `Показана сумма заказа ${order.number}.`,
+        ).toBe("320 ₽");
+      }
+    },
+  );
 });

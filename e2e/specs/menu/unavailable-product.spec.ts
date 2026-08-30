@@ -1,4 +1,5 @@
 import { expect, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: покупатель не может выбрать недоступный товар из публичного меню.
@@ -15,28 +16,41 @@ import { expect, test } from "@fixtures/test";
  * - Покупатель видит доступный «Круассан» той же категории.
  */
 test("MENU-06: покупатель не может открыть недоступный товар", async ({
+  page,
   e2eEnvironment,
   publicMenu,
 }) => {
   await publicMenu.open(e2eEnvironment.frontOfficeUrl);
   await publicMenu.product.openCategory("Выпечка");
 
-  await test.step("Покупатель видит недоступный «Чизкейк» в списке товаров категории.", async () => {
-    expect(
-      await publicMenu.product.isProductVisible("Чизкейк"),
-      "Недоступный «Чизкейк» показан в категории.",
-    ).toBe(true);
-  });
-  await test.step("Покупатель не может открыть недоступный «Чизкейк».", async () => {
-    expect(
-      await publicMenu.product.isProductOpenable("Чизкейк"),
-      "Кнопка открытия недоступного «Чизкейка» выключена.",
-    ).toBe(false);
-  });
-  await test.step("Покупатель видит доступный «Круассан» той же категории.", async () => {
-    expect(
-      await publicMenu.product.isProductVisible("Круассан"),
-      "Доступный «Круассан» показан в категории.",
-    ).toBe(true);
-  });
+  await expectedResult(
+    "Покупатель видит недоступный «Чизкейк» в списке товаров категории.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isProductVisible("Чизкейк"),
+        "Недоступный «Чизкейк» показан в категории.",
+      ).toBe(true);
+    },
+  );
+  await expectedResult(
+    "Покупатель не может открыть недоступный «Чизкейк».",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isProductOpenable("Чизкейк"),
+        "Кнопка открытия недоступного «Чизкейка» выключена.",
+      ).toBe(false);
+    },
+  );
+  await expectedResult(
+    "Покупатель видит доступный «Круассан» той же категории.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.isProductVisible("Круассан"),
+        "Доступный «Круассан» показан в категории.",
+      ).toBe(true);
+    },
+  );
 });

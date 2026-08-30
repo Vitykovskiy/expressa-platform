@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   OrderStatus,
   ProductConfiguratorSize,
@@ -35,6 +36,7 @@ import {
  * - Customer видит созданный заказ с итогом 300 ₽.
  */
 test("CHECKOUT-03: customer подтверждает актуальную цену", async ({
+  page,
   checkout,
   customerAuth,
   customerOrder,
@@ -76,25 +78,37 @@ test("CHECKOUT-03: customer подтверждает актуальную цен
   await checkout.cart.open();
   await checkout.cart.requestUpdatedTotalConfirmation();
 
-  await test.step("Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.", async () => {
-    const totals = await checkout.cart.readUpdatedTotals();
+  await expectedResult(
+    "Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.",
+    page,
+    async () => {
+      const totals = await checkout.cart.readUpdatedTotals();
 
-    expect(totals.previousTotal, "Показан прежний итог 320 ₽.").toBe("320 ₽");
-    expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe("300 ₽");
-  });
-  await test.step("Customer видит запрос на подтверждение нового итога.", async () => {
-    expect(
-      await checkout.cart.isUpdatedTotalConfirmationVisible(),
-      "Кнопка подтверждения нового итога показана.",
-    ).toBe(true);
-  });
+      expect(totals.previousTotal, "Показан прежний итог 320 ₽.").toBe("320 ₽");
+      expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe("300 ₽");
+    },
+  );
+  await expectedResult(
+    "Customer видит запрос на подтверждение нового итога.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isUpdatedTotalConfirmationVisible(),
+        "Кнопка подтверждения нового итога показана.",
+      ).toBe(true);
+    },
+  );
   await checkout.cart.confirmUpdatedTotal();
-  await test.step("Customer видит созданный заказ с итогом 300 ₽.", async () => {
-    const order = await customerOrder.details.readSnapshot();
+  await expectedResult(
+    "Customer видит созданный заказ с итогом 300 ₽.",
+    page,
+    async () => {
+      const order = await customerOrder.details.readSnapshot();
 
-    expect(order.status, "Заказ находится на стадии «Оформлен».").toBe(
-      OrderStatus.CREATED,
-    );
-    expect(order.total, "Показан итог 300 ₽.").toBe("300 ₽");
-  });
+      expect(order.status, "Заказ находится на стадии «Оформлен».").toBe(
+        OrderStatus.CREATED,
+      );
+      expect(order.total, "Показан итог 300 ₽.").toBe("300 ₽");
+    },
+  );
 });

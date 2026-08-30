@@ -1,4 +1,4 @@
-import { expect, test } from "@fixtures/test";
+import { expectedResult, expect, test } from "@fixtures/test";
 
 /**
  * Назначение: подтвердить изменение порядка категорий в каталоге.
@@ -16,6 +16,7 @@ import { expect, test } from "@fixtures/test";
  * - Для категории «Выпечка» действие перемещения вверх недоступно.
  */
 test("CATALOG-05: администратор меняет порядок категорий", async ({
+  page,
   backOfficeAuth,
   e2eCredentials,
   e2eEnvironment,
@@ -32,24 +33,32 @@ test("CATALOG-05: администратор меняет порядок кат�
   await menuManagement.ensureManagementExpanded();
   await menuManagement.catalog.moveCategoryUp(secondCategoryName);
 
-  await test.step("Администратор видит категорию «Выпечка» перед категорией «Кофе».", async () => {
-    const categoryOrder = await menuManagement.catalog.readCategoryOrder();
+  await expectedResult(
+    "Администратор видит категорию «Выпечка» перед категорией «Кофе».",
+    page,
+    async () => {
+      const categoryOrder = await menuManagement.catalog.readCategoryOrder();
 
-    expect(
-      categoryOrder.indexOf(secondCategoryName),
-      "Категория «Выпечка» показана в каталоге.",
-    ).toBeGreaterThanOrEqual(0);
-    expect(
-      categoryOrder.indexOf(secondCategoryName),
-      "Категория «Выпечка» показана перед категорией «Кофе».",
-    ).toBeLessThan(categoryOrder.indexOf(firstCategoryName));
-  });
-  await test.step("Для категории «Выпечка» действие перемещения вверх недоступно.", async () => {
-    expect(
-      await menuManagement.catalog.isCategoryMoveUpAvailable(
-        secondCategoryName,
-      ),
-      "Для категории «Выпечка» действие перемещения вверх недоступно.",
-    ).toBe(false);
-  });
+      expect(
+        categoryOrder.indexOf(secondCategoryName),
+        "Категория «Выпечка» показана в каталоге.",
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        categoryOrder.indexOf(secondCategoryName),
+        "Категория «Выпечка» показана перед категорией «Кофе».",
+      ).toBeLessThan(categoryOrder.indexOf(firstCategoryName));
+    },
+  );
+  await expectedResult(
+    "Для категории «Выпечка» действие перемещения вверх недоступно.",
+    page,
+    async () => {
+      expect(
+        await menuManagement.catalog.isCategoryMoveUpAvailable(
+          secondCategoryName,
+        ),
+        "Для категории «Выпечка» действие перемещения вверх недоступно.",
+      ).toBe(false);
+    },
+  );
 });

@@ -1,4 +1,5 @@
 import {
+  expectedResult,
   expect,
   ProductConfiguratorSize,
   ProductEditorSize,
@@ -34,6 +35,7 @@ import {
  * - Заказ не создаётся без подтверждения нового итога.
  */
 test("CHECKOUT-04: customer отменяет оформление после изменения цены", async ({
+  page,
   checkout,
   customerAuth,
   e2eCredentials,
@@ -77,24 +79,36 @@ test("CHECKOUT-04: customer отменяет оформление после и�
   await checkout.cart.open();
   await checkout.cart.requestUpdatedTotalConfirmation();
 
-  await test.step("Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.", async () => {
-    const totals = await checkout.cart.readUpdatedTotals();
+  await expectedResult(
+    "Корзина показывает прежний итог 320 ₽ и новый итог 300 ₽.",
+    page,
+    async () => {
+      const totals = await checkout.cart.readUpdatedTotals();
 
-    expect(totals.previousTotal, "Показан прежний итог 320 ₽.").toBe("320 ₽");
-    expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe("300 ₽");
-  });
-  await test.step("Customer видит запрос на подтверждение нового итога.", async () => {
-    expect(
-      await checkout.cart.isUpdatedTotalConfirmationVisible(),
-      "Кнопка подтверждения нового итога показана.",
-    ).toBe(true);
-  });
+      expect(totals.previousTotal, "Показан прежний итог 320 ₽.").toBe("320 ₽");
+      expect(totals.newTotal, "Показан новый итог 300 ₽.").toBe("300 ₽");
+    },
+  );
+  await expectedResult(
+    "Customer видит запрос на подтверждение нового итога.",
+    page,
+    async () => {
+      expect(
+        await checkout.cart.isUpdatedTotalConfirmationVisible(),
+        "Кнопка подтверждения нового итога показана.",
+      ).toBe(true);
+    },
+  );
   await checkout.navigation.openMenu();
   await orderHistory.open();
-  await test.step("Заказ не создаётся без подтверждения нового итога.", async () => {
-    expect(
-      await orderHistory.history.readOrderCount(),
-      "Количество заказов не изменилось без подтверждения нового итога.",
-    ).toBe(ordersBefore);
-  });
+  await expectedResult(
+    "Заказ не создаётся без подтверждения нового итога.",
+    page,
+    async () => {
+      expect(
+        await orderHistory.history.readOrderCount(),
+        "Количество заказов не изменилось без подтверждения нового итога.",
+      ).toBe(ordersBefore);
+    },
+  );
 });

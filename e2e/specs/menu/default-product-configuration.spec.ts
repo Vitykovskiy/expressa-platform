@@ -1,4 +1,5 @@
 import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
+import { expectedResult } from "@fixtures/test";
 
 /**
  * Назначение: покупатель видит начальную конфигурацию доступного напитка с обязательной группой добавок.
@@ -17,6 +18,7 @@ import { expect, ProductConfiguratorSize, test } from "@fixtures/test";
  * - Покупатель видит итоговую цену выбранной конфигурации.
  */
 test("MENU-05: покупатель видит конфигурацию напитка по умолчанию", async ({
+  page,
   e2eEnvironment,
   publicMenu,
 }) => {
@@ -24,28 +26,44 @@ test("MENU-05: покупатель видит конфигурацию напи
   await publicMenu.product.openCategory("Кофе");
   await publicMenu.product.openProduct("Капучино");
 
-  await test.step("Покупатель видит выбранный размер M.", async () => {
-    expect(
-      await publicMenu.product.readSelectedSize(),
-      "По умолчанию выбран размер M.",
-    ).toBe(ProductConfiguratorSize.M);
-  });
-  await test.step("Покупатель видит выбранную бесплатную добавку обязательной группы.", async () => {
-    expect(
-      await publicMenu.product.readSelectedRequiredModifier("Молоко"),
-      "По умолчанию выбрано «Обычное молоко».",
-    ).toBe("Обычное молоко");
-  });
-  await test.step("Покупатель видит начальное количество «1».", async () => {
-    expect(
-      await publicMenu.product.readQuantity(),
-      "Начальное количество равно одному.",
-    ).toBe(1);
-  });
-  await test.step("Покупатель видит итоговую цену выбранной конфигурации.", async () => {
-    expect(
-      await publicMenu.product.readConfigurationTotal(),
-      "Итог выбранной конфигурации равен 320 ₽.",
-    ).toBe("320 ₽");
-  });
+  await expectedResult(
+    "Покупатель видит выбранный размер M.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readSelectedSize(),
+        "По умолчанию выбран размер M.",
+      ).toBe(ProductConfiguratorSize.M);
+    },
+  );
+  await expectedResult(
+    "Покупатель видит выбранную бесплатную добавку обязательной группы.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readSelectedRequiredModifier("Молоко"),
+        "По умолчанию выбрано «Обычное молоко».",
+      ).toBe("Обычное молоко");
+    },
+  );
+  await expectedResult(
+    "Покупатель видит начальное количество «1».",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readQuantity(),
+        "Начальное количество равно одному.",
+      ).toBe(1);
+    },
+  );
+  await expectedResult(
+    "Покупатель видит итоговую цену выбранной конфигурации.",
+    page,
+    async () => {
+      expect(
+        await publicMenu.product.readConfigurationTotal(),
+        "Итог выбранной конфигурации равен 320 ₽.",
+      ).toBe("320 ₽");
+    },
+  );
 });
