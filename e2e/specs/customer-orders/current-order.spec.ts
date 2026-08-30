@@ -43,7 +43,7 @@ test("ORDER-03: customer видит текущий заказ", async ({
     expect(order.productName, "Показано наименование товара.").toBe("Капучино");
     expect(order.size, "Показан размер товара.").toBe("Размер M");
     expect(order.modifierName, "Показана добавка.").toBe("+ Обычное молоко");
-    expect(order.quantity, "Показано количество товара.").toBe("1");
+    expect(order.quantity, "Показано количество товара.").toBe("1 × 320 ₽");
     expect(order.lineTotal, "Показана сумма позиции.").toBe("320 ₽");
     expect(order.total, "Показана итоговая сумма заказа.").toBe("320 ₽");
   });

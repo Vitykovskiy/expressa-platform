@@ -58,7 +58,9 @@ test("ORDER-01: customer видит снимок созданного заказ
     expect(order.modifierName, "Показана сохранённая добавка.").toBe(
       "+ Обычное молоко",
     );
-    expect(order.quantity, "Показано сохранённое количество.").toBe("1");
+    expect(order.quantity, "Показано сохранённое количество.").toBe(
+      "1 × 320 ₽",
+    );
   });
   await test.step("Customer видит сохранённые сумму позиции и итог 320 ₽, а также оплату на кассе при получении.", async () => {
     const order = await customerOrder.details.readSnapshot();
