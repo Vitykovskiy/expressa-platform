@@ -340,6 +340,7 @@ merge_suite_reports() {
   E2E_ARTIFACT_DIRECTORY="$suite_directory"
   export E2E_PROFILE E2E_ARTIFACT_DIRECTORY
   if ! compose run --rm --no-deps \
+    --user "$(id -u):$(id -g)" \
     -e PLAYWRIGHT_HTML_OPEN=never \
     -e PLAYWRIGHT_HTML_OUTPUT_DIR=/artifacts/report \
     e2e npm exec -- playwright merge-reports --reporter html /artifacts/blobs; then
