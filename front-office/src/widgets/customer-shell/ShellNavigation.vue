@@ -36,6 +36,14 @@
           />
         </ui-icon-btn>
         <ui-icon-btn
+          v-if="props.isAuthenticated"
+          type="button"
+          aria-label="Выйти"
+          @click="emit('signOut')"
+        >
+          <LogOut aria-hidden="true" :size="17" :stroke-width="2.5" />
+        </ui-icon-btn>
+        <ui-icon-btn
           type="button"
           class="shell-navigation__cart-button"
           aria-label="Корзина"
@@ -134,6 +142,7 @@ import {
   History,
   House,
   LogIn,
+  LogOut,
   Phone,
   ShoppingCart,
 } from "lucide-vue-next";
@@ -198,13 +207,14 @@ const accountControl = computed(() => {
   height: var(--customer-size-shell-header);
   align-items: center;
   justify-content: space-between;
+  gap: var(--customer-space-3);
   padding: 0 var(--customer-space-9);
   background: var(--customer-background);
 }
 
 .shell-navigation__header-actions {
   display: flex;
-  width: var(--customer-space-21);
+  flex: 0 0 auto;
   gap: var(--customer-space-3);
 }
 
@@ -215,16 +225,23 @@ const accountControl = computed(() => {
 .shell-navigation__header-actions .ui-icon-btn {
   position: relative;
   display: grid;
-  width: calc(var(--customer-space-16) + var(--customer-space-3));
-  min-width: calc(var(--customer-space-16) + var(--customer-space-3));
-  height: calc(var(--customer-space-16) + var(--customer-space-3));
-  min-height: calc(var(--customer-space-16) + var(--customer-space-3));
+  width: calc(var(--customer-space-12) * 2);
+  min-width: calc(var(--customer-space-12) * 2);
+  height: calc(var(--customer-space-12) * 2);
+  min-height: calc(var(--customer-space-12) * 2);
   place-items: center;
   color: var(--customer-text);
   background: var(--customer-surface-control);
   border: 0;
   border-radius: var(--customer-radius-round);
   font-weight: var(--customer-font-weight-black);
+}
+
+.shell-navigation__mobile-header .shell-navigation__brand {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shell-navigation__brand {

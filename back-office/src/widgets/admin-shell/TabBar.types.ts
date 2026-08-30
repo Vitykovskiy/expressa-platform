@@ -11,5 +11,6 @@ export interface TabBarProps {
 }
 
 export interface TabBarEmits {
+  logout: [];
   select: [section: AdminSection];
 }

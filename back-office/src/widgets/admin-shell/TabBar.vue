@@ -13,10 +13,21 @@
       <AdminSectionIcon :section="section.id" :size="22" />
       <span class="tab-bar-link__label">{{ section.label }}</span>
     </AdminButton>
+    <AdminButton
+      class="tab-bar-link"
+      type="button"
+      variant="ghost"
+      @click="emit('logout')"
+    >
+      <LogOut aria-hidden="true" :size="22" />
+      <span class="tab-bar-link__label">Выйти</span>
+    </AdminButton>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { LogOut } from "lucide-vue-next";
+
 import AdminButton from "../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { TabBarEmits, TabBarProps } from "./TabBar.types";

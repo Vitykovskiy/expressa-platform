@@ -13,6 +13,7 @@
     <TabBar
       :sections="sections"
       :active-section="props.activeSection"
+      @logout="emit('logout')"
       @select="emit('navigate', $event)"
     />
   </div>
