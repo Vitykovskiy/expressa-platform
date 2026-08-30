@@ -76,10 +76,14 @@
         class="cart-screen__mobile-total cart-screen__mobile-total--changed"
         aria-label="Изменение итога заказа"
       >
-        <span>Предыдущий итог</span>
-        <s>{{ formatRubAmount(totalRub) }}</s>
-        <span>Новый итог</span>
-        <strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
+        <span role="group" aria-label="Предыдущий итог">
+          <span>Предыдущий итог</span>
+          <s>{{ formatRubAmount(totalRub) }}</s>
+        </span>
+        <span role="group" aria-label="Новый итог">
+          <span>Новый итог</span>
+          <strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
+        </span>
       </div>
       <div v-else class="cart-screen__mobile-total" aria-label="Итого заказа">
         <span>Итого</span>
@@ -93,10 +97,18 @@
           ><strong>{{ totalQuantity }}</strong>
         </p>
         <template v-if="needsReconfirmation">
-          <p class="cart-screen__total cart-screen__total--previous">
+          <p
+            class="cart-screen__total cart-screen__total--previous"
+            role="group"
+            aria-label="Предыдущий итог"
+          >
             <span>Предыдущий итог</span><s>{{ formatRubAmount(totalRub) }}</s>
           </p>
-          <p class="cart-screen__total cart-screen__total--changed">
+          <p
+            class="cart-screen__total cart-screen__total--changed"
+            role="group"
+            aria-label="Новый итог"
+          >
             <span>Новый итог</span
             ><strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
           </p>
@@ -367,6 +379,12 @@ function emitCheckout(): void {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--customer-space-4) var(--customer-space-7);
+}
+.cart-screen__mobile-total--changed > [role="group"] {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--customer-space-7);
 }
 .cart-screen__mobile-total:not(.cart-screen__mobile-total--changed) > span {
   color: rgb(255 255 255 / 75%);

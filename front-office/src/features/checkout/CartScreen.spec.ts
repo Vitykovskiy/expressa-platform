@@ -122,9 +122,37 @@ describe("CartScreen", () => {
     });
 
     expect(wrapper.get('[role="status"]').text()).toContain("Итог изменился");
+    const mobileTotals = wrapper.get('[aria-label="Изменение итога заказа"]');
+    const desktopTotals = wrapper.get('[aria-label="Сводка заказа"]');
+
     expect(
-      wrapper.get('[aria-label="Изменение итога заказа"]').text(),
-    ).toContain("Новый итог");
+      wrapper.findAll('[role="group"][aria-label="Предыдущий итог"]'),
+    ).toHaveLength(2);
+    expect(
+      wrapper.findAll('[role="group"][aria-label="Новый итог"]'),
+    ).toHaveLength(2);
+    const mobilePreviousTotal = mobileTotals.get(
+      '[role="group"][aria-label="Предыдущий итог"]',
+    );
+    const mobileNewTotal = mobileTotals.get(
+      '[role="group"][aria-label="Новый итог"]',
+    );
+    expect(mobilePreviousTotal.get("span").text()).toBe("Предыдущий итог");
+    expect(mobilePreviousTotal.get("s").text()).toBe("4 ₽");
+    expect(mobileNewTotal.get("span").text()).toBe("Новый итог");
+    expect(mobileNewTotal.get("strong").text()).toBe("5 ₽");
+    expect(
+      desktopTotals
+        .get('[role="group"][aria-label="Предыдущий итог"]')
+        .get("s")
+        .text(),
+    ).toBe("4 ₽");
+    expect(
+      desktopTotals
+        .get('[role="group"][aria-label="Новый итог"]')
+        .get("strong")
+        .text(),
+    ).toBe("5 ₽");
     await wrapper.findAll(".cart-screen__checkout")[0]!.trigger("click");
     expect(wrapper.emitted("reconfirm")).toHaveLength(1);
     expect(wrapper.emitted("checkout")).toBeUndefined();

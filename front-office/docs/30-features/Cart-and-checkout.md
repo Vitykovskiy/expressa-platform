@@ -21,8 +21,10 @@ sources:
 | Ошибка   | network повторяется; totalChanged предлагает подтверждение; itemUnavailable выделяет позиции; intakeClosed запрещает отправку  | [checkout store](../../src/features/checkout/checkout.store.ts) |
 
 Экран имеет мобильную фиксированную кнопку и desktop summary на 1024px; списки,
-итог и сообщения имеют именованные регионы и status. Переполнение имени позиции
-обрабатывает layout `CartItem`. [Источники: CartScreen](../../src/features/checkout/CartScreen.vue), [CartItem](../../src/features/checkout/CartItem.vue).
+итог и сообщения имеют именованные регионы и status. При изменении итога
+предыдущая и новая суммы в обоих layout — отдельные доступные группы с точными
+названиями и суммами. Переполнение имени позиции обрабатывает layout `CartItem`.
+[Источники: CartScreen](../../src/features/checkout/CartScreen.vue), [CartItem](../../src/features/checkout/CartItem.vue).
 
 `SlotPickerScreen` и `SlotOption` существуют как UI-контракт слотов (loading,
 error, выбранный/disabled), но `/cart` их не подключает и slot не входит в заказ.

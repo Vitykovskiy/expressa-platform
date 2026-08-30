@@ -472,8 +472,7 @@ export class CartPanelComponent {
 
   private async totalValue(summary: Locator, label: string): Promise<string> {
     const total = summary
-      .getByText(label, { exact: true })
-      .locator("..")
+      .getByRole("group", { name: label, exact: true })
       .getByText(/^\d{1,3}(?:\u00a0\d{3})*\u00a0₽$/u, { exact: true });
 
     await expect(total, `Показан итог «${label}» в целых рублях.`).toHaveCount(
