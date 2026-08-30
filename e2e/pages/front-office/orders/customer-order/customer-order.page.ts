@@ -11,7 +11,10 @@ export class CustomerOrderPage {
 
   async open(url: string, orderId: string): Promise<void> {
     await test.step("Открыть заказ customer", async () => {
-      await this.page.goto(`${url}/orders/${orderId}`);
+      const orderUrl = new URL(url);
+
+      orderUrl.pathname = `${orderUrl.pathname.replace(/\/$/u, "")}/orders/${orderId}`;
+      await this.page.goto(orderUrl.toString());
       await this.details.waitReady();
     });
   }

@@ -188,11 +188,9 @@ test("JOURNEY-04: клиент открывает выданный заказ в
   await customerAuth.phoneVerification.confirm();
   await orderHistory.open();
   await orderHistory.history.refresh();
+  const historyOrder = await orderHistory.history.readOrder(snapshot);
   await orderHistory.history.openOrder(snapshot);
-  const [historyOrder, issuedOrder] = await Promise.all([
-    orderHistory.history.readOrder(snapshot),
-    customerOrder.details.readSnapshot(),
-  ]);
+  const issuedOrder = await customerOrder.details.readSnapshot();
 
   await test.step("Результат: история показывает выданный заказ с датой и итогом.", async () => {
     expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(

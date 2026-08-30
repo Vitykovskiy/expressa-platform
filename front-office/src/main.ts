@@ -25,7 +25,5 @@ installPlugins(app);
 app.use(router);
 app.provide(apiClientKey, apiClient);
 
-await router.isReady();
-
 app.mount("#app");
 registerPwa();

@@ -243,12 +243,10 @@ test("JOURNEY-05: публикация, заказ, выдача и истори
   await customerAuth.phoneVerification.confirm();
   await orderHistory.open();
   await orderHistory.history.refresh();
+  const historyOrder = await orderHistory.history.readOrder(snapshot);
   await orderHistory.history.openOrder(snapshot);
   await test.step("Результат: история показывает неизменяемый выданный заказ.", async () => {
-    const [historyOrder, issuedOrder] = await Promise.all([
-      orderHistory.history.readOrder(snapshot),
-      customerOrder.details.readSnapshot(),
-    ]);
+    const issuedOrder = await customerOrder.details.readSnapshot();
 
     expect(historyOrder.number, "Номер заказа сохранён в истории.").toBe(
       snapshot.number,

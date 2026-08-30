@@ -66,7 +66,7 @@ test("CHECKOUT-07: customer не получает второй заказ при
       "Страница показывает идентификатор заказа.",
     ).toMatch(/^[0-9a-f-]{36}$/u);
     expect(createdOrder.number, "Страница показывает номер заказа.").toMatch(
-      /^\d+$/u,
+      /^\d{8}-\d{3}$/u,
     );
     expect(createdOrder.status, "Заказ находится на стадии «Оформлен».").toBe(
       OrderStatus.CREATED,

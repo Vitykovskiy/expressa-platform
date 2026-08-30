@@ -63,7 +63,7 @@ test("CHECKOUT-01: авторизованный customer оформляет за
     const order = await customerOrder.details.readSnapshot();
 
     expect(order.number, "Заказ имеет человекочитаемый номер.").toMatch(
-      /^\d+$/u,
+      /^\d{8}-\d{3}$/u,
     );
     expect(order.status, "Заказ находится на стадии «Оформлен».").toBe(
       OrderStatus.CREATED,

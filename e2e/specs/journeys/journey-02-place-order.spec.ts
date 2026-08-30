@@ -182,6 +182,6 @@ test("JOURNEY-02: клиент оформляет заказ через одно
     expect(snapshot.quantity, "Количество товара сохранено.").toContain(
       String(data.productQuantity),
     );
-    expect(snapshot.total, "Итог заказа сохранён.").toContain("3,98");
+    expect(snapshot.total, "Итог заказа сохранён.").toBe("398 ₽");
   });
 });
