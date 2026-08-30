@@ -453,7 +453,7 @@ export class CartPanelComponent {
 
   private updatedTotalConfirmation(): Locator {
     return this.page.getByRole("button", {
-      name: /^Подтвердить новый итог(?: · \d{1,3}(?:\u00a0\d{3})*\u00a0₽)?$/u,
+      name: /^Подтвердить новый итог(?: · \d{1,3}(?: \d{3})* ₽)?$/u,
     });
   }
 
