@@ -11,9 +11,9 @@
           <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
         </ui-icon-btn>
         <ui-icon-btn
-          v-if="props.showBack"
+          v-if="props.showBack || props.activeDestination === 'cart'"
           type="button"
-          aria-label="В меню"
+          aria-label="Меню"
           @click="emit('navigate', 'menu')"
         >
           <House aria-hidden="true" :size="17" :stroke-width="2.5" />

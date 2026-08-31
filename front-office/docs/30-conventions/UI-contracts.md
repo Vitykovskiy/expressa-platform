@@ -20,7 +20,7 @@ sources:
 | Phone/OTP поля          | оба принимают `modelValue`, `label`, `loading`, `disabled`, `readonly` и испускают только `update:modelValue`; loading отключает поле, phone задаёт tel/inputmode/auto-complete, OTP оставляет цифры и максимум шесть | [PhoneInput](../../src/shared/ui/customer/phone-input/UiPhoneInput.vue), [OtpInput](../../src/shared/ui/customer/otp-input/UiOtpInput.vue) |
 | Dialog/progress/message | dialog открывается/закрывается событием, progress и field message показывают состояние вызывающего                                                                                                                    | [Dialog](../../src/shared/ui/customer/dialog/UiDialog.vue), [Progress](../../src/shared/ui/customer/progress/UiProgress.vue)               |
 
-`CustomerShell`, `AuthGatePrompt`, `UiPhoneInput`, `UiOtpInput`, `UiSurfaceCard`,
+`AuthGatePrompt`, `UiPhoneInput`, `UiOtpInput`, `UiSurfaceCard`,
 `UiToggle` и `UiDialog` не имеют runtime consumer: это story-only contracts,
 не активный пользовательский путь. Их props описывают layout, confirm, model
 value, перенос текста и disabled/model state; AuthForm использует

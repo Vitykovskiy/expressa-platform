@@ -2,8 +2,30 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import ShellNavigation from "./ShellNavigation.vue";
+import type { ShellNavigationProps } from "./ShellNavigation.types";
 
 describe("ShellNavigation", () => {
+  it("открывает меню из корзины без кнопки назад", async () => {
+    const wrapper = mount(ShellNavigation, {
+      props: createProps({ activeDestination: "cart" }),
+    });
+
+    expect(wrapper.find('[aria-label="Меню"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Назад"]').exists()).toBe(false);
+
+    await wrapper.get('[aria-label="Меню"]').trigger("click");
+
+    expect(wrapper.emitted("navigate")).toEqual([["menu"]]);
+  });
+
+  it("не показывает кнопку меню вне корзины без возврата", () => {
+    const wrapper = mount(ShellNavigation, {
+      props: createProps({ activeDestination: "orders" }),
+    });
+
+    expect(wrapper.find('[aria-label="Меню"]').exists()).toBe(false);
+  });
+
   it("называет мобильную кнопку аккаунтом и историей, не меняя выход", async () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ isAuthenticated: true }),
@@ -29,7 +51,7 @@ describe("ShellNavigation", () => {
   });
 });
 
-function createProps(overrides: Partial<{ isAuthenticated: boolean }> = {}) {
+function createProps(overrides: Partial<ShellNavigationProps> = {}) {
   return {
     activeDestination: "menu" as const,
     accountLabel: "+79991234567",
