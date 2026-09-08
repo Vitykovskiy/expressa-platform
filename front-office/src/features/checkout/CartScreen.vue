@@ -152,6 +152,7 @@ import { ShoppingCart } from "lucide-vue-next";
 import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import CartItem from "./CartItem.vue";
+import { checkoutMessages, checkoutStatuses } from "./checkout.store.constants";
 import type { CartScreenEmits, CartScreenProps } from "./CartScreen.types";
 
 const { acceptsNewOrders = true, ...props } = defineProps<CartScreenProps>();
@@ -225,6 +226,18 @@ const noticeClass = computed(() => ({
     !acceptsNewOrders ||
     !needsReconfirmation.value ||
     unavailableItemIdSet.value.size > 0,
+  "cart-screen__notice--lost-response":
+    props.checkoutState === checkoutStatuses.error &&
+    props.errorMessage === checkoutMessages.retryFailed,
+  "cart-screen__notice--generic-error":
+    props.checkoutState === checkoutStatuses.error &&
+    props.errorMessage === checkoutMessages.orderFailed,
+  "cart-screen__notice--disabled-explanation":
+    (!acceptsNewOrders &&
+      noticeMessage.value === checkoutMessages.intakeClosed) ||
+    (unavailableItemIdSet.value.size > 0 &&
+      noticeMessage.value === "Удалите недоступные позиции, чтобы продолжить."),
+  "cart-screen__notice--reconfirmation": needsReconfirmation.value,
 }));
 const checkoutLabel = computed(() => {
   if (isSubmitting.value) return "Оформляем заказ";
@@ -393,6 +406,11 @@ function emitCheckout(): void {
   color: var(--customer-color-text-muted-on-brand);
   font-weight: var(--customer-font-weight-bold);
 }
+.cart-screen__mobile-total--changed [role="group"] > span,
+.cart-screen__mobile-total--changed s,
+.cart-screen__mobile-total--changed strong {
+  color: var(--customer-text);
+}
 .cart-screen__notice {
   display: grid;
   gap: var(--customer-space-3);
@@ -407,6 +425,26 @@ function emitCheckout(): void {
 }
 .cart-screen__notice span {
   color: var(--customer-color-text-muted-on-surface);
+}
+.cart-screen__notice--lost-response span {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-regular);
+}
+.cart-screen__notice--generic-error span {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-regular);
+}
+.cart-screen__notice--disabled-explanation span {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-regular);
+}
+.cart-screen__notice--reconfirmation span {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-regular);
 }
 .cart-screen__mobile-total strong {
   font-size: var(--customer-font-size-4xl);
@@ -437,6 +475,11 @@ function emitCheckout(): void {
 }
 .cart-screen__total--previous s {
   font-weight: var(--customer-font-weight-bold);
+}
+.cart-screen__total--previous,
+.cart-screen__total--previous s,
+.cart-screen__total--changed span {
+  color: var(--customer-text-on-surface);
 }
 .cart-screen__total--changed {
   margin-top: var(--customer-space-5);

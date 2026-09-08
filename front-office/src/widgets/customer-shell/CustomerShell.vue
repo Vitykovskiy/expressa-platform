@@ -6,6 +6,7 @@
       :cart-count="props.cartCount"
       :categories="props.categories"
       :is-authenticated="props.isAuthenticated"
+      :is-logout-pending="props.isLogoutPending"
       :selected-category-id="props.selectedCategoryId"
       :show-back="props.showBack"
       @back="emit('back')"

@@ -5,6 +5,7 @@
     stacked
     variant="text"
     :disabled="!props.product.isAvailable"
+    :aria-describedby="unavailabilityStatusId"
     @click="emit('select', props.product.id)"
     ><span class="product-card__info"
       ><span class="product-card__name">{{ props.product.name }}</span
@@ -21,6 +22,12 @@
       ><span v-else class="product-card__price">{{
         formatRubles(props.product.price)
       }}</span></span
+    ><span
+      v-if="!props.product.isAvailable"
+      :id="unavailabilityStatusId"
+      class="product-card__availability"
+      role="status"
+      >{{ PRODUCT_CARD_UNAVAILABLE_STATUS }}</span
     ></ui-btn
   >
 </template>
@@ -29,11 +36,17 @@
 import { computed } from "vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import { formatRubles } from "@/entities/customer/model/money";
+import { PRODUCT_CARD_UNAVAILABLE_STATUS } from "./ProductCard.constants";
 import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();
 const productKind = computed(() =>
   props.product.type === "DRINK" ? "Напиток" : "Еда и другое",
+);
+const unavailabilityStatusId = computed(() =>
+  props.product.isAvailable
+    ? undefined
+    : `product-card-${props.product.id}-availability`,
 );
 </script>
 <style scoped lang="scss">
@@ -49,6 +62,9 @@ const productKind = computed(() =>
   border: 0;
   border-radius: var(--customer-radius);
   box-shadow: var(--customer-shadow-card-raised);
+}
+.product-card:disabled {
+  --customer-state-disabled-opacity: 1;
 }
 .product-card__name,
 .product-card__type {
@@ -78,6 +94,14 @@ const productKind = computed(() =>
   gap: var(--customer-space-4);
   justify-content: flex-start;
   width: 100%;
+}
+.product-card__availability {
+  display: block;
+  margin-top: var(--customer-space-5);
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+  line-height: 1.5;
 }
 .product-card__price {
   padding: var(--customer-space-3) var(--customer-space-7);

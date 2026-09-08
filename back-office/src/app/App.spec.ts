@@ -10,6 +10,7 @@ import { createBackOfficeRouter } from "./router";
 import { routePaths } from "./router.constants";
 import { setSessionStoreDependencies } from "./session.store.dependencies";
 import { useSessionStore } from "./session.store";
+import { apiClientKey, createApiClient } from "../shared/api/client";
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
 
 class ResizeObserverMock {
@@ -33,6 +34,16 @@ const authApi = {
   requestOtp: vi.fn(),
   verifyOtp: vi.fn(),
 };
+
+const queueResponse = [
+  {
+    createdAt: "2030-01-02T10:00:00.000Z",
+    id: "11111111-1111-4111-8111-111111111111",
+    number: "20300102-001",
+    stage: "CREATED",
+    total: 380,
+  },
+];
 
 beforeEach(() => {
   const pinia = createPinia();
@@ -130,6 +141,13 @@ function mountApp(
   return mount(App, {
     global: {
       plugins: [pinia, vuetify, router],
+      provide: {
+        [apiClientKey as symbol]: createApiClient(
+          "/",
+          async () =>
+            new Response(JSON.stringify(queueResponse), { status: 200 }),
+        ),
+      },
     },
   });
 }

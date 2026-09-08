@@ -29,10 +29,19 @@
 
     <AdminButton
       class="order-card__details-button"
+      :disabled="props.detailsLoading"
       variant="secondary"
       @click="emit('open', props.order.id)"
     >
-      {{ props.details === null ? "Открыть детали" : "Скрыть детали" }}
+      {{
+        props.detailsLoading
+          ? "Загрузка деталей…"
+          : props.detailsError !== null
+            ? "Повторить загрузку деталей"
+            : props.details === null
+              ? "Открыть детали"
+              : "Скрыть детали"
+      }}
     </AdminButton>
 
     <div
@@ -42,6 +51,31 @@
     >
       Загрузка деталей…
     </div>
+    <section
+      v-else-if="props.detailsError !== null"
+      class="order-card__details order-card__details-error"
+      :aria-label="`Ошибка загрузки деталей заказа ${props.order.number}`"
+    >
+      <h2>Не удалось загрузить детали заказа</h2>
+      <p>Повторите загрузку деталей.</p>
+      <details class="order-card__diagnostics">
+        <summary>Технические подробности</summary>
+        <dl>
+          <div>
+            <dt>Код</dt>
+            <dd>{{ props.detailsError.code }}</dd>
+          </div>
+          <div>
+            <dt>Сообщение</dt>
+            <dd>{{ props.detailsError.message }}</dd>
+          </div>
+          <div v-if="props.detailsError.requestId">
+            <dt>Номер запроса</dt>
+            <dd>{{ props.detailsError.requestId }}</dd>
+          </div>
+        </dl>
+      </details>
+    </section>
     <section
       v-else-if="props.details !== null"
       class="order-card__details"
@@ -219,7 +253,7 @@ function formatMoney(value: number): string {
   width: 100%;
 }
 .order-card__loading {
-  color: var(--expressa-color-text-muted);
+  color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
 }
 .order-card__details {
@@ -229,6 +263,15 @@ function formatMoney(value: number): string {
   padding-top: var(--expressa-space-sm);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
+}
+.order-card__details-error h2,
+.order-card__details-error p,
+.order-card__diagnostics dl {
+  margin: 0;
+}
+.order-card__diagnostics dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .order-card__customer {
   color: var(--expressa-color-text-primary);

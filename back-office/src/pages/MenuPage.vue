@@ -1,19 +1,35 @@
 <template>
   <PageShell class="menu-page__shell" title="Меню" description="">
     <p
-      v-if="catalogStore.status === 'loading'"
+      v-if="
+        catalogStore.status === 'loading' && modifierPendingMessage === null
+      "
       class="menu-page__state"
       role="status"
     >
       Загружаем меню…
     </p>
     <section
-      v-if="catalogStore.status === 'error'"
+      v-if="catalogStore.status === 'error' && !activeForm"
       class="menu-page__error"
       role="alert"
     >
-      <p>{{ catalogStore.error?.message }}</p>
-      <AdminButton type="button" @click="loadCatalog">Повторить</AdminButton>
+      <p>{{ catalogReadErrorMessage }}</p>
+      <p>Загрузите актуальное меню, чтобы проверить текущее состояние.</p>
+      <details v-if="catalogStore.error" class="menu-page__error-details">
+        <summary>Технические сведения</summary>
+        <p>{{ catalogStore.error.message }}</p>
+        <p v-if="catalogStore.error.requestId">
+          Идентификатор запроса: {{ catalogStore.error.requestId }}
+        </p>
+      </details>
+      <AdminButton
+        class="menu-page__error-recovery"
+        type="button"
+        variant="secondary"
+        @click="loadCatalog"
+        >Загрузить меню</AdminButton
+      >
     </section>
     <template v-if="hasConfirmedCatalog">
       <p v-if="catalogSummary" class="menu-page__desktop-summary">
@@ -41,14 +57,14 @@
             <AdminButton
               :disabled="isBusy"
               type="button"
-              @click="addCategoryOpen = true"
+              @click="openNewCategoryForm"
               >Добавить группу</AdminButton
             >
             <AdminButton
               :disabled="isBusy"
               type="button"
               variant="secondary"
-              @click="addProductOpen = true"
+              @click="openNewProductForm"
               >Добавить товар</AdminButton
             >
           </div>
@@ -204,7 +220,7 @@
                 :disabled="isBusy"
                 type="button"
                 variant="ghost"
-                @click="selectedCategory = category"
+                @click="openCategoryAssignments(category, $event)"
                 >{{ category.name }}</AdminButton
               >
             </section>
@@ -225,7 +241,7 @@
               :category="selectedCategory"
               :disabled="catalogStore.status === 'loading'"
               :groups="modifierGroups"
-              @cancel="selectedCategory = null"
+              @cancel="cancelCategoryAssignments"
               @save="saveAssignments"
             />
           </div>
@@ -236,25 +252,34 @@
       v-model:open="addCategoryOpen"
       :disabled="isBusy"
       :field-errors="categoryFieldErrors"
-      @cancel="addCategoryOpen = false"
+      :save-error="catalogStore.formSaveError"
+      :save-outcome="categoryFormSaveOutcome"
+      @cancel="closeNewCategoryForm"
       @confirm="createCategory"
+      @refresh="refreshCategoryCatalog"
     />
     <EditCategoryDialog
       v-model:open="editCategoryOpen"
       :disabled="isBusy"
       :category="selectedCategory"
       :field-errors="categoryFieldErrors"
+      :save-error="catalogStore.formSaveError"
+      :save-outcome="categoryFormSaveOutcome"
       @archive="archiveCategory"
-      @cancel="selectedCategory = null"
+      @cancel="closeCategoryEditor"
       @save="updateCategory"
+      @refresh="refreshCategoryCatalog"
     />
     <AddProductDialog
       v-model:open="addProductOpen"
       :disabled="isBusy"
       :categories="orderedCategories"
       :field-errors="productFieldErrors"
-      @cancel="addProductOpen = false"
+      :save-error="catalogStore.formSaveError"
+      :save-outcome="productFormSaveOutcome"
+      @cancel="closeNewProductForm"
       @confirm="createProduct"
+      @refresh="refreshProductCatalog"
     />
     <EditProductDialog
       v-model:open="editProductOpen"
@@ -262,24 +287,34 @@
       :categories="orderedCategories"
       :field-errors="productFieldErrors"
       :product="selectedProduct"
-      @cancel="selectedProduct = null"
+      :save-error="catalogStore.formSaveError"
+      :save-outcome="productFormSaveOutcome"
+      @cancel="closeProductEditor"
       @delete="archiveProduct"
       @save="updateProduct"
+      @refresh="refreshProductCatalog"
     />
     <AdminDialog
       :model-value="modifierGroupEditorOpen"
       max-width="800"
+      :persistent="modifierDialogPending"
       @update:model-value="updateModifierGroupEditorOpen"
     >
       <v-card class="menu-page__modifier-dialog">
         <v-card-text class="menu-page__modifier-dialog-content">
           <ModifierGroupEditor
-            :disabled="catalogStore.status === 'loading'"
+            :key="modifierEditorSession"
+            :disabled="modifierDialogPending"
             :field-errors="modifierFieldErrors"
             :group="selectedModifierGroup"
+            :pending-message="modifierPendingMessage"
+            :operation-kind="modifierOperationKind"
+            :save-error="catalogStore.formSaveError"
+            :save-outcome="modifierFormSaveOutcome"
             @archive="archiveModifierGroup"
             @cancel="closeModifierGroupEditor"
             @save="saveModifierGroup"
+            @refresh="refreshModifierGroupCatalog"
           />
         </v-card-text>
       </v-card>
@@ -288,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, watch } from "vue";
+import { computed, nextTick, onMounted, shallowRef, watch } from "vue";
 import { ChevronDown, ChevronRight, Ellipsis, Pencil } from "lucide-vue-next";
 
 import { useSessionStore } from "../app/session.store";
@@ -320,14 +355,95 @@ const addProductOpen = shallowRef(false);
 const editCategoryOpen = shallowRef(false);
 const editProductOpen = shallowRef(false);
 const modifierGroupEditorOpen = shallowRef(false);
+const modifierEditorSession = shallowRef(0);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const expandedModifierGroupIds = shallowRef<ReadonlySet<string>>(new Set());
 const managementOpen = shallowRef(false);
 const selectedCategory = shallowRef<Category | null>(null);
+const assignmentReturnFocusTarget = shallowRef<HTMLButtonElement | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
 const selectedProduct = shallowRef<Product | null>(null);
+const productRecoveryState = shallowRef<
+  "idle" | "checking" | "retry" | "checked"
+>("idle");
+const categoryRecoveryState = shallowRef<
+  "idle" | "checking" | "retry" | "checked"
+>("idle");
+const modifierRecoveryState = shallowRef<
+  "idle" | "checking" | "retry" | "checked"
+>("idle");
+const modifierOperationKind = shallowRef<"save" | "archive" | null>(null);
+const modifierSaveInFlight = shallowRef(false);
+const acknowledgedForm = shallowRef<
+  "category" | "product" | "modifier" | "modifier-archive" | null
+>(null);
 const hasConfirmedCatalog = shallowRef(catalogStore.status === "ready");
 const isBusy = computed(() => catalogStore.status === "loading");
+const activeForm = computed(
+  () =>
+    addCategoryOpen.value ||
+    editCategoryOpen.value ||
+    addProductOpen.value ||
+    editProductOpen.value ||
+    modifierGroupEditorOpen.value,
+);
+const categoryFormSaveOutcome = computed(() =>
+  categoryRecoveryState.value === "checked"
+    ? "saved"
+    : categoryRecoveryState.value === "checking" ||
+        categoryRecoveryState.value === "retry"
+      ? "unconfirmed"
+      : catalogStore.formSaveOutcome,
+);
+const productFormSaveOutcome = computed(() =>
+  productRecoveryState.value === "checked"
+    ? "saved"
+    : productRecoveryState.value === "checking" ||
+        productRecoveryState.value === "retry"
+      ? "unconfirmed"
+      : catalogStore.formSaveOutcome,
+);
+const modifierDialogPending = computed(
+  () =>
+    catalogStore.status === "loading" ||
+    modifierRecoveryState.value === "checking",
+);
+const modifierFormSaveOutcome = computed(() =>
+  modifierRecoveryState.value === "checking" ||
+  modifierRecoveryState.value === "retry"
+    ? "unconfirmed"
+    : modifierRecoveryState.value === "checked"
+      ? "checked"
+      : catalogStore.formSaveOutcome,
+);
+const modifierPendingMessage = computed<string | null>(() => {
+  if (modifierRecoveryState.value === "checking")
+    return "Проверяем актуальное меню…";
+  if (!modifierSaveInFlight.value) return null;
+  if (catalogStore.formSaveOutcome === "saved")
+    return modifierOperationKind.value === "archive"
+      ? "Группа архивирована. Обновляем меню…"
+      : "Группа сохранена. Обновляем меню…";
+  return modifierOperationKind.value === "archive"
+    ? "Архивируем группу…"
+    : "Сохраняем группу…";
+});
+const catalogReadErrorMessage = computed(() =>
+  catalogStore.formSaveOutcome === "saved" &&
+  acknowledgedForm.value === "category"
+    ? "Категория сохранена, но меню не удалось обновить."
+    : catalogStore.formSaveOutcome === "saved" &&
+        acknowledgedForm.value === "modifier-archive"
+      ? "Группа добавок архивирована, но меню не удалось обновить."
+      : catalogStore.formSaveOutcome === "saved" &&
+          acknowledgedForm.value === "modifier"
+        ? "Группа добавок сохранена, но меню не удалось обновить."
+        : catalogStore.formSaveOutcome === "saved"
+          ? "Товар сохранён, но меню не удалось обновить."
+          : hasConfirmedCatalog.value
+            ? "Не удалось завершить операцию с меню."
+            : "Не удалось загрузить меню.",
+);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 
 const orderedCategories = computed(() =>
@@ -423,21 +539,81 @@ function modifierOptionCountLabel(count: number): string {
 }
 
 function openCategoryEditor(category: Category): void {
+  catalogStore.resetFormSaveOutcome();
+  acknowledgedForm.value = null;
+  categoryRecoveryState.value = "idle";
   selectedCategory.value = category;
   editCategoryOpen.value = true;
 }
 
+function openCategoryAssignments(category: Category, event: MouseEvent): void {
+  const opener = event.currentTarget;
+  assignmentReturnFocusTarget.value =
+    opener instanceof HTMLButtonElement ? opener : null;
+  selectedCategory.value = category;
+}
+
+async function cancelCategoryAssignments(): Promise<void> {
+  if (catalogStore.status === "loading") return;
+  const focusTarget = assignmentReturnFocusTarget.value;
+  selectedCategory.value = null;
+  assignmentReturnFocusTarget.value = null;
+  await nextTick();
+  if (focusTarget?.isConnected && !focusTarget.disabled) focusTarget.focus();
+}
+
 function openProductEditor(product: Product): void {
+  catalogStore.resetFormSaveOutcome();
+  acknowledgedForm.value = null;
+  productRecoveryState.value = "idle";
   selectedProduct.value = product;
   editProductOpen.value = true;
 }
 
+function openNewProductForm(): void {
+  catalogStore.resetFormSaveOutcome();
+  acknowledgedForm.value = null;
+  productRecoveryState.value = "idle";
+  addProductOpen.value = true;
+}
+
+function closeNewProductForm(preserveOutcome = false): void {
+  if (!preserveOutcome) {
+    catalogStore.resetFormSaveOutcome();
+    acknowledgedForm.value = null;
+  }
+  productRecoveryState.value = "idle";
+  addProductOpen.value = false;
+}
+
+function closeProductEditor(preserveOutcome = false): void {
+  if (!preserveOutcome) {
+    catalogStore.resetFormSaveOutcome();
+    acknowledgedForm.value = null;
+  }
+  productRecoveryState.value = "idle";
+  editProductOpen.value = false;
+  selectedProduct.value = null;
+}
+
 function openModifierGroupEditor(group: ModifierGroup | null): void {
+  catalogStore.resetFormSaveOutcome();
+  acknowledgedForm.value = null;
+  modifierRecoveryState.value = "idle";
+  modifierOperationKind.value = null;
+  modifierEditorSession.value += 1;
   selectedModifierGroup.value = group;
   modifierGroupEditorOpen.value = true;
 }
 
-function closeModifierGroupEditor(): void {
+function closeModifierGroupEditor(preserveOutcome = false): void {
+  if (modifierDialogPending.value) return;
+  if (!preserveOutcome) {
+    catalogStore.resetFormSaveOutcome();
+    acknowledgedForm.value = null;
+  }
+  modifierRecoveryState.value = "idle";
+  if (!preserveOutcome) modifierOperationKind.value = null;
   selectedModifierGroup.value = null;
   modifierGroupEditorOpen.value = false;
 }
@@ -448,12 +624,21 @@ function updateModifierGroupEditorOpen(isOpen: boolean): void {
 
 async function createCategory(data: CategoryFormData): Promise<void> {
   const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
+  if (
+    authorizationValue === null ||
+    catalogStore.status === "loading" ||
+    categoryRecoveryState.value !== "idle" ||
+    catalogStore.formSaveOutcome !== "idle"
+  )
+    return;
   await catalogStore.createCategory(authorizationValue, {
     ...data,
     sortOrder: nextCategorySortOrder(),
   });
-  if (catalogStore.lastCommandSucceeded) addCategoryOpen.value = false;
+  if (catalogStore.lastCommandSucceeded) {
+    acknowledgedForm.value = "category";
+    closeNewCategoryForm(true);
+  }
 }
 
 async function updateCategory(data: CategoryFormData): Promise<void> {
@@ -462,14 +647,60 @@ async function updateCategory(data: CategoryFormData): Promise<void> {
   if (
     authorizationValue === null ||
     category === null ||
-    catalogStore.status === "loading"
+    catalogStore.status === "loading" ||
+    categoryRecoveryState.value !== "idle" ||
+    catalogStore.formSaveOutcome !== "idle"
   )
     return;
   await catalogStore.updateCategory(authorizationValue, category.id, {
     ...data,
     sortOrder: category.sortOrder,
   });
-  if (catalogStore.lastCommandSucceeded) editCategoryOpen.value = false;
+  if (catalogStore.lastCommandSucceeded) {
+    acknowledgedForm.value = "category";
+    closeCategoryEditor(true);
+  }
+}
+
+function openNewCategoryForm(): void {
+  catalogStore.resetFormSaveOutcome();
+  acknowledgedForm.value = null;
+  categoryRecoveryState.value = "idle";
+  addCategoryOpen.value = true;
+}
+
+function closeNewCategoryForm(preserveOutcome = false): void {
+  if (!preserveOutcome) {
+    catalogStore.resetFormSaveOutcome();
+    acknowledgedForm.value = null;
+  }
+  categoryRecoveryState.value = "idle";
+  addCategoryOpen.value = false;
+}
+
+function closeCategoryEditor(preserveOutcome = false): void {
+  if (!preserveOutcome) {
+    catalogStore.resetFormSaveOutcome();
+    acknowledgedForm.value = null;
+  }
+  categoryRecoveryState.value = "idle";
+  editCategoryOpen.value = false;
+  selectedCategory.value = null;
+}
+
+async function refreshCategoryCatalog(): Promise<void> {
+  const authorizationValue = accessToken();
+  if (
+    authorizationValue === null ||
+    catalogStore.status === "loading" ||
+    categoryRecoveryState.value === "checking" ||
+    categoryRecoveryState.value === "checked"
+  )
+    return;
+  categoryRecoveryState.value = "checking";
+  await catalogStore.refresh(authorizationValue);
+  categoryRecoveryState.value =
+    catalogStore.status === "ready" ? "checked" : "retry";
 }
 
 async function archiveCategory(categoryId: string): Promise<void> {
@@ -481,12 +712,35 @@ async function archiveCategory(categoryId: string): Promise<void> {
 
 async function createProduct(data: ProductFormData): Promise<void> {
   const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
+  if (
+    authorizationValue === null ||
+    catalogStore.status === "loading" ||
+    productRecoveryState.value === "checked"
+  )
+    return;
   await catalogStore.createProduct(authorizationValue, {
     ...data,
     sortOrder: nextProductSortOrder(data.categoryId),
   });
-  if (catalogStore.lastCommandSucceeded) addProductOpen.value = false;
+  if (catalogStore.lastCommandSucceeded) {
+    acknowledgedForm.value = "product";
+    closeNewProductForm(true);
+  }
+}
+
+async function refreshProductCatalog(): Promise<void> {
+  const authorizationValue = accessToken();
+  if (
+    authorizationValue === null ||
+    catalogStore.status === "loading" ||
+    productRecoveryState.value === "checking" ||
+    productRecoveryState.value === "checked"
+  )
+    return;
+  productRecoveryState.value = "checking";
+  await catalogStore.refresh(authorizationValue);
+  productRecoveryState.value =
+    catalogStore.status === "ready" ? "checked" : "retry";
 }
 
 async function updateProduct(data: ProductFormData): Promise<void> {
@@ -495,7 +749,8 @@ async function updateProduct(data: ProductFormData): Promise<void> {
   if (
     authorizationValue === null ||
     product === null ||
-    catalogStore.status === "loading"
+    catalogStore.status === "loading" ||
+    productRecoveryState.value === "checked"
   )
     return;
   await catalogStore.updateProduct(authorizationValue, product.id, {
@@ -505,7 +760,10 @@ async function updateProduct(data: ProductFormData): Promise<void> {
         ? product.sortOrder
         : nextProductSortOrder(data.categoryId),
   });
-  if (catalogStore.lastCommandSucceeded) editProductOpen.value = false;
+  if (catalogStore.lastCommandSucceeded) {
+    acknowledgedForm.value = "product";
+    closeProductEditor(true);
+  }
 }
 
 async function archiveProduct(): Promise<void> {
@@ -565,9 +823,40 @@ async function moveProduct(product: Product, offset: -1 | 1): Promise<void> {
 
 async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {
   const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
-  await catalogStore.saveModifierGroup(authorizationValue, data);
-  if (catalogStore.lastCommandSucceeded) closeModifierGroupEditor();
+  if (
+    authorizationValue === null ||
+    modifierDialogPending.value ||
+    modifierRecoveryState.value !== "idle" ||
+    (catalogStore.formSaveOutcome !== "idle" &&
+      (catalogStore.formSaveOutcome !== "rejected" ||
+        modifierOperationKind.value === "archive"))
+  )
+    return;
+  modifierSaveInFlight.value = true;
+  modifierOperationKind.value = "save";
+  try {
+    await catalogStore.saveModifierGroup(authorizationValue, data);
+    if (catalogStore.lastCommandSucceeded) {
+      acknowledgedForm.value = "modifier";
+      closeModifierGroupEditor(true);
+    }
+  } finally {
+    modifierSaveInFlight.value = false;
+  }
+}
+
+async function refreshModifierGroupCatalog(): Promise<void> {
+  const authorizationValue = accessToken();
+  if (
+    authorizationValue === null ||
+    modifierDialogPending.value ||
+    modifierRecoveryState.value === "checked"
+  )
+    return;
+  modifierRecoveryState.value = "checking";
+  await catalogStore.refresh(authorizationValue);
+  modifierRecoveryState.value =
+    catalogStore.status === "ready" ? "checked" : "retry";
 }
 
 async function saveAssignments(
@@ -594,9 +883,23 @@ async function saveAssignments(
 
 async function archiveModifierGroup(groupId: string): Promise<void> {
   const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
-  await catalogStore.archiveModifierGroup(authorizationValue, groupId);
-  if (catalogStore.lastCommandSucceeded) closeModifierGroupEditor();
+  if (
+    authorizationValue === null ||
+    modifierDialogPending.value ||
+    modifierFormSaveOutcome.value !== "idle"
+  )
+    return;
+  modifierOperationKind.value = "archive";
+  modifierSaveInFlight.value = true;
+  try {
+    await catalogStore.archiveModifierGroup(authorizationValue, groupId);
+    if (catalogStore.lastCommandSucceeded) {
+      acknowledgedForm.value = "modifier-archive";
+      closeModifierGroupEditor(true);
+    }
+  } finally {
+    modifierSaveInFlight.value = false;
+  }
 }
 
 function bySortOrder(
@@ -806,6 +1109,7 @@ function bySortOrder(
 
 .menu-page__editor-section,
 .menu-page__assignments {
+  min-inline-size: 0;
   padding: var(--expressa-space-md);
   background: var(--expressa-color-surface);
   border: var(--expressa-border-width-default) solid
@@ -818,6 +1122,14 @@ function bySortOrder(
   width: 100%;
   justify-content: flex-start;
   min-height: var(--expressa-size-control-min-height);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.menu-page__editor-section h3,
+.menu-page__assignments h3 {
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .menu-page__state {
@@ -827,10 +1139,22 @@ function bySortOrder(
 
 .menu-page__error {
   color: var(--expressa-color-status-error);
+  margin-block-end: var(--expressa-space-md);
 }
 
 .menu-page__error p {
   margin: 0;
+}
+
+.menu-page__error-details {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .menu-page__error-recovery {
+    justify-self: start;
+    width: fit-content;
+  }
 }
 
 .menu-page__modifier-dialog {
@@ -889,6 +1213,12 @@ function bySortOrder(
 
   .menu-page__actions > .admin-button:last-child {
     flex: 1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .menu-page__catalog-tools {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

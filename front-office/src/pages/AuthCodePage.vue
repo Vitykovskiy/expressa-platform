@@ -1,14 +1,17 @@
 <template>
   <AuthScreen
     :state="authState"
+    :otp="otp"
+    :resend-remaining-seconds="resendRemainingSeconds"
     @back-to-phone="backToPhone"
     @send-code="resendOtp"
+    @update-otp="otp = $event"
     @verify-otp="verifyOtp"
   />
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
@@ -22,6 +25,24 @@ const router = useRouter();
 const sessionStore = useSessionStore();
 const errorMessage = shallowRef("");
 const isLoading = shallowRef(false);
+const otp = shallowRef("");
+const now = shallowRef(getSessionDependencies().now());
+const resendTimer = setInterval(
+  () => (now.value = getSessionDependencies().now()),
+  1000,
+);
+const resendRemainingSeconds = computed(() => {
+  const metadata = sessionStore.otpRequestMetadata;
+  const requestedAt = sessionStore.otpRequestedAt;
+  if (metadata === null || requestedAt === null) return 0;
+  return Math.max(
+    0,
+    Math.ceil(
+      (requestedAt + metadata.retryAfterSeconds * 1000 - now.value) / 1000,
+    ),
+  );
+});
+onBeforeUnmount(() => clearInterval(resendTimer));
 
 if (!hasActiveOtpRequest()) {
   void router.replace({
@@ -41,7 +62,7 @@ const authState = computed<AuthCodePageState>(() => ({
   verified: false,
 }));
 
-async function verifyOtp(code: string): Promise<void> {
+async function verifyOtp(code: string = otp.value): Promise<void> {
   if (isLoading.value || sessionStore.pendingPhone === null) return;
 
   isLoading.value = true;
@@ -59,13 +80,20 @@ async function verifyOtp(code: string): Promise<void> {
 }
 
 async function resendOtp(): Promise<void> {
-  if (isLoading.value || sessionStore.pendingPhone === null) return;
+  if (
+    isLoading.value ||
+    sessionStore.pendingPhone === null ||
+    resendRemainingSeconds.value > 0
+  )
+    return;
 
   isLoading.value = true;
   errorMessage.value = "";
 
   try {
     await sessionStore.requestOtp(sessionStore.pendingPhone);
+    otp.value = "";
+    now.value = getSessionDependencies().now();
   } catch {
     errorMessage.value = sessionStore.errorMessage ?? "";
   } finally {

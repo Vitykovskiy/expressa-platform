@@ -1,6 +1,8 @@
 <template>
   <AuthScreen
     :state="authState"
+    otp=""
+    :resend-remaining-seconds="0"
     @send-code="requestOtp"
     @update-phone="updatePhone"
   />

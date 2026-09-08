@@ -12,6 +12,8 @@ import {
 import { getSessionDependencies } from "./session.store.dependencies";
 import type { OtpRequestMetadata, SessionState } from "./session.store.types";
 
+const logoutPromises = new WeakMap<object, Promise<void>>();
+
 export const useSessionStore = defineStore("session", {
   state: (): SessionState => ({ ...initialSessionState }),
   actions: {
@@ -41,7 +43,7 @@ export const useSessionStore = defineStore("session", {
 
         return metadata;
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        this.errorMessage = getErrorMessage("requestOtp", error);
         throw error;
       }
     },
@@ -56,19 +58,31 @@ export const useSessionStore = defineStore("session", {
         await this.authenticate(accessSession.accessToken);
         this.clearOtpRequest();
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        this.errorMessage = getErrorMessage("verifyOtp", error);
         throw error;
       }
     },
     async logout(): Promise<void> {
-      this.errorMessage = null;
+      const activeLogout = logoutPromises.get(this);
+      if (activeLogout) return activeLogout;
 
+      this.errorMessage = null;
+      const logout = this.completeLogout();
+      logoutPromises.set(this, logout);
+
+      try {
+        await logout;
+      } finally {
+        logoutPromises.delete(this);
+      }
+    },
+    async completeLogout(): Promise<void> {
       try {
         await getSessionDependencies().authApi.logout();
         this.clear();
         useCartStore().clear();
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        this.errorMessage = getErrorMessage(null, error);
         throw error;
       }
     },
@@ -92,7 +106,7 @@ export const useSessionStore = defineStore("session", {
           return;
         }
 
-        this.errorMessage = getErrorMessage(error);
+        this.errorMessage = getErrorMessage("restore", error);
       }
     },
     async authenticate(accessToken: string): Promise<void> {
@@ -122,7 +136,10 @@ function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
 }
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(
+  operation: "requestOtp" | "restore" | "verifyOtp" | null,
+  error: unknown,
+): string {
   if (
     error instanceof ApiError &&
     error.code === sessionErrorCodes.invalidOtpCode
@@ -135,6 +152,17 @@ function getErrorMessage(error: unknown): string {
     error.code === sessionErrorCodes.otpRateLimited
   ) {
     return sessionMessages.otpRateLimited;
+  }
+
+  if (
+    error instanceof ApiError &&
+    error.code === sessionErrorCodes.expiredOtpCode
+  ) {
+    return sessionMessages.expiredOtpCode;
+  }
+
+  if (error instanceof ApiError && operation !== null) {
+    return sessionMessages[operation];
   }
 
   return error instanceof Error

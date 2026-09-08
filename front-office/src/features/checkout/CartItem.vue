@@ -241,7 +241,7 @@ const addonRows = computed(() => {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--customer-border-subtle-on-surface);
   border-radius: var(--customer-radius-sm);
 }

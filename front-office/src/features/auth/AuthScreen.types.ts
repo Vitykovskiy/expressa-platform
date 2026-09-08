@@ -19,6 +19,8 @@ export type AuthScreenPresentation = Record<
 
 export interface AuthScreenProps {
   state: AuthState;
+  otp: string;
+  resendRemainingSeconds: number;
 }
 
 export type AuthScreenEmits = {

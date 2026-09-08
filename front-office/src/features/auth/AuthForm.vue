@@ -25,7 +25,11 @@
         <Phone class="auth-form__field-icon" aria-hidden="true" />
       </template>
     </ui-text-field>
-    <UiFieldMessage :message="props.state.errorMessage" tone="error" />
+    <UiFieldMessage
+      class="auth-form__error-message"
+      :message="props.state.errorMessage"
+      tone="error"
+    />
     <ui-btn
       block
       class="auth-form__primary-button"
@@ -37,8 +41,8 @@
       Отправить код
     </ui-btn>
     <p class="auth-form__info">
-      Корзина, выбор времени и история заказов доступны только после
-      подтверждения номера.
+      Подтвердите номер телефона, чтобы оформить заказ и посмотреть историю
+      заказов.
     </p>
   </form>
 
@@ -61,10 +65,14 @@
       variant="outlined"
       class="auth-form__field"
       :disabled="isLoading"
-      :model-value="otp"
+      :model-value="props.otp"
       @update:model-value="updateOtp"
     />
-    <UiFieldMessage :message="props.state.errorMessage" tone="error" />
+    <UiFieldMessage
+      class="auth-form__error-message"
+      :message="props.state.errorMessage"
+      tone="error"
+    />
     <ui-btn
       block
       class="auth-form__primary-button"
@@ -77,12 +85,19 @@
     </ui-btn>
     <ui-btn
       class="auth-form__ghost-button"
-      :disabled="isLoading"
+      :disabled="isLoading || props.resendRemainingSeconds > 0"
       variant="text"
       @click="resendCode"
     >
       Отправить код ещё раз
     </ui-btn>
+    <p
+      v-if="props.resendRemainingSeconds > 0"
+      aria-live="polite"
+      class="auth-form__cooldown"
+    >
+      Повторная отправка доступна через {{ props.resendRemainingSeconds }} сек.
+    </p>
     <ui-btn
       class="auth-form__ghost-button"
       :disabled="isLoading"
@@ -133,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, watch } from "vue";
+import { computed } from "vue";
 import { ArrowLeft, Phone, UserRound } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiFieldMessage from "@/shared/ui/customer/field-message/UiFieldMessage.vue";
@@ -144,31 +159,22 @@ import type { AuthFormEmits, AuthFormProps } from "./AuthForm.types";
 const props = defineProps<AuthFormProps>();
 const emit = defineEmits<AuthFormEmits>();
 
-const otp = shallowRef("");
 const phoneDigits = computed(() => props.state.phone.replace(/\D/g, ""));
 const canSendCode = computed(
   () => phoneDigits.value.length >= authFormLimits.phoneDigits,
 );
 const canVerifyOtp = computed(
-  () => otp.value.length === authFormLimits.otpLength,
+  () => props.otp.length === authFormLimits.otpLength,
 );
 const canSubmitName = computed(() => props.state.name.trim().length >= 2);
 const isLoading = computed(() => props.state.step === "loading");
-
-watch(
-  () => props.state.step,
-  (step) => {
-    if (step === "phone") otp.value = "";
-  },
-);
 
 function updatePhone(phone: string) {
   if (!isLoading.value) emit("updatePhone", formatPhone(phone));
 }
 
 function updateOtp(value: string) {
-  otp.value = value.replace(/\D/g, "");
-  emit("updateOtp", otp.value);
+  emit("updateOtp", value.replace(/\D/g, ""));
 }
 
 function formatPhone(value: string): string {
@@ -198,15 +204,12 @@ function sendCode() {
 }
 
 function resendCode() {
-  if (isLoading.value) return;
-
-  otp.value = "";
-  emit("updateOtp", "");
+  if (isLoading.value || props.resendRemainingSeconds > 0) return;
   emit("sendCode");
 }
 
 function verifyOtp() {
-  if (canVerifyOtp.value && !isLoading.value) emit("verifyOtp", otp.value);
+  if (canVerifyOtp.value && !isLoading.value) emit("verifyOtp", props.otp);
 }
 
 function submitName() {
@@ -248,6 +251,24 @@ function submitName() {
   color: var(--customer-color-white-55);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
+}
+
+.auth-form :deep(.auth-form__error-message.v-alert) {
+  /* Vuetify's tonal error color is unreadable over the auth background. */
+  background: var(--customer-color-blue-700) !important;
+  border: 1px solid var(--customer-danger-pale);
+  color: var(--customer-color-white) !important;
+  font-weight: var(--customer-font-weight-semibold);
+}
+
+.auth-form__cooldown {
+  align-self: center;
+  margin: calc(-1 * var(--customer-space-4)) 0 0;
+  color: var(--customer-color-white);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
+  line-height: var(--customer-line-height-body);
+  text-align: center;
 }
 
 .auth-form__info {

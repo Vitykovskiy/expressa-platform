@@ -31,6 +31,7 @@ export interface ModifierOptionEditorProps {
 
 export interface ModifierOptionEditorEmits {
   "update:modelValue": [value: ModifierOptionDraft];
+  touch: [field: ModifierOptionFormField];
   remove: [];
   moveUp: [];
   moveDown: [];

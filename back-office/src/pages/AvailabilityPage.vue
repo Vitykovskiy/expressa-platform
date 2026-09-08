@@ -12,11 +12,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, shallowRef } from "vue";
+import { inject, onMounted, shallowRef } from "vue";
 
 import { useSessionStore } from "../app/session.store";
 import { AvailabilityApi } from "../shared/api/availability.api";
-import { createApiClient } from "../shared/api/client";
+import { apiClientKey } from "../shared/api/client";
 import type {
   Availability,
   AvailabilityApiError,
@@ -24,11 +24,16 @@ import type {
   AvailabilityUpdate,
 } from "../shared/api/availability.api.types";
 import AvailabilityScreen from "./admin/availability/AvailabilityScreen.vue";
+import type { AvailabilityScreenError } from "./admin/availability/AvailabilityScreen.types";
 
-const availabilityApi = new AvailabilityApi(createApiClient("/"));
+const apiClient = inject(apiClientKey);
+if (apiClient === undefined) {
+  throw new Error("AvailabilityPage requires an ApiClient provider.");
+}
+const availabilityApi = new AvailabilityApi(apiClient);
 const sessionStore = useSessionStore();
 const availability = shallowRef<Availability | null>(null);
-const error = shallowRef<AvailabilityApiError | null>(null);
+const error = shallowRef<AvailabilityScreenError | null>(null);
 const loading = shallowRef(true);
 const saving = shallowRef(false);
 let loadRequest = 0;
@@ -36,6 +41,7 @@ let loadRequest = 0;
 onMounted(() => void loadAvailability());
 
 async function loadAvailability(): Promise<void> {
+  if (saving.value) return;
   const request = ++loadRequest;
   const accessToken = sessionStore.accessToken;
   if (accessToken === null) {
@@ -62,7 +68,8 @@ async function updateAvailability(
 ): Promise<void> {
   const current = availability.value;
   const accessToken = sessionStore.accessToken;
-  if (current === null || accessToken === null || saving.value) return;
+  if (current === null || accessToken === null || loading.value || saving.value)
+    return;
 
   saving.value = true;
   error.value = null;
@@ -87,7 +94,7 @@ async function updateAvailability(
     availability.value = replaceAvailability(current, confirmed);
   } catch (requestError) {
     availability.value = current;
-    error.value = toAvailabilityApiError(requestError);
+    error.value = itemError(item, toAvailabilityApiError(requestError));
   } finally {
     saving.value = false;
   }
@@ -96,7 +103,8 @@ async function updateAvailability(
 async function updateIntake(acceptsNewOrders: boolean): Promise<void> {
   const current = availability.value;
   const accessToken = sessionStore.accessToken;
-  if (current === null || accessToken === null || saving.value) return;
+  if (current === null || accessToken === null || loading.value || saving.value)
+    return;
 
   saving.value = true;
   error.value = null;
@@ -112,7 +120,7 @@ async function updateIntake(acceptsNewOrders: boolean): Promise<void> {
     availability.value = { ...current, intake };
   } catch (requestError) {
     availability.value = current;
-    error.value = toAvailabilityApiError(requestError);
+    error.value = intakeError(toAvailabilityApiError(requestError));
   } finally {
     saving.value = false;
   }
@@ -137,8 +145,31 @@ function replaceAvailability(
 
 function setLoadError(request: number, nextError: AvailabilityApiError): void {
   if (request !== loadRequest) return;
-  availability.value = null;
-  error.value = nextError;
+  error.value = { kind: "read", ...diagnostic(nextError) };
+}
+
+function itemError(
+  item: AvailabilityItem,
+  nextError: AvailabilityApiError,
+): AvailabilityScreenError {
+  return {
+    kind: "item",
+    label: item.label,
+    sublabel: item.sublabel,
+    ...diagnostic(nextError),
+  };
+}
+
+function intakeError(nextError: AvailabilityApiError): AvailabilityScreenError {
+  return { kind: "intake", ...diagnostic(nextError) };
+}
+
+function diagnostic(error: AvailabilityApiError) {
+  return {
+    code: error.code,
+    message: error.message,
+    requestId: error.requestId,
+  };
 }
 
 function unauthorizedError(): AvailabilityApiError {

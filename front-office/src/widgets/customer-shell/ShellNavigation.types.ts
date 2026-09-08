@@ -10,6 +10,7 @@ export interface ShellNavigationProps {
   categories: ShellNavigationCategory[];
   cartCount: number;
   isAuthenticated: boolean;
+  isLogoutPending: boolean;
   accountLabel: string;
   selectedCategoryId?: string;
   showBack: boolean;

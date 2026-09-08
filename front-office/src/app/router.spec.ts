@@ -54,6 +54,20 @@ describe("маршруты front-office", () => {
     );
   });
 
+  it("сохраняет защищённый маршрут на восстанавливаемой ошибке", async () => {
+    const sessionStore = useSessionStore();
+    vi.spyOn(sessionStore, "bootstrap").mockImplementation(async () => {
+      sessionStore.errorMessage =
+        "Не удалось восстановить сессию. Попробуйте ещё раз.";
+    });
+    const testRouter = createTestRouter();
+
+    await testRouter.push("/orders");
+    await testRouter.isReady();
+
+    expect(testRouter.currentRoute.value.path).toBe("/orders");
+  });
+
   it("не открывает ввод кода без активного запроса и отбрасывает внешний returnTo", async () => {
     const testRouter = createTestRouter();
 

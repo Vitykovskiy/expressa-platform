@@ -1,4 +1,5 @@
 import type {
+  OrderApiError,
   OrderDetails,
   OrderListItem,
   OrderStage,
@@ -7,6 +8,7 @@ import type {
 export type OrderCardProps = {
   order: OrderListItem;
   details: OrderDetails | null;
+  detailsError: OrderApiError | null;
   detailsLoading: boolean;
   transitionLoading: boolean;
 };

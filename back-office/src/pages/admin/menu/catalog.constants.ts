@@ -28,6 +28,8 @@ export const initialCatalogStoreState: CatalogStoreState = {
   fieldErrors: {},
   lastCommandSucceeded: false,
   modifierGroups: [],
+  formSaveError: null,
+  formSaveOutcome: "idle",
   products: [],
   status: catalogStatuses.idle,
 };

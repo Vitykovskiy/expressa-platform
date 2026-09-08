@@ -15,9 +15,12 @@ sources:
 во внутренний путь. Защищённые routes требуют customer-сессии. [Источники: router](../../src/app/router.ts), [phone page](../../src/pages/AuthPhonePage.vue).
 
 Телефонная форма оставляет только цифры для проверки, требует минимум 10 цифр и
-форматирует номер; submit не испускается до этого условия. OTP принимает ровно
-шесть цифр; проверка и повтор блокируются при loading. Ошибка состояния сразу
-показывается через `UiFieldMessage`.
+форматирует номер; submit не испускается до этого условия. Подсказка формы
+объясняет, что подтверждение нужно для оформления заказа и истории заказов.
+OTP принимает ровно шесть цифр; проверка и повтор блокируются при loading. До
+разрешённого сервером времени повтор недоступен с остатком секунд, а после
+успешной повторной отправки очищается только введённый код. Ошибка состояния
+сразу показывается через `UiFieldMessage`.
 [Источник: AuthForm](../../src/features/auth/AuthForm.vue).
 
 `returnTo` принимается только если начинается с одиночного `/` и не ведёт на
@@ -28,6 +31,6 @@ auth-маршруты; `//`, внешний URL и auth-пути заменяю�
 `AuthScreen` публикует loading через `aria-busy`/live region, поля и кнопки
 имеют подписи; адаптивный layout остаётся в компоненте. [Источник: screen](../../src/features/auth/AuthScreen.vue).
 
-Проверки: [router spec](../../src/app/router.spec.ts), [phone spec](../../src/pages/AuthPhonePage.spec.ts), [code spec](../../src/pages/AuthCodePage.spec.ts).
+Проверки: [router spec](../../src/app/router.spec.ts), [phone spec](../../src/pages/AuthPhonePage.spec.ts), [code spec](../../src/pages/AuthCodePage.spec.ts), [composition spec](../../src/pages/AuthCodePage.composition.spec.ts), [form spec](../../src/features/auth/AuthForm.spec.ts).
 
 Карта раздела: [сценарии](INDEX.md).

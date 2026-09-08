@@ -12,6 +12,7 @@
         <h1 id="orders-history-title">История</h1>
       </div>
       <ui-icon-btn
+        v-if="!props.errorMessage"
         type="button"
         aria-label="Обновить историю заказов"
         :loading="props.loading"
@@ -29,11 +30,13 @@
     </div>
     <div
       v-else-if="props.errorMessage"
-      class="orders-history__state"
+      class="orders-history__state orders-history__state--error"
       role="alert"
     >
       <p>{{ props.errorMessage }}</p>
-      <ui-btn type="button" @click="emit('retry')">Повторить</ui-btn>
+      <ui-btn type="button" class="orders-history__retry" @click="emit('retry')"
+        >Повторить</ui-btn
+      >
     </div>
     <div
       v-else-if="props.orders.length === 0"
@@ -104,7 +107,7 @@ const orderLabel = computed(() => {
   justify-content: space-between;
   gap: var(--customer-space-9);
   padding: var(--customer-space-13) var(--customer-space-9)
-    var(--customer-space-15);
+    var(--customer-space-9);
 }
 .orders-history__eyebrow {
   margin: 0 0 var(--customer-space-4);
@@ -127,18 +130,29 @@ const orderLabel = computed(() => {
 }
 .orders-history__state {
   display: grid;
-  flex: 1;
   gap: var(--customer-space-7);
-  place-content: center;
-  justify-items: center;
-  padding: var(--customer-space-18) var(--customer-space-9);
+  justify-items: start;
+  min-width: 0;
+  padding: 0 var(--customer-space-9) var(--customer-space-13);
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
-  text-align: center;
 }
 .orders-history__state p {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+.orders-history__retry {
+  min-height: 44px;
+  padding: 0 var(--customer-space-9);
+  color: var(--customer-color-text-on-brand);
+  background: var(--customer-color-action-primary);
+  border-radius: var(--customer-radius-sm);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.orders-history__retry:focus-visible {
+  outline: 2px solid var(--customer-color-focus);
+  outline-offset: 2px;
 }
 .orders-history__grid {
   display: grid;
@@ -175,6 +189,10 @@ const orderLabel = computed(() => {
   .orders-history__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding-bottom: var(--customer-space-17);
+  }
+  .orders-history__state {
+    padding-right: 0;
+    padding-left: 0;
   }
 }
 </style>

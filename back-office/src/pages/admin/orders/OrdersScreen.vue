@@ -5,7 +5,7 @@
       title="Заказы"
       @action="emit('refresh')"
     >
-      <template #action>
+      <template v-if="props.status !== 'error'" #action>
         <RefreshCw :size="22" aria-hidden="true" />
       </template>
     </TopBar>
@@ -35,29 +35,56 @@
     <div class="orders-screen__content">
       <div
         v-if="props.status === 'loading'"
-        class="orders-screen__grid"
-        aria-busy="true"
-        aria-label="Загрузка очереди"
+        class="orders-screen__loading-state"
       >
-        <div v-for="index in 4" :key="index" class="orders-screen__skeleton" />
+        <p class="orders-screen__loading-label" role="status">
+          Загружаем очередь заказов…
+        </p>
+        <div
+          class="orders-screen__grid"
+          aria-busy="true"
+          aria-label="Загрузка очереди"
+        >
+          <div
+            v-for="index in 4"
+            :key="index"
+            class="orders-screen__skeleton"
+            aria-hidden="true"
+          />
+        </div>
       </div>
       <div
         v-else-if="props.status === 'error' && props.error !== null"
         class="orders-screen__state orders-screen__state--error"
         role="alert"
       >
-        <strong>{{ props.error.code }}</strong
-        >: {{ props.error.message }}
-        <span v-if="props.error.requestId">
-          Номер запроса: {{ props.error.requestId }}
-        </span>
+        <h2>Не удалось загрузить очередь заказов</h2>
+        <p>{{ errorGuidance }}</p>
         <AdminButton
           class="orders-screen__retry"
+          :disabled="props.accessRecoveryPending"
           variant="secondary"
-          @click="emit('refresh')"
+          @click="recoverQueue"
         >
-          Повторить
+          {{ recoveryLabel }}
         </AdminButton>
+        <details class="orders-screen__diagnostics">
+          <summary>Технические подробности</summary>
+          <dl>
+            <div>
+              <dt>Код</dt>
+              <dd>{{ props.error.code }}</dd>
+            </div>
+            <div>
+              <dt>Сообщение</dt>
+              <dd>{{ props.error.message }}</dd>
+            </div>
+            <div v-if="props.error.requestId">
+              <dt>Номер запроса</dt>
+              <dd>{{ props.error.requestId }}</dd>
+            </div>
+          </dl>
+        </details>
       </div>
       <EmptyState
         v-else-if="props.orders.length === 0"
@@ -73,6 +100,9 @@
           v-for="order in props.orders"
           :key="order.id"
           :details="props.selectedOrderId === order.id ? props.details : null"
+          :details-error="
+            props.selectedOrderId === order.id ? props.detailsError : null
+          "
           :details-loading="
             props.selectedOrderId === order.id && props.detailsLoading
           "
@@ -121,6 +151,28 @@ const stageModel = computed<QueueFilter>({
   get: () => props.stage,
   set: (stage) => emit("update:stage", stage),
 });
+const isAuthorizationError = computed(() => props.requiresAccessRecovery);
+const recoveryLabel = computed(() =>
+  props.accessRecoveryPending
+    ? "Восстанавливаем доступ…"
+    : isAuthorizationError.value
+      ? "Восстановить доступ"
+      : "Повторить",
+);
+const errorGuidance = computed(() =>
+  isAuthorizationError.value
+    ? "Восстановите доступ, чтобы снова загрузить очередь."
+    : "Попробуйте ещё раз.",
+);
+
+function recoverQueue(): void {
+  if (isAuthorizationError.value) {
+    emit("restore-access");
+    return;
+  }
+
+  emit("refresh");
+}
 </script>
 
 <style scoped lang="scss">
@@ -168,11 +220,38 @@ const stageModel = computed<QueueFilter>({
   grid-template-columns: minmax(0, 1fr);
   gap: var(--expressa-space-md);
 }
+.orders-screen__loading-state {
+  display: grid;
+  gap: var(--expressa-space-sm);
+}
+.orders-screen__loading-label {
+  margin: 0;
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-body);
+  line-height: var(--expressa-line-height-body);
+}
 .orders-screen__skeleton {
   min-height: 192px;
   border-radius: var(--expressa-radius-lg);
-  background: var(--expressa-color-surface);
+  background: linear-gradient(
+    90deg,
+    var(--expressa-color-surface) 0%,
+    var(--expressa-color-surface-raised) 50%,
+    var(--expressa-color-surface) 100%
+  );
+  background-size: 200% 100%;
   box-shadow: var(--expressa-shadow-card);
+  animation: orders-screen-skeleton-shimmer 1s ease-in-out infinite;
+}
+@keyframes orders-screen-skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orders-screen__skeleton {
+    animation: none;
+  }
 }
 .orders-screen__state,
 .orders-screen__action-error {
@@ -186,10 +265,47 @@ const stageModel = computed<QueueFilter>({
 }
 .orders-screen__state--error,
 .orders-screen__action-error {
+  border-left: var(--expressa-border-width-strong) solid
+    var(--expressa-color-status-error);
+}
+.orders-screen__state--error h2 {
+  margin: 0;
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-title);
+  line-height: var(--expressa-line-height-title);
+}
+.orders-screen__state--error p,
+.orders-screen__diagnostics {
+  margin: 0;
+  color: var(--expressa-color-text-secondary);
+}
+.orders-screen__diagnostics {
+  padding-top: var(--expressa-space-xs);
+}
+.orders-screen__diagnostics dl {
+  display: grid;
+  gap: var(--expressa-space-sm);
+  margin: var(--expressa-space-sm) 0 0;
+}
+.orders-screen__diagnostics dl div {
+  display: grid;
+  gap: var(--expressa-space-xs);
+}
+.orders-screen__diagnostics dt,
+.orders-screen__diagnostics dd {
+  margin: 0;
+}
+.orders-screen__diagnostics dt {
+  font-weight: var(--expressa-font-weight-medium);
+}
+.orders-screen__action-error {
   color: var(--expressa-color-status-error);
 }
 .orders-screen__retry {
   justify-self: start;
+}
+.orders-screen__diagnostics dd {
+  overflow-wrap: anywhere;
 }
 .orders-screen__action-error {
   margin: 0 var(--expressa-space-md) var(--expressa-space-tab-bar-clearance);

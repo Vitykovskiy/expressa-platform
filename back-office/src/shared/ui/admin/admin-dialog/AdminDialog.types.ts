@@ -1,6 +1,7 @@
 export interface AdminDialogProps {
   modelValue?: boolean;
   maxWidth?: number | string;
+  persistent?: boolean;
 }
 
 export interface AdminDialogEmits {

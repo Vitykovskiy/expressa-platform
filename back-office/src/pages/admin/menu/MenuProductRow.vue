@@ -79,7 +79,6 @@ function formatPrice(price: number): string {
   display: flex;
   width: 100%;
   min-height: 63px;
-  overflow: hidden;
   color: var(--expressa-color-text-primary);
   text-align: left;
   background: var(--expressa-color-surface);

@@ -2,6 +2,8 @@ import type { AuthState } from "@/entities/customer/model/customer.types";
 
 export interface AuthFormProps {
   state: AuthState;
+  otp: string;
+  resendRemainingSeconds: number;
 }
 
 export type AuthFormEmits = {

@@ -6,6 +6,7 @@
     :max-height="dialogMaxHeight"
     :max-width="dialogMaxWidth"
     :model-value="props.modelValue"
+    :persistent="props.persistent"
     :transition="false"
     :width="dialogWidth"
     @after-enter="emit('afterEnter')"

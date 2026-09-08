@@ -1,7 +1,10 @@
 <template>
   <OrdersScreen
     :action-error="actionError"
+    :access-recovery-pending="accessRecoveryPending"
+    :requires-access-recovery="authorizationEpisode"
     :details="details"
+    :details-error="detailsError"
     :details-loading="detailsLoading"
     :error="queueError"
     :orders="orders"
@@ -12,6 +15,7 @@
     :transition-loading="transitionLoading"
     @open="toggleDetails"
     @refresh="loadQueue"
+    @restore-access="restoreAccess"
     @transition="transitionSelectedOrder"
     @update:search="search = $event"
     @update:stage="stage = $event"
@@ -19,11 +23,14 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
+import { inject, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
+import { useRouter } from "vue-router";
 
+import { routePaths } from "../app/router.constants";
 import { useSessionStore } from "../app/session.store";
 import OrdersScreen from "./admin/orders/OrdersScreen.vue";
-import { createApiClient } from "../shared/api/client";
+import { apiClientKey } from "../shared/api/client";
+import { ApiError } from "../shared/api/client";
 import { OrdersApi } from "../shared/api/orders.api";
 import type {
   OrderApiError,
@@ -32,34 +39,49 @@ import type {
 } from "../shared/api/orders.api.types";
 import type { QueueFilter } from "./admin/orders/OrdersScreen.types";
 
-const ordersApi = new OrdersApi(createApiClient("/"));
+const apiClient = inject(apiClientKey);
+if (apiClient === undefined) {
+  throw new Error("QueuePage requires an ApiClient provider.");
+}
+const ordersApi = new OrdersApi(apiClient);
 const sessionStore = useSessionStore();
+const router = useRouter();
 const orders = shallowRef<readonly OrderListItem[]>([]);
 const search = shallowRef("");
 const stage = shallowRef<QueueFilter>("ALL");
 const queueStatus = shallowRef<"error" | "loading" | "ready">("loading");
 const queueError = shallowRef<OrderApiError | null>(null);
+const accessRecoveryPending = shallowRef(false);
 const selectedOrderId = shallowRef<string | null>(null);
 const details = shallowRef<OrderDetails | null>(null);
+const detailsError = shallowRef<OrderApiError | null>(null);
 const detailsLoading = shallowRef(false);
 const transitionLoading = shallowRef(false);
 const actionError = shallowRef<OrderApiError | null>(null);
 let queueRequest = 0;
 let detailsRequest = 0;
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
+let resumedPollingTimer: ReturnType<typeof setTimeout> | null = null;
+let authorizationEpisode = false;
+let pageIsActive = true;
 
 watch([search, stage], () => void loadQueue());
 
 onMounted(() => {
   void loadQueue();
-  pollingTimer = setInterval(() => void loadQueue(), 5000);
+  startPolling();
 });
 
 onBeforeUnmount(() => {
-  if (pollingTimer !== null) clearInterval(pollingTimer);
+  pageIsActive = false;
+  queueRequest++;
+  detailsRequest++;
+  stopPolling();
 });
 
 async function loadQueue(): Promise<void> {
+  if (authorizationEpisode) return;
+
   const request = ++queueRequest;
   const accessToken = sessionStore.accessToken;
   if (accessToken === null) {
@@ -67,8 +89,10 @@ async function loadQueue(): Promise<void> {
     return;
   }
 
-  queueStatus.value = "loading";
-  queueError.value = null;
+  if (queueStatus.value !== "error" || queueError.value === null) {
+    queueStatus.value = "loading";
+    queueError.value = null;
+  }
   try {
     const nextOrders = await ordersApi.list(accessToken, {
       number: search.value,
@@ -76,21 +100,66 @@ async function loadQueue(): Promise<void> {
     });
     if (request !== queueRequest) return;
     orders.value = nextOrders;
+    queueError.value = null;
     queueStatus.value = "ready";
     if (selectedOrderId.value !== null) void loadDetails(selectedOrderId.value);
   } catch (error) {
-    setQueueError(request, toOrderApiError(error));
+    const queueError = toOrderApiError(error);
+    if (isUnauthorized(error)) {
+      startAuthorizationEpisode(request, queueError);
+      return;
+    }
+
+    setQueueError(request, queueError);
+  }
+}
+
+async function restoreAccess(): Promise<void> {
+  if (!authorizationEpisode || accessRecoveryPending.value) return;
+
+  accessRecoveryPending.value = true;
+  try {
+    await sessionStore.restore();
+  } catch {
+    return;
+  } finally {
+    accessRecoveryPending.value = false;
+  }
+
+  if (sessionStore.status === "anonymous" || sessionStore.status === "denied") {
+    await router.replace(routePaths.login);
+    return;
+  }
+
+  if (!pageIsActive) return;
+
+  if (sessionStore.status !== "authenticated" || sessionStore.error !== null) {
+    return;
+  }
+
+  authorizationEpisode = false;
+  await loadQueue();
+  if (!pageIsActive) return;
+
+  if (!authorizationEpisode && queueStatus.value === "ready") {
+    scheduleResumedPolling();
   }
 }
 
 async function toggleDetails(orderId: string): Promise<void> {
   if (selectedOrderId.value === orderId) {
+    if (detailsError.value !== null) {
+      await loadDetails(orderId);
+      return;
+    }
     selectedOrderId.value = null;
     details.value = null;
+    detailsError.value = null;
     return;
   }
 
   selectedOrderId.value = orderId;
+  detailsError.value = null;
   await loadDetails(orderId);
 }
 
@@ -98,11 +167,11 @@ async function loadDetails(orderId: string): Promise<void> {
   const request = ++detailsRequest;
   const accessToken = sessionStore.accessToken;
   details.value = null;
+  detailsError.value = null;
   detailsLoading.value = true;
-  actionError.value = null;
   if (accessToken === null) {
     detailsLoading.value = false;
-    actionError.value = unauthorizedError();
+    detailsError.value = unauthorizedError();
     return;
   }
 
@@ -112,7 +181,7 @@ async function loadDetails(orderId: string): Promise<void> {
     details.value = nextDetails;
   } catch (error) {
     if (request === detailsRequest && selectedOrderId.value === orderId) {
-      actionError.value = toOrderApiError(error);
+      detailsError.value = toOrderApiError(error);
     }
   } finally {
     if (request === detailsRequest && selectedOrderId.value === orderId) {
@@ -161,6 +230,47 @@ function setQueueError(request: number, error: OrderApiError): void {
   queueStatus.value = "error";
 }
 
+function startAuthorizationEpisode(
+  request: number,
+  error: OrderApiError,
+): void {
+  if (request !== queueRequest) return;
+
+  authorizationEpisode = true;
+  stopPolling();
+  setQueueError(request, error);
+}
+
+function startPolling(): void {
+  if (pollingTimer !== null) return;
+
+  pollingTimer = setInterval(() => void loadQueue(), 5000);
+}
+
+function scheduleResumedPolling(): void {
+  if (resumedPollingTimer !== null) return;
+
+  resumedPollingTimer = setTimeout(() => {
+    resumedPollingTimer = null;
+    if (authorizationEpisode) return;
+
+    void loadQueue();
+    startPolling();
+  }, 5200);
+}
+
+function stopPolling(): void {
+  if (pollingTimer !== null) {
+    clearInterval(pollingTimer);
+    pollingTimer = null;
+  }
+
+  if (resumedPollingTimer !== null) {
+    clearTimeout(resumedPollingTimer);
+    resumedPollingTimer = null;
+  }
+}
+
 function toOrderApiError(error: unknown): OrderApiError {
   if (
     typeof error === "object" &&
@@ -195,5 +305,9 @@ function unauthorizedError(): OrderApiError {
     message: "Сессия сотрудника недоступна.",
     requestId: null,
   };
+}
+
+function isUnauthorized(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 401;
 }
 </script>

@@ -2,12 +2,53 @@
   <AdminDialog
     :model-value="open"
     max-width="448"
+    :persistent="props.disabled"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="edit-dialog">
       <v-card-title>Редактировать товар</v-card-title>
-      <v-card-text>Категория: «{{ categoryName }}»</v-card-text>
+      <section
+        v-if="hasSaveOutcome"
+        class="edit-dialog-outcome"
+        aria-live="polite"
+      >
+        <p v-if="props.disabled" role="status">Сохраняем товар…</p>
+        <p
+          v-else-if="props.saveOutcome === 'rejected'"
+          class="edit-dialog-error"
+          role="alert"
+        >
+          Не удалось сохранить товар. Исправьте отмеченные поля и сохраните ещё
+          раз.
+        </p>
+        <template v-else-if="props.saveOutcome === 'unconfirmed'">
+          <p class="edit-dialog-error" role="alert">
+            Не удалось подтвердить сохранение товара. Обновите меню и проверьте
+            товар перед повторным сохранением.
+          </p>
+          <AdminButton
+            :disabled="props.disabled"
+            type="button"
+            @click="emit('refresh')"
+            >Обновить меню</AdminButton
+          >
+        </template>
+        <p v-else-if="props.saveOutcome === 'saved'" role="status">
+          Меню обновлено. Закройте форму и проверьте товар в меню перед
+          повторным сохранением.
+        </p>
+        <details v-if="props.saveError" class="edit-dialog-technical-details">
+          <summary>Технические сведения</summary>
+          <p>{{ props.saveError.message }}</p>
+          <p v-if="props.saveError.requestId">
+            Идентификатор запроса: {{ props.saveError.requestId }}
+          </p>
+        </details>
+      </section>
+      <v-card-text class="edit-dialog-category"
+        >Категория: «{{ categoryName }}»</v-card-text
+      >
       <v-card-text class="edit-dialog-fields">
         <label :for="nameId">Название товара</label>
         <AdminTextField
@@ -18,7 +59,9 @@
           :aria-invalid="Boolean(nameError)"
           autofocus
           class="edit-dialog-input"
+          :disabled="props.disabled"
           type="text"
+          @blur="touch('name')"
           @update:model-value="dismissFieldError('name')"
         />
         <p
@@ -36,6 +79,8 @@
           :aria-describedby="categoryError ? categoryErrorId : undefined"
           :aria-invalid="Boolean(categoryError)"
           class="edit-dialog-input"
+          :disabled="props.disabled"
+          @blur="touch('categoryId')"
           @update:model-value="dismissFieldError('categoryId')"
         >
           <option
@@ -60,7 +105,8 @@
           v-model="type"
           :aria-describedby="typeError ? typeErrorId : undefined"
           :aria-invalid="Boolean(typeError)"
-          class="edit-dialog-input"
+          class="edit-dialog-input edit-dialog-type-input"
+          :disabled="props.disabled"
           @update:model-value="dismissFieldError('type')"
         >
           <option
@@ -86,6 +132,7 @@
           :aria-describedby="descriptionError ? descriptionErrorId : undefined"
           :aria-invalid="Boolean(descriptionError)"
           class="edit-dialog-input"
+          :disabled="props.disabled"
           type="text"
           @update:model-value="dismissFieldError('description')"
         />
@@ -104,6 +151,7 @@
             :aria-describedby="activeError ? activeErrorId : undefined"
             :aria-invalid="Boolean(activeError)"
             :aria-labelledby="activeLabelId"
+            :disabled="props.disabled"
             @update:model-value="updateIsActive"
           />
         </div>
@@ -122,6 +170,7 @@
             :aria-describedby="availableError ? availableErrorId : undefined"
             :aria-invalid="Boolean(availableError)"
             :aria-labelledby="availableLabelId"
+            :disabled="props.disabled"
             @update:model-value="updateIsAvailable"
           />
         </div>
@@ -149,7 +198,8 @@
                 :model-value="variant.isConfigured"
                 :aria-labelledby="`edit-product-size-${variant.size}`"
                 :disabled="
-                  variant.isConfigured && configuredVariants.length === 1
+                  props.disabled ||
+                  (variant.isConfigured && configuredVariants.length === 1)
                 "
                 @update:model-value="
                   updateVariant(index, 'isConfigured', Boolean($event))
@@ -165,9 +215,11 @@
                 :aria-invalid="Boolean(variantsError)"
                 :model-value="variant.price"
                 class="edit-dialog-input"
+                :disabled="props.disabled"
                 inputmode="numeric"
                 min="0"
                 type="number"
+                @blur="touch('variants')"
                 @input="
                   updateVariant(
                     index,
@@ -182,6 +234,7 @@
                 :aria-label="`Размер ${variant.size} доступен`"
                 :aria-describedby="variantsError ? variantsErrorId : undefined"
                 :aria-invalid="Boolean(variantsError)"
+                :disabled="props.disabled"
                 @update:model-value="
                   updateVariant(index, 'isAvailable', Boolean($event))
                 "
@@ -191,7 +244,9 @@
               <span>Порядок</span>
               <AdminButton
                 :aria-label="`Поднять размер ${variant.size}`"
-                :disabled="configuredVariantIndex(index) === 0"
+                :disabled="
+                  props.disabled || configuredVariantIndex(index) === 0
+                "
                 class="size-order-button"
                 type="button"
                 variant="secondary"
@@ -201,8 +256,9 @@
               <AdminButton
                 :aria-label="`Опустить размер ${variant.size}`"
                 :disabled="
+                  props.disabled ||
                   configuredVariantIndex(index) ===
-                  configuredVariants.length - 1
+                    configuredVariants.length - 1
                 "
                 class="size-order-button"
                 type="button"
@@ -229,9 +285,11 @@
             :aria-describedby="priceError ? priceErrorId : undefined"
             :aria-invalid="Boolean(priceError)"
             class="edit-dialog-input"
+            :disabled="props.disabled"
             inputmode="numeric"
             min="0"
             type="number"
+            @blur="touch('price')"
             @update:model-value="dismissFieldError('price')"
           />
           <p
@@ -248,7 +306,12 @@
         class="edit-dialog-actions admin-dialog-actions admin-dialog-actions--with-destructive"
       >
         <AdminButton
-          :disabled="props.disabled || !isValid"
+          :disabled="
+            props.disabled ||
+            !isValid ||
+            props.saveOutcome === 'unconfirmed' ||
+            props.saveOutcome === 'saved'
+          "
           type="button"
           @click="save"
           >Сохранить изменения</AdminButton
@@ -265,7 +328,9 @@
           type="button"
           variant="ghost"
           @click="closeAsCancelled"
-          >Отмена</AdminButton
+          >{{
+            props.saveOutcome === "idle" ? "Отмена" : "Закрыть форму"
+          }}</AdminButton
         >
       </v-card-actions>
     </v-card>
@@ -305,6 +370,8 @@ import type {
 
 const props = withDefaults(defineProps<EditProductDialogProps>(), {
   fieldErrors: () => ({}),
+  saveError: null,
+  saveOutcome: "idle",
 });
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<EditProductDialogEmits>();
@@ -318,8 +385,13 @@ const isAvailable = shallowRef(true);
 const dismissedFieldErrors = shallowRef<
   Partial<Record<ProductFormField, true>>
 >({});
+const touched = shallowRef<Partial<Record<ProductFormField, true>>>({});
 const variants = shallowRef<ProductVariantDraft[]>(
   createEditProductVariantDrafts(null),
+);
+const hasSaveOutcome = computed(
+  () =>
+    props.disabled || props.saveOutcome !== "idle" || props.saveError !== null,
 );
 const deleteOpen = shallowRef(false);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
@@ -346,24 +418,30 @@ const categoryName = computed(
       ?.name ?? "",
 );
 const categoryError = computed(() =>
-  categoryIdValue.value ? fieldError("categoryId") : "Выберите категорию",
+  localError(
+    "categoryId",
+    Boolean(categoryIdValue.value),
+    "Выберите категорию",
+  ),
 );
 const typeError = computed(() => fieldError("type"));
 const nameError = computed(() =>
-  name.value.trim() ? fieldError("name") : "Введите название товара",
+  localError("name", Boolean(name.value.trim()), "Введите название товара"),
 );
 const descriptionError = computed(() => fieldError("description"));
 const priceError = computed(() =>
-  isNonNegativeInteger(price.value)
-    ? fieldError("price")
-    : "Укажите цену в целых рублях",
+  localError(
+    "price",
+    isNonNegativeInteger(price.value),
+    "Укажите цену в целых рублях",
+  ),
 );
 const activeError = computed(() => fieldError("isActive"));
 const availableError = computed(() => fieldError("isAvailable"));
 const configuredVariants = computed(() =>
   variants.value.filter((variant) => variant.isConfigured),
 );
-const variantsError = computed(() => {
+const variantsValidityError = computed(() => {
   if (configuredVariants.value.length === 0)
     return "Выберите хотя бы один размер";
   if (
@@ -379,12 +457,19 @@ const variantsError = computed(() => {
     return "Для активного товара нужен хотя бы один доступный размер";
   return fieldError("variants");
 });
+const variantsError = computed(
+  () =>
+    fieldError("variants") ??
+    (touched.value.variants ? variantsValidityError.value : undefined),
+);
 const isValid = computed(
   () =>
-    !categoryError.value &&
+    Boolean(categoryIdValue.value) &&
+    Boolean(name.value.trim()) &&
     !typeError.value &&
-    !nameError.value &&
-    (type.value === "DRINK" ? !variantsError.value : !priceError.value),
+    (type.value === "DRINK"
+      ? !variantsValidityError.value
+      : isNonNegativeInteger(price.value) && !fieldError("price")),
 );
 
 function isNonNegativeInteger(value: string): boolean {
@@ -395,7 +480,23 @@ function fieldError(field: ProductFormField): string | undefined {
     ? undefined
     : props.fieldErrors[field];
 }
+function localError(
+  field: ProductFormField,
+  valid: boolean,
+  message: string,
+): string | undefined {
+  return (
+    fieldError(field) ?? (!valid && touched.value[field] ? message : undefined)
+  );
+}
+function touch(field: ProductFormField): void {
+  touched.value = { ...touched.value, [field]: true };
+}
 function dismissFieldError(field: ProductFormField): void {
+  dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
+}
+function resetBranchVisibility(field: "price" | "variants"): void {
+  touched.value = { ...touched.value, [field]: false };
   dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
 }
 function resetDraft(): void {
@@ -409,8 +510,10 @@ function resetDraft(): void {
   isAvailable.value = product?.isAvailable ?? true;
   variants.value = createEditProductVariantDrafts(product);
   dismissedFieldErrors.value = {};
+  touched.value = {};
 }
 function closeDialog(): void {
+  if (props.disabled) return;
   deleteOpen.value = false;
   resetDraft();
   open.value = false;
@@ -421,6 +524,7 @@ function closeAsCancelled(): void {
   emit("cancel");
 }
 function updateOpen(value: boolean): void {
+  if (props.disabled) return;
   if (value) open.value = true;
   else closeAsCancelled();
 }
@@ -429,6 +533,8 @@ function updateVariant(
   field: "price" | "isConfigured" | "isAvailable",
   value: string | boolean,
 ): void {
+  if (props.disabled) return;
+  touch("variants");
   dismissFieldError("variants");
   if (field === "isConfigured") {
     const selected = { ...variants.value[index], isConfigured: Boolean(value) };
@@ -455,6 +561,7 @@ function moveConfiguredVariant(
   index: number,
   direction: ProductVariantMoveDirection,
 ): void {
+  if (props.disabled) return;
   const targetIndex = index + direction;
   if (
     !variants.value[index]?.isConfigured ||
@@ -470,14 +577,19 @@ function moveConfiguredVariant(
   dismissFieldError("variants");
 }
 function updateIsActive(value: boolean | null): void {
+  if (props.disabled) return;
   isActive.value = Boolean(value);
+  if (type.value === "DRINK") touch("variants");
   dismissFieldError("isActive");
 }
 function updateIsAvailable(value: boolean | null): void {
+  if (props.disabled) return;
   isAvailable.value = Boolean(value);
   dismissFieldError("isAvailable");
 }
 function save(): void {
+  if (props.disabled) return;
+  touched.value = { categoryId: true, name: true, price: true, variants: true };
   if (!isValid.value) return;
   const data: ProductFormData =
     type.value === "DRINK"
@@ -539,17 +651,42 @@ watch(
     dismissedFieldErrors.value = {};
   },
 );
+watch(type, (current, previous) => {
+  if (current !== previous) {
+    resetBranchVisibility(current === "DRINK" ? "variants" : "price");
+  }
+});
 </script>
 
 <style scoped lang="scss">
 .edit-dialog {
+  flex: none;
+  display: grid;
+  inline-size: min(100vw, 28rem);
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  block-size: min(
+    44rem,
+    calc(100dvh - var(--expressa-space-xl) - var(--expressa-space-xl))
+  );
+  min-block-size: 0;
+  overflow: hidden;
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
+.edit-dialog-category {
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+}
 .edit-dialog-fields {
+  min-inline-size: 0;
+  min-block-size: 0;
   display: grid;
   gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .edit-dialog-fields label {
   color: var(--expressa-color-text-secondary);
@@ -585,6 +722,23 @@ watch(
   margin: 0;
   color: var(--expressa-color-status-error);
   font-size: var(--expressa-font-size-caption);
+}
+.edit-dialog-outcome {
+  display: grid;
+  max-block-size: 10rem;
+  gap: var(--expressa-space-sm);
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.edit-dialog-outcome > p {
+  margin: 0;
+}
+.edit-dialog-technical-details {
+  min-width: 0;
+}
+.edit-dialog-technical-details p {
+  margin: var(--expressa-space-sm) 0 0;
 }
 .size-row {
   display: grid;

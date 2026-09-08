@@ -35,28 +35,21 @@ describe("MenuPage", () => {
 
     expect(getMenu).toHaveBeenCalledTimes(2);
     expect(useMenuStore().status).toBe("ready");
-    expect(wrapper.find('[data-test="cart"]').text()).toContain("Корзина · 0");
+    expect(wrapper.find('[data-test="cart"]').exists()).toBe(false);
   });
 
-  it("показывает ready flow, добавляет товар и скрывает fixed корзину на product", async () => {
+  it("показывает ready flow и добавляет товар без page-local корзины", async () => {
     setMenuStoreDependencies({
       publicMenuApi: { getMenu: vi.fn().mockResolvedValue(createReadyMenu()) },
     });
     const wrapper = await mountPage();
     await flushPromises();
 
-    await wrapper.get('[data-test="category"]').trigger("click");
-    expect(wrapper.find('[data-test="cart"]').exists()).toBe(true);
     await wrapper.get('[data-test="add"]').trigger("click");
 
     const cart = useCartStore();
     expect(cart.itemCount).toBe(1);
     expect(cart.total).toBe(250);
-    expect(wrapper.get('[data-test="cart"]').text()).toContain(
-      "Корзина · 1 · 250",
-    );
-    expect(wrapper.get('[data-test="cart"]').attributes("href")).toBe("/cart");
-    await wrapper.get('[data-test="product"]').trigger("click");
     expect(wrapper.find('[data-test="cart"]').exists()).toBe(false);
   });
 

@@ -43,6 +43,26 @@ describe("session store", () => {
     );
   });
 
+  it("переводит ограничение повторной отправки на русский и сохраняет requestId", async () => {
+    const { dependencies, store } = createStore();
+    dependencies.authApi.requestOtp.mockRejectedValue(
+      new ApiError({
+        code: "AUTH_RATE_LIMITED",
+        details: null,
+        message: "Too many requests",
+        requestId: "request-42",
+        status: 429,
+      }),
+    );
+
+    await store.requestOtp("+79123456789");
+
+    expect(store.error).toEqual({
+      message: "Слишком много попыток. Подождите немного и попробуйте снова.",
+      requestId: "request-42",
+    });
+  });
+
   it("хранит staff session только в памяти после проверки OTP", async () => {
     const { dependencies, store } = createStore();
     const setItem = vi.spyOn(Storage.prototype, "setItem");

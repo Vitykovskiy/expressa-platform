@@ -13,6 +13,7 @@ import {
   productNames,
   screenNames,
 } from "./menu.e2e.constants";
+import { CheckoutDatabase } from "./checkout.database";
 import type { BrowserIssue } from "./menu.e2e.types";
 
 test("меню добавляет M, only-S и OTHER на реальном seeded backend", async ({
@@ -159,6 +160,113 @@ test("allowlist не пропускает public menu и foreign origin 401", ()
       "https://foreign.example/api/v2/auth/refresh",
     ),
   ).toBe(false);
+});
+
+test("недоступный товар сохраняет читаемый статус", async ({ page }) => {
+  const database = new CheckoutDatabase();
+  const state = await database.readState();
+  try {
+    await database.setProductAvailable(false);
+
+    for (const { width, height } of [
+      { width: 390, height: 844 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/");
+      await page.evaluate(() => localStorage.clear());
+      await page.reload();
+      await page
+        .locator(".menu-root__grid > li")
+        .filter({ has: page.getByText(screenNames.coffee, { exact: true }) })
+        .getByRole("button")
+        .click();
+
+      const unavailableProduct = page.getByRole("button", {
+        name: productNames.cappuccino,
+      });
+      const status = page.getByText("Сейчас недоступно", { exact: true });
+      const cart = page.getByRole("button", { name: "Корзина" });
+      const cartBadge = page.locator(
+        ".shell-navigation__cart-button .shell-navigation__badge",
+      );
+      await expect(unavailableProduct).toBeDisabled();
+      await expect(status).toBeVisible();
+      await expect(cart).toBeVisible();
+      await expect(cartBadge).toHaveCount(0);
+      await unavailableProduct.focus();
+      await expect(unavailableProduct).not.toBeFocused();
+      await unavailableProduct.click({ force: true });
+      await expect(
+        page.getByRole("heading", { name: screenNames.coffee }),
+      ).toBeVisible();
+      await expect(cart).toBeVisible();
+      await expect(cartBadge).toHaveCount(0);
+      await expectNoHorizontalOverflow(page, width);
+
+      const contrast = await status.evaluate((element) => {
+        const parseColor = (value: string) => {
+          const [red = 0, green = 0, blue = 0, alpha = 1] =
+            value.match(/[\d.]+/g)?.map(Number) ?? [];
+          return { alpha, blue, green, red };
+        };
+        const linear = (channel: number) => {
+          const value = channel / 255;
+          return value <= 0.04045
+            ? value / 12.92
+            : ((value + 0.055) / 1.055) ** 2.4;
+        };
+        const luminance = ({
+          red,
+          green,
+          blue,
+        }: ReturnType<typeof parseColor>) =>
+          0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
+        const foreground = parseColor(getComputedStyle(element).color);
+        const background = parseColor(
+          getComputedStyle(element.parentElement ?? document.body)
+            .backgroundColor,
+        );
+        const compositedForeground = {
+          blue:
+            foreground.blue * foreground.alpha +
+            background.blue * (1 - foreground.alpha),
+          green:
+            foreground.green * foreground.alpha +
+            background.green * (1 - foreground.alpha),
+          red:
+            foreground.red * foreground.alpha +
+            background.red * (1 - foreground.alpha),
+        };
+        const ratio =
+          (Math.max(luminance(compositedForeground), luminance(background)) +
+            0.05) /
+          (Math.min(luminance(compositedForeground), luminance(background)) +
+            0.05);
+
+        return {
+          background: getComputedStyle(element.parentElement ?? document.body)
+            .backgroundColor,
+          compositedForeground: [
+            Math.round(compositedForeground.red),
+            Math.round(compositedForeground.green),
+            Math.round(compositedForeground.blue),
+          ],
+          fontSize: getComputedStyle(element).fontSize,
+          fontWeight: getComputedStyle(element).fontWeight,
+          ratio,
+        };
+      });
+      expect(contrast.background).toBe("rgb(255, 255, 255)");
+      expect(contrast.compositedForeground).toEqual([15, 40, 128]);
+      expect(contrast.fontSize).toBe("13px");
+      expect(contrast.fontWeight).toBe("600");
+      expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);
+    }
+  } finally {
+    await database.restore(state);
+    await database.close();
+  }
 });
 
 async function openCleanMenu(page: Page, width: number): Promise<void> {

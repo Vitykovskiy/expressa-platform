@@ -1,4 +1,9 @@
-import type { ModifierGroup, ModifierSelectionType } from "./catalog.types";
+import type {
+  CatalogFormSaveOutcome,
+  CatalogStoreError,
+  ModifierGroup,
+  ModifierSelectionType,
+} from "./catalog.types";
 import type { ModifierOptionFormData } from "./ModifierOptionEditor.types";
 
 export type ModifierGroupFormField =
@@ -33,10 +38,15 @@ export interface ModifierGroupEditorProps {
   loading?: boolean;
   errorMessage?: string;
   fieldErrors?: Partial<Record<ModifierGroupFormField, string>>;
+  pendingMessage?: string | null;
+  operationKind?: "save" | "archive" | null;
+  saveError?: CatalogStoreError | null;
+  saveOutcome?: CatalogFormSaveOutcome;
 }
 
 export interface ModifierGroupEditorEmits {
   save: [data: ModifierGroupFormData];
   archive: [groupId: string];
   cancel: [];
+  refresh: [];
 }

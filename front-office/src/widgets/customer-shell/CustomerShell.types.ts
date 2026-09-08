@@ -9,6 +9,7 @@ export interface CustomerShellProps {
   cartCount: number;
   categories: ShellNavigationCategory[];
   isAuthenticated: boolean;
+  isLogoutPending: boolean;
   selectedCategoryId?: string;
   showBack: boolean;
 }

@@ -3,10 +3,24 @@ import type {
   AvailabilityItem,
   ServiceIntake,
 } from "../../../shared/api/availability.api.types";
-import type { ScreenError } from "../../../shared/ui/screen-error";
+
+export interface AvailabilityErrorDiagnostic {
+  code: string;
+  message: string;
+  requestId: string | null;
+}
+
+export type AvailabilityScreenError =
+  | ({ kind: "read" } & AvailabilityErrorDiagnostic)
+  | ({ kind: "intake" } & AvailabilityErrorDiagnostic)
+  | ({
+      kind: "item";
+      label: string;
+      sublabel: string;
+    } & AvailabilityErrorDiagnostic);
 
 export interface AvailabilityScreenProps {
-  error: ScreenError | null;
+  error: AvailabilityScreenError | null;
   groups: readonly AvailabilityGroup[];
   intake: ServiceIntake | null;
   loading: boolean;

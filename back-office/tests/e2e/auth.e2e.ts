@@ -139,6 +139,67 @@ test("auth и роли back-office работают через backend", async (
   await expectOtpNotExposed(evidence);
 });
 
+test("Q-053: loading status has readable contrast at mobile and desktop widths", async ({
+  browser,
+}) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1440, height: 900 },
+  ]) {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    const requestReleased = Promise.withResolvers<void>();
+    const requestReached = Promise.withResolvers<void>();
+
+    await page.route(`**${otpRequestPath}`, async (route) => {
+      requestReached.resolve();
+      await requestReleased.promise;
+      await route.continue();
+    });
+
+    try {
+      await page.goto("/login");
+      await page.getByLabel("Телефон").fill(phone());
+      await page.getByRole("button", { name: "Отправить код" }).click();
+      await requestReached.promise;
+
+      const status = page.getByRole("status", { name: "Загрузка" });
+      await expect(status).toHaveText("Подождите…");
+      const contrast = await status.evaluate((element) => {
+        const textColor = globalThis.getComputedStyle(element).color;
+        const surfaceColor = globalThis.getComputedStyle(
+          element.closest(".auth-screen")!,
+        ).backgroundColor;
+        const rgb = (color: string) =>
+          color.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+        const luminance = (color: number[]) => {
+          const [red, green, blue] = color.map((channel) => {
+            const normalized = channel / 255;
+            return normalized <= 0.04045
+              ? normalized / 12.92
+              : ((normalized + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        };
+        const [lighter, darker] = [
+          luminance(rgb(textColor)),
+          luminance(rgb(surfaceColor)),
+        ].sort((first, second) => second - first);
+
+        return (lighter + 0.05) / (darker + 0.05);
+      });
+
+      expect(contrast).toBeGreaterThanOrEqual(4.5);
+      requestReleased.resolve();
+      await expectOtpStep(page, observeAuthentication(page));
+    } finally {
+      requestReleased.resolve();
+      await page.unrouteAll({ behavior: "ignoreErrors" });
+      await context.close();
+    }
+  }
+});
+
 async function login(
   page: AuthPage,
   phone: string,

@@ -25,19 +25,25 @@
       <CircleAlert aria-hidden="true" class="auth-step__error-icon" />
       <span>{{ error }}</span>
     </p>
-    <p v-else id="auth-otp-hint" class="auth-step__hint">
-      Код действует {{ props.expiresInSeconds }} сек. Повторная отправка
-      доступна через {{ props.retryAfterSeconds }} сек.
+    <p id="auth-otp-hint" class="auth-step__hint">
+      Код действует {{ props.expiresInSeconds }} сек.
+      <template v-if="props.resendRemainingSeconds > 0">
+        Повторная отправка доступна через
+        {{ props.resendRemainingSeconds }} сек.
+      </template>
     </p>
     <AdminButton class="auth-step__button" :disabled="!valid" type="submit">
       Подтвердить
     </AdminButton>
     <AdminButton
       class="auth-step__button"
+      :disabled="props.resendRemainingSeconds > 0"
       variant="ghost"
       @click="emit('resend')"
     >
-      Отправить код повторно
+      {{
+        props.resendRemainingSeconds > 0 ? "Ожидайте" : "Отправить код повторно"
+      }}
     </AdminButton>
     <AdminButton
       class="auth-step__button"

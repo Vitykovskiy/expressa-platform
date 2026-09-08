@@ -31,6 +31,8 @@
       <AuthForm
         v-if="presentation.content === 'form'"
         :state="state"
+        :otp="otp"
+        :resend-remaining-seconds="resendRemainingSeconds"
         @back-to-phone="emit('backToPhone')"
         @send-code="emit('sendCode')"
         @submit-name="emit('submitName')"

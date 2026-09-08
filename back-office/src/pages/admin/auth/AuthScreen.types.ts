@@ -18,6 +18,7 @@ export interface AuthScreenProps {
   otpValid: boolean;
   phone: string;
   phoneValid: boolean;
+  resendRemainingSeconds: number;
   state: AuthScreenState;
 }
 

@@ -3,7 +3,7 @@ export interface OtpStepProps {
   otp: string;
   error: string;
   expiresInSeconds: number;
-  retryAfterSeconds: number;
+  resendRemainingSeconds: number;
   valid: boolean;
 }
 

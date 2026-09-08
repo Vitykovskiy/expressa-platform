@@ -19,7 +19,7 @@
   align-items: center;
   gap: var(--expressa-space-control-inline);
   justify-content: center;
-  color: var(--expressa-color-text-muted);
+  color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-body);
   -webkit-font-smoothing: auto;

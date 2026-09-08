@@ -4,6 +4,31 @@ import { describe, expect, it } from "vitest";
 import OrderCard from "./OrderCard.vue";
 
 describe("OrderCard", () => {
+  it("показывает ошибку деталей в карточке и повторяет существующим действием", async () => {
+    const wrapper = mount(OrderCard, {
+      props: {
+        details: null,
+        detailsError: {
+          code: "NETWORK_ERROR",
+          details: null,
+          message: "Не удалось подключиться к серверу.",
+          requestId: "request-1",
+        },
+        detailsLoading: false,
+        order,
+        transitionLoading: false,
+      },
+    });
+
+    expect(wrapper.text()).toContain("Не удалось загрузить детали заказа");
+    expect(wrapper.get("details").attributes("open")).toBeUndefined();
+    expect(wrapper.get(".order-card__details-button").text()).toBe(
+      "Повторить загрузку деталей",
+    );
+    await wrapper.get(".order-card__details-button").trigger("click");
+    expect(wrapper.emitted("open")).toEqual([[order.id]]);
+  });
+
   it("показывает суммы заказа и позиций целыми рублями", () => {
     const wrapper = mount(OrderCard, {
       props: {
@@ -25,6 +50,7 @@ describe("OrderCard", () => {
           ],
         },
         detailsLoading: false,
+        detailsError: null,
         order,
         transitionLoading: false,
       },

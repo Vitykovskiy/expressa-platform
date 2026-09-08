@@ -101,6 +101,7 @@ import type {
   ModifierOptionDraft,
   ModifierOptionEditorEmits,
   ModifierOptionEditorProps,
+  ModifierOptionFormField,
 } from "./ModifierOptionEditor.types";
 
 const props = defineProps<ModifierOptionEditorProps>();
@@ -109,10 +110,11 @@ const defaultLabelId = `modifier-option-default-${useId()}`;
 const availableLabelId = `modifier-option-available-${useId()}`;
 const removeOpen = shallowRef(false);
 
-function updateField<Key extends keyof ModifierOptionDraft>(
-  field: Key,
-  value: ModifierOptionDraft[Key],
+function updateField(
+  field: ModifierOptionFormField,
+  value: ModifierOptionDraft[ModifierOptionFormField],
 ) {
+  emit("touch", field);
   emit("update:modelValue", { ...props.modelValue, [field]: value });
 }
 </script>

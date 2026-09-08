@@ -18,7 +18,7 @@ describe("session store", () => {
 
   it("uses one refresh for concurrent bootstrap and keeps token only in memory", async () => {
     const dependencies = createDependencies();
-    const resolveRefresh = createDeferred();
+    const resolveRefresh = createDeferred<typeof accessSession>();
     dependencies.authApi.refresh = vi.fn(() => resolveRefresh.promise);
     setSessionDependencies(dependencies);
     const store = useSessionStore();
@@ -43,7 +43,32 @@ describe("session store", () => {
     dependencies.authApi.refresh = vi.fn().mockRejectedValue(apiError(500));
     await useSessionStore().bootstrap();
     expect(useSessionStore().status).toBe("unknown");
-    expect(useSessionStore().errorMessage).toBe("Ошибка API");
+    expect(useSessionStore().errorMessage).toBe(
+      "Не удалось восстановить сессию. Попробуйте ещё раз.",
+    );
+  });
+
+  it("permits only one in-flight logout and releases it after rejection", async () => {
+    const dependencies = createDependencies();
+    const deferred = createDeferred<void>();
+    dependencies.authApi.logout = vi.fn(() => deferred.promise);
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    store.setAuthenticated("+79991234567");
+
+    const first = store.logout();
+    const second = store.logout();
+    expect(dependencies.authApi.logout).toHaveBeenCalledTimes(1);
+
+    deferred.reject(apiError(503));
+    await expect(first).rejects.toThrow("Ошибка API");
+    await expect(second).rejects.toThrow("Ошибка API");
+    expect(store.status).toBe("authenticated");
+
+    dependencies.authApi.logout = vi.fn().mockResolvedValue(undefined);
+    await store.logout();
+    expect(dependencies.authApi.logout).toHaveBeenCalledTimes(1);
+    expect(store.status).toBe("anonymous");
   });
 
   it("rejects a non-customer session", async () => {
@@ -130,7 +155,29 @@ describe("session store", () => {
     );
   });
 
-  it("сохраняет текст неизвестной ошибки API", async () => {
+  it.each([
+    [400, "API_CONTRACT_ERROR", "Сервер вернул неизвестный ответ."],
+    [503, "SERVICE_UNAVAILABLE", "Service unavailable"],
+  ])(
+    "объясняет неудачу отправки кода без технического текста: %i %s",
+    async (status, code, message) => {
+      const dependencies = createDependencies();
+      dependencies.authApi.requestOtp = vi
+        .fn()
+        .mockRejectedValue(apiError(status, code, message));
+      setSessionDependencies(dependencies);
+
+      await expect(
+        useSessionStore().requestOtp("+79991234567"),
+      ).rejects.toThrow(message);
+
+      expect(useSessionStore().errorMessage).toBe(
+        "Не удалось отправить код. Попробуйте ещё раз.",
+      );
+    },
+  );
+
+  it("объясняет истёкший код и предлагает запросить новый", async () => {
     const dependencies = createDependencies();
     dependencies.authApi.verifyOtp = vi
       .fn()
@@ -141,7 +188,9 @@ describe("session store", () => {
       useSessionStore().verifyOtp("+79991234567", "123456"),
     ).rejects.toThrow("Код истёк.");
 
-    expect(useSessionStore().errorMessage).toBe("Код истёк.");
+    expect(useSessionStore().errorMessage).toBe(
+      "Срок действия кода истёк. Запросите новый код.",
+    );
   });
 
   it("сохраняет резервный текст для не-API ошибки", async () => {
@@ -233,16 +282,19 @@ function apiError(
   });
 }
 
-function createDeferred(): {
-  promise: Promise<typeof accessSession>;
-  resolve: (value: typeof accessSession) => void;
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  reject: (reason?: unknown) => void;
+  resolve: (value: T) => void;
 } {
-  let resolve!: (value: typeof accessSession) => void;
-  const promise = new Promise<typeof accessSession>((nextResolve) => {
+  let reject!: (reason?: unknown) => void;
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
     resolve = nextResolve;
+    reject = nextReject;
   });
 
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 function createStorage() {

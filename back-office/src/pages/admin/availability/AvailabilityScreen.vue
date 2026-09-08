@@ -41,12 +41,26 @@
           class="availability-screen__error"
           role="alert"
         >
-          <p class="availability-screen__error-message">
-            {{ props.error.message }}
+          <p class="availability-screen__error-message">{{ errorLead }}</p>
+          <p v-if="errorPosition" class="availability-screen__error-message">
+            {{ errorPosition }}
           </p>
-          <AdminButton type="button" @click="emit('retry')">
-            Повторить
+          <p class="availability-screen__error-message">{{ errorGuidance }}</p>
+          <AdminButton
+            :disabled="props.loading || props.saving"
+            type="button"
+            @click="emit('retry')"
+          >
+            {{ errorAction }}
           </AdminButton>
+          <details class="availability-screen__error-details">
+            <summary>Технические подробности</summary>
+            <p>Код: {{ props.error.code }}</p>
+            <p>{{ props.error.message }}</p>
+            <p v-if="props.error.requestId">
+              Идентификатор запроса: {{ props.error.requestId }}
+            </p>
+          </details>
         </section>
         <section
           v-if="props.intake !== null"
@@ -64,14 +78,33 @@
           </section>
           <EmptyState
             v-if="groupedItems.length === 0"
-            :title="availabilityMessages.emptyTitle"
-            :description="availabilityMessages.emptyDescription"
+            :title="
+              hasItems
+                ? availabilityMessages.emptyFilteredTitle
+                : availabilityMessages.emptyTitle
+            "
+            :description="
+              hasItems
+                ? availabilityMessages.emptyFilteredDescription
+                : availabilityMessages.emptyDescription
+            "
           >
             <template #icon>
               <ToggleRight :size="48" :stroke-width="1.5" />
             </template>
           </EmptyState>
-          <div v-else class="availability-screen__groups">
+          <AdminButton
+            v-if="hasItems && groupedItems.length === 0"
+            class="availability-screen__reset-filters"
+            type="button"
+            @click="resetFilters"
+          >
+            {{ availabilityMessages.resetFilters }}
+          </AdminButton>
+          <div
+            v-if="groupedItems.length > 0"
+            class="availability-screen__groups"
+          >
             <AvailabilityGroup
               v-for="group in groupedItems"
               :key="group.id"
@@ -156,6 +189,33 @@ const groupedItems = computed(() => {
     return groups;
   }, []);
 });
+const hasItems = computed(() =>
+  props.groups.some((group) => group.items.length > 0),
+);
+const errorLead = computed(() => {
+  if (props.error?.kind === "item")
+    return "Не удалось подтвердить изменение доступности.";
+  if (props.error?.kind === "intake")
+    return "Не удалось подтвердить изменение приёма заказов.";
+  return "Не удалось загрузить доступность.";
+});
+const errorPosition = computed(() =>
+  props.error?.kind === "item"
+    ? `Позиция: «${props.error.label}»${
+        props.error.sublabel ? `, ${props.error.sublabel}` : ""
+      }`
+    : "",
+);
+const errorGuidance = computed(() =>
+  props.error?.kind === "read"
+    ? "Проверьте соединение и загрузите данные ещё раз."
+    : "Показано предыдущее состояние. Проверьте актуальное состояние на сервере.",
+);
+const errorAction = computed(() =>
+  props.error?.kind === "read"
+    ? availabilityMessages.retryLoad
+    : availabilityMessages.verifyState,
+);
 
 const intakeSublabel = computed(() => {
   if (props.intake === null) return "";
@@ -170,6 +230,10 @@ const intakeSublabel = computed(() => {
 
 function updateIntake(value: boolean): void {
   emit("intake-change", value);
+}
+function resetFilters(): void {
+  search.value = "";
+  activeCategory.value = AVAILABILITY_ALL_CATEGORY;
 }
 
 function formatDate(value: string): string {
@@ -255,6 +319,12 @@ function formatDate(value: string): string {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
   line-height: var(--expressa-line-height-body);
+}
+.availability-screen__error > .admin-button {
+  justify-self: start;
+}
+.availability-screen__error-details p {
+  overflow-wrap: anywhere;
 }
 
 .availability-screen__groups {

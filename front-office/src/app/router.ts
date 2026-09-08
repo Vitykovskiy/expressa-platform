@@ -57,6 +57,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
   if (!to.meta.requiresCustomer) return true;
   if (sessionStore.status === "unknown") await sessionStore.bootstrap();
   if (sessionStore.status === "authenticated") return true;
+  if (sessionStore.status === "unknown") return true;
   return { path: routePaths.authPhone, query: { returnTo: to.fullPath } };
 };
 

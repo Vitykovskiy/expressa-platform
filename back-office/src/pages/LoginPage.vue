@@ -3,6 +3,7 @@
     :error="formError || sessionStore.error?.message || ''"
     :otp="otp"
     :otp-metadata="otpMetadata"
+    :resend-remaining-seconds="resendRemainingSeconds"
     :otp-valid="otpValid"
     :phone="phone"
     :phone-valid="phoneValid"
@@ -18,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 
 import AuthScreen from "./admin/auth/AuthScreen.vue";
@@ -41,11 +42,18 @@ const phone = shallowRef("");
 const otp = shallowRef("");
 const otpMetadata = shallowRef<LoginOtpMetadata | null>(null);
 const formError = shallowRef("");
+const resendAvailableAt = shallowRef<number | null>(null);
+const now = shallowRef(Date.now());
+let resendTimer: ReturnType<typeof setInterval> | null = null;
 
 const phoneValid = computed(
   () => phone.value.replace(/\D/g, "").length === loginPhoneDigitsLength,
 );
 const otpValid = computed(() => otp.value.length === loginOtpLength);
+const resendRemainingSeconds = computed(() => {
+  if (resendAvailableAt.value === null) return 0;
+  return Math.max(0, Math.ceil((resendAvailableAt.value - now.value) / 1000));
+});
 
 async function requestOtp(): Promise<void> {
   if (!phoneValid.value) {
@@ -53,16 +61,26 @@ async function requestOtp(): Promise<void> {
     return;
   }
 
+  const previousState = screenState.value;
+  const isResend = previousState === "otp" && otpMetadata.value !== null;
+  if (
+    previousState === "loading" ||
+    (isResend && resendRemainingSeconds.value > 0)
+  )
+    return;
+
   formError.value = "";
   screenState.value = "loading";
   const metadata = await sessionStore.requestOtp(phone.value);
 
   if (metadata === null) {
-    screenState.value = "phone";
+    screenState.value = isResend ? "otp" : "phone";
     return;
   }
 
   otpMetadata.value = toLoginOtpMetadata(metadata);
+  resendAvailableAt.value = Date.now() + metadata.retryAfterSeconds * 1000;
+  startResendTimer();
   otp.value = "";
   screenState.value = "otp";
 }
@@ -92,6 +110,7 @@ function updateOtp(value: string): void {
 function changePhone(): void {
   otp.value = "";
   otpMetadata.value = null;
+  clearResendTimer();
   formError.value = "";
   screenState.value = "phone";
 }
@@ -100,6 +119,7 @@ function retry(): void {
   phone.value = "";
   otp.value = "";
   otpMetadata.value = null;
+  clearResendTimer();
   formError.value = "";
   screenState.value = "phone";
 }
@@ -156,4 +176,18 @@ function toLoginOtpMetadata(metadata: AuthOtpMetadata): LoginOtpMetadata {
     retryAfterSeconds: metadata.retryAfterSeconds,
   };
 }
+
+function startResendTimer(): void {
+  if (resendTimer !== null) clearInterval(resendTimer);
+  now.value = Date.now();
+  resendTimer = setInterval(() => (now.value = Date.now()), 1000);
+}
+
+function clearResendTimer(): void {
+  if (resendTimer !== null) clearInterval(resendTimer);
+  resendTimer = null;
+  resendAvailableAt.value = null;
+}
+
+onBeforeUnmount(clearResendTimer);
 </script>

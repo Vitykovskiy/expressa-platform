@@ -1,4 +1,10 @@
-import type { Category, ProductSize, ProductType } from "./catalog.types";
+import type {
+  CatalogStoreError,
+  Category,
+  CatalogFormSaveOutcome,
+  ProductSize,
+  ProductType,
+} from "./catalog.types";
 
 export type ProductFormField =
   | "categoryId"
@@ -56,11 +62,14 @@ export interface AddProductDialogProps {
   disabled: boolean;
   categories: readonly Category[];
   fieldErrors?: Partial<Record<ProductFormField, string>>;
+  saveError?: CatalogStoreError | null;
+  saveOutcome?: CatalogFormSaveOutcome;
 }
 
 export interface AddProductDialogEmits {
   confirm: [data: ProductFormData];
   cancel: [];
+  refresh: [];
 }
 
 export interface ProductTypeOption {

@@ -78,12 +78,46 @@ describe("App", () => {
     expect(restore).toHaveBeenCalledTimes(1);
     expect(calls).toEqual(["cart", "session"]);
     expect(wrapper.find("h1").exists()).toBe(false);
+    expect(wrapper.get('[role="status"]').text()).toContain(
+      "Восстанавливаем сессию",
+    );
+    expect(wrapper.get('[role="status"]').attributes("aria-busy")).toBe("true");
 
     finishBootstrap();
     await flushPromises();
 
     expect(wrapper.get("h1").text()).toBe("Меню");
     expect(wrapper.findAllComponents(CustomerShell)).toHaveLength(1);
+  });
+
+  it("показывает восстанавливаемую ошибку с единственным повтором", async () => {
+    const router = await createTestRouter("/orders");
+    const sessionStore = useSessionStore();
+    const bootstrap = vi
+      .spyOn(sessionStore, "bootstrap")
+      .mockImplementationOnce(async () => {
+        sessionStore.errorMessage =
+          "Не удалось восстановить сессию. Попробуйте ещё раз.";
+      })
+      .mockImplementationOnce(async () => {
+        sessionStore.setAuthenticated("+79990000000");
+      });
+
+    const wrapper = mount(App, {
+      global: { plugins: [vuetify, pinia, router] },
+    });
+    await flushPromises();
+
+    const boundary = wrapper.get('[role="status"]');
+    expect(boundary.text()).toContain("Не удалось восстановить сессию");
+    expect(boundary.findAll("button")).toHaveLength(1);
+
+    await boundary.get("button").trigger("click");
+    await flushPromises();
+
+    expect(bootstrap).toHaveBeenCalledTimes(2);
+    expect(wrapper.findComponent(CustomerShell).exists()).toBe(true);
+    expect(router.currentRoute.value.path).toBe("/orders");
   });
 
   it("после успешного выхода очищает сессию и корзину, затем возвращает на главную", async () => {
@@ -117,9 +151,14 @@ describe("App", () => {
     await flushPromises();
 
     wrapper.getComponent(CustomerShell).vm.$emit("signOut");
+    wrapper.getComponent(CustomerShell).vm.$emit("signOut");
+    await wrapper.vm.$nextTick();
     expect(router.currentRoute.value.path).toBe("/orders");
     expect(sessionStore.status).toBe("authenticated");
     expect(cartStore.items).toHaveLength(1);
+    expect(wrapper.getComponent(CustomerShell).props("isLogoutPending")).toBe(
+      true,
+    );
 
     finishLogout();
     await flushPromises();

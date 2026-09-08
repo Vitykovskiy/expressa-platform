@@ -81,4 +81,4 @@ rewrite, навигация; `docs/README.md` — merge/delete в INDEX; `00-met
 — rewrite, границы; `20-architecture/Structure.md` — rewrite, слои;
 `40-testing/Verification.md` — rewrite, проверки;
 `_sources/README.md` — update, приоритет источников; `_journal/README.md` —
-keep, журнал. [Источник: target-map](../../.codex/tmp/tasks/docs-as-code-rework/architecture.md).
+keep, журнал.

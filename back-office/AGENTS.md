@@ -1,7 +1,8 @@
 # back-office
 
-Начинайте с [README](README.md): он ведёт к runtime, контракту, тестам и командам. [Карта документации](docs/INDEX.md) содержит текущие сценарии, маршруты и API-границы; [Definition of Done](../docs/80-conventions/Code-Definition-of-Done-back-office.md) определяет приёмку production-кода.
+Следуй корневому [AGENTS.md](../AGENTS.md).
 
+- Вход: [README](README.md); [карта документации](docs/INDEX.md); критерии готовности: [Definition of Done](../docs/80-conventions/Code-Definition-of-Done-back-office.md).
 - Изменяй только этот автономный Vue-контур; исходные импорты из `front-office` запрещены.
 - Runtime-код следует `app -> pages -> widgets -> features -> entities -> shared`.
 - `src` содержит только runtime-код.

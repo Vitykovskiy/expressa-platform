@@ -79,6 +79,9 @@ export interface CategoryModifierGroupAssignment {
 
 export type CatalogStoreStatus = "idle" | "loading" | "ready" | "error";
 
+export type CatalogFormSaveOutcome =
+  "idle" | "saved" | "rejected" | "unconfirmed" | "checked";
+
 export type CatalogFieldErrors = Readonly<Record<string, string>>;
 
 export interface CatalogStoreError {
@@ -94,6 +97,8 @@ export interface CatalogStoreState {
   fieldErrors: CatalogFieldErrors;
   lastCommandSucceeded: boolean;
   modifierGroups: readonly ModifierGroup[];
+  formSaveError: CatalogStoreError | null;
+  formSaveOutcome: CatalogFormSaveOutcome;
   products: readonly Product[];
   status: CatalogStoreStatus;
 }
@@ -138,6 +143,8 @@ export interface CatalogStoreActions {
     product: CreateCatalogProduct,
   ): Promise<void>;
   load(accessToken: string): Promise<void>;
+  resetFormSaveOutcome(): void;
+  refresh(accessToken: string): Promise<void>;
   reorderCategories(
     accessToken: string,
     categoryIds: readonly string[],

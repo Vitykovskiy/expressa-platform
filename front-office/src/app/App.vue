@@ -1,12 +1,28 @@
 <template>
   <VApp>
+    <main
+      v-if="sessionBoundaryState !== 'ready'"
+      aria-live="polite"
+      class="session-boundary"
+      role="status"
+      :aria-busy="sessionBoundaryState === 'loading'"
+    >
+      <div class="session-boundary__content">
+        <p v-if="sessionBoundaryState === 'loading'">Восстанавливаем сессию…</p>
+        <template v-else>
+          <p>{{ sessionStore.errorMessage }}</p>
+          <button type="button" @click="retrySession">Повторить</button>
+        </template>
+      </div>
+    </main>
     <CustomerShell
-      v-if="bootstrapState.ready"
+      v-else
       :active-destination="activeDestination"
       :account-label="accountLabel"
       :cart-count="cartStore.itemCount"
       :categories="menuStore.menu?.categories ?? []"
       :is-authenticated="sessionStore.status === 'authenticated'"
+      :is-logout-pending="logoutPending"
       :selected-category-id="selectedCategoryId"
       :show-back="showBack"
       @back="back"
@@ -51,7 +67,7 @@ import type {
 import { useAppStore } from "./app.store";
 import { appRoute } from "./App.constants";
 import { routePaths } from "./router.constants";
-import type { AppBootstrapState } from "./App.types";
+import type { AppBootstrapState, SessionBoundaryState } from "./App.types";
 import { useSessionStore } from "./session.store";
 
 const appStore = useAppStore();
@@ -63,6 +79,8 @@ const router = useRouter();
 const bootstrapState = reactive<AppBootstrapState>({ ready: false });
 const pendingMenuShellCommand = ref<MenuShellCommand | null>(null);
 const observedMenuScreen = ref<MenuFlowScreen>({ id: "root" });
+const logoutPending = ref(false);
+const sessionRetrying = ref(false);
 let nextMenuShellCommandId = 0;
 const activeDestination = computed<ShellNavigationDestination>(() => {
   if (route.path === "/cart") return "cart";
@@ -85,6 +103,12 @@ const showBack = computed(
     route.path.startsWith("/orders/") ||
     (route.path === appRoute.home && observedMenuScreen.value.id !== "root"),
 );
+const sessionBoundaryState = computed<SessionBoundaryState>(() => {
+  if (!bootstrapState.ready || sessionRetrying.value) return "loading";
+  if (sessionStore.status !== "unknown") return "ready";
+
+  return sessionStore.errorMessage === null ? "ready" : "error";
+});
 
 watch(
   () => route.path,
@@ -103,11 +127,32 @@ onMounted(async () => {
 });
 
 async function logout(): Promise<void> {
+  if (logoutPending.value) return;
+
+  logoutPending.value = true;
   try {
     await sessionStore.logout();
     await router.replace(appRoute.home);
   } catch {
     /* state owns error */
+  } finally {
+    logoutPending.value = false;
+  }
+}
+
+async function retrySession(): Promise<void> {
+  sessionRetrying.value = true;
+  try {
+    await sessionStore.bootstrap();
+
+    if (sessionStore.status === "anonymous" && route.meta.requiresCustomer) {
+      await router.replace({
+        path: routePaths.authPhone,
+        query: { returnTo: route.fullPath },
+      });
+    }
+  } finally {
+    sessionRetrying.value = false;
   }
 }
 
@@ -187,3 +232,36 @@ function getAuthReturnTo(): string | undefined {
   return activeDestination.value === "auth" ? undefined : route.fullPath;
 }
 </script>
+
+<style scoped>
+.session-boundary {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--customer-space-8);
+  color: var(--customer-text);
+  background: var(--customer-background);
+}
+
+.session-boundary__content {
+  display: grid;
+  gap: var(--customer-space-6);
+  max-width: 32rem;
+  text-align: center;
+}
+
+.session-boundary__content p {
+  margin: 0;
+}
+
+.session-boundary__content button {
+  min-height: 44px;
+  padding: 0 var(--customer-space-8);
+  color: var(--customer-text);
+  background: var(--customer-primary);
+  border: 0;
+  border-radius: var(--customer-radius-sm);
+  font: inherit;
+  font-weight: var(--customer-font-weight-extrabold);
+}
+</style>

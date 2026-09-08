@@ -61,6 +61,7 @@ expressa/
 - [Поставка](docs/70-deployment/INDEX.md) — окружения, CI/CD и эксплуатация.
 - [Бэклог](docs/10-overview/backlog/INDEX.md) — планы следующих этапов и карточки работ.
 - [Правила работы](AGENTS.md) — обязательные инструкции для агентов.
+- [Агентная система](docs/80-conventions/Agent-system.md) — skills, роли и оркестрация.
 
 ## Состояние и проверка
 

@@ -40,11 +40,24 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       );
     },
 
+    refresh(accessToken: string): Promise<void> {
+      if (this.activeOperation !== null) return this.activeOperation;
+      return this.execute(accessToken, () =>
+        getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
+      );
+    },
+
+    resetFormSaveOutcome(): void {
+      this.fieldErrors = {};
+      this.formSaveError = null;
+      this.formSaveOutcome = "idle";
+    },
+
     createCategory(
       accessToken: string,
       category: Parameters<CatalogStoreActions["createCategory"]>[1],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.createCategory(
           accessToken,
           category,
@@ -57,7 +70,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       categoryId: string,
       category: Parameters<CatalogStoreActions["updateCategory"]>[2],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.updateCategory(
           accessToken,
           categoryId,
@@ -91,7 +104,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       product: Parameters<CatalogStoreActions["createProduct"]>[1],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.createProduct(
           accessToken,
           product,
@@ -104,7 +117,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       productId: string,
       product: Parameters<CatalogStoreActions["updateProduct"]>[2],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.updateProduct(
           accessToken,
           productId,
@@ -137,7 +150,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     },
 
     archiveModifierGroup(accessToken: string, groupId: string): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.archiveModifierGroup(
           accessToken,
           groupId,
@@ -203,7 +216,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       group: Parameters<CatalogStoreActions["saveModifierGroup"]>[1],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.saveCatalogForm(accessToken, () =>
         getCatalogStoreDependencies().catalogApi.saveModifierGroup(
           accessToken,
           group,
@@ -226,6 +239,49 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       });
     },
 
+    saveCatalogForm(
+      accessToken: string,
+      mutation: () => Promise<unknown>,
+    ): Promise<void> {
+      if (this.activeOperation !== null) return this.activeOperation;
+
+      this.status = catalogStatuses.loading;
+      this.error = null;
+      this.fieldErrors = {};
+      this.lastCommandSucceeded = false;
+      this.formSaveError = null;
+      this.formSaveOutcome = "idle";
+      const activeOperation = mutation()
+        .then(async () => {
+          this.formSaveOutcome = "saved";
+          this.lastCommandSucceeded = true;
+          try {
+            const catalog =
+              await getCatalogStoreDependencies().catalogApi.getCatalog(
+                accessToken,
+              );
+            replaceCatalogState(this, catalog);
+            this.status = catalogStatuses.ready;
+          } catch (error) {
+            this.error = toCatalogStoreError(error);
+            this.status = catalogStatuses.error;
+          }
+        })
+        .catch((error: unknown) => {
+          this.formSaveError = toCatalogStoreError(error);
+          this.fieldErrors = toFieldErrors(error);
+          this.formSaveOutcome = isValidationError(error)
+            ? "rejected"
+            : "unconfirmed";
+          this.status = catalogStatuses.ready;
+        })
+        .finally(() => {
+          this.activeOperation = null;
+        });
+      this.activeOperation = activeOperation;
+      return activeOperation;
+    },
+
     execute(
       accessToken: string,
       operation: () => Promise<CatalogApiResult>,
@@ -234,6 +290,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.error = null;
       this.fieldErrors = {};
       this.lastCommandSucceeded = false;
+      this.resetFormSaveOutcome();
 
       const activeOperation = operation()
         .then((catalog) => {
@@ -256,6 +313,13 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     },
   },
 });
+
+function isValidationError(error: unknown): boolean {
+  return (
+    error instanceof CatalogApiError &&
+    (error.code === "VALIDATION_ERROR" || error.status === 400)
+  );
+}
 
 function replaceCatalogState(
   store: CatalogStoreState,

@@ -31,7 +31,7 @@
         :expires-in-seconds="props.otpMetadata?.expiresInSeconds ?? 0"
         :otp="props.otp"
         :phone="props.phone"
-        :retry-after-seconds="props.otpMetadata?.retryAfterSeconds ?? 0"
+        :resend-remaining-seconds="props.resendRemainingSeconds"
         :valid="props.otpValid"
         @change-phone="emit('changePhone')"
         @resend="emit('resendOtp')"

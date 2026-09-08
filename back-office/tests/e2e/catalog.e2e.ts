@@ -68,6 +68,139 @@ test("production runtime компилирует Vuetify-диалог катег�
   await context.close();
 });
 
+test("Q-046: edit-draft product type focus stays inside the 320px viewport", async ({
+  browser,
+}) => {
+  const administrator = phone();
+  const suffix = randomUUID().slice(0, 8);
+  const categoryName = `Q-046 категория ${suffix}`;
+  const productName = `Q-046 товар ${suffix}`;
+  createStaff(administrator, "administrator");
+
+  const context = await browser.newContext({
+    viewport: { height: catalogViewportHeight, width: 320 },
+  });
+  const page = await context.newPage();
+  const productUpdateRequests: Request[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "PATCH" &&
+      /\/api\/v2\/backoffice\/catalog\/products\/.+/.test(request.url())
+    )
+      productUpdateRequests.push(request);
+  });
+
+  await login(page, administrator);
+  await page.getByRole("button", { name: "Меню" }).click();
+  await createCategory(page, categoryName);
+  await createProduct(page, productName, "OTHER", ["180"], ["S"], categoryName);
+  await page
+    .getByRole("button", { name: `Редактировать товар ${productName}` })
+    .click();
+
+  const dialog = page.locator(".edit-dialog:visible");
+  const categorySelect = dialog.getByLabel("Категория", { exact: true });
+  const typeSelect = dialog.getByLabel("Тип товара", { exact: true });
+  await typeSelect.selectOption("DRINK");
+  await categorySelect.focus();
+  await page.keyboard.press("Tab");
+  await expect(typeSelect).toBeFocused();
+
+  const focusRing = await typeSelect.evaluate((select) => {
+    const style = globalThis.getComputedStyle(select);
+    const rect = select.getBoundingClientRect();
+    const outlineWidth = Number.parseFloat(style.outlineWidth);
+    const outlineOffset = Number.parseFloat(style.outlineOffset);
+    return {
+      outlineOffset,
+      outlineWidth,
+      right: rect.right + outlineWidth + outlineOffset,
+      viewportWidth: globalThis.innerWidth,
+    };
+  });
+  expect(focusRing.outlineWidth).toBe(2);
+  expect(focusRing.outlineOffset).toBe(2);
+  expect(focusRing.right).toBeLessThanOrEqual(focusRing.viewportWidth);
+
+  const sizeVariantSwitches = dialog.getByRole("switch", {
+    name: /^Использовать размер [SML]$/,
+  });
+  const sizeVariantSwitchCount = await sizeVariantSwitches.count();
+  expect(sizeVariantSwitchCount).toBeGreaterThan(0);
+  for (let index = 0; index < sizeVariantSwitchCount; index += 1) {
+    const sizeVariantSwitch = sizeVariantSwitches.nth(index);
+    for (
+      let tabPresses = 0;
+      tabPresses < 20 &&
+      !(await sizeVariantSwitch.evaluate(
+        (toggle) => toggle === globalThis.document.activeElement,
+      ));
+      tabPresses += 1
+    ) {
+      await page.keyboard.press("Tab");
+    }
+
+    await expect(sizeVariantSwitch).toBeFocused();
+    const focusRing = await sizeVariantSwitch.evaluate((toggle) => {
+      const style = globalThis.getComputedStyle(toggle);
+      const rect = toggle.getBoundingClientRect();
+      const outlineWidth = Number.parseFloat(style.outlineWidth);
+      const outlineOffset = Number.parseFloat(style.outlineOffset);
+      const ringExtent = outlineWidth + outlineOffset;
+      return {
+        bottom: rect.bottom + ringExtent,
+        left: rect.left - ringExtent,
+        outlineOffset,
+        outlineWidth,
+        right: rect.right + ringExtent,
+        top: rect.top - ringExtent,
+        viewportHeight: globalThis.innerHeight,
+        viewportWidth: globalThis.innerWidth,
+      };
+    });
+    expect(focusRing.outlineWidth).toBe(2);
+    expect(focusRing.outlineOffset).toBe(2);
+    expect(focusRing.left).toBeGreaterThanOrEqual(0);
+    expect(focusRing.top).toBeGreaterThanOrEqual(0);
+    expect(focusRing.right).toBeLessThanOrEqual(focusRing.viewportWidth);
+    expect(focusRing.bottom).toBeLessThanOrEqual(focusRing.viewportHeight);
+  }
+
+  const pageHorizontalSurfaces = await page.evaluate(() => {
+    const documentElement = globalThis.document.documentElement;
+    const body = globalThis.document.body;
+    return {
+      documentLeft: documentElement.scrollLeft,
+      pageLeft: globalThis.scrollX,
+      surfaces: [documentElement, body].map((surface) => ({
+        clientWidth: surface.clientWidth,
+        scrollLeft: surface.scrollLeft,
+        scrollWidth: surface.scrollWidth,
+      })),
+    };
+  });
+  const fieldsHorizontalSurface = await dialog
+    .locator(".edit-dialog-fields")
+    .evaluate((surface) => ({
+      clientWidth: surface.clientWidth,
+      scrollLeft: surface.scrollLeft,
+      scrollWidth: surface.scrollWidth,
+    }));
+  expect(pageHorizontalSurfaces.documentLeft).toBe(0);
+  expect(pageHorizontalSurfaces.pageLeft).toBe(0);
+  for (const surface of [
+    ...pageHorizontalSurfaces.surfaces,
+    fieldsHorizontalSurface,
+  ]) {
+    expect(surface.scrollWidth).toBeLessThanOrEqual(surface.clientWidth);
+    expect(surface.scrollLeft).toBe(0);
+  }
+
+  await dialog.getByRole("button", { name: "Отмена" }).click();
+  expect(productUpdateRequests).toHaveLength(0);
+  await context.close();
+});
+
 test("administrator создаёт и публикует каталог для public menu", async ({
   browser,
 }) => {

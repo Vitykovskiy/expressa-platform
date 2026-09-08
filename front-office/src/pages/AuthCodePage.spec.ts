@@ -70,6 +70,24 @@ describe("AuthCodePage", () => {
     expect(router.currentRoute.value.path).toBe("/auth/code");
   });
 
+  it("does not request another code before the retry deadline", async () => {
+    const dependencies = createDependencies();
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    store.pendingPhone = "+79991234567";
+    store.otpExpiresAt = 301_000;
+    store.otpRequestedAt = 1_000;
+    store.otpRequestMetadata = { expiresInSeconds: 300, retryAfterSeconds: 60 };
+    const router = createTestRouter();
+    await router.push("/auth/code?returnTo=/cart");
+    await router.isReady();
+    const wrapper = mount(AuthCodePage, { global: { plugins: [router] } });
+
+    await wrapper.get('[data-test="resend"]').trigger("click");
+
+    expect(dependencies.authApi.requestOtp).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["/cart", "/cart"],
     ["/auth/phone?next=/cart", "/"],

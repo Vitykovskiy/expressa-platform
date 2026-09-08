@@ -2,7 +2,11 @@ import { defineStore } from "pinia";
 
 import { ApiError } from "../shared/api/client";
 import { getSessionStoreDependencies } from "./session.store.dependencies";
-import { sessionErrorMessage, staffRoles } from "./session.store.constants";
+import {
+  otpRateLimitedMessage,
+  sessionErrorMessage,
+  staffRoles,
+} from "./session.store.constants";
 import type {
   SessionStoreDependencies,
   SessionStoreError,
@@ -131,6 +135,10 @@ function isStaffUser(value: AuthCurrentUser): value is StaffSessionUser {
 
 function toSessionStoreError(error: unknown): SessionStoreError {
   if (error instanceof ApiError) {
+    if (error.code === "AUTH_RATE_LIMITED") {
+      return { message: otpRateLimitedMessage, requestId: error.requestId };
+    }
+
     return { message: error.message, requestId: error.requestId };
   }
 

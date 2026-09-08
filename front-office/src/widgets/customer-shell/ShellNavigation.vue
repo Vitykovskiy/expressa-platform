@@ -11,7 +11,11 @@
           <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
         </ui-icon-btn>
         <ui-icon-btn
-          v-if="props.showBack || props.activeDestination === 'cart'"
+          v-if="
+            props.showBack ||
+            props.activeDestination === 'cart' ||
+            props.activeDestination === 'orders'
+          "
           type="button"
           aria-label="Меню"
           @click="emit('navigate', 'menu')"
@@ -38,7 +42,9 @@
         <ui-icon-btn
           v-if="props.isAuthenticated"
           type="button"
-          aria-label="Выйти"
+          :aria-label="props.isLogoutPending ? 'Выход выполняется' : 'Выйти'"
+          :disabled="props.isLogoutPending"
+          :loading="props.isLogoutPending"
           @click="emit('signOut')"
         >
           <LogOut aria-hidden="true" :size="17" :stroke-width="2.5" />
@@ -118,6 +124,8 @@
           'shell-navigation__account--authenticated':
             accountControl.isAuthenticated,
         }"
+        :disabled="props.isLogoutPending && accountControl.isAuthenticated"
+        :loading="props.isLogoutPending && accountControl.isAuthenticated"
         @click="accountControl.action()"
       >
         <component :is="accountControl.sidebarIcon" aria-hidden="true" />
@@ -175,7 +183,7 @@ const accountControl = computed(() => {
       sidebarIcon: Phone,
       isAuthenticated: true,
       label: props.accountLabel,
-      actionLabel: "Выйти",
+      actionLabel: props.isLogoutPending ? "Выходим…" : "Выйти",
       action: () => emit("signOut"),
     };
   }

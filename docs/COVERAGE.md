@@ -5,7 +5,6 @@ owner: root
 last_verified: 2026-08-11
 sources:
   - ../scripts/check-docs.mjs
-  - ../.codex/tmp/tasks/docs-as-code-rework/disposition-manifest.md
   - ../backend/openapi/openapi.json
 ---
 
@@ -13,7 +12,8 @@ sources:
 
 Реестр отделяет работающие межконтурные контракты от planning, ADR, journal и
 placeholder. Детали реализации остаются в local docs.
-[disposition-manifest.md:root](../.codex/tmp/tasks/docs-as-code-rework/disposition-manifest.md).
+Статус каждой группы определяется её назначением и расположением в текущем дереве
+документации.
 
 ## Ноты root docs
 
@@ -22,9 +22,9 @@ placeholder. Детали реализации остаются в local docs.
 | `docs/COVERAGE.md`                                                                                     | current                         | registry; источник статуса root docs                                  | [COVERAGE](COVERAGE.md)                             | [scripts/check-docs.mjs:checkCoverage](../scripts/check-docs.mjs)                                     | [scripts/check-docs.mjs:checkCoverage](../scripts/check-docs.mjs)                                     |
 | `docs/INDEX.md`, `docs/README.md`, `docs/**/_MOC-*.md`                                                 | N/A — navigation                | navigation; reason: glob содержит только навигационные ноты           | [INDEX](INDEX.md)                                   | [scripts/check-docs.mjs:checkReachability](../scripts/check-docs.mjs)                                 | [scripts/check-docs.mjs:checkReachability](../scripts/check-docs.mjs)                                 |
 | `docs/00-meta/*.md` кроме `_MOC-meta.md`                                                               | current                         | current policy/source rules                                           | [Метаданные](00-meta/_MOC-meta.md)                  | [docs/00-meta/Source-precedence.md:source](00-meta/Source-precedence.md)                              | N/A — rules; reason: не runtime                                                                       |
-| `docs/10-overview/backlog/**/*.md`, `docs/10-overview/Backlog*.md`, `docs/10-overview/Epic-roadmap.md` | N/A — planning                  | planning; glob содержит только backlog corpus                         | [Бэклог](10-overview/Backlog.md)                    | [disposition-manifest.md:root](../.codex/tmp/tasks/docs-as-code-rework/disposition-manifest.md)       | N/A — planning; reason: не runtime                                                                    |
+| `docs/10-overview/backlog/**/*.md`, `docs/10-overview/Backlog*.md`, `docs/10-overview/Epic-roadmap.md` | N/A — planning                  | planning; glob содержит только backlog corpus                         | [Бэклог](10-overview/Backlog.md)                    | N/A — planning; reason: не runtime, статус следует из расположения в backlog corpus                   | N/A — planning; reason: не runtime                                                                    |
 | `docs/10-overview/{MVP-scope,Project-overview,Roles-and-access}.md`                                    | N/A — planning target           | planning/target; reason: ТЗ описывает целевой MVP, не текущую систему | [Обзор](10-overview/_MOC-overview.md)               | [docs/_sources/Expressa_MVP_Техническое_задание.md:MVP](_sources/Expressa_MVP_Техническое_задание.md) | N/A — planning; reason: не runtime                                                                    |
-| `docs/20-architecture/ADR/*.md`                                                                        | N/A — decision records          | ADR; glob содержит только решения                                     | [Архитектура](20-architecture/_MOC-architecture.md) | [disposition-manifest.md:ADR](../.codex/tmp/tasks/docs-as-code-rework/disposition-manifest.md)        | N/A — ADR; reason: не runtime                                                                         |
+| `docs/20-architecture/ADR/*.md`                                                                        | N/A — decision records          | ADR; glob содержит только решения                                     | [Архитектура](20-architecture/_MOC-architecture.md) | N/A — ADR; reason: не runtime, статус следует из расположения в ADR                                   | N/A — ADR; reason: не runtime                                                                         |
 | `docs/20-architecture/*.md` кроме `ADR/**` и `_MOC-architecture.md`                                    | current                         | current cross-contour architecture                                    | [Архитектура](20-architecture/_MOC-architecture.md) | [backend/src/app.module.ts:AppModule](../backend/src/app.module.ts)                                   | [backend/test/e2e/health.e2e-spec.ts:health](../backend/test/e2e/health.e2e-spec.ts)                  |
 | `docs/30-domain/*.md` кроме `_MOC-domain.md`                                                           | current                         | current domain boundaries                                             | [Предметная область](30-domain/_MOC-domain.md)      | [backend/migrations/0006_e07_orders.sql:orders](../backend/migrations/0006_e07_orders.sql)            | [backend/test/e2e/create-order.e2e-spec.ts:createOrder](../backend/test/e2e/create-order.e2e-spec.ts) |
 | `docs/40-features/*.md` кроме `_MOC-features.md`                                                       | current/placeholder/unsupported | scenario note declares its own runtime boundary                       | [Возможности](40-features/_MOC-features.md)         | [backend/openapi/openapi.json:paths](../backend/openapi/openapi.json)                                 | [docs/95-testing/Mandatory-scenarios.md:scenarios](95-testing/Mandatory-scenarios.md)                 |
