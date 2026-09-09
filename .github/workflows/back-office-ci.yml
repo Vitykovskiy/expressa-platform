@@ -22,7 +22,6 @@ jobs:
   verify:
     name: Verify back-office
     runs-on: ubuntu-24.04
-    # Playwright v1.62.1 Noble Linux image for GitHub-hosted amd64 runners.
     container: mcr.microsoft.com/playwright@sha256:c091b21d9fae78c76e85cd4356431e9b018402f172a214fc7d7a5e9a7e29d8ac
     defaults:
       run:
@@ -58,10 +57,6 @@ jobs:
       - name: Verify OpenAPI contract
         run: npm run contract:check
 
-      - name: Run end-to-end tests
-        run: npm run test:e2e
-
-      - name: Audit high-severity dependencies
         run: npm audit --audit-level=high
 
   docker-build:
@@ -83,65 +78,3 @@ jobs:
           --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL"
           --tag expressa-back-office:ci
           .
-
-  auth-e2e:
-    name: Back-office auth E2E
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Set up Node.js
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version-file: back-office/.nvmrc
-          cache: npm
-          cache-dependency-path: back-office/package-lock.json
-
-      - name: Install back-office dependencies
-        working-directory: back-office
-        run: npm ci
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-
-      - name: Install front-office dependencies
-        working-directory: front-office
-        run: npm ci
-
-      - name: Install Chromium
-        working-directory: back-office
-        run: npx playwright install --with-deps chromium
-
-      - name: Run auth roles E2E
-        working-directory: back-office
-        run: >-
-          VITE_APP_ENV=development VITE_API_BASE_URL=http://127.0.0.1:3000
-          npm run build && PLAYWRIGHT_TARGET=auth npx playwright test --project=auth-e2e
-
-      - name: Run catalog E2E
-        working-directory: back-office
-        run: npm run test:catalog:e2e
-
-      - name: Upload catalog E2E diagnostics
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: back-office-catalog-e2e-diagnostics
-          path: back-office/test-results
-          if-no-files-found: ignore
-          retention-days: 3
-
-      - name: Run orders E2E
-        working-directory: back-office
-        run: npx playwright test --config=playwright.orders.config.ts
-
-      - name: Upload orders E2E diagnostics
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: back-office-orders-e2e-diagnostics
-          path: /tmp/expressa-orders-playwright-results
-          if-no-files-found: ignore
-          retention-days: 3

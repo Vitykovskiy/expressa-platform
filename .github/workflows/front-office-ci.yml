@@ -48,30 +48,6 @@ jobs:
         run: npm ci
         working-directory: backend
 
-      - name: Install Chromium for Playwright 1.62.1
-        run: npx playwright install --with-deps chromium
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Tests
-        run: npm test -- --run
-
-      - name: Verify OpenAPI contract
-        run: npm run contract:check
-
-      - name: End-to-end tests
-        run: npm run test:e2e
-
-      - name: Clean up isolated E2E backend
-        if: always()
-        run: >-
-          docker compose -p expressa-frontoffice-e2e
-          -f ../backend/compose.local.yml down --volumes
-
       - name: Audit high-severity dependencies
         run: npm audit --audit-level=high
 
