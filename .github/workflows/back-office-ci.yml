@@ -57,6 +57,7 @@ jobs:
       - name: Verify OpenAPI contract
         run: npm run contract:check
 
+      - name: Audit high-severity dependencies
         run: npm audit --audit-level=high
 
   docker-build:
