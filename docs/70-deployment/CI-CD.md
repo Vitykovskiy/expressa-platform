@@ -20,6 +20,9 @@ Docker build; client CI включает contract, UI и container провер�
 
 После main три проверенных образа получают SHA-tag, публикуются в локальный
 registry и передаются по digest в development. После успешной development
+поставки workflow проверяет customer, admin и прямой API `GET /api/v2/public/menu`:
+каждый endpoint обязан вернуть JSON меню, а HTML SPA fallback считается ошибкой.
+После успешной development
 поставки workflow собирает четвёртый E2E-образ, передаёт его immutable digest
 вместе с тремя digest приложений и запускает изолированную E2E-проверку. Если
 поставка или сборка E2E-образа неуспешна, always job публикует E2E-диагностику

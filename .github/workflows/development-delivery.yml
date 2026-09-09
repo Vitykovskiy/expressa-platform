@@ -90,6 +90,8 @@ jobs:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
           BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
         run: deploy/run-remote.sh development deploy/images.env
+      - name: Verify public development ingress
+        run: node deploy/check-development-ingress.mjs
   e2e-image:
     needs: deploy
     runs-on: ubuntu-24.04

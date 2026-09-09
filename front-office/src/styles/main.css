@@ -1,6 +1,40 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap");
 @import "./customer-tokens.css";
 
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/nunito-cyrillic-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/nunito-cyrillic-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/nunito-cyrillic-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/nunito-cyrillic-800.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/nunito-cyrillic-900.woff2") format("woff2");
+}
 :root {
   font-family: var(--customer-font-family);
   color: var(--customer-text);
