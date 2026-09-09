@@ -31,7 +31,7 @@ test("guest сохраняет конфигурацию через OTP и соз
     await page.getByRole("button", { name: checkoutProductName }).click();
     await page.getByRole("button", { name: /M · 320 ₽/ }).click();
     await page.getByRole("button", { name: /Добавить/ }).click();
-    await page.getByRole("link", { name: /Корзина/ }).click();
+    await page.getByRole("button", { name: /Корзина/ }).click();
     await expect(
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
     ).toContainText("Размер M");
@@ -1075,7 +1075,7 @@ test("issued заказ показывает history, скрывает чужо�
     await stranger.getByRole("button", { name: checkoutProductName }).click();
     await stranger.getByRole("button", { name: /M · 320 ₽/ }).click();
     await stranger.getByRole("button", { name: /Добавить/ }).click();
-    await stranger.getByRole("link", { name: /Корзина/ }).click();
+    await stranger.getByRole("button", { name: /Корзина/ }).click();
     await stranger.getByRole("button", { name: "Оформить заказ" }).click();
     await login(
       stranger,
@@ -1136,6 +1136,7 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
     const key = (await orderRequest).headers()["idempotency-key"] ?? "";
     const order = await requireOrder(database, customerId, key);
+    await database.stabilizeHistoryVisualOrder(order.id);
     const history = await database.createIssuedHistory(customerId, order.id);
     historyOrderIds = history.map((historyOrder) => historyOrder.id);
 

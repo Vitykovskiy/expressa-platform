@@ -11,6 +11,13 @@ test("открывает канонические маршруты без усп
 
     await route.continue();
   });
+  await page.route("**/api/v2/auth/refresh", (route) =>
+    route.fulfill({
+      body: "{}",
+      contentType: "application/json",
+      status: 401,
+    }),
+  );
 
   await page.goto("/");
   await expect(page).toHaveTitle("Expressa");
@@ -62,9 +69,9 @@ test("собранное приложение публикует PWA manifest", 
   await expect(
     page.getByRole("heading", { name: "Что будем заказывать?" }),
   ).toBeVisible();
-  const cartLink = page.getByRole("link", { name: /^Корзина/ });
+  const cartButton = page.getByRole("button", { name: /^Корзина/ });
 
-  await cartLink.focus();
+  await cartButton.focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/cart$/);
 });

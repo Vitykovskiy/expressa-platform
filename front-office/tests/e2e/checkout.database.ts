@@ -165,6 +165,22 @@ export class CheckoutDatabase {
     await this.#update("orders", "stage", stage, "id", orderId);
   }
 
+  async stabilizeHistoryVisualOrder(orderId: string): Promise<void> {
+    const result = await this.#pool.query(
+      `UPDATE orders
+       SET number = $1,
+           order_day = $2,
+           daily_number = $3,
+           created_at = $4
+       WHERE id = $5`,
+      ["20260817-016", "2026-08-17", 16, "2026-08-17T10:12:00.000Z", orderId],
+    );
+    if (result.rowCount !== 1)
+      throw new Error(
+        `Стабилизация history visual заказа затронула ${result.rowCount} строк.`,
+      );
+  }
+
   async createIssuedHistory(
     customerId: string,
     sourceOrderId: string,

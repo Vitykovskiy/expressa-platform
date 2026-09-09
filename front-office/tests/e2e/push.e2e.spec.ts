@@ -123,7 +123,7 @@ async function openCustomerOrder(page: Page): Promise<void> {
   await page.getByRole("button", { name: pushProductName }).click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: /Добавить/ }).click();
-  await page.getByRole("link", { name: /Корзина/ }).click();
+  await page.getByRole("button", { name: /Корзина/ }).click();
   await page.getByRole("button", { name: "Оформить заказ" }).click();
   await page
     .getByLabel("Номер телефона")

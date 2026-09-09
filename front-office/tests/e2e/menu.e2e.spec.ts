@@ -1,7 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
-  cartSummaries,
   configuredProductPrices,
   customerBreakpointWidths,
   expectedUnauthenticatedRefreshConsoleError,
@@ -48,7 +47,7 @@ test("меню добавляет M, only-S и OTHER на реальном seede
       page,
       screenNames.coffee,
       width,
-      cartSummaries.afterCappuccino,
+      1,
       cappuccinoScrollY,
       configuredProductPrices.cappuccino,
     );
@@ -73,7 +72,7 @@ test("меню добавляет M, only-S и OTHER на реальном seede
       page,
       screenNames.coffee,
       width,
-      cartSummaries.afterEspresso,
+      2,
       espressoScrollY,
       configuredProductPrices.espresso,
     );
@@ -93,7 +92,7 @@ test("меню добавляет M, only-S и OTHER на реальном seede
       page,
       screenNames.bakery,
       width,
-      cartSummaries.afterCroissant,
+      4,
       croissantScrollY,
       configuredProductPrices.croissant,
     );
@@ -302,29 +301,29 @@ async function addAndExpectCategory(
   page: Page,
   categoryName: string,
   width: number,
-  cartSummary: string,
+  expectedItemCount: number,
   scrollY: number,
   configuredPrice: string,
 ): Promise<void> {
   const add = page.getByRole("button", { name: /Добавить/ });
   await expect(add).toBeVisible();
   await expect(add).toContainText(configuredPrice);
-  await expect(page.getByRole("link", { name: /Корзина/ })).toHaveCount(0);
   await expectControlNotOccluded(page, add, "Добавить");
   await add.click();
 
   await expect(page.getByRole("heading", { name: categoryName })).toBeVisible();
-  const cart = page.getByRole("link", {
-    name: new RegExp(`Корзина · ${cartSummary}`),
-  });
+  const cart = page.getByRole("button", { name: /Корзина/ });
   await expect(cart).toBeVisible();
+  await expect(cart.locator(".shell-navigation__badge")).toContainText(
+    String(expectedItemCount),
+  );
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
-  await expectControlNotOccluded(page, cart, "Корзина");
+  await expectControlNotOccluded(page, cart, String(expectedItemCount));
   await expectNoHorizontalOverflow(page, width);
 }
 
 async function expectCartConfiguration(page: Page): Promise<void> {
-  await page.getByRole("link", { name: /Корзина · 4 · 1 160 ₽/ }).click();
+  await page.getByRole("button", { name: /Корзина/ }).click();
   await expect(page).toHaveURL(/\/cart$/);
 
   const cappuccino = page.getByLabel("Позиция корзины: Капучино");
