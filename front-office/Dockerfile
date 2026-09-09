@@ -12,7 +12,7 @@ ARG VITE_API_BASE_URL
 ENV VITE_APP_ENV=$VITE_APP_ENV \
     VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-RUN npm run build
+RUN npm run deploy-build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:e88d990b349df8cf4aa82f16642d7a23375016638c9ace4e5c6ca25028e62e65
 

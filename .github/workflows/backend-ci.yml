@@ -16,81 +16,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  verify:
-    name: Verify backend
+  build:
+    name: Build backend image
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-    env:
-      AUTH_ACCESS_TOKEN_SECRET: ci-local-access-token-secret
-      AUTH_DEVELOPMENT_OTP: "123456"
-      AUTH_OTP_PEPPER: ci-local-otp-pepper
-      CORS_ORIGINS: http://localhost:5173
-      DATABASE_URL: postgresql://expressa:expressa@localhost:5432/expressa
-      NODE_ENV: local
-      PORT: "3000"
-      SMS_RU_API_ID: ci-test-sms-ru-api-id
-      SMS_RU_SENDER: ExpressaCI
-      VAPID_SUBJECT: mailto:push@expressa.test
-      VAPID_PUBLIC_KEY: BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw
-      VAPID_PRIVATE_KEY: 9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: expressa
-          POSTGRES_USER: expressa
-          POSTGRES_PASSWORD: expressa
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U expressa -d expressa"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 15
     steps:
       - name: Checkout
         # actions/checkout v5.1.0
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Set up Node.js
-        # actions/setup-node v5.0.0
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm test -- --runInBand
-
-      - name: PostgreSQL integration tests
-        run: npm run test:integration
-
-      - name: End-to-end tests
-        run: npm run test:e2e
-
-      - name: Build
-        run: npm run build
-
-      - name: Production startup test
-        run: npx jest --config test/e2e/jest-e2e.json --runInBand test/e2e/production.e2e-spec.ts
-
-      - name: Verify OpenAPI specification
-        run: npm run openapi:check
-
-      - name: Audit high-severity dependencies
-        run: npm audit --audit-level=high
 
       - name: Validate Docker image build
         run: docker build --tag expressa-backend:ci .

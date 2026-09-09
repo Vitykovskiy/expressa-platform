@@ -15,7 +15,8 @@
     "typecheck": "vue-tsc --build",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "contract:check": "node scripts/check-openapi.mjs"
+    "contract:check": "node scripts/check-openapi.mjs",
+    "deploy-build": "vite build"
   },
   "dependencies": {
     "lucide-vue-next": "1.0.0",

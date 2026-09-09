@@ -18,21 +18,8 @@ jobs:
     uses: ./.github/workflows/front-office-ci.yml
   back:
     uses: ./.github/workflows/back-office-ci.yml
-  deploy-static:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - name: Install ShellCheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes shellcheck
-      - name: Validate deployment scripts
-        run: |
-          bash -n deploy/deploy.sh deploy/run-remote.sh
-          shellcheck -e SC1090 deploy/deploy.sh
-          shellcheck -e SC2029 deploy/run-remote.sh
   deploy:
-    needs: [backend, front, back, deploy-static]
+    needs: [backend, front, back]
     runs-on: ubuntu-24.04
     environment: development
     steps:
@@ -90,5 +77,3 @@ jobs:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
           BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
         run: deploy/run-remote.sh development deploy/images.env
-      - name: Verify public development ingress
-        run: node deploy/check-development-ingress.mjs

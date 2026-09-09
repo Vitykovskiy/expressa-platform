@@ -12,21 +12,19 @@ sources:
 
 # CI и поставка
 
-PR-проверки запускаются отдельно для backend, front-office, back-office и
-delivery scripts. Backend CI включает PostgreSQL integration/e2e, OpenAPI и
-Docker build; client CI включает contract, UI и container проверки. [Backend CI](../../.github/workflows/backend-ci.yml),
-[front CI](../../.github/workflows/front-office-ci.yml), [back CI](../../.github/workflows/back-office-ci.yml),
-[delivery CI](../../.github/workflows/delivery-ci.yml).
+Reusable CI для backend, front-office и back-office выполняет только сборку
+соответствующего Docker image. Проверки тестов, линтинга, типов, контрактов,
+аудита и браузера остаются отдельно запускаемыми quality checks и не входят в
+blocking delivery path. [Backend CI](../../.github/workflows/backend-ci.yml),
+[front CI](../../.github/workflows/front-office-ci.yml), [back CI](../../.github/workflows/back-office-ci.yml).
 
-После main три проверенных образа получают SHA-tag, публикуются в локальный
-registry и передаются по digest в development. После успешной development
-поставки workflow проверяет customer, admin и прямой API `GET /api/v2/public/menu`:
-поставки development завершается проверкой public ingress. Browser, Playwright и visual
-проверки не входят в blocking delivery path: они остаются доступными отдельными
-командами пакетов и запускаются вручную. Staging проверяет manifest из
-`deploy/staging.env` и развёртывает те же три digest без сборки.
-развёртывает те же три digest без сборки. [Development](../../.github/workflows/development-delivery.yml),
-[E2E на VPS](E2E-on-VPS.md), [staging](../../.github/workflows/staging-deploy.yml).
+После main три образа получают SHA-tag, публикуются в локальный registry и
+передаются по digest в development. Staging проверяет manifest из
+`deploy/staging.env` и развёртывает те же три digest без сборки. Development,
+staging и production сохраняют проверку разрешённого маршрута, immutable digest,
+секретов, backup/restore, миграции, seed и service health, но не выполняют
+smoke или public-ingress acceptance. [Development](../../.github/workflows/development-delivery.yml),
+[staging](../../.github/workflows/staging-deploy.yml).
 Ручной workflow production до доступа к secrets и SSH проверяет dispatch из
 `main`, владельца репозитория и `confirm_production=true`; затем принимает
 только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого
@@ -34,8 +32,8 @@ registry и передаются по digest в development. После успе
 [Production](../../.github/workflows/production-promotion.yml).
 
 GitHub SSH-переменные остаются входами runner для соединения с VPS и не
-передаются на сервер. SCP копирует во временный VPS-каталог только `deploy.sh`,
-`compose.yml`, smoke-скрипт и image manifest. Для staging stdin SSH передаёт
+передаются на сервер. SCP копирует во временный VPS-каталог `deploy.sh`,
+`compose.yml`, backup/restore и smoke scripts, а также image manifest. Для staging stdin SSH передаёт
 `BOOTSTRAP_ADMIN_PHONE`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_OTP_PEPPER` и
 `CORS_ORIGINS`; все три workflow также получают environment secrets `VAPID_*`.
 Remote script передаёт эти значения `deploy.sh` NUL-разделённым stdin как
@@ -45,27 +43,11 @@ Remote script передаёт эти значения `deploy.sh` NUL-разд�
 передаёт `AUTH_DEVELOPMENT_OTP` из GitHub Environment `development`
 NUL-разделённым stdin; `deploy.sh` использует его только для текущего процесса
 поставки. Значение не сохраняется в `runtime.env`, временном каталоге или
-логах. В staging он включает
-`AUTH_OTP_MODE=staging_test`, OTP `000000` и allowlist из
-`BOOTSTRAP_ADMIN_PHONE` и синтетического customer `+79990000001`. Значения
-хранятся в GitHub Environment Secrets, не коммитятся в YAML, не печатаются и
-не сохраняются в `runtime.env` или временном каталоге VPS. [Development deploy step](../../.github/workflows/development-delivery.yml),
+логах. Значения хранятся в GitHub Environment Secrets, не коммитятся в YAML,
+не печатаются и не сохраняются в `runtime.env` или временном каталоге VPS.
+[Development deploy step](../../.github/workflows/development-delivery.yml),
 [staging deploy step](../../.github/workflows/staging-deploy.yml),
 [remote transfer](../../deploy/run-remote.sh), [проверка ключей](../../deploy/deploy.sh).
-
-E2E job передаёт во временный VPS-каталог `e2e-compose.yml`, конфигурации
-gateway и report host, remote runtime и, при успешной сборке, оба image manifest.
-Administrator берётся из `BOOTSTRAP_ADMIN_PHONE`, OTP — из
-`AUTH_DEVELOPMENT_OTP`, а staff и customer получают два свободных номера из
-резервного пула `+79990000002…+79990000004`. Runner и VPS runtime проверяют, что все три
-роли различаются, до seed и staff upsert. Единственный новый E2E secret —
-`E2E_REPORT_ALLOWLIST`; он, существующие значения доступа и `VAPID_*` приходят
-из GitHub Environment `development` process-scoped через NUL-разделённый stdin
-и не попадают в manifest, runtime.env или отчёт. Полный жизненный цикл
-временного стенда и отчёта описан в [E2E на VPS](E2E-on-VPS.md).
-
-CI последовательно запускает disposable-профили `empty`, `seeded` и `mutating`;
-их контракт и очистка описаны в [E2E на VPS](E2E-on-VPS.md).
 
 Источник соединения workflow — GitHub Environment Secrets `EXPRESSA_VPS_*`;
 источник постоянных секретов среды — её VPS

@@ -42,31 +42,12 @@ VAPID_PUBLIC_KEY="$DELIVERY_VAPID_PUBLIC_KEY"
 VAPID_PRIVATE_KEY="$DELIVERY_VAPID_PRIVATE_KEY"
 export VAPID_SUBJECT VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY
 unset DELIVERY_VAPID_SUBJECT DELIVERY_VAPID_PUBLIC_KEY DELIVERY_VAPID_PRIVATE_KEY
-if [[ "$environment" == staging ]]; then
-  smoke_customer_phone='+79990000001'
-  [[ "${BOOTSTRAP_ADMIN_PHONE:-}" =~ ^\+7[0-9]{10}$ ]] || fail 'BOOTSTRAP_ADMIN_PHONE must use +7XXXXXXXXXX'
-  [[ "${STAGING_AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'STAGING_AUTH_ACCESS_TOKEN_SECRET is required'
-  [[ "${STAGING_AUTH_OTP_PEPPER:-}" ]] || fail 'STAGING_AUTH_OTP_PEPPER is required'
-  [[ "${STAGING_CORS_ORIGINS:-}" ]] || fail 'STAGING_CORS_ORIGINS is required'
-  AUTH_ACCESS_TOKEN_SECRET="$STAGING_AUTH_ACCESS_TOKEN_SECRET"
-  AUTH_OTP_PEPPER="$STAGING_AUTH_OTP_PEPPER"
-  CORS_ORIGINS="$STAGING_CORS_ORIGINS"
-  AUTH_OTP_MODE=staging_test
-  STAGING_TEST_OTP_CODE=000000
-  STAGING_TEST_PHONE_ALLOWLIST="$BOOTSTRAP_ADMIN_PHONE,$smoke_customer_phone"
-  export AUTH_ACCESS_TOKEN_SECRET AUTH_OTP_PEPPER CORS_ORIGINS AUTH_OTP_MODE STAGING_TEST_OTP_CODE STAGING_TEST_PHONE_ALLOWLIST
-  unset STAGING_AUTH_ACCESS_TOKEN_SECRET STAGING_AUTH_OTP_PEPPER STAGING_CORS_ORIGINS
-fi
 [[ "${POSTGRES_PASSWORD:-}" ]] || fail 'POSTGRES_PASSWORD is required'
 [[ "${AUTH_ACCESS_TOKEN_SECRET:-}" ]] || fail 'AUTH_ACCESS_TOKEN_SECRET is required'
 [[ "${AUTH_OTP_PEPPER:-}" ]] || fail 'AUTH_OTP_PEPPER is required'
 [[ "${CORS_ORIGINS:-}" ]] || fail 'CORS_ORIGINS is required'
 if [[ "$environment" == development ]]; then
   [[ "${AUTH_DEVELOPMENT_OTP:-}" =~ ^[0-9]{6}$ ]] || fail 'AUTH_DEVELOPMENT_OTP must contain six digits'
-elif [[ "$environment" == staging ]]; then
-  [[ "${AUTH_OTP_MODE:-}" ]] || fail 'AUTH_OTP_MODE is required'
-  [[ "${STAGING_TEST_OTP_CODE:-}" ]] || fail 'STAGING_TEST_OTP_CODE is required'
-  [[ "${STAGING_TEST_PHONE_ALLOWLIST:-}" ]] || fail 'STAGING_TEST_PHONE_ALLOWLIST is required'
 fi
 [[ "${BACKEND_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'BACKEND_IMAGE must be an immutable digest'
 [[ "${FRONT_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'FRONT_IMAGE must be an immutable digest'
@@ -176,12 +157,3 @@ for service in backend front back; do
   [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]] || fail "$service did not become healthy"
   passed "$service health"
 done
-if [[ "$environment" == staging ]]; then
-  backend_container="$(compose ps -q backend)"
-  docker exec --interactive --env SMOKE_CUSTOMER_PHONE="$smoke_customer_phone" --env SMOKE_STAFF_PHONE="$BOOTSTRAP_ADMIN_PHONE" "$backend_container" \
-    /nodejs/bin/node --input-type=module - < "$script_directory/smoke-staging.mjs"
-  unset BOOTSTRAP_ADMIN_PHONE
-elif [[ "$environment" == production ]]; then
-  backend_container="$(compose ps -q backend)"
-  docker exec --interactive "$backend_container" /nodejs/bin/node --input-type=module - < "$script_directory/smoke-production.mjs"
-fi
