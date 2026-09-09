@@ -334,9 +334,9 @@ function createInitialConfiguration(product = props.product) {
 .product-detail__quantity .ui-icon-btn,
 .product-detail__quantity output {
   display: grid;
-  width: var(--customer-size-control-md);
-  min-width: var(--customer-size-control-md);
-  height: var(--customer-size-control-md);
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
   place-items: center;
   color: var(--customer-text);
   background: transparent;

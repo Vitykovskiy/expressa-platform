@@ -77,6 +77,23 @@ describe("LoginPage", () => {
     expect(wrapper.getComponent(AuthScreen).props("state")).toBe("phone");
     wrapper.unmount();
   });
+
+  it("сохраняет OTP после ошибки проверки кода", async () => {
+    session.requestOtp.mockResolvedValueOnce(metadata(30));
+    session.verifyOtp.mockResolvedValueOnce(undefined);
+    session.error = { message: "Неверный код. Попробуйте ещё раз." };
+    const wrapper = mountPage();
+    await requestOtp(wrapper);
+    let screen = wrapper.getComponent(AuthScreen);
+    screen.vm.$emit("update:otp", "123456");
+    screen.vm.$emit("verifyOtp");
+    await flushPromises();
+    screen = wrapper.getComponent(AuthScreen);
+
+    expect(screen.props("state")).toBe("otp");
+    expect(screen.props("otp")).toBe("123456");
+    wrapper.unmount();
+  });
   it("rate-limit и network resend ошибки сохраняют контекст и deadline", async () => {
     for (const message of ["Слишком много запросов", "Нет сети"]) {
       const clear = vi.spyOn(globalThis, "clearInterval");

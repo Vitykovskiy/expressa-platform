@@ -20,6 +20,8 @@ export type OrdersScreenProps = {
   detailsError: OrderApiError | null;
   detailsLoading: boolean;
   transitionLoading: boolean;
+  transitionRecoveryPending: boolean;
+  requiresTransitionRecovery: boolean;
   actionError: OrderApiError | null;
 };
 
@@ -30,4 +32,5 @@ export type OrdersScreenEmits = {
   "update:stage": [stage: QueueFilter];
   open: [orderId: string];
   transition: [];
+  "recover-transition": [];
 };

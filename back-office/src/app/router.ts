@@ -19,7 +19,7 @@ export function createBackOfficeRouter(
   router.beforeEach(async (to) => {
     const sessionStore = useSessionStore();
 
-    if (sessionStore.status === "unknown") {
+    if (sessionStore.status === "unknown" && sessionStore.error === null) {
       await sessionStore.restore();
     }
 

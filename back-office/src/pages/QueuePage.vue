@@ -12,9 +12,12 @@
     :selected-order-id="selectedOrderId"
     :stage="stage"
     :status="queueStatus"
+    :transition-recovery-pending="transitionRecoveryPending"
+    :requires-transition-recovery="requiresTransitionRecovery"
     :transition-loading="transitionLoading"
     @open="toggleDetails"
     @refresh="loadQueue"
+    @recover-transition="recoverTransitionState"
     @restore-access="restoreAccess"
     @transition="transitionSelectedOrder"
     @update:search="search = $event"
@@ -58,6 +61,8 @@ const detailsError = shallowRef<OrderApiError | null>(null);
 const detailsLoading = shallowRef(false);
 const transitionLoading = shallowRef(false);
 const actionError = shallowRef<OrderApiError | null>(null);
+const transitionRecoveryPending = shallowRef(false);
+const requiresTransitionRecovery = shallowRef(false);
 let queueRequest = 0;
 let detailsRequest = 0;
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
@@ -160,6 +165,8 @@ async function toggleDetails(orderId: string): Promise<void> {
 
   selectedOrderId.value = orderId;
   detailsError.value = null;
+  actionError.value = null;
+  requiresTransitionRecovery.value = false;
   await loadDetails(orderId);
 }
 
@@ -202,6 +209,7 @@ async function transitionSelectedOrder(): Promise<void> {
 
   transitionLoading.value = true;
   actionError.value = null;
+  requiresTransitionRecovery.value = false;
   try {
     const nextDetails = await ordersApi.transition(accessToken, currentDetails);
     if (selectedOrderId.value !== currentDetails.id) return;
@@ -217,9 +225,48 @@ async function transitionSelectedOrder(): Promise<void> {
       details.value?.id === currentDetails.id
     ) {
       actionError.value = toOrderApiError(error);
+      requiresTransitionRecovery.value = true;
+      await recoverTransitionState();
     }
   } finally {
     transitionLoading.value = false;
+  }
+}
+
+async function recoverTransitionState(): Promise<void> {
+  const orderId = selectedOrderId.value;
+  const accessToken = sessionStore.accessToken;
+  if (
+    orderId === null ||
+    accessToken === null ||
+    transitionRecoveryPending.value
+  )
+    return;
+
+  const request = ++detailsRequest;
+  transitionRecoveryPending.value = true;
+  try {
+    const nextDetails = await ordersApi.details(accessToken, orderId);
+    if (request !== detailsRequest || selectedOrderId.value !== orderId) return;
+
+    details.value = nextDetails;
+    detailsError.value = null;
+    orders.value = orders.value.map((order) =>
+      order.id === nextDetails.id
+        ? { ...order, stage: nextDetails.stage }
+        : order,
+    );
+    actionError.value = null;
+    requiresTransitionRecovery.value = false;
+  } catch (error) {
+    if (request === detailsRequest && selectedOrderId.value === orderId) {
+      actionError.value = toOrderApiError(error);
+      requiresTransitionRecovery.value = true;
+    }
+  } finally {
+    if (request === detailsRequest && selectedOrderId.value === orderId) {
+      transitionRecoveryPending.value = false;
+    }
   }
 }
 

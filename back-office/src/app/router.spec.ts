@@ -65,6 +65,21 @@ describe("маршруты back-office", () => {
     expect(authApi.refresh).toHaveBeenCalledOnce();
   });
 
+  it("не повторяет restore после recoverable ошибки на перенаправленном входе", async () => {
+    authApi.refresh.mockRejectedValue(new Error("network details"));
+    const router = createRouter();
+
+    await router.push(routePaths.queue);
+    await router.isReady();
+
+    expect(router.currentRoute.value.path).toBe(routePaths.login);
+    expect(authApi.refresh).toHaveBeenCalledOnce();
+    expect(useSessionStore()).toMatchObject({
+      error: { message: "Не удалось обновить сессию.", requestId: null },
+      status: "unknown",
+    });
+  });
+
   it("не пускает customer к рабочему маршруту", async () => {
     authApi.refresh.mockResolvedValue({ accessToken: "customer-token" });
     authApi.getCurrentUser.mockResolvedValue({

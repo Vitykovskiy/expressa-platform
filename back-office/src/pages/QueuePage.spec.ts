@@ -484,7 +484,7 @@ describe("QueuePage", () => {
     wrapper.unmount();
   });
 
-  it("оставляет ошибку перехода отдельной от повтора деталей", async () => {
+  it("после неясного ответа перехода читает текущее состояние вместо повтора POST", async () => {
     const fetcher = vi.fn<typeof fetch>((url) => {
       const requestedUrl = url.toString();
       if (requestedUrl.endsWith(`/${order.id}/accept`)) {
@@ -502,12 +502,56 @@ describe("QueuePage", () => {
     await wrapper.get(".order-card__action").trigger("click");
     await flushPromises();
 
-    expect(wrapper.get(".orders-screen__action-error").text()).toContain(
-      "INTERNAL_SERVER_ERROR",
-    );
+    expect(fetcher.mock.calls.map(([url]) => url.toString())).toEqual([
+      "/api/v2/backoffice/orders",
+      `/api/v2/backoffice/orders/${order.id}`,
+      `/api/v2/backoffice/orders/${order.id}/accept`,
+      `/api/v2/backoffice/orders/${order.id}`,
+    ]);
+    expect(wrapper.find(".orders-screen__action-error").exists()).toBe(false);
+    expect(wrapper.get(".order-card__action").text()).toBe("Принять заказ");
     expect(wrapper.get(".order-card__details-button").text()).toBe(
       "Скрыть детали",
     );
+    wrapper.unmount();
+  });
+
+  it("блокирует повтор перехода до успешной проверки состояния", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response([order]))
+      .mockResolvedValueOnce(response(detailsFor(order)))
+      .mockResolvedValueOnce(failure("transition-uncertain", 503))
+      .mockResolvedValueOnce(failure("state-check-failed", 503))
+      .mockResolvedValueOnce(
+        response({ ...detailsFor(order), stage: "ACCEPTED" }),
+      );
+    const wrapper = mountQueue("/", fetcher);
+    await flushPromises();
+    await wrapper.get(".order-card__details-button").trigger("click");
+    await flushPromises();
+    await wrapper.get(".order-card__action").trigger("click");
+    await flushPromises();
+
+    const recovery = wrapper.get(".orders-screen__action-error");
+    expect(recovery.text()).toContain(
+      "Не удалось подтвердить изменение заказа",
+    );
+    expect(recovery.text()).not.toContain("INTERNAL_SERVER_ERROR:");
+    expect(
+      wrapper.get(".order-card__action").attributes("disabled"),
+    ).toBeDefined();
+    expect(recovery.get(".admin-button").text()).toBe(
+      "Проверить состояние заказа",
+    );
+    await recovery.get(".admin-button").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".orders-screen__action-error").exists()).toBe(false);
+    expect(wrapper.get(".order-card__stage").text()).toBe("Принят");
+    expect(
+      fetcher.mock.calls.filter(([url]) => url.toString().endsWith("/accept")),
+    ).toHaveLength(1);
     wrapper.unmount();
   });
 

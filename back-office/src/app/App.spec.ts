@@ -68,6 +68,40 @@ describe("App", () => {
     expect(wrapper.text()).not.toContain("Меню");
   });
 
+  it("показывает loading без рабочей оболочки во время initial restore", async () => {
+    let resolveRefresh: (value: {
+      accessToken: string;
+      expiresInSeconds: number;
+    }) => void = () => undefined;
+    authApi.refresh.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter();
+    const navigation = router.push(routePaths.queue);
+    await flushPromises();
+    const wrapper = mountApp(pinia, router);
+
+    expect(wrapper.get('[role="status"][aria-label="Загрузка"]').text()).toBe(
+      "Подождите…",
+    );
+    expect(wrapper.text()).not.toContain("Доступность");
+
+    authApi.getCurrentUser.mockResolvedValue({
+      id: "staff-id",
+      phoneE164: "+79123456789",
+      role: "barista",
+    });
+    resolveRefresh({ accessToken: "token", expiresInSeconds: 900 });
+    await navigation;
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Доступность");
+  });
+
   it("после успешного logout открывает вход", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

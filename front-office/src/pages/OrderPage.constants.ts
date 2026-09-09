@@ -9,9 +9,14 @@ export const orderPageStageLabels = {
 export const orderPageMessages = {
   pushDisabled: "Уведомления отключены.",
   pushFailed: "Не удалось изменить уведомления. Заказ останется доступен.",
+  pushPreparing: "Проверяем уведомления…",
   pushUnsupported: "Уведомления не поддерживаются этим браузером.",
   unavailable: "Заказ недоступен.",
   loadFailed: "Не удалось загрузить заказ.",
+  refreshing: "Обновляем заказ",
+  refreshFailed: "Не удалось обновить заказ.",
+  repeatPreparing: "Проверяем доступность позиций…",
+  staleData: "Показаны последние доступные данные.",
   repeatProductUnavailable: "Товар больше недоступен.",
   repeatConfigurationUnavailable: "Выбранная конфигурация больше недоступна.",
 } as const;

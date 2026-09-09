@@ -13,6 +13,7 @@ const orderId = "00000000-0000-4000-8000-000000000003";
 describe("OrderPage", () => {
   beforeEach(() => setActivePinia(createPinia()));
   afterEach(() => {
+    vi.useRealTimers();
     Reflect.deleteProperty(navigator, "serviceWorker");
     delete (window as Window & { PushManager?: unknown }).PushManager;
   });
@@ -39,7 +40,7 @@ describe("OrderPage", () => {
     expect(wrapper.text()).toContain("Оформлен");
   });
 
-  it("не показывает снимок при отказе API", async () => {
+  it("не показывает снимок и технический текст при отказе API", async () => {
     const { wrapper } = await mountOrder(
       {
         code: "ACCESS_DENIED",
@@ -50,8 +51,14 @@ describe("OrderPage", () => {
       403,
     );
 
-    expect(wrapper.text()).toContain("Доступ запрещён.");
+    expect(wrapper.text()).toContain("Не удалось загрузить заказ.");
+    expect(wrapper.text()).not.toContain("Доступ запрещён.");
     expect(wrapper.text()).not.toContain("Капучино");
+    expect(
+      wrapper
+        .findAll("button")
+        .filter((button) => button.text() === "Повторить"),
+    ).toHaveLength(1);
   });
 
   it("показывает каноническую недоступность для отсутствующего заказа", async () => {
@@ -67,6 +74,209 @@ describe("OrderPage", () => {
 
     expect(wrapper.text()).toContain("Заказ недоступен.");
     expect(wrapper.text()).not.toContain("Заказ не найден.");
+    expect(
+      wrapper
+        .findAll("button")
+        .filter((button) => button.text() === "Повторить"),
+    ).toHaveLength(0);
+  });
+
+  it.each([
+    [
+      {
+        code: "SERVER_ERROR",
+        details: null,
+        message: "database trace",
+        requestId: null,
+      },
+      503,
+    ],
+    [{ invalid: "contract" }, 200],
+  ])("безопасно переводит начальную ошибку %j", async (response, status) => {
+    const { wrapper } = await mountOrder(response, status);
+
+    expect(wrapper.text()).toContain("Не удалось загрузить заказ.");
+    expect(wrapper.text()).not.toContain("database trace");
+    expect(wrapper.text()).not.toContain("API_CONTRACT_ERROR");
+    expect(
+      wrapper
+        .findAll("button")
+        .filter((button) => button.text() === "Повторить"),
+    ).toHaveLength(1);
+  });
+
+  it("не показывает технический текст при сетевом сбое первой загрузки", async () => {
+    const { wrapper } = await mountOrder(orderResponse, 200, null, {
+      detailReplies: [Promise.reject(new Error("socket ECONNRESET"))],
+    });
+
+    expect(wrapper.text()).toContain("Не удалось загрузить заказ.");
+    expect(wrapper.text()).not.toContain("socket ECONNRESET");
+    expect(
+      wrapper
+        .findAll("button")
+        .filter((button) => button.text() === "Повторить"),
+    ).toHaveLength(1);
+  });
+
+  it("не дублирует начальный GET и восстанавливает снимок одной повторной попыткой", async () => {
+    const deferred = createDeferred<Response>();
+    const { detailRequests, wrapper } = await mountOrder(
+      {
+        code: "SERVER_ERROR",
+        details: null,
+        message: "raw error",
+        requestId: null,
+      },
+      503,
+      null,
+      { detailReplies: [deferred.promise, detailResponse(orderResponse)] },
+    );
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Загружаем заказ");
+    expect(detailRequests).toHaveLength(1);
+    deferred.resolve(
+      detailResponse(
+        {
+          code: "SERVER_ERROR",
+          details: null,
+          message: "raw error",
+          requestId: null,
+        },
+        503,
+      ),
+    );
+    await flushPromises();
+    const retry = getButtonByText(wrapper, "Повторить");
+
+    await retry.trigger("click");
+    await retry.trigger("click");
+    await flushPromises();
+
+    expect(detailRequests).toHaveLength(2);
+    expect(wrapper.text()).toContain("Заказ №1042");
+  });
+
+  it("сохраняет снимок и останавливает polling после ошибки фонового обновления", async () => {
+    vi.useFakeTimers();
+    const { detailRequests, wrapper } = await mountOrder(
+      orderResponse,
+      200,
+      null,
+      {
+        detailReplies: [
+          detailResponse(orderResponse),
+          detailResponse(
+            {
+              code: "SERVER_ERROR",
+              details: null,
+              message: "raw error",
+              requestId: null,
+            },
+            503,
+          ),
+        ],
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Заказ №1042");
+    expect(wrapper.text()).toContain("Не удалось обновить заказ.");
+    expect(wrapper.text()).toContain("Показаны последние доступные данные.");
+    expect(
+      wrapper
+        .findAll("button")
+        .filter((button) => button.text() === "Повторить обновление"),
+    ).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(detailRequests).toHaveLength(2);
+  });
+
+  it("удерживает один точный GET при таймере и ручном восстановлении", async () => {
+    vi.useFakeTimers();
+    const deferredRecovery = createDeferred<Response>();
+    const refreshFailure = {
+      code: "SERVER_ERROR",
+      details: null,
+      message: "raw error",
+      requestId: null,
+    };
+    const { detailRequests, wrapper } = await mountOrder(
+      orderResponse,
+      200,
+      null,
+      {
+        detailReplies: [
+          detailResponse(orderResponse),
+          detailResponse(refreshFailure, 503),
+          deferredRecovery.promise,
+          detailResponse(orderResponse),
+        ],
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    const recovery = getButtonByText(wrapper, "Повторить обновление");
+
+    await recovery.trigger("click");
+    await flushPromises();
+
+    expect(detailRequests).toHaveLength(3);
+    await vi.advanceTimersByTimeAsync(20_000);
+    await recovery.trigger("click");
+    await flushPromises();
+
+    expect(detailRequests).toHaveLength(3);
+    deferredRecovery.resolve(detailResponse(orderResponse));
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(detailRequests).toHaveLength(4);
+  });
+
+  it("не учитывает menu-запрос как чтение деталей заказа", async () => {
+    const { detailRequests, wrapper } = await mountOrder(
+      {
+        ...orderResponse,
+        stage: "ISSUED",
+      },
+      200,
+      menuResponse,
+    );
+
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
+    await flushPromises();
+
+    expect(detailRequests).toEqual([
+      { method: "GET", path: `/api/v2/orders/${orderId}` },
+    ]);
+  });
+
+  it("учитывает чтение только для точного endpoint текущего маршрута", async () => {
+    const nextOrderId = "00000000-0000-4000-8000-000000000099";
+    const { detailRequests, router } = await mountOrder(
+      orderResponse,
+      200,
+      null,
+      {
+        detailReplies: [
+          detailResponse(orderResponse),
+          detailResponse({ ...orderResponse, id: nextOrderId, number: "2048" }),
+        ],
+      },
+    );
+
+    await router.push(`/orders/${nextOrderId}?from=history`);
+    await flushPromises();
+
+    expect(detailRequests).toEqual([
+      { method: "GET", path: `/api/v2/orders/${orderId}` },
+      { method: "GET", path: `/api/v2/orders/${nextOrderId}` },
+    ]);
   });
 
   it("после подтверждения повтора заменяет корзину и открывает её", async () => {
@@ -94,6 +304,53 @@ describe("OrderPage", () => {
       { productId: orderResponse.snapshot[0].productId },
     ]);
     expect(cart.repeatWarnings).toEqual([]);
+  });
+
+  it("защищает повтор от повторной активации до завершения menu read", async () => {
+    const deferredMenu = createDeferred<Response>();
+    const { menuRequests, router, wrapper } = await mountOrder(
+      { ...orderResponse, stage: "ISSUED" },
+      200,
+      menuResponse,
+      { menuReplies: [deferredMenu.promise] },
+    );
+    const repeat = getButtonByText(wrapper, "Повторить заказ");
+
+    await repeat.trigger("click");
+    await repeat.trigger("click");
+    await flushPromises();
+
+    expect(menuRequests).toHaveLength(1);
+    expect(repeat.attributes("disabled")).toBeDefined();
+    expect(repeat.attributes("aria-busy")).toBe("true");
+    expect(wrapper.find('[role="status"]').text()).toContain(
+      "Проверяем доступность позиций…",
+    );
+
+    deferredMenu.resolve(detailResponse(menuResponse));
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/cart");
+  });
+
+  it("снимает защиту повтора после ошибки menu read", async () => {
+    const deferredMenu = createDeferred<Response>();
+    const { menuRequests, wrapper } = await mountOrder(
+      { ...orderResponse, stage: "ISSUED" },
+      200,
+      menuResponse,
+      { menuReplies: [deferredMenu.promise] },
+    );
+    const repeat = getButtonByText(wrapper, "Повторить заказ");
+
+    await repeat.trigger("click");
+    await flushPromises();
+    deferredMenu.resolve(detailResponse({ code: "SERVER_ERROR" }, 503));
+    await flushPromises();
+
+    expect(menuRequests).toHaveLength(1);
+    expect(repeat.attributes("disabled")).toBeUndefined();
+    expect(repeat.attributes("aria-busy")).toBeUndefined();
   });
 
   it("повторяет полный заказ в пустую корзину по текущей цене", async () => {
@@ -315,6 +572,92 @@ describe("OrderPage", () => {
     expect(wrapper.text()).toContain("Отключить уведомления");
   });
 
+  it("показывает busy feedback и блокирует повторный enable до settlement", async () => {
+    const deferred = createDeferred<Response>();
+    installPushSupport({
+      getSubscription: vi.fn().mockResolvedValue(null),
+      subscribe: vi.fn(),
+    });
+    const { wrapper } = await mountOrder(orderResponse, 200, null, {
+      publicKeyReply: deferred.promise,
+    });
+    const enable = getButtonByText(wrapper, "Включить уведомления");
+    await enable.trigger("click");
+    await enable.trigger("click");
+    await flushPromises();
+    expect(enable.attributes("aria-busy")).toBe("true");
+    expect(enable.attributes("disabled")).toBeDefined();
+    expect(wrapper.find('[role="status"]').text()).toContain(
+      "Проверяем уведомления…",
+    );
+    deferred.resolve(detailResponse({ publicKey: validVapidPublicKey }));
+    await flushPromises();
+  });
+
+  it("показывает busy feedback и блокирует повторный disable до settlement", async () => {
+    const deferred = createDeferred<Response>();
+    const subscription = createBrowserSubscription();
+    const getSubscription = vi.fn().mockResolvedValue(subscription);
+    installPushSupport({ getSubscription, subscribe: vi.fn() });
+    const { requests, wrapper } = await mountOrder(orderResponse, 200, null, {
+      subscriptionReplies: [deferred.promise],
+    });
+    const disable = getButtonByText(wrapper, "Отключить уведомления");
+
+    await disable.trigger("click");
+    await disable.trigger("click");
+    await flushPromises();
+
+    expect(
+      requests.filter((request) => request.method?.toUpperCase() === "DELETE"),
+    ).toHaveLength(1);
+    expect(disable.attributes("aria-busy")).toBe("true");
+    expect(disable.attributes("disabled")).toBeDefined();
+    expect(wrapper.find('[role="status"]').text()).toContain(
+      "Проверяем уведомления…",
+    );
+
+    deferred.resolve(new Response(null, { status: 204 }));
+    await flushPromises();
+
+    expect(
+      getButtonByText(wrapper, "Включить уведомления").attributes("disabled"),
+    ).toBeUndefined();
+    expect(subscription.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("снимает защиту disable после ошибки и позволяет повторить действие", async () => {
+    const subscription = createBrowserSubscription();
+    installPushSupport({
+      getSubscription: vi.fn().mockResolvedValue(subscription),
+      subscribe: vi.fn(),
+    });
+    const { requests, wrapper } = await mountOrder(orderResponse, 200, null, {
+      subscriptionReplies: [
+        detailResponse({ code: "PUSH_UNAVAILABLE" }, 503),
+        new Response(null, { status: 204 }),
+      ],
+    });
+    const disable = getButtonByText(wrapper, "Отключить уведомления");
+
+    await disable.trigger("click");
+    await flushPromises();
+
+    expect(disable.attributes("disabled")).toBeUndefined();
+    expect(disable.attributes("aria-busy")).toBeUndefined();
+    expect(wrapper.text()).toContain(
+      "Не удалось изменить уведомления. Заказ останется доступен.",
+    );
+
+    await disable.trigger("click");
+    await flushPromises();
+
+    expect(
+      requests.filter((request) => request.method?.toUpperCase() === "DELETE"),
+    ).toHaveLength(2);
+    expect(getButtonByText(wrapper, "Включить уведомления")).toBeDefined();
+  });
+
   it("сохраняет заказ доступным после ошибки Push API", async () => {
     const getSubscription = vi.fn().mockResolvedValue(null);
     const subscribe = vi.fn().mockResolvedValue(createBrowserSubscription());
@@ -362,6 +705,11 @@ async function mountOrder(
   const sessionStore = useSessionStore();
   const cart = useCartStore();
   const requests: RequestInit[] = [];
+  const menuRequests: RequestInit[] = [];
+  const detailRequests: Array<{ method: string; path: string }> = [];
+  const detailReplies = [...(pushOptions.detailReplies ?? [])];
+  const menuReplies = [...(pushOptions.menuReplies ?? [])];
+  const subscriptionReplies = [...(pushOptions.subscriptionReplies ?? [])];
   sessionStore.accessToken = "example-access-token";
   sessionStore.status = "authenticated";
   const router = createRouter({
@@ -383,6 +731,8 @@ async function mountOrder(
             const requestUrl = typeof url === "string" ? url : url.toString();
             requests.push(options ?? {});
             if (requestUrl.endsWith("/push/public-key")) {
+              if (pushOptions.publicKeyReply !== undefined)
+                return await pushOptions.publicKeyReply;
               return new Response(
                 JSON.stringify({
                   publicKey: pushOptions.publicKey ?? validVapidPublicKey,
@@ -391,9 +741,29 @@ async function mountOrder(
               );
             }
             if (requestUrl.endsWith("/push/subscriptions")) {
+              const reply = subscriptionReplies.shift();
+              if (reply !== undefined) return await reply;
               return new Response(null, {
                 status: pushOptions.subscriptionStatus ?? 204,
               });
+            }
+
+            const path = new URL(requestUrl).pathname;
+            const method = options?.method?.toUpperCase() ?? "GET";
+            const currentOrderId = router.currentRoute.value.params.id;
+            if (
+              typeof currentOrderId === "string" &&
+              isCurrentDetailRequest(method, path, currentOrderId)
+            ) {
+              detailRequests.push({ method, path });
+              const reply = detailReplies.shift();
+              if (reply !== undefined) return await reply;
+            }
+
+            if (requestUrl.endsWith("/menu")) {
+              menuRequests.push(options ?? {});
+              const reply = menuReplies.shift();
+              if (reply !== undefined) return await reply;
             }
 
             return new Response(
@@ -407,7 +777,7 @@ async function mountOrder(
     },
   });
   await flushPromises();
-  return { cart, requests, router, wrapper };
+  return { cart, detailRequests, menuRequests, requests, router, wrapper };
 }
 
 function getButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
@@ -416,6 +786,14 @@ function getButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
   if (button === undefined) throw new Error(`Кнопка «${text}» не найдена.`);
 
   return button;
+}
+
+function isCurrentDetailRequest(
+  method: string,
+  pathname: string,
+  currentOrderId: string,
+): boolean {
+  return method === "GET" && pathname === `/api/v2/orders/${currentOrderId}`;
 }
 
 function installPushSupport({
@@ -447,10 +825,26 @@ function createBrowserSubscription(): PushSubscription {
 }
 
 type PushOptions = {
+  publicKeyReply?: Response | Promise<Response>;
+  subscriptionReplies?: Array<Response | Promise<Response>>;
+  detailReplies?: Array<Response | Promise<Response>>;
+  menuReplies?: Array<Response | Promise<Response>>;
   publicKey?: unknown;
   publicKeyStatus?: number;
   subscriptionStatus?: number;
 };
+
+function detailResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status });
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
 
 type MenuVariant = {
   id: string;

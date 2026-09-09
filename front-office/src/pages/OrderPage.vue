@@ -8,6 +8,28 @@
         <p class="order-page__stage">{{ stageLabel }}</p>
         <h1 id="order-title">Заказ №{{ order.number }}</h1>
       </header>
+      <p
+        v-if="refreshFeedback === 'pending'"
+        class="order-page__refresh-status"
+        role="status"
+      >
+        {{ orderPageMessages.refreshing }}
+      </p>
+      <section
+        v-else-if="refreshFeedback === 'stale'"
+        class="order-page__refresh-status"
+        role="alert"
+      >
+        <p>{{ refreshErrorMessage }}</p>
+        <p>{{ orderPageMessages.staleData }}</p>
+        <ui-btn
+          :disabled="detailRequestPending"
+          type="button"
+          @click="recoverOrder"
+        >
+          Повторить обновление
+        </ui-btn>
+      </section>
       <ul class="order-page__items" aria-label="Состав заказа">
         <li v-for="item in order.items" :key="itemKey(item)">
           <div class="order-page__item-main">
@@ -44,10 +66,13 @@
         <h2 id="notifications-title">Уведомления о заказе</h2>
         <p v-if="!pushSupported">{{ orderPageMessages.pushUnsupported }}</p>
         <template v-else>
-          <p v-if="pushMessage" role="status">{{ pushMessage }}</p>
+          <p v-if="pushOperationPending" role="status">
+            {{ orderPageMessages.pushPreparing }}
+          </p>
+          <p v-else-if="pushMessage" role="status">{{ pushMessage }}</p>
           <ui-btn
             v-if="pushSubscription === null"
-            :disabled="pushOperationPending"
+            :loading="pushOperationPending"
             type="button"
             @click="enablePushNotifications"
           >
@@ -55,7 +80,7 @@
           </ui-btn>
           <ui-btn
             v-else
-            :disabled="pushOperationPending"
+            :loading="pushOperationPending"
             type="button"
             @click="disablePushNotifications"
           >
@@ -67,15 +92,27 @@
         v-if="order.stage === 'ISSUED'"
         class="order-page__repeat"
         color="surface"
+        :loading="repeatPreparationPending"
         type="button"
         @click="prepareRepeat"
       >
         Повторить заказ
       </ui-btn>
+      <p v-if="repeatPreparationPending" role="status">
+        {{ orderPageMessages.repeatPreparing }}
+      </p>
     </template>
-    <div v-else class="order-page__state" role="status">
+    <div v-else class="order-page__state" role="alert">
       <h1 id="order-title">Заказ</h1>
       <p>{{ errorMessage ?? orderPageMessages.unavailable }}</p>
+      <ui-btn
+        v-if="initialRecoveryAvailable"
+        :disabled="detailRequestPending"
+        type="button"
+        @click="recoverOrder"
+      >
+        Повторить
+      </ui-btn>
     </div>
     <ui-dialog
       v-if="repeatConfirmationOpen"
@@ -132,12 +169,20 @@ const cartStore = useCartStore();
 const order = ref<OrderPageOrder | null>(null);
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
+const refreshErrorMessage = ref<string | null>(null);
+const refreshFeedback = ref<"pending" | "stale" | null>(null);
+const detailRequestPending = ref(false);
+const initialRecoveryAvailable = ref(false);
 const pushMessage = ref<string | null>(null);
 const pushOperationPending = ref(false);
 const pushSubscription = ref<OrderPagePushSubscription | null>(null);
 const repeatConfirmationOpen = ref(false);
+const repeatPreparationPending = ref(false);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let repeatPreparation: OrderRepeatPreparation | null = null;
+let detailRequestOwner = 0;
+let repeatOperationOwner = 0;
+let isMounted = false;
 const stageLabel = computed(() =>
   order.value === null ? "" : orderPageStageLabels[order.value.stage],
 );
@@ -146,53 +191,74 @@ const pushSupported = computed(
 );
 
 onMounted(() => {
+  isMounted = true;
   document.addEventListener("visibilitychange", syncPolling);
   void loadPushSubscription();
-  void loadOrder();
+  void loadInitialOrder();
 });
 onUnmounted(() => {
+  isMounted = false;
+  detailRequestOwner += 1;
+  repeatOperationOwner += 1;
   document.removeEventListener("visibilitychange", syncPolling);
   stopPolling();
 });
 watch(
   () => route.params.id,
-  () => void loadOrder(),
+  () => {
+    repeatOperationOwner += 1;
+    repeatPreparationPending.value = false;
+    void loadInitialOrder();
+  },
 );
 
-async function loadOrder(): Promise<void> {
+async function loadInitialOrder(): Promise<void> {
   stopPolling();
+  const owner = beginDetailRequest();
   loading.value = true;
+  order.value = null;
   errorMessage.value = null;
+  initialRecoveryAvailable.value = false;
+  refreshErrorMessage.value = null;
+  refreshFeedback.value = null;
   const orderId = route.params.id;
   if (
     typeof orderId !== "string" ||
     apiClient === undefined ||
     sessionStore.accessToken === null
   ) {
-    loading.value = false;
+    finishInitialRequest(owner);
     return;
   }
   try {
-    order.value = await createOrdersApi(apiClient).getOrder(
+    const nextOrder = await createOrdersApi(apiClient).getOrder(
       sessionStore.accessToken,
       orderId,
     );
+    if (!ownsDetailRequest(owner)) return;
+    order.value = nextOrder;
   } catch (error) {
+    if (!ownsDetailRequest(owner)) return;
     order.value = null;
     errorMessage.value =
       error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
         ? orderPageMessages.unavailable
-        : error instanceof Error
-          ? error.message
-          : orderPageMessages.loadFailed;
+        : orderPageMessages.loadFailed;
+    initialRecoveryAvailable.value =
+      errorMessage.value !== orderPageMessages.unavailable;
   } finally {
-    loading.value = false;
-    syncPolling();
+    finishInitialRequest(owner);
   }
 }
 
 function syncPolling(): void {
-  if (document.hidden || order.value === null || order.value.stage === "ISSUED")
+  if (
+    document.hidden ||
+    detailRequestPending.value ||
+    refreshFeedback.value === "stale" ||
+    order.value === null ||
+    order.value.stage === "ISSUED"
+  )
     return stopPolling();
   if (pollingTimer === null)
     pollingTimer = setInterval(
@@ -205,6 +271,7 @@ function stopPolling(): void {
   pollingTimer = null;
 }
 async function refreshOrder(): Promise<void> {
+  if (detailRequestPending.value) return;
   const orderId = route.params.id;
   if (
     typeof orderId !== "string" ||
@@ -212,15 +279,55 @@ async function refreshOrder(): Promise<void> {
     sessionStore.accessToken === null
   )
     return;
+  const owner = beginDetailRequest();
+  refreshFeedback.value = "pending";
+  refreshErrorMessage.value = null;
   try {
-    order.value = await createOrdersApi(apiClient).getOrder(
+    const nextOrder = await createOrdersApi(apiClient).getOrder(
       sessionStore.accessToken,
       orderId,
     );
-    syncPolling();
-  } catch {
+    if (!ownsDetailRequest(owner)) return;
+    order.value = nextOrder;
+    refreshFeedback.value = null;
+  } catch (error) {
+    if (!ownsDetailRequest(owner)) return;
+    refreshErrorMessage.value =
+      error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
+        ? orderPageMessages.unavailable
+        : orderPageMessages.refreshFailed;
+    refreshFeedback.value = "stale";
     stopPolling();
+  } finally {
+    finishRefreshRequest(owner);
   }
+}
+function recoverOrder(): void {
+  if (detailRequestPending.value) return;
+  if (initialRecoveryAvailable.value) {
+    void loadInitialOrder();
+    return;
+  }
+  if (refreshFeedback.value === "stale") void refreshOrder();
+}
+function beginDetailRequest(): number {
+  detailRequestOwner += 1;
+  detailRequestPending.value = true;
+  return detailRequestOwner;
+}
+function ownsDetailRequest(owner: number): boolean {
+  return isMounted && detailRequestOwner === owner;
+}
+function finishInitialRequest(owner: number): void {
+  if (!ownsDetailRequest(owner)) return;
+  detailRequestPending.value = false;
+  loading.value = false;
+  syncPolling();
+}
+function finishRefreshRequest(owner: number): void {
+  if (!ownsDetailRequest(owner)) return;
+  detailRequestPending.value = false;
+  syncPolling();
 }
 async function loadPushSubscription(): Promise<void> {
   if (!pushSupported.value) return;
@@ -293,10 +400,14 @@ async function disablePushNotifications(): Promise<void> {
   }
 }
 async function prepareRepeat(): Promise<void> {
+  if (repeatPreparationPending.value) return;
   cartStore.clearRepeatWarnings();
   if (order.value?.stage !== "ISSUED" || apiClient === undefined) return;
+  const owner = ++repeatOperationOwner;
+  repeatPreparationPending.value = true;
   try {
     const menu = await createPublicMenuApi(apiClient).getMenu();
+    if (!ownsRepeatOperation(owner)) return;
     const preparation = createRepeatItems(
       order.value,
       menu.categories.flatMap((category) => category.products),
@@ -310,9 +421,15 @@ async function prepareRepeat(): Promise<void> {
     }
     repeatConfirmationOpen.value = true;
   } catch (error) {
+    if (!ownsRepeatOperation(owner)) return;
     errorMessage.value =
       error instanceof Error ? error.message : orderPageMessages.loadFailed;
+  } finally {
+    if (ownsRepeatOperation(owner)) repeatPreparationPending.value = false;
   }
+}
+function ownsRepeatOperation(owner: number): boolean {
+  return isMounted && repeatOperationOwner === owner;
 }
 async function confirmRepeat(): Promise<void> {
   if (repeatPreparation === null) return;

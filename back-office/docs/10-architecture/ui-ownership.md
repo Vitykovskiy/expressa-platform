@@ -19,3 +19,9 @@ sources:
 Диалоги создания, редактирования и удаления работают с явными `confirm/save/cancel`; отмена очищает черновик, подтверждение удаляет только после `ConfirmDialog`. `AdminDialog` — bottom sheet до 767px и центрированный диалог с ограничением 90vh от 768px; `ConfirmDialog` связывает заголовок и описание через ARIA, требует причину когда задано `requireInput`, очищает её при закрытии и возвращает фокус. Поля и переключатели имеют нативную семантику, видимый focus ring и отключённое состояние. Источники: [AdminDialog.vue](../../src/shared/ui/admin/admin-dialog/AdminDialog.vue), [ConfirmDialog.vue](../../src/shared/ui/admin/confirm-dialog/ConfirmDialog.vue), [AdminTextField.vue](../../src/shared/ui/admin/admin-text-field/AdminTextField.vue), [AdminToggle.vue](../../src/shared/ui/admin/admin-toggle/AdminToggle.vue).
 
 `AdminShell` показывает боковую навигацию от 768px и нижнюю вкладочную панель на меньшей ширине; контент прокручивается внутри оболочки. Runtime следует `app -> pages -> widgets -> features -> entities -> shared`. См. [shell](../../src/widgets/admin-shell/AdminShell.vue).
+
+Канонические Admin-цвета определяет [theme.ts](../../src/styles/theme.ts),
+семантические CSS tokens — [main.css](../../src/styles/main.css), который
+потребляет переменные темы Vuetify. Изменённые цвета, отступы, границы, radius
+и shared-control overrides используют существующий semantic token; общие
+исключения и проверку задаёт [Vue-code-style](../../../docs/40-quality/Vue-code-style.md).

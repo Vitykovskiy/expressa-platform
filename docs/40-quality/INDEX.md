@@ -4,6 +4,7 @@
 
 - [Charter качества продукта](Product-quality-charter.md)
 - [Предпочтения качества продукта](Product-quality-preferences.md)
+- [Goal кампании качества Expressa](Expressa-quality-campaign-goal.md)
 - [Общие критерии готовности](Definition-of-done.md)
 - [Доступность интерфейса](UI-accessibility.md)
 - [Стратегия проверки](Validation-strategy.md)

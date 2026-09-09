@@ -100,7 +100,7 @@ function handleNavigate(destination: ShellNavigationDestination): void {
     align-self: start;
     display: inline-flex;
     align-items: center;
-    min-height: 0;
+    min-height: 44px;
     gap: var(--customer-space-5);
     margin-top: var(--customer-space-11);
     padding: var(--customer-space-5) var(--customer-space-8)

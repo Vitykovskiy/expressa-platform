@@ -248,10 +248,10 @@ const addonRows = computed(() => {
 
 .cart-item__quantity-control {
   flex: 0 0 auto;
-  width: calc(var(--customer-space-12) * 2);
-  min-width: calc(var(--customer-space-12) * 2);
-  height: calc(var(--customer-space-12) * 2);
-  min-height: calc(var(--customer-space-12) * 2);
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   color: var(--customer-text-on-surface);
   background: transparent;
   border: 0;

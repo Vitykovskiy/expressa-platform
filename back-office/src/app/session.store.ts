@@ -4,6 +4,10 @@ import { ApiError } from "../shared/api/client";
 import { getSessionStoreDependencies } from "./session.store.dependencies";
 import {
   otpRateLimitedMessage,
+  otpInvalidMessage,
+  otpExpiredMessage,
+  otpRequestFailedMessage,
+  otpVerifyFailedMessage,
   sessionErrorMessage,
   staffRoles,
 } from "./session.store.constants";
@@ -33,7 +37,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           this.error = null;
           return metadata;
         } catch (error) {
-          this.handleApiFailure(error);
+          this.handleApiFailure(error, otpRequestFailedMessage);
           return null;
         }
       },
@@ -47,7 +51,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
 
           await this.completeAuthentication(access.accessToken, user);
         } catch (error) {
-          this.handleApiFailure(error);
+          this.handleApiFailure(error, otpVerifyFailedMessage);
         }
       },
 
@@ -106,13 +110,13 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
         this.status = "denied";
       },
 
-      handleApiFailure(error: unknown): void {
+      handleApiFailure(error: unknown, message = sessionErrorMessage): void {
         if (error instanceof ApiError && error.status === 401) {
           this.setAnonymous();
           return;
         }
 
-        this.error = toSessionStoreError(error);
+        this.error = toSessionStoreError(error, message);
       },
 
       setAnonymous(): void {
@@ -133,14 +137,22 @@ function isStaffUser(value: AuthCurrentUser): value is StaffSessionUser {
   return staffRoles.some((role) => role === value.role);
 }
 
-function toSessionStoreError(error: unknown): SessionStoreError {
+function toSessionStoreError(
+  error: unknown,
+  fallbackMessage = sessionErrorMessage,
+): SessionStoreError {
   if (error instanceof ApiError) {
     if (error.code === "AUTH_RATE_LIMITED") {
       return { message: otpRateLimitedMessage, requestId: error.requestId };
     }
 
-    return { message: error.message, requestId: error.requestId };
+    if (error.code === "AUTH_CODE_INVALID")
+      return { message: otpInvalidMessage, requestId: error.requestId };
+    if (error.code === "AUTH_CODE_EXPIRED")
+      return { message: otpExpiredMessage, requestId: error.requestId };
+
+    return { message: fallbackMessage, requestId: error.requestId };
   }
 
-  return { message: sessionErrorMessage, requestId: null };
+  return { message: fallbackMessage, requestId: null };
 }

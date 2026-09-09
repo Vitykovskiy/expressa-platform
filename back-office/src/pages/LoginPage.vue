@@ -138,8 +138,7 @@ async function showSessionResult(
     return;
   }
 
-  screenState.value =
-    sessionStore.status === "anonymous" ? "phone" : fallbackState;
+  screenState.value = fallbackState;
 }
 
 function formatPhone(value: string): string {

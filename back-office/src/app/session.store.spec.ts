@@ -63,6 +63,26 @@ describe("session store", () => {
     });
   });
 
+  it("скрывает техническую ошибку отправки OTP и сохраняет requestId", async () => {
+    const { dependencies, store } = createStore();
+    dependencies.authApi.requestOtp.mockRejectedValue(
+      new ApiError({
+        code: "SERVER_ERROR",
+        details: null,
+        message: "database trace",
+        requestId: "request-42",
+        status: 503,
+      }),
+    );
+
+    await store.requestOtp("+79123456789");
+
+    expect(store.error).toEqual({
+      message: "Не удалось отправить код. Попробуйте ещё раз.",
+      requestId: "request-42",
+    });
+  });
+
   it("хранит staff session только в памяти после проверки OTP", async () => {
     const { dependencies, store } = createStore();
     const setItem = vi.spyOn(Storage.prototype, "setItem");

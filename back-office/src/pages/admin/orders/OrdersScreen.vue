@@ -88,8 +88,8 @@
       </div>
       <EmptyState
         v-else-if="props.orders.length === 0"
-        description="Активные заказы появятся здесь"
-        title="Заказов нет"
+        :description="emptyContent.description"
+        :title="emptyContent.title"
       >
         <template #icon>
           <ClipboardCheck :size="28" />
@@ -108,23 +108,52 @@
           "
           :order="order"
           :transition-loading="
-            props.selectedOrderId === order.id && props.transitionLoading
+            props.selectedOrderId === order.id &&
+            (props.transitionLoading ||
+              props.transitionRecoveryPending ||
+              props.requiresTransitionRecovery)
           "
           @open="emit('open', $event)"
           @transition="emit('transition')"
         />
       </div>
     </div>
-    <p
+    <div
       v-if="props.actionError !== null"
       class="orders-screen__action-error"
       role="alert"
     >
-      {{ props.actionError.code }}: {{ props.actionError.message }}
-      <span v-if="props.actionError.requestId">
-        Номер запроса: {{ props.actionError.requestId }}
-      </span>
-    </p>
+      {{ actionErrorGuidance }}
+      <AdminButton
+        v-if="props.requiresTransitionRecovery"
+        :disabled="props.transitionRecoveryPending"
+        variant="secondary"
+        @click="emit('recover-transition')"
+      >
+        {{
+          props.transitionRecoveryPending
+            ? "Проверяем состояние заказа…"
+            : "Проверить состояние заказа"
+        }}
+      </AdminButton>
+      <details class="orders-screen__diagnostics">
+        <summary>Технические подробности</summary>
+        <dl>
+          <div>
+            <dt>Код</dt>
+            <dd>{{ props.actionError.code }}</dd>
+          </div>
+          <div>
+            <dt>Сообщение</dt>
+            <dd>{{ props.actionError.message }}</dd>
+          </div>
+          <div v-if="props.actionError.requestId">
+            <dt>Номер запроса</dt>
+            <dd>{{ props.actionError.requestId }}</dd>
+          </div>
+        </dl>
+      </details>
+    </div>
   </section>
 </template>
 
@@ -138,7 +167,7 @@ import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
 import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
 import TopBar from "../../../widgets/admin-shell/TopBar.vue";
 import OrderCard from "./OrderCard.vue";
-import { queueFilters } from "./OrdersScreen.constants";
+import { queueEmptyContent, queueFilters } from "./OrdersScreen.constants";
 import type {
   OrdersScreenEmits,
   OrdersScreenProps,
@@ -151,7 +180,22 @@ const stageModel = computed<QueueFilter>({
   get: () => props.stage,
   set: (stage) => emit("update:stage", stage),
 });
+const emptyContent = computed(() => {
+  if (props.search !== "" && props.stage !== "ALL") {
+    return queueEmptyContent.searchAndStage;
+  }
+
+  if (props.search !== "") return queueEmptyContent.search;
+  if (props.stage !== "ALL") return queueEmptyContent.stage;
+
+  return queueEmptyContent.global;
+});
 const isAuthorizationError = computed(() => props.requiresAccessRecovery);
+const actionErrorGuidance = computed(() =>
+  props.requiresTransitionRecovery
+    ? "Не удалось подтвердить изменение заказа. Проверьте его текущее состояние, прежде чем повторять действие."
+    : "Не удалось изменить состояние заказа. Проверьте текущее состояние заказа.",
+);
 const recoveryLabel = computed(() =>
   props.accessRecoveryPending
     ? "Восстанавливаем доступ…"

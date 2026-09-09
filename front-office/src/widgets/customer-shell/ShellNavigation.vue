@@ -343,7 +343,7 @@ const accountControl = computed(() => {
 
   .shell-navigation__nav .ui-btn {
     display: flex;
-    min-height: 2.5rem;
+    min-height: 44px;
     align-items: center;
     justify-content: flex-start;
     gap: var(--customer-space-7);

@@ -133,6 +133,12 @@
   -moz-osx-font-smoothing: auto;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --expressa-motion-duration-control: 0ms;
+  }
+}
+
 html,
 body,
 #app {
