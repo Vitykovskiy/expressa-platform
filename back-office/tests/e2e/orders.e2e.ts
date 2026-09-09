@@ -300,7 +300,7 @@ async function createCustomerOrder(
   await product.click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: /Добавить/ }).click();
-  await page.getByRole("link", { name: /Корзина/ }).click();
+  await page.getByRole("button", { name: /Корзина/ }).click();
   await expect(page.locator(".cart-screen__payment")).toBeVisible();
 
   await page.getByRole("button", { name: "Оформить заказ" }).click();
@@ -361,7 +361,7 @@ async function openCustomerCart(page: OrdersPage): Promise<void> {
     .click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
   await page.getByRole("button", { name: "Добавить" }).click();
-  await page.getByRole("link", { name: /Корзина/ }).click();
+  await page.getByRole("button", { name: /Корзина/ }).click();
 }
 
 async function loginCustomer(

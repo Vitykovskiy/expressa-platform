@@ -40,6 +40,9 @@
     "@nestjs/swagger": {
       "js-yaml": "5.2.3"
     },
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "3.15.2"
+    },
     "multer": "2.3.0"
   },
   "devDependencies": {
