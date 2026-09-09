@@ -130,7 +130,11 @@
         </div>
       </v-card-text>
       <v-card-actions class="add-dialog-actions admin-dialog-actions">
-        <AdminButton :disabled="isProtected" type="button" @click="confirm">
+        <AdminButton
+          :disabled="isProtected || !isRawFormValid"
+          type="button"
+          @click="confirm"
+        >
           Добавить категорию
         </AdminButton>
         <AdminButton

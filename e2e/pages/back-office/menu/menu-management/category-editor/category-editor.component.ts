@@ -116,6 +116,12 @@ export class CategoryEditorComponent {
 
       await nameInput.clear();
       await expect(nameInput, "Название категории очищено.").toHaveValue("");
+    });
+  }
+
+  async moveToDescription(): Promise<void> {
+    await test.step("Перейти к описанию категории", async () => {
+      await this.descriptionInput.click();
       await expect(
         this.nameRequiredAlert,
         "Показано требование указать название категории.",

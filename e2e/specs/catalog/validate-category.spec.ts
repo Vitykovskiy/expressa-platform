@@ -9,6 +9,7 @@ import { expectedResult, expect, test } from "@fixtures/test";
  * 1. Администратор открывает управление меню.
  * 2. Администратор открывает создание категории.
  * 3. Администратор очищает название категории.
+ * 4. Администратор переходит к описанию категории.
  *
  * Ожидаемый результат:
  * - Администратор видит сообщение «Введите название категории».
@@ -28,6 +29,7 @@ test("CATALOG-03: администратор видит валидацию ка�
   await menuManagement.open();
   await menuManagement.categoryEditor.startCreation();
   await menuManagement.categoryEditor.clearName();
+  await menuManagement.categoryEditor.moveToDescription();
 
   await expectedResult(
     "Администратор видит сообщение «Введите название категории».",

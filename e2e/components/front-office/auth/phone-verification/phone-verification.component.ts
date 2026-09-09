@@ -13,6 +13,7 @@ export class PhoneVerificationComponent {
   private readonly otpInput: Locator;
   private readonly confirmButton: Locator;
   private readonly resendCodeButton: Locator;
+  private readonly resendCooldownMessage: Locator;
   private readonly errorMessage: Locator;
   private readonly authenticatedAccountButton: Locator;
 
@@ -30,6 +31,9 @@ export class PhoneVerificationComponent {
     this.resendCodeButton = page.getByRole("button", {
       name: /Отправить код (ещё раз|повторно)/,
     });
+    this.resendCooldownMessage = page.getByText(
+      /Повторная отправка доступна через \d+ сек\./,
+    );
     this.errorMessage = page.getByRole("alert");
     this.authenticatedAccountButton = page.getByRole("button", {
       name: /Выйти$/u,
@@ -103,20 +107,6 @@ export class PhoneVerificationComponent {
     });
   }
 
-  async resendCode(): Promise<void> {
-    await test.step("Повторно запросить одноразовый код", async () => {
-      await expect(
-        this.resendCodeButton,
-        "Кнопка повторной отправки кода доступна.",
-      ).toBeEnabled();
-      await this.resendCodeButton.click();
-      await expect(
-        this.otpInput,
-        "Клиент остаётся на шаге ввода кода.",
-      ).toBeVisible();
-    });
-  }
-
   async assertStep(step: PhoneVerificationStep): Promise<void> {
     if (step === PhoneVerificationStep.PHONE) {
       await expect(
@@ -137,6 +127,17 @@ export class PhoneVerificationComponent {
       this.sendCodeButton,
       "Кнопка запроса одноразового кода недоступна.",
     ).toBeDisabled();
+  }
+
+  async assertResendCooldown(): Promise<void> {
+    await expect(
+      this.resendCodeButton,
+      "Кнопка повторной отправки кода недоступна до завершения ограничения.",
+    ).toBeDisabled();
+    await expect(
+      this.resendCooldownMessage,
+      "Показано время до повторной отправки кода.",
+    ).toBeVisible();
   }
 
   async isCodeConfirmationDisabled(): Promise<boolean> {

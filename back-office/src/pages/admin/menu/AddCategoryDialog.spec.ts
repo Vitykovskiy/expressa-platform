@@ -30,6 +30,12 @@ describe("AddCategoryDialog", () => {
 
     expect(wrapper.emitted("confirm")).toBeUndefined();
     expect(wrapper.text()).toContain("Введите название категории");
+    expect(
+      wrapper
+        .findAll("button")
+        .find((button) => button.text() === "Добавить категорию")!
+        .attributes("disabled"),
+    ).toBeDefined();
   });
 
   it.each(["unconfirmed", "saved"] as const)(
