@@ -16,6 +16,9 @@ describe("ProductCard", () => {
     expect(button.classes()).toContain("product-card--unavailable");
     expect(button.attributes("aria-describedby")).toBe(status.attributes("id"));
     expect(status.text()).toBe(PRODUCT_CARD_UNAVAILABLE_STATUS);
+    expect(status.element.parentElement?.classList).toContain(
+      "product-card__info",
+    );
     expect(button.text()).not.toContain(">");
     expect(wrapper.text()).toContain("Очень длинное название напитка");
     expect(wrapper.text()).toContain(PRODUCT_CARD_UNAVAILABLE_STATUS);

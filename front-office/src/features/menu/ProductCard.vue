@@ -14,6 +14,13 @@
       <span v-if="description" class="product-card__description">
         {{ description }}
       </span>
+      <span
+        v-if="!props.product.isAvailable"
+        :id="unavailabilityStatusId"
+        class="product-card__availability"
+        role="status"
+        >{{ PRODUCT_CARD_UNAVAILABLE_STATUS }}</span
+      >
     </span>
     <span class="product-card__prices">
       <template v-if="props.product.type === 'DRINK'">
@@ -34,13 +41,6 @@
       class="product-card__unavailable-veil"
       aria-hidden="true"
     />
-    <span
-      v-if="!props.product.isAvailable"
-      :id="unavailabilityStatusId"
-      class="product-card__availability"
-      role="status"
-      >{{ PRODUCT_CARD_UNAVAILABLE_STATUS }}</span
-    >
   </ui-btn>
 </template>
 
@@ -112,11 +112,7 @@ const unavailabilityStatusId = computed(() =>
   display: block;
   position: relative;
   z-index: 2;
-  margin: var(--customer-space-7) calc(var(--customer-space-11) * -1)
-    calc(var(--customer-space-10) * -1);
-  padding: var(--customer-space-4) var(--customer-space-11);
-  color: var(--customer-text-on-surface);
-  background: var(--customer-color-info-surface);
+  color: var(--customer-danger);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
   line-height: 1.5;
