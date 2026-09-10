@@ -84,8 +84,17 @@ const sessionRetrying = ref(false);
 let nextMenuShellCommandId = 0;
 const activeDestination = computed<ShellNavigationDestination>(() => {
   if (route.path === "/cart") return "cart";
-  if (route.path === routePaths.authPhone || route.path === routePaths.authCode)
+  if (
+    route.path === routePaths.authPhone ||
+    route.path === routePaths.authCode
+  ) {
+    const path = getInternalAuthReturnPath(route.query.returnTo);
+    if (path !== undefined) {
+      if (path === "/cart") return "cart";
+      if (path === "/orders" || path.startsWith("/orders/")) return "orders";
+    }
     return "auth";
+  }
   if (route.path === "/orders" || route.path.startsWith("/orders/"))
     return "orders";
   return "menu";
@@ -229,7 +238,24 @@ function handleMenuShellCommandAck(requestId: number): void {
 }
 
 function getAuthReturnTo(): string | undefined {
-  return activeDestination.value === "auth" ? undefined : route.fullPath;
+  if (route.path === routePaths.authPhone || route.path === routePaths.authCode)
+    return undefined;
+  return route.fullPath;
+}
+
+function getInternalAuthReturnPath(value: unknown): string | undefined {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith("/") ||
+    value.startsWith("//")
+  ) {
+    return undefined;
+  }
+
+  const path = new URL(value, window.location.origin).pathname;
+  return path === routePaths.authPhone || path === routePaths.authCode
+    ? undefined
+    : path;
 }
 </script>
 

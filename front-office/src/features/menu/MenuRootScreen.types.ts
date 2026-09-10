@@ -2,6 +2,7 @@ import type { PublicMenuCategory } from "@/shared/api/public-menu.api";
 
 export interface MenuRootScreenProps {
   categories: PublicMenuCategory[];
+  feedback?: string | null;
 }
 
 export type MenuRootScreenEmits = {

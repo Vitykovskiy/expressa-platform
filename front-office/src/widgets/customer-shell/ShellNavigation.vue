@@ -88,6 +88,12 @@
               props.activeDestination === item.destination &&
               (item.destination !== 'menu' || !props.selectedCategoryId),
           }"
+          :aria-current="
+            props.activeDestination === item.destination &&
+            (item.destination !== 'menu' || !props.selectedCategoryId)
+              ? 'page'
+              : undefined
+          "
           type="button"
           @click="emit('navigate', item.destination)"
         >
@@ -114,6 +120,9 @@
             'shell-navigation__nav-button--active':
               props.selectedCategoryId === item.id,
           }"
+          :aria-current="
+            props.selectedCategoryId === item.id ? 'page' : undefined
+          "
           type="button"
           @click="emit('selectCategory', item.id)"
         >

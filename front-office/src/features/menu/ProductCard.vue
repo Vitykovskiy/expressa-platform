@@ -61,9 +61,10 @@ const unavailabilityStatusId = computed(() =>
 </script>
 <style scoped lang="scss">
 .product-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: auto;
+  height: 100%;
   min-height: 44px;
   padding: var(--customer-space-10) var(--customer-space-11);
   color: var(--customer-text-on-surface);
@@ -107,6 +108,7 @@ const unavailabilityStatusId = computed(() =>
   gap: var(--customer-space-4);
   justify-content: flex-start;
   width: 100%;
+  margin-top: auto;
 }
 .product-card__availability {
   display: block;

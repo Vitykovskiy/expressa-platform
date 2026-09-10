@@ -89,7 +89,8 @@ defineSlots<{
   line-height: normal;
 }
 
-.ui-text-field :deep(input::placeholder) {
+.ui-text-field :deep(.v-field--active input::placeholder),
+.ui-text-field :deep(.v-field--no-label input::placeholder) {
   color: var(--customer-text-faint-on-brand);
   opacity: 1;
 }

@@ -9,10 +9,11 @@ import MenuGroupScreen from "./MenuGroupScreen.vue";
 import MenuRootScreen from "./MenuRootScreen.vue";
 
 describe("MenuFlow", () => {
-  it("открывает товар прямо с корневого меню и подтверждает добавление именем товара", async () => {
+  it("открывает товар прямо с корневого меню и подтверждает добавление в каталоге", async () => {
     const wrapper = mount(MenuFlow, {
       props: { menu: createMenu() },
       global: { plugins: [vuetify] },
+      attachTo: document.body,
     });
 
     await wrapper
@@ -21,7 +22,30 @@ describe("MenuFlow", () => {
 
     expect(wrapper.get(".product-detail__title").text()).toBe("Эспрессо");
     await wrapper.get(".product-detail__submit").trigger("click");
-    expect(wrapper.get('[role="status"]').text()).toBe("Добавлено: Эспрессо");
+    await backTo({ id: "root" });
+    await nextTick();
+    expect(wrapper.get('[role="status"]').text()).toBe(
+      "Добавлено в корзину: Эспрессо",
+    );
+  });
+
+  it("переводит фокус на heading категории после Enter на исчезающем действии", async () => {
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+      attachTo: document.body,
+    });
+    const action = wrapper.get('[aria-label="Открыть категорию Эспрессо"]');
+
+    (action.element as HTMLElement).focus();
+    await action.trigger("keydown", { key: "Enter" });
+    await action.trigger("keyup", { key: "Enter" });
+    await action.trigger("click");
+    await nextTick();
+    await nextTick();
+
+    expect(document.activeElement?.id).toBe("menu-group-espresso");
+    wrapper.unmount();
   });
 
   it("возвращает product в category через history и восстанавливает scroll", async () => {
@@ -165,6 +189,34 @@ describe("MenuFlow", () => {
     expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1]]);
     expect(wrapper.emitted("menuScreenChange")).toEqual([[{ id: "root" }]]);
   });
+
+  it("целевое Меню возвращает в root после последовательности категорий", async () => {
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 1,
+        target: { id: "category", categoryId: "espresso" },
+      },
+    });
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 2,
+        target: { id: "category", categoryId: "bakery" },
+      },
+    });
+    await wrapper.setProps({
+      menuShellCommand: { requestId: 3, target: { id: "root" } },
+    });
+
+    expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
+    expect(wrapper.emitted("menuScreenChange")?.at(-1)).toEqual([
+      { id: "root" },
+    ]);
+  });
 });
 
 async function backTo(
@@ -211,6 +263,12 @@ function createMenu(): PublicMenu {
             ],
           },
         ],
+      },
+      {
+        id: "bakery",
+        name: "Выпечка",
+        description: "",
+        products: [],
       },
     ],
   };

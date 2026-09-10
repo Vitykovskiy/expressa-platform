@@ -1,11 +1,12 @@
 <template>
   <section class="menu-root" aria-labelledby="menu-root-title">
     <header class="menu-root__header">
-      <p class="menu-root__eyebrow">Меню кофейни</p>
-      <h1 id="menu-root-title" class="menu-root__title">
-        Что будем<br />заказывать?
-      </h1>
+      <h1 id="menu-root-title" class="menu-root__title" tabindex="-1">Меню</h1>
     </header>
+
+    <p class="menu-root__feedback" role="status" aria-atomic="true">
+      {{ feedback ?? "" }}
+    </p>
 
     <p v-if="categories.length === 0" class="menu-root__empty" role="status">
       В меню пока нет категорий
@@ -90,16 +91,7 @@ function selectProduct(categoryId: string, productId: string): void {
   color: var(--customer-text);
 }
 .menu-root__header {
-  padding: var(--customer-space-13) var(--customer-space-9)
-    var(--customer-space-16);
-}
-.menu-root__eyebrow {
-  margin: 0 0 var(--customer-space-4);
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-xs);
-  font-weight: var(--customer-font-weight-bold);
-  letter-spacing: var(--customer-letter-spacing-overline);
-  text-transform: uppercase;
+  padding: var(--customer-space-11) var(--customer-space-9);
 }
 .menu-root__title {
   margin: 0;
@@ -117,9 +109,21 @@ function selectProduct(categoryId: string, productId: string): void {
   font-weight: var(--customer-font-weight-bold);
   text-align: center;
 }
+.menu-root__feedback {
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--customer-space-9);
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-body);
+  font-weight: var(--customer-font-weight-semibold);
+  line-height: var(--customer-line-height-body);
+}
+.menu-root__feedback:not(:empty) {
+  padding-bottom: var(--customer-space-7);
+}
 .menu-root__categories {
   display: grid;
-  gap: var(--customer-space-13);
+  gap: var(--customer-space-11);
   width: 100%;
   margin: 0;
   padding: 0 var(--customer-space-9) var(--customer-space-9);
@@ -130,12 +134,13 @@ function selectProduct(categoryId: string, productId: string): void {
 }
 .menu-root__category {
   display: grid;
-  gap: var(--customer-space-7);
+  gap: var(--customer-space-6);
 }
 .menu-root__category-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: var(--customer-space-7);
 }
 .menu-root__category-name {
@@ -149,8 +154,8 @@ function selectProduct(categoryId: string, productId: string): void {
 }
 .menu-root__products {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--customer-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--customer-space-8);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -160,29 +165,14 @@ function selectProduct(categoryId: string, productId: string): void {
   color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-sm);
 }
-@media (max-width: 479px) {
-  .menu-root__category-header {
-    flex-wrap: wrap;
-  }
-  .menu-root__category-action {
-    width: 100%;
-  }
-}
 @media (min-width: 1024px) {
   .menu-root__header,
-  .menu-root__categories {
+  .menu-root__categories,
+  .menu-root__feedback {
     max-width: none;
     margin: 0;
     padding-right: 0;
     padding-left: 0;
-  }
-  .menu-root__products {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1280px) {
-  .menu-root__products {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

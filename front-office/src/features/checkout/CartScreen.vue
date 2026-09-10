@@ -134,8 +134,7 @@
           v-if="props.requiresPhoneConfirmation"
           class="cart-screen__phone-confirmation"
         >
-          Перед оформлением подтвердите номер телефона. Вернём вас в эту
-          корзину.
+          Для оформления заказа подтвердите номер телефона.
         </p>
         <ui-btn
           block
@@ -156,7 +155,7 @@
         v-if="props.requiresPhoneConfirmation"
         class="cart-screen__phone-confirmation"
       >
-        Перед оформлением подтвердите номер телефона. Вернём вас в эту корзину.
+        Для оформления заказа подтвердите номер телефона.
       </p>
       <ui-btn
         block

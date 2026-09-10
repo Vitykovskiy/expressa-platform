@@ -2,6 +2,7 @@
   <AuthScreen
     :state="authState"
     :is-loading="isLoading"
+    :context-description="contextDescription"
     :otp="otp"
     :resend-remaining-seconds="resendRemainingSeconds"
     @back-to-phone="backToPhone"
@@ -43,6 +44,7 @@ const resendRemainingSeconds = computed(() => {
     ),
   );
 });
+const contextDescription = computed(() => getContextDescription());
 onBeforeUnmount(() => clearInterval(resendTimer));
 
 if (!hasActiveOtpRequest()) {
@@ -140,5 +142,20 @@ function hasActiveOtpRequest(): boolean {
     sessionStore.otpExpiresAt !== null &&
     getSessionDependencies().now() < sessionStore.otpExpiresAt
   );
+}
+
+function getContextDescription(): string | undefined {
+  const returnTo = route.query.returnTo;
+  if (!isInternalReturnTo(returnTo)) return undefined;
+
+  const path = new URL(returnTo, window.location.origin).pathname;
+  if (path === "/orders" || path.startsWith("/orders/")) {
+    return "Подтвердите номер телефона, чтобы посмотреть историю заказов.";
+  }
+  if (path === "/cart") {
+    return "Подтвердите номер телефона, чтобы оформить заказ.";
+  }
+
+  return undefined;
 }
 </script>

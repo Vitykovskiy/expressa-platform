@@ -4,7 +4,7 @@
       <header class="auth-heading">
         <h1 class="auth-title">{{ presentation.title }}</h1>
         <p class="auth-description" aria-live="polite">
-          {{ presentation.description(state) }}
+          {{ props.contextDescription ?? presentation.description(state) }}
         </p>
       </header>
 

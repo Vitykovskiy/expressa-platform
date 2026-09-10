@@ -2,6 +2,7 @@
   <AuthScreen
     :state="authState"
     :is-loading="isLoading"
+    :context-description="contextDescription"
     otp=""
     :resend-remaining-seconds="0"
     @send-code="requestOtp"
@@ -28,6 +29,7 @@ const errorMessage = shallowRef(
     : "",
 );
 const isLoading = shallowRef(false);
+const contextDescription = computed(() => getContextDescription());
 
 const authState = computed<AuthPhonePageState>(() => ({
   errorMessage: errorMessage.value,
@@ -76,5 +78,20 @@ function isInternalReturnTo(value: unknown): value is string {
   const path = new URL(value, window.location.origin).pathname;
 
   return path !== authPhoneRoute.phone && path !== authPhoneRoute.code;
+}
+
+function getContextDescription(): string | undefined {
+  const returnTo = route.query.returnTo;
+  if (!isInternalReturnTo(returnTo)) return undefined;
+
+  const path = new URL(returnTo, window.location.origin).pathname;
+  if (path === "/orders" || path.startsWith("/orders/")) {
+    return "Подтвердите номер телефона, чтобы посмотреть историю заказов.";
+  }
+  if (path === "/cart") {
+    return "Подтвердите номер телефона, чтобы оформить заказ.";
+  }
+
+  return undefined;
 }
 </script>

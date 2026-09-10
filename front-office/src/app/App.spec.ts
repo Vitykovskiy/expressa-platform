@@ -237,6 +237,32 @@ describe("App", () => {
     }
   });
 
+  it("не выбирает раздел навигации для внешнего или невалидного auth returnTo", async () => {
+    const router = await createTestRouter("/");
+    const sessionStore = useSessionStore();
+    vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
+    const wrapper = mount(App, {
+      global: { plugins: [vuetify, pinia, router] },
+    });
+    await flushPromises();
+
+    const shell = wrapper.getComponent(CustomerShell);
+    for (const returnTo of [
+      "https://evil.example/orders",
+      "https://evil.example/cart",
+      "//evil.example/orders",
+      "/auth/phone",
+      "/auth/code",
+    ]) {
+      await router.push({
+        path: "/auth/phone",
+        query: { returnTo },
+      });
+      await flushPromises();
+      expect(shell.props("activeDestination")).toBe("auth");
+    }
+  });
+
   it("выполняет navigation и detail back через существующие router paths", async () => {
     const router = await createTestRouter("/orders/order-1");
     const sessionStore = useSessionStore();

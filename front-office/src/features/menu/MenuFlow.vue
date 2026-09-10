@@ -2,12 +2,14 @@
   <menu-root-screen
     v-if="screen.id === 'root'"
     :categories="menu.categories"
+    :feedback="catalogFeedback"
     @select-category="openCategory"
     @select-product="openProduct"
   />
   <template v-else-if="screen.id === 'category'">
     <menu-group-screen
       :category="selectedCategory"
+      :feedback="catalogFeedback"
       @return-to-menu="openRoot"
       @select-product="openProduct(selectedCategory?.id, $event)"
     />
@@ -20,9 +22,6 @@
       @submit="addConfigured"
     />
   </template>
-  <p v-if="recentlyAddedProductName" class="menu-flow__feedback" role="status">
-    Добавлено: {{ recentlyAddedProductName }}
-  </p>
 </template>
 
 <script setup lang="ts">
@@ -49,6 +48,8 @@ const emit = defineEmits<MenuFlowEmits>();
 const screen = ref<MenuFlowScreen>({ id: "root" });
 const productScrollY = ref(0);
 const recentlyAddedProductName = ref<string | null>(null);
+let feedbackTimer: ReturnType<typeof setTimeout> | undefined;
+let preserveFeedbackOnNextHistoryRestore = false;
 let lastConsumedMenuShellCommandId = 0;
 watch(
   screen,
@@ -74,6 +75,12 @@ onMounted(() => {
 onBeforeUnmount(() =>
   window.removeEventListener("popstate", restoreHistoryScreen),
 );
+onBeforeUnmount(() => clearTimeout(feedbackTimer));
+const catalogFeedback = computed(() =>
+  recentlyAddedProductName.value === null
+    ? null
+    : `Добавлено в корзину: ${recentlyAddedProductName.value}`,
+);
 const selectedCategory = computed(() => {
   const currentScreen = screen.value;
   if (currentScreen.id === "root") return undefined;
@@ -90,11 +97,16 @@ const selectedProduct = computed(() => {
 });
 
 function openCategory(categoryId: string): void {
-  recentlyAddedProductName.value = null;
+  const focusedElement = getFocusedElement();
+  clearFeedback();
   screen.value = { id: "category", categoryId };
   history.pushState(
     { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
     "",
+  );
+  focusHeadingAfterRemovedControl(
+    focusedElement,
+    focusedElement?.classList.contains("menu-root__category-action") ?? false,
   );
 }
 
@@ -142,20 +154,23 @@ function isMenuShellCommand(
   );
 }
 function openRoot(): void {
-  if (hasCurrentManagedEntry() && screen.value.id === "category") {
-    history.back();
-    return;
-  }
+  if (screen.value.id === "root") return;
+  const focusedElement = getFocusedElement();
+  clearFeedback();
   screen.value = { id: "root" };
   history.pushState(
     { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
     "",
   );
+  focusHeadingAfterRemovedControl(
+    focusedElement,
+    focusedElement?.classList.contains("customer-shell__desktop-back") ?? false,
+  );
 }
 function openProduct(categoryId: string | undefined, productId: string): void {
   const category = props.menu.categories.find((item) => item.id === categoryId);
   if (!category?.products.some((product) => product.id === productId)) return;
-  recentlyAddedProductName.value = null;
+  clearFeedback();
   productScrollY.value = window.scrollY;
   screen.value = {
     id: "product",
@@ -171,10 +186,38 @@ function restoreHistoryScreen(event: PopStateEvent): void {
   if (!("menuFlowScreen" in (event.state ?? {}))) return;
   const nextScreen = getValidHistoryScreen(event.state.menuFlowScreen);
   const previousScreen = screen.value;
+  const focusedElement = getFocusedElement();
+  if (preserveFeedbackOnNextHistoryRestore) {
+    preserveFeedbackOnNextHistoryRestore = false;
+  } else {
+    clearFeedback();
+  }
   screen.value = nextScreen ?? { id: "root" };
+  focusHeadingAfterRemovedControl(focusedElement);
   if (previousScreen.id === "product" && screen.value.id === "category") {
     void nextTick(() => window.scrollTo({ top: productScrollY.value }));
   }
+}
+function getFocusedElement(): HTMLElement | null {
+  return document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
+}
+function focusHeadingAfterRemovedControl(
+  focusedElement: HTMLElement | null,
+  force = false,
+): void {
+  void nextTick(() => {
+    if (!force && focusedElement?.isConnected) return;
+    const currentScreen = screen.value;
+    const headingId =
+      currentScreen.id === "root"
+        ? "menu-root-title"
+        : currentScreen.id === "category"
+          ? `menu-group-${currentScreen.categoryId}`
+          : undefined;
+    if (headingId) document.getElementById(headingId)?.focus();
+  });
 }
 function closeProduct(): void {
   if (screen.value.id !== "product") return;
@@ -239,24 +282,21 @@ function getValidHistoryScreen(value: unknown): MenuFlowScreen | undefined {
 }
 function addConfigured(item: ConfiguredCartItemDraft): void {
   emit("add", item);
-  recentlyAddedProductName.value = item.productName;
+  showFeedback(item.productName);
+  preserveFeedbackOnNextHistoryRestore = true;
   closeProduct();
 }
-</script>
-
-<style scoped lang="scss">
-.menu-flow__feedback {
-  position: fixed;
-  z-index: 1;
-  right: var(--customer-space-9);
-  bottom: var(--customer-space-9);
-  max-width: min(24rem, calc(100vw - var(--customer-space-18)));
-  margin: 0;
-  padding: var(--customer-space-6) var(--customer-space-8);
-  color: var(--customer-text-on-surface);
-  background: var(--customer-color-success-surface);
-  border-radius: var(--customer-radius-sm);
-  box-shadow: var(--customer-shadow-floating);
-  font-weight: var(--customer-font-weight-bold);
+function showFeedback(productName: string): void {
+  clearTimeout(feedbackTimer);
+  recentlyAddedProductName.value = null;
+  void nextTick(() => {
+    recentlyAddedProductName.value = productName;
+    feedbackTimer = setTimeout(clearFeedback, 5000);
+  });
 }
-</style>
+function clearFeedback(): void {
+  clearTimeout(feedbackTimer);
+  feedbackTimer = undefined;
+  recentlyAddedProductName.value = null;
+}
+</script>
