@@ -15,12 +15,12 @@ describe("OrdersHistoryScreen", () => {
       expect(
         wrapper.find('[aria-label="Обновить историю заказов"]').exists(),
       ).toBe(false);
-      expect(wrapper.findAll("button")).toHaveLength(1);
+      expect(wrapper.find('[aria-label="Настройки"]').exists()).toBe(true);
       expect(wrapper.get('[role="alert"]').text()).toContain(
         "Не удалось загрузить историю заказов.",
       );
 
-      await wrapper.get("button").trigger("click");
+      await wrapper.get(".orders-history__retry").trigger("click");
 
       expect(wrapper.emitted("retry")).toEqual([[]]);
     },

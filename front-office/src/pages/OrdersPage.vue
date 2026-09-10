@@ -4,6 +4,7 @@
     @load-more="loadMore"
     @repeat="repeatOrder"
     @retry="retry"
+    @sign-out="logout"
   />
 </template>
 
@@ -60,6 +61,10 @@ async function loadMore(): Promise<void> {
 }
 async function repeatOrder(orderId: string): Promise<void> {
   await router.push({ path: `/orders/${orderId}`, query: { repeat: "1" } });
+}
+async function logout(): Promise<void> {
+  await sessionStore.logout();
+  await router.replace("/");
 }
 async function loadPage(cursor?: string): Promise<void> {
   if (

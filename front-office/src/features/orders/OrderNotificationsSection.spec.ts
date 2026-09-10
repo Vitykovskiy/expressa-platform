@@ -1,7 +1,10 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useSessionStore } from "@/app/session.store";
+import { apiClientKey } from "@/shared/api/client";
 import OrderNotificationsSection from "./OrderNotificationsSection.vue";
 
 describe("OrderNotificationsSection", () => {
@@ -13,17 +16,58 @@ describe("OrderNotificationsSection", () => {
     Reflect.deleteProperty(window, "Notification");
   });
 
-  it("объясняет отсутствие поддержки без кнопки включения", async () => {
+  it("не показывает invitation при отсутствии поддержки, оставляя объяснение в Settings", async () => {
     const wrapper = mount(OrderNotificationsSection, {
-      global: { stubs: { UiBtn: { template: "<button><slot /></button>" } } },
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiDialog: {
+            props: ["modelValue"],
+            template: '<section v-if="modelValue"><slot /></section>',
+          },
+        },
+      },
     });
     await flushPromises();
 
+    expect(wrapper.find("#notifications").exists()).toBe(false);
+    wrapper.vm.openSettings();
+    await flushPromises();
     expect(wrapper.text()).toContain(
       "Уведомления не поддерживаются этим браузером.",
     );
-    expect(wrapper.text()).not.toContain("Включить уведомления");
-    expect(wrapper.get("#notifications").attributes("tabindex")).toBe("-1");
+  });
+
+  it("не показывает invitation при запрещённых уведомлениях", async () => {
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: { permission: "denied" },
+    });
+    Object.defineProperty(window, "PushManager", {
+      configurable: true,
+      value: class PushManager {},
+    });
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: { ready: new Promise(() => undefined) },
+    });
+    const wrapper = mount(OrderNotificationsSection, {
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiDialog: {
+            props: ["modelValue"],
+            template: '<section v-if="modelValue"><slot /></section>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.find("#notifications").exists()).toBe(false);
+    wrapper.vm.openSettings();
+    await flushPromises();
+    expect(wrapper.text()).toContain("Уведомления заблокированы");
   });
 
   it("не оставляет проверку бесконечной, если readiness service worker не отвечает", async () => {
@@ -41,12 +85,21 @@ describe("OrderNotificationsSection", () => {
       value: { ready: new Promise(() => undefined) },
     });
     const wrapper = mount(OrderNotificationsSection, {
-      global: { stubs: { UiBtn: { template: "<button><slot /></button>" } } },
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiDialog: {
+            props: ["modelValue"],
+            template: '<section v-if="modelValue"><slot /></section>',
+          },
+        },
+      },
     });
 
-    expect(wrapper.get('[role="status"]').text()).toBe(
-      "Проверяем уведомления…",
-    );
+    expect(wrapper.find("#notifications").exists()).toBe(false);
+    wrapper.vm.openSettings();
+    await flushPromises();
+    expect(wrapper.text()).toContain("Проверяем уведомления…");
     await vi.advanceTimersByTimeAsync(5_000);
     await flushPromises();
 
@@ -80,5 +133,90 @@ describe("OrderNotificationsSection", () => {
 
     expect(wrapper.text()).toContain("Включить уведомления");
     expect(wrapper.text()).not.toContain("Уведомления включены.");
+  });
+
+  it("открывает единые настройки с управлением уведомлениями", async () => {
+    const wrapper = mount(OrderNotificationsSection, {
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiDialog: {
+            props: ["modelValue"],
+            template:
+              '<section v-if="modelValue" data-testid="settings"><slot /></section>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    wrapper.vm.openSettings();
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="settings"]').text()).toContain(
+      "Уведомления о заказах",
+    );
+  });
+
+  it("не возвращает invitation при ошибке отключения включённых уведомлений", async () => {
+    const subscription = {
+      endpoint: "https://push.example.test/subscription",
+      getKey: () => new Uint8Array([1]).buffer,
+      unsubscribe: vi.fn(),
+    };
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: { permission: "granted" },
+    });
+    Object.defineProperty(window, "PushManager", {
+      configurable: true,
+      value: class PushManager {},
+    });
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            getSubscription: vi.fn().mockResolvedValue(subscription),
+          },
+        }),
+      },
+    });
+    useSessionStore().$patch({
+      accessToken: "access",
+      status: "authenticated",
+    });
+    const wrapper = mount(OrderNotificationsSection, {
+      global: {
+        provide: {
+          [apiClientKey as symbol]: {
+            request: vi.fn().mockRejectedValue(new Error("network")),
+          },
+        },
+        stubs: {
+          UiBtn: {
+            template: "<button @click=\"$emit('click')\"><slot /></button>",
+          },
+          UiDialog: {
+            props: ["modelValue"],
+            template:
+              '<section v-if="modelValue" data-testid="settings"><slot /></section>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.find("#notifications").exists()).toBe(false);
+    wrapper.vm.openSettings();
+    await nextTick();
+    await wrapper.get('[data-testid="settings"] button').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find("#notifications").exists()).toBe(false);
+    expect(wrapper.get('[data-testid="settings"]').text()).toContain(
+      "Не удалось изменить настройки уведомлений",
+    );
+    expect(subscription.unsubscribe).not.toHaveBeenCalled();
   });
 });

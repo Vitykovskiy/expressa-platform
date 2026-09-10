@@ -43,38 +43,25 @@ describe("ShellNavigation", () => {
     expect(wrapper.emitted("navigate")).toEqual([["menu"]]);
   });
 
-  it("называет мобильную кнопку аккаунтом и историей, не меняя выход", async () => {
+  it("ведёт в историю отдельной мобильной кнопкой", async () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ isAuthenticated: true }),
     });
 
-    const accountControl = wrapper.get(
-      '[aria-label="+79991234567: история заказов"]',
-    );
-    await accountControl.trigger("click");
-    await wrapper.get('[aria-label="Выйти"]').trigger("click");
+    const history = wrapper.get('[aria-label="История заказов"]');
+    await history.trigger("click");
 
     expect(wrapper.emitted("navigate")).toEqual([["orders"]]);
-    expect(wrapper.emitted("signOut")).toEqual([[]]);
     expect(wrapper.get(".shell-navigation__account").text()).toContain(
       "+79991234567",
     );
-
-    await wrapper.setProps({ isAuthenticated: false });
-    expect(wrapper.find('[aria-label="Подтвердить телефон"]').exists()).toBe(
-      true,
-    );
-    expect(wrapper.find('[aria-label="Выйти"]').exists()).toBe(false);
   });
 
-  it("объявляет и блокирует выход во время выполнения", () => {
+  it("блокирует desktop выход во время выполнения", () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ isAuthenticated: true, isLogoutPending: true }),
     });
 
-    const logout = wrapper.get('[aria-label="Выход выполняется"]');
-    expect(logout.attributes("disabled")).toBeDefined();
-    expect(logout.attributes("aria-busy")).toBe("true");
     expect(
       wrapper.get(".shell-navigation__account").attributes("disabled"),
     ).toBeDefined();

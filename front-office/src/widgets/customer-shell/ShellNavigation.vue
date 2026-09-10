@@ -27,32 +27,16 @@
       <div
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
-        <details class="shell-navigation__more">
-          <summary aria-label="Дополнительная навигация">
-            <MoreHorizontal aria-hidden="true" :size="18" :stroke-width="2.5" />
-          </summary>
-          <div class="shell-navigation__more-panel">
-            <ui-btn
-              type="button"
-              :aria-label="accountControl.ariaLabel"
-              @click="emit('navigate', accountControl.destination)"
-            >
-              {{ accountControl.ariaLabel }}
-            </ui-btn>
-            <ui-btn
-              v-if="props.isAuthenticated"
-              type="button"
-              :aria-label="
-                props.isLogoutPending ? 'Выход выполняется' : 'Выйти'
-              "
-              :disabled="props.isLogoutPending"
-              :loading="props.isLogoutPending"
-              @click="emit('signOut')"
-            >
-              {{ props.isLogoutPending ? "Выходим…" : "Выйти" }}
-            </ui-btn>
-          </div>
-        </details>
+        <ui-icon-btn
+          type="button"
+          aria-label="История заказов"
+          :aria-current="
+            props.activeDestination === 'orders' ? 'page' : undefined
+          "
+          @click="emit('navigate', 'orders')"
+        >
+          <History aria-hidden="true" :size="18" :stroke-width="2.5" />
+        </ui-icon-btn>
         <ui-icon-btn
           type="button"
           class="shell-navigation__cart-button"
@@ -163,7 +147,6 @@ import {
   History,
   House,
   LogIn,
-  MoreHorizontal,
   Phone,
   ShoppingCart,
 } from "lucide-vue-next";
@@ -190,9 +173,6 @@ const navigationItems = [
 const accountControl = computed(() => {
   if (props.isAuthenticated) {
     return {
-      ariaLabel: `${props.accountLabel}: история заказов`,
-      destination: "orders" as const,
-      mobileIcon: History,
       sidebarIcon: Phone,
       isAuthenticated: true,
       label: props.accountLabel,
@@ -202,9 +182,6 @@ const accountControl = computed(() => {
   }
 
   return {
-    ariaLabel: "Подтвердить телефон",
-    destination: "auth" as const,
-    mobileIcon: LogIn,
     sidebarIcon: LogIn,
     isAuthenticated: false,
     label: "Подтвердить телефон",
@@ -275,54 +252,6 @@ const accountControl = computed(() => {
   letter-spacing: var(--customer-letter-spacing-slight);
 }
 
-.shell-navigation__more {
-  position: relative;
-}
-
-.shell-navigation__more summary {
-  display: grid;
-  width: calc(var(--customer-space-12) * 2);
-  height: calc(var(--customer-space-12) * 2);
-  place-items: center;
-  color: var(--customer-text);
-  background: var(--customer-surface-control);
-  border: 0;
-  border-radius: var(--customer-radius-round);
-  cursor: pointer;
-  list-style: none;
-}
-
-.shell-navigation__more summary::-webkit-details-marker {
-  display: none;
-}
-
-.shell-navigation__more summary:focus-visible {
-  outline: 2px solid var(--customer-focus-ring);
-  outline-offset: 2px;
-}
-
-.shell-navigation__more-panel {
-  position: absolute;
-  top: calc(100% + var(--customer-space-4));
-  right: 0;
-  display: grid;
-  width: min(16rem, calc(100vw - var(--customer-space-9) * 2));
-  gap: var(--customer-space-3);
-  padding: var(--customer-space-5);
-  background: var(--customer-surface);
-  border: 1px solid var(--customer-border-on-brand);
-  border-radius: var(--customer-radius-md);
-  box-shadow: var(--customer-shadow-floating);
-}
-
-.shell-navigation__more-panel .ui-btn {
-  justify-content: flex-start;
-  min-height: 44px;
-  padding: 0 var(--customer-space-7);
-  color: var(--customer-color-blue-700);
-  border-radius: var(--customer-radius-sm);
-}
-
 .shell-navigation__brand-icon {
   width: var(--customer-space-11);
   height: var(--customer-space-11);
@@ -363,10 +292,6 @@ const accountControl = computed(() => {
 
 @media (min-width: 1024px) {
   .shell-navigation__mobile-header {
-    display: none;
-  }
-
-  .shell-navigation__more {
     display: none;
   }
 

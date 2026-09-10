@@ -20,8 +20,19 @@
       >
         <RefreshCw class="orders-history__refresh-icon" aria-hidden="true" />
       </ui-icon-btn>
+      <ui-icon-btn
+        ref="settingsButton"
+        type="button"
+        aria-label="Настройки"
+        @click="openSettings"
+      >
+        <Settings aria-hidden="true" :size="18" :stroke-width="2.5" />
+      </ui-icon-btn>
     </header>
-    <OrderNotificationsSection />
+    <OrderNotificationsSection
+      ref="notificationsSection"
+      @sign-out="emit('signOut')"
+    />
     <p v-if="props.staleMessage" class="orders-history__stale" role="status">
       {{ props.staleMessage }}
     </p>
@@ -72,8 +83,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { RefreshCw } from "lucide-vue-next";
+import { computed, useTemplateRef } from "vue";
+import { RefreshCw, Settings } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import OrderCard from "./OrderCard.vue";
@@ -86,6 +97,9 @@ import type {
 
 const props = defineProps<OrdersHistoryScreenProps>();
 const emit = defineEmits<OrdersHistoryScreenEmits>();
+const notificationsSection = useTemplateRef<
+  InstanceType<typeof OrderNotificationsSection>
+>("notificationsSection");
 
 const orderLabel = computed(() => {
   const lastTwoDigits = props.orders.length % 100;
@@ -97,6 +111,13 @@ const orderLabel = computed(() => {
 
   return "заказов";
 });
+
+function openSettings(): void {
+  const section = notificationsSection.value as {
+    openSettings?: () => void;
+  } | null;
+  section?.openSettings?.();
+}
 </script>
 
 <style scoped lang="scss">

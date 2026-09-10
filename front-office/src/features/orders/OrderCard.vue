@@ -213,7 +213,7 @@ function itemKey(item: OrderItem): string {
 .order-card__pickup-cue,
 .order-card__item-quantity,
 .order-card__modifier {
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-text-secondary-on-surface);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-semibold);
 }

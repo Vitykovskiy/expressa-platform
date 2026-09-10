@@ -130,12 +130,6 @@
           <span>Итого</span><strong>{{ formatRubAmount(totalRub) }}</strong>
         </p>
         <p class="cart-screen__payment">Оплата на кассе при получении</p>
-        <p
-          v-if="props.requiresPhoneConfirmation"
-          class="cart-screen__phone-confirmation"
-        >
-          Для оформления заказа подтвердите номер телефона.
-        </p>
         <ui-btn
           block
           class="cart-screen__checkout"
@@ -151,12 +145,6 @@
 
     <footer v-if="items.length" class="cart-screen__mobile-checkout">
       <p class="cart-screen__mobile-payment">Оплата на кассе при получении</p>
-      <p
-        v-if="props.requiresPhoneConfirmation"
-        class="cart-screen__phone-confirmation"
-      >
-        Для оформления заказа подтвердите номер телефона.
-      </p>
       <ui-btn
         block
         class="cart-screen__checkout"
@@ -269,10 +257,13 @@ const noticeClass = computed(() => ({
 const checkoutLabel = computed(() => {
   if (isSubmitting.value) return "Оформляем заказ";
   if (needsReconfirmation.value) return "Подтвердить новый итог";
+  if (props.requiresPhoneConfirmation) return "Подтвердить телефон";
   return "Оформить заказ";
 });
-const mobileCheckoutLabel = computed(
-  () => `${checkoutLabel.value} · ${formatRubAmount(checkoutTotalRub.value)}`,
+const mobileCheckoutLabel = computed(() =>
+  props.requiresPhoneConfirmation
+    ? checkoutLabel.value
+    : `${checkoutLabel.value} · ${formatRubAmount(checkoutTotalRub.value)}`,
 );
 
 function formatRubAmount(value: number): string {
@@ -397,7 +388,8 @@ function emitCheckout(): void {
   gap: var(--customer-space-9);
   width: 100%;
   min-width: 0;
-  padding: 0 var(--customer-space-9) var(--customer-space-13);
+  padding: 0 var(--customer-space-9)
+    calc(var(--customer-space-13) + var(--customer-size-control-xl));
 }
 .cart-screen__items {
   display: flex;
@@ -461,12 +453,6 @@ function emitCheckout(): void {
   justify-self: start;
   padding: 0 var(--customer-space-7);
   font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__phone-confirmation {
-  margin: 0;
-  color: var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-sm);
-  line-height: var(--customer-line-height-body);
 }
 .cart-screen__notice--lost-response span {
   color: var(--customer-text-on-surface);
@@ -563,14 +549,15 @@ function emitCheckout(): void {
   display: flex;
   align-items: stretch;
   flex-direction: column;
-  gap: var(--customer-space-9);
-  padding: var(--customer-space-9);
+  gap: var(--customer-space-5);
+  padding: var(--customer-space-6) var(--customer-space-9)
+    calc(var(--customer-space-6) + env(safe-area-inset-bottom));
   background: var(--customer-background);
   border-top: 1px solid var(--customer-border);
 }
 .cart-screen__mobile-payment {
   margin: 0;
-  color: var(--customer-color-text-muted-on-brand);
+  color: var(--customer-text-strong-on-brand);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-semibold);
   text-align: center;

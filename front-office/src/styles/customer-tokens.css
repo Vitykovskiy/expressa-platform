@@ -39,6 +39,7 @@
   --customer-color-blue-500-10: rgb(24 71 232 / 10%);
   --customer-color-blue-500-4: rgb(24 71 232 / 4%);
   --customer-color-blue-700-60: rgb(15 40 128 / 60%);
+  --customer-color-blue-700-70: rgb(15 40 128 / 70%);
   --customer-color-blue-700-55: rgb(15 40 128 / 55%);
   --customer-color-blue-700-50: rgb(15 40 128 / 50%);
   --customer-color-blue-700-45: rgb(15 40 128 / 45%);
@@ -66,6 +67,7 @@
   --customer-color-text-on-surface: var(--customer-color-blue-700);
   --customer-color-text-muted-on-brand: var(--customer-color-white-70);
   --customer-color-text-muted-on-surface: var(--customer-color-blue-700-45);
+  --customer-color-text-secondary-on-surface: var(--customer-color-blue-700-70);
   --customer-color-border-on-brand: var(--customer-color-white-15);
   --customer-color-focus: var(--customer-color-orange-500);
 

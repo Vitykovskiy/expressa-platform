@@ -215,10 +215,12 @@ describe("CartScreen", () => {
     ).toBe(true);
   });
 
-  it("объясняет гостю подтверждение телефона перед оформлением", () => {
+  it("предлагает гостю подтвердить телефон вместо скрытого пояснения", () => {
     const wrapper = mountCartScreen({ requiresPhoneConfirmation: true });
 
-    expect(wrapper.text()).toContain("подтвердите номер телефона");
+    expect(wrapper.text()).toContain("Подтвердить телефон");
+    expect(wrapper.text()).not.toContain("Для оформления заказа подтвердите");
+    expect(wrapper.text()).not.toContain("Подтвердить телефон ·");
   });
 
   it("disables checkout and item controls while submitting", () => {

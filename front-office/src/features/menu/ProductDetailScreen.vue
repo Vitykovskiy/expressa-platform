@@ -322,7 +322,7 @@ function createInitialConfiguration(product = props.product) {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: var(--customer-space-2);
+  gap: 0;
   overflow: hidden;
   padding: var(--customer-space-2);
   background: var(--customer-color-surface-subtle);
@@ -348,8 +348,8 @@ function createInitialConfiguration(product = props.product) {
   cursor: pointer;
 }
 .product-detail__quantity output {
-  width: var(--customer-size-control-sm);
-  min-width: var(--customer-size-control-sm);
+  width: 1.75rem;
+  min-width: 1.75rem;
 }
 .product-detail__submit {
   display: inline-flex;
@@ -367,6 +367,17 @@ function createInitialConfiguration(product = props.product) {
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-black);
   cursor: pointer;
+}
+@media (max-width: 359px) {
+  .product-detail__footer {
+    flex-direction: column;
+  }
+  .product-detail__quantity {
+    align-self: flex-start;
+  }
+  .product-detail__submit {
+    width: 100%;
+  }
 }
 @media (min-width: 1024px) {
   .product-detail__header,

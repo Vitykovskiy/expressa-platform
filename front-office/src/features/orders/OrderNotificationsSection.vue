@@ -1,5 +1,6 @@
 <template>
   <section
+    v-if="showInvitation"
     id="notifications"
     ref="sectionRef"
     class="order-notifications"
@@ -29,7 +30,6 @@
           Отключаем уведомления…
         </p>
         <p v-else-if="message" role="status">{{ message }}</p>
-        <p v-else-if="subscription !== null">Уведомления включены.</p>
       </template>
     </div>
     <div
@@ -50,20 +50,74 @@
         @click="enable"
         >Включить уведомления</ui-btn
       >
-      <ui-btn
-        v-else
-        class="order-notifications__button"
-        type="button"
-        :loading="operation === 'disabling'"
-        @click="disable"
-        >Отключить уведомления</ui-btn
-      >
     </div>
   </section>
+  <p v-if="successMessage" class="order-notifications__success" role="status">
+    {{ successMessage }}
+  </p>
+  <ui-dialog
+    v-if="settingsOpen"
+    v-model="settingsOpen"
+    label="Настройки"
+    max-width="28rem"
+    :return-focus-to="settingsTrigger"
+  >
+    <section
+      class="order-notifications__settings"
+      aria-labelledby="notification-settings-title"
+    >
+      <h2 id="notification-settings-title">Настройки</h2>
+      <p
+        v-if="sessionStore.currentUser?.phoneE164"
+        class="order-notifications__account"
+      >
+        {{ sessionStore.currentUser.phoneE164 }}
+      </p>
+      <div class="order-notifications__settings-section">
+        <h3>Уведомления о заказах</h3>
+        <p>{{ settingsDescription }}</p>
+        <ui-btn v-if="state === 'denied'" type="button" @click="inspect"
+          >Проверить ещё раз</ui-btn
+        >
+        <ui-btn v-else-if="state === 'failed'" type="button" @click="inspect"
+          >Повторить проверку</ui-btn
+        >
+        <ui-btn
+          v-else-if="state === 'ready' && subscription === null"
+          type="button"
+          :loading="operation === 'enabling'"
+          @click="enable"
+          >Включить уведомления</ui-btn
+        >
+        <ui-btn
+          v-else-if="state === 'ready'"
+          type="button"
+          :loading="operation === 'disabling'"
+          @click="disable"
+          >Отключить уведомления</ui-btn
+        >
+      </div>
+      <ui-btn
+        v-if="sessionStore.status === 'authenticated'"
+        type="button"
+        class="order-notifications__logout"
+        @click="emit('signOut')"
+        >Выйти</ui-btn
+      >
+    </section>
+  </ui-dialog>
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref, useTemplateRef } from "vue";
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+} from "vue";
 
 import { useSessionStore } from "@/app/session.store";
 import { apiClientKey } from "@/shared/api/client";
@@ -72,6 +126,7 @@ import {
   type PushSubscriptionRequest,
 } from "@/shared/api/push.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 
 type NotificationState =
   "inspecting" | "unsupported" | "denied" | "ready" | "failed";
@@ -85,18 +140,40 @@ const state = ref<NotificationState>("inspecting");
 const operation = ref<Operation>(null);
 const subscription = ref<PushSubscriptionRequest | null>(null);
 const message = ref<string | null>(null);
+const settingsOpen = ref(false);
+const successMessage = ref<string | null>(null);
+const settingsTrigger = ref<HTMLElement | null>(null);
+const emit = defineEmits<{ signOut: [] }>();
+const showInvitation = computed(
+  () => state.value === "ready" && subscription.value === null,
+);
+const settingsDescription = computed(() => {
+  if (state.value === "inspecting") return "Проверяем уведомления…";
+  if (state.value === "unsupported")
+    return "Уведомления не поддерживаются этим браузером.";
+  if (state.value === "denied")
+    return "Уведомления заблокированы. Разрешите их в настройках браузера.";
+  if (state.value === "failed")
+    return "Не удалось проверить уведомления. Попробуйте ещё раз.";
+  if (operation.value === "enabling") return "Включаем уведомления…";
+  if (operation.value === "disabling") return "Отключаем уведомления…";
+  if (message.value) return message.value;
+  return subscription.value === null
+    ? "Сообщим, когда заказ примут и когда он будет готов."
+    : "Включены.";
+});
 
 onMounted(() => {
   document.addEventListener("visibilitychange", onVisibilityChange);
   void inspect();
   if (window.location.hash === "#notifications")
-    requestAnimationFrame(focusSection);
+    requestAnimationFrame(openSettings);
 });
 onUnmounted(() =>
   document.removeEventListener("visibilitychange", onVisibilityChange),
 );
 
-defineExpose({ focus: focusSection });
+defineExpose({ focus: openSettings, openSettings });
 
 function supportsPush(): boolean {
   return (
@@ -175,6 +252,14 @@ async function enable(): Promise<void> {
     const request = toPushSubscription(browserSubscription);
     await pushApi.saveSubscription(sessionStore.accessToken, request);
     subscription.value = request;
+    successMessage.value = "Уведомления включены";
+    if (
+      document.activeElement instanceof HTMLElement &&
+      sectionRef.value?.contains(document.activeElement)
+    ) {
+      await nextTick();
+      document.getElementById("orders-history-title")?.focus();
+    }
   } catch {
     if (permission() === "denied") state.value = "denied";
     else
@@ -206,6 +291,7 @@ async function disable(): Promise<void> {
     if (browserSubscription !== null) await browserSubscription.unsubscribe();
     subscription.value = null;
     message.value = "Уведомления отключены.";
+    successMessage.value = null;
   } catch {
     message.value =
       "Не удалось изменить настройки уведомлений. Попробуйте ещё раз.";
@@ -216,9 +302,12 @@ async function disable(): Promise<void> {
 function onVisibilityChange(): void {
   if (!document.hidden) void inspect();
 }
-function focusSection(): void {
-  sectionRef.value?.scrollIntoView({ block: "start" });
-  sectionRef.value?.focus({ preventScroll: true });
+function openSettings(): void {
+  settingsTrigger.value =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  settingsOpen.value = true;
 }
 function toPushSubscription(value: PushSubscription): PushSubscriptionRequest {
   const p256dh = value.getKey("p256dh");
@@ -272,7 +361,7 @@ function toBase64(value: ArrayBuffer): string {
   font-weight: var(--customer-font-weight-extrabold);
 }
 .order-notifications p {
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-text-secondary-on-surface);
   font-size: var(--customer-font-size-sm);
   overflow-wrap: anywhere;
 }
@@ -286,6 +375,56 @@ function toBase64(value: ArrayBuffer): string {
   border-radius: var(--customer-radius-pill);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-extrabold);
+}
+.order-notifications__success {
+  margin: 0 var(--customer-space-9) var(--customer-space-9);
+  color: var(--customer-text-strong-on-brand);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
+.order-notifications__settings {
+  display: grid;
+  gap: var(--customer-space-7);
+  padding: var(--customer-space-10);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-lg);
+}
+.order-notifications__settings h2,
+.order-notifications__settings h3,
+.order-notifications__settings p {
+  margin: 0;
+}
+.order-notifications__settings h2 {
+  font-size: var(--customer-font-size-xl);
+  font-weight: var(--customer-font-weight-black);
+}
+.order-notifications__settings h3 {
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.order-notifications__account,
+.order-notifications__settings-section p {
+  color: var(--customer-color-text-secondary-on-surface);
+  font-size: var(--customer-font-size-sm);
+}
+.order-notifications__settings-section {
+  display: grid;
+  gap: var(--customer-space-4);
+}
+.order-notifications__settings-section .ui-btn,
+.order-notifications__logout {
+  justify-self: start;
+  padding: 0 var(--customer-space-8);
+  color: var(--customer-primary);
+  background: var(--customer-surface);
+  border: 1px solid var(--customer-border-subtle-on-surface);
+  border-radius: var(--customer-radius-pill);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.order-notifications__logout {
+  color: var(--customer-danger);
 }
 @media (min-width: 1024px) {
   .order-notifications {
@@ -302,6 +441,10 @@ function toBase64(value: ArrayBuffer): string {
   }
   .order-notifications__actions {
     flex: 0 0 auto;
+  }
+  .order-notifications__success {
+    margin-right: 0;
+    margin-left: 0;
   }
 }
 </style>
