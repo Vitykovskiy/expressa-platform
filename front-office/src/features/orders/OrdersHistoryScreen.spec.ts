@@ -73,10 +73,14 @@ function mountScreen(
       hasMore: false,
       loading: false,
       orders: [],
+      staleMessage: null,
       ...props,
     },
     global: {
       stubs: {
+        OrderNotificationsSection: {
+          template: '<section id="notifications" />',
+        },
         OrderCard: {
           props: ["order"],
           template:

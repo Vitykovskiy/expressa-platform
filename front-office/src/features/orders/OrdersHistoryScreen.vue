@@ -21,6 +21,10 @@
         <RefreshCw class="orders-history__refresh-icon" aria-hidden="true" />
       </ui-icon-btn>
     </header>
+    <OrderNotificationsSection />
+    <p v-if="props.staleMessage" class="orders-history__stale" role="status">
+      {{ props.staleMessage }}
+    </p>
     <div
       v-if="props.loading && props.orders.length === 0"
       class="orders-history__state"
@@ -51,6 +55,7 @@
         <li v-for="order in props.orders" :key="order.id">
           <OrderCard
             :order="order"
+            :stage-hint="orderCardStageHints[order.stage]"
             :stage-label="orderCardStageLabels[order.stage]"
             @repeat="emit('repeat', $event)"
           />
@@ -73,7 +78,11 @@ import { RefreshCw } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import OrderCard from "./OrderCard.vue";
-import { orderCardStageLabels } from "./OrderCard.constants";
+import OrderNotificationsSection from "./OrderNotificationsSection.vue";
+import {
+  orderCardStageHints,
+  orderCardStageLabels,
+} from "./OrderCard.constants";
 import type {
   OrdersHistoryScreenEmits,
   OrdersHistoryScreenProps,
@@ -140,6 +149,12 @@ const orderLabel = computed(() => {
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
 }
+.orders-history__stale {
+  margin: 0 var(--customer-space-9) var(--customer-space-7);
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
 .orders-history__state p {
   margin: 0;
   overflow-wrap: anywhere;
@@ -195,6 +210,10 @@ const orderLabel = computed(() => {
   .orders-history__state {
     padding-right: 0;
     padding-left: 0;
+  }
+  .orders-history__stale {
+    margin-right: 0;
+    margin-left: 0;
   }
 }
 </style>

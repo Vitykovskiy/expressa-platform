@@ -48,12 +48,11 @@
         </li>
       </ul>
     </div>
-    <div class="order-card__actions">
-      <ui-btn class="order-card__open" :to="`/orders/${props.order.id}`">
-        Подробнее о заказе
-      </ui-btn>
+    <p v-if="props.order.stage !== 'ISSUED'" class="order-card__stage-hint">
+      {{ props.stageHint }}
+    </p>
+    <div v-if="props.order.stage === 'ISSUED'" class="order-card__actions">
       <ui-btn
-        v-if="props.order.stage === 'ISSUED'"
         class="order-card__repeat"
         type="button"
         @click="emit('repeat', props.order.id)"
@@ -208,6 +207,7 @@ function itemKey(item: OrderItem): string {
 }
 .order-card__meta,
 .order-card__disclosure,
+.order-card__stage-hint,
 .order-card__item-quantity,
 .order-card__modifier {
   color: var(--customer-color-text-muted-on-surface);
@@ -216,6 +216,7 @@ function itemKey(item: OrderItem): string {
 }
 .order-card--issued .order-card__meta,
 .order-card--issued .order-card__disclosure,
+.order-card--issued .order-card__stage-hint,
 .order-card--issued .order-card__item-quantity,
 .order-card--issued .order-card__modifier {
   color: var(--customer-text-secondary-on-brand);
@@ -281,7 +282,6 @@ function itemKey(item: OrderItem): string {
   gap: var(--customer-space-5);
   padding: 0 var(--customer-space-10) var(--customer-space-10);
 }
-.order-card__open,
 .order-card__repeat {
   align-self: start;
   min-height: 0;

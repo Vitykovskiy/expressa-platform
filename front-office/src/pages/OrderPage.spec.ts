@@ -576,162 +576,11 @@ describe("OrderPage", () => {
     ]);
   });
 
-  it("запрашивает разрешение только после явного включения уведомлений", async () => {
-    const browserSubscription = createBrowserSubscription();
-    const getSubscription = vi.fn().mockResolvedValue(null);
-    const subscribe = vi.fn().mockResolvedValue(browserSubscription);
-    installPushSupport({ getSubscription, subscribe });
+  it("ведёт к единственной настройке уведомлений в истории", async () => {
+    const { wrapper } = await mountOrder(orderResponse);
 
-    const { requests, wrapper } = await mountOrder(orderResponse);
-
-    expect(subscribe).not.toHaveBeenCalled();
-
-    await wrapper.get("button").trigger("click");
-    await flushPromises();
-
-    expect(subscribe).toHaveBeenCalledWith({
-      applicationServerKey: validVapidPublicKeyBytes,
-      userVisibleOnly: true,
-    });
-    expect(requests).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          headers: { authorization: "Bearer example-access-token" },
-          method: "GET",
-        }),
-        expect.objectContaining({
-          headers: {
-            "content-type": "application/json",
-            authorization: "Bearer example-access-token",
-          },
-          method: "PUT",
-        }),
-      ]),
-    );
-    expect(wrapper.text()).toContain("Отключить уведомления");
-  });
-
-  it("показывает busy feedback и блокирует повторный enable до settlement", async () => {
-    const deferred = createDeferred<Response>();
-    installPushSupport({
-      getSubscription: vi.fn().mockResolvedValue(null),
-      subscribe: vi.fn(),
-    });
-    const { wrapper } = await mountOrder(orderResponse, 200, null, {
-      publicKeyReply: deferred.promise,
-    });
-    const enable = getButtonByText(wrapper, "Включить уведомления");
-    await enable.trigger("click");
-    await enable.trigger("click");
-    await flushPromises();
-    expect(enable.attributes("aria-busy")).toBe("true");
-    expect(enable.attributes("disabled")).toBeDefined();
-    expect(wrapper.find('[role="status"]').text()).toContain(
-      "Проверяем уведомления…",
-    );
-    deferred.resolve(detailResponse({ publicKey: validVapidPublicKey }));
-    await flushPromises();
-  });
-
-  it("показывает busy feedback и блокирует повторный disable до settlement", async () => {
-    const deferred = createDeferred<Response>();
-    const subscription = createBrowserSubscription();
-    const getSubscription = vi.fn().mockResolvedValue(subscription);
-    installPushSupport({ getSubscription, subscribe: vi.fn() });
-    const { requests, wrapper } = await mountOrder(orderResponse, 200, null, {
-      subscriptionReplies: [deferred.promise],
-    });
-    const disable = getButtonByText(wrapper, "Отключить уведомления");
-
-    await disable.trigger("click");
-    await disable.trigger("click");
-    await flushPromises();
-
-    expect(
-      requests.filter((request) => request.method?.toUpperCase() === "DELETE"),
-    ).toHaveLength(1);
-    expect(disable.attributes("aria-busy")).toBe("true");
-    expect(disable.attributes("disabled")).toBeDefined();
-    expect(wrapper.find('[role="status"]').text()).toContain(
-      "Проверяем уведомления…",
-    );
-
-    deferred.resolve(new Response(null, { status: 204 }));
-    await flushPromises();
-
-    expect(
-      getButtonByText(wrapper, "Включить уведомления").attributes("disabled"),
-    ).toBeUndefined();
-    expect(subscription.unsubscribe).toHaveBeenCalledTimes(1);
-  });
-
-  it("снимает защиту disable после ошибки и позволяет повторить действие", async () => {
-    const subscription = createBrowserSubscription();
-    installPushSupport({
-      getSubscription: vi.fn().mockResolvedValue(subscription),
-      subscribe: vi.fn(),
-    });
-    const { requests, wrapper } = await mountOrder(orderResponse, 200, null, {
-      subscriptionReplies: [
-        detailResponse({ code: "PUSH_UNAVAILABLE" }, 503),
-        new Response(null, { status: 204 }),
-      ],
-    });
-    const disable = getButtonByText(wrapper, "Отключить уведомления");
-
-    await disable.trigger("click");
-    await flushPromises();
-
-    expect(disable.attributes("disabled")).toBeUndefined();
-    expect(disable.attributes("aria-busy")).toBeUndefined();
-    expect(wrapper.text()).toContain(
-      "Не удалось изменить уведомления. Заказ останется доступен.",
-    );
-
-    await disable.trigger("click");
-    await flushPromises();
-
-    expect(
-      requests.filter((request) => request.method?.toUpperCase() === "DELETE"),
-    ).toHaveLength(2);
-    expect(getButtonByText(wrapper, "Включить уведомления")).toBeDefined();
-  });
-
-  it("сохраняет заказ доступным после ошибки Push API", async () => {
-    const getSubscription = vi.fn().mockResolvedValue(null);
-    const subscribe = vi.fn().mockResolvedValue(createBrowserSubscription());
-    installPushSupport({ getSubscription, subscribe });
-
-    const { wrapper } = await mountOrder(orderResponse, 200, null, {
-      publicKeyStatus: 500,
-    });
-
-    await wrapper.get("button").trigger("click");
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Заказ №1042");
-    expect(wrapper.text()).toContain(
-      "Не удалось изменить уведомления. Заказ останется доступен.",
-    );
-    expect(subscribe).not.toHaveBeenCalled();
-  });
-
-  it("не передаёт невалидный VAPID ключ в PushManager", async () => {
-    const getSubscription = vi.fn().mockResolvedValue(null);
-    const subscribe = vi.fn().mockResolvedValue(createBrowserSubscription());
-    installPushSupport({ getSubscription, subscribe });
-
-    const { wrapper } = await mountOrder(orderResponse, 200, null, {
-      publicKey: "AQID",
-    });
-
-    await wrapper.get("button").trigger("click");
-    await flushPromises();
-
-    expect(subscribe).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain(
-      "Не удалось изменить уведомления. Заказ останется доступен.",
-    );
+    expect(wrapper.text()).toContain("Настроить уведомления");
+    expect(wrapper.text()).not.toContain("Включить уведомления");
   });
 });
 
@@ -849,34 +698,6 @@ function isCurrentDetailRequest(
   return method === "GET" && pathname === `/api/v2/orders/${currentOrderId}`;
 }
 
-function installPushSupport({
-  getSubscription,
-  subscribe,
-}: {
-  getSubscription: ReturnType<typeof vi.fn>;
-  subscribe: ReturnType<typeof vi.fn>;
-}): void {
-  Object.defineProperty(navigator, "serviceWorker", {
-    configurable: true,
-    value: {
-      ready: Promise.resolve({ pushManager: { getSubscription, subscribe } }),
-    },
-  });
-  Object.defineProperty(window, "PushManager", {
-    configurable: true,
-    value: class PushManager {},
-  });
-}
-
-function createBrowserSubscription(): PushSubscription {
-  return {
-    endpoint: "https://push.example/subscription",
-    getKey: (name: PushEncryptionKeyName) =>
-      new Uint8Array(name === "auth" ? [4] : [5]).buffer,
-    unsubscribe: vi.fn().mockResolvedValue(true),
-  } as unknown as PushSubscription;
-}
-
 type PushOptions = {
   publicKeyReply?: Response | Promise<Response>;
   subscriptionReplies?: Array<Response | Promise<Response>>;
@@ -908,13 +729,6 @@ type MenuVariant = {
 
 const validVapidPublicKey =
   "BKdrZ6EKrXOx0fbDPwF3egGVmOfYiacFCfz8g0-OG1FrCF_pmVddiHl8yPwv5kUNc9mu0vsPJgkuCwK1dbEWJ_k";
-const validVapidPublicKeyBytes = new Uint8Array([
-  4, 167, 107, 103, 161, 10, 173, 115, 177, 209, 246, 195, 63, 1, 119, 122, 1,
-  149, 152, 231, 216, 137, 167, 5, 9, 252, 252, 131, 79, 142, 27, 81, 107, 8,
-  95, 233, 153, 87, 93, 136, 121, 124, 200, 252, 47, 230, 69, 13, 115, 217, 174,
-  210, 251, 15, 38, 9, 46, 11, 2, 181, 117, 177, 22, 39, 249,
-]);
-
 const orderResponse = {
   createdAt: "2026-08-16T12:00:00.000Z",
   id: orderId,

@@ -1,5 +1,4 @@
 import type { CustomerOrder, OrderItem } from "../shared/api/orders.api";
-import type { PushSubscriptionRequest } from "../shared/api/push.api";
 import type { CartItem } from "@/entities/customer/model/customer.types";
 import type {
   RepeatResult,
@@ -8,7 +7,6 @@ import type {
 
 export type OrderPageOrder = CustomerOrder;
 export type OrderPageItem = OrderItem;
-export type OrderPagePushSubscription = PushSubscriptionRequest;
 export type OrderRepeatPreparation = {
   items: CartItem[];
   result: RepeatResult;

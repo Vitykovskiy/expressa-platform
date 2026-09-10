@@ -7,3 +7,11 @@ export const orderCardStageLabels = {
   READY: "Заказ готов к выдаче",
   ISSUED: "Заказ выдан",
 } satisfies Record<CustomerOrderStage, string>;
+
+export const orderCardStageHints = {
+  CREATED: "Ожидаем подтверждения бариста.",
+  ACCEPTED: "Бариста принял заказ.",
+  PREPARING: "Готовим заказ.",
+  READY: "Можно забрать заказ на кассе.",
+  ISSUED: "Заказ выдан.",
+} satisfies Record<CustomerOrderStage, string>;

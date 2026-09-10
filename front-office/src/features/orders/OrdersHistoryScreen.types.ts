@@ -5,6 +5,7 @@ export interface OrdersHistoryScreenProps {
   hasMore: boolean;
   loading: boolean;
   orders: CustomerOrder[];
+  staleMessage: string | null;
 }
 
 export type OrdersHistoryScreenEmits = {

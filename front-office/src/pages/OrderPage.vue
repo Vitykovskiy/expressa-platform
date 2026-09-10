@@ -73,35 +73,9 @@
       <p v-if="repeatPreparationPending" role="status">
         {{ orderPageMessages.repeatPreparing }}
       </p>
-      <section
-        class="order-page__notifications"
-        aria-labelledby="notifications-title"
-      >
-        <h2 id="notifications-title">Уведомления о заказе</h2>
-        <p v-if="!pushSupported">{{ orderPageMessages.pushUnsupported }}</p>
-        <template v-else>
-          <p v-if="pushOperationPending" role="status">
-            {{ orderPageMessages.pushPreparing }}
-          </p>
-          <p v-else-if="pushMessage" role="status">{{ pushMessage }}</p>
-          <ui-btn
-            v-if="pushSubscription === null"
-            :loading="pushOperationPending"
-            type="button"
-            @click="enablePushNotifications"
-          >
-            Включить уведомления
-          </ui-btn>
-          <ui-btn
-            v-else
-            :loading="pushOperationPending"
-            type="button"
-            @click="disablePushNotifications"
-          >
-            Отключить уведомления
-          </ui-btn>
-        </template>
-      </section>
+      <ui-btn class="order-page__notifications-link" to="/orders#notifications">
+        Настроить уведомления
+      </ui-btn>
     </template>
     <div v-else class="order-page__state" role="alert">
       <h1 id="order-title">Заказ</h1>
@@ -146,25 +120,23 @@ import { useCartStore } from "@/entities/customer/model/cart.store";
 import type { ConfiguredCartItemDraft } from "@/entities/customer/model/customer.types";
 import { formatRubles } from "@/entities/customer/model/money";
 import { toCartItemDraft } from "@/features/menu/product-configuration";
+import { orderCardStageHints } from "@/features/orders/OrderCard.constants";
 import {
   createPublicMenuApi,
   type PublicMenuProduct,
 } from "@/shared/api/public-menu.api";
 import { ApiError, apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
-import { createPushApi } from "@/shared/api/push.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 import {
   orderPageMessages,
-  orderPageStageHints,
   orderPageStageLabels,
   orderPollingIntervalMs,
 } from "./OrderPage.constants";
 import type {
   OrderPageItem,
   OrderPageOrder,
-  OrderPagePushSubscription,
   OrderRepeatPreparation,
 } from "./OrderPage.types";
 
@@ -180,9 +152,6 @@ const refreshErrorMessage = ref<string | null>(null);
 const refreshFeedback = ref<"pending" | "stale" | null>(null);
 const detailRequestPending = ref(false);
 const initialRecoveryAvailable = ref(false);
-const pushMessage = ref<string | null>(null);
-const pushOperationPending = ref(false);
-const pushSubscription = ref<OrderPagePushSubscription | null>(null);
 const repeatConfirmationOpen = ref(false);
 const repeatPreparationPending = ref(false);
 const repeatTrigger = ref<InstanceType<typeof UiBtn> | null>(null);
@@ -195,16 +164,12 @@ const stageLabel = computed(() =>
   order.value === null ? "" : orderPageStageLabels[order.value.stage],
 );
 const stageHint = computed(() =>
-  order.value === null ? "" : orderPageStageHints[order.value.stage],
-);
-const pushSupported = computed(
-  () => "serviceWorker" in navigator && "PushManager" in window,
+  order.value === null ? "" : orderCardStageHints[order.value.stage],
 );
 
 onMounted(() => {
   isMounted = true;
   document.addEventListener("visibilitychange", syncPolling);
-  void loadPushSubscription();
   void loadInitialOrder();
 });
 onUnmounted(() => {
@@ -346,76 +311,6 @@ function finishRefreshRequest(owner: number): void {
   detailRequestPending.value = false;
   syncPolling();
 }
-async function loadPushSubscription(): Promise<void> {
-  if (!pushSupported.value) return;
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-
-    pushSubscription.value =
-      subscription === null ? null : toPushSubscription(subscription);
-  } catch {
-    pushSubscription.value = null;
-  }
-}
-async function enablePushNotifications(): Promise<void> {
-  if (
-    !pushSupported.value ||
-    apiClient === undefined ||
-    sessionStore.accessToken === null
-  ) {
-    return;
-  }
-  pushOperationPending.value = true;
-  pushMessage.value = null;
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const pushApi = createPushApi(apiClient);
-    const publicKey = await pushApi.getPublicKey(sessionStore.accessToken);
-    const subscription =
-      (await registration.pushManager.getSubscription()) ??
-      (await registration.pushManager.subscribe({
-        applicationServerKey: toApplicationServerKey(publicKey),
-        userVisibleOnly: true,
-      }));
-    const request = toPushSubscription(subscription);
-
-    await pushApi.saveSubscription(sessionStore.accessToken, request);
-    pushSubscription.value = request;
-  } catch {
-    pushMessage.value = orderPageMessages.pushFailed;
-  } finally {
-    pushOperationPending.value = false;
-  }
-}
-async function disablePushNotifications(): Promise<void> {
-  if (
-    pushSubscription.value === null ||
-    apiClient === undefined ||
-    sessionStore.accessToken === null
-  ) {
-    return;
-  }
-  pushOperationPending.value = true;
-  pushMessage.value = null;
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-
-    await createPushApi(apiClient).deleteSubscription(
-      sessionStore.accessToken,
-      pushSubscription.value,
-    );
-    if (subscription !== null) await subscription.unsubscribe();
-    pushSubscription.value = null;
-    pushMessage.value = orderPageMessages.pushDisabled;
-  } catch {
-    pushMessage.value = orderPageMessages.pushFailed;
-  } finally {
-    pushOperationPending.value = false;
-  }
-}
 async function prepareRepeat(): Promise<void> {
   if (repeatPreparationPending.value) return;
   cartStore.clearRepeatWarnings();
@@ -549,37 +444,6 @@ function itemKey(item: OrderPageItem): string {
     ...item.modifiers.map((modifier) => modifier.modifierOptionId),
   ].join(":");
 }
-function toPushSubscription(
-  subscription: PushSubscription,
-): OrderPagePushSubscription {
-  const p256dh = subscription.getKey("p256dh");
-  const auth = subscription.getKey("auth");
-  if (p256dh === null || auth === null) {
-    throw new Error("Подписка браузера не содержит ключи.");
-  }
-
-  return {
-    endpoint: subscription.endpoint,
-    keys: {
-      auth: toBase64(auth),
-      p256dh: toBase64(p256dh),
-    },
-  };
-}
-function toApplicationServerKey(value: string): Uint8Array<ArrayBuffer> {
-  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
-  const bytes = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
-  const key = new Uint8Array(new ArrayBuffer(bytes.length));
-
-  for (const [index, character] of Array.from(bytes).entries()) {
-    key[index] = character.charCodeAt(0);
-  }
-
-  return key;
-}
-function toBase64(value: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(value)));
-}
 </script>
 
 <style scoped lang="scss">
@@ -599,8 +463,7 @@ function toBase64(value: ArrayBuffer): string {
 .order-page__header h1,
 .order-page__number,
 .order-page__stage-hint,
-.order-page__payment,
-.order-page__notifications h2 {
+.order-page__payment {
   margin: 0;
 }
 .order-page__header h1,
@@ -707,26 +570,8 @@ function toBase64(value: ArrayBuffer): string {
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
-.order-page__notifications {
-  display: grid;
-  gap: var(--customer-space-5);
-  padding: var(--customer-space-9) var(--customer-space-10);
-  color: var(--customer-text-on-surface);
-  background: var(--customer-surface);
-  border-radius: var(--customer-radius-lg);
-  box-shadow: var(--customer-shadow-card);
-}
-.order-page__notifications h2 {
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-extrabold);
-}
-.order-page__notifications p {
-  margin: 0;
-  color: var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-sm);
-}
-.order-page__notifications .ui-btn,
-.order-page__repeat {
+.order-page__repeat,
+.order-page__notifications-link {
   justify-self: start;
   padding: 0 var(--customer-space-10);
   color: var(--customer-text);
@@ -735,7 +580,7 @@ function toBase64(value: ArrayBuffer): string {
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-extrabold);
 }
-.order-page__notifications .ui-btn {
+.order-page__notifications-link {
   color: var(--customer-primary);
   background: var(--customer-surface);
   border: 1px solid var(--customer-border-subtle-on-surface);
