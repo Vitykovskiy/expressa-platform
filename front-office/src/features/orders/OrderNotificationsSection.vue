@@ -70,6 +70,7 @@
       <header class="order-notifications__settings-heading">
         <h2 id="notification-settings-title">Настройки</h2>
         <ui-icon-btn
+          class="order-notifications__settings-close"
           type="button"
           aria-label="Закрыть настройки"
           @click="closeSettings"
@@ -420,6 +421,14 @@ function toBase64(value: ArrayBuffer): string {
   align-items: center;
   justify-content: space-between;
   gap: var(--customer-space-6);
+}
+.order-notifications__settings-close.ui-icon-btn {
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface-info);
+  border-color: var(--customer-border-subtle-on-surface);
+}
+.order-notifications__settings-close.ui-icon-btn:hover:not(:disabled) {
+  background: var(--customer-color-blue-500-10);
 }
 .order-notifications__settings h2 {
   font-size: var(--customer-font-size-xl);

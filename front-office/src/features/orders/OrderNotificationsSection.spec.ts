@@ -196,6 +196,9 @@ describe("OrderNotificationsSection", () => {
     expect(wrapper.get('[data-testid="settings"]').text()).toContain(
       "Выйти из аккаунта",
     );
+    expect(wrapper.get('[aria-label="Закрыть настройки"]').classes()).toContain(
+      "order-notifications__settings-close",
+    );
     await wrapper.get('[aria-label="Закрыть настройки"]').trigger("click");
 
     expect(wrapper.find('[data-testid="settings"]').exists()).toBe(false);
