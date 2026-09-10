@@ -21,6 +21,7 @@ export interface AuthScreenProps {
   state: AuthState;
   otp: string;
   resendRemainingSeconds: number;
+  isLoading?: boolean;
 }
 
 export type AuthScreenEmits = {

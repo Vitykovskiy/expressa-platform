@@ -35,7 +35,7 @@ describe("AuthCodePage composition", () => {
 
       expect(dependencies.authApi.requestOtp).toHaveBeenCalledTimes(1);
       expect(wrapper.find('[aria-label="Код из сообщения"]').exists()).toBe(
-        false,
+        true,
       );
 
       deferred.reject(failure);
@@ -69,7 +69,12 @@ describe("AuthCodePage composition", () => {
       "+79991234567",
     );
     expect(otpInputValue(wrapper)).toBe("");
-    expect(resendButton(wrapper).attributes("disabled")).toBeDefined();
+    expect(
+      wrapper
+        .findAll("button")
+        .map((button) => button.text())
+        .includes("Отправить код ещё раз"),
+    ).toBe(false);
     expect(store.otpRequestedAt).toBe(currentTime);
     expect(wrapper.text()).toContain(
       "Повторная отправка доступна через 60 сек.",

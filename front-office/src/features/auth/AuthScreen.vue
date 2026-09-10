@@ -1,26 +1,6 @@
 <template>
-  <section class="auth-screen" :aria-busy="isLoading">
+  <section class="auth-screen" :aria-busy="props.isLoading || undefined">
     <div class="auth-content">
-      <div
-        class="state-icon"
-        :class="`state-icon--${presentation.iconTone}`"
-        aria-hidden="true"
-      >
-        <v-progress-circular
-          v-if="presentation.content === 'loading'"
-          class="loading-spinner"
-          indeterminate
-          :size="30"
-          :width="3"
-        />
-        <component
-          :is="presentation.icon"
-          v-else
-          class="state-icon-icon"
-          aria-hidden="true"
-        />
-      </div>
-
       <header class="auth-heading">
         <h1 class="auth-title">{{ presentation.title }}</h1>
         <p class="auth-description" aria-live="polite">
@@ -31,6 +11,7 @@
       <AuthForm
         v-if="presentation.content === 'form'"
         :state="state"
+        :is-loading="props.isLoading"
         :otp="otp"
         :resend-remaining-seconds="resendRemainingSeconds"
         @back-to-phone="emit('backToPhone')"
@@ -85,7 +66,7 @@ const props = defineProps<AuthScreenProps>();
 const emit = defineEmits<AuthScreenEmits>();
 
 const presentation = computed(() => AUTH_SCREEN_PRESENTATION[props.state.step]);
-const isLoading = computed(() => presentation.value.content === "loading");
+const isLoading = computed(() => props.isLoading ?? false);
 </script>
 
 <style scoped lang="scss">
@@ -106,37 +87,7 @@ const isLoading = computed(() => presentation.value.content === "loading");
   align-items: center;
   width: 100%;
   max-width: var(--customer-size-content-auth);
-  gap: var(--customer-space-14);
-}
-
-.state-icon {
-  display: grid;
-  width: var(--customer-size-state-icon);
-  height: var(--customer-size-state-icon);
-  place-items: center;
-  border-radius: var(--customer-radius-round);
-  background: var(--customer-surface);
-  box-shadow: var(--customer-shadow-state);
-  color: var(--customer-background);
-  font-size: var(--customer-font-size-6xl);
-}
-
-.state-icon--success {
-  color: var(--customer-success);
-}
-
-.loading-spinner {
-  color: var(--customer-background);
-}
-
-.state-icon-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-.state-icon--success .state-icon-icon {
-  width: var(--customer-font-size-6xl);
-  height: var(--customer-font-size-6xl);
+  gap: var(--customer-space-8);
 }
 
 .auth-heading {
@@ -146,15 +97,15 @@ const isLoading = computed(() => presentation.value.content === "loading");
 .auth-title {
   margin: 0;
   color: var(--customer-text);
-  font-size: var(--customer-font-size-6xl);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
 
 .auth-description {
-  margin: var(--customer-space-4) 0 0;
-  color: var(--customer-color-white-65);
+  margin: var(--customer-space-3) 0 0;
+  color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-semibold);
   line-height: var(--customer-line-height-body);
@@ -177,7 +128,7 @@ const isLoading = computed(() => presentation.value.content === "loading");
   width: 100%;
   min-height: var(--customer-size-control-xl);
   gap: var(--customer-space-7);
-  color: var(--customer-color-text-muted-on-brand);
+  color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-bold);
 }

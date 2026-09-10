@@ -21,6 +21,7 @@ vi.mock("@/features/checkout/CartScreen.vue", () => ({
       "checkout",
       "continueShopping",
       "reconfirm",
+      "recheckAvailability",
       "removeItem",
       "updateQuantity",
     ],
@@ -30,6 +31,7 @@ vi.mock("@/features/checkout/CartScreen.vue", () => ({
       "errorMessage",
       "items",
       "reconfirmedTotalRub",
+      "requiresPhoneConfirmation",
       "repeatWarnings",
       "unavailableItemIds",
     ],
@@ -37,6 +39,7 @@ vi.mock("@/features/checkout/CartScreen.vue", () => ({
       <div>
         <button data-test="checkout" @click="$emit('checkout')" />
         <button data-test="reconfirm" @click="$emit('reconfirm')" />
+        <button data-test="recheck" @click="$emit('recheckAvailability')" />
         <button data-test="remove" @click="$emit('removeItem', 'item')" />
         <button data-test="quantity" @click="$emit('updateQuantity', 'item', 2)" />
       </div>
@@ -197,6 +200,24 @@ describe("CartPage", () => {
         checkoutState: checkoutStatuses.submitting,
       },
     );
+  });
+
+  it("сбрасывает известное закрытие только после повторной проверки меню", async () => {
+    const { checkout, menu, wrapper } = await mountPage();
+    menu.menu = { acceptsNewOrders: true, categories: [] };
+    checkout.errorCode = checkoutErrorCodes.intakeClosed;
+    const reset = vi.spyOn(checkout, "reset");
+    const load = vi.spyOn(menu, "load").mockResolvedValue();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findComponent({ name: "CartScreen" }).props()).toMatchObject(
+      {
+        acceptsNewOrders: false,
+      },
+    );
+    await wrapper.get('[data-test="recheck"]').trigger("click");
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledWith(true);
   });
 });
 

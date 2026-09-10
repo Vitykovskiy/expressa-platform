@@ -14,6 +14,7 @@
       color="var(--customer-text)"
       hide-details
       inputmode="tel"
+      label="Номер телефона"
       placeholder="+7 (___) ___-__-__"
       variant="outlined"
       class="auth-form__field"
@@ -33,17 +34,14 @@
     <ui-btn
       block
       class="auth-form__primary-button"
-      color="surface"
+      color="primary"
       :disabled="!canSendCode || isLoading"
+      :loading="isLoading"
       size="x-large"
       type="submit"
     >
       Отправить код
     </ui-btn>
-    <p class="auth-form__info">
-      Подтвердите номер телефона, чтобы оформить заказ и посмотреть историю
-      заказов.
-    </p>
   </form>
 
   <form
@@ -60,8 +58,9 @@
       color="var(--customer-text)"
       hide-details
       inputmode="numeric"
+      label="Код из сообщения"
       maxlength="6"
-      placeholder="——"
+      placeholder="000000"
       variant="outlined"
       class="auth-form__field"
       :disabled="isLoading"
@@ -76,28 +75,33 @@
     <ui-btn
       block
       class="auth-form__primary-button"
-      color="surface"
+      color="primary"
       :disabled="!canVerifyOtp || isLoading"
+      :loading="isLoading"
       size="x-large"
       type="submit"
     >
       Подтвердить
     </ui-btn>
-    <ui-btn
-      class="auth-form__ghost-button"
-      :disabled="isLoading || props.resendRemainingSeconds > 0"
-      variant="text"
-      @click="resendCode"
-    >
-      Отправить код ещё раз
-    </ui-btn>
-    <p
-      v-if="props.resendRemainingSeconds > 0"
-      aria-live="polite"
-      class="auth-form__cooldown"
-    >
-      Повторная отправка доступна через {{ props.resendRemainingSeconds }} сек.
-    </p>
+    <div class="auth-form__resend">
+      <p
+        v-if="props.resendRemainingSeconds > 0"
+        aria-live="polite"
+        class="auth-form__cooldown"
+      >
+        Повторная отправка доступна через
+        {{ props.resendRemainingSeconds }} сек.
+      </p>
+      <ui-btn
+        v-else
+        class="auth-form__ghost-button"
+        :disabled="isLoading"
+        variant="text"
+        @click="resendCode"
+      >
+        Отправить код ещё раз
+      </ui-btn>
+    </div>
     <ui-btn
       class="auth-form__ghost-button"
       :disabled="isLoading"
@@ -167,7 +171,7 @@ const canVerifyOtp = computed(
   () => props.otp.length === authFormLimits.otpLength,
 );
 const canSubmitName = computed(() => props.state.name.trim().length >= 2);
-const isLoading = computed(() => props.state.step === "loading");
+const isLoading = computed(() => props.isLoading ?? false);
 
 function updatePhone(phone: string) {
   if (!isLoading.value) emit("updatePhone", formatPhone(phone));
@@ -231,13 +235,6 @@ function submitName() {
   color: var(--customer-color-text-muted-on-brand);
 }
 
-.auth-form__field :deep(.v-field) {
-  --v-input-padding-top: 0;
-  --v-field-padding-bottom: 0;
-  --v-field-padding-start: var(--customer-space-9);
-  --v-field-padding-end: var(--customer-space-9);
-}
-
 .auth-form__primary-button {
   min-height: var(--customer-size-control-xl);
   border-radius: var(--customer-radius-sm);
@@ -253,6 +250,17 @@ function submitName() {
   font-weight: var(--customer-font-weight-bold);
 }
 
+.auth-form__ghost-button.auth-form__ghost-button {
+  /* Overrides the shared text-variant compact height for the touch target. */
+  min-height: 2.75rem;
+}
+
+.auth-form__resend {
+  display: flex;
+  justify-content: center;
+  min-height: 2.75rem;
+}
+
 .auth-form :deep(.auth-form__error-message.v-alert) {
   /* Vuetify's tonal error color is unreadable over the auth background. */
   background: var(--customer-color-blue-700) !important;
@@ -263,23 +271,11 @@ function submitName() {
 
 .auth-form__cooldown {
   align-self: center;
-  margin: calc(-1 * var(--customer-space-4)) 0 0;
-  color: var(--customer-color-white);
+  margin: 0;
+  color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
   line-height: var(--customer-line-height-body);
   text-align: center;
-}
-
-.auth-form__info {
-  margin: 0;
-  padding: var(--customer-space-9) var(--customer-space-11);
-  border: 1px solid var(--customer-color-white-12);
-  border-radius: 1rem;
-  background: var(--customer-color-white-9);
-  color: var(--customer-color-white-65);
-  font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
-  line-height: var(--customer-line-height-relaxed);
 }
 </style>

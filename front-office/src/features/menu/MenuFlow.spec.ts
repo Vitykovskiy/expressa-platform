@@ -9,6 +9,21 @@ import MenuGroupScreen from "./MenuGroupScreen.vue";
 import MenuRootScreen from "./MenuRootScreen.vue";
 
 describe("MenuFlow", () => {
+  it("открывает товар прямо с корневого меню и подтверждает добавление именем товара", async () => {
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper
+      .findComponent(MenuRootScreen)
+      .vm.$emit("selectProduct", "espresso", "espresso-single");
+
+    expect(wrapper.get(".product-detail__title").text()).toBe("Эспрессо");
+    await wrapper.get(".product-detail__submit").trigger("click");
+    expect(wrapper.get('[role="status"]').text()).toBe("Добавлено: Эспрессо");
+  });
+
   it("возвращает product в category через history и восстанавливает scroll", async () => {
     const menu = createMenu();
     const removeEventListener = vi.spyOn(window, "removeEventListener");

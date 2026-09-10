@@ -48,7 +48,7 @@ describe("menu store", () => {
     await store.load();
 
     expect(store).toMatchObject({
-      errorMessage: "Сеть недоступна",
+      errorMessage: "Не удалось загрузить меню. Попробуйте ещё раз.",
       menu: null,
       status: "error",
     });

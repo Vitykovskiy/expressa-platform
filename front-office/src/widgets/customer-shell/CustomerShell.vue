@@ -105,9 +105,9 @@ function handleNavigate(destination: ShellNavigationDestination): void {
     margin-top: var(--customer-space-11);
     padding: var(--customer-space-5) var(--customer-space-8)
       var(--customer-space-5) var(--customer-space-6);
-    color: var(--customer-text);
-    background: var(--customer-surface-muted);
-    border: 0;
+    color: var(--customer-color-blue-700);
+    background: var(--customer-surface);
+    border: 1px solid var(--customer-border);
     border-radius: var(--customer-radius-pill);
     font-size: var(--customer-font-size-sm);
     font-weight: var(--customer-font-weight-extrabold);

@@ -16,6 +16,10 @@
       <h2 id="cart-repeat-warnings-title" class="cart-screen__repeat-title">
         Не все позиции из заказа добавлены
       </h2>
+      <p v-if="repeatResult" class="cart-screen__repeat-result">
+        Добавлено {{ repeatResult.addedPositionCount }} из
+        {{ repeatResult.requestedPositionCount }} позиций
+      </p>
       <ul class="cart-screen__repeat-warning-list">
         <li
           v-for="(warning, index) in repeatWarnings"
@@ -69,6 +73,15 @@
       >
         <strong>{{ noticeTitle }}</strong>
         <span>{{ noticeMessage }}</span>
+        <ui-btn
+          v-if="isIntakeClosed"
+          type="button"
+          class="cart-screen__recheck"
+          color="surface"
+          @click="emit('recheckAvailability')"
+        >
+          Проверить доступность
+        </ui-btn>
       </div>
 
       <div
@@ -117,6 +130,13 @@
           <span>Итого</span><strong>{{ formatRubAmount(totalRub) }}</strong>
         </p>
         <p class="cart-screen__payment">Оплата на кассе при получении</p>
+        <p
+          v-if="props.requiresPhoneConfirmation"
+          class="cart-screen__phone-confirmation"
+        >
+          Перед оформлением подтвердите номер телефона. Вернём вас в эту
+          корзину.
+        </p>
         <ui-btn
           block
           class="cart-screen__checkout"
@@ -132,6 +152,12 @@
 
     <footer v-if="items.length" class="cart-screen__mobile-checkout">
       <p class="cart-screen__mobile-payment">Оплата на кассе при получении</p>
+      <p
+        v-if="props.requiresPhoneConfirmation"
+        class="cart-screen__phone-confirmation"
+      >
+        Перед оформлением подтвердите номер телефона. Вернём вас в эту корзину.
+      </p>
       <ui-btn
         block
         class="cart-screen__checkout"
@@ -176,6 +202,7 @@ const totalRub = computed(() =>
   props.items.reduce((sum, item) => sum + item.lineTotalRub, 0),
 );
 const repeatWarnings = computed(() => props.repeatWarnings ?? []);
+const repeatResult = computed(() => props.repeatResult ?? null);
 const hasRepeatWarnings = computed(() => repeatWarnings.value.length > 0);
 const checkoutTotalRub = computed(() =>
   props.checkoutState === "reconfirmation-required"
@@ -186,30 +213,31 @@ const unavailableItemIdSet = computed(
   () => new Set(props.unavailableItemIds ?? []),
 );
 const isSubmitting = computed(() => props.checkoutState === "submitting");
+const isIntakeClosed = computed(() => !acceptsNewOrders);
 const needsReconfirmation = computed(
   () => props.checkoutState === "reconfirmation-required",
 );
 const isCheckoutDisabled = computed(
   () =>
-    !acceptsNewOrders ||
+    isIntakeClosed.value ||
     isSubmitting.value ||
     unavailableItemIdSet.value.size > 0,
 );
 const hasCheckoutMessage = computed(
   () =>
-    !acceptsNewOrders ||
+    isIntakeClosed.value ||
     needsReconfirmation.value ||
     props.checkoutState === "error" ||
     unavailableItemIdSet.value.size > 0,
 );
 const noticeTitle = computed(() => {
-  if (!acceptsNewOrders) return "Заказы временно недоступны";
+  if (isIntakeClosed.value) return "Приём заказов закрыт";
   if (unavailableItemIdSet.value.size > 0) return "Проверьте корзину";
   if (needsReconfirmation.value) return "Итог изменился";
   return "Не удалось оформить заказ";
 });
 const noticeMessage = computed(() => {
-  if (!acceptsNewOrders)
+  if (isIntakeClosed.value)
     return props.errorMessage ?? "Приём новых заказов сейчас закрыт.";
   if (unavailableItemIdSet.value.size > 0)
     return "Удалите недоступные позиции, чтобы продолжить.";
@@ -223,7 +251,7 @@ const noticeClass = computed(() => ({
     needsReconfirmation.value &&
     unavailableItemIdSet.value.size === 0,
   "cart-screen__notice--error":
-    !acceptsNewOrders ||
+    isIntakeClosed.value ||
     !needsReconfirmation.value ||
     unavailableItemIdSet.value.size > 0,
   "cart-screen__notice--lost-response":
@@ -233,7 +261,7 @@ const noticeClass = computed(() => ({
     props.checkoutState === checkoutStatuses.error &&
     props.errorMessage === checkoutMessages.orderFailed,
   "cart-screen__notice--disabled-explanation":
-    (!acceptsNewOrders &&
+    (isIntakeClosed.value &&
       noticeMessage.value === checkoutMessages.intakeClosed) ||
     (unavailableItemIdSet.value.size > 0 &&
       noticeMessage.value === "Удалите недоступные позиции, чтобы продолжить."),
@@ -290,10 +318,10 @@ function emitCheckout(): void {
 .cart-screen__title {
   margin-top: 0;
   margin-bottom: 0;
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
 .cart-screen__empty {
   display: flex;
@@ -318,6 +346,10 @@ function emitCheckout(): void {
 .cart-screen__repeat-title {
   margin: 0;
   font-size: var(--customer-font-size-md);
+}
+.cart-screen__repeat-result {
+  margin: 0;
+  font-weight: var(--customer-font-weight-bold);
 }
 .cart-screen__repeat-warning-list {
   display: grid;
@@ -425,6 +457,17 @@ function emitCheckout(): void {
 }
 .cart-screen__notice span {
   color: var(--customer-color-text-muted-on-surface);
+}
+.cart-screen__recheck {
+  justify-self: start;
+  padding: 0 var(--customer-space-7);
+  font-weight: var(--customer-font-weight-bold);
+}
+.cart-screen__phone-confirmation {
+  margin: 0;
+  color: var(--customer-color-text-muted-on-surface);
+  font-size: var(--customer-font-size-sm);
+  line-height: var(--customer-line-height-body);
 }
 .cart-screen__notice--lost-response span {
   color: var(--customer-text-on-surface);

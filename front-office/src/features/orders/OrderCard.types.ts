@@ -4,3 +4,7 @@ export interface OrderCardProps {
   order: CustomerOrder;
   stageLabel: string;
 }
+
+export type OrderCardEmits = {
+  repeat: [orderId: string];
+};

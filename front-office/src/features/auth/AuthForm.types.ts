@@ -4,6 +4,7 @@ export interface AuthFormProps {
   state: AuthState;
   otp: string;
   resendRemainingSeconds: number;
+  isLoading?: boolean;
 }
 
 export type AuthFormEmits = {

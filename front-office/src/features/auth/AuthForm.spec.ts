@@ -20,26 +20,32 @@ describe("AuthForm", () => {
     expect(wrapper.emitted("updateOtp")).toEqual([["1234"]]);
   });
 
-  it("во время ожидания запрещает повтор, но оставляет проверку и смену номера", async () => {
+  it("во время ожидания честно показывает cooldown, но оставляет проверку и смену номера", async () => {
     const wrapper = mountForm({ otp: "123456", resendRemainingSeconds: 12 });
     const buttons = wrapper.findAll("button");
 
     expect(buttons[0].attributes("disabled")).toBeUndefined();
-    expect(buttons[1].attributes("disabled")).toBeDefined();
-    expect(buttons[2].attributes("disabled")).toBeUndefined();
+    expect(buttons[1].attributes("disabled")).toBeUndefined();
     expect(wrapper.text()).toContain(
       "Повторная отправка доступна через 12 сек.",
     );
     expect(wrapper.get("[aria-live]").text()).toBe(
       "Повторная отправка доступна через 12 сек.",
     );
-    expect(buttons[1].text()).toBe("Отправить код ещё раз");
+    expect(buttons.map((button) => button.text())).not.toContain(
+      "Отправить код ещё раз",
+    );
 
     await buttons[1].trigger("click");
-    await buttons[2].trigger("click");
 
-    expect(wrapper.emitted("sendCode")).toBeUndefined();
     expect(wrapper.emitted("backToPhone")).toHaveLength(1);
+  });
+
+  it("сохраняет форму и показывает compact busy feedback", () => {
+    const wrapper = mountForm({ isLoading: true });
+
+    expect(wrapper.get("button").attributes("aria-busy")).toBe("true");
+    expect(wrapper.get('[aria-label="Код из сообщения"]')).toBeTruthy();
   });
 
   it("локально выделяет ошибку на auth-фоне", () => {
@@ -57,13 +63,23 @@ function mountForm(
   props: Partial<InstanceType<typeof AuthForm>["$props"]> = {},
 ) {
   return mount(AuthForm, {
-    props: { otp: "", resendRemainingSeconds: 0, state: otpState, ...props },
+    props: {
+      isLoading: false,
+      otp: "",
+      resendRemainingSeconds: 0,
+      state: otpState,
+      ...props,
+    },
     global: { stubs: formStubs },
   });
 }
 
 const formStubs = {
-  "ui-btn": { template: "<button v-bind='$attrs'><slot /></button>" },
+  "ui-btn": {
+    props: ["loading"],
+    template:
+      "<button v-bind='$attrs' :aria-busy='loading || undefined'><slot /></button>",
+  },
   "ui-text-field": {
     props: ["modelValue"],
     template:

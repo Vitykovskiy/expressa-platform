@@ -1,11 +1,16 @@
-import type { RepeatWarning } from "@/entities/customer/model/cart.store.types";
+import type {
+  RepeatResult,
+  RepeatWarning,
+} from "@/entities/customer/model/cart.store.types";
 import type { CartItem } from "@/entities/customer/model/customer.types";
 
 type CartScreenBaseProps = {
   acceptsNewOrders?: boolean;
+  requiresPhoneConfirmation?: boolean;
   items: CartItem[];
   errorMessage?: string | null;
   repeatWarnings?: RepeatWarning[];
+  repeatResult?: RepeatResult | null;
   unavailableItemIds?: string[];
 };
 
@@ -31,4 +36,5 @@ export type CartScreenEmits = {
   continueShopping: [];
   checkout: [];
   reconfirm: [];
+  recheckAvailability: [];
 };

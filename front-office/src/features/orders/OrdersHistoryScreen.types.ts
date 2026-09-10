@@ -9,5 +9,6 @@ export interface OrdersHistoryScreenProps {
 
 export type OrdersHistoryScreenEmits = {
   loadMore: [];
+  repeat: [orderId: string];
   retry: [];
 };

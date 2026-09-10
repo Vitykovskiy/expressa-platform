@@ -5,24 +5,17 @@
     v-bind="attrs"
     class="error-notice mb-6"
     type="error"
-    title="Не удалось выполнить запрос"
+    title="Не удалось выполнить действие"
   >
     <p class="error-notice-message">
-      {{ error.message }}
-    </p>
-    <!-- prettier-ignore -->
-    <p
-      v-if="error.requestId"
-      class="error-notice-request-id"
-    >
-      Номер запроса: {{ error.requestId }}
+      Проверьте подключение и повторите действие.
     </p>
     <!-- prettier-ignore -->
     <VBtn
       variant="text"
       @click="emit('close')"
     >
-      Закрыть
+      Понятно
     </VBtn>
   </VAlert>
 </template>
@@ -47,8 +40,7 @@ const attrs = useAttrs();
 </script>
 
 <style scoped>
-.error-notice-message,
-.error-notice-request-id {
+.error-notice-message {
   overflow-wrap: anywhere;
   margin: 0 0 0.5rem;
 }

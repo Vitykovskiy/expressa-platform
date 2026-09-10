@@ -6,7 +6,12 @@ import {
   cartStoreId,
   configuredCartProductTypes,
 } from "./cart.store.constants";
-import type { CartState, CartStorage, RepeatWarning } from "./cart.store.types";
+import type {
+  CartState,
+  CartStorage,
+  RepeatResult,
+  RepeatWarning,
+} from "./cart.store.types";
 import type {
   CartItem,
   CartVariantSelection,
@@ -16,7 +21,11 @@ import type {
 } from "./customer.types";
 
 export const useCartStore = defineStore(cartStoreId, {
-  state: (): CartState => ({ items: [], repeatWarnings: [] }),
+  state: (): CartState => ({
+    items: [],
+    repeatResult: null,
+    repeatWarnings: [],
+  }),
   getters: {
     itemCount: (state) =>
       state.items.reduce((total, item) => total + item.quantity, 0),
@@ -92,16 +101,23 @@ export const useCartStore = defineStore(cartStoreId, {
     applyRepeat(
       items: CartItem[],
       warnings: RepeatWarning[],
+      resultOrStorage: RepeatResult | CartStorage | null = null,
       storage: CartStorage = localStorage,
     ): void {
+      const result = isRepeatResult(resultOrStorage) ? resultOrStorage : null;
+      const targetStorage = isCartStorage(resultOrStorage)
+        ? resultOrStorage
+        : storage;
       this.repeatWarnings = warnings.map((warning) => ({ ...warning }));
+      this.repeatResult = result === null ? null : { ...result };
 
       if (items.length === 0) return;
 
       this.items = items.map(normalizeCartItem);
-      this.persist(storage);
+      this.persist(targetStorage);
     },
     clearRepeatWarnings(): void {
+      this.repeatResult = null;
       this.repeatWarnings = [];
     },
     persist(storage: CartStorage = localStorage): void {
@@ -249,6 +265,24 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRepeatResult(value: unknown): value is RepeatResult {
+  return (
+    isRecord(value) &&
+    isNonNegativeInteger(value.addedPositionCount) &&
+    isNonNegativeInteger(value.requestedPositionCount) &&
+    value.addedPositionCount <= value.requestedPositionCount
+  );
+}
+
+function isCartStorage(value: unknown): value is CartStorage {
+  return (
+    isRecord(value) &&
+    typeof value.getItem === "function" &&
+    typeof value.removeItem === "function" &&
+    typeof value.setItem === "function"
+  );
 }
 
 function createConfiguredCartItem(

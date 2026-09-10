@@ -144,6 +144,27 @@ describe("cart store", () => {
     );
   });
 
+  it("держит фактический результат повтора только в памяти", () => {
+    const storage = createStorage(null);
+    const store = useCartStore();
+
+    store.applyRepeat(
+      [item],
+      [{ productName: "Чай", reason: "Недоступен." }],
+      { addedPositionCount: 1, requestedPositionCount: 2 },
+      storage,
+    );
+
+    expect(store.repeatResult).toEqual({
+      addedPositionCount: 1,
+      requestedPositionCount: 2,
+    });
+    expect(storage.setItem).toHaveBeenCalledWith(
+      cartStorageKey,
+      JSON.stringify([item]),
+    );
+  });
+
   it("сбрасывает предупреждения при восстановлении корзины", () => {
     const store = useCartStore();
     const storage = createStorage(JSON.stringify([item]));

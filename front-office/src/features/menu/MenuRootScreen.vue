@@ -11,27 +11,45 @@
       В меню пока нет категорий
     </p>
 
-    <ul v-else class="menu-root__grid" aria-label="Категории меню">
+    <ul v-else class="menu-root__categories" aria-label="Категории меню">
       <li v-for="category in categories" :key="category.id">
-        <ui-btn
-          type="button"
-          class="menu-root__card"
-          variant="text"
-          @click="selectCategory(category.id)"
+        <section
+          class="menu-root__category"
+          :aria-labelledby="`menu-category-${category.id}`"
         >
-          <span class="menu-root__content">
-            <span class="menu-root__name">{{ category.name }}</span>
-            <span class="menu-root__count"
-              >{{ category.products.length }} позиций</span
+          <header class="menu-root__category-header">
+            <h2
+              :id="`menu-category-${category.id}`"
+              class="menu-root__category-name"
             >
-          </span>
-          <ArrowRight
-            class="menu-root__arrow"
-            :size="16"
-            :stroke-width="2.5"
-            aria-hidden="true"
-          />
-        </ui-btn>
+              {{ category.name }}
+            </h2>
+            <ui-btn
+              type="button"
+              class="menu-root__category-action"
+              variant="text"
+              @click="selectCategory(category.id)"
+            >
+              Все позиции
+              <ArrowRight :size="16" :stroke-width="2.5" aria-hidden="true" />
+            </ui-btn>
+          </header>
+          <ul
+            v-if="category.products.length"
+            class="menu-root__products"
+            :aria-label="`Товары категории ${category.name}`"
+          >
+            <li v-for="product in category.products" :key="product.id">
+              <ProductCard
+                :product="product"
+                @select="selectProduct(category.id, $event)"
+              />
+            </li>
+          </ul>
+          <p v-else class="menu-root__category-empty">
+            В этой категории пока нет товаров
+          </p>
+        </section>
       </li>
     </ul>
   </section>
@@ -40,6 +58,7 @@
 <script setup lang="ts">
 import { ArrowRight } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import ProductCard from "./ProductCard.vue";
 import type {
   MenuRootScreenEmits,
   MenuRootScreenProps,
@@ -51,6 +70,10 @@ const emit = defineEmits<MenuRootScreenEmits>();
 
 function selectCategory(categoryId: string): void {
   emit("selectCategory", categoryId);
+}
+
+function selectProduct(categoryId: string, productId: string): void {
+  emit("selectProduct", categoryId, productId);
 }
 </script>
 
@@ -79,10 +102,10 @@ function selectCategory(categoryId: string): void {
 .menu-root__title {
   margin: 0;
   color: var(--customer-text);
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
 .menu-root__empty {
   margin: 0;
@@ -92,89 +115,67 @@ function selectCategory(categoryId: string): void {
   font-weight: var(--customer-font-weight-bold);
   text-align: center;
 }
-.menu-root__grid {
+.menu-root__categories {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--customer-space-7);
+  gap: var(--customer-space-13);
   width: 100%;
   margin: 0;
   padding: 0 var(--customer-space-9) var(--customer-space-9);
   list-style: none;
 }
-.menu-root__grid > li {
+.menu-root__categories > li {
   min-width: 0;
 }
-.menu-root__card {
+.menu-root__category {
+  display: grid;
+  gap: var(--customer-space-7);
+}
+.menu-root__category-header {
   display: flex;
-  width: 100%;
-  height: auto;
-  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   gap: var(--customer-space-7);
-  padding: var(--customer-space-10) var(--customer-space-11);
-  color: var(--customer-text-on-surface);
-  text-align: left;
-  background: var(--customer-surface);
-  border: 0;
-  border-radius: var(--customer-radius);
-  box-shadow: var(--customer-shadow-card-raised);
-  cursor: pointer;
-  transition: var(--customer-transition-transform);
 }
-.menu-root__card:active {
-  transform: var(--customer-transform-press);
-}
-.menu-root__card:focus-visible {
-  outline: 2px solid var(--customer-color-focus);
-  outline-offset: 2px;
-}
-.menu-root__name,
-.menu-root__count {
-  display: block;
-}
-.menu-root__content {
-  display: grid;
-  row-gap: var(--customer-space-2);
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.menu-root__name {
-  font-size: var(--customer-font-size-3xl);
-  font-weight: var(--customer-font-weight-extrabold);
-  letter-spacing: var(--customer-letter-spacing-slight);
+.menu-root__category-name {
+  margin: 0;
+  font-size: var(--customer-font-size-2xl);
+  font-weight: var(--customer-font-weight-black);
   line-height: var(--customer-line-height-compact);
 }
-.menu-root__count {
+.menu-root__category-action {
+  flex: 0 0 auto;
+  gap: var(--customer-space-3);
+  color: var(--customer-primary);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
+}
+.menu-root__products {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--customer-space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.menu-root__category-empty {
+  margin: 0;
   color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
-}
-.menu-root__arrow {
-  display: grid;
-  width: var(--customer-size-control-md);
-  height: var(--customer-size-control-md);
-  flex: 0 0 auto;
-  justify-self: end;
-  place-items: center;
-  color: var(--customer-text);
-  background: var(--customer-background);
-  border-radius: var(--customer-radius-round);
 }
 @media (min-width: 1024px) {
   .menu-root__header,
-  .menu-root__grid {
+  .menu-root__categories {
     max-width: none;
     margin: 0;
     padding-right: 0;
     padding-left: 0;
   }
-  .menu-root__grid {
+  .menu-root__products {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1280px) {
-  .menu-root__grid {
+  .menu-root__products {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

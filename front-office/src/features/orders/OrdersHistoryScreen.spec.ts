@@ -38,6 +38,7 @@ describe("OrdersHistoryScreen", () => {
     expect(empty.get('[role="status"]').text()).toContain(
       "История заказов пуста",
     );
+    expect(empty.text()).toContain("Перейти в меню");
   });
 
   it("сохраняет loading status и pagination events", async () => {
@@ -53,6 +54,14 @@ describe("OrdersHistoryScreen", () => {
 
     expect(paginated.emitted("loadMore")).toEqual([[]]);
   });
+
+  it("передаёт повтор только для завершённой карточки", async () => {
+    const wrapper = mountScreen({ orders: [{ ...order, stage: "ISSUED" }] });
+
+    await wrapper.get(".order-card-repeat").trigger("click");
+
+    expect(wrapper.emitted("repeat")).toEqual([[order.id]]);
+  });
 });
 
 function mountScreen(
@@ -66,7 +75,16 @@ function mountScreen(
       orders: [],
       ...props,
     },
-    global: { stubs: { OrderCard: { template: "<article />" } } },
+    global: {
+      stubs: {
+        OrderCard: {
+          props: ["order"],
+          template:
+            '<article><button class="order-card-repeat" @click="$emit(\'repeat\', order.id)">Повторить заказ</button></article>',
+        },
+        UiBtn: { template: "<button><slot /></button>" },
+      },
+    },
   });
 }
 

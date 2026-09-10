@@ -1,6 +1,7 @@
 <template>
   <AuthScreen
     :state="authState"
+    :is-loading="isLoading"
     :otp="otp"
     :resend-remaining-seconds="resendRemainingSeconds"
     @back-to-phone="backToPhone"
@@ -58,7 +59,7 @@ const authState = computed<AuthCodePageState>(() => ({
   errorMessage: errorMessage.value,
   name: "",
   phone: sessionStore.pendingPhone ?? "",
-  step: isLoading.value ? "loading" : "otp",
+  step: "otp",
   verified: false,
 }));
 

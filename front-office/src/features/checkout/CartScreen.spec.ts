@@ -31,6 +31,17 @@ describe("CartScreen", () => {
     expect(warningReport.text()).toContain("Товар больше недоступен.");
   });
 
+  it("показывает фактический результат частичного повтора рядом с предупреждением", () => {
+    const wrapper = mountCartScreen({
+      repeatResult: { addedPositionCount: 1, requestedPositionCount: 2 },
+      repeatWarnings: [createRepeatWarning()],
+    });
+
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Добавлено 1 из 2 позиций",
+    );
+  });
+
   it("сохраняет отдельные предупреждения с одинаковым контекстом", () => {
     const wrapper = mountCartScreen({
       repeatWarnings: [
@@ -187,6 +198,8 @@ describe("CartScreen", () => {
     expect(wrapper.emitted("removeItem")).toEqual([["item"]]);
     expect(wrapper.emitted("updateQuantity")).toEqual([["item", 2]]);
     expect(wrapper.text()).toContain("Приём новых заказов сейчас закрыт.");
+    await wrapper.get(".cart-screen__recheck").trigger("click");
+    expect(wrapper.emitted("recheckAvailability")).toHaveLength(1);
 
     await wrapper.setProps({ checkoutState: "submitting" });
     expect(
@@ -200,6 +213,12 @@ describe("CartScreen", () => {
         .findAll(".cart-screen__checkout")
         .every((button) => button.attributes("disabled") !== undefined),
     ).toBe(true);
+  });
+
+  it("объясняет гостю подтверждение телефона перед оформлением", () => {
+    const wrapper = mountCartScreen({ requiresPhoneConfirmation: true });
+
+    expect(wrapper.text()).toContain("подтвердите номер телефона");
   });
 
   it("disables checkout and item controls while submitting", () => {

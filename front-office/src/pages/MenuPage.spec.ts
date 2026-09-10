@@ -29,7 +29,11 @@ describe("MenuPage", () => {
     const wrapper = await mountPage();
 
     expect(wrapper.text()).toContain("Загружаем меню");
-    await vi.waitFor(() => expect(wrapper.text()).toContain("Нет меню"));
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(
+        "Не удалось загрузить меню. Попробуйте ещё раз.",
+      ),
+    );
     await wrapper.get("button").trigger("click");
     await flushPromises();
 

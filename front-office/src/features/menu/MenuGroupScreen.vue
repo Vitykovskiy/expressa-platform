@@ -85,10 +85,10 @@ function returnToMenu(): void {
 .menu-group__title {
   margin: 0;
   color: var(--customer-text);
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
   overflow-wrap: anywhere;
 }
 .menu-group__grid {

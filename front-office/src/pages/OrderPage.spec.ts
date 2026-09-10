@@ -38,6 +38,18 @@ describe("OrderPage", () => {
     });
 
     expect(wrapper.text()).toContain("Оформлен");
+    expect(wrapper.text()).toContain("Ожидаем подтверждения бариста.");
+    expect(wrapper.get("h1").text()).toBe("Оформлен");
+  });
+
+  it("показывает готовность к выдаче как следующий поддержанный шаг", async () => {
+    const { wrapper } = await mountOrder({
+      ...orderResponse,
+      stage: "READY",
+    });
+
+    expect(wrapper.get("h1").text()).toBe("Заказ готов к выдаче");
+    expect(wrapper.text()).toContain("Можно забрать заказ на кассе.");
   });
 
   it("не показывает снимок и технический текст при отказе API", async () => {
@@ -79,6 +91,8 @@ describe("OrderPage", () => {
         .findAll("button")
         .filter((button) => button.text() === "Повторить"),
     ).toHaveLength(0);
+    expect(wrapper.text()).toContain("К истории заказов");
+    expect(wrapper.text()).toContain("Перейти в меню");
   });
 
   it.each([
@@ -306,6 +320,23 @@ describe("OrderPage", () => {
     expect(cart.repeatWarnings).toEqual([]);
   });
 
+  it("передаёт диалогу контекстное имя и фактический trigger повтора", async () => {
+    const { cart, wrapper } = await mountOrder(
+      { ...orderResponse, stage: "ISSUED" },
+      200,
+      menuResponse,
+    );
+    cart.replace([existingCartItem]);
+    const repeat = getButtonByText(wrapper, "Повторить заказ");
+
+    await repeat.trigger("click");
+    await flushPromises();
+
+    const dialog = wrapper.getComponent({ name: "UiDialog" });
+    expect(dialog.props("label")).toBe("Подтверждение замены корзины");
+    expect(dialog.props("returnFocusTo").$el).toBe(repeat.element);
+  });
+
   it("защищает повтор от повторной активации до завершения menu read", async () => {
     const deferredMenu = createDeferred<Response>();
     const { menuRequests, router, wrapper } = await mountOrder(
@@ -448,6 +479,10 @@ describe("OrderPage", () => {
         reason: "Товар больше недоступен.",
       },
     ]);
+    expect(cart.repeatResult).toEqual({
+      addedPositionCount: 1,
+      requestedPositionCount: 2,
+    });
   });
 
   it("не заменяет непустую корзину, если повторить нечего", async () => {
@@ -469,6 +504,10 @@ describe("OrderPage", () => {
         reason: "Товар больше недоступен.",
       },
     ]);
+    expect(cart.repeatResult).toEqual({
+      addedPositionCount: 0,
+      requestedPositionCount: 1,
+    });
     expect(wrapper.text()).not.toContain("Заменить корзину?");
   });
 
@@ -773,7 +812,21 @@ async function mountOrder(
           },
         }),
       },
-      stubs: { UiDialog: { template: "<div><slot /></div>" } },
+      stubs: {
+        UiBtn: {
+          name: "UiBtn",
+          emits: ["click"],
+          props: ["disabled", "loading", "to", "type"],
+          template:
+            '<button :aria-busy="loading || undefined" :disabled="disabled || loading" :type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+        },
+        UiDialog: {
+          name: "UiDialog",
+          props: ["label", "modelValue", "returnFocusTo"],
+          template:
+            '<div v-if="modelValue" class="ui-dialog-stub"><slot /></div>',
+        },
+      },
     },
   });
   await flushPromises();

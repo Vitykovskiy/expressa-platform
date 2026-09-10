@@ -5,8 +5,9 @@
     </div>
     <template v-else-if="order">
       <header class="order-page__header">
-        <p class="order-page__stage">{{ stageLabel }}</p>
-        <h1 id="order-title">Заказ №{{ order.number }}</h1>
+        <p class="order-page__number">Заказ №{{ order.number }}</p>
+        <h1 id="order-title">{{ stageLabel }}</h1>
+        <p class="order-page__stage-hint">{{ stageHint }}</p>
       </header>
       <p
         v-if="refreshFeedback === 'pending'"
@@ -59,6 +60,19 @@
         }}</strong>
       </p>
       <p class="order-page__payment">Оплата на кассе при получении</p>
+      <ui-btn
+        v-if="order.stage === 'ISSUED'"
+        ref="repeatTrigger"
+        class="order-page__repeat"
+        :loading="repeatPreparationPending"
+        type="button"
+        @click="prepareRepeat"
+      >
+        Повторить заказ
+      </ui-btn>
+      <p v-if="repeatPreparationPending" role="status">
+        {{ orderPageMessages.repeatPreparing }}
+      </p>
       <section
         class="order-page__notifications"
         aria-labelledby="notifications-title"
@@ -88,19 +102,6 @@
           </ui-btn>
         </template>
       </section>
-      <ui-btn
-        v-if="order.stage === 'ISSUED'"
-        class="order-page__repeat"
-        color="surface"
-        :loading="repeatPreparationPending"
-        type="button"
-        @click="prepareRepeat"
-      >
-        Повторить заказ
-      </ui-btn>
-      <p v-if="repeatPreparationPending" role="status">
-        {{ orderPageMessages.repeatPreparing }}
-      </p>
     </template>
     <div v-else class="order-page__state" role="alert">
       <h1 id="order-title">Заказ</h1>
@@ -113,11 +114,16 @@
       >
         Повторить
       </ui-btn>
+      <div v-else class="order-page__terminal-actions">
+        <ui-btn to="/orders" type="button">К истории заказов</ui-btn>
+        <ui-btn to="/" type="button">Перейти в меню</ui-btn>
+      </div>
     </div>
     <ui-dialog
-      v-if="repeatConfirmationOpen"
       v-model="repeatConfirmationOpen"
+      label="Подтверждение замены корзины"
       max-width="32rem"
+      :return-focus-to="repeatTrigger"
     >
       <section class="order-page__dialog" aria-labelledby="repeat-title">
         <h2 id="repeat-title">Заменить корзину?</h2>
@@ -151,6 +157,7 @@ import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 import {
   orderPageMessages,
+  orderPageStageHints,
   orderPageStageLabels,
   orderPollingIntervalMs,
 } from "./OrderPage.constants";
@@ -178,6 +185,7 @@ const pushOperationPending = ref(false);
 const pushSubscription = ref<OrderPagePushSubscription | null>(null);
 const repeatConfirmationOpen = ref(false);
 const repeatPreparationPending = ref(false);
+const repeatTrigger = ref<InstanceType<typeof UiBtn> | null>(null);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let repeatPreparation: OrderRepeatPreparation | null = null;
 let detailRequestOwner = 0;
@@ -185,6 +193,9 @@ let repeatOperationOwner = 0;
 let isMounted = false;
 const stageLabel = computed(() =>
   order.value === null ? "" : orderPageStageLabels[order.value.stage],
+);
+const stageHint = computed(() =>
+  order.value === null ? "" : orderPageStageHints[order.value.stage],
 );
 const pushSupported = computed(
   () => "serviceWorker" in navigator && "PushManager" in window,
@@ -237,6 +248,7 @@ async function loadInitialOrder(): Promise<void> {
     );
     if (!ownsDetailRequest(owner)) return;
     order.value = nextOrder;
+    await startRequestedRepeat(nextOrder);
   } catch (error) {
     if (!ownsDetailRequest(owner)) return;
     order.value = null;
@@ -249,6 +261,11 @@ async function loadInitialOrder(): Promise<void> {
   } finally {
     finishInitialRequest(owner);
   }
+}
+async function startRequestedRepeat(nextOrder: OrderPageOrder): Promise<void> {
+  if (route.query.repeat !== "1" || nextOrder.stage !== "ISSUED") return;
+  await router.replace({ path: route.path, query: {} });
+  await prepareRepeat();
 }
 
 function syncPolling(): void {
@@ -433,14 +450,22 @@ function ownsRepeatOperation(owner: number): boolean {
 }
 async function confirmRepeat(): Promise<void> {
   if (repeatPreparation === null) return;
-  cartStore.applyRepeat(repeatPreparation.items, repeatPreparation.warnings);
+  cartStore.applyRepeat(
+    repeatPreparation.items,
+    repeatPreparation.warnings,
+    repeatPreparation.result,
+  );
   repeatConfirmationOpen.value = false;
   await router.push("/cart");
 }
 async function applyRepeatAndOpenCart(
   preparation: OrderRepeatPreparation,
 ): Promise<void> {
-  cartStore.applyRepeat(preparation.items, preparation.warnings);
+  cartStore.applyRepeat(
+    preparation.items,
+    preparation.warnings,
+    preparation.result,
+  );
   await router.push("/cart");
 }
 function createRepeatItems(
@@ -485,7 +510,14 @@ function createRepeatItems(
     }
     items.push({ ...draft, id: `repeat-${items.length}` });
   }
-  return { items, warnings };
+  return {
+    items,
+    result: {
+      addedPositionCount: items.length,
+      requestedPositionCount: source.items.length,
+    },
+    warnings,
+  };
 }
 function doesDraftPreserveModifiers(
   draft: ConfiguredCartItemDraft,
@@ -565,32 +597,49 @@ function toBase64(value: ArrayBuffer): string {
   gap: var(--customer-space-4);
 }
 .order-page__header h1,
-.order-page__stage,
+.order-page__number,
+.order-page__stage-hint,
 .order-page__payment,
 .order-page__notifications h2 {
   margin: 0;
 }
-.order-page__header h1 {
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
+.order-page__header h1,
+.order-page__state h1 {
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
-.order-page__stage {
+.order-page__number {
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-bold);
   letter-spacing: var(--customer-letter-spacing-overline);
   text-transform: uppercase;
 }
+.order-page__stage-hint {
+  color: var(--customer-color-text-muted-on-brand);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
 .order-page__state {
   display: grid;
+  gap: var(--customer-space-7);
   min-height: 15rem;
   place-items: center;
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
   text-align: center;
+}
+.order-page__state p {
+  margin: 0;
+}
+.order-page__terminal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--customer-space-5);
+  justify-content: center;
 }
 .order-page__items {
   display: grid;
@@ -686,15 +735,17 @@ function toBase64(value: ArrayBuffer): string {
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-extrabold);
 }
-.order-page__repeat[color="surface"] {
-  color: var(--customer-background);
+.order-page__notifications .ui-btn {
+  color: var(--customer-primary);
   background: var(--customer-surface);
+  border: 1px solid var(--customer-border-subtle-on-surface);
 }
 .order-page__dialog {
   display: grid;
   gap: var(--customer-space-5);
   padding: var(--customer-space-9);
-  background: var(--customer-background);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-lg);
 }
 @media (min-width: 1024px) {
   .order-page {

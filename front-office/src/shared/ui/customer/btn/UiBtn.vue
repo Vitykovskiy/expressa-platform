@@ -99,6 +99,11 @@ defineSlots<{
   opacity: var(--customer-state-disabled-opacity);
 }
 
+.ui-btn:focus-visible {
+  outline: 2px solid var(--customer-focus-ring);
+  outline-offset: 2px;
+}
+
 .ui-btn[block] {
   width: 100%;
 }
@@ -112,12 +117,13 @@ defineSlots<{
 }
 
 .ui-btn[color="surface"] {
-  color: var(--customer-background);
+  color: var(--customer-color-blue-700);
   background: var(--customer-surface);
+  border: 1px solid var(--customer-border);
 }
 
 .ui-btn[color="primary"] {
-  color: var(--customer-text);
+  color: var(--customer-color-white);
   background: var(--customer-primary);
 }
 

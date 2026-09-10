@@ -1,7 +1,10 @@
 <template>
   <v-dialog
     v-bind="$attrs"
+    :aria-label="props.label"
+    :activator="activator"
     :model-value="props.modelValue"
+    @after-leave="focusReturnTarget"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <template v-if="$slots.activator" #activator="slotProps">
@@ -14,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { ComponentPublicInstance, Ref } from "vue";
 import { UI_DIALOG_DEFAULTS } from "./UiDialog.constants";
 import type { UiDialogEmits, UiDialogProps } from "./UiDialog.types";
@@ -33,8 +37,14 @@ type UiDialogActivatorTargetRef = {
 
 defineOptions({ inheritAttrs: false });
 
-const props = withDefaults(defineProps<UiDialogProps>(), UI_DIALOG_DEFAULTS);
+const props = withDefaults(defineProps<UiDialogProps>(), {
+  ...UI_DIALOG_DEFAULTS,
+  label: "Диалог",
+});
 const emit = defineEmits<UiDialogEmits>();
+const activator = computed(
+  () => getFocusElement(props.returnFocusTo) ?? undefined,
+);
 defineSlots<{
   activator?: (props: {
     isActive: boolean;
@@ -43,4 +53,18 @@ defineSlots<{
   }) => unknown;
   default?: (props: { isActive: Ref<boolean> }) => unknown;
 }>();
+
+function focusReturnTarget(): void {
+  getFocusElement(props.returnFocusTo)?.focus();
+}
+
+function getFocusElement(
+  target: UiDialogProps["returnFocusTo"],
+): HTMLElement | null {
+  return target instanceof HTMLElement
+    ? target
+    : target?.$el instanceof HTMLElement
+      ? target.$el
+      : null;
+}
 </script>

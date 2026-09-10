@@ -4,6 +4,7 @@
     @checkout="checkout"
     @continue-shopping="continueShopping"
     @reconfirm="reconfirm"
+    @recheck-availability="recheckAvailability"
     @remove-item="removeItem"
     @update-quantity="updateQuantity"
   />
@@ -31,7 +32,10 @@ const checkoutStore = useCheckoutStore();
 const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
 const screenProps = computed<CartScreenProps>(() => {
-  const acceptsNewOrders = menuStore.menu?.acceptsNewOrders !== false;
+  const acceptsNewOrders =
+    menuStore.menu?.acceptsNewOrders !== false &&
+    checkoutStore.errorCode !== checkoutErrorCodes.intakeClosed;
+  const requiresPhoneConfirmation = sessionStore.status !== "authenticated";
 
   if (checkoutStore.status === checkoutStatuses.reconfirmationRequired) {
     return {
@@ -41,8 +45,10 @@ const screenProps = computed<CartScreenProps>(() => {
         ? checkoutStore.errorMessage
         : cartPageMessages.intakeClosed,
       items: cartStore.items,
+      requiresPhoneConfirmation,
       reconfirmedTotalRub: getReconfirmedTotalRub(),
       repeatWarnings: cartStore.repeatWarnings,
+      repeatResult: cartStore.repeatResult,
       unavailableItemIds: checkoutStore.unavailableCartItemIds,
     };
   }
@@ -54,7 +60,9 @@ const screenProps = computed<CartScreenProps>(() => {
       ? cartPageMessages.intakeClosed
       : checkoutStore.errorMessage,
     items: cartStore.items,
+    requiresPhoneConfirmation,
     repeatWarnings: cartStore.repeatWarnings,
+    repeatResult: cartStore.repeatResult,
     unavailableItemIds: checkoutStore.unavailableCartItemIds,
   };
 });
@@ -121,6 +129,11 @@ async function reconfirm(): Promise<void> {
   });
 
   await finishCheckout();
+}
+
+function recheckAvailability(): void {
+  checkoutStore.reset();
+  void menuStore.load(true);
 }
 
 async function finishCheckout(): Promise<void> {

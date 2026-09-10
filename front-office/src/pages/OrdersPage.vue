@@ -2,12 +2,14 @@
   <OrdersHistoryScreen
     v-bind="screenProps"
     @load-more="loadMore"
+    @repeat="repeatOrder"
     @retry="reload"
   />
 </template>
 
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { useSessionStore } from "@/app/session.store";
 import OrdersHistoryScreen from "@/features/orders/OrdersHistoryScreen.vue";
@@ -16,6 +18,7 @@ import { apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
 
 const apiClient = inject(apiClientKey);
+const router = useRouter();
 const sessionStore = useSessionStore();
 const orders = ref<CustomerOrder[]>([]);
 const nextCursor = ref<string | null>(null);
@@ -36,6 +39,9 @@ async function reload(): Promise<void> {
 }
 async function loadMore(): Promise<void> {
   await loadPage(nextCursor.value ?? undefined);
+}
+async function repeatOrder(orderId: string): Promise<void> {
+  await router.push({ path: `/orders/${orderId}`, query: { repeat: "1" } });
 }
 async function loadPage(cursor?: string): Promise<void> {
   if (

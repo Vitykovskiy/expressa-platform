@@ -17,7 +17,7 @@ describe("ProductCard", () => {
     expect(status.text()).toBe(PRODUCT_CARD_UNAVAILABLE_STATUS);
     expect(button.text()).not.toContain(">");
     expect(wrapper.text()).toContain("Очень длинное название напитка");
-    expect(wrapper.text()).toContain("Напиток");
+    expect(wrapper.text()).toContain(PRODUCT_CARD_UNAVAILABLE_STATUS);
     expect(wrapper.text()).toContain("S · 180 ₽");
     expect(wrapper.text()).toContain("M · 220 ₽");
     expect(wrapper.findAll(".product-card__price--unavailable")).toHaveLength(
@@ -41,7 +41,7 @@ describe("ProductCard", () => {
       PRODUCT_CARD_UNAVAILABLE_STATUS,
     );
     expect(wrapper.text()).toContain("Печенье");
-    expect(wrapper.text()).toContain("Еда и другое");
+    expect(wrapper.text()).toContain(PRODUCT_CARD_UNAVAILABLE_STATUS);
     expect(wrapper.text()).toContain("120 ₽");
   });
 

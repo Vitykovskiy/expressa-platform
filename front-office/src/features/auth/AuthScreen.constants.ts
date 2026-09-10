@@ -7,14 +7,15 @@ export const AUTH_SCREEN_PRESENTATION = {
     iconTone: "default",
     content: "form",
     title: "Введите номер телефона",
-    description: () => "Отправим одноразовый код для входа.",
+    description: () =>
+      "Подтверждение номера нужно для оформления заказа и истории заказов.",
   },
   otp: {
     icon: Phone,
     iconTone: "default",
     content: "form",
     title: "Введите код из сообщения",
-    description: (state) => `Код отправлен на ${state.phone}`,
+    description: (state) => `Код отправлен на ${state.phone}. Введите 6 цифр.`,
   },
   register: {
     icon: UserRound,

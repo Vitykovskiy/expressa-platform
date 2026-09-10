@@ -12,12 +12,12 @@ import type { MenuState } from "./menu.store.types";
 export const useMenuStore = defineStore(menuStoreId, {
   state: (): MenuState => ({ ...initialMenuState }),
   actions: {
-    load(): Promise<void> {
+    load(force = false): Promise<void> {
       if (this.loadPromise !== null) {
         return this.loadPromise;
       }
 
-      if (this.status === menuStatuses.ready) {
+      if (!force && this.status === menuStatuses.ready) {
         return Promise.resolve();
       }
 
@@ -31,8 +31,8 @@ export const useMenuStore = defineStore(menuStoreId, {
           this.menu = menu;
           this.status = menuStatuses.ready;
         })
-        .catch((error: unknown) => {
-          this.errorMessage = getErrorMessage(error);
+        .catch(() => {
+          this.errorMessage = menuMessages.loadFailed;
           this.status = menuStatuses.error;
         })
         .finally(() => {
@@ -45,7 +45,3 @@ export const useMenuStore = defineStore(menuStoreId, {
     },
   },
 });
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : menuMessages.loadFailed;
-}

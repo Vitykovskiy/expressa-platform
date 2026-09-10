@@ -25,6 +25,7 @@
         {{ formattedCreatedAt }} · {{ props.order.items.length }}
         {{ itemLabel }}
       </span>
+      <span class="order-card__disclosure">{{ disclosureLabel }}</span>
     </button>
     <div v-if="isOpen" :id="detailsId" class="order-card__details">
       <ul class="order-card__items" aria-label="Состав заказа">
@@ -47,9 +48,19 @@
         </li>
       </ul>
     </div>
-    <ui-btn class="order-card__open" :to="`/orders/${props.order.id}`"
-      >Открыть заказ</ui-btn
-    >
+    <div class="order-card__actions">
+      <ui-btn class="order-card__open" :to="`/orders/${props.order.id}`">
+        Подробнее о заказе
+      </ui-btn>
+      <ui-btn
+        v-if="props.order.stage === 'ISSUED'"
+        class="order-card__repeat"
+        type="button"
+        @click="emit('repeat', props.order.id)"
+      >
+        Повторить заказ
+      </ui-btn>
+    </div>
   </article>
 </template>
 
@@ -58,10 +69,11 @@ import { computed, ref } from "vue";
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
-import type { OrderCardProps } from "./OrderCard.types";
+import type { OrderCardEmits, OrderCardProps } from "./OrderCard.types";
 import type { OrderItem } from "@/shared/api/orders.api";
 
 const props = defineProps<OrderCardProps>();
+const emit = defineEmits<OrderCardEmits>();
 const isOpen = ref(false);
 const detailsId = `order-card-details-${props.order.id}`;
 const formattedCreatedAt = computed(() =>
@@ -83,6 +95,9 @@ const itemLabel = computed(() => {
 
   return "позиций";
 });
+const disclosureLabel = computed(() =>
+  isOpen.value ? "Скрыть состав" : "Показать состав",
+);
 
 function itemKey(item: OrderItem): string {
   return [
@@ -192,6 +207,7 @@ function itemKey(item: OrderItem): string {
   color: var(--customer-text-secondary-on-brand);
 }
 .order-card__meta,
+.order-card__disclosure,
 .order-card__item-quantity,
 .order-card__modifier {
   color: var(--customer-color-text-muted-on-surface);
@@ -199,6 +215,7 @@ function itemKey(item: OrderItem): string {
   font-weight: var(--customer-font-weight-semibold);
 }
 .order-card--issued .order-card__meta,
+.order-card--issued .order-card__disclosure,
 .order-card--issued .order-card__item-quantity,
 .order-card--issued .order-card__modifier {
   color: var(--customer-text-secondary-on-brand);
@@ -258,9 +275,15 @@ function itemKey(item: OrderItem): string {
 .order-card__modifier {
   grid-column: 1 / -1;
 }
-.order-card__open {
+.order-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--customer-space-5);
+  padding: 0 var(--customer-space-10) var(--customer-space-10);
+}
+.order-card__open,
+.order-card__repeat {
   align-self: start;
-  margin: 0 var(--customer-space-10) var(--customer-space-10);
   min-height: 0;
   padding: var(--customer-space-5) var(--customer-space-8);
   color: var(--customer-color-blue-500);
@@ -272,5 +295,9 @@ function itemKey(item: OrderItem): string {
 .order-card--issued .order-card__open {
   color: var(--customer-text);
   background: var(--customer-color-white-12);
+}
+.order-card__repeat {
+  color: var(--customer-color-text-on-brand);
+  background: var(--customer-color-action-primary);
 }
 </style>

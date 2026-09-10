@@ -43,7 +43,8 @@
       class="orders-history__state"
       role="status"
     >
-      История заказов пуста
+      <p>История заказов пуста</p>
+      <ui-btn to="/" type="button">Перейти в меню</ui-btn>
     </div>
     <template v-else>
       <ul class="orders-history__grid" aria-label="История заказов">
@@ -51,6 +52,7 @@
           <OrderCard
             :order="order"
             :stage-label="orderCardStageLabels[order.stage]"
+            @repeat="emit('repeat', $event)"
           />
         </li>
       </ul>
@@ -119,10 +121,10 @@ const orderLabel = computed(() => {
 }
 .orders-history h1 {
   margin: 0;
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
 .orders-history__refresh-icon {
   width: var(--customer-font-size-md);

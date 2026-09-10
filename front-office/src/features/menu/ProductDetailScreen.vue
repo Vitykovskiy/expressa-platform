@@ -13,7 +13,7 @@
     </header>
 
     <div class="product-detail__content">
-      <p class="product-detail__description">
+      <p v-if="description" class="product-detail__description">
         {{ product.description }}
       </p>
 
@@ -135,6 +135,7 @@ const isValid = computed(() =>
   isProductConfigurationValid(configuration.value),
 );
 const actionLabel = computed(() => (props.cartItem ? "Изменить" : "Добавить"));
+const description = computed(() => props.product.description.trim());
 
 watch(
   () => props.product,
@@ -216,10 +217,8 @@ function createInitialConfiguration(product = props.product) {
 <style scoped lang="scss">
 .product-detail {
   display: flex;
-  flex: 1;
   flex-direction: column;
   width: 100%;
-  min-height: 100%;
   color: var(--customer-text);
 }
 .product-detail__header {
@@ -243,10 +242,10 @@ function createInitialConfiguration(product = props.product) {
 .product-detail__title {
   margin: 0 0 var(--customer-space-7);
   color: var(--customer-text);
-  font-size: var(--customer-font-size-state);
-  font-weight: var(--customer-font-weight-black);
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
   letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
+  line-height: var(--customer-line-height-page-heading);
 }
 .product-detail__total {
   margin: 0;
@@ -255,7 +254,6 @@ function createInitialConfiguration(product = props.product) {
 }
 .product-detail__content {
   display: flex;
-  flex: 1;
   flex-direction: column;
   gap: var(--customer-space-11);
   padding: var(--customer-space-13) var(--customer-space-9);
@@ -382,8 +380,12 @@ function createInitialConfiguration(product = props.product) {
     margin-left: 0;
   }
   .product-detail__footer {
-    margin: 0 0 var(--customer-space-9);
+    position: static;
+    width: min(100%, var(--customer-size-content-detail));
+    margin: 0 0 var(--customer-space-13);
     padding: var(--customer-space-9) 0;
+    background: transparent;
+    border-top: 0;
   }
 }
 </style>

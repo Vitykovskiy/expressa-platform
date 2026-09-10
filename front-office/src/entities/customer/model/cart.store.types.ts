@@ -2,7 +2,13 @@ import type { CartItem } from "./customer.types";
 
 export interface CartState {
   items: CartItem[];
+  repeatResult: RepeatResult | null;
   repeatWarnings: RepeatWarning[];
+}
+
+export interface RepeatResult {
+  addedPositionCount: number;
+  requestedPositionCount: number;
 }
 
 export interface RepeatWarning {

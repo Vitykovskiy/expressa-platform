@@ -35,16 +35,16 @@ defineSlots<{
   height: var(--customer-size-control-md);
   padding: 0;
   place-items: center;
-  color: var(--customer-color-text-on-brand);
-  background: var(--customer-color-surface-subtle);
-  border: 1px solid var(--customer-color-border-on-brand);
+  color: var(--customer-color-blue-700);
+  background: var(--customer-surface);
+  border: 1px solid var(--customer-border);
   border-radius: var(--customer-radius-round);
   cursor: pointer;
   transition: var(--customer-transition-surface);
 }
 
 .ui-icon-btn:hover:not(:disabled) {
-  background: var(--customer-color-brand-raised);
+  background: var(--customer-surface-muted);
 }
 
 .ui-icon-btn:focus-visible {

@@ -11,7 +11,7 @@ export const menuStoreId = "menu";
 
 export const menuMessages = {
   dependenciesNotConfigured: "Зависимости меню не настроены.",
-  loadFailed: "Не удалось загрузить меню.",
+  loadFailed: "Не удалось загрузить меню. Попробуйте ещё раз.",
 } as const;
 
 export const initialMenuState: MenuState = {

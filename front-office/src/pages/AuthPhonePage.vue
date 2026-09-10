@@ -1,6 +1,7 @@
 <template>
   <AuthScreen
     :state="authState"
+    :is-loading="isLoading"
     otp=""
     :resend-remaining-seconds="0"
     @send-code="requestOtp"
@@ -32,7 +33,7 @@ const authState = computed<AuthPhonePageState>(() => ({
   errorMessage: errorMessage.value,
   name: "",
   phone: phone.value,
-  step: isLoading.value ? "loading" : "phone",
+  step: "phone",
   verified: false,
 }));
 

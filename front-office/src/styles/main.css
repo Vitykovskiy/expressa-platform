@@ -71,46 +71,6 @@ body {
   transition: none;
 }
 
-@media (min-width: 480px) {
-  body {
-    padding: var(--customer-space-13) var(--customer-space-9);
-    background: var(--customer-background-raised);
-  }
-
-  #app {
-    max-width: var(--customer-content-width);
-    height: calc(100dvh - var(--customer-space-13) * 2);
-    min-height: 0;
-    margin: 0 auto;
-    overflow: hidden;
-    border-radius: var(--customer-radius-xl);
-    box-shadow: var(--customer-shadow-shell);
-  }
-}
-
-@media (min-width: 768px) {
-  #app {
-    max-width: var(--customer-content-width);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    padding: 0;
-    background: var(--customer-background);
-  }
-
-  #app {
-    max-width: none;
-    height: auto;
-    min-height: 100dvh;
-    margin: 0;
-    overflow: visible;
-    border-radius: 0;
-    box-shadow: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* Override component transitions whose selectors otherwise win cascade. */
   *,

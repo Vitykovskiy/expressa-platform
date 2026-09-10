@@ -3,12 +3,13 @@
     v-if="screen.id === 'root'"
     :categories="menu.categories"
     @select-category="openCategory"
+    @select-product="openProduct"
   />
   <template v-else-if="screen.id === 'category'">
     <menu-group-screen
       :category="selectedCategory"
       @return-to-menu="openRoot"
-      @select-product="openProduct"
+      @select-product="openProduct(selectedCategory?.id, $event)"
     />
   </template>
   <template v-else>
@@ -19,6 +20,9 @@
       @submit="addConfigured"
     />
   </template>
+  <p v-if="recentlyAddedProductName" class="menu-flow__feedback" role="status">
+    Добавлено: {{ recentlyAddedProductName }}
+  </p>
 </template>
 
 <script setup lang="ts">
@@ -44,6 +48,7 @@ const props = defineProps<MenuFlowProps>();
 const emit = defineEmits<MenuFlowEmits>();
 const screen = ref<MenuFlowScreen>({ id: "root" });
 const productScrollY = ref(0);
+const recentlyAddedProductName = ref<string | null>(null);
 let lastConsumedMenuShellCommandId = 0;
 watch(
   screen,
@@ -85,6 +90,7 @@ const selectedProduct = computed(() => {
 });
 
 function openCategory(categoryId: string): void {
+  recentlyAddedProductName.value = null;
   screen.value = { id: "category", categoryId };
   history.pushState(
     { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
@@ -146,12 +152,14 @@ function openRoot(): void {
     "",
   );
 }
-function openProduct(productId: string): void {
-  if (screen.value.id !== "category") return;
+function openProduct(categoryId: string | undefined, productId: string): void {
+  const category = props.menu.categories.find((item) => item.id === categoryId);
+  if (!category?.products.some((product) => product.id === productId)) return;
+  recentlyAddedProductName.value = null;
   productScrollY.value = window.scrollY;
   screen.value = {
     id: "product",
-    categoryId: screen.value.categoryId,
+    categoryId: category.id,
     productId,
   };
   history.pushState(
@@ -231,6 +239,24 @@ function getValidHistoryScreen(value: unknown): MenuFlowScreen | undefined {
 }
 function addConfigured(item: ConfiguredCartItemDraft): void {
   emit("add", item);
+  recentlyAddedProductName.value = item.productName;
   closeProduct();
 }
 </script>
+
+<style scoped lang="scss">
+.menu-flow__feedback {
+  position: fixed;
+  z-index: 1;
+  right: var(--customer-space-9);
+  bottom: var(--customer-space-9);
+  max-width: min(24rem, calc(100vw - var(--customer-space-18)));
+  margin: 0;
+  padding: var(--customer-space-6) var(--customer-space-8);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-color-success-surface);
+  border-radius: var(--customer-radius-sm);
+  box-shadow: var(--customer-shadow-floating);
+  font-weight: var(--customer-font-weight-bold);
+}
+</style>
