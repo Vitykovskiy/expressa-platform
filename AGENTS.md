@@ -9,6 +9,14 @@
 - Полные отчёты и доказательства хранятся в `.codex/tmp/tasks/<task-id>/`; `state.yaml` содержит только ссылки и состояния.
 - Подробный протокол: [Агентная система](docs/80-conventions/Agent-system.md).
 
+## Маршрут применимых инструкций
+
+До действия и при изменении задачи следуйте
+[маршруту применимости](docs/80-conventions/Agent-system.md). Краткую трассу
+назначения ведёт [протокол обновления](docs/00-meta/Update-protocol.md), а
+решение о version/changelog/tag для поставки —
+[правила выпуска](docs/70-deployment/Release-and-version-compatibility.md).
+
 ## Definition of Done к коду
 
 - До зависимого кода зафиксируйте в назначении применимые нормы, ожидаемое

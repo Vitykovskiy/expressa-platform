@@ -2,8 +2,9 @@
 title: Выпуск и совместимость версий
 type: operations
 owner: root
-last_verified: 2026-08-16
+last_verified: 2026-09-09
 sources:
+  - ../../.github/workflows/development-delivery.yml
   - ../../.github/workflows/staging-deploy.yml
   - ../../.github/workflows/production-promotion.yml
   - ../../deploy/staging.env
@@ -28,3 +29,24 @@ backend `v0.2.0`, front-office `v0.1.0` и back-office `v0.1.0`.
 
 Совместимость приложения определяется проверенным набором CI и HTTP/OpenAPI
 контрактом, а не отдельной политикой версий API. Production вручную принимает только `staging-v*` с успешной staging-приёмкой и использует ровно его manifest из трёх digest; rebuild, `latest` и произвольный manifest не являются путём поставки. [Production workflow](../../.github/workflows/production-promotion.yml), [CI/CD](CI-CD.md), [контракты](../20-architecture/Cross-repository-contracts.md).
+
+## Решение о версии и выпуске
+
+Для каждого состояния поставки автор фиксирует в назначении или evidence:
+применимый проектный источник, среду, является ли изменение consumer-facing
+release, и для component semantic versions, human changelog и tag — `required`
+или `not required` с причиной. Это решение проверяется до закрытия поставки;
+оно не создаёт автоматический bump, changelog или tag.
+
+Development поставляется по SHA и digest. Этот маршрут не отменяет записи
+решения: если это не consumer-facing release, semantic versions, changelog и
+release tag могут быть `not required` с указанием SHA/digest-маршрута и причины.
+До закрытия consumer-facing release его явно классифицируют, затем применяют
+подходящие Semantic Versioning, changelog и tag из применимых Git/release-норм.
+
+Staging принимает только существующий immutable manifest, привязанный к
+`staging-v*`, без rebuild; production продвигает ровно принятый manifest этого
+тега. Поэтому эти среды не создают произвольный новый component bump, changelog
+или tag: запись решения указывает, используется ли уже существующий
+`staging-v*`, требуется ли новый составной тег для выбранного manifest и почему
+остальные пункты required либо not required.
