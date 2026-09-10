@@ -57,14 +57,14 @@ defineSlots<{
   --v-field-padding-end: var(--customer-space-9);
 
   min-height: var(--customer-size-field);
-  color: var(--customer-color-text-on-surface);
-  background: var(--customer-surface);
+  color: var(--customer-text);
+  background: var(--customer-color-white-13);
   border-radius: var(--customer-radius-md);
 }
 
 .ui-text-field :deep(.v-field__outline) {
   --v-field-border-width: 1.5px;
-  color: var(--customer-border);
+  color: var(--customer-color-white-22);
   --v-field-border-opacity: 1;
 }
 
@@ -78,20 +78,19 @@ defineSlots<{
 
 .ui-text-field :deep(.v-field__input) {
   align-items: center;
-  color: var(--customer-color-text-on-surface);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
 }
 
 .ui-text-field :deep(.v-messages) {
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-semibold);
   line-height: normal;
 }
 
 .ui-text-field :deep(input::placeholder) {
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-text-faint-on-brand);
   opacity: 1;
 }
 

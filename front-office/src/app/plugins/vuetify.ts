@@ -3,10 +3,10 @@ import { createVuetify } from "vuetify";
 // CSS custom properties are not valid Vuetify theme values. This adapter mirrors
 // customer-tokens.css with static, parseable values for Vuetify's JavaScript API.
 const customerVuetifyColorAdapter = {
-  background: "#F6F7FB",
+  background: "#1847E8",
   surface: "#FFFFFF",
-  "surface-subtle": "#E0EAFF",
-  primary: "#1847E8",
+  "surface-subtle": "#3B63EB",
+  primary: "#FF5500",
   secondary: "#1340D0",
   error: "#D4183D",
   success: "#00A854",
@@ -14,14 +14,14 @@ const customerVuetifyColorAdapter = {
   info: "#1847E8",
   brand: "#1847E8",
   "brand-raised": "#1340D0",
-  "action-primary": "#1847E8",
+  "action-primary": "#FF5500",
   "text-on-brand": "#FFFFFF",
   "text-on-surface": "#0F2880",
-  "text-muted-on-brand": "#536176",
-  "text-muted-on-surface": "#536176",
-  "border-on-brand": "#C5CCDB",
-  focus: "#1847E8",
-  "on-background": "#0F2880",
+  "text-muted-on-brand": "#BAC8F8",
+  "text-muted-on-surface": "#939EC6",
+  "border-on-brand": "#3B63EB",
+  focus: "#FF5500",
+  "on-background": "#FFFFFF",
   "on-surface": "#0F2880",
   "on-primary": "#FFFFFF",
   "on-secondary": "#FFFFFF",
@@ -47,7 +47,7 @@ export const vuetify = createVuetify({
     defaultTheme: "customer",
     themes: {
       customer: {
-        dark: false,
+        dark: true,
         colors: customerVuetifyColorAdapter,
       },
     },

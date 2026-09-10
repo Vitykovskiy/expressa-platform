@@ -242,9 +242,9 @@ const accountControl = computed(() => {
   height: calc(var(--customer-space-12) * 2);
   min-height: calc(var(--customer-space-12) * 2);
   place-items: center;
-  color: var(--customer-color-blue-700);
+  color: var(--customer-text);
   background: var(--customer-surface-control);
-  border: 1px solid var(--customer-border);
+  border: 0;
   border-radius: var(--customer-radius-round);
   font-weight: var(--customer-font-weight-black);
 }
@@ -275,9 +275,9 @@ const accountControl = computed(() => {
   width: calc(var(--customer-space-12) * 2);
   height: calc(var(--customer-space-12) * 2);
   place-items: center;
-  color: var(--customer-color-blue-700);
+  color: var(--customer-text);
   background: var(--customer-surface-control);
-  border: 1px solid var(--customer-border);
+  border: 0;
   border-radius: var(--customer-radius-round);
   cursor: pointer;
   list-style: none;
@@ -301,7 +301,7 @@ const accountControl = computed(() => {
   gap: var(--customer-space-3);
   padding: var(--customer-space-5);
   background: var(--customer-surface);
-  border: 1px solid var(--customer-border);
+  border: 1px solid var(--customer-border-on-brand);
   border-radius: var(--customer-radius-md);
   box-shadow: var(--customer-shadow-floating);
 }
@@ -419,9 +419,8 @@ const accountControl = computed(() => {
   }
 
   .shell-navigation__nav .shell-navigation__nav-button--active {
-    color: var(--customer-color-blue-700);
-    background: var(--customer-surface-muted);
-    box-shadow: inset 0 0 0 1px var(--customer-color-blue-500);
+    color: var(--customer-background);
+    background: var(--customer-surface);
   }
 
   .shell-navigation__nav .shell-navigation__badge {
@@ -440,7 +439,7 @@ const accountControl = computed(() => {
     width: 100%;
     margin-bottom: var(--customer-space-7);
     padding: var(--customer-space-7);
-    color: var(--customer-color-text-secondary);
+    color: var(--customer-text-tertiary-on-brand);
     text-align: left;
     background: var(--customer-surface-note);
     border: calc(var(--customer-space-1) / 2) solid
@@ -472,7 +471,7 @@ const accountControl = computed(() => {
 
   .shell-navigation__copyright {
     margin: 0 var(--customer-space-7);
-    color: var(--customer-color-text-secondary);
+    color: var(--customer-color-white-35);
     font-size: var(--customer-font-size-2xs);
     font-weight: var(--customer-font-weight-bold);
   }

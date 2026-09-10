@@ -34,7 +34,7 @@
     <ui-btn
       block
       class="auth-form__primary-button"
-      color="primary"
+      color="surface"
       :disabled="!canSendCode || isLoading"
       :loading="isLoading"
       size="x-large"
@@ -75,7 +75,7 @@
     <ui-btn
       block
       class="auth-form__primary-button"
-      color="primary"
+      color="surface"
       :disabled="!canVerifyOtp || isLoading"
       :loading="isLoading"
       size="x-large"
@@ -272,7 +272,7 @@ function submitName() {
 .auth-form__cooldown {
   align-self: center;
   margin: 0;
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
   line-height: var(--customer-line-height-body);

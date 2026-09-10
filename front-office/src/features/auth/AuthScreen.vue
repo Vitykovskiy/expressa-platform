@@ -105,7 +105,7 @@ const isLoading = computed(() => props.isLoading ?? false);
 
 .auth-description {
   margin: var(--customer-space-3) 0 0;
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-white-65);
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-semibold);
   line-height: var(--customer-line-height-body);
@@ -128,7 +128,7 @@ const isLoading = computed(() => props.isLoading ?? false);
   width: 100%;
   min-height: var(--customer-size-control-xl);
   gap: var(--customer-space-7);
-  color: var(--customer-color-text-muted-on-surface);
+  color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-bold);
 }

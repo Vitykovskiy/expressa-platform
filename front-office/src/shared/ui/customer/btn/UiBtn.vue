@@ -117,13 +117,12 @@ defineSlots<{
 }
 
 .ui-btn[color="surface"] {
-  color: var(--customer-color-blue-700);
+  color: var(--customer-background);
   background: var(--customer-surface);
-  border: 1px solid var(--customer-border);
 }
 
 .ui-btn[color="primary"] {
-  color: var(--customer-color-white);
+  color: var(--customer-text);
   background: var(--customer-primary);
 }
 

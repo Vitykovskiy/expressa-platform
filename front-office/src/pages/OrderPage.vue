@@ -744,7 +744,7 @@ function toBase64(value: ArrayBuffer): string {
   display: grid;
   gap: var(--customer-space-5);
   padding: var(--customer-space-9);
-  background: var(--customer-surface);
+  background: var(--customer-background);
   border-radius: var(--customer-radius-lg);
 }
 @media (min-width: 1024px) {

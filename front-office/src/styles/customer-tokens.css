@@ -6,15 +6,15 @@
   --customer-color-orange-500: #ff5500;
   --customer-color-white: #ffffff;
   --customer-color-black: #000000;
-  --customer-color-success: #087443;
+  --customer-color-success: #00a854;
   --customer-color-danger: #d4183d;
   --customer-color-error: var(--customer-color-danger);
-  --customer-color-danger-light: #b5163b;
+  --customer-color-danger-light: #ff4466;
   --customer-color-danger-pale: #ffb3c1;
-  --customer-color-warning: #8a5b00;
+  --customer-color-warning: #cc8800;
   --customer-color-warning-surface: #fff7e0;
   --customer-color-info-surface: #e0eaff;
-  --customer-color-success-surface: #e8f7ee;
+  --customer-color-success-surface: #e0fff0;
 
   --customer-color-white-70: rgb(255 255 255 / 70%);
   --customer-color-white-65: rgb(255 255 255 / 65%);
@@ -57,41 +57,38 @@
   --customer-color-black-12: rgb(0 0 0 / 12%);
   --customer-color-black-10: rgb(0 0 0 / 10%);
 
-  --customer-color-canvas: #f6f7fb;
-  --customer-color-border: #c5ccdb;
-  --customer-color-text-secondary: #536176;
   --customer-color-brand: var(--customer-color-blue-500);
   --customer-color-brand-raised: var(--customer-color-blue-600);
-  --customer-color-action-primary: var(--customer-color-blue-500);
+  --customer-color-action-primary: var(--customer-color-orange-500);
   --customer-color-surface: var(--customer-color-white);
   --customer-color-surface-subtle: var(--customer-color-white-15);
   --customer-color-text-on-brand: var(--customer-color-white);
   --customer-color-text-on-surface: var(--customer-color-blue-700);
   --customer-color-text-muted-on-brand: var(--customer-color-white-70);
-  --customer-color-text-muted-on-surface: var(--customer-color-text-secondary);
-  --customer-color-border-on-brand: var(--customer-color-border);
-  --customer-color-focus: var(--customer-color-blue-500);
+  --customer-color-text-muted-on-surface: var(--customer-color-blue-700-45);
+  --customer-color-border-on-brand: var(--customer-color-white-15);
+  --customer-color-focus: var(--customer-color-orange-500);
 
-  --customer-surface-control: var(--customer-color-white);
-  --customer-surface-muted: var(--customer-color-info-surface);
-  --customer-surface-muted-on-brand: var(--customer-color-info-surface);
-  --customer-surface-note: var(--customer-color-canvas);
-  --customer-surface-sidebar: var(--customer-color-white);
-  --customer-surface-info: var(--customer-color-info-surface);
-  --customer-border-subtle-on-brand: var(--customer-color-border);
-  --customer-border-subtle-on-surface: var(--customer-color-border);
-  --customer-text-subtle-on-brand: var(--customer-color-text-secondary);
-  --customer-text-secondary-on-brand: var(--customer-color-text-secondary);
-  --customer-text-tertiary-on-brand: var(--customer-color-text-secondary);
-  --customer-text-faint-on-brand: var(--customer-color-text-secondary);
-  --customer-text-strong-on-brand: var(--customer-color-blue-700);
-  --customer-text-danger: var(--customer-color-danger);
-  --customer-surface-danger: #fff0f3;
+  --customer-surface-control: var(--customer-color-white-18);
+  --customer-surface-muted: var(--customer-color-white-12);
+  --customer-surface-muted-on-brand: var(--customer-color-black-10);
+  --customer-surface-note: var(--customer-color-white-10);
+  --customer-surface-sidebar: var(--customer-color-black-12);
+  --customer-surface-info: var(--customer-color-blue-500-4);
+  --customer-border-subtle-on-brand: var(--customer-color-white-8);
+  --customer-border-subtle-on-surface: var(--customer-color-blue-700-8);
+  --customer-text-subtle-on-brand: var(--customer-color-white-65);
+  --customer-text-secondary-on-brand: var(--customer-color-white-50);
+  --customer-text-tertiary-on-brand: var(--customer-color-white-60);
+  --customer-text-faint-on-brand: var(--customer-color-white-45);
+  --customer-text-strong-on-brand: var(--customer-color-white-82);
+  --customer-text-danger: var(--customer-color-danger-light);
+  --customer-surface-danger: var(--customer-color-danger-15);
 
-  --customer-background: var(--customer-color-canvas);
-  --customer-background-raised: var(--customer-color-canvas);
+  --customer-background: var(--customer-color-brand);
+  --customer-background-raised: var(--customer-color-brand-raised);
   --customer-surface: var(--customer-color-surface);
-  --customer-text: var(--customer-color-text-on-surface);
+  --customer-text: var(--customer-color-text-on-brand);
   --customer-text-on-surface: var(--customer-color-text-on-surface);
   --customer-primary: var(--customer-color-action-primary);
   --customer-success: var(--customer-color-success);
@@ -99,9 +96,9 @@
   --customer-danger: var(--customer-error);
   --customer-danger-10: var(--customer-color-danger-10);
   --customer-danger-pale: var(--customer-color-danger-pale);
-  --customer-border: var(--customer-color-border);
-  --customer-focus-ring: var(--customer-color-focus);
-  --customer-state-disabled-opacity: 0.5;
+  --customer-border: var(--customer-color-border-on-brand);
+  --customer-focus-ring: var(--customer-color-orange-500-65);
+  --customer-state-disabled-opacity: 0.35;
 
   /* Typography */
   --customer-font-family: Nunito, Inter, sans-serif;
@@ -195,13 +192,15 @@
   --customer-radius-pill: 999px;
   --customer-radius-round: 50%;
   --customer-radius: var(--customer-radius-lg);
-  --customer-shadow-card: 0 0.125rem 0.5rem rgb(15 40 128 / 8%);
+  --customer-shadow-card: 0 0.25rem 1rem var(--customer-color-black-12);
   --customer-shadow-card-raised: 0 0.25rem 1.25rem
     var(--customer-color-black-15);
   --customer-shadow-floating: 0 0.5rem 2rem var(--customer-color-black-15);
   --customer-shadow-surface: 0 0.25rem 1.5rem var(--customer-color-black-18);
   --customer-shadow-state: 0 0.375rem 1.75rem var(--customer-color-black-14);
-  --customer-shadow-shell: 0 0.25rem 1.25rem rgb(15 40 128 / 10%);
+  --customer-shadow-shell:
+    0 1.25rem 5rem var(--customer-color-black-35),
+    0 0 0 1px var(--customer-color-white-10);
   --customer-elevation-sm: var(--customer-shadow-card);
   --customer-elevation-medium: var(--customer-shadow-card-raised);
   --customer-elevation-frame: var(--customer-shadow-shell);
