@@ -7,12 +7,13 @@ import { PRODUCT_CARD_UNAVAILABLE_STATUS } from "./ProductCard.constants";
 import ProductCard from "./ProductCard.vue";
 
 describe("ProductCard", () => {
-  it("показывает недоступный напиток с доступным статусом и не выбирает его", async () => {
+  it("приглушает недоступный напиток, показывает его статус и не выбирает его", async () => {
     const wrapper = mountProductCard(createDrink({ isAvailable: false }));
     const button = wrapper.get("button");
     const status = wrapper.get('[role="status"]');
 
     expect(button.attributes("disabled")).toBeDefined();
+    expect(button.classes()).toContain("product-card--unavailable");
     expect(button.attributes("aria-describedby")).toBe(status.attributes("id"));
     expect(status.text()).toBe(PRODUCT_CARD_UNAVAILABLE_STATUS);
     expect(button.text()).not.toContain(">");
@@ -23,6 +24,7 @@ describe("ProductCard", () => {
     expect(wrapper.findAll(".product-card__price--unavailable")).toHaveLength(
       1,
     );
+    expect(wrapper.find(".product-card__unavailable-veil").exists()).toBe(true);
 
     button.element.click();
     await button.trigger("keydown", { key: "Enter" });
@@ -31,6 +33,14 @@ describe("ProductCard", () => {
     await button.trigger("keyup", { key: " " });
 
     expect(wrapper.emitted("select")).toBeUndefined();
+
+    await wrapper.setProps({ product: createDrink() });
+
+    expect(button.attributes("disabled")).toBeUndefined();
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+    expect(wrapper.find(".product-card__unavailable-veil").exists()).toBe(
+      false,
+    );
   });
 
   it("сохраняет цену и статус недоступной карточки OTHER", () => {
@@ -45,13 +55,20 @@ describe("ProductCard", () => {
     expect(wrapper.text()).toContain("120 ₽");
   });
 
-  it("выбирает доступный товар один раз без статуса недоступности", () => {
+  it("выбирает доступный товар один раз без статуса доступности", () => {
     const product = createOther();
     const wrapper = mountProductCard(product);
     const button = wrapper.get("button");
 
     expect(button.attributes("disabled")).toBeUndefined();
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
+    expect(wrapper.find(".product-card__availability").exists()).toBe(false);
+    expect(wrapper.find(".product-card__unavailable-veil").exists()).toBe(
+      false,
+    );
+    expect(wrapper.findAll(".product-card__price--unavailable")).toHaveLength(
+      0,
+    );
 
     button.element.click();
 

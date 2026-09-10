@@ -2,39 +2,46 @@
   <ui-btn
     type="button"
     class="product-card"
+    :class="{ 'product-card--unavailable': !props.product.isAvailable }"
     stacked
     variant="text"
     :disabled="!props.product.isAvailable"
     :aria-describedby="unavailabilityStatusId"
     @click="emit('select', props.product.id)"
-    ><span class="product-card__info"
-      ><span class="product-card__name">{{ props.product.name }}</span
-      ><span v-if="description" class="product-card__description">{{
-        description
-      }}</span
-      ><span
-        :id="unavailabilityStatusId"
-        class="product-card__availability"
-        :class="{
-          'product-card__availability--unavailable': !props.product.isAvailable,
-        }"
-        :role="props.product.isAvailable ? undefined : 'status'"
-        >{{ availabilityLabel }}</span
-      ></span
-    ><span class="product-card__prices"
-      ><template v-if="props.product.type === 'DRINK'"
-        ><span
+  >
+    <span class="product-card__info">
+      <span class="product-card__name">{{ props.product.name }}</span>
+      <span v-if="description" class="product-card__description">
+        {{ description }}
+      </span>
+    </span>
+    <span class="product-card__prices">
+      <template v-if="props.product.type === 'DRINK'">
+        <span
           v-for="variant in props.product.variants"
           :key="variant.id"
           class="product-card__price"
           :class="{ 'product-card__price--unavailable': !variant.isAvailable }"
           >{{ variant.size }} · {{ formatRubles(variant.price) }}</span
-        ></template
-      ><span v-else class="product-card__price">{{
-        formatRubles(props.product.price)
-      }}</span></span
-    ></ui-btn
-  >
+        >
+      </template>
+      <span v-else class="product-card__price">
+        {{ formatRubles(props.product.price) }}
+      </span>
+    </span>
+    <span
+      v-if="!props.product.isAvailable"
+      class="product-card__unavailable-veil"
+      aria-hidden="true"
+    />
+    <span
+      v-if="!props.product.isAvailable"
+      :id="unavailabilityStatusId"
+      class="product-card__availability"
+      role="status"
+      >{{ PRODUCT_CARD_UNAVAILABLE_STATUS }}</span
+    >
+  </ui-btn>
 </template>
 
 <script setup lang="ts">
@@ -46,9 +53,6 @@ import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();
 const description = computed(() => props.product.description.trim());
-const availabilityLabel = computed(() =>
-  props.product.isAvailable ? "Доступно" : PRODUCT_CARD_UNAVAILABLE_STATUS,
-);
 const unavailabilityStatusId = computed(() =>
   props.product.isAvailable
     ? undefined
@@ -68,13 +72,15 @@ const unavailabilityStatusId = computed(() =>
   border: 0;
   border-radius: var(--customer-radius);
   box-shadow: var(--customer-shadow-card-raised);
+  overflow: hidden;
+  position: relative;
 }
 .product-card:disabled {
   --customer-state-disabled-opacity: 1;
+  box-shadow: none;
 }
 .product-card__name,
-.product-card__description,
-.product-card__availability {
+.product-card__description {
   display: block;
 }
 .product-card__info {
@@ -103,13 +109,24 @@ const unavailabilityStatusId = computed(() =>
   width: 100%;
 }
 .product-card__availability {
-  color: var(--customer-success);
+  display: block;
+  position: relative;
+  z-index: 2;
+  margin: var(--customer-space-7) calc(var(--customer-space-11) * -1)
+    calc(var(--customer-space-10) * -1);
+  padding: var(--customer-space-4) var(--customer-space-11);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-color-info-surface);
   font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
+  font-weight: var(--customer-font-weight-bold);
   line-height: 1.5;
 }
-.product-card__availability--unavailable {
-  color: var(--customer-danger);
+.product-card__unavailable-veil {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: color-mix(in srgb, var(--customer-surface) 45%, transparent);
+  pointer-events: none;
 }
 .product-card__price {
   padding: var(--customer-space-3) var(--customer-space-7);

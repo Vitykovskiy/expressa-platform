@@ -27,10 +27,10 @@
             <ui-btn
               type="button"
               class="menu-root__category-action"
-              variant="text"
+              :aria-label="`Открыть категорию ${category.name}`"
               @click="selectCategory(category.id)"
             >
-              Все позиции
+              Открыть категорию
               <ArrowRight :size="16" :stroke-width="2.5" aria-hidden="true" />
             </ui-btn>
           </header>
@@ -145,7 +145,11 @@ function selectProduct(categoryId: string, productId: string): void {
 .menu-root__category-action {
   flex: 0 0 auto;
   gap: var(--customer-space-3);
-  color: var(--customer-primary);
+  min-height: 44px;
+  padding: 0 var(--customer-space-6);
+  color: var(--customer-text);
+  border: 1px solid var(--customer-text);
+  border-radius: var(--customer-radius-sm);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
@@ -161,6 +165,14 @@ function selectProduct(categoryId: string, productId: string): void {
   margin: 0;
   color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-sm);
+}
+@media (max-width: 479px) {
+  .menu-root__category-header {
+    flex-wrap: wrap;
+  }
+  .menu-root__category-action {
+    width: 100%;
+  }
 }
 @media (min-width: 1024px) {
   .menu-root__header,
