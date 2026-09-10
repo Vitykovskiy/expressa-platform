@@ -11,23 +11,25 @@
         </p>
         <h1 id="orders-history-title">История</h1>
       </div>
-      <ui-icon-btn
-        v-if="!props.errorMessage"
-        type="button"
-        aria-label="Обновить историю заказов"
-        :loading="props.loading"
-        @click="emit('retry')"
-      >
-        <RefreshCw class="orders-history__refresh-icon" aria-hidden="true" />
-      </ui-icon-btn>
-      <ui-icon-btn
-        ref="settingsButton"
-        type="button"
-        aria-label="Настройки"
-        @click="openSettings"
-      >
-        <Settings aria-hidden="true" :size="18" :stroke-width="2.5" />
-      </ui-icon-btn>
+      <div class="orders-history__actions">
+        <ui-icon-btn
+          v-if="!props.errorMessage"
+          type="button"
+          aria-label="Обновить историю заказов"
+          :loading="props.loading"
+          @click="emit('retry')"
+        >
+          <RefreshCw class="orders-history__refresh-icon" aria-hidden="true" />
+        </ui-icon-btn>
+        <ui-icon-btn
+          ref="settingsButton"
+          type="button"
+          aria-label="Настройки"
+          @click="openSettings"
+        >
+          <Settings aria-hidden="true" :size="18" :stroke-width="2.5" />
+        </ui-icon-btn>
+      </div>
     </header>
     <OrderNotificationsSection
       ref="notificationsSection"
@@ -144,6 +146,11 @@ function openSettings(): void {
   font-weight: var(--customer-font-weight-bold);
   letter-spacing: var(--customer-letter-spacing-overline);
   text-transform: uppercase;
+}
+.orders-history__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--customer-space-4);
 }
 .orders-history h1 {
   margin: 0;

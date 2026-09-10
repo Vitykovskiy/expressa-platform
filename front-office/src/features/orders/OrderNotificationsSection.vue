@@ -56,17 +56,27 @@
     {{ successMessage }}
   </p>
   <ui-dialog
-    v-if="settingsOpen"
+    v-if="settingsMounted"
     v-model="settingsOpen"
     label="Настройки"
     max-width="28rem"
     :return-focus-to="settingsTrigger"
+    @after-leave="unmountSettings"
   >
     <section
       class="order-notifications__settings"
       aria-labelledby="notification-settings-title"
     >
-      <h2 id="notification-settings-title">Настройки</h2>
+      <header class="order-notifications__settings-heading">
+        <h2 id="notification-settings-title">Настройки</h2>
+        <ui-icon-btn
+          type="button"
+          aria-label="Закрыть настройки"
+          @click="closeSettings"
+        >
+          <X aria-hidden="true" :size="18" :stroke-width="2.5" />
+        </ui-icon-btn>
+      </header>
       <p
         v-if="sessionStore.currentUser?.phoneE164"
         class="order-notifications__account"
@@ -102,7 +112,7 @@
         type="button"
         class="order-notifications__logout"
         @click="emit('signOut')"
-        >Выйти</ui-btn
+        >Выйти из аккаунта</ui-btn
       >
     </section>
   </ui-dialog>
@@ -118,6 +128,7 @@ import {
   ref,
   useTemplateRef,
 } from "vue";
+import { X } from "lucide-vue-next";
 
 import { useSessionStore } from "@/app/session.store";
 import { apiClientKey } from "@/shared/api/client";
@@ -127,6 +138,7 @@ import {
 } from "@/shared/api/push.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
+import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 
 type NotificationState =
   "inspecting" | "unsupported" | "denied" | "ready" | "failed";
@@ -141,6 +153,7 @@ const operation = ref<Operation>(null);
 const subscription = ref<PushSubscriptionRequest | null>(null);
 const message = ref<string | null>(null);
 const settingsOpen = ref(false);
+const settingsMounted = ref(false);
 const successMessage = ref<string | null>(null);
 const settingsTrigger = ref<HTMLElement | null>(null);
 const emit = defineEmits<{ signOut: [] }>();
@@ -307,7 +320,14 @@ function openSettings(): void {
     document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
+  settingsMounted.value = true;
   settingsOpen.value = true;
+}
+function closeSettings(): void {
+  settingsOpen.value = false;
+}
+function unmountSettings(): void {
+  settingsMounted.value = false;
 }
 function toPushSubscription(value: PushSubscription): PushSubscriptionRequest {
   const p256dh = value.getKey("p256dh");
@@ -394,6 +414,12 @@ function toBase64(value: ArrayBuffer): string {
 .order-notifications__settings h3,
 .order-notifications__settings p {
   margin: 0;
+}
+.order-notifications__settings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--customer-space-6);
 }
 .order-notifications__settings h2 {
   font-size: var(--customer-font-size-xl);

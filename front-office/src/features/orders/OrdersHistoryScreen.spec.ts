@@ -16,6 +16,7 @@ describe("OrdersHistoryScreen", () => {
         wrapper.find('[aria-label="Обновить историю заказов"]').exists(),
       ).toBe(false);
       expect(wrapper.find('[aria-label="Настройки"]').exists()).toBe(true);
+      expect(wrapper.find(".orders-history__actions").exists()).toBe(true);
       expect(wrapper.get('[role="alert"]').text()).toContain(
         "Не удалось загрузить историю заказов.",
       );
@@ -39,6 +40,16 @@ describe("OrdersHistoryScreen", () => {
       "История заказов пуста",
     );
     expect(empty.text()).toContain("Перейти в меню");
+  });
+
+  it("группирует служебные действия в шапке", () => {
+    const wrapper = mountScreen({ orders: [order] });
+
+    const actions = wrapper.get(".orders-history__actions");
+    expect(
+      actions.find('[aria-label="Обновить историю заказов"]').exists(),
+    ).toBe(true);
+    expect(actions.find('[aria-label="Настройки"]').exists()).toBe(true);
   });
 
   it("сохраняет loading status и pagination events", async () => {

@@ -1,5 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { nextTick } from "vue";
+import { defineComponent, nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -127,7 +127,16 @@ describe("OrderNotificationsSection", () => {
       },
     });
     const wrapper = mount(OrderNotificationsSection, {
-      global: { stubs: { UiBtn: { template: "<button><slot /></button>" } } },
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiDialog: {
+            props: ["modelValue"],
+            template:
+              '<section v-if="modelValue" data-testid="settings"><slot /></section>',
+          },
+        },
+      },
     });
     await flushPromises();
 
@@ -155,6 +164,50 @@ describe("OrderNotificationsSection", () => {
 
     expect(wrapper.get('[data-testid="settings"]').text()).toContain(
       "Уведомления о заказах",
+    );
+  });
+
+  it("явно закрывает настройки без выхода из аккаунта и открывает их снова", async () => {
+    useSessionStore().$patch({ status: "authenticated" });
+    const DialogStub = defineComponent({
+      name: "VDialog",
+      props: { modelValue: Boolean },
+      emits: ["afterLeave", "update:modelValue"],
+      template:
+        '<section v-if="modelValue" data-testid="settings"><slot /></section>',
+    });
+    const wrapper = mount(OrderNotificationsSection, {
+      global: {
+        stubs: {
+          UiBtn: { template: "<button><slot /></button>" },
+          UiIconBtn: {
+            template:
+              '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>',
+          },
+          VDialog: DialogStub,
+        },
+      },
+    });
+    await flushPromises();
+
+    wrapper.vm.openSettings();
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="settings"]').text()).toContain(
+      "Выйти из аккаунта",
+    );
+    await wrapper.get('[aria-label="Закрыть настройки"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="settings"]').exists()).toBe(false);
+    expect(wrapper.emitted("signOut")).toBeUndefined();
+    wrapper.getComponent(DialogStub).vm.$emit("afterLeave");
+    await nextTick();
+
+    wrapper.vm.openSettings();
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="settings"]').text()).toContain(
+      "Выйти из аккаунта",
     );
   });
 
@@ -210,7 +263,9 @@ describe("OrderNotificationsSection", () => {
     expect(wrapper.find("#notifications").exists()).toBe(false);
     wrapper.vm.openSettings();
     await nextTick();
-    await wrapper.get('[data-testid="settings"] button').trigger("click");
+    await wrapper
+      .get('[data-testid="settings"] button:not([aria-label])')
+      .trigger("click");
     await flushPromises();
 
     expect(wrapper.find("#notifications").exists()).toBe(false);
