@@ -57,6 +57,34 @@ describe("ShellNavigation", () => {
     );
   });
 
+  it.each([
+    { cartCount: 0, showBack: false },
+    { cartCount: 123, showBack: true },
+  ])(
+    "сохраняет полный текст бренда и все 44px-действия в узкой композиции: %o",
+    ({ cartCount, showBack }) => {
+      const wrapper = mount(ShellNavigation, {
+        props: createProps({ cartCount, showBack }),
+        global: {
+          stubs: { UiBadge: { template: "<span><slot /></span>" } },
+        },
+      });
+
+      expect(wrapper.get(".shell-navigation__brand").text()).toBe(
+        "Ex-pressa☕",
+      );
+      expect(wrapper.find(".shell-navigation__brand-coffee").exists()).toBe(
+        true,
+      );
+      expect(wrapper.get('[aria-label="История заказов"]')).toBeTruthy();
+      expect(wrapper.get('[aria-label="Корзина"]')).toBeTruthy();
+      if (showBack) {
+        expect(wrapper.get('[aria-label="Назад"]')).toBeTruthy();
+        expect(wrapper.get('[aria-label="Меню"]')).toBeTruthy();
+      }
+    },
+  );
+
   it("блокирует desktop выход во время выполнения", () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ isAuthenticated: true, isLogoutPending: true }),

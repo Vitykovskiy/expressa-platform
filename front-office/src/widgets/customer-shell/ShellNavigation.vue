@@ -23,7 +23,12 @@
           <House aria-hidden="true" :size="17" :stroke-width="2.5" />
         </ui-icon-btn>
       </div>
-      <span class="shell-navigation__brand">Ex-pressa ☕</span>
+      <span class="shell-navigation__brand">
+        <span>Ex-pressa</span
+        ><span class="shell-navigation__brand-coffee" aria-hidden="true"
+          >☕</span
+        >
+      </span>
       <div
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
@@ -250,6 +255,20 @@ const accountControl = computed(() => {
   font-size: var(--customer-font-size-2xl);
   font-weight: var(--customer-font-weight-black);
   letter-spacing: var(--customer-letter-spacing-slight);
+}
+
+@media (max-width: 359px) {
+  .shell-navigation__mobile-header {
+    gap: 0;
+  }
+
+  .shell-navigation__brand {
+    font-size: var(--customer-font-size-lg);
+  }
+
+  .shell-navigation__brand-coffee {
+    display: none;
+  }
 }
 
 .shell-navigation__brand-icon {
