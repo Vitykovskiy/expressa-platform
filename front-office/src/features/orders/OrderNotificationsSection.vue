@@ -9,22 +9,17 @@
     <div class="order-notifications__copy">
       <h2 id="notifications-title">Уведомления о заказах</h2>
       <p>Сообщим, когда заказ примут и когда он будет готов.</p>
-      <p class="order-notifications__scope">В этом браузере</p>
-    </div>
-    <div class="order-notifications__actions">
       <p v-if="state === 'inspecting'" role="status">Проверяем уведомления…</p>
       <template v-else-if="state === 'unsupported'">
         <p>Уведомления не поддерживаются этим браузером.</p>
       </template>
       <template v-else-if="state === 'denied'">
         <p>Уведомления заблокированы. Разрешите их в настройках браузера.</p>
-        <ui-btn type="button" @click="inspect">Проверить ещё раз</ui-btn>
       </template>
       <template v-else-if="state === 'failed'">
         <p role="status">
           Не удалось проверить уведомления. Попробуйте ещё раз.
         </p>
-        <ui-btn type="button" @click="inspect">Повторить проверку</ui-btn>
       </template>
       <template v-else>
         <p v-if="operation === 'enabling'" role="status">
@@ -34,26 +29,35 @@
           Отключаем уведомления…
         </p>
         <p v-else-if="message" role="status">{{ message }}</p>
-        <template v-if="subscription === null">
-          <ui-btn
-            class="order-notifications__button"
-            type="button"
-            :loading="operation === 'enabling'"
-            @click="enable"
-            >Включить уведомления</ui-btn
-          >
-        </template>
-        <template v-else>
-          <p>Уведомления включены в этом браузере.</p>
-          <ui-btn
-            class="order-notifications__button"
-            type="button"
-            :loading="operation === 'disabling'"
-            @click="disable"
-            >Отключить уведомления</ui-btn
-          >
-        </template>
+        <p v-else-if="subscription !== null">Уведомления включены.</p>
       </template>
+    </div>
+    <div
+      v-if="state === 'denied' || state === 'failed' || state === 'ready'"
+      class="order-notifications__actions"
+    >
+      <ui-btn v-if="state === 'denied'" type="button" @click="inspect"
+        >Проверить ещё раз</ui-btn
+      >
+      <ui-btn v-else-if="state === 'failed'" type="button" @click="inspect"
+        >Повторить проверку</ui-btn
+      >
+      <ui-btn
+        v-else-if="subscription === null"
+        class="order-notifications__button"
+        type="button"
+        :loading="operation === 'enabling'"
+        @click="enable"
+        >Включить уведомления</ui-btn
+      >
+      <ui-btn
+        v-else
+        class="order-notifications__button"
+        type="button"
+        :loading="operation === 'disabling'"
+        @click="disable"
+        >Отключить уведомления</ui-btn
+      >
     </div>
   </section>
 </template>
@@ -241,10 +245,11 @@ function toBase64(value: ArrayBuffer): string {
 
 <style scoped lang="scss">
 .order-notifications {
-  display: grid;
-  gap: var(--customer-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--customer-space-7);
   margin: 0 var(--customer-space-9) var(--customer-space-9);
-  padding: var(--customer-space-7) var(--customer-space-9);
+  padding: var(--customer-space-9) var(--customer-space-10);
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);
   border-radius: var(--customer-radius-lg);
@@ -254,8 +259,7 @@ function toBase64(value: ArrayBuffer): string {
   outline: 2px solid var(--customer-focus-ring);
   outline-offset: 2px;
 }
-.order-notifications__copy,
-.order-notifications__actions {
+.order-notifications__copy {
   display: grid;
   gap: var(--customer-space-3);
 }
@@ -272,10 +276,6 @@ function toBase64(value: ArrayBuffer): string {
   font-size: var(--customer-font-size-sm);
   overflow-wrap: anywhere;
 }
-.order-notifications__scope {
-  font-size: var(--customer-font-size-xs) !important;
-  font-weight: var(--customer-font-weight-bold);
-}
 .order-notifications__button,
 .order-notifications__actions .ui-btn {
   justify-self: start;
@@ -289,8 +289,19 @@ function toBase64(value: ArrayBuffer): string {
 }
 @media (min-width: 1024px) {
   .order-notifications {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--customer-space-9);
     margin-right: 0;
     margin-left: 0;
+  }
+  .order-notifications__copy {
+    flex: 1;
+    min-width: 0;
+  }
+  .order-notifications__actions {
+    flex: 0 0 auto;
   }
 }
 </style>

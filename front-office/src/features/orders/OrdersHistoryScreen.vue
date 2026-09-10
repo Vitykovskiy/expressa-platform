@@ -55,7 +55,6 @@
         <li v-for="order in props.orders" :key="order.id">
           <OrderCard
             :order="order"
-            :stage-hint="orderCardStageHints[order.stage]"
             :stage-label="orderCardStageLabels[order.stage]"
             @repeat="emit('repeat', $event)"
           />
@@ -79,10 +78,7 @@ import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import OrderCard from "./OrderCard.vue";
 import OrderNotificationsSection from "./OrderNotificationsSection.vue";
-import {
-  orderCardStageHints,
-  orderCardStageLabels,
-} from "./OrderCard.constants";
+import { orderCardStageLabels } from "./OrderCard.constants";
 import type {
   OrdersHistoryScreenEmits,
   OrdersHistoryScreenProps,

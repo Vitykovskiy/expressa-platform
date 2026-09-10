@@ -27,6 +27,9 @@
       </span>
       <span class="order-card__disclosure">{{ disclosureLabel }}</span>
     </button>
+    <p v-if="props.order.stage === 'READY'" class="order-card__pickup-cue">
+      Заберите заказ на кассе.
+    </p>
     <div v-if="isOpen" :id="detailsId" class="order-card__details">
       <ul class="order-card__items" aria-label="Состав заказа">
         <li v-for="item in props.order.items" :key="itemKey(item)">
@@ -48,10 +51,11 @@
         </li>
       </ul>
     </div>
-    <p v-if="props.order.stage !== 'ISSUED'" class="order-card__stage-hint">
-      {{ props.stageHint }}
-    </p>
-    <div v-if="props.order.stage === 'ISSUED'" class="order-card__actions">
+    <div
+      v-if="props.order.stage === 'ISSUED'"
+      class="order-card__actions"
+      :class="{ 'order-card__actions--after-details': isOpen }"
+    >
       <ui-btn
         class="order-card__repeat"
         type="button"
@@ -132,8 +136,7 @@ function itemKey(item: OrderItem): string {
   text-align: left;
   cursor: pointer;
 }
-.order-card__header:focus-visible,
-.order-card__open:focus-visible {
+.order-card__header:focus-visible {
   outline: 2px solid var(--customer-focus-ring);
   outline-offset: -2px;
 }
@@ -207,7 +210,7 @@ function itemKey(item: OrderItem): string {
 }
 .order-card__meta,
 .order-card__disclosure,
-.order-card__stage-hint,
+.order-card__pickup-cue,
 .order-card__item-quantity,
 .order-card__modifier {
   color: var(--customer-color-text-muted-on-surface);
@@ -216,7 +219,7 @@ function itemKey(item: OrderItem): string {
 }
 .order-card--issued .order-card__meta,
 .order-card--issued .order-card__disclosure,
-.order-card--issued .order-card__stage-hint,
+.order-card--issued .order-card__pickup-cue,
 .order-card--issued .order-card__item-quantity,
 .order-card--issued .order-card__modifier {
   color: var(--customer-text-secondary-on-brand);
@@ -228,6 +231,10 @@ function itemKey(item: OrderItem): string {
     var(--customer-space-10);
   background: var(--customer-surface-info);
   border-top: 1px solid var(--customer-border-subtle-on-surface);
+}
+.order-card__pickup-cue {
+  margin: 0;
+  padding: 0 var(--customer-space-10) var(--customer-space-9);
 }
 .order-card--issued .order-card__details {
   background: var(--customer-surface-muted-on-brand);
@@ -282,6 +289,9 @@ function itemKey(item: OrderItem): string {
   gap: var(--customer-space-5);
   padding: 0 var(--customer-space-10) var(--customer-space-10);
 }
+.order-card__actions--after-details {
+  padding-top: var(--customer-space-9);
+}
 .order-card__repeat {
   align-self: start;
   min-height: 0;
@@ -291,10 +301,6 @@ function itemKey(item: OrderItem): string {
   border-radius: var(--customer-radius-pill);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-extrabold);
-}
-.order-card--issued .order-card__open {
-  color: var(--customer-text);
-  background: var(--customer-color-white-12);
 }
 .order-card__repeat {
   color: var(--customer-color-text-on-brand);

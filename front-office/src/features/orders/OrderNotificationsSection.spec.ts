@@ -55,4 +55,30 @@ describe("OrderNotificationsSection", () => {
     );
     expect(wrapper.text()).toContain("Повторить проверку");
   });
+
+  it("не заявляет о включённых уведомлениях без подписки", async () => {
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: { permission: "granted" },
+    });
+    Object.defineProperty(window, "PushManager", {
+      configurable: true,
+      value: class PushManager {},
+    });
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: Promise.resolve({
+          pushManager: { getSubscription: () => Promise.resolve(null) },
+        }),
+      },
+    });
+    const wrapper = mount(OrderNotificationsSection, {
+      global: { stubs: { UiBtn: { template: "<button><slot /></button>" } } },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Включить уведомления");
+    expect(wrapper.text()).not.toContain("Уведомления включены.");
+  });
 });
