@@ -3,6 +3,11 @@
     v-if="props.to"
     v-bind="$attrs"
     class="ui-btn"
+    :class="{
+      'ui-btn--navigation': props.navigation,
+      'ui-btn--navigation-forward':
+        props.navigation && props.navigationDirection === 'forward',
+    }"
     :aria-busy="props.loading || undefined"
     :disabled="props.disabled || props.loading"
     :loading="props.loading"
@@ -19,6 +24,11 @@
     v-else
     v-bind="$attrs"
     class="ui-btn"
+    :class="{
+      'ui-btn--navigation': props.navigation,
+      'ui-btn--navigation-forward':
+        props.navigation && props.navigationDirection === 'forward',
+    }"
     :aria-busy="props.loading || undefined"
     :disabled="props.disabled || props.loading"
     :type="props.type"
@@ -114,6 +124,28 @@ defineSlots<{
 
 .ui-btn[variant="text"] {
   min-height: 0;
+}
+
+.ui-btn--navigation {
+  gap: var(--customer-space-5);
+  padding: var(--customer-space-5) var(--customer-space-8)
+    var(--customer-space-5) var(--customer-space-6);
+  color: var(--customer-text);
+  background: var(--customer-surface-muted);
+  border: 0;
+  border-radius: var(--customer-radius-pill);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+
+.ui-btn--navigation-forward {
+  padding-right: var(--customer-space-6);
+  padding-left: var(--customer-space-8);
+}
+
+.ui-btn--navigation :slotted(svg) {
+  width: var(--customer-font-size-md);
+  height: var(--customer-font-size-md);
 }
 
 .ui-btn[color="surface"] {

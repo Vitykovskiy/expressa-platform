@@ -27,11 +27,13 @@
             <ui-btn
               type="button"
               class="menu-root__category-action"
+              navigation
+              navigation-direction="forward"
               :aria-label="`Открыть категорию ${category.name}`"
               @click="selectCategory(category.id)"
             >
               Открыть категорию
-              <ArrowRight :size="16" :stroke-width="2.5" aria-hidden="true" />
+              <ArrowRight aria-hidden="true" />
             </ui-btn>
           </header>
           <ul
@@ -144,14 +146,6 @@ function selectProduct(categoryId: string, productId: string): void {
 }
 .menu-root__category-action {
   flex: 0 0 auto;
-  gap: var(--customer-space-3);
-  min-height: 44px;
-  padding: 0 var(--customer-space-6);
-  color: var(--customer-text);
-  border: 1px solid var(--customer-text);
-  border-radius: var(--customer-radius-sm);
-  font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-bold);
 }
 .menu-root__products {
   display: grid;

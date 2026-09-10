@@ -21,6 +21,8 @@ describe("MenuRootScreen", () => {
     );
     expect(action.attributes("variant")).toBeUndefined();
     expect(action.classes()).toContain("menu-root__category-action");
+    expect(action.classes()).toContain("ui-btn--navigation");
+    expect(action.classes()).toContain("ui-btn--navigation-forward");
 
     await action.trigger("click");
 

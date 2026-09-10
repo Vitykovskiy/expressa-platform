@@ -20,12 +20,11 @@
         v-if="props.showBack"
         type="button"
         class="customer-shell__desktop-back"
+        navigation
+        navigation-direction="back"
         @click="emit('back')"
       >
-        <ArrowLeft
-          class="customer-shell__desktop-back-icon"
-          aria-hidden="true"
-        />
+        <ArrowLeft aria-hidden="true" />
         Назад
       </ui-btn>
       <slot />
@@ -99,23 +98,7 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   .customer-shell__desktop-back {
     align-self: start;
     display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    gap: var(--customer-space-5);
     margin-top: var(--customer-space-11);
-    padding: var(--customer-space-5) var(--customer-space-8)
-      var(--customer-space-5) var(--customer-space-6);
-    color: var(--customer-text);
-    background: var(--customer-surface-muted);
-    border: 0;
-    border-radius: var(--customer-radius-pill);
-    font-size: var(--customer-font-size-sm);
-    font-weight: var(--customer-font-weight-extrabold);
-  }
-
-  .customer-shell__desktop-back-icon {
-    width: var(--customer-font-size-md);
-    height: var(--customer-font-size-md);
   }
 }
 </style>
