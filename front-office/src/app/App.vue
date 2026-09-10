@@ -166,8 +166,13 @@ async function retrySession(): Promise<void> {
 }
 
 function back(): void {
-  if (route.path === appRoute.home && observedMenuScreen.value.id !== "root") {
-    history.back();
+  if (route.path === appRoute.home) {
+    const screen = observedMenuScreen.value;
+    if (screen.id === "product") {
+      issueMenuShellCommand({ id: "category", categoryId: screen.categoryId });
+    } else if (screen.id === "category") {
+      issueMenuShellCommand({ id: "root" });
+    }
     return;
   }
 

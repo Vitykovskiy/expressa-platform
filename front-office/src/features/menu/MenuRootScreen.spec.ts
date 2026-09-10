@@ -6,23 +6,22 @@ import type { PublicMenuCategory } from "@/shared/api/public-menu.api";
 import MenuRootScreen from "./MenuRootScreen.vue";
 
 describe("MenuRootScreen", () => {
-  it("показывает заметное действие открытия категории с различимым именем", async () => {
+  it("показывает только доступную для всей площади карточку категории", async () => {
     const category = createCategory();
     const wrapper = mount(MenuRootScreen, {
       props: { categories: [category] },
       global: { plugins: [vuetify] },
     });
 
-    const action = wrapper.get(".menu-root__category-action");
+    const action = wrapper.get(".menu-root__category-card");
 
-    expect(action.text()).toContain("Открыть категорию");
+    expect(action.text()).toContain(category.name);
+    expect(action.text()).toContain("0 позиций");
     expect(action.attributes("aria-label")).toBe(
       `Открыть категорию ${category.name}`,
     );
-    expect(action.attributes("variant")).toBeUndefined();
-    expect(action.classes()).toContain("menu-root__category-action");
-    expect(action.classes()).toContain("ui-btn--navigation");
-    expect(action.classes()).toContain("ui-btn--navigation-forward");
+    expect(wrapper.find(".product-card").exists()).toBe(false);
+    expect(wrapper.find(".menu-root__products").exists()).toBe(false);
 
     await action.trigger("click");
 

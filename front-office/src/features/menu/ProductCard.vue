@@ -6,23 +6,20 @@
     stacked
     variant="text"
     :disabled="!props.product.isAvailable"
-    :aria-describedby="unavailabilityStatusId"
+    :aria-describedby="descriptionId"
     @click="emit('select', props.product.id)"
   >
     <span class="product-card__info">
       <span class="product-card__name">{{ props.product.name }}</span>
-      <span v-if="description" class="product-card__description">
+      <span
+        v-if="description"
+        :id="descriptionId"
+        class="product-card__description"
+      >
         {{ description }}
       </span>
-      <span
-        v-if="!props.product.isAvailable"
-        :id="unavailabilityStatusId"
-        class="product-card__availability"
-        role="status"
-        >{{ PRODUCT_CARD_UNAVAILABLE_STATUS }}</span
-      >
     </span>
-    <span class="product-card__prices">
+    <span v-if="props.product.isAvailable" class="product-card__prices">
       <template v-if="props.product.type === 'DRINK'">
         <span
           v-for="variant in props.product.variants"
@@ -48,21 +45,27 @@
 import { computed } from "vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import { formatRubles } from "@/entities/customer/model/money";
-import { PRODUCT_CARD_UNAVAILABLE_STATUS } from "./ProductCard.constants";
+import { PRODUCT_CARD_UNAVAILABLE_DESCRIPTION } from "./ProductCard.constants";
 import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();
-const description = computed(() => props.product.description.trim());
-const unavailabilityStatusId = computed(() =>
+const description = computed(() =>
+  props.product.isAvailable
+    ? props.product.description.trim()
+    : PRODUCT_CARD_UNAVAILABLE_DESCRIPTION,
+);
+const descriptionId = computed(() =>
   props.product.isAvailable
     ? undefined
-    : `product-card-${props.product.id}-availability`,
+    : `product-card-${props.product.id}-description`,
 );
 </script>
 <style scoped lang="scss">
 .product-card {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
   min-height: 44px;
@@ -109,15 +112,6 @@ const unavailabilityStatusId = computed(() =>
   justify-content: flex-start;
   width: 100%;
   margin-top: auto;
-}
-.product-card__availability {
-  display: block;
-  position: relative;
-  z-index: 2;
-  color: var(--customer-danger);
-  font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-bold);
-  line-height: 1.5;
 }
 .product-card__unavailable-veil {
   position: absolute;

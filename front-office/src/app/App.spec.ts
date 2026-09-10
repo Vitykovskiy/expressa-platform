@@ -323,19 +323,30 @@ describe("App", () => {
     expect(shell.props("showBack")).toBe(true);
     expect(menu.props("menuShellCommand")).toBeNull();
 
+    menu.vm.$emit("menuScreenChange", {
+      id: "product",
+      categoryId: "coffee",
+      productId: "espresso",
+    });
+    shell.vm.$emit("back");
+    await flushPromises();
+    expect(menu.props("menuShellCommand")).toMatchObject({
+      target: { id: "category", categoryId: "coffee" },
+    });
+
     shell.vm.$emit("selectCategory", "coffee");
     await flushPromises();
     menu.vm.$emit("menuShellCommandAck", 1);
     await flushPromises();
-    expect(menu.props("menuShellCommand")).toMatchObject({ requestId: 2 });
-    menu.vm.$emit("menuShellCommandAck", 2);
+    expect(menu.props("menuShellCommand")).toMatchObject({ requestId: 3 });
+    menu.vm.$emit("menuShellCommandAck", 3);
     await flushPromises();
     expect(menu.props("menuShellCommand")).toBeNull();
 
     shell.vm.$emit("navigate", "menu");
     await flushPromises();
     expect(menu.props("menuShellCommand")).toMatchObject({
-      requestId: 3,
+      requestId: 4,
       target: { id: "root" },
     });
 
@@ -352,7 +363,7 @@ describe("App", () => {
     expect(
       wrapper.getComponent(MenuBridgeProbe).props("menuShellCommand"),
     ).toMatchObject({
-      requestId: 4,
+      requestId: 5,
       target: { id: "category", categoryId: "coffee" },
     });
 

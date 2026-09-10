@@ -7,5 +7,4 @@ export interface MenuRootScreenProps {
 
 export type MenuRootScreenEmits = {
   selectCategory: [categoryId: string];
-  selectProduct: [categoryId: string, productId: string];
 };

@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { vuetify } from "@/app/plugins";
 import type { PublicMenu } from "@/shared/api/public-menu.api";
@@ -9,24 +9,29 @@ import MenuGroupScreen from "./MenuGroupScreen.vue";
 import MenuRootScreen from "./MenuRootScreen.vue";
 
 describe("MenuFlow", () => {
-  it("открывает товар прямо с корневого меню и подтверждает добавление в каталоге", async () => {
+  beforeEach(() => history.replaceState({}, ""));
+  it("открывает товар только из категории и возвращает добавление в неё", async () => {
     const wrapper = mount(MenuFlow, {
       props: { menu: createMenu() },
       global: { plugins: [vuetify] },
       attachTo: document.body,
     });
 
+    expect(wrapper.find(".product-card").exists()).toBe(false);
     await wrapper
       .findComponent(MenuRootScreen)
-      .vm.$emit("selectProduct", "espresso", "espresso-single");
+      .vm.$emit("selectCategory", "espresso");
+    await wrapper
+      .findComponent(MenuGroupScreen)
+      .vm.$emit("selectProduct", "espresso-single");
 
     expect(wrapper.get(".product-detail__title").text()).toBe("Эспрессо");
     await wrapper.get(".product-detail__submit").trigger("click");
-    await backTo({ id: "root" });
     await nextTick();
     expect(wrapper.get('[role="status"]').text()).toBe(
       "Добавлено в корзину: Эспрессо",
     );
+    expect(wrapper.findComponent(MenuGroupScreen).exists()).toBe(true);
   });
 
   it("переводит фокус на heading категории после Enter на исчезающем действии", async () => {
@@ -216,6 +221,37 @@ describe("MenuFlow", () => {
     expect(wrapper.emitted("menuScreenChange")?.at(-1)).toEqual([
       { id: "root" },
     ]);
+  });
+
+  it("восстанавливает валидный screen из history и shell category-target не зависит от history", async () => {
+    history.replaceState(
+      {
+        menuFlowScreen: {
+          id: "product",
+          categoryId: "espresso",
+          productId: "espresso-single",
+        },
+      },
+      "",
+    );
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+    });
+
+    await nextTick();
+    expect(wrapper.get(".product-detail__title").text()).toBe("Эспрессо");
+    await wrapper.setProps({
+      menuShellCommand: {
+        requestId: 1,
+        target: { id: "category", categoryId: "espresso" },
+      },
+    });
+    expect(wrapper.findComponent(MenuGroupScreen).exists()).toBe(true);
+    await wrapper.setProps({
+      menuShellCommand: { requestId: 2, target: { id: "root" } },
+    });
+    expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
   });
 });
 

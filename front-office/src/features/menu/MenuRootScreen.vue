@@ -14,45 +14,22 @@
 
     <ul v-else class="menu-root__categories" aria-label="Категории меню">
       <li v-for="category in categories" :key="category.id">
-        <section
-          class="menu-root__category"
-          :aria-labelledby="`menu-category-${category.id}`"
+        <ui-btn
+          type="button"
+          class="menu-root__category-card"
+          :aria-label="`Открыть категорию ${category.name}`"
+          @click="selectCategory(category.id)"
         >
-          <header class="menu-root__category-header">
-            <h2
-              :id="`menu-category-${category.id}`"
-              class="menu-root__category-name"
-            >
-              {{ category.name }}
-            </h2>
-            <ui-btn
-              type="button"
-              class="menu-root__category-action"
-              navigation
-              navigation-direction="forward"
-              :aria-label="`Открыть категорию ${category.name}`"
-              @click="selectCategory(category.id)"
-            >
-              Открыть категорию
-              <ArrowRight aria-hidden="true" />
-            </ui-btn>
-          </header>
-          <ul
-            v-if="category.products.length"
-            class="menu-root__products"
-            :aria-label="`Товары категории ${category.name}`"
-          >
-            <li v-for="product in category.products" :key="product.id">
-              <ProductCard
-                :product="product"
-                @select="selectProduct(category.id, $event)"
-              />
-            </li>
-          </ul>
-          <p v-else class="menu-root__category-empty">
-            В этой категории пока нет товаров
-          </p>
-        </section>
+          <span class="menu-root__category-info">
+            <span class="menu-root__category-name">{{ category.name }}</span>
+            <span class="menu-root__category-count">{{
+              categoryCount(category.products.length)
+            }}</span>
+          </span>
+          <span class="menu-root__category-arrow" aria-hidden="true">
+            <ArrowRight />
+          </span>
+        </ui-btn>
       </li>
     </ul>
   </section>
@@ -61,7 +38,6 @@
 <script setup lang="ts">
 import { ArrowRight } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
-import ProductCard from "./ProductCard.vue";
 import type {
   MenuRootScreenEmits,
   MenuRootScreenProps,
@@ -75,8 +51,18 @@ function selectCategory(categoryId: string): void {
   emit("selectCategory", categoryId);
 }
 
-function selectProduct(categoryId: string, productId: string): void {
-  emit("selectProduct", categoryId, productId);
+function categoryCount(count: number): string {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const noun =
+    lastTwo >= 11 && lastTwo <= 14
+      ? "позиций"
+      : last === 1
+        ? "позиция"
+        : last >= 2 && last <= 4
+          ? "позиции"
+          : "позиций";
+  return `${count} ${noun}`;
 }
 </script>
 
@@ -123,7 +109,8 @@ function selectProduct(categoryId: string, productId: string): void {
 }
 .menu-root__categories {
   display: grid;
-  gap: var(--customer-space-11);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--customer-space-8);
   width: 100%;
   margin: 0;
   padding: 0 var(--customer-space-9) var(--customer-space-9);
@@ -132,38 +119,48 @@ function selectProduct(categoryId: string, productId: string): void {
 .menu-root__categories > li {
   min-width: 0;
 }
-.menu-root__category {
-  display: grid;
-  gap: var(--customer-space-6);
-}
-.menu-root__category-header {
+.menu-root__category-card {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: var(--customer-space-7);
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--customer-size-control-xl);
+  padding: var(--customer-space-8) var(--customer-space-11);
+  color: var(--customer-text-on-surface);
+  text-align: left;
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius);
+  box-shadow: var(--customer-shadow-card-raised);
+}
+.menu-root__category-info {
+  display: grid;
+  gap: var(--customer-space-3);
+  min-width: 0;
 }
 .menu-root__category-name {
-  margin: 0;
   font-size: var(--customer-font-size-2xl);
   font-weight: var(--customer-font-weight-black);
   line-height: var(--customer-line-height-compact);
+  overflow-wrap: anywhere;
 }
-.menu-root__category-action {
-  flex: 0 0 auto;
-}
-.menu-root__products {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-  gap: var(--customer-space-8);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.menu-root__category-empty {
-  margin: 0;
+.menu-root__category-count {
   color: var(--customer-color-text-muted-on-surface);
   font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+}
+.menu-root__category-arrow {
+  display: grid;
+  flex: 0 0 auto;
+  width: var(--customer-size-control-md);
+  height: var(--customer-size-control-md);
+  place-items: center;
+  color: var(--customer-background);
+  background: var(--customer-color-info-surface);
+  border-radius: var(--customer-radius-round);
+}
+.menu-root__category-arrow :deep(svg) {
+  width: var(--customer-font-size-lg);
+  height: var(--customer-font-size-lg);
 }
 @media (min-width: 1024px) {
   .menu-root__header,

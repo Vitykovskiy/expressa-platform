@@ -4,7 +4,6 @@
     :categories="menu.categories"
     :feedback="catalogFeedback"
     @select-category="openCategory"
-    @select-product="openProduct"
   />
   <template v-else-if="screen.id === 'category'">
     <menu-group-screen
@@ -49,7 +48,6 @@ const screen = ref<MenuFlowScreen>({ id: "root" });
 const productScrollY = ref(0);
 const recentlyAddedProductName = ref<string | null>(null);
 let feedbackTimer: ReturnType<typeof setTimeout> | undefined;
-let preserveFeedbackOnNextHistoryRestore = false;
 let lastConsumedMenuShellCommandId = 0;
 watch(
   screen,
@@ -65,8 +63,10 @@ watch(
   (command) => consumeMenuShellCommand(command),
 );
 onMounted(() => {
+  const restoredScreen = getValidHistoryScreen(history.state?.menuFlowScreen);
+  if (restoredScreen !== undefined) screen.value = restoredScreen;
   history.replaceState(
-    { ...history.state, menuFlowScreen: toHistoryScreen({ id: "root" }) },
+    { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
     "",
   );
   window.addEventListener("popstate", restoreHistoryScreen);
@@ -106,7 +106,7 @@ function openCategory(categoryId: string): void {
   );
   focusHeadingAfterRemovedControl(
     focusedElement,
-    focusedElement?.classList.contains("menu-root__category-action") ?? false,
+    focusedElement?.classList.contains("menu-root__category-card") ?? false,
   );
 }
 
@@ -187,11 +187,7 @@ function restoreHistoryScreen(event: PopStateEvent): void {
   const nextScreen = getValidHistoryScreen(event.state.menuFlowScreen);
   const previousScreen = screen.value;
   const focusedElement = getFocusedElement();
-  if (preserveFeedbackOnNextHistoryRestore) {
-    preserveFeedbackOnNextHistoryRestore = false;
-  } else {
-    clearFeedback();
-  }
+  clearFeedback();
   screen.value = nextScreen ?? { id: "root" };
   focusHeadingAfterRemovedControl(focusedElement);
   if (previousScreen.id === "product" && screen.value.id === "category") {
@@ -221,16 +217,14 @@ function focusHeadingAfterRemovedControl(
 }
 function closeProduct(): void {
   if (screen.value.id !== "product") return;
-  if (hasCurrentManagedEntry()) {
-    history.back();
-    return;
-  }
+  const focusedElement = getFocusedElement();
   screen.value = { id: "category", categoryId: screen.value.categoryId };
+  history.pushState(
+    { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
+    "",
+  );
+  focusHeadingAfterRemovedControl(focusedElement, true);
   void nextTick(() => window.scrollTo({ top: productScrollY.value }));
-}
-function hasCurrentManagedEntry(): boolean {
-  const historyScreen = getValidHistoryScreen(history.state?.menuFlowScreen);
-  return historyScreen?.id === screen.value.id;
 }
 function toHistoryScreen(value: MenuFlowScreen): MenuFlowScreen {
   return cloneScreen(value);
@@ -283,7 +277,6 @@ function getValidHistoryScreen(value: unknown): MenuFlowScreen | undefined {
 function addConfigured(item: ConfiguredCartItemDraft): void {
   emit("add", item);
   showFeedback(item.productName);
-  preserveFeedbackOnNextHistoryRestore = true;
   closeProduct();
 }
 function showFeedback(productName: string): void {
