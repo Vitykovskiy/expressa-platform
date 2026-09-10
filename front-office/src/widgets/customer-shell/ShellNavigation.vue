@@ -205,13 +205,20 @@ const accountControl = computed(() => {
   position: sticky;
   top: 0;
   z-index: 2;
-  display: flex;
+  display: grid;
   flex: 0 0 var(--customer-size-shell-header);
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   height: var(--customer-size-shell-header);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--customer-space-3);
-  padding: 0 var(--customer-space-9);
+  column-gap: var(--customer-space-3);
+  padding-inline: max(
+      var(--customer-space-9),
+      env(safe-area-inset-left, var(--customer-space-9))
+    )
+    max(
+      var(--customer-space-9),
+      env(safe-area-inset-right, var(--customer-space-9))
+    );
   background: var(--customer-background);
 }
 
@@ -241,6 +248,8 @@ const accountControl = computed(() => {
 }
 
 .shell-navigation__mobile-header .shell-navigation__brand {
+  justify-self: center;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -259,11 +268,19 @@ const accountControl = computed(() => {
 
 @media (max-width: 359px) {
   .shell-navigation__mobile-header {
-    gap: 0;
+    column-gap: 0;
+    padding-inline: max(
+        var(--customer-space-5),
+        env(safe-area-inset-left, var(--customer-space-5))
+      )
+      max(
+        var(--customer-space-5),
+        env(safe-area-inset-right, var(--customer-space-5))
+      );
   }
 
   .shell-navigation__brand {
-    font-size: var(--customer-font-size-lg);
+    font-size: var(--customer-font-size-body);
   }
 
   .shell-navigation__brand-coffee {

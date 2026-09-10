@@ -111,6 +111,39 @@ test("menu не получает horizontal overflow на declared breakpoints",
   }
 });
 
+test("мобильная шапка сохраняет все действия и бренд внутри viewport", async ({
+  page,
+}) => {
+  for (const width of [320, 360, 390]) {
+    await openMenuForHeaderBounds(page, width);
+
+    await page.getByRole("button", { name: "Корзина" }).click();
+    await expect(page).toHaveURL(/\/cart$/);
+    await expectMobileHeaderBounds(page, width, false);
+
+    await page.getByRole("button", { exact: true, name: "Меню" }).click();
+    await expect(page.getByRole("region", { name: "Меню" })).toBeVisible();
+    await page.getByRole("button", { name: "Открыть категорию Кофе" }).click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.coffee }),
+    ).toBeVisible();
+    await expectMobileHeaderBounds(page, width, true);
+
+    await page.getByRole("button", { name: productNames.cappuccino }).click();
+    await expect(
+      page.getByRole("heading", { name: productNames.cappuccino }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /Добавить/ }).click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.coffee }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".shell-navigation__cart-button .shell-navigation__badge"),
+    ).toContainText("1");
+    await expectMobileHeaderBounds(page, width, true);
+  }
+});
+
 test("menu root, category and detail match visual baselines", async ({
   page,
 }) => {
@@ -279,6 +312,21 @@ async function openCleanMenu(page: Page, width: number): Promise<void> {
   await expectNoHorizontalOverflow(page, width);
 }
 
+async function openMenuForHeaderBounds(
+  page: Page,
+  width: number,
+): Promise<void> {
+  await page.setViewportSize({ height: menuViewportHeight, width });
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  if ((await page.getByRole("region", { name: "Меню" }).count()) === 0) {
+    await page.getByRole("button", { exact: true, name: "Меню" }).click();
+  }
+  await expect(page.getByRole("region", { name: "Меню" })).toBeVisible();
+  await expectNoHorizontalOverflow(page, width);
+}
+
 async function openProduct(
   page: Page,
   categoryName: string,
@@ -348,6 +396,69 @@ async function expectCartConfiguration(page: Page): Promise<void> {
     croissant.getByLabel("Количество", { exact: true }),
   ).toContainText("2");
   await expect(page.getByLabel("Итого заказа")).toContainText("1 160 ₽");
+}
+
+async function expectMobileHeaderBounds(
+  page: Page,
+  width: number,
+  showBack: boolean,
+): Promise<void> {
+  const labels = [
+    ...(showBack ? ["Назад", "Меню"] : ["Меню"]),
+    "История заказов",
+    "Корзина",
+  ];
+
+  const geometry = await page.evaluate((expectedLabels) => {
+    const header = document.querySelector(".shell-navigation__mobile-header");
+    const brand = header?.querySelector(".shell-navigation__brand");
+    if (header === null || brand === null) {
+      throw new Error("Не найдена мобильная шапка.");
+    }
+
+    const rectangle = (element: Element) => {
+      const { bottom, height, left, right, top, width } =
+        element.getBoundingClientRect();
+      return { bottom, height, left, right, top, width };
+    };
+    const controls = expectedLabels.map((label) => {
+      const control = header.querySelector(`[aria-label="${label}"]`);
+      if (control === null) {
+        throw new Error(`Не найдена кнопка ${label}.`);
+      }
+      return { label, rect: rectangle(control) };
+    });
+
+    return {
+      brand: {
+        rect: rectangle(brand),
+        text: brand.firstElementChild?.textContent?.trim(),
+      },
+      controls,
+      header: rectangle(header),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    };
+  }, labels);
+
+  expect(geometry.viewportWidth).toBe(width);
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
+  expect(geometry.brand.text).toBe("Ex-pressa");
+  expect(geometry.brand.rect.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.brand.rect.right).toBeLessThanOrEqual(width);
+  expect(geometry.brand.rect.top).toBeGreaterThanOrEqual(geometry.header.top);
+  expect(geometry.brand.rect.bottom).toBeLessThanOrEqual(
+    geometry.header.bottom,
+  );
+
+  for (const { rect } of geometry.controls) {
+    expect(rect.left).toBeGreaterThanOrEqual(0);
+    expect(rect.right).toBeLessThanOrEqual(width);
+    expect(rect.top).toBeGreaterThanOrEqual(geometry.header.top);
+    expect(rect.bottom).toBeLessThanOrEqual(geometry.header.bottom);
+    expect(rect.width).toBeGreaterThanOrEqual(44);
+    expect(rect.height).toBeGreaterThanOrEqual(44);
+  }
 }
 
 async function expectControlNotOccluded(
