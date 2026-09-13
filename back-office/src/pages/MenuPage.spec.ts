@@ -79,14 +79,14 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     expect(
       wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
     ).toBeNull();
 
     await clickButton(wrapper, "Отмена");
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     expect(
       wrapper.getComponent({ name: "ModifierGroupEditor" }).props("group"),
@@ -101,7 +101,7 @@ describe("MenuPage", () => {
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
     await openManagement(wrapper);
-    const trigger = buttonByText(wrapper, "Новая группа опций");
+    const trigger = buttonByText(wrapper, "Новая группа добавок");
     const focus = vi.spyOn(trigger.element, "focus");
 
     trigger.element.focus();
@@ -126,7 +126,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     await wrapper
       .get('.modifier-group-editor input[type="text"]')
       .setValue("Сиропы");
@@ -149,7 +149,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     const input = wrapper.get('.modifier-group-editor input[type="text"]');
     await input.setValue("Сиропы");
     await clickButton(wrapper, "Сохранить группу");
@@ -202,10 +202,10 @@ describe("MenuPage", () => {
 
       if (mode === "create") {
         await openManagement(wrapper);
-        await clickButton(wrapper, "Новая группа опций");
+        await clickButton(wrapper, "Новая группа добавок");
       } else {
         await wrapper
-          .get('button[aria-label="Редактировать группу опций Молоко"]')
+          .get('button[aria-label="Редактировать группу добавок Молоко"]')
           .trigger("click");
       }
       const input = wrapper.get('.modifier-group-editor input[type="text"]');
@@ -262,7 +262,7 @@ describe("MenuPage", () => {
       const wrapper = mountPage();
 
       await openManagement(wrapper);
-      await clickButton(wrapper, "Новая группа опций");
+      await clickButton(wrapper, "Новая группа добавок");
       store.$patch({ formSaveOutcome: outcome });
       await wrapper.vm.$nextTick();
       wrapper.getComponent({ name: "ModifierGroupEditor" }).vm.$emit("save", {
@@ -298,7 +298,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     await wrapper
       .get('.modifier-group-editor input[type="text"]')
       .setValue("Сиропы");
@@ -330,7 +330,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     await wrapper
       .get('.modifier-group-editor input[type="text"]')
       .setValue("Сиропы");
@@ -378,7 +378,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     const input = wrapper.get('.modifier-group-editor input[type="text"]');
     await input.setValue("Овсяное молоко");
@@ -426,7 +426,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await openManagement(wrapper);
-    await clickButton(wrapper, "Новая группа опций");
+    await clickButton(wrapper, "Новая группа добавок");
     await wrapper
       .get('.modifier-group-editor input[type="text"]')
       .setValue("Сиропы");
@@ -471,7 +471,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     const input = wrapper.get('.modifier-group-editor input[type="text"]');
     await input.setValue("Овсяное молоко");
@@ -509,7 +509,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     await clickButton(wrapper, "Архивировать группу");
     await clickButton(
@@ -563,7 +563,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     const editor = wrapper.getComponent({ name: "ModifierGroupEditor" });
     const name = editor.get('input[type="text"]');
@@ -658,7 +658,7 @@ describe("MenuPage", () => {
       const wrapper = mountPage();
 
       await wrapper
-        .get('button[aria-label="Редактировать группу опций Молоко"]')
+        .get('button[aria-label="Редактировать группу добавок Молоко"]')
         .trigger("click");
       await clickButton(wrapper, "Архивировать группу");
       await clickButton(
@@ -687,7 +687,7 @@ describe("MenuPage", () => {
 
       await clickButton(editor, "Отмена");
       await wrapper
-        .get('button[aria-label="Редактировать группу опций Молоко"]')
+        .get('button[aria-label="Редактировать группу добавок Молоко"]')
         .trigger("click");
       expect(
         wrapper
@@ -731,7 +731,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     await clickButton(wrapper, "Архивировать группу");
     await clickButton(
@@ -791,7 +791,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     await clickButton(wrapper, "Архивировать группу");
     await clickButton(
@@ -1750,7 +1750,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     await clickButton(wrapper, "Архивировать группу");
     expect(archiveGroup).not.toHaveBeenCalled();
@@ -1796,7 +1796,7 @@ describe("MenuPage", () => {
     const wrapper = mountPage();
 
     await wrapper
-      .get('button[aria-label="Редактировать группу опций Молоко"]')
+      .get('button[aria-label="Редактировать группу добавок Молоко"]')
       .trigger("click");
     await clickButton(wrapper, "Удалить вариант");
     expect(wrapper.text()).toContain("Удалить вариант добавки?");
@@ -1891,7 +1891,7 @@ describe("MenuPage", () => {
     ]);
     expectButtonsDisabled(wrapper.getComponent({ name: "EditProductDialog" }), [
       "Сохранить изменения",
-      "Удалить товар",
+      "Архивировать товар",
       "Отмена",
     ]);
     expect(

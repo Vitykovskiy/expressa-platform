@@ -321,7 +321,7 @@
           type="button"
           variant="destructive"
           @click="openDeleteConfirmation"
-          >Удалить товар</AdminButton
+          >Архивировать товар</AdminButton
         >
         <AdminButton
           :disabled="props.disabled"
@@ -337,10 +337,10 @@
   </AdminDialog>
   <ConfirmDialog
     v-model:open="deleteOpen"
-    confirm-label="Удалить"
+    confirm-label="Архивировать"
     confirm-variant="destructive"
-    description="Товар будет удалён без возможности восстановления."
-    title="Удалить товар?"
+    description="Товар больше не будет доступен в меню."
+    title="Архивировать товар?"
     @confirm="confirmDelete"
   />
 </template>

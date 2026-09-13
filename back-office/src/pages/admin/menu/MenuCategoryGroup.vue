@@ -111,8 +111,16 @@ const emit = defineEmits<MenuCategoryGroupEmits>();
 
 const countLabel = computed(() => {
   const count = props.products.length;
+  const finalTwoDigits = count % 100;
+  const finalDigit = count % 10;
   const itemType =
-    count === 1 ? "товар" : count >= 2 && count <= 4 ? "товара" : "товаров";
+    finalTwoDigits >= 11 && finalTwoDigits <= 14
+      ? "товаров"
+      : finalDigit === 1
+        ? "товар"
+        : finalDigit >= 2 && finalDigit <= 4
+          ? "товара"
+          : "товаров";
 
   return `${count} ${itemType}`;
 });

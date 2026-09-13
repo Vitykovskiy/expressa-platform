@@ -107,7 +107,7 @@
           aria-labelledby="menu-options-heading"
         >
           <h2 id="menu-options-heading" class="menu-page__section-title">
-            Группы опций
+            Группы добавок
           </h2>
           <div class="menu-page__table">
             <section
@@ -144,7 +144,7 @@
                   </span>
                 </AdminButton>
                 <AdminButton
-                  :aria-label="`Редактировать группу опций ${group.name}`"
+                  :aria-label="`Редактировать группу добавок ${group.name}`"
                   :disabled="isBusy"
                   class="menu-page__option-edit"
                   type="button"
@@ -167,13 +167,13 @@
                   v-if="group.options.length === 0"
                   class="menu-page__option-empty"
                 >
-                  Опций в этой группе пока нет
+                  В этой группе пока нет добавок
                 </p>
                 <AdminButton
                   v-for="option in group.options"
                   v-else
                   :key="option.id"
-                  :aria-label="`Редактировать группу опций ${group.name}`"
+                  :aria-label="`Редактировать группу добавок ${group.name}`"
                   class="menu-page__option-row"
                   type="button"
                   variant="ghost"
@@ -207,7 +207,7 @@
               type="button"
               variant="secondary"
               @click="openModifierGroupEditor(null)"
-              >Новая группа опций</AdminButton
+              >Новая группа добавок</AdminButton
             >
           </div>
           <div class="menu-page__catalog-tools">
@@ -228,9 +228,9 @@
               v-if="selectedCategory === null"
               class="menu-page__assignments"
             >
-              <h3>Группы опций категории</h3>
+              <h3>Группы добавок категории</h3>
               <p class="menu-page__state">
-                Выберите группу меню, чтобы настроить её опции.
+                Выберите категорию, чтобы настроить её группы добавок.
               </p>
             </section>
             <CategoryModifierAssignments
@@ -456,7 +456,12 @@ const catalogSummary = computed(() => {
 
   if (categoryCount === 0 && modifierGroupCount === 0) return "";
 
-  return `${categoryCount} групп · ${modifierGroupCount} групп опций`;
+  return `${countLabel(categoryCount, "группа", "группы", "групп")} · ${countLabel(
+    modifierGroupCount,
+    "группа добавок",
+    "группы добавок",
+    "групп добавок",
+  )}`;
 });
 const categoryFieldErrors = computed(() => catalogStore.fieldErrors);
 const productFieldErrors = computed(() => catalogStore.fieldErrors);
@@ -532,10 +537,27 @@ function modifierOptionPrice(priceDelta: number): string {
 }
 
 function modifierOptionCountLabel(count: number): string {
-  const label =
-    count === 1 ? "опция" : count >= 2 && count <= 4 ? "опции" : "опций";
+  return countLabel(count, "опция", "опции", "опций");
+}
 
-  return `${count} ${label}`;
+function countLabel(
+  count: number,
+  singular: string,
+  paucal: string,
+  plural: string,
+): string {
+  const finalTwoDigits = count % 100;
+  const finalDigit = count % 10;
+  const word =
+    finalTwoDigits >= 11 && finalTwoDigits <= 14
+      ? plural
+      : finalDigit === 1
+        ? singular
+        : finalDigit >= 2 && finalDigit <= 4
+          ? paucal
+          : plural;
+
+  return `${count} ${word}`;
 }
 
 function openCategoryEditor(category: Category): void {

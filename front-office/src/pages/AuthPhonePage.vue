@@ -75,10 +75,10 @@ function getContextDescription(): string | undefined {
 
   const path = new URL(safeReturnTo, window.location.origin).pathname;
   if (path === "/orders" || path.startsWith("/orders/")) {
-    return "Чтобы посмотреть историю заказов.";
+    return "Подтвердите номер, чтобы посмотреть историю заказов.";
   }
   if (path === "/cart") {
-    return "Чтобы оформить заказ.";
+    return "Подтвердите номер, чтобы оформить заказ.";
   }
 
   return undefined;
