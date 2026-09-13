@@ -18,6 +18,7 @@ export interface ProductSeed {
   type: ProductType;
   name: string;
   description: string;
+  displayLabel?: string | null;
   price: number | null;
   sortOrder: number;
   isActive: boolean;
@@ -28,6 +29,7 @@ export interface ProductVariantSeed {
   id: string;
   productId: string;
   size: ProductSize;
+  displayLabel?: string | null;
   price: number;
   sortOrder: number;
   isAvailable: boolean;
@@ -58,6 +60,12 @@ export interface CategoryModifierGroupSeed {
   sortOrder: number;
 }
 
+export interface ProductModifierGroupSeed {
+  productId: string;
+  groupId: string;
+  sortOrder: number;
+}
+
 export interface CatalogSeed {
   categories: readonly CategorySeed[];
   products: readonly ProductSeed[];
@@ -65,6 +73,7 @@ export interface CatalogSeed {
   modifierGroups: readonly ModifierGroupSeed[];
   modifierOptions: readonly ModifierOptionSeed[];
   categoryModifierGroups: readonly CategoryModifierGroupSeed[];
+  productModifierGroups: readonly ProductModifierGroupSeed[];
 }
 
 export type E2eSeedScenario =

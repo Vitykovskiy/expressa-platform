@@ -201,7 +201,7 @@ async function readCurrentCatalog(
       [productIds],
     ),
     client.query<DatabaseRow>(
-      `SELECT DISTINCT assignments.category_id, groups.id, groups.selection_type, groups.min_select, groups.max_select
+      `SELECT DISTINCT assignments.category_id, NULL::uuid AS product_id, groups.id, groups.selection_type, groups.min_select, groups.max_select
        FROM category_modifier_groups assignments
        JOIN modifier_groups groups ON groups.id = assignments.group_id
        JOIN categories ON categories.id = assignments.category_id
@@ -209,6 +209,16 @@ async function readCurrentCatalog(
        WHERE groups.archived_at IS NULL AND groups.is_active
          AND categories.archived_at IS NULL AND categories.is_active
          AND products.archived_at IS NULL AND products.is_active
+         AND products.id = ANY($1)
+       UNION
+       SELECT assignments.product_id, assignments.product_id, groups.id, groups.selection_type, groups.min_select, groups.max_select
+       FROM product_modifier_groups assignments
+       JOIN modifier_groups groups ON groups.id = assignments.group_id
+       JOIN products ON products.id = assignments.product_id
+       JOIN categories ON categories.id = products.category_id
+       WHERE groups.archived_at IS NULL AND groups.is_active
+         AND products.archived_at IS NULL AND products.is_active
+         AND categories.archived_at IS NULL AND categories.is_active
          AND products.id = ANY($1)`,
       [productIds],
     ),
@@ -265,7 +275,11 @@ function buildCatalogProducts(
   }
 
   const groupsByCategoryId = new Map<string, OrderCatalogModifierGroup[]>();
-  for (const row of groupRows) {
+  for (const row of groupRows.filter(
+    (candidate) =>
+      candidate["category_id"] !== null &&
+      candidate["category_id"] !== undefined,
+  )) {
     const categoryId = readString(row, "category_id");
     const groupId = readString(row, "id");
     const groups = groupsByCategoryId.get(categoryId) ?? [];
@@ -279,16 +293,47 @@ function buildCatalogProducts(
     groupsByCategoryId.set(categoryId, groups);
   }
 
-  return productRows.map((row) => ({
-    id: readString(row, "id"),
-    type: readProductType(row),
-    name: readString(row, "name"),
-    price: readNullableInteger(row, "price"),
-    isAvailable: readBoolean(row, "is_available"),
-    variants: variantsByProductId.get(readString(row, "id")) ?? [],
-    modifierGroups:
-      groupsByCategoryId.get(readString(row, "category_id")) ?? [],
-  }));
+  const groupsByProductId = new Map<string, OrderCatalogModifierGroup[]>();
+  for (const row of groupRows.filter(
+    (candidate) =>
+      candidate["product_id"] !== null && candidate["product_id"] !== undefined,
+  )) {
+    const productId = readString(row, "product_id");
+    const groupId = readString(row, "id");
+    const groups = groupsByProductId.get(productId) ?? [];
+    if (!groups.some((group) => group.id === groupId)) {
+      groups.push({
+        id: groupId,
+        selectionType: readSelectionType(row),
+        minSelect: readNonNegativeInteger(row, "min_select"),
+        maxSelect: readNonNegativeInteger(row, "max_select"),
+        options: optionsByGroupId.get(groupId) ?? [],
+      });
+    }
+    groupsByProductId.set(productId, groups);
+  }
+
+  return productRows.map((row) => {
+    const productId = readString(row, "id");
+    const categoryGroups =
+      groupsByCategoryId.get(readString(row, "category_id")) ?? [];
+    const assignedGroups = groupsByProductId.get(productId) ?? [];
+    return {
+      id: productId,
+      type: readProductType(row),
+      name: readString(row, "name"),
+      price: readNullableInteger(row, "price"),
+      isAvailable: readBoolean(row, "is_available"),
+      variants: variantsByProductId.get(productId) ?? [],
+      modifierGroups: [
+        ...categoryGroups,
+        ...assignedGroups.filter(
+          (group) =>
+            !categoryGroups.some((candidate) => candidate.id === group.id),
+        ),
+      ],
+    };
+  });
 }
 
 async function insertOrder(

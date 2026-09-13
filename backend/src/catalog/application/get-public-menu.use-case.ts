@@ -64,10 +64,43 @@ function createCategory(
               createProduct(
                 product,
                 candidates.productVariants,
-                modifierGroups,
+                mergeModifierGroups(
+                  product.id,
+                  modifierGroups,
+                  candidates.categoryModifierGroups,
+                  candidates.modifierGroups,
+                  publishableGroups,
+                ),
               ),
             ),
   };
+}
+
+function mergeModifierGroups(
+  productId: string,
+  categoryGroups: PublicMenuModifierGroup[],
+  assignments: Array<
+    CatalogCategoryModifierGroupCandidate & { productId?: string }
+  >,
+  candidates: CatalogModifierGroupCandidate[],
+  groups: Map<string, PublicMenuModifierGroup>,
+): PublicMenuModifierGroup[] {
+  const result = [...categoryGroups];
+  const active = new Set(
+    candidates.filter(isPublishedCatalogEntity).map((group) => group.id),
+  );
+  for (const assignment of assignments.filter(
+    (item) => item.productId === productId,
+  )) {
+    const group = groups.get(assignment.groupId);
+    if (
+      active.has(assignment.groupId) &&
+      group !== undefined &&
+      !result.some((item) => item.id === group.id)
+    )
+      result.push(group);
+  }
+  return result;
 }
 
 function createProduct(
@@ -221,6 +254,9 @@ function toPublicProduct(
     type: product.type,
     name: product.name,
     description: product.description,
+    ...(product.displayLabel === null || product.displayLabel === undefined
+      ? {}
+      : { displayLabel: product.displayLabel }),
     price: product.price,
     isAvailable: product.isAvailable,
   };
@@ -232,6 +268,9 @@ function toPublicVariant(
   return {
     id: variant.id,
     size: variant.size,
+    ...(variant.displayLabel === null || variant.displayLabel === undefined
+      ? {}
+      : { displayLabel: variant.displayLabel }),
     price: variant.price,
     isAvailable: variant.isAvailable,
   };

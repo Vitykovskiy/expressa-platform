@@ -18,6 +18,10 @@ sources:
 [Публичный controller](../../src/catalog/transport/public-menu.controller.ts),
 [админ-controller](../../src/catalog/transport/admin-catalog.controller.ts).
 
+Migration `0014` добавляет необязательные display labels и product-level
+назначения групп. Они используются development seed; существующие category-level
+назначения остаются совместимыми.
+
 Use case проверяет допустимость до записи: имя и порядок, тип и цены товара,
 варианты напитка, состав и выбор модификаторов; архивные сущности не меняются.
 Полная перестановка принимает ровно текущий набор идентификаторов. [Категории](../../src/catalog/domain/category-admin.policy.ts),

@@ -77,3 +77,5 @@ jobs:
           BACKUP_ENCRYPTION_KEY: ${{ secrets.EXPRESSA_BACKUP_ENCRYPTION_KEY }}
           BACKUP_INTEGRITY_KEY: ${{ secrets.EXPRESSA_BACKUP_INTEGRITY_KEY }}
         run: deploy/run-remote.sh development deploy/images.env
+      - name: Verify development ingress customer menu
+        run: node deploy/check-development-ingress.mjs

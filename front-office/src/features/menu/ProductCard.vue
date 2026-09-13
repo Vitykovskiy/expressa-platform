@@ -29,11 +29,13 @@
           :key="variant.id"
           class="product-card__price"
           :class="{ 'product-card__price--unavailable': !variant.isAvailable }"
-          >{{ variant.size }} · {{ formatRubles(variant.price) }}</span
+          >{{ variant.displayLabel ?? variant.size }} ·
+          {{ formatRubles(variant.price) }}</span
         >
       </template>
       <span v-else class="product-card__price">
-        {{ formatRubles(props.product.price) }}
+        {{ props.product.displayLabel ? `${props.product.displayLabel} · ` : ""
+        }}{{ formatRubles(props.product.price) }}
       </span>
     </span>
     <span

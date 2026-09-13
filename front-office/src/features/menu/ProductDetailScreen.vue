@@ -21,9 +21,12 @@
       <p v-if="description" class="product-detail__description">
         {{ product.description }}
       </p>
+      <p v-if="product.displayLabel" class="product-detail__description">
+        {{ product.displayLabel }}
+      </p>
 
       <fieldset v-if="product.type === 'DRINK'" class="product-detail__options">
-        <legend class="product-detail__options-title">Размер</legend>
+        <legend class="product-detail__options-title">Размер / порция</legend>
         <div class="product-detail__choices">
           <ui-btn
             v-for="variant in product.variants"
@@ -38,7 +41,8 @@
             :disabled="!variant.isAvailable"
             @click="selectVariant(variant.id)"
           >
-            {{ variant.size }} · {{ formatRubles(variant.price) }}
+            {{ variant.displayLabel ?? variant.size }} ·
+            {{ formatRubles(variant.price) }}
           </ui-btn>
         </div>
       </fieldset>

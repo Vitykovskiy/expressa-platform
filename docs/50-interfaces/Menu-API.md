@@ -14,6 +14,9 @@ sources:
 Схемы, поля и ответы принадлежат [OpenAPI](../../backend/openapi/openapi.json);
 HTTP-вход — [PublicMenuController](../../backend/src/catalog/transport/public-menu.controller.ts).
 
+У товара и варианта дополнительно может быть nullable `displayLabel`. Клиент
+показывает его как физический объём или порцию, сохраняя fallback к `S`/`M`/`L`.
+
 Административное чтение и команды каталога находятся под
 `/api/v2/backoffice/catalog/*`, требуют administrator и не заменяют публичную
 проекцию. [API map](../../backend/docs/50-api/_MOC-api.md),

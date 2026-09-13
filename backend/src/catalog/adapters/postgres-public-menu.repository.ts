@@ -57,12 +57,12 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
              ORDER BY sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT id, category_id, type, name, description, price, sort_order, is_active, is_available, archived_at
+          `SELECT id, category_id, type, name, description, display_label, price, sort_order, is_active, is_available, archived_at
              FROM products
              ORDER BY sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT id, product_id, size, price, sort_order, is_available, archived_at
+          `SELECT id, product_id, size, display_label, price, sort_order, is_available, archived_at
              FROM product_variants
              ORDER BY sort_order`,
         ),
@@ -76,9 +76,12 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
              ORDER BY sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT category_id, group_id, sort_order
+          `SELECT category_id, NULL::uuid AS product_id, group_id, sort_order
              FROM category_modifier_groups
-             ORDER BY sort_order`,
+           UNION ALL
+           SELECT NULL::uuid AS category_id, product_id, group_id, sort_order
+             FROM product_modifier_groups
+           ORDER BY sort_order`,
         ),
       ]);
 
@@ -137,6 +140,7 @@ function parseProduct(row: DatabaseRow): CatalogProductCandidate {
     type: readProductType(row),
     name: readString(row, "name"),
     description: readString(row, "description"),
+    displayLabel: readNullableString(row, "display_label"),
     price: readNullableInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isActive: readBoolean(row, "is_active"),
@@ -150,6 +154,7 @@ function parseProductVariant(row: DatabaseRow): CatalogProductVariantCandidate {
     id: readString(row, "id"),
     productId: readString(row, "product_id"),
     size: readProductSize(row),
+    displayLabel: readNullableString(row, "display_label"),
     price: readNonNegativeInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isAvailable: readBoolean(row, "is_available"),
@@ -184,9 +189,15 @@ function parseModifierOption(row: DatabaseRow): CatalogModifierOptionCandidate {
 
 function parseCategoryModifierGroup(
   row: DatabaseRow,
-): CatalogCategoryModifierGroupCandidate {
+): CatalogCategoryModifierGroupCandidate & { productId?: string } {
   return {
-    categoryId: readString(row, "category_id"),
+    categoryId:
+      row["category_id"] === null || row["category_id"] === undefined
+        ? ""
+        : readString(row, "category_id"),
+    ...(row["product_id"] === null || row["product_id"] === undefined
+      ? {}
+      : { productId: readString(row, "product_id") }),
     groupId: readString(row, "group_id"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
   };
@@ -272,6 +283,14 @@ function readNullableInteger(row: DatabaseRow, key: string): number | null {
   }
 
   return readInteger(row, key);
+}
+
+function readNullableString(
+  row: DatabaseRow,
+  key: string,
+): string | null | undefined {
+  const value = row[key];
+  return value === undefined || value === null ? value : readString(row, key);
 }
 
 function readNullableDate(row: DatabaseRow, key: string): Date | null {

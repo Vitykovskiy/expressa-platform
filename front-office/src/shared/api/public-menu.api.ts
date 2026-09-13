@@ -117,6 +117,7 @@ function isPublicMenuProductBase(value: Record<string, unknown>): boolean {
     isUuid(value.id) &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
+    isNullableString(value.displayLabel) &&
     typeof value.isAvailable === "boolean" &&
     isArrayOf(value.modifierGroups, isPublicMenuModifierGroupResponse)
   );
@@ -129,6 +130,7 @@ function isPublicMenuVariantResponse(
     isRecord(value) &&
     isUuid(value.id) &&
     publicMenuVariantSizes.some((size) => size === value.size) &&
+    isNullableString(value.displayLabel) &&
     isNonNegativeInt32(value.price) &&
     typeof value.isAvailable === "boolean"
   );
@@ -229,6 +231,9 @@ function toPublicDrinkMenuProduct(
     type: product.type,
     name: product.name,
     description: product.description,
+    ...(product.displayLabel === undefined
+      ? {}
+      : { displayLabel: product.displayLabel }),
     price: product.price,
     isAvailable: product.isAvailable,
     variants: product.variants.map(toPublicMenuVariant),
@@ -244,6 +249,9 @@ function toPublicOtherMenuProduct(
     type: product.type,
     name: product.name,
     description: product.description,
+    ...(product.displayLabel === undefined
+      ? {}
+      : { displayLabel: product.displayLabel }),
     price: product.price,
     isAvailable: product.isAvailable,
     variants: [],
@@ -257,6 +265,9 @@ function toPublicMenuVariant(
   return {
     id: variant.id,
     size: variant.size,
+    ...(variant.displayLabel === undefined
+      ? {}
+      : { displayLabel: variant.displayLabel }),
     price: variant.price,
     isAvailable: variant.isAvailable,
   };
@@ -312,4 +323,8 @@ function isNonNegativeInt32(value: unknown): value is number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === "string";
 }

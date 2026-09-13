@@ -36,6 +36,7 @@ export type PublicMenuProductBase = {
   id: string;
   name: string;
   description: string;
+  displayLabel?: string | null;
   isAvailable: boolean;
   modifierGroups: PublicMenuModifierGroup[];
 };
@@ -43,6 +44,7 @@ export type PublicMenuProductBase = {
 export type PublicMenuVariant = {
   id: string;
   size: "S" | "M" | "L";
+  displayLabel?: string | null;
   price: number;
   isAvailable: boolean;
 };
@@ -95,6 +97,7 @@ export type PublicMenuProductResponseBase = {
   id: string;
   name: string;
   description: string;
+  displayLabel?: string | null;
   isAvailable: boolean;
   modifierGroups: PublicMenuModifierGroupResponse[];
 };
@@ -102,6 +105,7 @@ export type PublicMenuProductResponseBase = {
 export type PublicMenuVariantResponse = {
   id: string;
   size: "S" | "M" | "L";
+  displayLabel?: string | null;
   price: number;
   isAvailable: boolean;
 };

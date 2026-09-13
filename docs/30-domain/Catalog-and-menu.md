@@ -15,6 +15,10 @@ sources:
 управления. [Backend catalog](../../backend/docs/30-domains/Catalog.md),
 [OpenAPI](../../backend/openapi/openapi.json).
 
+Development без `E2E_SEED_SCENARIO` восстанавливает нормативное меню кофейни
+только по owned UUID. Физическая подпись `displayLabel` является добавочным
+полем публичного товара или варианта и не меняет технические `S`/`M`/`L`.
+
 Публикация требует активных, неархивных и допустимых сущностей: напиток имеет
 доступный вариант, `OTHER` — собственную цену, обязательная группа — корректный
 набор default-вариантов. [Public repository](../../backend/src/catalog/adapters/postgres-public-menu.repository.ts),

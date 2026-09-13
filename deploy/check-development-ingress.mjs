@@ -4,6 +4,93 @@ const urls = [
   "https://api.dev.expressa.vitykovskiy.ru/api/v2/public/menu",
 ];
 
+const sourceCategories = new Set([
+  "Какао / шоколад",
+  "Чай",
+  "Холодные напитки",
+  "Поесть",
+  "Кофе классический",
+  "Кофе сладкий",
+  "Холодный кофе",
+]);
+const sourceProducts = new Set([
+  "Какао",
+  "Горячий шоколад",
+  "Оранжет",
+  "Сырный шок",
+  "Фундучный какао",
+  "Чай китайский",
+  "Чай летний",
+  "Сироп а лё",
+  "Лимонад «Проспект МИРинда»",
+  "Коктейль «Нежность»",
+  "Молочный коктейль",
+  "Антуччи",
+  "Круассан",
+  "Мороженое",
+  "Маффин",
+  "Сырники",
+  "Штрудель",
+  "Горячий бутерброд",
+  "Эспрессо",
+  "Американо",
+  "Флэт уайт",
+  "Капучино",
+  "Латте",
+  "Раф",
+  "Сырный раф",
+  "Раффундук",
+  "Моккачино",
+  "Айс-латте",
+  "Гляссе",
+  "Бамбл",
+  "Эспрессо-тоник",
+  "Кофе-шейк",
+  "Аффогато",
+]);
+const additions = new Set([
+  "Альт. молоко",
+  "Декаф",
+  "Джем",
+  "Кофейный сироп",
+  "Маршмеллоу",
+  "Налить воды",
+  "Доп. шот эспрессо",
+]);
+
+function validateMenu(body, url) {
+  const categories = body.categories.filter((category) =>
+    sourceCategories.has(category.name),
+  );
+  const products = categories
+    .flatMap((category) => category.products)
+    .filter((product) => sourceProducts.has(product.name));
+  const rows = products.reduce(
+    (count, product) => count + (product.variants.length || 1),
+    0,
+  );
+  const visibleAdditions = new Set(
+    products
+      .flatMap((product) =>
+        product.modifierGroups.flatMap((group) =>
+          group.options.map((option) => option.name),
+        ),
+      )
+      .filter((name) => additions.has(name)),
+  );
+  if (
+    categories.length !== 7 ||
+    products.length !== 33 ||
+    rows !== 43 ||
+    visibleAdditions.size !== 7 ||
+    products.some((product) =>
+      product.variants.some((variant) => !variant.displayLabel),
+    )
+  ) {
+    throw new Error(`Development ingress customer menu is incomplete: ${url}`);
+  }
+}
+
 for (const url of urls) {
   const response = await fetch(url);
   const contentType = response.headers.get("content-type") ?? "";
@@ -15,4 +102,5 @@ for (const url of urls) {
   ) {
     throw new Error(`Development ingress did not return menu JSON: ${url}`);
   }
+  validateMenu(body, url);
 }

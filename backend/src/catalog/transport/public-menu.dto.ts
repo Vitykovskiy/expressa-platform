@@ -54,6 +54,9 @@ export class PublicMenuVariantDto {
   @ApiProperty({ enum: productSizes })
   size!: PublicMenuProductSize;
 
+  @ApiProperty({ nullable: true, required: false })
+  displayLabel?: string | null;
+
   @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
   price!: number;
 
@@ -73,6 +76,9 @@ export class PublicMenuProductDto {
 
   @ApiProperty()
   description!: string;
+
+  @ApiProperty({ nullable: true, required: false })
+  displayLabel?: string | null;
 
   @ApiProperty({ format: "int32", minimum: 0, nullable: true, type: "integer" })
   price!: number | null;

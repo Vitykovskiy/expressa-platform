@@ -26,6 +26,7 @@ export type CatalogProductCandidate = {
   type: CatalogProductType;
   name: string;
   description: string;
+  displayLabel?: string | null;
   price: number | null;
   sortOrder: number;
   isActive: boolean;
@@ -37,6 +38,7 @@ export type CatalogProductVariantCandidate = {
   id: string;
   productId: string;
   size: CatalogProductSize;
+  displayLabel?: string | null;
   price: number;
   sortOrder: number;
   isAvailable: boolean;
@@ -70,6 +72,12 @@ export type CatalogCategoryModifierGroupCandidate = {
   sortOrder: number;
 };
 
+export type CatalogProductModifierGroupCandidate = {
+  productId: string;
+  groupId: string;
+  sortOrder: number;
+};
+
 export type PublicMenu = {
   acceptsNewOrders: boolean;
   categories: PublicMenuCategory[];
@@ -87,6 +95,7 @@ export type PublicMenuProduct = {
   type: CatalogProductType;
   name: string;
   description: string;
+  displayLabel?: string | null;
   price: number | null;
   isAvailable: boolean;
   variants: PublicMenuProductVariant[];
@@ -96,6 +105,7 @@ export type PublicMenuProduct = {
 export type PublicMenuProductVariant = {
   id: string;
   size: CatalogProductSize;
+  displayLabel?: string | null;
   price: number;
   isAvailable: boolean;
 };

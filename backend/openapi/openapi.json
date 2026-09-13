@@ -3470,6 +3470,10 @@
               "L"
             ]
           },
+          "displayLabel": {
+            "type": "object",
+            "nullable": true
+          },
           "price": {
             "type": "integer",
             "format": "int32",
@@ -3576,6 +3580,10 @@
           },
           "description": {
             "type": "string"
+          },
+          "displayLabel": {
+            "type": "object",
+            "nullable": true
           },
           "price": {
             "type": "integer",

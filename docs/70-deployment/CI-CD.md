@@ -25,6 +25,10 @@ staging и production сохраняют проверку разрешённог
 секретов, backup/restore, миграции, seed и service health, но не выполняют
 smoke или public-ingress acceptance. [Development](../../.github/workflows/development-delivery.yml),
 [staging](../../.github/workflows/staging-deploy.yml).
+
+После remote development deploy workflow проверяет все public ingress hosts:
+нормативный subset обязан содержать 7 групп, 33 товара, 43 ценовые строки и 7
+платных дополнений.
 Ручной workflow production до доступа к secrets и SSH проверяет dispatch из
 `main`, владельца репозитория и `confirm_production=true`; затем принимает
 только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого

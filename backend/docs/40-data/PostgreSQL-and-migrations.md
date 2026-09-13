@@ -16,6 +16,9 @@ PostgreSQL хранит users, OTP/sessions, каталог, audit и заказ
 применённый SQL не переписывают. [Runner](../../src/platform/database/migrations.ts),
 [foundation](../../migrations/0001_foundation.sql).
 
+`0014_customer_menu_display_and_product_modifiers.sql` добавляет nullable
+подписи физических порций и `product_modifier_groups` с restrictive FK.
+
 Схема auth ограничивает российский E.164, роль, одну открытую OTP на телефон,
 попытки и срок сессии. Каталог задаёт ссылки, активные уникальные позиции,
 цены и варианты. Заказы закрепляют ключ идемпотентности, дневной номер, суммы,

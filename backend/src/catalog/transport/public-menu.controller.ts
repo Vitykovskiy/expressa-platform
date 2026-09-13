@@ -33,11 +33,17 @@ function toPublicMenuDto(menu: PublicMenu): PublicMenuDto {
         type: product.type,
         name: product.name,
         description: product.description,
+        ...(product.displayLabel === undefined
+          ? {}
+          : { displayLabel: product.displayLabel }),
         price: product.price,
         isAvailable: product.isAvailable,
         variants: product.variants.map((variant) => ({
           id: variant.id,
           size: variant.size,
+          ...(variant.displayLabel === undefined
+            ? {}
+            : { displayLabel: variant.displayLabel }),
           price: variant.price,
           isAvailable: variant.isAvailable,
         })),
