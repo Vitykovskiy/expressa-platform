@@ -6,6 +6,11 @@ describe("ManagePushSubscriptionUseCase", () => {
     const repository: PushSubscriptionRepository = {
       upsert: jest.fn(),
       delete: jest.fn(),
+      findByEndpoint: jest.fn(),
+      createAssociation: jest.fn(),
+      transferAssociation: jest.fn(),
+      deleteAssociation: jest.fn(),
+      deleteSnapshot: jest.fn(),
       findForUser: jest.fn(),
       findForStaff: jest.fn(),
     };
@@ -25,5 +30,30 @@ describe("ManagePushSubscriptionUseCase", () => {
       command.userId,
       command.endpoint,
     );
+  });
+
+  it("does not transfer a foreign association through legacy upsert", async () => {
+    const repository: PushSubscriptionRepository = {
+      upsert: jest.fn(),
+      delete: jest.fn(),
+      findByEndpoint: jest.fn(),
+      createAssociation: jest.fn().mockResolvedValue(null),
+      transferAssociation: jest.fn(),
+      deleteAssociation: jest.fn(),
+      deleteSnapshot: jest.fn(),
+      findForUser: jest.fn(),
+      findForStaff: jest.fn(),
+    };
+    const useCase = new ManagePushSubscriptionUseCase(repository);
+
+    await expect(
+      useCase.associate(
+        "customer-b",
+        { userId: "customer-b", endpoint: "https://push.example/subscription", p256dh: "key", auth: "auth" },
+        "enable",
+        null,
+      ),
+    ).rejects.toMatchObject({ code: "PUSH_ASSOCIATION_CONFLICT" });
+    expect(repository.transferAssociation).not.toHaveBeenCalled();
   });
 });

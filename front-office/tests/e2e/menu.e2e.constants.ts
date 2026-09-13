@@ -31,5 +31,5 @@ export const cartSummaries = {
 export const screenNames = {
   bakery: "Выпечка",
   coffee: "Кофе",
-  menu: "Что будем заказывать?",
+  menu: "Меню",
 } as const;

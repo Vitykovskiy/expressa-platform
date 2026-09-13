@@ -5,41 +5,29 @@ import ShellNavigation from "./ShellNavigation.vue";
 import type { ShellNavigationProps } from "./ShellNavigation.types";
 
 describe("ShellNavigation", () => {
-  it("открывает меню из корзины без кнопки назад", async () => {
+  it("возвращает в меню из корзины через объединённый бренд", async () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ activeDestination: "cart" }),
     });
 
-    expect(wrapper.find('[aria-label="Меню"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Перейти в меню"]').exists()).toBe(true);
     expect(wrapper.find('[aria-label="Назад"]').exists()).toBe(false);
 
-    await wrapper.get('[aria-label="Меню"]').trigger("click");
+    await wrapper.get('[aria-label="Перейти в меню"]').trigger("click");
 
     expect(wrapper.emitted("navigate")).toEqual([["menu"]]);
   });
 
-  it("открывает меню из истории без кнопки назад", async () => {
+  it("возвращает в меню из истории через объединённый бренд", async () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ activeDestination: "orders" }),
     });
 
-    expect(wrapper.find('[aria-label="Меню"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Перейти в меню"]').exists()).toBe(true);
     expect(wrapper.find('[aria-label="Назад"]').exists()).toBe(false);
 
-    await wrapper.get('[aria-label="Меню"]').trigger("click");
+    await wrapper.get('[aria-label="Перейти в меню"]').trigger("click");
 
-    expect(wrapper.emitted("navigate")).toEqual([["menu"]]);
-  });
-
-  it("сохраняет distinct detail back и menu actions", async () => {
-    const wrapper = mount(ShellNavigation, {
-      props: createProps({ activeDestination: "orders", showBack: true }),
-    });
-
-    await wrapper.get('[aria-label="Назад"]').trigger("click");
-    await wrapper.get('[aria-label="Меню"]').trigger("click");
-
-    expect(wrapper.emitted("back")).toEqual([[]]);
     expect(wrapper.emitted("navigate")).toEqual([["menu"]]);
   });
 
@@ -57,43 +45,55 @@ describe("ShellNavigation", () => {
     );
   });
 
-  it.each([
-    { cartCount: 0, showBack: false },
-    { cartCount: 123, showBack: true },
-  ])(
+  it.each([{ cartCount: 0 }, { cartCount: 123 }])(
     "сохраняет полный текст бренда и все 44px-действия в узкой композиции: %o",
-    ({ cartCount, showBack }) => {
+    ({ cartCount }) => {
       const wrapper = mount(ShellNavigation, {
-        props: createProps({ cartCount, showBack }),
+        props: createProps({ cartCount }),
         global: {
           stubs: { UiBadge: { template: "<span><slot /></span>" } },
         },
       });
 
-      expect(wrapper.get(".shell-navigation__brand").text()).toBe(
-        "Ex-pressa☕",
+      expect(wrapper.get('[aria-label="Перейти в меню"]').text()).toBe(
+        "Экспресса☕",
       );
+      expect(
+        wrapper.get('[aria-label="Перейти в меню"]').findAll("svg"),
+      ).toHaveLength(0);
       expect(wrapper.find(".shell-navigation__brand-coffee").exists()).toBe(
         true,
       );
       expect(wrapper.get('[aria-label="История заказов"]')).toBeTruthy();
       expect(wrapper.get('[aria-label="Корзина"]')).toBeTruthy();
-      if (showBack) {
-        expect(wrapper.get('[aria-label="Назад"]')).toBeTruthy();
-        expect(wrapper.get('[aria-label="Меню"]')).toBeTruthy();
-      }
+      expect(wrapper.get('[aria-label="Аккаунт"]')).toBeTruthy();
+      expect(wrapper.find('[aria-label="Назад"]').exists()).toBe(false);
     },
   );
 
-  it("блокирует desktop выход во время выполнения", () => {
+  it("открывает аккаунт из постоянного mobile header", async () => {
     const wrapper = mount(ShellNavigation, {
       props: createProps({ isAuthenticated: true, isLogoutPending: true }),
     });
 
-    expect(
-      wrapper.get(".shell-navigation__account").attributes("disabled"),
-    ).toBeDefined();
+    const account = wrapper.get('[aria-label="Аккаунт"]');
+    expect(account.attributes("aria-haspopup")).toBe("dialog");
+    await account.trigger("click");
+
+    expect(wrapper.emitted("openAccount")).toEqual([[]]);
   });
+
+  it.each(["menu", "cart", "orders", "auth"] as const)(
+    "сохраняет Account в mobile header на маршруте %s",
+    (activeDestination) => {
+      const wrapper = mount(ShellNavigation, {
+        props: createProps({ activeDestination }),
+      });
+
+      expect(wrapper.get('[aria-label="Аккаунт"]')).toBeTruthy();
+      expect(wrapper.get('[aria-label="Перейти в меню"]')).toBeTruthy();
+    },
+  );
 });
 
 function createProps(overrides: Partial<ShellNavigationProps> = {}) {
@@ -104,7 +104,6 @@ function createProps(overrides: Partial<ShellNavigationProps> = {}) {
     categories: [],
     isAuthenticated: false,
     isLogoutPending: false,
-    showBack: false,
     ...overrides,
   };
 }

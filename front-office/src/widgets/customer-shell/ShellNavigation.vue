@@ -1,37 +1,28 @@
 <template>
   <div v-bind="$attrs" class="shell-navigation">
     <header class="shell-navigation__mobile-header">
-      <div class="shell-navigation__header-actions">
-        <ui-icon-btn
-          v-if="props.showBack"
-          type="button"
-          aria-label="Назад"
-          @click="emit('back')"
-        >
-          <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
-        </ui-icon-btn>
-        <ui-icon-btn
-          v-if="
-            props.showBack ||
-            props.activeDestination === 'cart' ||
-            props.activeDestination === 'orders'
-          "
-          type="button"
-          aria-label="Меню"
-          @click="emit('navigate', 'menu')"
-        >
-          <House aria-hidden="true" :size="17" :stroke-width="2.5" />
-        </ui-icon-btn>
-      </div>
-      <span class="shell-navigation__brand">
-        <span>Ex-pressa</span
-        ><span class="shell-navigation__brand-coffee" aria-hidden="true"
+      <ui-btn
+        type="button"
+        class="shell-navigation__brand shell-navigation__brand--mobile-button"
+        aria-label="Перейти в меню"
+        @click="emit('navigate', 'menu')"
+      >
+        <span>Экспресса</span>
+        <span class="shell-navigation__brand-coffee" aria-hidden="true"
           >☕</span
         >
-      </span>
+      </ui-btn>
       <div
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
+        <ui-icon-btn
+          type="button"
+          aria-label="Аккаунт"
+          aria-haspopup="dialog"
+          @click="emit('openAccount')"
+        >
+          <UserRound aria-hidden="true" :size="18" :stroke-width="2.5" />
+        </ui-icon-btn>
         <ui-icon-btn
           type="button"
           aria-label="История заказов"
@@ -66,7 +57,7 @@
         class="shell-navigation__brand shell-navigation__brand--button"
         @click="emit('navigate', 'menu')"
       >
-        Ex-pressa ☕
+        Экспресса ☕
       </ui-btn>
       <nav class="shell-navigation__nav" aria-label="Основная навигация">
         <ui-btn
@@ -126,8 +117,6 @@
           'shell-navigation__account--authenticated':
             accountControl.isAuthenticated,
         }"
-        :disabled="props.isLogoutPending && accountControl.isAuthenticated"
-        :loading="props.isLogoutPending && accountControl.isAuthenticated"
         @click="accountControl.action()"
       >
         <component :is="accountControl.sidebarIcon" aria-hidden="true" />
@@ -139,7 +128,7 @@
           {{ accountControl.actionLabel }}
         </span>
       </ui-btn>
-      <p class="shell-navigation__copyright">© Ex-pressa Customer</p>
+      <p class="shell-navigation__copyright">© Экспресса</p>
     </aside>
   </div>
 </template>
@@ -148,12 +137,12 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
-  ArrowLeft,
   History,
   House,
   LogIn,
   Phone,
   ShoppingCart,
+  UserRound,
 } from "lucide-vue-next";
 import UiBadge from "@/shared/ui/customer/badge/UiBadge.vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
@@ -181,17 +170,17 @@ const accountControl = computed(() => {
       sidebarIcon: Phone,
       isAuthenticated: true,
       label: props.accountLabel,
-      actionLabel: props.isLogoutPending ? "Выходим…" : "Выйти",
-      action: () => emit("signOut"),
+      actionLabel: "Аккаунт",
+      action: () => emit("openAccount"),
     };
   }
 
   return {
     sidebarIcon: LogIn,
     isAuthenticated: false,
-    label: "Подтвердить телефон",
+    label: "Аккаунт",
     actionLabel: "",
-    action: () => emit("navigate", "auth"),
+    action: () => emit("openAccount"),
   };
 });
 </script>
@@ -205,9 +194,8 @@ const accountControl = computed(() => {
   position: sticky;
   top: 0;
   z-index: 2;
-  display: grid;
+  display: flex;
   flex: 0 0 var(--customer-size-shell-header);
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
   height: var(--customer-size-shell-header);
   align-items: center;
   column-gap: var(--customer-space-3);
@@ -229,6 +217,7 @@ const accountControl = computed(() => {
 }
 
 .shell-navigation__header-actions--end {
+  margin-left: auto;
   justify-content: end;
 }
 
@@ -248,9 +237,13 @@ const accountControl = computed(() => {
 }
 
 .shell-navigation__mobile-header .shell-navigation__brand {
-  justify-self: center;
+  flex: 0 1 auto;
+  margin-right: auto;
+  margin-left: 0;
+  min-height: calc(var(--customer-space-12) * 2);
   max-width: 100%;
   min-width: 0;
+  padding: 0 var(--customer-space-5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -301,6 +294,36 @@ const accountControl = computed(() => {
   background: transparent;
   border: 0;
   font-size: var(--customer-font-size-4xl);
+}
+
+.shell-navigation__brand--mobile-button {
+  justify-content: center;
+  background: var(--customer-surface-control);
+  border: 0;
+  border-radius: var(--customer-radius-pill);
+}
+
+.shell-navigation__brand--mobile-button:focus-visible {
+  outline: 2px solid var(--customer-color-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 359px) {
+  .shell-navigation__header-actions .ui-icon-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .shell-navigation__header-actions {
+    gap: 0;
+  }
+
+  .shell-navigation__mobile-header .shell-navigation__brand {
+    min-height: 44px;
+    padding-inline: var(--customer-space-3);
+  }
 }
 
 .shell-navigation__badge {

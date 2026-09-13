@@ -14,6 +14,7 @@ const subscription = {
   endpoint: "https://push.example/subscription",
   keys: { p256dh: "key", auth: "auth" },
 };
+const associationVersion = "00000000-0000-4000-8000-000000000001";
 
 describe("PushSubscriptionsController", () => {
   it("использует путь без дублирования global api prefix", () => {
@@ -68,5 +69,56 @@ describe("PushSubscriptionsController", () => {
       ),
     ).rejects.toBeInstanceOf(HttpException);
     expect(useCase.upsert).not.toHaveBeenCalled();
+  });
+
+  it("передаёт inspection, explicit transfer и owner stop только текущему customer", async () => {
+    const useCase = {
+      inspect: jest.fn().mockResolvedValue({ association: "other", version: associationVersion }),
+      associate: jest.fn().mockResolvedValue({ association: "current", version: associationVersion }),
+      deleteAssociation: jest.fn(),
+    } as unknown as ManagePushSubscriptionUseCase;
+    const controller = new PushSubscriptionsController(
+      useCase,
+      new ConfigService({ VAPID_PUBLIC_KEY: "public-key" }),
+    );
+
+    await expect(controller.inspect(subscription, auth)).resolves.toEqual({
+      association: "other",
+      version: associationVersion,
+    });
+    await expect(
+      controller.associate(
+        {
+          subscription,
+          action: "transfer",
+          expectedVersion: associationVersion,
+        },
+        auth,
+      ),
+    ).resolves.toEqual({ association: "current", version: associationVersion });
+    await expect(
+      controller.deleteAssociation(
+        { subscription, expectedVersion: associationVersion },
+        auth,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(useCase.inspect).toHaveBeenCalledWith(auth.userId, {
+      userId: auth.userId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+    });
+    expect(useCase.associate).toHaveBeenCalledWith(
+      auth.userId,
+      expect.objectContaining({ endpoint: subscription.endpoint }),
+      "transfer",
+      associationVersion,
+    );
+    expect(useCase.deleteAssociation).toHaveBeenCalledWith(
+      auth.userId,
+      expect.objectContaining({ endpoint: subscription.endpoint }),
+      associationVersion,
+    );
   });
 });

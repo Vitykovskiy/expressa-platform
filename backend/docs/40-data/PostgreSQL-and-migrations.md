@@ -30,3 +30,15 @@ PostgreSQL хранит users, OTP/sessions, каталог, audit и заказ
 `npm run seed` заполняет тестовый каталог и upsert-ит администратора при
 `BOOTSTRAP_ADMIN_PHONE`; интеграционные тесты проверяют чистую схему и adapters.
 [Seed](../../scripts/seed.ts), [schema tests](../../test/integration/orders-schema.integration.spec.ts).
+
+## Notification association migration
+
+Additive migration `0012` adds
+an association version to existing push-subscription rows. It must work on clean
+and populated databases without changing `0009`, preserving current owners,
+endpoints and keys. Conditional insert/update/delete will use that version so a
+stale stop or invalid-provider cleanup cannot remove a recreated or transferred
+association. No retention job or destructive down migration is introduced.
+The exact required protocol and rollout boundary are in
+[ADR-005](../../../docs/20-architecture/ADR/ADR-005-customer-notification-association.md);
+this is current schema behavior.

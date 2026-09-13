@@ -80,28 +80,28 @@ describe('orders and notifications coverage', () => {
   });
 
   it('доставляет customer статусы, удаляет только недействительные подписки и сохраняет другие', async () => {
-    const stale = { id: 'stale', userId: customerId, endpoint: 'https://push.example/stale', p256dh: 'key', auth: 'auth' };
-    const valid = { id: 'valid', userId: customerId, endpoint: 'https://push.example/valid', p256dh: 'key', auth: 'auth' };
+    const stale = { id: 'stale', userId: customerId, endpoint: 'https://push.example/stale', p256dh: 'key', auth: 'auth', associationVersion: '00000000-0000-4000-8000-000000000001' };
+    const valid = { id: 'valid', userId: customerId, endpoint: 'https://push.example/valid', p256dh: 'key', auth: 'auth', associationVersion: '00000000-0000-4000-8000-000000000002' };
     const repository: PushSubscriptionRepository = {
-      upsert: jest.fn(), delete: jest.fn(), findForStaff: jest.fn(), findForUser: jest.fn().mockResolvedValue([stale, valid]),
+      upsert: jest.fn(), delete: jest.fn(), findByEndpoint: jest.fn(), createAssociation: jest.fn(), transferAssociation: jest.fn(), deleteAssociation: jest.fn(), deleteSnapshot: jest.fn(), findForStaff: jest.fn(), findForUser: jest.fn().mockResolvedValue([stale, valid]),
     };
     const sender: PushSender = { send: jest.fn().mockRejectedValueOnce({ statusCode: 404 }).mockRejectedValueOnce(new Error('temporary failure')) };
 
     await expect(new SendOrderPushUseCase(repository, sender).execute({ recipient: 'customer', orderId, number: '20300102-007', stage: 'ISSUED', customerId })).resolves.toBeUndefined();
     expect(sender.send).toHaveBeenCalledWith(valid, { title: 'Заказ 20300102-007', body: 'Заказ выдан', orderId });
-    expect(repository.delete).toHaveBeenCalledWith(customerId, stale.endpoint);
-    expect(repository.delete).toHaveBeenCalledTimes(1);
+    expect(repository.deleteSnapshot).toHaveBeenCalledWith(stale);
+    expect(repository.deleteSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it('читает staff и customer subscriptions, отвергая неполную PostgreSQL строку', async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: 'subscription-id', user_id: customerId, endpoint: 'https://push.example/subscription', p256dh: 'key', auth: 'auth' }] });
+    const query = jest.fn().mockResolvedValue({ rows: [{ id: 'subscription-id', user_id: customerId, endpoint: 'https://push.example/subscription', p256dh: 'key', auth: 'auth', association_version: '00000000-0000-4000-8000-000000000001' }] });
     const repository = new PostgresPushSubscriptionRepository({ pool: { query } as never });
 
-    await expect(repository.findForUser(customerId)).resolves.toEqual([{ id: 'subscription-id', userId: customerId, endpoint: 'https://push.example/subscription', p256dh: 'key', auth: 'auth' }]);
+    await expect(repository.findForUser(customerId)).resolves.toEqual([{ id: 'subscription-id', userId: customerId, endpoint: 'https://push.example/subscription', p256dh: 'key', auth: 'auth', associationVersion: '00000000-0000-4000-8000-000000000001' }]);
     await expect(repository.findForStaff()).resolves.toHaveLength(1);
     expect(query).toHaveBeenCalledWith(expect.stringContaining("users.role IN ('barista', 'administrator')"), []);
 
-    const broken = new PostgresPushSubscriptionRepository({ pool: { query: jest.fn().mockResolvedValue({ rows: [{ id: 'subscription-id', user_id: customerId, endpoint: '', p256dh: 'key', auth: 'auth' }] }) } as never });
+    const broken = new PostgresPushSubscriptionRepository({ pool: { query: jest.fn().mockResolvedValue({ rows: [{ id: 'subscription-id', user_id: customerId, endpoint: '', p256dh: 'key', auth: 'auth', association_version: '00000000-0000-4000-8000-000000000001' }] }) } as never });
     await expect(broken.findForUser(customerId)).rejects.toThrow('Invalid PostgreSQL push subscription field: endpoint');
   });
 });

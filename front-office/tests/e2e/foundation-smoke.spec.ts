@@ -20,7 +20,7 @@ test("открывает канонические маршруты без усп
   );
 
   await page.goto("/");
-  await expect(page).toHaveTitle("Expressa");
+  await expect(page).toHaveTitle("Экспресса");
   await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Меню" })).toBeVisible();
 
@@ -66,9 +66,7 @@ test("собранное приложение публикует PWA manifest", 
     "href",
     /manifest/,
   );
-  await expect(
-    page.getByRole("heading", { name: "Что будем заказывать?" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Меню" })).toBeVisible();
   const cartButton = page.getByRole("button", { name: /^Корзина/ });
 
   await cartButton.focus();
@@ -80,9 +78,7 @@ test("сохраняет рабочую ширину на контрольных
   for (const width of [320, 390, 479, 480, 767, 768, 1023, 1024, 1280, 1440]) {
     await page.setViewportSize({ height: 844, width });
     await page.goto("/");
-    await expect(
-      page.getByRole("heading", { name: "Что будем заказывать?" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Меню" })).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(width);

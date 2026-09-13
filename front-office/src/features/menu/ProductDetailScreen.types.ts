@@ -14,5 +14,6 @@ export interface ProductDetailScreenProps {
   cartItem?: DrinkCartItem | OtherCartItem;
 }
 export type ProductDetailScreenEmits = {
+  back: [];
   submit: [item: ConfiguredCartItemDraft, editId?: string];
 };

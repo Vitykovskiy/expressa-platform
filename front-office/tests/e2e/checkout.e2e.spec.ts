@@ -36,7 +36,7 @@ test("guest сохраняет конфигурацию через OTP и соз
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
     ).toContainText("Размер M");
 
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     await expect(page).toHaveURL(/\/auth\/phone\?returnTo=\/cart$/);
     const customerId = await login(
       page,
@@ -46,6 +46,10 @@ test("guest сохраняет конфигурацию через OTP и соз
     await expect(
       page.getByLabel(`Позиция корзины: ${checkoutProductName}`),
     ).toContainText("Размер M");
+
+    await expect(
+      page.getByRole("button", { name: "Оформить заказ" }),
+    ).toBeVisible();
 
     let idempotencyKey = "";
     page.on("request", (request) => {
@@ -82,7 +86,7 @@ test("изменённая цена требует повторного подт
     await page.getByRole("button", { name: /M · 320 ₽/ }).click();
     await page.getByRole("button", { name: /Добавить/ }).click();
     await page.getByRole("button", { name: /^Корзина(?:\s+\d+)?$/ }).click();
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
@@ -295,7 +299,7 @@ test("недоступный вариант выделен и не создаё�
     await page.getByRole("button", { name: /M · 320 ₽/ }).click();
     await page.getByRole("button", { name: /Добавить/ }).click();
     await page.getByRole("button", { name: /^Корзина(?:\s+\d+)?$/ }).click();
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
@@ -425,9 +429,8 @@ test("недоступный вариант выделен и не создаё�
   }
 });
 
-test("закрытый приём заказов блокирует checkout", async ({ browser, page }) => {
+test("закрытый приём заказов блокирует checkout", async ({ page }) => {
   const database = new CheckoutDatabase();
-  const intakePage = await browser.newPage();
   const state = await database.readState();
   try {
     await page.setViewportSize({
@@ -435,30 +438,26 @@ test("закрытый приём заказов блокирует checkout", a
       height: checkoutViewportHeight,
     });
     await openCappuccinoCart(page);
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
     );
     await database.setAcceptsNewOrders(false);
-    await intakePage.setViewportSize({
-      width: checkoutViewports[0],
-      height: checkoutViewportHeight,
-    });
-    await openCappuccinoCart(intakePage, new URL("/", page.url()).toString());
+    await page.getByRole("button", { name: "Оформить заказ" }).click();
     await expect(
-      intakePage.getByText("Приём новых заказов сейчас закрыт."),
+      page.getByText("Приём новых заказов сейчас закрыт."),
     ).toBeVisible();
     await expect(
-      intakePage.getByRole("button", { name: "Оформить заказ" }),
+      page.getByRole("button", { name: "Оформить заказ" }),
     ).toBeDisabled();
-    const closedIntakeExplanation = intakePage.getByText(
+    const closedIntakeExplanation = page.getByText(
       "Приём новых заказов сейчас закрыт.",
     );
     const orderRouteTransitions: string[] = [];
-    intakePage.on("framenavigated", (frame) => {
+    page.on("framenavigated", (frame) => {
       if (
-        frame === intakePage.mainFrame() &&
+        frame === page.mainFrame() &&
         /\/orders\/[0-9a-f-]{36}$/i.test(frame.url())
       )
         orderRouteTransitions.push(frame.url());
@@ -467,7 +466,7 @@ test("закрытый приём заказов блокирует checkout", a
       { width: 390, height: 844 },
       { width: 1440, height: 900 },
     ]) {
-      await intakePage.setViewportSize({ width, height });
+      await page.setViewportSize({ width, height });
       const contrast = await closedIntakeExplanation.evaluate((element) => {
         const color = (value: string) =>
           (value.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0, 1]) as [
@@ -522,13 +521,13 @@ test("закрытый приём заказов блокирует checkout", a
       expect(contrast.fontSize).toBe("16px");
       expect(contrast.fontWeight).toBe("400");
       expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);
-      const disabledCheckout = intakePage.getByRole("button", {
+      const disabledCheckout = page.getByRole("button", {
         name: "Оформить заказ",
       });
-      const remove = intakePage.getByRole("button", {
+      const remove = page.getByRole("button", {
         name: `Удалить ${checkoutProductName}`,
       });
-      const increment = intakePage.getByRole("button", {
+      const increment = page.getByRole("button", {
         name: `Увеличить количество ${checkoutProductName}`,
       });
       await expect(disabledCheckout).toBeVisible();
@@ -537,7 +536,7 @@ test("закрытый приём заказов блокирует checkout", a
       await expect(remove).toBeEnabled();
       await expect(increment).toBeEnabled();
       for (let tabPresses = 0; tabPresses < 20; tabPresses += 1) {
-        await intakePage.keyboard.press("Tab");
+        await page.keyboard.press("Tab");
         await expect(disabledCheckout).not.toBeFocused();
         if (
           await remove.evaluate((element) => document.activeElement === element)
@@ -550,12 +549,11 @@ test("закрытый приём заказов блокирует checkout", a
           remove.evaluate((element) => element.matches(":focus-visible")),
         )
         .toBe(true);
-      await expectNoOverflow(intakePage, width);
+      await expectNoOverflow(page, width);
     }
     expect(await database.countOrdersForCustomer(customerId)).toBe(0);
     expect(orderRouteTransitions).toEqual([]);
   } finally {
-    await intakePage.close();
     await database.restore(state);
     await database.close();
   }
@@ -571,7 +569,7 @@ test("повтор после потери ответа сохраняет од�
       height: checkoutViewportHeight,
     });
     await openCappuccinoCart(page);
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
@@ -783,7 +781,7 @@ test("ошибка 500 объясняет восстановление и не �
   try {
     await page.setViewportSize({ height: 844, width: 390 });
     await openCappuccinoCart(page);
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(
       page,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
@@ -988,11 +986,13 @@ test("checkout и заказ не ломают вёрстку на ключев�
     );
     await expectElementNotOccluded(
       page,
-      page.getByRole("button", { name: "Оформить заказ" }),
+      page.getByRole("button", {
+        name: authenticated ? "Оформить заказ" : "Подтвердить телефон",
+      }),
     );
 
     if (!authenticated) {
-      await page.getByRole("button", { name: "Оформить заказ" }).click();
+      await page.getByRole("button", { name: "Подтвердить телефон" }).click();
       await login(page, phone);
       authenticated = true;
       await expect(page).toHaveURL(/\/cart$/);
@@ -1010,6 +1010,48 @@ test("checkout и заказ не ломают вёрстку на ключев�
   expect(issues()).toEqual([]);
 });
 
+test("мобильная шапка одновременно сохраняет действия для guest и authenticated routes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: checkoutViewportHeight, width: 700 });
+  await openCappuccinoCart(page);
+  await expectMobileHeaderComposition(page, 700, false);
+  await page.getByLabel("Перейти в меню").click();
+  await expect(page).toHaveURL(/\/$/);
+  await openCappuccinoCart(page);
+
+  await page.getByRole("button", { name: "Подтвердить телефон" }).click();
+  await expect(page).toHaveURL(/\/auth\/phone\?returnTo=\/cart$/);
+  await expectMobileHeaderComposition(page, 700, false);
+  await page.getByLabel("Перейти в меню").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole("button", { name: "Корзина" }).click();
+  await expect(page).toHaveURL(/\/cart$/);
+  await page.getByRole("button", { name: "Подтвердить телефон" }).click();
+  await expect(page).toHaveURL(/\/auth\/phone\?returnTo=\/cart$/);
+
+  await login(
+    page,
+    `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
+  );
+  await expect(page).toHaveURL(/\/cart$/);
+  await expectMobileHeaderComposition(page, 700, false);
+
+  await page.getByRole("button", { name: "Оформить заказ" }).click();
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/);
+  await expectMobileHeaderComposition(page, 700, true);
+
+  await page.setViewportSize({ height: checkoutViewportHeight, width: 1023 });
+  await expectMobileHeaderComposition(page, 1023, true);
+  await page.getByLabel("Перейти в меню").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole("button", { name: "История заказов" }).click();
+  await expect(page).toHaveURL(/\/orders$/);
+  await expectMobileHeaderComposition(page, 1023, false);
+  await page.getByLabel("Перейти в меню").click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test("issued заказ показывает history, скрывает чужой snapshot и повторяет только после подтверждения", async ({
   browser,
   page,
@@ -1020,7 +1062,7 @@ test("issued заказ показывает history, скрывает чужо�
   let historyOrderIds: readonly string[] = [];
   try {
     await openCappuccinoCart(page);
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(page, phone);
     let key = "";
     page.on("request", (request) => {
@@ -1037,7 +1079,9 @@ test("issued заказ показывает history, скрывает чужо�
         detailRequests.push(request.url());
     });
     await database.setOrderStage(order.id, "ISSUED");
-    await expect(page.getByText("Заказ выдан")).toBeVisible({
+    await expect(
+      page.getByRole("heading", { name: "Заказ выдан" }),
+    ).toBeVisible({
       timeout: 15_000,
     });
     const requestsAfterIssue = detailRequests.length;
@@ -1049,25 +1093,26 @@ test("issued заказ показывает history, скрывает чужо�
     historyOrderIds = history.map((historyOrder) => historyOrder.id);
 
     await page.goto("/orders");
-    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
-      20,
-    );
+    const historyCards = page.locator(".order-card__header");
+    await expect(historyCards).toHaveCount(20);
     await page.getByRole("button", { name: "Показать ещё" }).click();
-    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
-      21,
+    await expect(historyCards).toHaveCount(21);
+    const actualOrderNumbers = await historyCards.evaluateAll((cards) =>
+      cards.map((card) => {
+        const match = card
+          .getAttribute("aria-label")
+          ?.match(/^Заказ №([^,]+)/u);
+        if (match === null || match === undefined)
+          throw new Error("Карточка истории не содержит номера заказа.");
+        return match[1];
+      }),
     );
-    const historyLinks = await page
-      .getByRole("link", { name: "Открыть заказ" })
-      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-    const historyIds = historyLinks.map((link) => {
-      if (link === null || !link.startsWith("/orders/"))
-        throw new Error("История заказа содержит некорректную ссылку.");
-      return link.slice("/orders/".length);
-    });
-    expect(historyIds).toHaveLength(new Set(historyIds).size);
-    expect(new Set(historyIds)).toEqual(
-      new Set([order.id, ...historyOrderIds]),
-    );
+    const expectedOrderNumbers = [
+      order.orderNumber,
+      ...history.map((historyOrder) => historyOrder.orderNumber),
+    ];
+    expect(new Set(actualOrderNumbers)).toEqual(new Set(expectedOrderNumbers));
+    expect(actualOrderNumbers).toHaveLength(expectedOrderNumbers.length);
 
     const stranger = await browser.newPage();
     await stranger.goto("/");
@@ -1076,7 +1121,7 @@ test("issued заказ показывает history, скрывает чужо�
     await stranger.getByRole("button", { name: /M · 320 ₽/ }).click();
     await stranger.getByRole("button", { name: /Добавить/ }).click();
     await stranger.getByRole("button", { name: /Корзина/ }).click();
-    await stranger.getByRole("button", { name: "Оформить заказ" }).click();
+    await stranger.getByRole("button", { name: "Подтвердить телефон" }).click();
     await login(
       stranger,
       `${checkoutPhonePrefix}${randomUUID().replace(/\D/g, "").slice(0, 7).padStart(7, "0")}`,
@@ -1127,7 +1172,7 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
   let historyOrderIds: readonly string[] = [];
   try {
     await openCappuccinoCart(page);
-    await page.getByRole("button", { name: "Оформить заказ" }).click();
+    await page.getByRole("button", { name: "Подтвердить телефон" }).click();
     const customerId = await login(page, phone);
     const orderRequest = page.waitForRequest((request) =>
       request.url().endsWith("/api/v2/orders"),
@@ -1137,6 +1182,60 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
     const key = (await orderRequest).headers()["idempotency-key"] ?? "";
     const order = await requireOrder(database, customerId, key);
     await database.stabilizeHistoryVisualOrder(order.id);
+
+    await page.setViewportSize({ height: checkoutViewportHeight, width: 390 });
+    await page.goto(`/orders/${order.id}`);
+    const shellHeader = page.locator(".shell-navigation__mobile-header");
+    const orderContextRow = page.locator(".order-page__context-row");
+    await expect(shellHeader.getByLabel("Назад", { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(
+      orderContextRow.getByLabel("Назад", { exact: true }),
+    ).toHaveCount(1);
+    await expect(orderContextRow.locator(":scope > button")).toHaveCount(1);
+    await expect(page.locator(".order-page__title-row")).toHaveCount(0);
+    await expect(page.getByLabel("Назад", { exact: true })).toHaveCount(1);
+    const orderContextPlacement = await orderContextRow.evaluate((row) => {
+      const header = document.querySelector(".shell-navigation__mobile-header");
+      const title = row.parentElement?.querySelector(".order-page__header h1");
+      if (header === null || title === null)
+        throw new Error("Не найдена геометрия contextual Back заказа.");
+      return {
+        followsHeader: row.compareDocumentPosition(header) === 2,
+        precedesTitle: Boolean(row.compareDocumentPosition(title) & 4),
+        headerBottom: header.getBoundingClientRect().bottom,
+        rowTop: row.getBoundingClientRect().top,
+        rowBottom: row.getBoundingClientRect().bottom,
+        titleTop: title.getBoundingClientRect().top,
+      };
+    });
+    expect(orderContextPlacement.followsHeader).toBe(true);
+    expect(orderContextPlacement.precedesTitle).toBe(true);
+    expect(orderContextPlacement.rowTop).toBeGreaterThanOrEqual(
+      orderContextPlacement.headerBottom,
+    );
+    expect(orderContextPlacement.rowBottom).toBeLessThanOrEqual(
+      orderContextPlacement.titleTop,
+    );
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      if (document.activeElement instanceof HTMLElement)
+        document.activeElement.blur();
+    });
+    await expect(page).toHaveScreenshot("order-detail-390.png", {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.01,
+    });
+    await orderContextRow.getByLabel("Назад", { exact: true }).click();
+    await expect(page).toHaveURL(/\/orders$/);
+
+    for (const width of [1024, 1440]) {
+      await page.setViewportSize({ height: checkoutViewportHeight, width });
+      await page.goto(`/orders/${order.id}`);
+      await expectDesktopOrderContextualRow(page, width);
+    }
+
     const history = await database.createIssuedHistory(customerId, order.id);
     historyOrderIds = history.map((historyOrder) => historyOrder.id);
 
@@ -1146,9 +1245,7 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
       await expect(
         page.getByRole("heading", { name: "История" }),
       ).toBeVisible();
-      await expect(
-        page.getByRole("link", { name: "Открыть заказ" }),
-      ).toHaveCount(20);
+      await expect(page.locator(".order-card__header")).toHaveCount(20);
       await expectNoOverflow(page, width);
 
       if (width === 390 || width === 700) {
@@ -1164,12 +1261,16 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
       }
     }
 
-    const lastHistoryLink = page
-      .getByRole("link", { name: "Открыть заказ" })
-      .last();
+    const lastHistoryLink = page.locator(".order-card__header").last();
     const loadMore = page.getByRole("button", { name: "Показать ещё" });
     await lastHistoryLink.focus();
-    await page.keyboard.press("Tab");
+    for (let tabPresses = 0; tabPresses < 20; tabPresses += 1) {
+      await page.keyboard.press("Tab");
+      if (
+        await loadMore.evaluate((element) => document.activeElement === element)
+      )
+        break;
+    }
     await expect(loadMore).toBeFocused();
     await expect
       .poll(() =>
@@ -1177,9 +1278,7 @@ test("history visual evidence на 390 и 700", async ({ page }) => {
       )
       .toBe(true);
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("link", { name: "Открыть заказ" })).toHaveCount(
-      21,
-    );
+    await expect(page.locator(".order-card__header")).toHaveCount(21);
     await expectNoOverflow(page, 700);
   } finally {
     await database.deleteOrders(historyOrderIds);
@@ -1311,9 +1410,7 @@ test("Q-047 quantity controls keep their keyboard focus ring visible", async ({
 async function openCappuccinoCart(page: Page, menuUrl = "/"): Promise<void> {
   await page.goto(menuUrl);
   await page
-    .locator(".menu-root__grid > li")
-    .filter({ has: page.getByText(checkoutCategoryName, { exact: true }) })
-    .getByRole("button")
+    .getByRole("button", { name: `Открыть категорию ${checkoutCategoryName}` })
     .click();
   await page.getByRole("button", { name: checkoutProductName }).click();
   await page.getByRole("button", { name: /M · 320 ₽/ }).click();
@@ -1399,7 +1496,7 @@ async function expectOrderPage(page: Page, order: OrderRow): Promise<void> {
   const total = `${order.total} ₽`;
   await expect(page).toHaveURL(new RegExp(`/orders/${order.id}$`));
   await expect(
-    page.getByRole("heading", { name: `Заказ №${order.orderNumber}` }),
+    page.getByText(`Заказ №${order.orderNumber}`, { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(`${order.quantity} × 320 ₽`, { exact: true }),
@@ -1413,13 +1510,118 @@ async function expectOrderPage(page: Page, order: OrderRow): Promise<void> {
   ).toContainText(total);
 }
 
+async function expectMobileHeaderComposition(
+  page: Page,
+  width: number,
+  screenOwnsBack: boolean,
+): Promise<void> {
+  const header = page.locator(".shell-navigation__mobile-header");
+  const labels = ["Перейти в меню", "Аккаунт", "История заказов", "Корзина"];
+  for (const label of labels) {
+    await expect(header.getByLabel(label, { exact: true })).toBeVisible();
+  }
+
+  const geometry = await header.evaluate((element, expectedLabels) => {
+    const rect = (candidate: Element) => {
+      const { bottom, height, left, right, top, width } =
+        candidate.getBoundingClientRect();
+      return { bottom, height, left, right, top, width };
+    };
+    return {
+      brand: (() => {
+        const brand = element.querySelector(".shell-navigation__brand");
+        if (brand === null) throw new Error("Не найден бренд header.");
+        return {
+          iconCount: brand.querySelectorAll("svg").length,
+          left: brand.getBoundingClientRect().left,
+        };
+      })(),
+      controls: expectedLabels.map((label) => {
+        const control = element.querySelector(`[aria-label="${label}"]`);
+        if (control === null) throw new Error(`Не найдена кнопка ${label}.`);
+        return rect(control);
+      }),
+      header: rect(element),
+      contentLeft:
+        element.getBoundingClientRect().left +
+        Number.parseFloat(getComputedStyle(element).paddingLeft),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    };
+  }, labels);
+
+  expect(geometry.viewportWidth).toBe(width);
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
+  expect(geometry.brand.iconCount).toBe(0);
+  expect(
+    Math.abs(geometry.brand.left - geometry.contentLeft),
+  ).toBeLessThanOrEqual(1);
+  await expect(header.getByLabel("Назад", { exact: true })).toHaveCount(0);
+  if (screenOwnsBack)
+    await expect(page.getByLabel("Назад", { exact: true })).toBeVisible();
+  for (const control of geometry.controls) {
+    expect(control.left).toBeGreaterThanOrEqual(0);
+    expect(control.right).toBeLessThanOrEqual(width);
+    expect(control.top).toBeGreaterThanOrEqual(geometry.header.top);
+    expect(control.bottom).toBeLessThanOrEqual(geometry.header.bottom);
+    expect(control.width).toBeGreaterThanOrEqual(44);
+    expect(control.height).toBeGreaterThanOrEqual(44);
+  }
+}
+
+async function expectDesktopOrderContextualRow(
+  page: Page,
+  width: number,
+): Promise<void> {
+  const row = page.locator(".order-page__context-row");
+  await expect(row).toHaveCount(1);
+  await expect(row.getByLabel("Назад", { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel("Назад", { exact: true })).toHaveCount(1);
+
+  const geometry = await row.evaluate((element) => {
+    const shell = document.querySelector(".shell-navigation__sidebar");
+    const content = document.querySelector(".customer-shell__content");
+    const primary = element.parentElement?.querySelector(".order-page__header");
+    const back = element.querySelector('[aria-label="Назад"]');
+    if (shell === null || content === null || primary === null || back === null)
+      throw new Error("Не найдена desktop-геометрия contextual Back заказа.");
+
+    const rect = (candidate: Element) => {
+      const { bottom, left, right, top } = candidate.getBoundingClientRect();
+      return { bottom, left, right, top };
+    };
+    return {
+      back: rect(back),
+      content: rect(content),
+      followsNavigation: Boolean(shell.compareDocumentPosition(element) & 4),
+      precedesPrimary: Boolean(element.compareDocumentPosition(primary) & 4),
+      primary: rect(primary),
+      row: rect(element),
+      viewportWidth: window.innerWidth,
+    };
+  });
+
+  expect(geometry.viewportWidth).toBe(width);
+  expect(geometry.followsNavigation).toBe(true);
+  expect(geometry.precedesPrimary).toBe(true);
+  expect(geometry.row.left).toBeGreaterThanOrEqual(geometry.content.left);
+  expect(geometry.row.right).toBeLessThanOrEqual(geometry.content.right);
+  expect(Math.abs(geometry.back.left - geometry.row.left)).toBeLessThanOrEqual(
+    1,
+  );
+  expect(geometry.back.right).toBeLessThanOrEqual(geometry.row.right);
+  expect(geometry.back.top).toBeGreaterThanOrEqual(geometry.row.top);
+  expect(geometry.back.bottom).toBeLessThanOrEqual(geometry.row.bottom);
+  expect(geometry.row.bottom).toBeLessThanOrEqual(geometry.primary.top);
+}
+
 async function login(page: Page, phone: string): Promise<string> {
   await page.getByLabel("Номер телефона").fill(phone);
-  await page.getByRole("button", { name: "Отправить код" }).click();
+  await page.getByRole("button", { name: "Получить код" }).click();
   const currentUser = page.waitForResponse(
     (response) => response.url().endsWith("/me") && response.status() === 200,
   );
-  await page.getByLabel("Код из сообщения").fill(checkoutOtp);
+  await page.getByLabel("Шестизначный код из сообщения").fill(checkoutOtp);
   await page
     .locator(".auth-form:visible")
     .getByRole("button", { name: "Подтвердить", exact: true })

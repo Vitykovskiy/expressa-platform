@@ -4,8 +4,11 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useSessionStore } from "@/app/session.store";
+import { setSessionDependencies } from "@/app/session.store.dependencies";
 import { useCartStore } from "@/entities/customer/model/cart.store";
+import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
 import { ApiClient, apiClientKey } from "@/shared/api/client";
+import OrderNotificationsSection from "@/features/orders/OrderNotificationsSection.vue";
 import OrderPage from "./OrderPage.vue";
 
 const orderId = "00000000-0000-4000-8000-000000000003";
@@ -29,6 +32,25 @@ describe("OrderPage", () => {
     expect(wrapper.text()).toMatch(/Итого560\s₽/u);
     expect(wrapper.text()).toContain("Оплата на кассе при получении");
     expect(wrapper.text()).not.toContain("Онлайн-оплата");
+  });
+
+  it("возвращает в историю Back из contextual row перед заказом", async () => {
+    const { router, wrapper } = await mountOrder(orderResponse);
+    const contextRow = wrapper.get(".order-page__context-row");
+
+    expect(contextRow.findAll('[aria-label="Назад"]')).toHaveLength(1);
+    expect(
+      contextRow.element.nextElementSibling?.classList.contains(
+        "order-page__header",
+      ),
+    ).toBe(true);
+    expect(wrapper.find(".order-page__title-row").exists()).toBe(false);
+    expect(wrapper.findAll('[aria-label="Назад"]')).toHaveLength(1);
+
+    await contextRow.get('[aria-label="Назад"]').trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/orders");
   });
 
   it("показывает оформленную стадию созданного заказа", async () => {
@@ -209,6 +231,112 @@ describe("OrderPage", () => {
     expect(detailRequests).toHaveLength(2);
   });
 
+  it("скрывает снимок во время отложенного восстановления доступа", async () => {
+    vi.useFakeTimers();
+    const restoration = createDeferred<{
+      accessToken: string;
+      expiresInSeconds: number;
+      tokenType: "Bearer";
+    }>();
+    setSessionDependencies({
+      authApi: {
+        getCurrentUser: vi.fn(),
+        logout: vi.fn(),
+        refresh: vi.fn(() => restoration.promise),
+        requestOtp: vi.fn(),
+        verifyOtp: vi.fn(),
+      },
+      now: vi.fn(() => 0),
+    });
+    const { detailRequests, requests, wrapper } = await mountOrder(
+      orderResponse,
+      200,
+      null,
+      {
+        detailReplies: [
+          detailResponse(orderResponse),
+          detailResponse(
+            {
+              code: "UNAUTHORIZED",
+              details: null,
+              message: "",
+              requestId: null,
+            },
+            401,
+          ),
+        ],
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await Promise.resolve();
+
+    expect(wrapper.text()).not.toContain("Заказ №1042");
+    expect(detailRequests).toHaveLength(2);
+    expect(
+      requests.every(
+        (request) => (request.method?.toUpperCase() ?? "GET") === "GET",
+      ),
+    ).toBe(true);
+  });
+
+  it("держит снимок скрытым после временного refresh и восстанавливает его только явным retry", async () => {
+    vi.useFakeTimers();
+    setSessionDependencies({
+      authApi: {
+        getCurrentUser: vi.fn().mockResolvedValue({
+          id: "customer-1",
+          phoneE164: "+79991234567",
+          role: "customer",
+        }),
+        logout: vi.fn(),
+        refresh: vi
+          .fn()
+          .mockRejectedValueOnce(new Error("network"))
+          .mockResolvedValueOnce({
+            accessToken: "restored-token",
+            expiresInSeconds: 900,
+            tokenType: "Bearer",
+          }),
+        requestOtp: vi.fn(),
+        verifyOtp: vi.fn(),
+      },
+      now: vi.fn(() => 0),
+    });
+    const { detailRequests, wrapper } = await mountOrder(
+      orderResponse,
+      200,
+      null,
+      {
+        detailReplies: [
+          detailResponse(orderResponse),
+          detailResponse(
+            {
+              code: "UNAUTHORIZED",
+              details: null,
+              message: "",
+              requestId: null,
+            },
+            401,
+          ),
+          detailResponse(orderResponse),
+        ],
+      },
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Заказ №1042");
+    expect(getButtonByText(wrapper, "Повторить").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(detailRequests).toHaveLength(2);
+
+    await getButtonByText(wrapper, "Повторить").trigger("click");
+    await flushPromises();
+    expect(detailRequests).toHaveLength(3);
+    expect(wrapper.text()).toContain("Заказ №1042");
+  });
+
   it("удерживает один точный GET при таймере и ручном восстановлении", async () => {
     vi.useFakeTimers();
     const deferredRecovery = createDeferred<Response>();
@@ -301,7 +429,7 @@ describe("OrderPage", () => {
     );
     cart.replace([existingCartItem]);
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
     const confirmation = wrapper
       .findAll("button")
@@ -408,7 +536,7 @@ describe("OrderPage", () => {
       menu,
     );
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
 
     expect(router.currentRoute.value.path).toBe("/cart");
@@ -468,7 +596,7 @@ describe("OrderPage", () => {
       menuResponse,
     );
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
 
     expect(router.currentRoute.value.path).toBe("/cart");
@@ -493,7 +621,7 @@ describe("OrderPage", () => {
     );
     cart.replace([existingCartItem]);
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
 
     expect(router.currentRoute.value.path).toBe("/cart");
@@ -519,7 +647,7 @@ describe("OrderPage", () => {
     );
     cart.replace([existingCartItem]);
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
     await getButtonByText(wrapper, "Отмена").trigger("click");
     await flushPromises();
@@ -558,7 +686,7 @@ describe("OrderPage", () => {
       }),
     );
 
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Повторить заказ").trigger("click");
     await flushPromises();
 
     expect(router.currentRoute.value.path).toBe("/cart");
@@ -576,12 +704,47 @@ describe("OrderPage", () => {
     ]);
   });
 
-  it("ведёт к единственной настройке уведомлений в истории", async () => {
+  it("не показывает постоянную настройку уведомлений", async () => {
     const { wrapper } = await mountOrder(orderResponse);
 
-    expect(wrapper.text()).toContain("Настроить уведомления");
-    expect(wrapper.text()).not.toContain("Включить уведомления");
+    expect(wrapper.text()).not.toContain("Настроить уведомления");
   });
+
+  it.each([
+    ["ACCEPTED", true],
+    ["ISSUED", false],
+  ] as const)(
+    "I11 passes the current owner, active-order eligibility and real heading target for %s",
+    async (stage, eligible) => {
+      globalThis.IntersectionObserver = class {
+        disconnect(): void {}
+        observe(): void {}
+        takeRecords(): IntersectionObserverEntry[] {
+          return [];
+        }
+        unobserve(): void {}
+      } as unknown as typeof IntersectionObserver;
+      const { wrapper } = await mountOrder(
+        { ...orderResponse, stage },
+        200,
+        null,
+        {
+          currentUser: {
+            id: "customer-1",
+            phoneE164: "+79990000000",
+            role: "customer",
+          },
+          notificationState: "off_current",
+        },
+      );
+      const invitation = wrapper.getComponent(OrderNotificationsSection);
+      expect(invitation.props("accountId")).toBe("customer-1");
+      expect(invitation.props("eligible")).toBe(eligible);
+      expect(invitation.props("returnFocusTo")).toBe(wrapper.get("h1").element);
+      expect(wrapper.find(".order-notifications").exists()).toBe(eligible);
+      expect(wrapper.text()).not.toContain("Настроить уведомления");
+    },
+  );
 });
 
 async function mountOrder(
@@ -600,6 +763,12 @@ async function mountOrder(
   const subscriptionReplies = [...(pushOptions.subscriptionReplies ?? [])];
   sessionStore.accessToken = "example-access-token";
   sessionStore.status = "authenticated";
+  sessionStore.currentUser = pushOptions.currentUser ?? null;
+  const notifications = useOrderNotificationsStore();
+  if (pushOptions.notificationState !== undefined) {
+    notifications.state = pushOptions.notificationState;
+    vi.spyOn(notifications, "inspect").mockResolvedValue();
+  }
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -699,6 +868,8 @@ function isCurrentDetailRequest(
 }
 
 type PushOptions = {
+  notificationState?: ReturnType<typeof useOrderNotificationsStore>["state"];
+  currentUser?: { id: string; phoneE164: string; role: "customer" };
   publicKeyReply?: Response | Promise<Response>;
   subscriptionReplies?: Array<Response | Promise<Response>>;
   detailReplies?: Array<Response | Promise<Response>>;

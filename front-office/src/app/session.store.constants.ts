@@ -26,6 +26,7 @@ export const sessionErrorCodes = {
 
 export const initialSessionState: SessionState = {
   accessToken: null,
+  generation: 0,
   currentUser: null,
   errorMessage: null,
   otpExpiresAt: null,

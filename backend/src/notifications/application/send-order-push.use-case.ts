@@ -22,10 +22,7 @@ export class SendOrderPushUseCase {
           await this.sender.send(subscription, notification);
         } catch (error) {
           if (isInvalidSubscription(error))
-            await this.repository.delete(
-              subscription.userId,
-              subscription.endpoint,
-            );
+            await this.repository.deleteSnapshot(subscription);
         }
       }),
     );

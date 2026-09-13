@@ -13,6 +13,7 @@ export type SessionStatus = "unknown" | "anonymous" | "authenticated";
 
 export interface SessionState {
   accessToken: string | null;
+  generation: number;
   currentUser: CurrentUser | null;
   errorMessage: string | null;
   otpExpiresAt: number | null;
@@ -28,3 +29,6 @@ export interface SessionDependencies {
   authApi: AuthApi;
   now(): number;
 }
+
+export type ProtectedReadLiveness = () => boolean;
+export type ProtectedReadRecoveryStart = () => void;

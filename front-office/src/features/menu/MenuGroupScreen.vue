@@ -4,8 +4,12 @@
     class="menu-group"
     :aria-labelledby="`menu-group-${category.id}`"
   >
+    <div class="menu-group__context-row">
+      <ui-icon-btn type="button" aria-label="Назад" @click="returnToMenu">
+        <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
+      </ui-icon-btn>
+    </div>
     <header class="menu-group__header">
-      <p class="menu-group__eyebrow">{{ categoryCount }}</p>
       <h1
         :id="`menu-group-${category.id}`"
         class="menu-group__title"
@@ -48,32 +52,18 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowLeft } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import ProductCard from "./ProductCard.vue";
 import type {
   MenuGroupScreenEmits,
   MenuGroupScreenProps,
 } from "./MenuGroupScreen.types";
 
-import { computed } from "vue";
-
-const props = defineProps<MenuGroupScreenProps>();
+defineProps<MenuGroupScreenProps>();
 
 const emit = defineEmits<MenuGroupScreenEmits>();
-const categoryCount = computed(() => {
-  const count = props.category?.products.length ?? 0;
-  const lastTwo = count % 100;
-  const last = count % 10;
-  const noun =
-    lastTwo >= 11 && lastTwo <= 14
-      ? "позиций"
-      : last === 1
-        ? "позиция"
-        : last >= 2 && last <= 4
-          ? "позиции"
-          : "позиций";
-  return `${count} ${noun}`;
-});
 
 function selectProduct(productId: string): void {
   emit("selectProduct", productId);
@@ -95,16 +85,13 @@ function returnToMenu(): void {
   color: var(--customer-text);
 }
 .menu-group__header {
-  padding: var(--customer-space-11) var(--customer-space-9)
+  padding: var(--customer-space-5) var(--customer-space-9)
     var(--customer-space-15);
 }
-.menu-group__eyebrow {
-  margin: 0 0 var(--customer-space-4);
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-xs);
-  font-weight: var(--customer-font-weight-bold);
-  letter-spacing: var(--customer-letter-spacing-overline);
-  text-transform: uppercase;
+.menu-group__context-row {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--customer-space-11) var(--customer-space-9) 0;
 }
 .menu-group__title {
   margin: 0;
@@ -183,6 +170,10 @@ function returnToMenu(): void {
 }
 @media (min-width: 1024px) {
   .menu-group__header {
+    padding-right: 0;
+    padding-left: 0;
+  }
+  .menu-group__context-row {
     padding-right: 0;
     padding-left: 0;
   }

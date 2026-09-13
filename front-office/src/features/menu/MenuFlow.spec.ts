@@ -53,6 +53,42 @@ describe("MenuFlow", () => {
     wrapper.unmount();
   });
 
+  it("возвращает category и product их собственными Back из contextual rows", async () => {
+    const wrapper = mount(MenuFlow, {
+      props: { menu: createMenu() },
+      global: { plugins: [vuetify] },
+    });
+
+    await wrapper
+      .findComponent(MenuRootScreen)
+      .vm.$emit("selectCategory", "espresso");
+    const groupContextRow = wrapper.get(".menu-group__context-row");
+    expect(
+      groupContextRow.element.nextElementSibling?.classList.contains(
+        "menu-group__header",
+      ),
+    ).toBe(true);
+    await groupContextRow.get('[aria-label="Назад"]').trigger("click");
+    await nextTick();
+    expect(wrapper.findComponent(MenuRootScreen).exists()).toBe(true);
+
+    await wrapper
+      .findComponent(MenuRootScreen)
+      .vm.$emit("selectCategory", "espresso");
+    await wrapper
+      .findComponent(MenuGroupScreen)
+      .vm.$emit("selectProduct", "espresso-single");
+    const productContextRow = wrapper.get(".product-detail__context-row");
+    expect(
+      productContextRow.element.nextElementSibling?.classList.contains(
+        "product-detail__header",
+      ),
+    ).toBe(true);
+    await productContextRow.get('[aria-label="Назад"]').trigger("click");
+    await nextTick();
+    expect(wrapper.findComponent(MenuGroupScreen).exists()).toBe(true);
+  });
+
   it("возвращает product в category через history и восстанавливает scroll", async () => {
     const menu = createMenu();
     const removeEventListener = vi.spyOn(window, "removeEventListener");
@@ -128,7 +164,9 @@ describe("MenuFlow", () => {
     expect(wrapper.get(".menu-group__empty").text()).toContain(
       "В этой категории пока нет товаров",
     );
-    expect(wrapper.get("button").text()).toContain("К категориям");
+    expect(wrapper.get(".menu-group__empty-action").text()).toContain(
+      "К категориям",
+    );
     expect(
       wrapper.findAll("button").filter((button) => button.text() === "Назад"),
     ).toHaveLength(0);

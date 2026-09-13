@@ -4,15 +4,44 @@ import {
 } from "./client.constants";
 import { ApiError } from "./client";
 import type {
+  PushAssociationResponse,
   PushApi,
   PushApiClient,
   PushPublicKeyResponse,
+  PushSubscriptionInspection,
 } from "./push.api.types";
 
-export type { PushApi, PushSubscriptionRequest } from "./push.api.types";
+export type {
+  PushApi,
+  PushAssociationDeleteRequest,
+  PushAssociationRequest,
+  PushAssociationResponse,
+  PushSubscriptionInspection,
+  PushSubscriptionRequest,
+} from "./push.api.types";
 
 export function createPushApi(client: PushApiClient): PushApi {
   return {
+    async associateSubscription(accessToken, request) {
+      return client.request(
+        "/push/subscriptions/association",
+        isAssociationResponse,
+        {
+          body: request,
+          expectedStatus: 200,
+          headers: bearer(accessToken),
+          method: "PUT",
+        },
+      );
+    },
+    async deleteAssociation(accessToken, request): Promise<void> {
+      await client.request("/push/subscriptions/association", isEmptyResponse, {
+        body: request,
+        expectedStatus: 204,
+        headers: bearer(accessToken),
+        method: "DELETE",
+      });
+    },
     async deleteSubscription(accessToken, subscription): Promise<void> {
       await client.request("/push/subscriptions", isEmptyResponse, {
         body: subscription,
@@ -44,6 +73,18 @@ export function createPushApi(client: PushApiClient): PushApi {
 
       return response.publicKey;
     },
+    async inspectSubscription(accessToken, subscription) {
+      return client.request(
+        "/push/subscriptions/inspect",
+        isSubscriptionInspection,
+        {
+          body: subscription,
+          expectedStatus: 200,
+          headers: bearer(accessToken),
+          method: "POST",
+        },
+      );
+    },
     async saveSubscription(accessToken, subscription): Promise<void> {
       await client.request("/push/subscriptions", isEmptyResponse, {
         body: subscription,
@@ -53,6 +94,28 @@ export function createPushApi(client: PushApiClient): PushApi {
       });
     },
   };
+}
+
+function isAssociationResponse(
+  value: unknown,
+): value is PushAssociationResponse {
+  return (
+    isRecord(value) &&
+    value.association === "current" &&
+    typeof value.version === "string"
+  );
+}
+
+function isSubscriptionInspection(
+  value: unknown,
+): value is PushSubscriptionInspection {
+  return (
+    isRecord(value) &&
+    (value.association === "none" ||
+      value.association === "current" ||
+      value.association === "other") &&
+    (typeof value.version === "string" || value.version === null)
+  );
 }
 
 function bearer(accessToken: string): Record<string, string> {

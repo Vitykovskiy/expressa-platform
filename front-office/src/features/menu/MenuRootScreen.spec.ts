@@ -16,7 +16,7 @@ describe("MenuRootScreen", () => {
     const action = wrapper.get(".menu-root__category-card");
 
     expect(action.text()).toContain(category.name);
-    expect(action.text()).toContain("0 позиций");
+    expect(action.text()).not.toMatch(/\d+\s+пози/);
     expect(action.attributes("aria-label")).toBe(
       `Открыть категорию ${category.name}`,
     );

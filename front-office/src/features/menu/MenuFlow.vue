@@ -18,6 +18,7 @@
       v-if="selectedCategory && selectedProduct"
       :category="selectedCategory"
       :product="selectedProduct"
+      @back="returnToCategory"
       @submit="addConfigured"
     />
   </template>
@@ -177,6 +178,14 @@ function openProduct(categoryId: string | undefined, productId: string): void {
     categoryId: category.id,
     productId,
   };
+  history.pushState(
+    { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
+    "",
+  );
+}
+function returnToCategory(): void {
+  if (screen.value.id !== "product") return;
+  screen.value = { id: "category", categoryId: screen.value.categoryId };
   history.pushState(
     { ...history.state, menuFlowScreen: toHistoryScreen(screen.value) },
     "",

@@ -15,7 +15,7 @@ describe("OrdersHistoryScreen", () => {
       expect(
         wrapper.find('[aria-label="Обновить историю заказов"]').exists(),
       ).toBe(false);
-      expect(wrapper.find('[aria-label="Настройки"]').exists()).toBe(true);
+      expect(wrapper.find('[aria-label="Настройки"]').exists()).toBe(false);
       expect(wrapper.find(".orders-history__actions").exists()).toBe(true);
       expect(wrapper.get('[role="alert"]').text()).toContain(
         "Не удалось загрузить историю заказов.",
@@ -49,7 +49,7 @@ describe("OrdersHistoryScreen", () => {
     expect(
       actions.find('[aria-label="Обновить историю заказов"]').exists(),
     ).toBe(true);
-    expect(actions.find('[aria-label="Настройки"]').exists()).toBe(true);
+    expect(actions.find('[aria-label="Настройки"]').exists()).toBe(false);
   });
 
   it("сохраняет loading status и pagination events", async () => {

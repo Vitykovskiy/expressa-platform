@@ -7,6 +7,14 @@ import type { OrderNotification } from "./push-notifications.types";
 declare let self: ServiceWorkerGlobalScope;
 
 if (isServiceWorker()) {
+  self.addEventListener("message", (event) => {
+    if (event.data?.type === "SKIP_WAITING") {
+      void self.skipWaiting();
+    }
+  });
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(self.clients.claim());
+  });
   precacheAndRoute(self.__WB_MANIFEST);
   self.addEventListener("push", (event) => {
     const notification = toOrderNotification(event.data?.json());

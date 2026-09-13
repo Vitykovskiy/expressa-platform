@@ -19,6 +19,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "../app/session.store";
 import { getSessionDependencies } from "../app/session.store.dependencies";
 import AuthScreen from "@/features/auth/AuthScreen.vue";
+import { getSafeAuthReturnTo } from "@/shared/lib/auth-return";
 import { authCodeRoute } from "./AuthCodePage.constants";
 import type { AuthCodePageState } from "./AuthCodePage.types";
 
@@ -111,29 +112,14 @@ function backToPhone(): void {
 function returnTo(): string {
   const returnTo = route.query.returnTo;
 
-  return isInternalReturnTo(returnTo)
-    ? returnTo
-    : authCodeRoute.defaultReturnTo;
+  return getSafeAuthReturnTo(returnTo) ?? authCodeRoute.defaultReturnTo;
 }
 
 function returnToQuery(): { returnTo?: string } {
   const returnTo = route.query.returnTo;
 
-  return isInternalReturnTo(returnTo) ? { returnTo } : {};
-}
-
-function isInternalReturnTo(value: unknown): value is string {
-  if (
-    typeof value !== "string" ||
-    !value.startsWith("/") ||
-    value.startsWith("//")
-  ) {
-    return false;
-  }
-
-  const path = new URL(value, window.location.origin).pathname;
-
-  return path !== authCodeRoute.phone && path !== authCodeRoute.code;
+  const safeReturnTo = getSafeAuthReturnTo(returnTo);
+  return safeReturnTo === undefined ? {} : { returnTo: safeReturnTo };
 }
 
 function hasActiveOtpRequest(): boolean {
@@ -146,9 +132,10 @@ function hasActiveOtpRequest(): boolean {
 
 function getContextDescription(): string | undefined {
   const returnTo = route.query.returnTo;
-  if (!isInternalReturnTo(returnTo)) return undefined;
+  const safeReturnTo = getSafeAuthReturnTo(returnTo);
+  if (safeReturnTo === undefined) return undefined;
 
-  const path = new URL(returnTo, window.location.origin).pathname;
+  const path = new URL(safeReturnTo, window.location.origin).pathname;
   if (path === "/orders" || path.startsWith("/orders/")) {
     return "Подтвердите номер телефона, чтобы посмотреть историю заказов.";
   }

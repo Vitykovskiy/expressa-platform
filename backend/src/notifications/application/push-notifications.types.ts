@@ -4,8 +4,17 @@ export type PushSubscription = {
   endpoint: string;
   p256dh: string;
   auth: string;
+  associationVersion: string;
+  ownerRole?: "customer" | "barista" | "administrator";
 };
-export type PushSubscriptionCommand = Omit<PushSubscription, "id">;
+export type PushSubscriptionCommand = Omit<
+  PushSubscription,
+  "id" | "associationVersion" | "ownerRole"
+>;
+export type PushAssociation = {
+  association: "none" | "current" | "other";
+  version: string | null;
+};
 export type PushRecipient = "customer" | "staff";
 export type OrderPush = {
   recipient: PushRecipient;
@@ -18,6 +27,15 @@ export type OrderPush = {
 export interface PushSubscriptionRepository {
   upsert(command: PushSubscriptionCommand): Promise<void>;
   delete(userId: string, endpoint: string): Promise<void>;
+  findByEndpoint(endpoint: string): Promise<PushSubscription | null>;
+  createAssociation(command: PushSubscriptionCommand): Promise<string | null>;
+  transferAssociation(
+    subscription: PushSubscription,
+    userId: string,
+    expectedVersion: string,
+  ): Promise<string | null>;
+  deleteAssociation(subscription: PushSubscription): Promise<boolean>;
+  deleteSnapshot(subscription: PushSubscription): Promise<void>;
   findForUser(userId: string): Promise<readonly PushSubscription[]>;
   findForStaff(): Promise<readonly PushSubscription[]>;
 }

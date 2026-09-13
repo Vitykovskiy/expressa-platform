@@ -6,3 +6,4 @@
 - [ADR-002: топология поставки](ADR-002-delivery-topology.md)
 - [ADR-003: локальная документация и Storybook](ADR-003-local-application-documentation-and-storybook.md)
 - [ADR-004: удаление Storybook](ADR-004-remove-storybook.md)
+- [ADR-005: связь customer-уведомлений с установкой](ADR-005-customer-notification-association.md)

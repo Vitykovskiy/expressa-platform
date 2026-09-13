@@ -4,9 +4,18 @@
       Загружаем заказ
     </div>
     <template v-else-if="order">
+      <div class="order-page__context-row">
+        <ui-icon-btn
+          type="button"
+          aria-label="Назад"
+          @click="router.push('/orders')"
+        >
+          <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
+        </ui-icon-btn>
+      </div>
       <header class="order-page__header">
         <p class="order-page__number">Заказ №{{ order.number }}</p>
-        <h1 id="order-title">{{ stageLabel }}</h1>
+        <h1 id="order-title" ref="orderHeading">{{ stageLabel }}</h1>
         <p class="order-page__stage-hint">{{ stageHint }}</p>
       </header>
       <p
@@ -60,6 +69,11 @@
         }}</strong>
       </p>
       <p class="order-page__payment">Оплата на кассе при получении</p>
+      <OrderNotificationsSection
+        :account-id="sessionStore.currentUser?.id ?? null"
+        :eligible="order.stage !== 'ISSUED'"
+        :return-focus-to="orderHeading"
+      />
       <ui-btn
         v-if="order.stage === 'ISSUED'"
         ref="repeatTrigger"
@@ -73,9 +87,6 @@
       <p v-if="repeatPreparationPending" role="status">
         {{ orderPageMessages.repeatPreparing }}
       </p>
-      <ui-btn class="order-page__notifications-link" to="/orders#notifications">
-        Настроить уведомления
-      </ui-btn>
     </template>
     <div v-else class="order-page__state" role="alert">
       <h1 id="order-title">Заказ</h1>
@@ -113,6 +124,7 @@
 
 <script setup lang="ts">
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
+import { ArrowLeft } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "@/app/session.store";
@@ -121,6 +133,7 @@ import type { ConfiguredCartItemDraft } from "@/entities/customer/model/customer
 import { formatRubles } from "@/entities/customer/model/money";
 import { toCartItemDraft } from "@/features/menu/product-configuration";
 import { orderCardStageHints } from "@/features/orders/OrderCard.constants";
+import OrderNotificationsSection from "@/features/orders/OrderNotificationsSection.vue";
 import {
   createPublicMenuApi,
   type PublicMenuProduct,
@@ -128,6 +141,7 @@ import {
 import { ApiError, apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
 import {
   orderPageMessages,
@@ -155,6 +169,7 @@ const initialRecoveryAvailable = ref(false);
 const repeatConfirmationOpen = ref(false);
 const repeatPreparationPending = ref(false);
 const repeatTrigger = ref<InstanceType<typeof UiBtn> | null>(null);
+const orderHeading = ref<HTMLElement | null>(null);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let repeatPreparation: OrderRepeatPreparation | null = null;
 let detailRequestOwner = 0;
@@ -207,15 +222,21 @@ async function loadInitialOrder(): Promise<void> {
     return;
   }
   try {
-    const nextOrder = await createOrdersApi(apiClient).getOrder(
-      sessionStore.accessToken,
-      orderId,
+    const nextOrder = await sessionStore.readProtected(
+      (accessToken) =>
+        createOrdersApi(apiClient).getOrder(accessToken, orderId),
+      () => ownsDetailRequest(owner),
+      clearOrderForSessionBoundary,
     );
     if (!ownsDetailRequest(owner)) return;
     order.value = nextOrder;
     await startRequestedRepeat(nextOrder);
   } catch (error) {
     if (!ownsDetailRequest(owner)) return;
+    if (sessionStore.status !== "authenticated") {
+      clearOrderForSessionBoundary();
+      return;
+    }
     order.value = null;
     errorMessage.value =
       error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
@@ -252,6 +273,14 @@ function stopPolling(): void {
   if (pollingTimer !== null) clearInterval(pollingTimer);
   pollingTimer = null;
 }
+function clearOrderForSessionBoundary(): void {
+  stopPolling();
+  order.value = null;
+  refreshFeedback.value = null;
+  refreshErrorMessage.value = null;
+  errorMessage.value = orderPageMessages.loadFailed;
+  initialRecoveryAvailable.value = true;
+}
 async function refreshOrder(): Promise<void> {
   if (detailRequestPending.value) return;
   const orderId = route.params.id;
@@ -265,15 +294,21 @@ async function refreshOrder(): Promise<void> {
   refreshFeedback.value = "pending";
   refreshErrorMessage.value = null;
   try {
-    const nextOrder = await createOrdersApi(apiClient).getOrder(
-      sessionStore.accessToken,
-      orderId,
+    const nextOrder = await sessionStore.readProtected(
+      (accessToken) =>
+        createOrdersApi(apiClient).getOrder(accessToken, orderId),
+      () => ownsDetailRequest(owner),
+      clearOrderForSessionBoundary,
     );
     if (!ownsDetailRequest(owner)) return;
     order.value = nextOrder;
     refreshFeedback.value = null;
   } catch (error) {
     if (!ownsDetailRequest(owner)) return;
+    if (sessionStore.status !== "authenticated") {
+      clearOrderForSessionBoundary();
+      return;
+    }
     refreshErrorMessage.value =
       error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
         ? orderPageMessages.unavailable
@@ -284,13 +319,20 @@ async function refreshOrder(): Promise<void> {
     finishRefreshRequest(owner);
   }
 }
-function recoverOrder(): void {
+async function recoverOrder(): Promise<void> {
   if (detailRequestPending.value) return;
+  if (!hasAuthenticatedSession()) {
+    await sessionStore.bootstrap();
+    if (!hasAuthenticatedSession()) return;
+  }
   if (initialRecoveryAvailable.value) {
-    void loadInitialOrder();
+    await loadInitialOrder();
     return;
   }
-  if (refreshFeedback.value === "stale") void refreshOrder();
+  if (refreshFeedback.value === "stale") await refreshOrder();
+}
+function hasAuthenticatedSession(): boolean {
+  return sessionStore.status === "authenticated";
 }
 function beginDetailRequest(): number {
   detailRequestOwner += 1;
@@ -332,10 +374,9 @@ async function prepareRepeat(): Promise<void> {
       return applyRepeatAndOpenCart(preparation);
     }
     repeatConfirmationOpen.value = true;
-  } catch (error) {
+  } catch {
     if (!ownsRepeatOperation(owner)) return;
-    errorMessage.value =
-      error instanceof Error ? error.message : orderPageMessages.loadFailed;
+    errorMessage.value = orderPageMessages.loadFailed;
   } finally {
     if (ownsRepeatOperation(owner)) repeatPreparationPending.value = false;
   }
@@ -459,6 +500,10 @@ function itemKey(item: OrderPageItem): string {
 .order-page__header {
   display: grid;
   gap: var(--customer-space-4);
+}
+.order-page__context-row {
+  display: flex;
+  justify-content: flex-start;
 }
 .order-page__header h1,
 .order-page__number,

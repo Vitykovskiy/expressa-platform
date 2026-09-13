@@ -22,9 +22,6 @@
         >
           <span class="menu-root__category-info">
             <span class="menu-root__category-name">{{ category.name }}</span>
-            <span class="menu-root__category-count">{{
-              categoryCount(category.products.length)
-            }}</span>
           </span>
           <span class="menu-root__category-arrow" aria-hidden="true">
             <ArrowRight />
@@ -49,20 +46,6 @@ const emit = defineEmits<MenuRootScreenEmits>();
 
 function selectCategory(categoryId: string): void {
   emit("selectCategory", categoryId);
-}
-
-function categoryCount(count: number): string {
-  const lastTwo = count % 100;
-  const last = count % 10;
-  const noun =
-    lastTwo >= 11 && lastTwo <= 14
-      ? "позиций"
-      : last === 1
-        ? "позиция"
-        : last >= 2 && last <= 4
-          ? "позиции"
-          : "позиций";
-  return `${count} ${noun}`;
 }
 </script>
 

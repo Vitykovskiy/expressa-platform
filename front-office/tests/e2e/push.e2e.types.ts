@@ -4,4 +4,4 @@ export type PushBrowserState = {
   unsubscribeCalls: number;
 };
 
-export type PushBrowserMode = "denied" | "granted";
+export type PushBrowserMode = "denied" | "granted" | "unsubscribe-fails";

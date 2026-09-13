@@ -12,11 +12,24 @@ sources:
 `typecheck`, `test -- --run` и `build` проверяют код; `contract:check` сверяет
 OpenAPI; `test:e2e` запускает приложение.
 
-| Сценарий                    | Основные доказательства                                                                                                                                                               |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Меню, конфигурация, корзина | [MenuPage spec](../../src/pages/MenuPage.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
-| OTP и безопасный возврат    | [router spec](../../src/app/router.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                    |
-| Оформление и ошибки API     | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                 |
-| Браузерные сценарии         | [меню](../../tests/e2e/menu.e2e.spec.ts), [вход](../../tests/e2e/auth.e2e.spec.ts), [оформление](../../tests/e2e/checkout.e2e.spec.ts), [push](../../tests/e2e/push.e2e.spec.ts)      |
+| Сценарий                               | Основные доказательства                                                                                                                                                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Меню, навигация, конфигурация, корзина | [MenuPage spec](../../src/pages/MenuPage.spec.ts), [shell spec](../../src/widgets/customer-shell/ShellNavigation.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
+| Phone/OTP и безопасный возврат         | [form spec](../../src/features/auth/AuthForm.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                                                                                  |
+| Оформление и ошибки API                | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                                                                                         |
+| Браузерные сценарии                    | [меню](../../tests/e2e/menu.e2e.spec.ts), [вход](../../tests/e2e/auth.e2e.spec.ts), [оформление](../../tests/e2e/checkout.e2e.spec.ts), [push](../../tests/e2e/push.e2e.spec.ts)                                                                              |
 
 Покрытие объектов и их авторитетные ноты: [COVERAGE](../COVERAGE.md).
+
+Visual snapshots с OS suffix — evidence, созданное на указанной платформе из
+одной revision, а не ветка дизайна. Darwin image нельзя выдавать за Linux или
+копировать в Linux baseline. Если текущий Linux прогон недоступен, Linux
+visual verification записывается `unable_to_verify`; старый baseline не
+принимается как актуальный.
+
+Проверка mobile header подтверждает один left-aligned button «Экспресса» без
+House с именем «Перейти в меню»: он возвращает в root с history, cart, auth,
+category, product и order detail. Contextual `Назад` проверяется в отдельной
+left-aligned row под header и перед primary content, а не в header или title
+row; Account, History и Cart сохраняют позиции для guest и authenticated
+sessions.

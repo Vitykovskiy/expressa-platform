@@ -10,7 +10,12 @@ import {
   sessionStatuses,
 } from "./session.store.constants";
 import { getSessionDependencies } from "./session.store.dependencies";
-import type { OtpRequestMetadata, SessionState } from "./session.store.types";
+import type {
+  OtpRequestMetadata,
+  ProtectedReadLiveness,
+  ProtectedReadRecoveryStart,
+  SessionState,
+} from "./session.store.types";
 
 const logoutPromises = new WeakMap<object, Promise<void>>();
 
@@ -49,13 +54,14 @@ export const useSessionStore = defineStore("session", {
     },
     async verifyOtp(phone: string, code: string): Promise<void> {
       this.errorMessage = null;
+      const generation = ++this.generation;
 
       try {
         const accessSession = await getSessionDependencies().authApi.verifyOtp(
           phone,
           code,
         );
-        await this.authenticate(accessSession.accessToken);
+        await this.authenticate(accessSession.accessToken, generation);
         this.clearOtpRequest();
       } catch (error) {
         this.errorMessage = getErrorMessage("verifyOtp", error);
@@ -77,8 +83,10 @@ export const useSessionStore = defineStore("session", {
       }
     },
     async completeLogout(): Promise<void> {
+      const generation = ++this.generation;
       try {
         await getSessionDependencies().authApi.logout();
+        if (this.generation !== generation) return;
         this.clear();
         useCartStore().clear();
       } catch (error) {
@@ -91,16 +99,19 @@ export const useSessionStore = defineStore("session", {
       this.status = sessionStatuses.authenticated;
     },
     clear(): void {
-      Object.assign(this, anonymousSessionState);
+      const generation = this.generation + 1;
+      Object.assign(this, anonymousSessionState, { generation });
     },
     async restore(): Promise<void> {
+      const generation = ++this.generation;
       this.status = sessionStatuses.unknown;
       this.errorMessage = null;
 
       try {
         const accessSession = await getSessionDependencies().authApi.refresh();
-        await this.authenticate(accessSession.accessToken);
+        await this.authenticate(accessSession.accessToken, generation);
       } catch (error) {
+        if (this.generation !== generation) return;
         if (isUnauthorized(error)) {
           this.clear();
           return;
@@ -109,10 +120,15 @@ export const useSessionStore = defineStore("session", {
         this.errorMessage = getErrorMessage("restore", error);
       }
     },
-    async authenticate(accessToken: string): Promise<void> {
+    async authenticate(
+      accessToken: string,
+      generation?: number,
+    ): Promise<void> {
+      const expectedGeneration = generation ?? this.generation;
       const currentUser =
         await getSessionDependencies().authApi.getCurrentUser(accessToken);
 
+      if (this.generation !== expectedGeneration) return;
       if (currentUser.role !== "customer") {
         this.clear();
         throw new Error(sessionMessages.roleRejected);
@@ -122,6 +138,73 @@ export const useSessionStore = defineStore("session", {
       this.currentUser = currentUser;
       this.phone = currentUser.phoneE164;
       this.status = sessionStatuses.authenticated;
+    },
+    async readProtected<T>(
+      read: (accessToken: string) => Promise<T>,
+      isLive: ProtectedReadLiveness = () => true,
+      onRecoveryStart: ProtectedReadRecoveryStart = () => {},
+    ): Promise<T> {
+      const accessToken = this.accessToken;
+      const accountId = this.currentUser?.id ?? null;
+      const generation = this.generation;
+      if (accessToken === null)
+        throw new Error(sessionMessages.operationFailed);
+
+      try {
+        const result = await read(accessToken);
+        if (!isLive() || !this.ownsProtectedRead(generation, accountId))
+          throw new Error(sessionMessages.restore);
+        return result;
+      } catch (error) {
+        if (!isUnauthorized(error)) throw error;
+      }
+
+      const sharesInFlightRefresh =
+        this.restorePromise !== null &&
+        this.accessToken === accessToken &&
+        (this.currentUser?.id ?? null) === accountId;
+      if (
+        !isLive() ||
+        (!this.ownsProtectedRead(generation, accountId) &&
+          !sharesInFlightRefresh)
+      )
+        throw new Error(sessionMessages.restore);
+      onRecoveryStart();
+      await this.bootstrap();
+      const refreshedAccessToken = this.accessToken;
+      if (
+        this.status !== sessionStatuses.authenticated ||
+        refreshedAccessToken === null ||
+        (this.currentUser?.id ?? null) !== accountId ||
+        (this.generation !== generation && this.generation !== generation + 1)
+      ) {
+        throw new Error(sessionMessages.restore);
+      }
+      const refreshedGeneration = this.generation;
+
+      try {
+        if (!isLive()) throw new Error(sessionMessages.restore);
+        const result = await read(refreshedAccessToken);
+        if (
+          !isLive() ||
+          !this.ownsProtectedRead(refreshedGeneration, accountId)
+        )
+          throw new Error(sessionMessages.restore);
+        return result;
+      } catch (error) {
+        if (
+          isUnauthorized(error) &&
+          this.ownsProtectedRead(refreshedGeneration, accountId)
+        )
+          this.clear();
+        throw error;
+      }
+    },
+    ownsProtectedRead(generation: number, accountId: string | null): boolean {
+      return (
+        this.generation === generation &&
+        (this.currentUser?.id ?? null) === accountId
+      );
     },
     clearOtpRequest(): void {
       this.pendingPhone = null;
@@ -165,7 +248,5 @@ function getErrorMessage(
     return sessionMessages[operation];
   }
 
-  return error instanceof Error
-    ? error.message
-    : sessionMessages.operationFailed;
+  return sessionMessages.operationFailed;
 }

@@ -59,5 +59,26 @@ intake — в error state.
 idempotency key; API остаётся источником созданного заказа.
 [front-office/src/shared/api/orders.api.ts:createOrdersApi](../../front-office/src/shared/api/orders.api.ts).
 
+## Навигация customer
+
+Ниже 1024px header всегда содержит один left-aligned touch-control с видимой
+надписью «Экспресса» (и декоративной чашкой там, где она помещается), без
+House. Его доступное имя — «Перейти в меню»: с корня
+меню действие безопасно повторяет reset, с категории или товара возвращает в
+корень MenuFlow, а с остальных маршрутов открывает `/`. Отдельного Home-action
+нет. Back не принадлежит header: на category, product и details он находится
+в отдельной left-aligned contextual row сразу под header и перед primary content
+соответствующего экрана; он не входит в строку заголовка. Бренд всегда
+начинается от левого content edge header. Справа в
+постоянных позициях находятся «Аккаунт», «История заказов» и «Корзина».
+Гость и вошедший customer видят те же действия в тех же местах: отличаются
+только защищённый результат History и содержимое Account-диалога.
+
+От 1024px сохраняется существующая боковая навигация: clickable brand, Menu,
+History, Cart, categories и нижняя строка Account. Account остаётся постоянным
+местом управления уведомлениями устройства; выход не отключает их. Точный
+сценарий уведомлений — в [системной feature-ноте](../40-features/Track-history-and-repeat-order.md),
+а контракт shell — в [UI-контрактах front-office](../../front-office/docs/30-conventions/UI-contracts.md).
+
 Повторно используемая кнопка связывает disabled/loading с `aria-busy` и
 показывает progressbar во время loading. [front-office/src/shared/ui/customer/btn/UiBtn.vue:entry](../../front-office/src/shared/ui/customer/btn/UiBtn.vue).

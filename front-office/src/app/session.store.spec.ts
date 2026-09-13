@@ -48,6 +48,227 @@ describe("session store", () => {
     );
   });
 
+  it("повторяет безопасное чтение один раз после общего восстановления", async () => {
+    const dependencies = createDependencies();
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    const read = vi
+      .fn()
+      .mockRejectedValueOnce(apiError(401))
+      .mockResolvedValueOnce("restored");
+
+    await expect(store.readProtected(read)).resolves.toBe("restored");
+
+    expect(dependencies.authApi.refresh).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it("координирует одно восстановление для одновременных 401 безопасных чтений", async () => {
+    const dependencies = createDependencies();
+    const restored = createDeferred<typeof accessSession>();
+    dependencies.authApi.refresh = vi
+      .fn()
+      .mockResolvedValueOnce(accessSession)
+      .mockImplementationOnce(() => restored.promise);
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    const firstRead = vi
+      .fn()
+      .mockRejectedValueOnce(apiError(401))
+      .mockResolvedValueOnce("first");
+    const secondRead = vi
+      .fn()
+      .mockRejectedValueOnce(apiError(401))
+      .mockResolvedValueOnce("second");
+
+    const first = store.readProtected(firstRead);
+    const second = store.readProtected(secondRead);
+    restored.resolve(accessSession);
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      "first",
+      "second",
+    ]);
+    expect(dependencies.authApi.refresh).toHaveBeenCalledTimes(2);
+    expect(firstRead).toHaveBeenCalledTimes(2);
+    expect(secondRead).toHaveBeenCalledTimes(2);
+  });
+
+  it("не зацикливает вторую 401 безопасного чтения и очищает сессию", async () => {
+    const dependencies = createDependencies();
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    const read = vi.fn().mockRejectedValue(apiError(401));
+
+    await expect(store.readProtected(read)).rejects.toThrow("Ошибка API");
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(store.status).toBe("anonymous");
+  });
+
+  it("не повторяет защищённое чтение после потери владельца маршрута", async () => {
+    const dependencies = createDependencies();
+    const restored = createDeferred<typeof accessSession>();
+    dependencies.authApi.refresh = vi
+      .fn()
+      .mockResolvedValueOnce(accessSession)
+      .mockImplementationOnce(() => restored.promise);
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    let live = true;
+    const read = vi.fn().mockRejectedValueOnce(apiError(401));
+
+    const pending = store.readProtected(read, () => live);
+    await Promise.resolve();
+    live = false;
+    restored.resolve(accessSession);
+
+    await expect(pending).rejects.toThrow(
+      "Не удалось восстановить сессию. Попробуйте ещё раз.",
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("не повторяет чтение A под поздно восстановленной сессией B", async () => {
+    const dependencies = createDependencies({ ...customer, id: "customer-2" });
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    store.accessToken = "token-a";
+    store.currentUser = customer;
+    store.status = "authenticated";
+    const read = vi.fn().mockRejectedValue(apiError(401));
+
+    await expect(store.readProtected(read)).rejects.toThrow(
+      "Не удалось восстановить сессию. Попробуйте ещё раз.",
+    );
+
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(store.currentUser?.id).toBe("customer-2");
+  });
+
+  it.each(["сначала B", "сначала A"])(
+    "не даёт восстановлению A заменить новый OTP-вход B, когда завершает %s",
+    async (completionOrder) => {
+      const dependencies = createDependencies();
+      const restoredA = createDeferred<typeof accessSession>();
+      const userA = createDeferred<CurrentUser>();
+      const userB = createDeferred<CurrentUser>();
+      const accountB = { ...customer, id: "customer-2" };
+      dependencies.authApi.refresh = vi.fn(() => restoredA.promise);
+      dependencies.authApi.verifyOtp = vi.fn().mockResolvedValue({
+        ...accessSession,
+        accessToken: "token-b",
+      });
+      dependencies.authApi.getCurrentUser = vi.fn((accessToken: string) =>
+        accessToken === "token-b" ? userB.promise : userA.promise,
+      );
+      setSessionDependencies(dependencies);
+      const store = useSessionStore();
+
+      const restore = store.bootstrap();
+      const login = store.verifyOtp("+79991234567", "123456");
+
+      if (completionOrder === "сначала B") {
+        userB.resolve(accountB);
+        await login;
+        restoredA.resolve(accessSession);
+        userA.resolve(customer);
+      } else {
+        restoredA.resolve(accessSession);
+        userA.resolve(customer);
+        await restore;
+        userB.resolve(accountB);
+        await login;
+      }
+
+      await restore;
+      expect(store.currentUser).toEqual(accountB);
+      expect(store.accessToken).toBe("token-b");
+      expect(store.status).toBe("authenticated");
+    },
+  );
+
+  it("не публикует поздний успешный результат после logout", async () => {
+    const dependencies = createDependencies();
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    const deferred = createDeferred<string>();
+    const read = vi.fn(() => deferred.promise);
+
+    const pending = store.readProtected(read);
+    await store.logout();
+    deferred.resolve("late");
+
+    await expect(pending).rejects.toThrow(
+      "Не удалось восстановить сессию. Попробуйте ещё раз.",
+    );
+    expect(store.status).toBe("anonymous");
+  });
+
+  it.each(["refresh", "me"])(
+    "не восстанавливает logout поздним %s",
+    async (pendingOperation) => {
+      const dependencies = createDependencies();
+      const refresh = createDeferred<typeof accessSession>();
+      const currentUser = createDeferred<CurrentUser>();
+      dependencies.authApi.refresh = vi.fn(async () =>
+        pendingOperation === "refresh" ? await refresh.promise : accessSession,
+      );
+      dependencies.authApi.getCurrentUser = vi.fn(() => currentUser.promise);
+      setSessionDependencies(dependencies);
+      const store = useSessionStore();
+
+      const restoration = store.bootstrap();
+      await Promise.resolve();
+      const logout = store.logout();
+      if (pendingOperation === "refresh") refresh.resolve(accessSession);
+      currentUser.resolve(customer);
+      await Promise.all([restoration, logout]);
+
+      expect(store.status).toBe("anonymous");
+      expect(store.accessToken).toBeNull();
+    },
+  );
+
+  it("не повторяет защищённое чтение при временной ошибке восстановления", async () => {
+    const dependencies = createDependencies();
+    dependencies.authApi.refresh = vi
+      .fn()
+      .mockResolvedValueOnce(accessSession)
+      .mockRejectedValueOnce(apiError(503));
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    await store.bootstrap();
+    const read = vi.fn().mockRejectedValue(apiError(401));
+
+    await expect(store.readProtected(read)).rejects.toThrow(
+      "Не удалось восстановить сессию. Попробуйте ещё раз.",
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(store.status).toBe("unknown");
+  });
+
+  it("не восстанавливает сессию поздним OTP после logout", async () => {
+    const dependencies = createDependencies();
+    const verification = createDeferred<typeof accessSession>();
+    dependencies.authApi.verifyOtp = vi.fn(() => verification.promise);
+    setSessionDependencies(dependencies);
+    const store = useSessionStore();
+    const verificationPending = store.verifyOtp("+79991234567", "123456");
+
+    await store.logout();
+    verification.resolve(accessSession);
+    await verificationPending;
+
+    expect(store.status).toBe("anonymous");
+    expect(store.accessToken).toBeNull();
+  });
+
   it("permits only one in-flight logout and releases it after rejection", async () => {
     const dependencies = createDependencies();
     const deferred = createDeferred<void>();

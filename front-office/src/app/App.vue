@@ -24,10 +24,9 @@
       :is-authenticated="sessionStore.status === 'authenticated'"
       :is-logout-pending="logoutPending"
       :selected-category-id="selectedCategoryId"
-      :show-back="showBack"
-      @back="back"
       @navigate="navigate"
       @select-category="selectCategory"
+      @open-account="openAccount"
       @sign-out="logout"
     >
       <ErrorNotice
@@ -39,21 +38,38 @@
           :is="Component"
           v-if="routedRoute.path === appRoute.home"
           :menu-shell-command="pendingMenuShellCommand"
+          :menu-screen="observedMenuScreen"
           @menu-screen-change="handleMenuScreenChange"
           @menu-shell-command-ack="handleMenuShellCommandAck"
         />
         <component :is="Component" v-else />
       </RouterView>
     </CustomerShell>
+    <AccountSettingsDialog
+      v-model="accountSettingsOpen"
+      :account-label="accountLabel"
+      :account-id="sessionStore.currentUser?.id ?? null"
+      :authenticated="sessionStore.status === 'authenticated'"
+      :logout-error="logoutError"
+      :logout-pending="logoutPending"
+      :return-focus-to="accountSettingsTrigger"
+      @sign-in="navigate('auth')"
+      @sign-out="logout"
+    />
   </VApp>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, inject, onMounted, reactive, ref, watch } from "vue";
 import { VApp } from "vuetify/components";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
+import AccountSettingsDialog from "@/features/account/AccountSettingsDialog.vue";
+import { configureOrderNotificationsDependencies } from "@/entities/customer/model/order-notifications.store.dependencies";
+import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
+import { getSafeAuthReturnTo } from "@/shared/lib/auth-return";
+import { apiClientKey } from "@/shared/api/client";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import CustomerShell from "@/widgets/customer-shell/CustomerShell.vue";
@@ -74,6 +90,8 @@ const appStore = useAppStore();
 const cartStore = useCartStore();
 const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
+const notificationStore = useOrderNotificationsStore();
+const apiClient = inject(apiClientKey);
 const route = useRoute();
 const router = useRouter();
 const bootstrapState = reactive<AppBootstrapState>({ ready: false });
@@ -81,6 +99,9 @@ const pendingMenuShellCommand = ref<MenuShellCommand | null>(null);
 const observedMenuScreen = ref<MenuFlowScreen>({ id: "root" });
 const logoutPending = ref(false);
 const sessionRetrying = ref(false);
+const accountSettingsOpen = ref(false);
+const accountSettingsTrigger = ref<HTMLElement | null>(null);
+const logoutError = ref<string | null>(null);
 let nextMenuShellCommandId = 0;
 const activeDestination = computed<ShellNavigationDestination>(() => {
   if (route.path === "/cart") return "cart";
@@ -107,11 +128,6 @@ const selectedCategoryId = computed(() => {
     return undefined;
   return observedMenuScreen.value.categoryId;
 });
-const showBack = computed(
-  () =>
-    route.path.startsWith("/orders/") ||
-    (route.path === appRoute.home && observedMenuScreen.value.id !== "root"),
-);
 const sessionBoundaryState = computed<SessionBoundaryState>(() => {
   if (!bootstrapState.ready || sessionRetrying.value) return "loading";
   if (sessionStore.status !== "unknown") return "ready";
@@ -129,24 +145,59 @@ watch(
   },
 );
 
+watch(
+  () => sessionStore.status,
+  async (status) => {
+    if (status !== "anonymous" || !route.meta.requiresCustomer) return;
+    await router.replace({
+      path: routePaths.authPhone,
+      query: { returnTo: route.fullPath },
+    });
+  },
+);
+
 onMounted(async () => {
+  if (apiClient !== undefined)
+    configureOrderNotificationsDependencies(apiClient, (read) =>
+      sessionStore.readProtected(read),
+    );
   cartStore.restore();
   await sessionStore.bootstrap();
+  notificationStore.setSession(
+    sessionStore.currentUser?.id ?? null,
+    sessionStore.accessToken,
+  );
   bootstrapState.ready = true;
 });
+
+watch(
+  () =>
+    [sessionStore.currentUser?.id ?? null, sessionStore.accessToken] as const,
+  ([accountId, accessToken]) =>
+    notificationStore.setSession(accountId, accessToken),
+);
 
 async function logout(): Promise<void> {
   if (logoutPending.value) return;
 
   logoutPending.value = true;
+  logoutError.value = null;
   try {
     await sessionStore.logout();
     await router.replace(appRoute.home);
   } catch {
-    /* state owns error */
+    logoutError.value = "Не удалось выйти из аккаунта. Попробуйте ещё раз.";
   } finally {
     logoutPending.value = false;
   }
+}
+
+function openAccount(): void {
+  accountSettingsTrigger.value =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  accountSettingsOpen.value = true;
 }
 
 async function retrySession(): Promise<void> {
@@ -165,44 +216,30 @@ async function retrySession(): Promise<void> {
   }
 }
 
-function back(): void {
-  if (route.path === appRoute.home) {
-    const screen = observedMenuScreen.value;
-    if (screen.id === "product") {
-      issueMenuShellCommand({ id: "category", categoryId: screen.categoryId });
-    } else if (screen.id === "category") {
-      issueMenuShellCommand({ id: "root" });
-    }
-    return;
-  }
-
-  if (route.path.startsWith("/orders/")) {
-    void router.push("/orders");
-  }
-}
-
-function navigate(destination: ShellNavigationDestination): void {
+async function navigate(
+  destination: ShellNavigationDestination,
+): Promise<void> {
   if (destination === "menu") {
     if (route.path === appRoute.home) {
       issueMenuShellCommand({ id: "root" });
       return;
     }
-    void router.push(appRoute.home);
+    await router.push(appRoute.home);
     return;
   }
 
   if (destination === "cart") {
-    void router.push("/cart");
+    await router.push("/cart");
     return;
   }
 
   if (destination === "orders") {
-    void router.push("/orders");
+    await router.push("/orders");
     return;
   }
 
   const returnTo = getAuthReturnTo();
-  void router.push({
+  await router.push({
     path: routePaths.authPhone,
     query: returnTo === undefined ? {} : { returnTo },
   });
@@ -249,18 +286,7 @@ function getAuthReturnTo(): string | undefined {
 }
 
 function getInternalAuthReturnPath(value: unknown): string | undefined {
-  if (
-    typeof value !== "string" ||
-    !value.startsWith("/") ||
-    value.startsWith("//")
-  ) {
-    return undefined;
-  }
-
-  const path = new URL(value, window.location.origin).pathname;
-  return path === routePaths.authPhone || path === routePaths.authCode
-    ? undefined
-    : path;
+  return getSafeAuthReturnTo(value);
 }
 </script>
 

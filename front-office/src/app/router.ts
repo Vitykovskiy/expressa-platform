@@ -9,6 +9,7 @@ import OrdersPage from "../pages/OrdersPage.vue";
 import { routePaths } from "./router.constants";
 import { getSessionDependencies } from "./session.store.dependencies";
 import { useSessionStore } from "./session.store";
+import { getSafeAuthReturnTo } from "../shared/lib/auth-return";
 import type { CustomerNavigationGuard } from "./router.types";
 
 export const router = createRouter({
@@ -47,7 +48,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
       sessionStore.otpExpiresAt === null ||
       getSessionDependencies().now() >= sessionStore.otpExpiresAt)
   ) {
-    const returnTo = getSafeReturnTo(to.query.returnTo);
+    const returnTo = getSafeAuthReturnTo(to.query.returnTo);
 
     return {
       path: routePaths.authPhone,
@@ -62,19 +63,3 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
 };
 
 router.beforeEach(customerNavigationGuard);
-
-function getSafeReturnTo(value: unknown): string | undefined {
-  if (
-    typeof value !== "string" ||
-    !value.startsWith("/") ||
-    value.startsWith("//")
-  ) {
-    return undefined;
-  }
-
-  const path = new URL(value, window.location.origin).pathname;
-
-  return path === routePaths.authPhone || path === routePaths.authCode
-    ? undefined
-    : value;
-}

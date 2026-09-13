@@ -34,7 +34,7 @@ describe("MenuPage", () => {
         "Не удалось загрузить меню. Попробуйте ещё раз.",
       ),
     );
-    await wrapper.get("button").trigger("click");
+    await wrapper.get(".menu-page__retry").trigger("click");
     await flushPromises();
 
     expect(getMenu).toHaveBeenCalledTimes(2);
@@ -90,17 +90,30 @@ describe("MenuPage", () => {
     ]);
     expect(wrapper.emitted("menuShellCommandAck")).toEqual([[1]]);
   });
+
+  it("не добавляет локальное действие аккаунта в корень меню", async () => {
+    setMenuStoreDependencies({
+      publicMenuApi: { getMenu: vi.fn().mockResolvedValue(createReadyMenu()) },
+    });
+    const wrapper = await mountPage(undefined, { id: "root" });
+    await flushPromises();
+
+    expect(wrapper.find(".menu-page__account").exists()).toBe(false);
+  });
 });
 
-async function mountPage(menuShellCommand?: {
-  requestId: number;
-  target: { id: "category"; categoryId: string };
-}) {
+async function mountPage(
+  menuShellCommand?: {
+    requestId: number;
+    target: { id: "category"; categoryId: string };
+  },
+  menuScreen?: import("@/features/menu/MenuFlow.types").MenuFlowScreen,
+) {
   await router.push("/");
   await router.isReady();
 
   return mount(MenuPage, {
-    props: { menuShellCommand },
+    props: { menuShellCommand, menuScreen },
     global: {
       plugins: [router],
       stubs: {
@@ -122,8 +135,9 @@ async function mountPage(menuShellCommand?: {
         },
         UiBtn: {
           props: ["to"],
+          emits: ["click"],
           template:
-            '<a v-if="to" data-test="cart" :href="to"><slot /></a><button v-else><slot /></button>',
+            '<a v-if="to" data-test="cart" :href="to"><slot /></a><button v-else @click="$emit(\'click\', $event)"><slot /></button>',
         },
         UiProgress: true,
       },

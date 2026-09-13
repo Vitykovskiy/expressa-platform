@@ -15,6 +15,9 @@
         v-if="description"
         :id="descriptionId"
         class="product-card__description"
+        :class="{
+          'product-card__description--unavailable': !props.product.isAvailable,
+        }"
       >
         {{ description }}
       </span>
@@ -86,6 +89,11 @@ const descriptionId = computed(() =>
 .product-card__name,
 .product-card__description {
   display: block;
+}
+.product-card__description.product-card__description--unavailable {
+  position: relative;
+  z-index: 2;
+  color: var(--customer-text-on-surface);
 }
 .product-card__info {
   display: grid;

@@ -56,6 +56,7 @@ const menuStore = useMenuStore();
 const cartStore = useCartStore();
 const props = defineProps<{
   menuShellCommand?: MenuShellCommand | null;
+  menuScreen?: import("@/features/menu/MenuFlow.types").MenuFlowScreen;
 }>();
 const emit = defineEmits<{
   menuScreenChange: [
@@ -82,6 +83,9 @@ function addConfigured(
 
 <style scoped lang="scss">
 .menu-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   min-height: 100%;
 }
 .menu-page__state {

@@ -28,6 +28,23 @@ describe("OrderCard", () => {
         ) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it("keeps disclosure semantics without a visible duplicate caption", async () => {
+    const wrapper = mountCard("CREATED");
+    const header = wrapper.get(".order-card__header");
+
+    expect(wrapper.text()).not.toContain("Показать состав");
+    expect(header.attributes("aria-expanded")).toBe("false");
+    expect(header.attributes("aria-label")).toContain("Показать состав");
+
+    await header.trigger("click");
+
+    expect(header.attributes("aria-expanded")).toBe("true");
+    expect(header.attributes("aria-label")).toContain("Скрыть состав");
+    expect(
+      wrapper.find(`#${header.attributes("aria-controls")}`).exists(),
+    ).toBe(true);
+  });
 });
 
 function mountCard(

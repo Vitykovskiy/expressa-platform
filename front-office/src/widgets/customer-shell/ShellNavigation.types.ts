@@ -13,14 +13,12 @@ export interface ShellNavigationProps {
   isLogoutPending: boolean;
   accountLabel: string;
   selectedCategoryId?: string;
-  showBack: boolean;
 }
 
 export interface ShellNavigationEmits {
-  back: [];
   navigate: [destination: ShellNavigationDestination];
+  openAccount: [];
   selectCategory: [categoryId: string];
-  signOut: [];
 }
 
 export type ShellNavigationItem = {

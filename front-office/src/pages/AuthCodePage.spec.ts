@@ -65,7 +65,9 @@ describe("AuthCodePage", () => {
       ),
     );
     await wrapper.get('[data-test="verify"]').trigger("click");
-    await vi.waitFor(() => expect(store.errorMessage).toBe("Неверный код"));
+    await vi.waitFor(() =>
+      expect(store.errorMessage).toBe("Не удалось выполнить операцию сессии."),
+    );
     await nextTick();
     expect(router.currentRoute.value.path).toBe("/auth/code");
   });

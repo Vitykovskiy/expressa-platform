@@ -1,5 +1,10 @@
 <template>
   <section class="product-detail" aria-labelledby="product-detail-title">
+    <div class="product-detail__context-row">
+      <ui-icon-btn type="button" aria-label="Назад" @click="emit('back')">
+        <ArrowLeft aria-hidden="true" :size="18" :stroke-width="2.5" />
+      </ui-icon-btn>
+    </div>
     <header class="product-detail__header">
       <p class="product-detail__eyebrow">
         {{ category.name }}
@@ -104,7 +109,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { Minus, Plus, ShoppingCart } from "lucide-vue-next";
+import { ArrowLeft, Minus, Plus, ShoppingCart } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import { formatRubles } from "@/entities/customer/model/money";
@@ -217,6 +222,7 @@ function createInitialConfiguration(product = props.product) {
 <style scoped lang="scss">
 .product-detail {
   display: flex;
+  flex: 1;
   flex-direction: column;
   width: 100%;
   color: var(--customer-text);
@@ -226,6 +232,11 @@ function createInitialConfiguration(product = props.product) {
   margin: var(--customer-space-7) var(--customer-space-9) 0;
   background: var(--customer-color-surface-subtle);
   border-radius: var(--customer-radius-xl);
+}
+.product-detail__context-row {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--customer-space-7) var(--customer-space-9) 0;
 }
 .product-detail__eyebrow,
 .product-detail__options-title {
@@ -253,6 +264,7 @@ function createInitialConfiguration(product = props.product) {
 }
 .product-detail__content {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--customer-space-11);
   padding: var(--customer-space-13) var(--customer-space-9);
@@ -310,11 +322,16 @@ function createInitialConfiguration(product = props.product) {
   background: var(--customer-surface);
 }
 .product-detail__footer {
+  margin-top: auto;
   position: sticky;
   bottom: 0;
   display: flex;
   gap: var(--customer-space-7);
   padding: var(--customer-space-9);
+  padding-bottom: max(
+    var(--customer-space-9),
+    env(safe-area-inset-bottom, var(--customer-space-9))
+  );
   background: var(--customer-background);
   border-top: 1px solid var(--customer-border);
 }
@@ -382,7 +399,8 @@ function createInitialConfiguration(product = props.product) {
 @media (min-width: 1024px) {
   .product-detail__header,
   .product-detail__content,
-  .product-detail__footer {
+  .product-detail__footer,
+  .product-detail__context-row {
     width: min(100%, var(--customer-size-content-detail));
     margin-right: 0;
     margin-left: 0;
@@ -390,7 +408,12 @@ function createInitialConfiguration(product = props.product) {
   .product-detail__header {
     padding: var(--customer-spacing-xl);
   }
+  .product-detail__context-row {
+    padding-right: 0;
+    padding-left: 0;
+  }
   .product-detail__footer {
+    margin-top: 0;
     position: static;
     margin-bottom: var(--customer-space-13);
     padding: var(--customer-space-9) 0;

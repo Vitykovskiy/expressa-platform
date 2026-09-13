@@ -15,8 +15,8 @@ sources:
 
 | Контракт                | Поведение, данные и состояния                                                                                                                                                                                                                                                                             | Источник и проверка                                                                                                                                                                                                          |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shell/navigation        | отображает маршрутную область и навигацию; активный пункт и ссылка доступны клавиатуре                                                                                                                                                                                                                    | [shell](../../src/widgets/customer-shell/CustomerShell.vue), [navigation](../../src/widgets/customer-shell/ShellNavigation.vue)                                                                                              |
-| Button/icon button      | `disabled`/`loading` блокируют действие; icon button требует доступного имени                                                                                                                                                                                                                             | [UiBtn](../../src/shared/ui/customer/btn/UiBtn.vue), [UiIconBtn](../../src/shared/ui/customer/icon-btn/UiIconBtn.vue)                                                                                                        |
+| Shell/navigation        | ниже 1024px показывает left-aligned button «Экспресса» без House с именем «Перейти в меню», а также постоянные Account, History и Cart. Back не входит в shell: category, product и order detail рендерят его в отдельной left-aligned contextual row под header и перед primary content, но не в title row. Отдельного Home-action нет. От 1024px сохраняется sidebar | [shell](../../src/widgets/customer-shell/CustomerShell.vue), [navigation](../../src/widgets/customer-shell/ShellNavigation.vue)                                                                                              |
+| Button/icon button      | `disabled`/`loading` блокируют действие; icon button требует доступного имени. Profile icon имеет имя «Аккаунт», `aria-haspopup="dialog"` и возвращает фокус после закрытия диалога                                                                                                                       | [UiBtn](../../src/shared/ui/customer/btn/UiBtn.vue), [UiIconBtn](../../src/shared/ui/customer/icon-btn/UiIconBtn.vue)                                                                                                        |
 | Phone/OTP поля          | оба принимают `modelValue`, `label`, `loading`, `disabled`, `readonly` и испускают только `update:modelValue`; loading отключает поле, phone задаёт tel/inputmode/auto-complete, OTP оставляет цифры и максимум шесть                                                                                     | [PhoneInput](../../src/shared/ui/customer/phone-input/UiPhoneInput.vue), [OtpInput](../../src/shared/ui/customer/otp-input/UiOtpInput.vue)                                                                                   |
 | Dialog/progress/message | `UiDialog` принимает `modelValue`, необязательные `label` и `returnFocusTo`, сообщает `update:modelValue`; consumer повтора заказа передаёт actual trigger. Browser-проверка подтверждает контекстное имя и возврат фокуса после Escape/Отмены. Progress и field message показывают состояние вызывающего | [Dialog](../../src/shared/ui/customer/dialog/UiDialog.vue), [dialog spec](../../src/shared/ui/customer/dialog/UiDialog.spec.ts), [OrderPage](../../src/pages/OrderPage.vue), [order spec](../../src/pages/OrderPage.spec.ts) |
 
@@ -43,3 +43,25 @@ reduced motion отключает анимации. Контентные
 UiDialog задаёт доступное имя через `label`; `returnFocusTo` связывает текущий
 runtime consumer с фактическим trigger. В Chrome browser-проверка подтверждает
 Escape и «Отмена» для повтора заказа; она не заявляет screen-reader semantics.
+
+Видимый label поля можно не показывать, когда задача экрана однозначно называет
+вводимое значение, но программное имя остаётся. Placeholder тогда показывает
+только формат и не заменяет имя или ошибку. В частности, phone field имеет имя
+«Номер телефона», OTP — «Шестизначный код из сообщения»; точный текст экранов
+владеет [authentication feature](../30-features/Authentication-and-returnTo.md).
+
+Disclosure использует единственную native button-область: `aria-expanded`,
+`aria-controls`, состояние chevron и полное меняющееся доступное имя должны
+соответствовать друг другу. Видимая дублирующая подпись действия не нужна;
+конкретную карточку описывает [orders feature](../30-features/Orders.md).
+
+## Required account-dialog reuse
+
+Диалог «Аккаунт» является feature composition, а не новым primitive: он
+переиспользует `UiDialog`, `UiIconBtn`, `UiBtn` и `UiFieldMessage`; `UiToggle`
+не используется для opt-in. Нужны существующие surface/text/primary/danger/
+border/focus, spacing, radius и typography tokens, прокрутка содержимого и
+разделённый footer logout. Требуются label, Escape/close, focus containment и
+возврат к фактическому trigger, 44px targets и один feedback announcement.
+Это required UI contract; policy и непроверенные assistive-technology claims не
+дублируются здесь.

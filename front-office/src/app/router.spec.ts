@@ -78,6 +78,16 @@ describe("маршруты front-office", () => {
     expect(testRouter.currentRoute.value.query.returnTo).toBeUndefined();
   });
 
+  it("отбрасывает router-эквивалентный returnTo на auth path", async () => {
+    const testRouter = createTestRouter();
+
+    await testRouter.push("/auth/code?returnTo=%2FAUTH%2FPHONE%2F");
+    await testRouter.isReady();
+
+    expect(testRouter.currentRoute.value.path).toBe("/auth/phone");
+    expect(testRouter.currentRoute.value.query.returnTo).toBeUndefined();
+  });
+
   it("разрешает заказ аутентифицированному клиенту", async () => {
     const sessionStore = useSessionStore();
     sessionStore.status = "authenticated";

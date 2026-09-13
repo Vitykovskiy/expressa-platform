@@ -29,14 +29,16 @@ describe("AuthCodePage composition", () => {
       setSessionDependencies(dependencies);
       const { router, store, wrapper } = await mountPage();
 
-      await wrapper.get('[aria-label="Код из сообщения"]').setValue("123456");
+      await wrapper
+        .get('[aria-label="Шестизначный код из сообщения"]')
+        .setValue("123456");
       const resend = resendButton(wrapper);
       await Promise.all([resend.trigger("click"), resend.trigger("click")]);
 
       expect(dependencies.authApi.requestOtp).toHaveBeenCalledTimes(1);
-      expect(wrapper.find('[aria-label="Код из сообщения"]').exists()).toBe(
-        true,
-      );
+      expect(
+        wrapper.find('[aria-label="Шестизначный код из сообщения"]').exists(),
+      ).toBe(true);
 
       deferred.reject(failure);
       await flushPromises();
@@ -47,7 +49,7 @@ describe("AuthCodePage composition", () => {
       expect(router.currentRoute.value.fullPath).toBe(
         "/auth/code?returnTo=/cart",
       );
-      expect(wrapper.text()).toContain(failure.message);
+      expect(wrapper.text()).toContain("Не удалось выполнить операцию сессии.");
     },
   );
 
@@ -61,7 +63,9 @@ describe("AuthCodePage composition", () => {
     setSessionDependencies(dependencies);
     const { store, wrapper } = await mountPage();
 
-    await wrapper.get('[aria-label="Код из сообщения"]').setValue("123456");
+    await wrapper
+      .get('[aria-label="Шестизначный код из сообщения"]')
+      .setValue("123456");
     await resendButton(wrapper).trigger("click");
     await flushPromises();
 
@@ -109,12 +113,14 @@ describe("AuthCodePage composition", () => {
     setSessionDependencies(dependencies);
     const { router, wrapper } = await mountPage();
 
-    await wrapper.get('[aria-label="Код из сообщения"]').setValue("123456");
+    await wrapper
+      .get('[aria-label="Шестизначный код из сообщения"]')
+      .setValue("123456");
     await wrapper.get("form").trigger("submit");
     await flushPromises();
 
     expect(otpInputValue(wrapper)).toBe("123456");
-    expect(wrapper.text()).toContain("Неверный код");
+    expect(wrapper.text()).toContain("Не удалось выполнить операцию сессии.");
     expect(router.currentRoute.value.fullPath).toBe(
       "/auth/code?returnTo=/cart",
     );
@@ -145,7 +151,9 @@ describe("AuthCodePage composition", () => {
     setSessionDependencies(dependencies);
     const { router, wrapper } = await mountPage();
 
-    await wrapper.get('[aria-label="Код из сообщения"]').setValue("123456");
+    await wrapper
+      .get('[aria-label="Шестизначный код из сообщения"]')
+      .setValue("123456");
     await wrapper.get("form").trigger("submit");
     await flushPromises();
 
@@ -211,7 +219,8 @@ function verifyButton(wrapper: ReturnType<typeof mount>) {
 
 function otpInputValue(wrapper: ReturnType<typeof mount>) {
   return (
-    wrapper.get('[aria-label="Код из сообщения"]').element as HTMLInputElement
+    wrapper.get('[aria-label="Шестизначный код из сообщения"]')
+      .element as HTMLInputElement
   ).value;
 }
 

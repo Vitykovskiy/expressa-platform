@@ -10,6 +10,7 @@ const subscription = {
   endpoint: "https://push.example/subscription",
   p256dh: "key",
   auth: "auth",
+  associationVersion: "00000000-0000-4000-8000-000000000001",
 };
 
 describe("SendOrderPushUseCase", () => {
@@ -17,6 +18,11 @@ describe("SendOrderPushUseCase", () => {
     const repository: PushSubscriptionRepository = {
       upsert: jest.fn(),
       delete: jest.fn(),
+      findByEndpoint: jest.fn(),
+      createAssociation: jest.fn(),
+      transferAssociation: jest.fn(),
+      deleteAssociation: jest.fn(),
+      deleteSnapshot: jest.fn(),
       findForUser: jest.fn(),
       findForStaff: jest.fn().mockResolvedValue([subscription]),
     };
@@ -42,6 +48,11 @@ describe("SendOrderPushUseCase", () => {
     const repository: PushSubscriptionRepository = {
       upsert: jest.fn(),
       delete: jest.fn(),
+      findByEndpoint: jest.fn(),
+      createAssociation: jest.fn(),
+      transferAssociation: jest.fn(),
+      deleteAssociation: jest.fn(),
+      deleteSnapshot: jest.fn(),
       findForUser: jest.fn().mockResolvedValue([subscription]),
       findForStaff: jest.fn(),
     };
@@ -60,9 +71,6 @@ describe("SendOrderPushUseCase", () => {
     ).resolves.toBeUndefined();
 
     expect(repository.findForUser).toHaveBeenCalledWith("customer-id");
-    expect(repository.delete).toHaveBeenCalledWith(
-      "customer-id",
-      subscription.endpoint,
-    );
+    expect(repository.deleteSnapshot).toHaveBeenCalledWith(subscription);
   });
 });

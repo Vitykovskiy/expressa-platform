@@ -11,14 +11,13 @@ export interface CustomerShellProps {
   isAuthenticated: boolean;
   isLogoutPending: boolean;
   selectedCategoryId?: string;
-  showBack: boolean;
 }
 
 export interface CustomerShellEmits {
-  back: [];
   goMenu: [];
   navigate: [destination: ShellNavigationDestination];
   selectCategory: [categoryId: string];
+  openAccount: [];
   signOut: [];
   openAuth: [];
   openCart: [];

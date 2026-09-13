@@ -51,7 +51,7 @@ test("сохраняет гостевую корзину через вход, re
     "2",
   );
 
-  await page.getByText("Оформить заказ", { exact: true }).click();
+  await page.getByRole("button", { name: "Подтвердить телефон" }).click();
   await expect(page).toHaveURL(/\/auth\/phone\?returnTo=\/cart/);
   const firstUser = await login(page, phone);
   await expect(page).toHaveURL(/\/cart$/);
@@ -79,7 +79,8 @@ test("сохраняет гостевую корзину через вход, re
   const logoutResponse = page.waitForResponse((response) =>
     response.url().endsWith("/auth/logout"),
   );
-  await page.getByRole("button", { name: "Выйти" }).click();
+  await page.getByRole("button", { name: "Аккаунт" }).click();
+  await page.getByRole("button", { name: "Выйти из аккаунта" }).click();
   expect((await logoutResponse).status()).toBe(204);
   await expect(page).toHaveURL(/\/$/);
   expect(await context.cookies()).not.toContainEqual(
@@ -109,7 +110,9 @@ test("сохраняет гостевую корзину через вход, re
 });
 
 test("фиксирует пустые экраны phone и OTP", async ({ browser }) => {
-  for (const width of [390, 700]) {
+  for (const width of [
+    320, 359, 360, 390, 479, 480, 700, 767, 768, 1023, 1024, 1440,
+  ]) {
     const context = await browser.newContext({
       deviceScaleFactor: 1,
       viewport: { height: 844, width },
@@ -137,14 +140,26 @@ test("фиксирует пустые экраны phone и OTP", async ({ brows
     await expect(
       page.getByRole("heading", { name: "Введите номер телефона" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Подтвердить телефон" }),
-    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Корзина" })).toBeVisible();
     await expect(phone).toBeFocused();
     await expect(
-      page.getByRole("button", { name: "Отправить код" }),
+      page.getByRole("button", { name: "Получить код" }),
     ).toBeDisabled();
+    await expect(page.getByText("Отправить код", { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(
+      page.getByText(
+        "Подтверждение номера нужно для оформления заказа и истории заказов.",
+        {
+          exact: true,
+        },
+      ),
+    ).toHaveCount(0);
+    await expect(page.getByText("Номер телефона", { exact: true })).toHaveCount(
+      0,
+    );
+    await expectMobileAuthHeader(page, width);
     const phonePresentation = await page.evaluate(() => {
       const authScreen = document.querySelector(".auth-screen");
       const authContent = document.querySelector(".auth-content");
@@ -177,14 +192,13 @@ test("фиксирует пустые экраны phone и OTP", async ({ brows
     });
 
     await phone.fill("+79991234567");
-    await page.getByRole("button", { name: "Отправить код" }).click();
+    await page.getByRole("button", { name: "Получить код" }).click();
 
-    const otp = page.getByLabel("Код из сообщения", { exact: true });
+    const otp = page.getByLabel("Шестизначный код из сообщения", {
+      exact: true,
+    });
     await expect(
-      page.getByRole("heading", { name: "Введите код из сообщения" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Подтвердить телефон" }),
+      page.getByRole("heading", { name: "Введите код" }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Корзина" })).toBeVisible();
     await expect(otp).toBeFocused();
@@ -193,105 +207,106 @@ test("фиксирует пустые экраны phone и OTP", async ({ brows
         .locator(".auth-form:visible")
         .getByRole("button", { name: "Подтвердить", exact: true }),
     ).toBeDisabled();
+    await expect(
+      page.getByText("Введите код из сообщения", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("Код из сообщения", { exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByText("Введите 6 цифр", { exact: true })).toHaveCount(
+      0,
+    );
+    await expectMobileAuthHeader(page, width);
 
-    const geometry = await page.evaluate(() => {
-      const rect = (element: Element | null) => {
-        if (!element) throw new Error("Не найден элемент auth-геометрии.");
-
-        return element.getBoundingClientRect();
-      };
-      const field = document.querySelector<HTMLInputElement>(
-        'input[aria-label="Код из сообщения"]',
-      );
-      const authScreen = document.querySelector(".auth-screen");
-      const authContent = document.querySelector(".auth-content");
-      const app = document.querySelector("#app");
-      const header = document.querySelector(".shell-navigation__mobile-header");
-      const shellContent = document.querySelector(".customer-shell__content");
-      const stateIcon = document.querySelector(".state-icon");
-      const primary = document.querySelector<HTMLButtonElement>(
-        '.auth-form button[type="submit"]',
-      );
-      const fieldRect = rect(field?.closest(".v-field"));
-      const fieldFieldRect = rect(field?.parentElement);
-      const controlRect = rect(field?.closest(".v-input__control"));
-      const authScreenRect = rect(authScreen);
-      const authContentRect = rect(authContent);
-      const iconRect = rect(stateIcon);
-      const primaryRect = rect(primary);
-      const computed = getComputedStyle(field?.closest(".v-field") as Element);
-
-      return {
-        centerResidual: Math.abs(
-          authContentRect.y +
-            authContentRect.height / 2 -
-            (authScreenRect.y + authScreenRect.height / 2),
-        ),
-        fieldHeights: [
-          fieldFieldRect.height,
-          fieldRect.height,
-          controlRect.height,
-        ],
-        fontFamily: getComputedStyle(authContent).fontFamily,
-        iconHeight: iconRect.height,
-        appScrollTop: app?.scrollTop,
-        authScreenTop: authScreenRect.top,
-        headerTop: header?.getBoundingClientRect().top,
-        headerVisibleAtCenter:
-          header !== null &&
-          header.contains(
-            document.elementFromPoint(
-              header.getBoundingClientRect().x +
-                header.getBoundingClientRect().width / 2,
-              header.getBoundingClientRect().y +
-                header.getBoundingClientRect().height / 2,
-            ),
-          ),
-        overflow: document.documentElement.scrollWidth > window.innerWidth,
-        paddingBottom: computed.getPropertyValue("--v-field-padding-bottom"),
-        paddingTop: computed.getPropertyValue("--v-input-padding-top"),
-        primaryHeight: primaryRect.height,
-        scrollY: window.scrollY,
-        shellContentScrollTop: shellContent?.scrollTop,
-      };
-    });
-
-    expect(geometry.fieldHeights).toEqual([54, 54, 54]);
-    expect(geometry.iconHeight).toBe(76);
-    expect(geometry.primaryHeight).toBe(52);
-    expect(geometry.appScrollTop).toBe(0);
-    expect(geometry.authScreenTop).toBe(width < 480 ? 56 : 80);
-    expect(geometry.headerTop).toBe(width < 480 ? 0 : 24);
-    expect(geometry.headerVisibleAtCenter).toBe(true);
-    expect(geometry.paddingBottom).toBe("0");
-    expect(geometry.paddingTop).toBe("0");
-    expect(geometry.centerResidual).toBeLessThanOrEqual(2);
-    expect(geometry.fontFamily).toContain("Nunito");
-    expect(geometry.overflow).toBe(false);
-    expect(geometry.scrollY).toBe(0);
-    expect(geometry.shellContentScrollTop).toBe(0);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(width);
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page).toHaveScreenshot(`auth-otp-empty-${width}.png`, {
       animations: "disabled",
       fullPage: false,
       maxDiffPixelRatio: 0.01,
     });
+    if (width < 1024) {
+      await page.getByLabel("Перейти в меню").click();
+      await expect(page).toHaveURL(/\/$/);
+    }
 
     await context.close();
   }
 });
+
+async function expectMobileAuthHeader(
+  page: Page,
+  width: number,
+): Promise<void> {
+  const mobileHeader = page.locator(".shell-navigation__mobile-header");
+  if (width >= 1024) {
+    await expect(mobileHeader).toBeHidden();
+    return;
+  }
+
+  const labels = ["Перейти в меню", "Аккаунт", "История заказов", "Корзина"];
+  for (const label of labels) {
+    await expect(mobileHeader.getByLabel(label, { exact: true })).toBeVisible();
+  }
+
+  const geometry = await mobileHeader.evaluate((header, expectedLabels) => {
+    const rect = (element: Element) => {
+      const { bottom, height, left, right, top, width } =
+        element.getBoundingClientRect();
+      return { bottom, height, left, right, top, width };
+    };
+    return {
+      brand: (() => {
+        const brand = header.querySelector(".shell-navigation__brand");
+        if (brand === null) throw new Error("Не найден бренд header.");
+        return {
+          iconCount: brand.querySelectorAll("svg").length,
+          left: brand.getBoundingClientRect().left,
+        };
+      })(),
+      controls: expectedLabels.map((label) => {
+        const control = header.querySelector(`[aria-label="${label}"]`);
+        if (control === null) throw new Error(`Не найдена кнопка ${label}.`);
+        return rect(control);
+      }),
+      header: rect(header),
+      contentLeft:
+        header.getBoundingClientRect().left +
+        Number.parseFloat(getComputedStyle(header).paddingLeft),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    };
+  }, labels);
+
+  expect(geometry.viewportWidth).toBe(width);
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
+  expect(geometry.brand.iconCount).toBe(0);
+  expect(
+    Math.abs(geometry.brand.left - geometry.contentLeft),
+  ).toBeLessThanOrEqual(1);
+  for (const control of geometry.controls) {
+    expect(control.left).toBeGreaterThanOrEqual(0);
+    expect(control.right).toBeLessThanOrEqual(width);
+    expect(control.top).toBeGreaterThanOrEqual(geometry.header.top);
+    expect(control.bottom).toBeLessThanOrEqual(geometry.header.bottom);
+    expect(control.width).toBeGreaterThanOrEqual(44);
+    expect(control.height).toBeGreaterThanOrEqual(44);
+  }
+}
 
 async function login(page: Page, phone: string): Promise<string> {
   const otpResponse = page.waitForResponse((response) =>
     response.url().endsWith("/auth/otp/request"),
   );
   await page.getByLabel("Номер телефона").fill(phone);
-  await page.getByRole("button", { name: "Отправить код" }).click();
+  await page.getByRole("button", { name: "Получить код" }).click();
   const response = await otpResponse;
   expect(response.status()).toBe(202);
   expect(await response.text()).not.toContain(developmentOtp);
   const user = currentUser(page);
-  await page.getByLabel("Код из сообщения").fill(developmentOtp);
+  await page.getByLabel("Шестизначный код из сообщения").fill(developmentOtp);
   await page
     .locator(".auth-form:visible")
     .getByRole("button", { name: "Подтвердить", exact: true })

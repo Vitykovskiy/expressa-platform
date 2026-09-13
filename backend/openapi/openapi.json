@@ -2983,6 +2983,218 @@
         ]
       }
     },
+    "/api/v2/push/subscriptions/inspect": {
+      "post": {
+        "operationId": "PushSubscriptionsController_inspect",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionInspectionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Проверить связь текущей push-подписки",
+        "tags": [
+          "Push"
+        ]
+      }
+    },
+    "/api/v2/push/subscriptions/association": {
+      "put": {
+        "operationId": "PushSubscriptionsController_associate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushAssociationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushAssociationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Включить или перенести связь push-подписки",
+        "tags": [
+          "Push"
+        ]
+      },
+      "delete": {
+        "operationId": "PushSubscriptionsController_deleteAssociation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushAssociationDeleteRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Отключить свою versioned push-связь",
+        "tags": [
+          "Push"
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "operationId": "HealthController_getLiveness",
@@ -4928,6 +5140,88 @@
         "required": [
           "endpoint",
           "keys"
+        ]
+      },
+      "PushSubscriptionInspectionDto": {
+        "type": "object",
+        "properties": {
+          "association": {
+            "type": "string",
+            "enum": [
+              "none",
+              "current",
+              "other"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "association",
+          "version"
+        ]
+      },
+      "PushAssociationRequestDto": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "$ref": "#/components/schemas/PushSubscriptionDto"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "enable",
+              "transfer"
+            ]
+          },
+          "expectedVersion": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "subscription",
+          "action",
+          "expectedVersion"
+        ]
+      },
+      "PushAssociationResponseDto": {
+        "type": "object",
+        "properties": {
+          "association": {
+            "type": "string",
+            "enum": [
+              "current"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "association",
+          "version"
+        ]
+      },
+      "PushAssociationDeleteRequestDto": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "$ref": "#/components/schemas/PushSubscriptionDto"
+          },
+          "expectedVersion": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "subscription",
+          "expectedVersion"
         ]
       }
     }

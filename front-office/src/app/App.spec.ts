@@ -2,7 +2,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent } from "vue";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import MenuPage from "../pages/MenuPage.vue";
@@ -27,6 +27,8 @@ class ResizeObserverMock {
 }
 
 globalThis.ResizeObserver = ResizeObserverMock;
+
+const wrappers: ReturnType<typeof mount>[] = [];
 
 describe("App", () => {
   let pinia = createPinia();
@@ -53,6 +55,11 @@ describe("App", () => {
     });
   });
 
+  afterEach(() => {
+    for (const wrapper of wrappers) wrapper.unmount();
+    wrappers.splice(0);
+  });
+
   it("восстанавливает корзину до сессии один раз и не показывает маршрут до завершения", async () => {
     const router = await createTestRouter("/");
     const cartStore = useCartStore();
@@ -70,9 +77,11 @@ describe("App", () => {
         }),
     );
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
 
     await vi.waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
     expect(restore).toHaveBeenCalledTimes(1);
@@ -103,9 +112,11 @@ describe("App", () => {
         sessionStore.setAuthenticated("+79990000000");
       });
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     const boundary = wrapper.get('[role="status"]');
@@ -145,9 +156,11 @@ describe("App", () => {
     });
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     wrapper.getComponent(CustomerShell).vm.$emit("signOut");
@@ -161,7 +174,7 @@ describe("App", () => {
     );
 
     finishLogout();
-    await flushPromises();
+    await expectRoute(router, "/");
 
     expect(logout).toHaveBeenCalledTimes(1);
     expect(sessionStore.status).toBe("anonymous");
@@ -187,9 +200,11 @@ describe("App", () => {
     });
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     wrapper.getComponent(CustomerShell).vm.$emit("signOut");
@@ -197,7 +212,10 @@ describe("App", () => {
 
     expect(sessionStore.status).toBe("authenticated");
     expect(cartStore.items).toHaveLength(1);
-    expect(sessionStore.errorMessage).toBe("Сеть недоступна");
+    expect(sessionStore.errorMessage).toBe(
+      "Не удалось выполнить операцию сессии.",
+    );
+    expect(sessionStore.errorMessage).not.toContain("Сеть недоступна");
     expect(router.currentRoute.value.path).toBe("/");
   });
 
@@ -209,9 +227,11 @@ describe("App", () => {
     sessionStore.setAuthenticated("+79990000000");
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     const shell = wrapper.getComponent(CustomerShell);
@@ -220,20 +240,18 @@ describe("App", () => {
       activeDestination: "menu",
       cartCount: 1,
       isAuthenticated: true,
-      showBack: false,
     });
 
-    for (const [path, activeDestination, showBack] of [
-      ["/cart", "cart", false],
-      ["/auth/phone", "auth", false],
-      ["/auth/code", "auth", false],
-      ["/orders", "orders", false],
-      ["/orders/order-1", "orders", true],
+    for (const [path, activeDestination] of [
+      ["/cart", "cart"],
+      ["/auth/phone", "auth"],
+      ["/auth/code", "auth"],
+      ["/orders", "orders"],
+      ["/orders/order-1", "orders"],
     ] as const) {
       await router.push(path);
       await flushPromises();
       expect(shell.props("activeDestination")).toBe(activeDestination);
-      expect(shell.props("showBack")).toBe(showBack);
     }
   });
 
@@ -241,9 +259,11 @@ describe("App", () => {
     const router = await createTestRouter("/");
     const sessionStore = useSessionStore();
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     const shell = wrapper.getComponent(CustomerShell);
@@ -268,28 +288,26 @@ describe("App", () => {
     const sessionStore = useSessionStore();
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     const shell = wrapper.getComponent(CustomerShell);
-    shell.vm.$emit("back");
-    await flushPromises();
-    expect(router.currentRoute.value.path).toBe("/orders");
+    await router.push("/orders");
+    await expectRoute(router, "/orders");
 
     shell.vm.$emit("navigate", "cart");
-    await flushPromises();
-    expect(router.currentRoute.value.path).toBe("/cart");
+    await expectRoute(router, "/cart");
 
     shell.vm.$emit("navigate", "auth");
-    await flushPromises();
-    expect(router.currentRoute.value.path).toBe("/auth/phone");
+    await expectRoute(router, "/auth/phone");
     expect(router.currentRoute.value.query.returnTo).toBe("/cart");
 
     shell.vm.$emit("navigate", "menu");
-    await flushPromises();
-    expect(router.currentRoute.value.path).toBe("/");
+    await expectRoute(router, "/");
   });
 
   it("передаёт bridge только MenuPage и принимает только актуальный ack", async () => {
@@ -298,9 +316,11 @@ describe("App", () => {
     vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const wrapper = mount(App, {
-      global: { plugins: [vuetify, pinia, router] },
-    });
+    const wrapper = track(
+      mount(App, {
+        global: { plugins: [vuetify, pinia, router] },
+      }),
+    );
     await flushPromises();
 
     const shell = wrapper.getComponent(CustomerShell);
@@ -320,7 +340,6 @@ describe("App", () => {
     menu.vm.$emit("menuShellCommandAck", 1);
     await flushPromises();
     expect(shell.props("selectedCategoryId")).toBe("coffee");
-    expect(shell.props("showBack")).toBe(true);
     expect(menu.props("menuShellCommand")).toBeNull();
 
     menu.vm.$emit("menuScreenChange", {
@@ -328,25 +347,19 @@ describe("App", () => {
       categoryId: "coffee",
       productId: "espresso",
     });
-    shell.vm.$emit("back");
-    await flushPromises();
-    expect(menu.props("menuShellCommand")).toMatchObject({
-      target: { id: "category", categoryId: "coffee" },
-    });
-
     shell.vm.$emit("selectCategory", "coffee");
     await flushPromises();
     menu.vm.$emit("menuShellCommandAck", 1);
     await flushPromises();
-    expect(menu.props("menuShellCommand")).toMatchObject({ requestId: 3 });
-    menu.vm.$emit("menuShellCommandAck", 3);
+    expect(menu.props("menuShellCommand")).toMatchObject({ requestId: 2 });
+    menu.vm.$emit("menuShellCommandAck", 2);
     await flushPromises();
     expect(menu.props("menuShellCommand")).toBeNull();
 
     shell.vm.$emit("navigate", "menu");
     await flushPromises();
     expect(menu.props("menuShellCommand")).toMatchObject({
-      requestId: 4,
+      requestId: 3,
       target: { id: "root" },
     });
 
@@ -355,15 +368,13 @@ describe("App", () => {
     expect(wrapper.findAll('[data-test="plain-route"]')).toHaveLength(1);
     expect(wrapper.get('[data-test="plain-route"]').text()).toBe("cart");
     expect(shell.props("selectedCategoryId")).toBeUndefined();
-    expect(shell.props("showBack")).toBe(false);
 
     shell.vm.$emit("selectCategory", "coffee");
-    await flushPromises();
-    expect(router.currentRoute.value.path).toBe("/");
+    await expectRoute(router, "/");
     expect(
       wrapper.getComponent(MenuBridgeProbe).props("menuShellCommand"),
     ).toMatchObject({
-      requestId: 5,
+      requestId: 4,
       target: { id: "category", categoryId: "coffee" },
     });
 
@@ -383,6 +394,193 @@ describe("App", () => {
       /Extraneous non-props attributes|Extraneous non-emits event listeners/,
     );
     consoleWarn.mockRestore();
+  });
+
+  it("A06 opens Account through the real root-menu trigger and retries its real logout action", async () => {
+    const router = await createTestRouter("/");
+    const sessionStore = useSessionStore();
+    const cartStore = useCartStore();
+    sessionStore.setAuthenticated("+79990000000");
+    cartStore.items = [createCartItem()];
+    const logout = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error("network detail that must not reach a customer"),
+      )
+      .mockResolvedValueOnce(undefined);
+    setSessionDependencies({
+      authApi: {
+        getCurrentUser: vi.fn(),
+        logout,
+        refresh: vi.fn(),
+        requestOtp: vi.fn(),
+        verifyOtp: vi.fn(),
+      },
+      now: vi.fn(() => 1_000),
+    });
+    vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
+    const wrapper = track(
+      mount(App, {
+        global: {
+          plugins: [vuetify, pinia, router],
+          stubs: {
+            VAlert: { template: '<p v-bind="$attrs"><slot /></p>' },
+            VDialog: {
+              props: ["modelValue"],
+              template:
+                '<div v-if="modelValue" data-test="account-dialog"><slot /></div>',
+            },
+          },
+        },
+      }),
+    );
+    await flushPromises();
+    const trigger = wrapper.get('[aria-label="Аккаунт"]');
+    await trigger.trigger("click");
+    await flushPromises();
+    expect(wrapper.get('[data-test="account-dialog"]')).toBeDefined();
+    const logoutButton = () =>
+      wrapper
+        .findAll("button")
+        .find((button) => button.text() === "Выйти из аккаунта");
+    expect(logoutButton()).toBeDefined();
+    await logoutButton()!.trigger("click");
+    await flushPromises();
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(sessionStore.status).toBe("authenticated");
+    expect(cartStore.items).toHaveLength(1);
+    expect(wrapper.text()).toContain(
+      "Не удалось выйти из аккаунта. Попробуйте ещё раз.",
+    );
+    expect(wrapper.text()).not.toContain("network detail");
+    await logoutButton()!.trigger("click");
+    await expectRoute(router, "/");
+    expect(logout).toHaveBeenCalledTimes(2);
+    expect(sessionStore.status).toBe("anonymous");
+    expect(cartStore.items).toHaveLength(0);
+  });
+
+  it("A07 keeps Account closed when deferred logout settles after the customer closes it", async () => {
+    const router = await createTestRouter("/");
+    const sessionStore = useSessionStore();
+    sessionStore.setAuthenticated("+79990000000");
+    const logoutGate = deferred<void>();
+    const logout = vi.fn(() => logoutGate.promise);
+    setSessionDependencies({
+      authApi: {
+        getCurrentUser: vi.fn(),
+        logout,
+        refresh: vi.fn(),
+        requestOtp: vi.fn(),
+        verifyOtp: vi.fn(),
+      },
+      now: vi.fn(() => 1_000),
+    });
+    vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
+    const wrapper = track(
+      mount(App, {
+        global: {
+          plugins: [vuetify, pinia, router],
+          stubs: {
+            VDialog: {
+              props: ["modelValue"],
+              template:
+                '<div v-if="modelValue" data-test="account-dialog"><slot /></div>',
+            },
+            VAlert: { template: "<p><slot /></p>" },
+          },
+        },
+      }),
+    );
+    await flushPromises();
+    await wrapper.get('[aria-label="Аккаунт"]').trigger("click");
+    await flushPromises();
+    await byButtonText(wrapper, "Выйти из аккаунта").trigger("click");
+    await vi.waitFor(() => expect(logout).toHaveBeenCalledOnce());
+    expect(
+      byButtonText(wrapper, "Выйти из аккаунта").attributes("disabled"),
+    ).toBeDefined();
+    await wrapper
+      .get('[aria-label="Закрыть настройки аккаунта"]')
+      .trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-test="account-dialog"]').exists()).toBe(false),
+    );
+
+    logoutGate.resolve();
+    await expectRoute(router, "/");
+    expect(sessionStore.status).toBe("anonymous");
+    expect(wrapper.find('[data-test="account-dialog"]').exists()).toBe(false);
+  });
+
+  it("keeps header Account available across MenuFlow root/category/product/root", async () => {
+    const router = await createTestRouter("/");
+    setMenuStoreDependencies({
+      publicMenuApi: {
+        getMenu: vi.fn().mockResolvedValue({
+          acceptsNewOrders: true,
+          categories: [
+            {
+              id: "coffee",
+              name: "Кофе",
+              description: "",
+              products: [
+                {
+                  id: "espresso",
+                  name: "Эспрессо",
+                  description: "",
+                  isAvailable: true,
+                  modifierGroups: [],
+                  type: "DRINK",
+                  price: null,
+                  variants: [
+                    { id: "s", size: "S", price: 180, isAvailable: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    });
+    const sessionStore = useSessionStore();
+    vi.spyOn(sessionStore, "bootstrap").mockResolvedValue();
+    const wrapper = track(
+      mount(App, {
+        global: {
+          plugins: [vuetify, pinia, router],
+          stubs: {
+            VDialog: {
+              props: ["modelValue"],
+              template:
+                '<div v-if="modelValue" data-test="account-dialog"><slot /></div>',
+            },
+            VAlert: { template: "<p><slot /></p>" },
+          },
+        },
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(wrapper.find(".menu-root__category-card").exists()).toBe(true),
+    );
+    await wrapper.get(".menu-root__category-card").trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find(".product-card").exists()).toBe(true),
+    );
+    await wrapper.get(".product-card").trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find(".product-detail").exists()).toBe(true),
+    );
+    await wrapper.get('.product-detail [aria-label="Назад"]').trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find(".menu-group").exists()).toBe(true),
+    );
+    await wrapper.get('.menu-group [aria-label="Назад"]').trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find(".menu-root").exists()).toBe(true),
+    );
+    await wrapper.get('[aria-label="Аккаунт"]').trigger("click");
+    expect(wrapper.findAll('[data-test="account-dialog"]')).toHaveLength(1);
   });
 });
 
@@ -462,4 +660,34 @@ function createCartItem() {
     quantity: 1,
     type: "drink" as const,
   };
+}
+
+function byButtonText(wrapper: ReturnType<typeof mount>, text: string) {
+  const button = wrapper.findAll("button").find((item) => item.text() === text);
+  expect(button, `Expected button ${text}`).toBeDefined();
+  return button!;
+}
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  let reject: (reason?: unknown) => void = () => {};
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, reject, resolve };
+}
+
+function track<T>(wrapper: T): T {
+  // App permanently mounts a Vuetify dialog whose router guard must be removed
+  // with the wrapper. Keeping the test lifecycle explicit prevents guard leaks.
+  wrappers.push(wrapper as ReturnType<typeof mount>);
+  return wrapper;
+}
+
+async function expectRoute(
+  router: ReturnType<typeof createRouter>,
+  path: string,
+): Promise<void> {
+  await vi.waitFor(() => expect(router.currentRoute.value.path).toBe(path));
 }

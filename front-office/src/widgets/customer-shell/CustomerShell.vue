@@ -8,33 +8,18 @@
       :is-authenticated="props.isAuthenticated"
       :is-logout-pending="props.isLogoutPending"
       :selected-category-id="props.selectedCategoryId"
-      :show-back="props.showBack"
-      @back="emit('back')"
       @navigate="handleNavigate"
       @select-category="emit('selectCategory', $event)"
-      @sign-out="emit('signOut')"
+      @open-account="emit('openAccount')"
     />
 
     <section class="customer-shell__content">
-      <ui-btn
-        v-if="props.showBack"
-        type="button"
-        class="customer-shell__desktop-back"
-        navigation
-        navigation-direction="back"
-        @click="emit('back')"
-      >
-        <ArrowLeft aria-hidden="true" />
-        Назад
-      </ui-btn>
       <slot />
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft } from "lucide-vue-next";
-import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import ShellNavigation from "./ShellNavigation.vue";
 import type { ShellNavigationDestination } from "./ShellNavigation.types";
 import type {
@@ -78,10 +63,6 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   min-width: 0;
 }
 
-.customer-shell__desktop-back {
-  display: none;
-}
-
 @media (min-width: 1024px) {
   .customer-shell {
     flex-direction: row;
@@ -93,12 +74,6 @@ function handleNavigate(destination: ShellNavigationDestination): void {
     max-width: var(--customer-size-shell-content);
     margin: 0 auto;
     padding: var(--customer-space-5) var(--customer-space-17);
-  }
-
-  .customer-shell__desktop-back {
-    align-self: start;
-    display: inline-flex;
-    margin-top: var(--customer-space-11);
   }
 }
 </style>

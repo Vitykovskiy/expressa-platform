@@ -6,6 +6,7 @@
     <button
       type="button"
       class="order-card__header"
+      :aria-label="disclosureAccessibleName"
       :aria-controls="detailsId"
       :aria-expanded="isOpen"
       @click="isOpen = !isOpen"
@@ -22,10 +23,8 @@
         </span>
       </span>
       <span class="order-card__meta">
-        {{ formattedCreatedAt }} · {{ props.order.items.length }}
-        {{ itemLabel }}
+        {{ formattedCreatedAt }}
       </span>
-      <span class="order-card__disclosure">{{ disclosureLabel }}</span>
     </button>
     <p v-if="props.order.stage === 'READY'" class="order-card__pickup-cue">
       Заберите заказ на кассе.
@@ -87,19 +86,12 @@ const formattedCreatedAt = computed(() =>
     minute: "2-digit",
   }).format(new Date(props.order.createdAt)),
 );
-const itemLabel = computed(() => {
-  const count = props.order.items.length;
-  const lastTwoDigits = count % 100;
-  const lastDigit = count % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "позиций";
-  if (lastDigit === 1) return "позиция";
-  if (lastDigit >= 2 && lastDigit <= 4) return "позиции";
-
-  return "позиций";
-});
 const disclosureLabel = computed(() =>
   isOpen.value ? "Скрыть состав" : "Показать состав",
+);
+const disclosureAccessibleName = computed(
+  () =>
+    `Заказ №${props.order.number}, ${props.stageLabel}, ${formatRubles(props.order.total)}, ${formattedCreatedAt.value}. ${disclosureLabel.value}`,
 );
 
 function itemKey(item: OrderItem): string {
@@ -209,7 +201,6 @@ function itemKey(item: OrderItem): string {
   color: var(--customer-text-secondary-on-brand);
 }
 .order-card__meta,
-.order-card__disclosure,
 .order-card__pickup-cue,
 .order-card__item-quantity,
 .order-card__modifier {
@@ -218,7 +209,6 @@ function itemKey(item: OrderItem): string {
   font-weight: var(--customer-font-weight-semibold);
 }
 .order-card--issued .order-card__meta,
-.order-card--issued .order-card__disclosure,
 .order-card--issued .order-card__pickup-cue,
 .order-card--issued .order-card__item-quantity,
 .order-card--issued .order-card__modifier {

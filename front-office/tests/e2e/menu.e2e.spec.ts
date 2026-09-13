@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { Pool } from "pg";
 
+import { frontOfficeE2eDatabaseUrl } from "../../playwright.config.constants";
 import {
   configuredProductPrices,
   customerBreakpointWidths,
@@ -109,19 +111,42 @@ test("menu не получает horizontal overflow на declared breakpoints",
     await openCleanMenu(page, width);
     await expectNoHorizontalOverflow(page, width);
   }
+
+  for (const width of [1024, 1440]) {
+    await openCleanMenu(page, width);
+    await page
+      .getByRole("button", {
+        name: `Открыть категорию ${screenNames.coffee}`,
+      })
+      .click();
+    await expectDesktopContextualRow(
+      page,
+      width,
+      ".menu-group__context-row",
+      ".menu-group__header",
+    );
+
+    await page.getByRole("button", { name: productNames.cappuccino }).click();
+    await expectDesktopContextualRow(
+      page,
+      width,
+      ".product-detail__context-row",
+      ".product-detail__header",
+    );
+  }
 });
 
 test("мобильная шапка сохраняет все действия и бренд внутри viewport", async ({
   page,
 }) => {
-  for (const width of [320, 360, 390]) {
+  for (const width of [320, 359, 390, 700, 1023]) {
     await openMenuForHeaderBounds(page, width);
 
     await page.getByRole("button", { name: "Корзина" }).click();
     await expect(page).toHaveURL(/\/cart$/);
     await expectMobileHeaderBounds(page, width, false);
 
-    await page.getByRole("button", { exact: true, name: "Меню" }).click();
+    await page.getByLabel("Перейти в меню").click();
     await expect(page.getByRole("region", { name: "Меню" })).toBeVisible();
     await page.getByRole("button", { name: "Открыть категорию Кофе" }).click();
     await expect(
@@ -144,6 +169,90 @@ test("мобильная шапка сохраняет все действия �
   }
 });
 
+test("бренд возвращает category и product в корень меню без reload", async ({
+  page,
+}) => {
+  for (const width of [320, 359, 390, 700, 1023]) {
+    await openCleanMenu(page, width);
+    await page
+      .getByRole("button", { name: `Открыть категорию ${screenNames.coffee}` })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.coffee }),
+    ).toBeVisible();
+    await page.getByLabel("Перейти в меню").click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.menu }),
+    ).toBeVisible();
+
+    await openProduct(page, screenNames.coffee, productNames.cappuccino);
+    await page.getByLabel("Перейти в меню").click();
+    await expect(
+      page.getByRole("heading", { name: screenNames.menu }),
+    ).toBeVisible();
+  }
+});
+
+test("product footer reaches the mobile usable bottom and remains reachable across boundaries", async ({
+  page,
+}) => {
+  for (const width of [320, 359, 390, 700, 1023, 1024, 1440]) {
+    await openCleanMenu(page, width);
+    await openProduct(page, screenNames.coffee, productNames.cappuccino);
+
+    const footer = page.locator(".product-detail__footer");
+    const add = footer.getByRole("button", { name: /Добавить/ });
+    await expect(add).toBeVisible();
+    await expectControlNotOccluded(page, add, "Добавить");
+
+    const geometry = await footerGeometry(footer);
+    if (width < 1024) {
+      expect(geometry.footerPosition).toBe("sticky");
+      expect(
+        Math.abs(geometry.footerBottom - geometry.viewportBottom),
+      ).toBeLessThanOrEqual(2);
+      expect(geometry.addBottom).toBeLessThanOrEqual(geometry.viewportBottom);
+      // In desktop Chromium env(safe-area-inset-bottom) is zero. The token
+      // fallback must still leave an operable bottom inset for the CTA.
+      expect(geometry.paddingBottom).toBeGreaterThanOrEqual(16);
+    } else {
+      expect(geometry.footerPosition).toBe("static");
+    }
+  }
+
+  const longModifiers = new LongModifierFixture();
+  try {
+    await longModifiers.create();
+    for (const width of [390, 700, 1023]) {
+      await openCleanMenu(page, width);
+      await openProduct(page, screenNames.coffee, productNames.cappuccino);
+
+      const footer = page.locator(".product-detail__footer");
+      const finalModifier = page.getByRole("button", {
+        name: "Последняя добавка · 0 ₽",
+      });
+      await finalModifier.scrollIntoViewIfNeeded();
+      await expectControlNotOccluded(page, finalModifier, "Последняя добавка");
+      const modifierGeometry = await finalModifier.evaluate((element) => {
+        const modifier = element.getBoundingClientRect();
+        const footer = document
+          .querySelector(".product-detail__footer")
+          ?.getBoundingClientRect();
+        return { footerTop: footer?.top ?? 0, modifierBottom: modifier.bottom };
+      });
+      expect(modifierGeometry.modifierBottom).toBeLessThanOrEqual(
+        modifierGeometry.footerTop,
+      );
+
+      const add = footer.getByRole("button", { name: /Добавить/ });
+      await expectControlNotOccluded(page, add, "Добавить");
+    }
+  } finally {
+    await longModifiers.remove();
+    await longModifiers.close();
+  }
+});
+
 test("menu root, category and detail match visual baselines", async ({
   page,
 }) => {
@@ -156,9 +265,7 @@ test("menu root, category and detail match visual baselines", async ({
     });
 
     await page
-      .locator(".menu-root__grid > li")
-      .filter({ has: page.getByText(screenNames.coffee, { exact: true }) })
-      .getByRole("button")
+      .getByRole("button", { name: `Открыть категорию ${screenNames.coffee}` })
       .click();
     await expect(
       page.getByRole("heading", { name: screenNames.coffee }),
@@ -206,18 +313,23 @@ test("недоступный товар сохраняет читаемый ст
     ]) {
       await page.setViewportSize({ width, height });
       await page.goto("/");
-      await page.evaluate(() => localStorage.clear());
+      await page.evaluate(() => {
+        localStorage.clear();
+        history.replaceState({}, "", location.href);
+      });
       await page.reload();
       await page
-        .locator(".menu-root__grid > li")
-        .filter({ has: page.getByText(screenNames.coffee, { exact: true }) })
-        .getByRole("button")
+        .getByRole("button", {
+          name: `Открыть категорию ${screenNames.coffee}`,
+        })
         .click();
 
       const unavailableProduct = page.getByRole("button", {
         name: productNames.cappuccino,
       });
-      const status = page.getByText("Сейчас недоступно", { exact: true });
+      const status = unavailableProduct.getByText("Временно недоступно", {
+        exact: true,
+      });
       const cart = page.getByRole("button", { name: "Корзина" });
       const cartBadge = page.locator(
         ".shell-navigation__cart-button .shell-navigation__badge",
@@ -255,9 +367,10 @@ test("недоступный товар сохраняет читаемый ст
         }: ReturnType<typeof parseColor>) =>
           0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
         const foreground = parseColor(getComputedStyle(element).color);
+        const backgroundElement =
+          element.closest(".product-card") ?? document.body;
         const background = parseColor(
-          getComputedStyle(element.parentElement ?? document.body)
-            .backgroundColor,
+          getComputedStyle(backgroundElement).backgroundColor,
         );
         const compositedForeground = {
           blue:
@@ -277,8 +390,7 @@ test("недоступный товар сохраняет читаемый ст
             0.05);
 
         return {
-          background: getComputedStyle(element.parentElement ?? document.body)
-            .backgroundColor,
+          background: getComputedStyle(backgroundElement).backgroundColor,
           compositedForeground: [
             Math.round(compositedForeground.red),
             Math.round(compositedForeground.green),
@@ -304,7 +416,10 @@ test("недоступный товар сохраняет читаемый ст
 async function openCleanMenu(page: Page, width: number): Promise<void> {
   await page.setViewportSize({ height: menuViewportHeight, width });
   await page.goto("/");
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    history.replaceState({}, "", location.href);
+  });
   await page.reload();
   await expect(
     page.getByRole("heading", { name: screenNames.menu }),
@@ -318,10 +433,15 @@ async function openMenuForHeaderBounds(
 ): Promise<void> {
   await page.setViewportSize({ height: menuViewportHeight, width });
   await page.goto("/");
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    history.replaceState({}, "", location.href);
+  });
   await page.reload();
-  if ((await page.getByRole("region", { name: "Меню" }).count()) === 0) {
-    await page.getByRole("button", { exact: true, name: "Меню" }).click();
+  if (
+    (await page.getByRole("heading", { name: screenNames.menu }).count()) === 0
+  ) {
+    await page.getByLabel("Перейти в меню").click();
   }
   await expect(page.getByRole("region", { name: "Меню" })).toBeVisible();
   await expectNoHorizontalOverflow(page, width);
@@ -333,13 +453,14 @@ async function openProduct(
   productName: string,
 ): Promise<number> {
   await page
-    .locator(".menu-root__grid > li")
-    .filter({ has: page.getByText(categoryName, { exact: true }) })
-    .getByRole("button")
+    .getByRole("button", { name: `Открыть категорию ${categoryName}` })
     .click();
   await expect(page.getByRole("heading", { name: categoryName })).toBeVisible();
   const scrollY = await page.evaluate(() => window.scrollY);
-  await page.getByRole("button", { name: new RegExp(productName) }).click();
+  await page
+    .locator(".product-card")
+    .filter({ has: page.getByText(productName, { exact: true }) })
+    .click();
   await expect(page.getByRole("heading", { name: productName })).toBeVisible();
 
   return scrollY;
@@ -401,13 +522,9 @@ async function expectCartConfiguration(page: Page): Promise<void> {
 async function expectMobileHeaderBounds(
   page: Page,
   width: number,
-  showBack: boolean,
+  screenOwnsBack: boolean,
 ): Promise<void> {
-  const labels = [
-    ...(showBack ? ["Назад", "Меню"] : ["Меню"]),
-    "История заказов",
-    "Корзина",
-  ];
+  const labels = ["Перейти в меню", "Аккаунт", "История заказов", "Корзина"];
 
   const geometry = await page.evaluate((expectedLabels) => {
     const header = document.querySelector(".shell-navigation__mobile-header");
@@ -431,11 +548,15 @@ async function expectMobileHeaderBounds(
 
     return {
       brand: {
+        iconCount: brand.querySelectorAll("svg").length,
         rect: rectangle(brand),
-        text: brand.firstElementChild?.textContent?.trim(),
+        text: brand.textContent?.replace("☕", "").trim(),
       },
       controls,
       header: rectangle(header),
+      contentLeft:
+        header.getBoundingClientRect().left +
+        Number.parseFloat(getComputedStyle(header).paddingLeft),
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     };
@@ -443,13 +564,54 @@ async function expectMobileHeaderBounds(
 
   expect(geometry.viewportWidth).toBe(width);
   expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
-  expect(geometry.brand.text).toBe("Ex-pressa");
+  expect(geometry.brand.text).toBe("Экспресса");
+  expect(geometry.brand.iconCount).toBe(0);
   expect(geometry.brand.rect.left).toBeGreaterThanOrEqual(0);
   expect(geometry.brand.rect.right).toBeLessThanOrEqual(width);
   expect(geometry.brand.rect.top).toBeGreaterThanOrEqual(geometry.header.top);
   expect(geometry.brand.rect.bottom).toBeLessThanOrEqual(
     geometry.header.bottom,
   );
+  expect(
+    Math.abs(geometry.brand.rect.left - geometry.contentLeft),
+  ).toBeLessThanOrEqual(1);
+  await expect(
+    page
+      .locator(".shell-navigation__mobile-header")
+      .getByLabel("Назад", { exact: true }),
+  ).toHaveCount(0);
+  if (screenOwnsBack) {
+    await expect(page.getByLabel("Назад", { exact: true })).toBeVisible();
+    const contextRow = page.locator(
+      ".menu-group__context-row, .product-detail__context-row",
+    );
+    await expect(contextRow).toHaveCount(1);
+    await expect(contextRow.getByLabel("Назад", { exact: true })).toHaveCount(
+      1,
+    );
+    const contextPlacement = await contextRow.evaluate((row) => {
+      const header = document.querySelector(".shell-navigation__mobile-header");
+      const title = row.parentElement?.querySelector("h1");
+      if (header === null || title === null)
+        throw new Error("Не найдена геометрия contextual Back меню.");
+      return {
+        followsHeader: row.compareDocumentPosition(header) === 2,
+        precedesTitle: Boolean(row.compareDocumentPosition(title) & 4),
+        headerBottom: header.getBoundingClientRect().bottom,
+        rowTop: row.getBoundingClientRect().top,
+        rowBottom: row.getBoundingClientRect().bottom,
+        titleTop: title.getBoundingClientRect().top,
+      };
+    });
+    expect(contextPlacement.followsHeader).toBe(true);
+    expect(contextPlacement.precedesTitle).toBe(true);
+    expect(contextPlacement.rowTop).toBeGreaterThanOrEqual(
+      contextPlacement.headerBottom,
+    );
+    expect(contextPlacement.rowBottom).toBeLessThanOrEqual(
+      contextPlacement.titleTop,
+    );
+  }
 
   for (const { rect } of geometry.controls) {
     expect(rect.left).toBeGreaterThanOrEqual(0);
@@ -461,11 +623,83 @@ async function expectMobileHeaderBounds(
   }
 }
 
+async function expectDesktopContextualRow(
+  page: Page,
+  width: number,
+  rowSelector: string,
+  primarySelector: string,
+): Promise<void> {
+  const row = page.locator(rowSelector);
+  await expect(row).toHaveCount(1);
+  await expect(row.getByLabel("Назад", { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel("Назад", { exact: true })).toHaveCount(1);
+
+  const geometry = await row.evaluate((element, primarySelector) => {
+    const shell = document.querySelector(".shell-navigation__sidebar");
+    const content = document.querySelector(".customer-shell__content");
+    const primary = element.parentElement?.querySelector(primarySelector);
+    const back = element.querySelector('[aria-label="Назад"]');
+    if (shell === null || content === null || primary === null || back === null)
+      throw new Error("Не найдена desktop-геометрия contextual Back.");
+
+    const rect = (candidate: Element) => {
+      const { bottom, left, right, top } = candidate.getBoundingClientRect();
+      return { bottom, left, right, top };
+    };
+    return {
+      back: rect(back),
+      content: rect(content),
+      followsNavigation: Boolean(shell.compareDocumentPosition(element) & 4),
+      precedesPrimary: Boolean(element.compareDocumentPosition(primary) & 4),
+      primary: rect(primary),
+      row: rect(element),
+      viewportWidth: window.innerWidth,
+    };
+  }, primarySelector);
+
+  expect(geometry.viewportWidth).toBe(width);
+  expect(geometry.followsNavigation).toBe(true);
+  expect(geometry.precedesPrimary).toBe(true);
+  expect(geometry.row.left).toBeGreaterThanOrEqual(geometry.content.left);
+  expect(geometry.row.right).toBeLessThanOrEqual(geometry.content.right);
+  expect(Math.abs(geometry.back.left - geometry.row.left)).toBeLessThanOrEqual(
+    1,
+  );
+  expect(geometry.back.right).toBeLessThanOrEqual(geometry.row.right);
+  expect(geometry.back.top).toBeGreaterThanOrEqual(geometry.row.top);
+  expect(geometry.back.bottom).toBeLessThanOrEqual(geometry.row.bottom);
+  expect(geometry.row.bottom).toBeLessThanOrEqual(geometry.primary.top);
+}
+
+async function footerGeometry(footer: Locator): Promise<{
+  addBottom: number;
+  footerBottom: number;
+  footerPosition: string;
+  paddingBottom: number;
+  viewportBottom: number;
+}> {
+  return footer.evaluate((element) => {
+    const footerRect = element.getBoundingClientRect();
+    const addRect = element
+      .querySelector("button:last-child")
+      ?.getBoundingClientRect();
+    return {
+      addBottom: addRect?.bottom ?? 0,
+      footerBottom: footerRect.bottom,
+      footerPosition: getComputedStyle(element).position,
+      paddingBottom: Number.parseFloat(getComputedStyle(element).paddingBottom),
+      viewportBottom: window.innerHeight,
+    };
+  });
+}
+
 async function expectControlNotOccluded(
   page: Page,
   control: Locator,
   expectedText: string,
 ): Promise<void> {
+  await control.scrollIntoViewIfNeeded();
+
   await expect
     .poll(async () => {
       const box = await control.boundingBox();
@@ -480,13 +714,15 @@ async function expectControlNotOccluded(
       if (!isInsideViewport) return false;
 
       return page.evaluate(
-        ({ x, y }) =>
-          document.elementFromPoint(x, y)?.closest("button, a")?.textContent ??
-          "",
-        { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+        ({ expectedText, x, y }) =>
+          document
+            .elementFromPoint(x, y)
+            ?.closest("button, a")
+            ?.textContent?.includes(expectedText) ?? false,
+        { expectedText, x: box.x + box.width / 2, y: box.y + box.height / 2 },
       );
     })
-    .toContain(expectedText);
+    .toBe(true);
 }
 
 async function expectNoHorizontalOverflow(
@@ -577,4 +813,64 @@ function isExpectedUnauthenticatedRefresh(
     new URL(url).origin === expectedUnauthenticatedRefreshOrigin &&
     new URL(url).pathname === expectedUnauthenticatedRefreshPath
   );
+}
+
+class LongModifierFixture {
+  readonly #pool = new Pool({ connectionString: frontOfficeE2eDatabaseUrl });
+  readonly #groupIds = Array.from(
+    { length: 8 },
+    (_, index) =>
+      `00000000-0000-4000-8000-${String(900 + index).padStart(12, "0")}`,
+  );
+  readonly #optionIds = this.#groupIds.flatMap((_, groupIndex) => [
+    `00000000-0000-4000-8000-${String(1_000 + groupIndex * 2).padStart(12, "0")}`,
+    `00000000-0000-4000-8000-${String(1_001 + groupIndex * 2).padStart(12, "0")}`,
+  ]);
+
+  async create(): Promise<void> {
+    for (const [index, groupId] of this.#groupIds.entries()) {
+      await this.#pool.query(
+        `INSERT INTO modifier_groups (id, name, selection_type, min_select, max_select, is_active)
+         VALUES ($1, $2, 'single', 0, 1, true)`,
+        [groupId, `Дополнение ${index + 1}`],
+      );
+      await this.#pool.query(
+        `INSERT INTO category_modifier_groups (category_id, group_id, sort_order)
+         VALUES ($1, $2, $3)`,
+        ["00000000-0000-4000-8000-000000000001", groupId, 100 + index],
+      );
+      await this.#pool.query(
+        `INSERT INTO modifier_options (id, group_id, name, price_delta, sort_order, is_default, is_available)
+         VALUES ($1, $2, $3, 0, 10, false, true), ($4, $2, $5, 0, 20, false, true)`,
+        [
+          this.#optionIds[index * 2],
+          groupId,
+          `Добавка ${index + 1}`,
+          this.#optionIds[index * 2 + 1],
+          index === this.#groupIds.length - 1
+            ? "Последняя добавка"
+            : `Ещё добавка ${index + 1}`,
+        ],
+      );
+    }
+  }
+
+  async remove(): Promise<void> {
+    await this.#pool.query(
+      "DELETE FROM category_modifier_groups WHERE group_id = ANY($1::uuid[])",
+      [this.#groupIds],
+    );
+    await this.#pool.query(
+      "DELETE FROM modifier_options WHERE id = ANY($1::uuid[])",
+      [this.#optionIds],
+    );
+    await this.#pool.query(
+      "DELETE FROM modifier_groups WHERE id = ANY($1::uuid[])",
+      [this.#groupIds],
+    );
+  }
+
+  async close(): Promise<void> {
+    await this.#pool.end();
+  }
 }

@@ -15,7 +15,9 @@ describe("AuthForm", () => {
   it("передаёт только цифры из кода", async () => {
     const wrapper = mountForm();
 
-    await wrapper.get('[aria-label="Код из сообщения"]').setValue("12a-3б4");
+    await wrapper
+      .get('[aria-label="Шестизначный код из сообщения"]')
+      .setValue("12a-3б4");
 
     expect(wrapper.emitted("updateOtp")).toEqual([["1234"]]);
   });
@@ -45,7 +47,9 @@ describe("AuthForm", () => {
     const wrapper = mountForm({ isLoading: true });
 
     expect(wrapper.get("button").attributes("aria-busy")).toBe("true");
-    expect(wrapper.get('[aria-label="Код из сообщения"]')).toBeTruthy();
+    expect(
+      wrapper.get('[aria-label="Шестизначный код из сообщения"]'),
+    ).toBeTruthy();
   });
 
   it("локально выделяет ошибку на auth-фоне", () => {

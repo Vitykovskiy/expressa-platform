@@ -6,9 +6,6 @@
   >
     <header class="orders-history__header">
       <div>
-        <p class="orders-history__eyebrow">
-          {{ props.orders.length }} {{ orderLabel }}
-        </p>
         <h1 id="orders-history-title">История</h1>
       </div>
       <div class="orders-history__actions">
@@ -21,20 +18,8 @@
         >
           <RefreshCw class="orders-history__refresh-icon" aria-hidden="true" />
         </ui-icon-btn>
-        <ui-icon-btn
-          ref="settingsButton"
-          type="button"
-          aria-label="Настройки"
-          @click="openSettings"
-        >
-          <Settings aria-hidden="true" :size="18" :stroke-width="2.5" />
-        </ui-icon-btn>
       </div>
     </header>
-    <OrderNotificationsSection
-      ref="notificationsSection"
-      @sign-out="emit('signOut')"
-    />
     <p v-if="props.staleMessage" class="orders-history__stale" role="status">
       {{ props.staleMessage }}
     </p>
@@ -85,12 +70,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from "vue";
-import { RefreshCw, Settings } from "lucide-vue-next";
+import { RefreshCw } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import OrderCard from "./OrderCard.vue";
-import OrderNotificationsSection from "./OrderNotificationsSection.vue";
 import { orderCardStageLabels } from "./OrderCard.constants";
 import type {
   OrdersHistoryScreenEmits,
@@ -99,27 +82,6 @@ import type {
 
 const props = defineProps<OrdersHistoryScreenProps>();
 const emit = defineEmits<OrdersHistoryScreenEmits>();
-const notificationsSection = useTemplateRef<
-  InstanceType<typeof OrderNotificationsSection>
->("notificationsSection");
-
-const orderLabel = computed(() => {
-  const lastTwoDigits = props.orders.length % 100;
-  const lastDigit = props.orders.length % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "заказов";
-  if (lastDigit === 1) return "заказ";
-  if (lastDigit >= 2 && lastDigit <= 4) return "заказа";
-
-  return "заказов";
-});
-
-function openSettings(): void {
-  const section = notificationsSection.value as {
-    openSettings?: () => void;
-  } | null;
-  section?.openSettings?.();
-}
 </script>
 
 <style scoped lang="scss">

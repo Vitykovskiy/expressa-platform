@@ -38,7 +38,26 @@ stores сохраняют сообщения ошибок в собственн�
 [notice](../../src/shared/ui/ErrorNotice.vue).
 
 В production регистрируется service worker; development его не регистрирует.
-[Источник: PWA](../../src/app/pwa.ts).
+Обновлённый worker ожидает стандартное `SKIP_WAITING` message. При явной
+browser reload navigation PWA bootstrap посылает его, только когда prompt
+callback сообщает о waiting worker; тогда worker активируется и захватывает
+клиенты. Обычная открытая сессия не перезагружается из-за найденного обновления,
+а после закрытия всех клиентов worker активируется по обычному lifecycle перед
+следующим запуском. Nginx требует revalidation для worker и `index.html`;
+внутренний SPA fallback также отдаёт этот `index.html`.
+[Источники: PWA](../../src/app/pwa.ts), [worker](../../src/app/push-notifications.ts),
+[Nginx](../../nginx.conf).
+
+## Required notification and session state
+
+Planned notification entity owns support, permission, local capability,
+server-association inspection and serialized operation state; browser
+subscription and secrets остаются transient и не попадают в local storage.
+Account/route generations invalidate delayed results: старое действие не
+привязывает новый аккаунт и не открывает диалог. Invitation memory локальна для
+аккаунта и установки; write/readback failure suppresses automatic invitation.
+Session store owns one recovery flow for protected reads; API client remains
+stateless. Details: [ADR-005](../../../docs/20-architecture/ADR/ADR-005-customer-notification-association.md).
 
 Проверки: [session](../../src/app/session.store.spec.ts), [API](../../src/shared/api/client.spec.ts),
 [checkout](../../src/features/checkout/checkout.store.spec.ts).

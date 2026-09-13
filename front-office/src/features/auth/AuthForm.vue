@@ -14,7 +14,6 @@
       color="var(--customer-text)"
       hide-details
       inputmode="tel"
-      label="Номер телефона"
       placeholder="+7 (___) ___-__-__"
       variant="outlined"
       class="auth-form__field"
@@ -40,7 +39,7 @@
       size="x-large"
       type="submit"
     >
-      Отправить код
+      Получить код
     </ui-btn>
   </form>
 
@@ -51,14 +50,13 @@
   >
     <ui-text-field
       autocomplete="one-time-code"
-      aria-label="Код из сообщения"
+      aria-label="Шестизначный код из сообщения"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
       color="var(--customer-text)"
       hide-details
       inputmode="numeric"
-      label="Код из сообщения"
       maxlength="6"
       placeholder="000000"
       variant="outlined"

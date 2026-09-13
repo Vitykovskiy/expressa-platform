@@ -18,6 +18,9 @@ describe("ProductCard", () => {
       description.attributes("id"),
     );
     expect(description.text()).toBe(PRODUCT_CARD_UNAVAILABLE_DESCRIPTION);
+    expect(description.classes()).toContain(
+      "product-card__description--unavailable",
+    );
     expect(description.element.parentElement?.classList).toContain(
       "product-card__info",
     );

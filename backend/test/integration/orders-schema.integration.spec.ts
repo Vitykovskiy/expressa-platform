@@ -103,6 +103,15 @@ async function applyWholeRublesMigration(client: PoolClient): Promise<void> {
   }
 }
 
+async function applyPushAssociationMigration(client: PoolClient): Promise<void> {
+  await client.query(
+    await readFile(
+      resolve(__dirname, "../../migrations/0012_customer_push_association_version.sql"),
+      "utf8",
+    ),
+  );
+}
+
 async function createCatalogItem(pool: Pool): Promise<{
   productId: string;
   variantId: string;
@@ -225,6 +234,38 @@ describe("схема заказов", () => {
         expect(
           constraints.rows.some(({ conname }) => conname.includes("_minor")),
         ).toBe(false);
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    "добавляет версию связи без потери existing push-подписок",
+    async () => {
+      await withLegacySchema(pool, async (client) => {
+        await applyWholeRublesMigration(client);
+        const customerId = await createCustomer(client as unknown as Pool);
+        const endpoint = `https://push.example/${randomUUID()}`;
+        await client.query(
+          `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+           VALUES ($1, $2, 'legacy-key', 'legacy-auth')`,
+          [customerId, endpoint],
+        );
+        await applyPushAssociationMigration(client);
+        await expect(
+          client.query<{ user_id: string; endpoint: string; association_version: string }>(
+            "SELECT user_id, endpoint, association_version FROM push_subscriptions WHERE endpoint = $1",
+            [endpoint],
+          ),
+        ).resolves.toMatchObject({
+          rows: [
+            {
+              user_id: customerId,
+              endpoint,
+              association_version: expect.any(String),
+            },
+          ],
+        });
       });
     },
     externalProcessTimeoutMs,
