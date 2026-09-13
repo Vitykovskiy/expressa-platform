@@ -27,6 +27,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       accessToken: null,
       currentUser: null,
       error: null,
+      otpRetryAfterSeconds: null,
       status: "unknown",
     }),
     actions: {
@@ -35,8 +36,13 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           const metadata = await dependencies.authApi.requestOtp(phone);
 
           this.error = null;
+          this.otpRetryAfterSeconds = null;
           return metadata;
         } catch (error) {
+          this.otpRetryAfterSeconds =
+            error instanceof ApiError && error.code === "AUTH_RATE_LIMITED"
+              ? error.retryAfterSeconds
+              : null;
           this.handleApiFailure(error, otpRequestFailedMessage);
           return null;
         }
@@ -78,6 +84,29 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
         return restorePromise;
       },
 
+      async readWithRecovery<T>(
+        read: (accessToken: string) => Promise<T>,
+      ): Promise<T> {
+        const initialToken = this.accessToken;
+        if (initialToken === null)
+          throw new ApiError({
+            code: "UNAUTHORIZED",
+            details: null,
+            message: sessionErrorMessage,
+            requestId: null,
+            status: 401,
+          });
+        try {
+          return await read(initialToken);
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.status !== 401) throw error;
+          await this.restore();
+          const refreshedToken = this.accessToken;
+          if (refreshedToken === null) throw error;
+          return read(refreshedToken);
+        }
+      },
+
       async logout(): Promise<void> {
         try {
           await dependencies.authApi.logout();
@@ -111,7 +140,12 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       handleApiFailure(error: unknown, message = sessionErrorMessage): void {
-        if (error instanceof ApiError && error.status === 401) {
+        if (
+          error instanceof ApiError &&
+          error.status === 401 &&
+          error.code !== "AUTH_CODE_INVALID" &&
+          error.code !== "AUTH_CODE_EXPIRED"
+        ) {
           this.setAnonymous();
           return;
         }
@@ -123,6 +157,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
         this.accessToken = null;
         this.currentUser = null;
         this.error = null;
+        this.otpRetryAfterSeconds = null;
         this.status = "anonymous";
       },
     },
@@ -143,7 +178,14 @@ function toSessionStoreError(
 ): SessionStoreError {
   if (error instanceof ApiError) {
     if (error.code === "AUTH_RATE_LIMITED") {
-      return { message: otpRateLimitedMessage, requestId: error.requestId };
+      return {
+        message:
+          error.retryAfterSeconds === null ||
+          error.retryAfterSeconds === undefined
+            ? otpRateLimitedMessage
+            : `Повторно запросить код можно через ${error.retryAfterSeconds} с.`,
+        requestId: error.requestId,
+      };
     }
 
     if (error.code === "AUTH_CODE_INVALID")

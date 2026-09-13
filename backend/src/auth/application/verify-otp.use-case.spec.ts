@@ -41,7 +41,7 @@ function createRepository(): jest.Mocked<AuthRepository> {
     revokeSession: jest.fn(),
     reserveOtpChallenge: jest.fn(),
     rotateSession: jest.fn(),
-    verifyOtpAndCreateSession: jest.fn(),
+    verifyOtpAndCreateSessionForChallenge: jest.fn(),
   };
 }
 
@@ -104,7 +104,7 @@ describe("VerifyOtpUseCase", () => {
     const repository = createRepository();
     const challenge = createChallenge();
     repository.findOpenOtpChallenge.mockResolvedValue(challenge);
-    repository.verifyOtpAndCreateSession.mockResolvedValue(
+    repository.verifyOtpAndCreateSessionForChallenge.mockResolvedValue(
       createAuthentication(),
     );
     const crypto = createCrypto();
@@ -119,8 +119,11 @@ describe("VerifyOtpUseCase", () => {
         sessionExpiresAt: new Date("2026-09-03T10:00:00.000Z"),
       },
     );
-    expect(repository.verifyOtpAndCreateSession).toHaveBeenCalledWith(
+    expect(
+      repository.verifyOtpAndCreateSessionForChallenge,
+    ).toHaveBeenCalledWith(
       "+79991234567",
+      "challenge-id",
       "code-hash",
       now,
       "session-id",
@@ -156,7 +159,7 @@ describe("VerifyOtpUseCase", () => {
     const repository = createRepository();
     const challenge = createChallenge({ attempts: 4 });
     repository.findOpenOtpChallenge.mockResolvedValue(challenge);
-    repository.verifyOtpAndCreateSession.mockResolvedValue({
+    repository.verifyOtpAndCreateSessionForChallenge.mockResolvedValue({
       status: "invalid",
       challenge: { ...challenge, attempts: 5 },
     });
@@ -169,8 +172,11 @@ describe("VerifyOtpUseCase", () => {
     await expect(
       useCase.execute("+79991234567", "654321"),
     ).rejects.toBeInstanceOf(InvalidOtpCodeError);
-    expect(repository.verifyOtpAndCreateSession).toHaveBeenCalledWith(
+    expect(
+      repository.verifyOtpAndCreateSessionForChallenge,
+    ).toHaveBeenCalledWith(
       "+79991234567",
+      "challenge-id",
       "provided-hash",
       now,
       "session-id",
@@ -187,7 +193,7 @@ describe("VerifyOtpUseCase", () => {
       sentAt: new Date(expiredAt.getTime() - otpLifetimeMs),
     });
     repository.findOpenOtpChallenge.mockResolvedValue(expired);
-    repository.verifyOtpAndCreateSession.mockResolvedValue({
+    repository.verifyOtpAndCreateSessionForChallenge.mockResolvedValue({
       status: "unavailable",
       challenge: expired,
     });
@@ -205,7 +211,7 @@ describe("VerifyOtpUseCase", () => {
   it("безопасно отклоняет коллизию session id", async () => {
     const repository = createRepository();
     repository.findOpenOtpChallenge.mockResolvedValue(createChallenge());
-    repository.verifyOtpAndCreateSession.mockResolvedValue({
+    repository.verifyOtpAndCreateSessionForChallenge.mockResolvedValue({
       status: "session_conflict",
     });
     const useCase = new VerifyOtpUseCase(repository, createCrypto(), {

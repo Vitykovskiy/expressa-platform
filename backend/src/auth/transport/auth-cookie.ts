@@ -25,19 +25,11 @@ export function readRefreshCookie(value: string | undefined): string | null {
     const item = part.trim();
     const separator = item.indexOf("=");
 
-    if (
-      separator <= 0 ||
-      separator !== item.lastIndexOf("=") ||
-      separator === item.length - 1
-    ) {
-      return null;
-    }
+    if (separator <= 0 || separator === item.length - 1) continue;
 
     const name = item.slice(0, separator);
     const cookieValue = item.slice(separator + 1);
-    if (/\s/.test(name) || /\s/.test(cookieValue)) {
-      return null;
-    }
+    if (/\s/.test(name) || /\s/.test(cookieValue)) continue;
 
     if (name === refreshCookieName) {
       if (refreshToken !== null || !isRefreshToken(cookieValue)) {

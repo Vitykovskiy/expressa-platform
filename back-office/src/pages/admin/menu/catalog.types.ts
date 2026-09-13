@@ -87,6 +87,7 @@ export type CatalogFieldErrors = Readonly<Record<string, string>>;
 export interface CatalogStoreError {
   message: string;
   requestId: string | null;
+  status?: number | null;
 }
 
 export interface CatalogStoreState {

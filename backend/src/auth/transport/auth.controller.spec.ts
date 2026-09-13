@@ -77,7 +77,36 @@ describe("AuthController", () => {
         { cookie: jest.fn(), header: jest.fn() },
       ),
     ).resolves.toEqual({ expiresInSeconds: 300, retryAfterSeconds: 60 });
-    expect(requestOtp.execute).toHaveBeenCalledWith("+79123456789");
+    expect(requestOtp.execute).toHaveBeenCalledWith("+79123456789", "unknown");
+  });
+
+  it("игнорирует spoofed X-Forwarded-For от прямого public peer", async () => {
+    const { controller, requestOtp } = createController();
+    await controller.requestCode(
+      { phone: "+79123456789" },
+      { cookie: jest.fn(), header: jest.fn() },
+      {
+        ip: "198.51.100.77",
+        socket: { remoteAddress: "203.0.113.10" },
+      } as never,
+    );
+    expect(requestOtp.execute).toHaveBeenCalledWith(
+      "+79123456789",
+      "203.0.113.10",
+    );
+  });
+
+  it("использует forwarded source только от private proxy peer", async () => {
+    const { controller, requestOtp } = createController();
+    await controller.requestCode(
+      { phone: "+79123456789" },
+      { cookie: jest.fn(), header: jest.fn() },
+      { ip: "198.51.100.77", socket: { remoteAddress: "172.18.0.2" } } as never,
+    );
+    expect(requestOtp.execute).toHaveBeenCalledWith(
+      "+79123456789",
+      "198.51.100.77",
+    );
   });
 
   it("публикует OTP request с HTTP 202", async () => {

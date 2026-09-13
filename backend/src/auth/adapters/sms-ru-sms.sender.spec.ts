@@ -1,4 +1,5 @@
 import { SmsRuSmsSender } from "./sms-ru-sms.sender";
+import { SmsDeliveryError } from "../application/sms-sender.types";
 
 function createFetch(response: Response): jest.MockedFunction<typeof fetch> {
   return jest
@@ -84,9 +85,11 @@ describe("SmsRuSmsSender", () => {
       createFetch(response),
     );
 
-    await expect(smsSender.send("+79123456789", "123456")).rejects.toThrow(
-      "SMS delivery failed.",
-    );
+    await expect(
+      smsSender.send("+79123456789", "123456"),
+    ).rejects.toMatchObject({
+      kind: "rejected",
+    } satisfies Partial<SmsDeliveryError>);
   });
 
   it("не повторяет запрос после ошибки провайдера", async () => {
@@ -98,9 +101,11 @@ describe("SmsRuSmsSender", () => {
       fetchImplementation,
     );
 
-    await expect(smsSender.send("+79123456789", "123456")).rejects.toThrow(
-      "SMS delivery failed.",
-    );
+    await expect(
+      smsSender.send("+79123456789", "123456"),
+    ).rejects.toMatchObject({
+      kind: "transport",
+    } satisfies Partial<SmsDeliveryError>);
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
 
@@ -115,7 +120,11 @@ describe("SmsRuSmsSender", () => {
         (_input, init) =>
           new Promise((_, reject) => {
             init?.signal?.addEventListener("abort", () => {
-              reject(new Error("request aborted"));
+              reject(
+                Object.assign(new Error("request aborted"), {
+                  name: "AbortError",
+                }),
+              );
             });
           }),
       );
@@ -124,9 +133,9 @@ describe("SmsRuSmsSender", () => {
         fetchImplementation,
       );
       const delivery = smsSender.send("+79123456789", "123456");
-      const rejection = expect(delivery).rejects.toThrow(
-        "SMS delivery failed.",
-      );
+      const rejection = expect(delivery).rejects.toMatchObject({
+        kind: "timeout",
+      } satisfies Partial<SmsDeliveryError>);
 
       await jest.advanceTimersByTimeAsync(5_000);
 

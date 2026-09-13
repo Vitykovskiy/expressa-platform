@@ -1,4 +1,7 @@
-import type { SmsSender } from "../application/sms-sender.types";
+import {
+  SmsDeliveryError,
+  type SmsSender,
+} from "../application/sms-sender.types";
 import type { RussianPhone } from "../domain/phone.types";
 import { smsRuEndpoint, smsRuTimeoutMs } from "./sms-ru-sms.sender.constants";
 import type {
@@ -36,10 +39,14 @@ export class SmsRuSmsSender implements SmsSender {
         !response.ok ||
         !(await isSuccessfulSmsRuResponse(response, recipient))
       ) {
-        throw new Error("SMS provider did not accept the message.");
+        throw new SmsDeliveryError("rejected");
       }
-    } catch {
-      throw new Error("SMS delivery failed.");
+    } catch (error) {
+      if (error instanceof SmsDeliveryError) throw error;
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new SmsDeliveryError("timeout");
+      }
+      throw new SmsDeliveryError("transport");
     } finally {
       clearTimeout(timeout);
     }

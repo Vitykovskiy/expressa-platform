@@ -8,16 +8,19 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
+import type { Request } from "express";
 import {
   ApiCookieAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
+import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
 import { clockPort } from "../application/clock.constants";
 import type { Clock } from "../application/clock.types";
 import { LogoutUseCase } from "../application/logout.use-case";
@@ -44,10 +47,7 @@ import {
   readRefreshCookie,
   writeRefreshCookie,
 } from "./auth-cookie";
-import {
-  authErrorResponses,
-  otpRetryAfterSeconds,
-} from "./auth.controller.constants";
+import { authErrorResponses } from "./auth.controller.constants";
 import {
   AccessTokenDto,
   RequestOtpDto,
@@ -75,17 +75,31 @@ export class AuthController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Запросить одноразовый код" })
   @ApiResponse({ status: HttpStatus.ACCEPTED, type: RequestOtpResponseDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
+  @ApiResponse({
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    type: ApiHttpErrorDto,
+    headers: { "Retry-After": { schema: { type: "integer" } } },
+  })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    type: ApiHttpErrorDto,
+  })
   async requestCode(
     @Body() body: RequestOtpDto,
     @Res({ passthrough: true }) response: AuthHeaderResponse,
+    @Req() request?: Request,
   ): Promise<RequestOtpResponseDto> {
     assertRequestOtpBody(body);
 
     try {
-      return await this.requestOtp.execute(body.phone);
+      return await this.requestOtp.execute(
+        body.phone,
+        getOtpRequestSource(request),
+      );
     } catch (error) {
       if (error instanceof OtpRateLimitedError) {
-        response.header("Retry-After", otpRetryAfterSeconds);
+        response.header("Retry-After", String(error.retryAfterSeconds));
       }
 
       throwSafeAuthError(error);
@@ -96,6 +110,12 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: "Подтвердить одноразовый код" })
   @ApiResponse({ status: 200, type: AccessTokenDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ApiHttpErrorDto })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    type: ApiHttpErrorDto,
+  })
   async verifyCode(
     @Body() body: VerifyOtpDto,
     @Res({ passthrough: true }) response: AuthCookieResponse,
@@ -122,6 +142,7 @@ export class AuthController {
   @ApiCookieAuth("expressa_refresh")
   @ApiOperation({ summary: "Обновить access token" })
   @ApiResponse({ status: 200, type: AccessTokenDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ApiHttpErrorDto })
   async refresh(
     @Headers("cookie") cookie: string | undefined,
     @Res({ passthrough: true }) response: AuthCookieResponse,
@@ -176,6 +197,27 @@ export class AuthController {
   private getCookieMaxAge(expiresAt: Date): number {
     return Math.max(0, expiresAt.getTime() - this.clock.now().getTime());
   }
+}
+
+function getOtpRequestSource(request: Request | undefined): string {
+  const peer = request?.socket.remoteAddress;
+  if (peer === undefined) return "unknown";
+
+  // Only the private edge network may supply the forwarded client address.
+  // A directly connected public peer cannot choose a throttle key via XFF.
+  if (isPrivateProxyPeer(peer) && request?.ip !== undefined) return request.ip;
+  return peer;
+}
+
+function isPrivateProxyPeer(address: string): boolean {
+  return (
+    address === "::1" ||
+    address.startsWith("127.") ||
+    address.startsWith("::ffff:127.") ||
+    address.startsWith("10.") ||
+    address.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(address)
+  );
 }
 
 function assertRequestOtpBody(body: RequestOtpDto): void {

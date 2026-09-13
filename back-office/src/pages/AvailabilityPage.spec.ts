@@ -6,7 +6,11 @@ import type { AvailabilityItem } from "../shared/api/availability.api.types";
 import AvailabilityPage from "./AvailabilityPage.vue";
 
 vi.mock("../app/session.store", () => ({
-  useSessionStore: () => ({ accessToken: "example-token" }),
+  useSessionStore: () => ({
+    accessToken: "example-token",
+    readWithRecovery: (read: (accessToken: string) => Promise<unknown>) =>
+      read("example-token"),
+  }),
 }));
 
 const categoryId = "11111111-1111-4111-8111-111111111111";

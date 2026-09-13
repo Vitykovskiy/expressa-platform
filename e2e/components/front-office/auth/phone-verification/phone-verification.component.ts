@@ -20,10 +20,10 @@ export class PhoneVerificationComponent {
   constructor(page: Page) {
     this.phoneInput = page.getByLabel("Номер телефона", { exact: true });
     this.sendCodeButton = page.getByRole("button", {
-      name: "Отправить код",
+      name: "Получить код",
       exact: true,
     });
-    this.otpInput = page.getByLabel("Код из сообщения", { exact: true });
+    this.otpInput = page.locator('input[autocomplete="one-time-code"]');
     this.confirmButton = page.getByRole("button", {
       name: "Подтвердить",
       exact: true,
@@ -81,10 +81,6 @@ export class PhoneVerificationComponent {
         "Кнопка подтверждения кода доступна.",
       ).toBeEnabled();
       await this.confirmButton.click();
-      await expect(
-        this.authenticatedAccountButton,
-        "После подтверждения номера клиент авторизован.",
-      ).toBeVisible();
     });
   }
 

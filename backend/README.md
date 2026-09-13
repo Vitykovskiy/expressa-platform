@@ -66,7 +66,8 @@ npm run staff -- upsert --phone +79991234567 --role administrator
 
 `npm run staff` создаёт или обновляет сотрудника.
 
-Допустимые роли: `barista`, `administrator`. Формат телефона —
+Допустимые роли: `barista`, `administrator`, `customer` (последняя безопасно
+понижает сотрудника). Формат телефона —
 `+7XXXXXXXXXX`.
 
 ## Где искать детали

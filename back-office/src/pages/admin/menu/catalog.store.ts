@@ -370,10 +370,18 @@ function toCategoryModifierGroupAssignment(
 
 function toCatalogStoreError(error: unknown): CatalogStoreError {
   if (error instanceof CatalogApiError) {
-    return { message: error.message, requestId: error.requestId };
+    return {
+      message: error.message,
+      requestId: error.requestId,
+      status: error.status,
+    };
   }
 
-  return { message: catalogStoreMessages.requestFailed, requestId: null };
+  return {
+    message: catalogStoreMessages.requestFailed,
+    requestId: null,
+    status: null,
+  };
 }
 
 function toFieldErrors(error: unknown): CatalogFieldErrors {

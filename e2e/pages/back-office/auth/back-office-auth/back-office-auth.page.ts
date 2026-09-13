@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { BackOfficeAuthFormComponent } from "@pages/back-office/auth/back-office-auth/back-office-auth-form/back-office-auth-form.component";
 
@@ -33,6 +33,16 @@ export class BackOfficeAuthPage {
     await test.step("Открыть back-office", async () => {
       await this.page.goto(url);
       await this.form.waitReady();
+    });
+  }
+
+  async reload(): Promise<void> {
+    await test.step("Перезагрузить back-office", async () => {
+      await this.page.reload();
+      await expect(
+        this.queueButton,
+        "Сессия back-office восстановлена после перезагрузки.",
+      ).toBeVisible();
     });
   }
 

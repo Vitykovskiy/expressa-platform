@@ -53,7 +53,7 @@
       :logout-error="logoutError"
       :logout-pending="logoutPending"
       :return-focus-to="accountSettingsTrigger"
-      @sign-in="navigate('auth')"
+      @sign-in="signIn"
       @sign-out="logout"
     />
   </VApp>
@@ -190,6 +190,11 @@ async function logout(): Promise<void> {
   } finally {
     logoutPending.value = false;
   }
+}
+
+function signIn(): void {
+  accountSettingsOpen.value = false;
+  navigate("auth");
 }
 
 function openAccount(): void {

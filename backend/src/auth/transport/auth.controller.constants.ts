@@ -1,5 +1,3 @@
-import { otpResendIntervalMs } from "../domain/otp-policy.constants";
-
 export const refreshCookieName = "expressa_refresh";
 export const refreshCookiePath = "/api/v2/auth";
 
@@ -31,4 +29,6 @@ export const authErrorResponses = {
   },
 } as const;
 
-export const otpRetryAfterSeconds = String(otpResendIntervalMs / 1_000);
+// Compatibility export for existing consumers; runtime 429 uses the repository's
+// exact remainder instead of this policy maximum.
+export const otpRetryAfterSeconds = "60";

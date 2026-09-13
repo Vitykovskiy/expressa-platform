@@ -17,6 +17,7 @@ export type SessionStoreState = {
   accessToken: string | null;
   currentUser: StaffSessionUser | null;
   error: SessionStoreError | null;
+  otpRetryAfterSeconds: number | null;
   status: SessionStatus;
 };
 

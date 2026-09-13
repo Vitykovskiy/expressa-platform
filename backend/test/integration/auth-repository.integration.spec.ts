@@ -4,6 +4,12 @@ import { resolve } from "node:path";
 import { Pool } from "pg";
 import { PostgresAuthRepository } from "../../src/auth/adapters/postgres-auth.repository";
 import type { StoredOtpChallenge } from "../../src/auth/application/auth-repository.types";
+import {
+  otpSecurityPhoneLimit,
+  otpSecurityProviderLimit,
+  otpSecuritySourceLimit,
+  otpSecurityWindowMs,
+} from "../../src/auth/domain/otp-policy.constants";
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
@@ -88,7 +94,7 @@ describe("PostgreSQL repository авторизации", () => {
   let pool: Pool;
   let repository: PostgresAuthRepository;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     if (databaseUrl === undefined) {
       throw new Error("DATABASE_URL is required for integration tests");
     }
@@ -96,10 +102,15 @@ describe("PostgreSQL repository авторизации", () => {
     pool = new Pool({ connectionString: databaseUrl });
     repository = new PostgresAuthRepository(pool);
     runMigrations();
+    await pool.query("DELETE FROM auth_otp_security_throttles");
   });
 
   afterAll(async () => {
     await pool?.end();
+  });
+
+  afterEach(async () => {
+    await pool.query("DELETE FROM auth_otp_security_throttles");
   });
 
   it(
@@ -187,7 +198,7 @@ describe("PostgreSQL repository авторизации", () => {
           new Date(now.getTime() + 59_999),
           randomUUID(),
         ),
-      ).resolves.toEqual({ status: "rate_limited" });
+      ).resolves.toEqual({ status: "rate_limited", retryAfterSeconds: 1 });
       const afterShortCooldown = await pool.query<{
         total: number;
         open: number;
@@ -222,7 +233,7 @@ describe("PostgreSQL repository авторизации", () => {
           new Date(now.getTime() + 59_999),
           randomUUID(),
         ),
-      ).resolves.toEqual({ status: "rate_limited" });
+      ).resolves.toEqual({ status: "rate_limited", retryAfterSeconds: 61 });
       const afterRollback = await pool.query<{ total: number; open: number }>(
         `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE consumed_at IS NULL)::int AS open
          FROM otp_challenges
@@ -318,6 +329,204 @@ describe("PostgreSQL repository авторизации", () => {
       );
       expect(await repository.findOpenOtpChallenge(phone)).toMatchObject({
         id: newer.id,
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    "сохраняет phone, source и provider лимиты в PostgreSQL с точным Retry-After и сбросом окна",
+    async () => {
+      const now = new Date();
+      const phone = createPhone();
+      const source = `source-${randomUUID()}`;
+
+      for (let attempt = 0; attempt < otpSecurityPhoneLimit; attempt += 1) {
+        await expect(
+          repository.reserveOtpChallenge(
+            phone,
+            randomUUID(),
+            new Date(now.getTime() + otpSecurityWindowMs),
+            new Date(now.getTime() + attempt * 60_000),
+            randomUUID(),
+            `${source}-${attempt}`,
+          ),
+        ).resolves.toMatchObject({ status: "created" });
+      }
+
+      await expect(
+        repository.reserveOtpChallenge(
+          phone,
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          new Date(now.getTime() + otpSecurityPhoneLimit * 60_000),
+          randomUUID(),
+          `${source}-after-phone-limit`,
+        ),
+      ).resolves.toEqual({ status: "rate_limited", retryAfterSeconds: 3300 });
+
+      const sourceKey = `source-${randomUUID()}`;
+      const providerWindowStart = new Date(now.getTime() - 1_000);
+      await pool.query(
+        `INSERT INTO auth_otp_security_throttles
+           (scope, throttle_key, window_started_at, attempts)
+         VALUES ('source', $1, $2, $3), ('provider', 'sms', $2, $4)
+         ON CONFLICT (scope, throttle_key) DO UPDATE
+         SET window_started_at = EXCLUDED.window_started_at,
+             attempts = EXCLUDED.attempts`,
+        [
+          sourceKey,
+          providerWindowStart,
+          otpSecuritySourceLimit,
+          otpSecurityProviderLimit,
+        ],
+      );
+
+      await expect(
+        repository.reserveOtpChallenge(
+          createPhone(),
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          now,
+          randomUUID(),
+          sourceKey,
+        ),
+      ).resolves.toEqual({ status: "rate_limited", retryAfterSeconds: 3599 });
+
+      await pool.query(
+        `DELETE FROM auth_otp_security_throttles
+         WHERE scope = 'source' AND throttle_key = $1`,
+        [sourceKey],
+      );
+      await expect(
+        repository.reserveOtpChallenge(
+          createPhone(),
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          now,
+          randomUUID(),
+          `provider-${randomUUID()}`,
+        ),
+      ).resolves.toEqual({ status: "rate_limited", retryAfterSeconds: 3599 });
+
+      await pool.query(
+        `UPDATE auth_otp_security_throttles
+         SET window_started_at = $2, attempts = $3
+         WHERE scope = 'phone' AND throttle_key = $1`,
+        [phone, now, otpSecurityPhoneLimit],
+      );
+      await pool.query(
+        `DELETE FROM auth_otp_security_throttles
+         WHERE scope = 'provider' AND throttle_key = 'sms'`,
+      );
+      await expect(
+        repository.reserveOtpChallenge(
+          phone,
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs * 2),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          randomUUID(),
+          `reset-${randomUUID()}`,
+        ),
+      ).resolves.toMatchObject({ status: "created" });
+      await expect(
+        pool.query<{ attempts: number }>(
+          `SELECT attempts FROM auth_otp_security_throttles
+           WHERE scope = 'phone' AND throttle_key = $1`,
+          [phone],
+        ),
+      ).resolves.toMatchObject({ rows: [{ attempts: 1 }] });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    "атомарно применяет source throttle при параллельных разных номерах",
+    async () => {
+      const now = new Date();
+      const source = `concurrent-source-${randomUUID()}`;
+      await pool.query(
+        `INSERT INTO auth_otp_security_throttles
+           (scope, throttle_key, window_started_at, attempts)
+         VALUES ('source', $1, $2, $3)`,
+        [source, now, otpSecuritySourceLimit - 1],
+      );
+
+      const reservations = await Promise.all([
+        repository.reserveOtpChallenge(
+          createPhone(),
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          now,
+          randomUUID(),
+          source,
+        ),
+        repository.reserveOtpChallenge(
+          createPhone(),
+          randomUUID(),
+          new Date(now.getTime() + otpSecurityWindowMs),
+          now,
+          randomUUID(),
+          source,
+        ),
+      ]);
+
+      expect(reservations.map(({ status }) => status).sort()).toEqual([
+        "created",
+        "rate_limited",
+      ]);
+      await expect(
+        pool.query<{ attempts: number }>(
+          `SELECT attempts FROM auth_otp_security_throttles
+           WHERE scope = 'source' AND throttle_key = $1`,
+          [source],
+        ),
+      ).resolves.toMatchObject({
+        rows: [{ attempts: otpSecuritySourceLimit }],
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    "не списывает попытку нового challenge при параллельных resend и verify старого кода",
+    async () => {
+      const phone = createPhone();
+      const now = new Date();
+      const older = await reserveChallenge(
+        repository,
+        phone,
+        "older-code-hash",
+        new Date(now.getTime() + 300_000),
+        now,
+      );
+      const newerId = randomUUID();
+
+      const [verification, replacement] = await Promise.all([
+        repository.verifyOtpAndCreateSessionForChallenge(
+          phone,
+          older.id,
+          "incorrect-code-hash",
+          new Date(now.getTime() + 60_000),
+          randomUUID(),
+          randomUUID(),
+          new Date(now.getTime() + 3_600_000),
+        ),
+        repository.reserveOtpChallenge(
+          phone,
+          "newer-code-hash",
+          new Date(now.getTime() + 360_000),
+          new Date(now.getTime() + 60_000),
+          newerId,
+          `replacement-${randomUUID()}`,
+        ),
+      ]);
+
+      expect(["invalid", "unavailable"]).toContain(verification.status);
+      expect(replacement).toMatchObject({ status: "created" });
+      expect(await repository.findOpenOtpChallenge(phone)).toMatchObject({
+        id: newerId,
+        attempts: 0,
       });
     },
     externalProcessTimeoutMs,

@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 
 import {
   E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE,
+  E2E_ADMIN_2_OTP_ENVIRONMENT_VARIABLE,
+  E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE,
   E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
   E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE,
   E2E_CUSTOMER_2_OTP_ENVIRONMENT_VARIABLE,
@@ -70,6 +72,20 @@ test.describe("Окружение E2E", () => {
     });
   });
 
+  test("требует отдельные origin для customer и back-office", () => {
+    process.env[E2E_FRONT_OFFICE_URL_ENVIRONMENT_VARIABLE] =
+      "https://expressa.example.test/customer";
+    process.env[E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE] =
+      "https://expressa.example.test/admin";
+
+    expect(
+      () => getE2eEnvironment(),
+      "Сценарий окружения: один origin не изолирует host-only refresh cookies.",
+    ).toThrow(
+      "E2E_FRONT_OFFICE_URL and E2E_BACK_OFFICE_URL must use different origins.",
+    );
+  });
+
   test("отклоняет пустой, относительный и не-HTTP(S) адрес", () => {
     process.env[E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE] =
       "https://back-office.example.test";
@@ -108,14 +124,18 @@ test.describe("Окружение E2E", () => {
   test("требует и проверяет отдельные учётные данные customer", () => {
     const phoneValues: Readonly<Record<string, string>> = {
       [E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-01",
-      [E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-02",
-      [E2E_CUSTOMER_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-03",
-      [E2E_CUSTOMER_2_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-04",
+      [E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-02",
+      [E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-03",
+      [E2E_CUSTOMER_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-04",
+      [E2E_CUSTOMER_2_PHONE_ENVIRONMENT_VARIABLE]: "+7 999 000-00-05",
     };
 
     process.env[E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE] =
       phoneValues[E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE];
     process.env[E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE] = "123456";
+    process.env[E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE] =
+      phoneValues[E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE];
+    process.env[E2E_ADMIN_2_OTP_ENVIRONMENT_VARIABLE] = "123456";
     process.env[E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE] =
       phoneValues[E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE];
     process.env[E2E_STAFF_OTP_ENVIRONMENT_VARIABLE] = "123456";
@@ -152,6 +172,12 @@ test.describe("Окружение E2E", () => {
 
     process.env[E2E_CUSTOMER_2_OTP_ENVIRONMENT_VARIABLE] = "654321";
     for (const [firstName, secondName, firstRole, secondRole] of [
+      [
+        E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
+        E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE,
+        "administrator",
+        "secondAdministrator",
+      ],
       [
         E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
         E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE,

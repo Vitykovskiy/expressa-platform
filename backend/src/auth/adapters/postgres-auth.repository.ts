@@ -12,10 +12,66 @@ import type {
 } from "../application/auth-repository.types";
 import { userRoles } from "../domain/auth.constants";
 import type { UserRole } from "../domain/auth.types";
-import { otpResendIntervalMs } from "../domain/otp-policy.constants";
+import {
+  otpMaxAttempts,
+  otpResendIntervalMs,
+  otpSecurityPhoneLimit,
+  otpSecurityProviderLimit,
+  otpSecuritySourceLimit,
+  otpSecurityWindowMs,
+} from "../domain/otp-policy.constants";
 import type { DatabaseRow } from "./postgres-auth.repository.types";
 
 class SessionIdConflictError extends Error {}
+class OtpSecurityThrottleExceededError extends Error {
+  constructor(readonly retryAfterSeconds: number) {
+    super("OTP security throttle exceeded.");
+  }
+}
+
+async function reserveOtpSecurityThrottle(
+  client: PoolClient,
+  phoneE164: string,
+  sourceId: string,
+  now: Date,
+): Promise<void> {
+  for (const [scope, key, limit] of [
+    ["phone", phoneE164, otpSecurityPhoneLimit],
+    ["source", sourceId, otpSecuritySourceLimit],
+    ["provider", "sms", otpSecurityProviderLimit],
+  ] as const) {
+    const result = await client.query<DatabaseRow>(
+      `INSERT INTO auth_otp_security_throttles
+         (scope, throttle_key, window_started_at, attempts)
+       VALUES ($1, $2, $3, 1)
+       ON CONFLICT (scope, throttle_key) DO UPDATE
+       SET window_started_at = CASE
+             WHEN auth_otp_security_throttles.window_started_at <= $3 - ($4 * interval '1 millisecond')
+             THEN $3 ELSE auth_otp_security_throttles.window_started_at END,
+           attempts = CASE
+             WHEN auth_otp_security_throttles.window_started_at <= $3 - ($4 * interval '1 millisecond')
+             THEN 1 ELSE auth_otp_security_throttles.attempts + 1 END
+       RETURNING window_started_at, attempts`,
+      [scope, key, now, otpSecurityWindowMs],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new Error("Missing throttle result.");
+    const attempts = Number(row.attempts);
+    if (attempts > limit) {
+      const windowStartedAt = readDate(row, "window_started_at");
+      throw new OtpSecurityThrottleExceededError(
+        Math.max(
+          1,
+          Math.ceil(
+            (otpSecurityWindowMs -
+              (now.getTime() - windowStartedAt.getTime())) /
+              1_000,
+          ),
+        ),
+      );
+    }
+  }
+}
 
 export class PostgresAuthRepository implements AuthRepository {
   constructor(private readonly pool: Pool) {}
@@ -41,52 +97,74 @@ export class PostgresAuthRepository implements AuthRepository {
     expiresAt: Date,
     sentAt: Date,
     challengeId: string,
+    sourceId = "direct",
   ): Promise<OtpChallengeReservation> {
-    return this.withTransaction(async (client) => {
-      await client.query(
-        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
-        [phoneE164],
-      );
-
-      const latest = await client.query<DatabaseRow>(
-        `SELECT sent_at
+    try {
+      return await this.withTransaction(async (client) => {
+        await client.query(
+          "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+          [phoneE164],
+        );
+        const latest = await client.query<DatabaseRow>(
+          `SELECT sent_at
          FROM otp_challenges
-         WHERE phone_e164 = $1 AND consumed_at IS NULL AND attempts < 5
+         WHERE phone_e164 = $1 AND consumed_at IS NULL AND attempts < $2
          ORDER BY sent_at DESC
          LIMIT 1`,
-        [phoneE164],
-      );
-      const latestSentAt =
-        latest.rows[0] === undefined
-          ? null
-          : readDate(latest.rows[0], "sent_at");
+          [phoneE164, otpMaxAttempts],
+        );
+        const latestSentAt =
+          latest.rows[0] === undefined
+            ? null
+            : readDate(latest.rows[0], "sent_at");
 
-      if (
-        latestSentAt !== null &&
-        sentAt.getTime() - latestSentAt.getTime() < otpResendIntervalMs
-      ) {
-        return { status: "rate_limited" };
-      }
+        if (
+          latestSentAt !== null &&
+          sentAt.getTime() - latestSentAt.getTime() < otpResendIntervalMs
+        ) {
+          return {
+            status: "rate_limited",
+            retryAfterSeconds: Math.max(
+              1,
+              Math.ceil(
+                (otpResendIntervalMs -
+                  (sentAt.getTime() - latestSentAt.getTime())) /
+                  1_000,
+              ),
+            ),
+          };
+        }
 
-      await client.query(
-        `UPDATE otp_challenges
+        await reserveOtpSecurityThrottle(client, phoneE164, sourceId, sentAt);
+
+        await client.query(
+          `UPDATE otp_challenges
          SET consumed_at = GREATEST($2, sent_at)
          WHERE phone_e164 = $1 AND consumed_at IS NULL`,
-        [phoneE164, sentAt],
-      );
+          [phoneE164, sentAt],
+        );
 
-      const result = await client.query<DatabaseRow>(
-        `INSERT INTO otp_challenges (id, phone_e164, code_hash, expires_at, sent_at)
+        const result = await client.query<DatabaseRow>(
+          `INSERT INTO otp_challenges (id, phone_e164, code_hash, expires_at, sent_at)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, code_hash, expires_at, consumed_at, sent_at, attempts`,
-        [challengeId, phoneE164, codeHash, expiresAt, sentAt],
-      );
+          [challengeId, phoneE164, codeHash, expiresAt, sentAt],
+        );
 
-      return {
-        status: "created",
-        challenge: parseRequiredRow(result.rows[0], parseOtpChallenge),
-      };
-    });
+        return {
+          status: "created",
+          challenge: parseRequiredRow(result.rows[0], parseOtpChallenge),
+        };
+      });
+    } catch (error) {
+      if (error instanceof OtpSecurityThrottleExceededError) {
+        return {
+          status: "rate_limited",
+          retryAfterSeconds: error.retryAfterSeconds,
+        };
+      }
+      throw error;
+    }
   }
 
   async invalidateOtpChallenge(challengeId: string, now: Date): Promise<void> {
@@ -98,8 +176,50 @@ export class PostgresAuthRepository implements AuthRepository {
     );
   }
 
+  async verifyOtpAndCreateSessionForChallenge(
+    phoneE164: string,
+    challengeId: string,
+    codeHash: string,
+    now: Date,
+    sessionId: string,
+    refreshTokenHash: string,
+    sessionExpiresAt: Date,
+  ): Promise<OtpAuthentication> {
+    return this.verifyOtpAndCreateSessionInternal(
+      phoneE164,
+      challengeId,
+      codeHash,
+      now,
+      sessionId,
+      refreshTokenHash,
+      sessionExpiresAt,
+    );
+  }
+
+  // Kept only for repository-level legacy fixtures; application code uses the
+  // challenge-bound port above and cannot call this method through AuthRepository.
   async verifyOtpAndCreateSession(
     phoneE164: string,
+    codeHash: string,
+    now: Date,
+    sessionId: string,
+    refreshTokenHash: string,
+    sessionExpiresAt: Date,
+  ): Promise<OtpAuthentication> {
+    return this.verifyOtpAndCreateSessionInternal(
+      phoneE164,
+      null,
+      codeHash,
+      now,
+      sessionId,
+      refreshTokenHash,
+      sessionExpiresAt,
+    );
+  }
+
+  private async verifyOtpAndCreateSessionInternal(
+    phoneE164: string,
+    expectedChallengeId: string | null,
     codeHash: string,
     now: Date,
     sessionId: string,
@@ -120,9 +240,17 @@ export class PostgresAuthRepository implements AuthRepository {
         const challenge = parseOptionalRow(selected.rows[0], parseOtpChallenge);
 
         if (
+          challenge !== null &&
+          expectedChallengeId !== null &&
+          challenge.id !== expectedChallengeId
+        ) {
+          return { status: "unavailable", challenge: null };
+        }
+
+        if (
           challenge === null ||
           challenge.expiresAt <= now ||
-          challenge.attempts >= 5
+          challenge.attempts >= otpMaxAttempts
         ) {
           return { status: "unavailable", challenge };
         }

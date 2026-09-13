@@ -2,7 +2,9 @@ import { createPinia, setActivePinia } from "pinia";
 import { mount, type DOMWrapper, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const restore = vi.fn();
 const session = { accessToken: "access-token" };
+Object.defineProperty(session, "restore", { value: restore });
 
 vi.mock("../app/session.store", () => ({ useSessionStore: () => session }));
 
@@ -31,6 +33,8 @@ const mountedWrappers: VueWrapper[] = [];
 
 describe("MenuPage", () => {
   beforeEach(() => {
+    session.accessToken = "access-token"; // placeholder session token
+    restore.mockReset();
     setActivePinia(createPinia());
     setCatalogStoreDependencies({
       catalogApi: {
@@ -51,6 +55,53 @@ describe("MenuPage", () => {
         saveModifierGroup: vi.fn(),
       },
     });
+  });
+
+  it("один раз восстанавливает сессию и повторяет только catalog GET", async () => {
+    const catalogApi = {
+      archiveCategory: vi.fn(),
+      archiveModifierGroup: vi.fn(),
+      archiveModifierOption: vi.fn(),
+      archiveProduct: vi.fn(),
+      createCategory: vi.fn(),
+      createModifierOption: vi.fn(),
+      createProduct: vi.fn(),
+      getCatalog: vi
+        .fn()
+        .mockRejectedValueOnce(
+          new CatalogApiError({
+            code: "UNAUTHORIZED",
+            fields: [],
+            message: "expired",
+            requestId: "request-1",
+            status: 401,
+          }),
+        )
+        .mockResolvedValue(catalog),
+      reorderCategories: vi.fn(),
+      reorderProducts: vi.fn(),
+      replaceCategoryModifierGroups: vi.fn(),
+      saveModifierGroup: vi.fn(),
+      updateCategory: vi.fn(),
+      updateModifierOption: vi.fn(),
+      updateProduct: vi.fn(),
+    };
+    setCatalogStoreDependencies({ catalogApi });
+    restore.mockImplementation(async () => {
+      session.accessToken = "renewed";
+    });
+
+    mountPage();
+
+    await vi.waitFor(() =>
+      expect(catalogApi.getCatalog).toHaveBeenCalledTimes(2),
+    );
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(catalogApi.getCatalog.mock.calls).toEqual([
+      ["access-token"],
+      ["renewed"],
+    ]);
+    expect(catalogApi.createCategory).not.toHaveBeenCalled();
   });
 
   afterEach(() => {

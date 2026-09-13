@@ -4,17 +4,18 @@
     :is-loading="isLoading"
     :context-description="contextDescription"
     otp=""
-    :resend-remaining-seconds="0"
+    :resend-remaining-seconds="resendRemainingSeconds"
     @send-code="requestOtp"
     @update-phone="updatePhone"
   />
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
+import { getSessionDependencies } from "../app/session.store.dependencies";
 import AuthScreen from "@/features/auth/AuthScreen.vue";
 import { getSafeAuthReturnTo } from "@/shared/lib/auth-return";
 import { authPhoneRoute } from "./AuthPhonePage.constants";
@@ -30,7 +31,18 @@ const errorMessage = shallowRef(
     : "",
 );
 const isLoading = shallowRef(false);
+const now = shallowRef(getSessionDependencies().now());
+const resendTimer = setInterval(
+  () => (now.value = getSessionDependencies().now()),
+  1000,
+);
 const contextDescription = computed(() => getContextDescription());
+const resendRemainingSeconds = computed(() => {
+  const cooldownUntil = sessionStore.otpCooldownUntil;
+  if (cooldownUntil === null) return 0;
+  return Math.max(0, Math.ceil((cooldownUntil - now.value) / 1000));
+});
+onBeforeUnmount(() => clearInterval(resendTimer));
 
 const authState = computed<AuthPhonePageState>(() => ({
   errorMessage: errorMessage.value,
@@ -46,7 +58,7 @@ function updatePhone(value: string): void {
 }
 
 async function requestOtp(): Promise<void> {
-  if (isLoading.value) return;
+  if (isLoading.value || resendRemainingSeconds.value > 0) return;
 
   isLoading.value = true;
   errorMessage.value = "";

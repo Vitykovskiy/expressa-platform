@@ -19,6 +19,11 @@ token плюс refresh-cookie. `/me` читает текущую непроср�
 
 ## Поток и безопасность
 
+Выдача OTP сначала применяет 60-секундный UX cooldown, затем в одной
+транзакции резервирует часовые лимиты номера, доверенного адреса источника и
+общего SMS-провайдера. Отклонённый cooldown не изменяет security budget;
+`Retry-After` всегда является фактическим остатком применённого окна.
+
 `RequestOtpUseCase` нормализует телефон, создаёт challenge и отправляет код;
 `VerifyOtpUseCase` проверяет срок и попытки, создаёт пользователя/сессию,
 подписывает access token. Refresh поворачивает refresh token, logout отзывает
@@ -39,8 +44,9 @@ customer, `Staff` — barista/administrator, `Administrator` — админис�
 роль. [RolesGuard](../../src/auth/transport/roles.guard.ts),
 [схема ролей](../../migrations/0002_e01_core_schema.sql).
 
-В local/development один adapter выдаёт development OTP; в staging/production
-код генерируется криптографически и отправляется SMS.ru. Секреты не попадают в
+В local/development один adapter выдаёт development OTP. Staging требует режим
+`staging_test`, фиксированный test OTP и allowlist номеров; production
+генерирует криптографический код и отправляет его через SMS.ru. Секреты не попадают в
 документацию. [Сборка adapters](../../src/auth/auth.module.ts),
 [переменные](../../.env.example).
 

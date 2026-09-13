@@ -1,5 +1,7 @@
 import {
   E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE,
+  E2E_ADMIN_2_OTP_ENVIRONMENT_VARIABLE,
+  E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE,
   E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
   E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE,
   E2E_CUSTOMER_2_OTP_ENVIRONMENT_VARIABLE,
@@ -17,10 +19,21 @@ import type {
 } from "./e2e-environment.types";
 
 export function getE2eEnvironment(): E2eEnvironment {
-  return {
+  const environment = {
     frontOfficeUrl: readUrl(E2E_FRONT_OFFICE_URL_ENVIRONMENT_VARIABLE),
     backOfficeUrl: readUrl(E2E_BACK_OFFICE_URL_ENVIRONMENT_VARIABLE),
   };
+
+  if (
+    new URL(environment.frontOfficeUrl).origin ===
+    new URL(environment.backOfficeUrl).origin
+  ) {
+    throw new Error(
+      "E2E_FRONT_OFFICE_URL and E2E_BACK_OFFICE_URL must use different origins.",
+    );
+  }
+
+  return environment;
 }
 
 export function getE2eCredentials(): E2eCredentials {
@@ -28,6 +41,10 @@ export function getE2eCredentials(): E2eCredentials {
     administrator: readOtpCredentials(
       E2E_ADMIN_PHONE_ENVIRONMENT_VARIABLE,
       E2E_ADMIN_OTP_ENVIRONMENT_VARIABLE,
+    ),
+    secondAdministrator: readOtpCredentials(
+      E2E_ADMIN_2_PHONE_ENVIRONMENT_VARIABLE,
+      E2E_ADMIN_2_OTP_ENVIRONMENT_VARIABLE,
     ),
     staff: readOtpCredentials(
       E2E_STAFF_PHONE_ENVIRONMENT_VARIABLE,

@@ -3,7 +3,8 @@ import type { AuthCrypto } from "./auth-crypto.types";
 import type { AuthRepository } from "./auth-repository.types";
 import type { Clock } from "./clock.types";
 import type { OtpCodeGenerator } from "./otp-code-generator.types";
-import type { SmsSender } from "./sms-sender.types";
+import { SmsDeliveryError, type SmsSender } from "./sms-sender.types";
+import { Logger } from "@nestjs/common";
 import { OtpRateLimitedError } from "../domain/auth.errors";
 import {
   otpLifetimeMs,
@@ -27,7 +28,7 @@ export class RequestOtpUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(phone: string): Promise<RequestOtpResult> {
+  async execute(phone: string, sourceId: string): Promise<RequestOtpResult> {
     const phoneE164 = normalizeRussianPhone(phone);
     const now = this.clock.now();
     const challengeId = randomUUID();
@@ -40,21 +41,32 @@ export class RequestOtpUseCase {
       expiresAt,
       now,
       challengeId,
+      sourceId,
     );
 
     if (reservation.status === "rate_limited") {
-      throw new OtpRateLimitedError();
+      throw new OtpRateLimitedError(reservation.retryAfterSeconds);
     }
 
     try {
       await this.smsSender.send(phoneE164, code);
-    } catch {
+    } catch (error) {
+      const deliveryKind =
+        error instanceof SmsDeliveryError ? error.kind : "transport";
+      Logger.warn(
+        `OTP delivery failed: ${deliveryKind}`,
+        RequestOtpUseCase.name,
+      );
       try {
         await this.repository.invalidateOtpChallenge(
           challengeId,
           this.clock.now(),
         );
       } catch {
+        Logger.error(
+          `OTP delivery compensation failed: ${deliveryKind}`,
+          RequestOtpUseCase.name,
+        );
         // The public result must remain safe when compensating persistence fails.
       }
 

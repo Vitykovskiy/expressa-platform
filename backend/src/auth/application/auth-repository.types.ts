@@ -13,7 +13,7 @@ export type StoredOtpChallenge = OtpChallenge & {
 
 export type OtpChallengeReservation =
   | { status: "created"; challenge: StoredOtpChallenge }
-  | { status: "rate_limited" };
+  | { status: "rate_limited"; retryAfterSeconds?: number };
 
 export type AuthSession = {
   id: string;
@@ -52,10 +52,12 @@ export interface AuthRepository {
     expiresAt: Date,
     sentAt: Date,
     challengeId: string,
+    sourceId: string,
   ): Promise<OtpChallengeReservation>;
   invalidateOtpChallenge(challengeId: string, now: Date): Promise<void>;
-  verifyOtpAndCreateSession(
+  verifyOtpAndCreateSessionForChallenge(
     phoneE164: string,
+    challengeId: string,
     codeHash: string,
     now: Date,
     sessionId: string,

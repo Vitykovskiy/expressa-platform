@@ -3,6 +3,7 @@ export interface ApiErrorData {
   details: unknown;
   message: string;
   requestId: string | null;
+  retryAfterSeconds?: number | null;
   status?: number | null;
 }
 export type ResponseValidator<T> = (value: unknown) => value is T;

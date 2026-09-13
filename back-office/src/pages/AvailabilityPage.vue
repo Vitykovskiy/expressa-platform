@@ -43,16 +43,12 @@ onMounted(() => void loadAvailability());
 async function loadAvailability(): Promise<void> {
   if (saving.value) return;
   const request = ++loadRequest;
-  const accessToken = sessionStore.accessToken;
-  if (accessToken === null) {
-    setLoadError(request, unauthorizedError());
-    return;
-  }
-
   loading.value = true;
   error.value = null;
   try {
-    const nextAvailability = await availabilityApi.get(accessToken);
+    const nextAvailability = await sessionStore.readWithRecovery(
+      (accessToken) => availabilityApi.get(accessToken),
+    );
     if (request !== loadRequest) return;
     availability.value = nextAvailability;
   } catch (requestError) {
@@ -169,16 +165,6 @@ function diagnostic(error: AvailabilityApiError) {
     code: error.code,
     message: error.message,
     requestId: error.requestId,
-  };
-}
-
-function unauthorizedError(): AvailabilityApiError {
-  return {
-    code: "UNAUTHORIZED",
-    details: null,
-    message: "Сессия сотрудника не найдена.",
-    requestId: null,
-    status: 401,
   };
 }
 

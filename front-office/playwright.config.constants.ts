@@ -15,7 +15,7 @@ export const frontOfficePlaywrightTestDirectory = {
 } as const;
 export const frontOfficePlaywrightTestMatch = "tests/e2e/**/*.spec.ts";
 export const frontOfficeAppWebServerCommand =
-  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && vite preview --host 127.0.0.1 --port 4174";
+  "VITE_APP_ENV=local VITE_API_BASE_URL=/ npm run build && vite --host 127.0.0.1 --port 4174";
 
 const frontOfficeE2eComposeCommand = `docker compose -p ${frontOfficeE2eComposeProjectName} -f ../backend/compose.local.yml`;
 const frontOfficeE2eComposeOverride = `services:

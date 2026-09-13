@@ -29,6 +29,7 @@ export const initialSessionState: SessionState = {
   generation: 0,
   currentUser: null,
   errorMessage: null,
+  otpCooldownUntil: null,
   otpExpiresAt: null,
   otpRequestMetadata: null,
   otpRequestedAt: null,

@@ -74,6 +74,11 @@ async function requestOtp(): Promise<void> {
   const metadata = await sessionStore.requestOtp(phone.value);
 
   if (metadata === null) {
+    const retryAfterSeconds = sessionStore.otpRetryAfterSeconds;
+    if (retryAfterSeconds !== null && retryAfterSeconds !== undefined) {
+      resendAvailableAt.value = Date.now() + retryAfterSeconds * 1000;
+      startResendTimer();
+    }
     screenState.value = isResend ? "otp" : "phone";
     return;
   }

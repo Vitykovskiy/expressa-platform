@@ -34,6 +34,9 @@ const resendTimer = setInterval(
   1000,
 );
 const resendRemainingSeconds = computed(() => {
+  const cooldownUntil = sessionStore.otpCooldownUntil;
+  if (cooldownUntil !== null)
+    return Math.max(0, Math.ceil((cooldownUntil - now.value) / 1000));
   const metadata = sessionStore.otpRequestMetadata;
   const requestedAt = sessionStore.otpRequestedAt;
   if (metadata === null || requestedAt === null) return 0;

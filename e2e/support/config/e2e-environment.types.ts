@@ -5,6 +5,7 @@ export interface E2eEnvironment {
 
 export interface E2eCredentials {
   readonly administrator: E2eOtpCredentials;
+  readonly secondAdministrator: E2eOtpCredentials;
   readonly staff: E2eOtpCredentials;
   readonly customer: E2eOtpCredentials;
   readonly secondCustomer: E2eOtpCredentials;

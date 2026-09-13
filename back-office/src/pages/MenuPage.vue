@@ -444,6 +444,7 @@ const catalogReadErrorMessage = computed(() =>
             ? "Не удалось завершить операцию с меню."
             : "Не удалось загрузить меню.",
 );
+let recoveringCatalogRead = false;
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 
 const orderedCategories = computed(() =>
@@ -471,8 +472,23 @@ onMounted(loadCatalog);
 
 watch(
   () => catalogStore.status,
-  (status) => {
+  async (status) => {
     if (status === "ready") hasConfirmedCatalog.value = true;
+    if (
+      status !== "error" ||
+      recoveringCatalogRead ||
+      catalogStore.error?.status !== 401
+    )
+      return;
+
+    recoveringCatalogRead = true;
+    try {
+      await sessionStore.restore();
+      const refreshedAccess = accessToken();
+      if (refreshedAccess !== null) await catalogStore.refresh(refreshedAccess);
+    } finally {
+      recoveringCatalogRead = false;
+    }
   },
 );
 

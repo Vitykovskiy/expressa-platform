@@ -40,6 +40,13 @@ E08/E09 — запреты ролей и неверного перехода, п
 [Deploy preconditions](../../deploy/deploy.sh), [Compose networks](../../deploy/compose.yml),
 [workflow SSH](../../.github/workflows/staging-deploy.yml).
 
+Auth topology: backend не имеет host port и принимает запросы только из private
+`edge` network. Front-office и back-office имеют разные UI origins и каждый
+проксирует собственный `/api/v2`; host-only refresh cookie никогда не покидает
+origin UI. Nginx добавляет один `X-Forwarded-For` hop, которому backend доверяет
+для security throttle. Публикация backend port или дополнительный proxy без
+изменения этой конфигурации запрещены.
+
 Автоматические migration, seed, внутренние health-проверки и staging smoke
 пишут только именные evidence-маркеры `expressa-release-evidence: check=… status=passed`
 или `expressa-staging-smoke: check=… status=passed`. Маркеры подтверждают
@@ -74,7 +81,12 @@ runtime отклоняют совпадение любой пары этих р�
 [E2E на VPS](E2E-on-VPS.md). Адреса Customer, Admin и API приведены в
 [средах](Environments.md).
 
-Для ротации administrator оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
+Замена `BOOTSTRAP_ADMIN_PHONE` добавляет или повышает нового administrator, но
+сама по себе не отзывает доступ прежнего номера. Для ротации оператор сначала
+назначает новый номер, проверяет его вход, затем отдельно понижает прежний
+номер командой `npm run staff -- upsert --phone +7XXXXXXXXXX --role customer`;
+текущие сессии сразу теряют staff-доступ благодаря DB role lookup. После этого
+оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
 номер формата `+7XXXXXXXXXX` в GitHub Environments `development` и `staging`.
 Значение вводится только в интерфейсе GitHub Secrets и не помещается в команду,
 Git, логи или `runtime.env`. Следующая поставка seed-ом создаёт либо обновляет

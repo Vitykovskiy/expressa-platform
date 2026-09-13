@@ -59,14 +59,17 @@ export class VerifyOtpUseCase {
       throw new Error("Could not hash refresh token.");
     }
 
-    const authentication = await this.repository.verifyOtpAndCreateSession(
-      phoneE164,
-      codeHash,
-      now,
-      sessionId,
-      refreshTokenHash,
-      new Date(now.getTime() + sessionLifetimeMs),
-    );
+    const sessionExpiresAt = new Date(now.getTime() + sessionLifetimeMs);
+    const authentication =
+      await this.repository.verifyOtpAndCreateSessionForChallenge(
+        phoneE164,
+        challenge.id,
+        codeHash,
+        now,
+        sessionId,
+        refreshTokenHash,
+        sessionExpiresAt,
+      );
 
     return this.createResult(authentication, challenge, now, refreshToken);
   }

@@ -1,4 +1,5 @@
 import type { AuthCrypto } from "./auth-crypto.types";
+import { Logger } from "@nestjs/common";
 import type {
   AuthRepository,
   StoredOtpChallenge,
@@ -9,7 +10,7 @@ import {
   OtpDeliveryUnavailableError,
   RequestOtpUseCase,
 } from "./request-otp.use-case";
-import type { SmsSender } from "./sms-sender.types";
+import { SmsDeliveryError, type SmsSender } from "./sms-sender.types";
 import { OtpRateLimitedError } from "../domain/auth.errors";
 
 const now = new Date("2026-08-04T10:00:00.000Z");
@@ -40,7 +41,7 @@ function createRepository(): jest.Mocked<AuthRepository> {
     revokeSession: jest.fn(),
     reserveOtpChallenge: jest.fn(),
     rotateSession: jest.fn(),
-    verifyOtpAndCreateSession: jest.fn(),
+    verifyOtpAndCreateSessionForChallenge: jest.fn(),
   };
 }
 
@@ -87,7 +88,9 @@ describe("RequestOtpUseCase", () => {
       clock,
     );
 
-    await expect(useCase.execute("8 999 123-45-67")).resolves.toEqual({
+    await expect(
+      useCase.execute("8 999 123-45-67", "source-id"),
+    ).resolves.toEqual({
       retryAfterSeconds: 60,
       expiresInSeconds: 300,
     });
@@ -102,6 +105,7 @@ describe("RequestOtpUseCase", () => {
       new Date("2026-08-04T10:05:00.000Z"),
       now,
       expect.any(String),
+      "source-id",
     );
     expect(smsSender.send).toHaveBeenCalledWith("+79991234567", "123456");
   });
@@ -120,9 +124,9 @@ describe("RequestOtpUseCase", () => {
       { now: () => new Date(now.getTime() + 59_999) },
     );
 
-    await expect(useCase.execute("+79991234567")).rejects.toBeInstanceOf(
-      OtpRateLimitedError,
-    );
+    await expect(
+      useCase.execute("+79991234567", "source-id"),
+    ).rejects.toBeInstanceOf(OtpRateLimitedError);
     expect(smsSender.send).not.toHaveBeenCalled();
   });
 
@@ -141,7 +145,7 @@ describe("RequestOtpUseCase", () => {
       { now: () => now },
     );
 
-    await expect(useCase.execute("+79991234567")).rejects.toEqual(
+    await expect(useCase.execute("+79991234567", "source-id")).rejects.toEqual(
       new OtpDeliveryUnavailableError(),
     );
     expect(repository.invalidateOtpChallenge).toHaveBeenCalledWith(
@@ -177,8 +181,8 @@ describe("RequestOtpUseCase", () => {
       { now: () => now },
     );
 
-    const firstRequest = useCase.execute("+79991234567");
-    await useCase.execute("+79991234567");
+    const firstRequest = useCase.execute("+79991234567", "source-id");
+    await useCase.execute("+79991234567", "source-id");
     const firstChallengeId = repository.reserveOtpChallenge.mock.calls[0]?.[4];
     const secondChallengeId = repository.reserveOtpChallenge.mock.calls[1]?.[4];
 
@@ -204,6 +208,38 @@ describe("RequestOtpUseCase", () => {
     );
   });
 
+  it("сохраняет безопасную классификацию диагностики при ошибке компенсации", async () => {
+    const repository = createRepository();
+    repository.reserveOtpChallenge.mockResolvedValue({
+      status: "created",
+      challenge: createChallenge(),
+    });
+    repository.invalidateOtpChallenge.mockRejectedValue(
+      new Error("database connection password"),
+    );
+    const logger = jest.spyOn(Logger, "error").mockImplementation();
+    const useCase = new RequestOtpUseCase(
+      repository,
+      { generate: () => "123456" },
+      createCrypto(),
+      { send: jest.fn().mockRejectedValue(new SmsDeliveryError("timeout")) },
+      { now: () => now },
+    );
+
+    await expect(useCase.execute("+79991234567", "source-id")).rejects.toEqual(
+      new OtpDeliveryUnavailableError(),
+    );
+    expect(logger).toHaveBeenCalledWith(
+      "OTP delivery compensation failed: timeout",
+      RequestOtpUseCase.name,
+    );
+    expect(logger).not.toHaveBeenCalledWith(
+      expect.stringContaining("password"),
+      expect.anything(),
+    );
+    logger.mockRestore();
+  });
+
   it("отправляет SMS только для единственного созданного параллельного challenge", async () => {
     const repository = createRepository();
     repository.reserveOtpChallenge
@@ -224,8 +260,8 @@ describe("RequestOtpUseCase", () => {
     );
 
     const [first, second] = await Promise.allSettled([
-      useCase.execute("+79991234567"),
-      useCase.execute("+79991234567"),
+      useCase.execute("+79991234567", "source-id"),
+      useCase.execute("+79991234567", "source-id"),
     ]);
 
     expect([first.status, second.status].sort()).toEqual([

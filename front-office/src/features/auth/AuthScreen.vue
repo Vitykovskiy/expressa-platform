@@ -1,6 +1,26 @@
 <template>
   <section class="auth-screen" :aria-busy="props.isLoading || undefined">
     <div class="auth-content">
+      <div
+        class="state-icon"
+        :class="`state-icon--${presentation.iconTone}`"
+        aria-hidden="true"
+      >
+        <v-progress-circular
+          v-if="presentation.content === 'loading'"
+          class="loading-spinner"
+          indeterminate
+          :size="30"
+          :width="3"
+        />
+        <component
+          :is="presentation.icon"
+          v-else
+          class="state-icon-icon"
+          aria-hidden="true"
+        />
+      </div>
+
       <header class="auth-heading">
         <h1 class="auth-title">{{ presentation.title }}</h1>
         <p class="auth-description" aria-live="polite">
@@ -87,7 +107,37 @@ const isLoading = computed(() => props.isLoading ?? false);
   align-items: center;
   width: 100%;
   max-width: var(--customer-size-content-auth);
-  gap: var(--customer-space-8);
+  gap: var(--customer-space-14);
+}
+
+.state-icon {
+  display: grid;
+  width: var(--customer-size-state-icon);
+  height: var(--customer-size-state-icon);
+  place-items: center;
+  border-radius: var(--customer-radius-round);
+  background: var(--customer-surface);
+  box-shadow: var(--customer-shadow-state);
+  color: var(--customer-background);
+  font-size: var(--customer-font-size-6xl);
+}
+
+.state-icon--success {
+  color: var(--customer-success);
+}
+
+.loading-spinner {
+  color: var(--customer-background);
+}
+
+.state-icon-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.state-icon--success .state-icon-icon {
+  width: var(--customer-font-size-6xl);
+  height: var(--customer-font-size-6xl);
 }
 
 .auth-heading {

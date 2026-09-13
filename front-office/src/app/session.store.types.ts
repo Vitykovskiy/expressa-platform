@@ -17,6 +17,7 @@ export interface SessionState {
   currentUser: CurrentUser | null;
   errorMessage: string | null;
   otpExpiresAt: number | null;
+  otpCooldownUntil: number | null;
   otpRequestMetadata: OtpRequestMetadata | null;
   otpRequestedAt: number | null;
   pendingPhone: string | null;

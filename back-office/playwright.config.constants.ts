@@ -25,15 +25,15 @@ export const backOfficeAppUrl = "http://127.0.0.1:4173";
 export const backOfficeAppWebServerCommand = "npm run preview";
 export const backOfficeDesktopBrowserDeviceName = "Desktop Chrome";
 export const backOfficeAuthWebServerCommand =
-  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3000 npm run build && npm run preview -- --port 4175";
+  "VITE_APP_ENV=local VITE_API_BASE_URL=/ npm run build && vite --host 127.0.0.1 --port 4175";
 export const catalogBackendReadyUrl = "http://127.0.0.1:3001/docs";
 export const catalogDatabaseUrl =
   "postgresql://expressa:expressa@127.0.0.1:5435/expressa";
 export const catalogFrontendUrl = "http://127.0.0.1:4174";
 export const catalogBackOfficeWebServerCommand =
-  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3001 npm run build && npm run preview -- --port 4175";
+  "VITE_APP_ENV=local VITE_API_BASE_URL=/ VITE_API_PROXY_TARGET=http://127.0.0.1:3001 npm run build && vite --host 127.0.0.1 --port 4175";
 export const catalogFrontendWebServerCommand =
-  "VITE_APP_ENV=local VITE_API_BASE_URL=http://127.0.0.1:3001 npm --prefix ../front-office run build && (cd ../front-office && npx vite preview --host 127.0.0.1 --port 4174)";
+  "VITE_APP_ENV=local VITE_API_BASE_URL=/ VITE_API_PROXY_TARGET=http://127.0.0.1:3001 npm --prefix ../front-office run build && (cd ../front-office && npx vite --host 127.0.0.1 --port 4174)";
 export const catalogOrigin = "http://127.0.0.1:4175";
 export const catalogServerEnvironment = {
   AUTH_ACCESS_TOKEN_SECRET:

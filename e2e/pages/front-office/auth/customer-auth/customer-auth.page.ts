@@ -11,6 +11,8 @@ import type { Locator, Page } from "@playwright/test";
 export class CustomerAuthPage {
   public readonly phoneVerification: PhoneVerificationComponent;
   public readonly profile: GuestCheckoutFormComponent;
+  private readonly accountButton: Locator;
+  private readonly authenticatedAccountButton: Locator;
   private readonly signOutButton: Locator;
   private readonly signInButton: Locator;
   private readonly publicInterface: Locator;
@@ -19,10 +21,17 @@ export class CustomerAuthPage {
     this.phoneVerification = new PhoneVerificationComponent(page);
     this.profile = new GuestCheckoutFormComponent(page);
     this.signOutButton = page.getByRole("button", {
-      name: /Выйти$/u,
+      name: "Выйти из аккаунта",
+    });
+    this.accountButton = page.getByRole("button", {
+      name: "Аккаунт",
+      exact: true,
+    });
+    this.authenticatedAccountButton = page.getByRole("button", {
+      name: /^\+7.*Аккаунт$/u,
     });
     this.signInButton = page.getByRole("button", {
-      name: "Подтвердить телефон",
+      name: "Войти",
       exact: true,
     });
     this.publicInterface = page.getByRole("main");
@@ -32,8 +41,13 @@ export class CustomerAuthPage {
     await test.step("Открыть вход клиента", async () => {
       await this.page.goto(new URL("/", frontUrl).toString());
       await expect(
+        this.accountButton,
+        "Кнопка аккаунта доступна гостю.",
+      ).toBeVisible();
+      await this.accountButton.click();
+      await expect(
         this.signInButton,
-        "Кнопка подтверждения телефона доступна гостю.",
+        "Кнопка входа доступна гостю.",
       ).toBeVisible();
       await this.signInButton.click();
       await expect(this.page, "Открыт ввод номера телефона.").toHaveURL(
@@ -55,6 +69,7 @@ export class CustomerAuthPage {
 
   async signOut(): Promise<void> {
     await test.step("Выйти из учётной записи клиента", async () => {
+      await this.authenticatedAccountButton.click();
       await expect(
         this.signOutButton,
         "Кнопка выхода из учётной записи доступна.",
@@ -67,7 +82,7 @@ export class CustomerAuthPage {
   async assertSession(state: CustomerSessionState): Promise<void> {
     if (state === CustomerSessionState.AUTHENTICATED) {
       await expect(
-        this.signOutButton,
+        this.authenticatedAccountButton,
         "Клиент авторизован в публичном интерфейсе.",
       ).toBeVisible();
       return;
@@ -75,7 +90,7 @@ export class CustomerAuthPage {
 
     await expect(
       this.signInButton,
-      "Публичный интерфейс открыт для неавторизованного клиента.",
+      "В настройках аккаунта доступен вход для неавторизованного клиента.",
     ).toBeVisible();
   }
 

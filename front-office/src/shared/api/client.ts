@@ -29,6 +29,7 @@ export class ApiError extends Error implements ApiErrorData {
   readonly code: string;
   readonly details: unknown;
   readonly requestId: string | null;
+  readonly retryAfterSeconds: number | null;
   readonly status: number | null;
 
   constructor({
@@ -36,6 +37,7 @@ export class ApiError extends Error implements ApiErrorData {
     details,
     message,
     requestId,
+    retryAfterSeconds = null,
     status = null,
   }: ApiErrorData) {
     super(message);
@@ -43,6 +45,7 @@ export class ApiError extends Error implements ApiErrorData {
     this.code = code;
     this.details = details;
     this.requestId = requestId;
+    this.retryAfterSeconds = retryAfterSeconds;
     this.status = status;
   }
 }
@@ -69,11 +72,7 @@ export class ApiClient {
         : await this.readPayload(response);
 
     if (!response.ok) {
-      throw this.createApiError(
-        payload,
-        response.headers.get("x-request-id"),
-        response.status,
-      );
+      throw this.createApiError(payload, response, response.status);
     }
 
     if (!matchesExpectedStatus(response.status, expectedStatus)) {
@@ -160,11 +159,15 @@ export class ApiClient {
 
   private createApiError(
     payload: unknown,
-    requestId: string | null,
+    response: Response,
     status: number,
   ): ApiError {
+    const retryAfterSeconds = parseRetryAfter(
+      response.headers.get("retry-after"),
+    );
+    const requestId = response.headers.get("x-request-id");
     if (isApiErrorData(payload)) {
-      return new ApiError({ ...payload, status });
+      return new ApiError({ ...payload, retryAfterSeconds, status });
     }
 
     return new ApiError({
@@ -175,6 +178,12 @@ export class ApiClient {
       status,
     });
   }
+}
+
+function parseRetryAfter(value: string | null): number | null {
+  if (value === null || !/^\d+$/.test(value)) return null;
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : null;
 }
 
 function isApiErrorData(value: unknown): value is ApiErrorData {

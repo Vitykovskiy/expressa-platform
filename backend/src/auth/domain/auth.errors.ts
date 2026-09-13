@@ -31,7 +31,7 @@ export class ExpiredOtpCodeError extends AuthDomainError {
 export class OtpRateLimitedError extends AuthDomainError {
   readonly code = "AUTH_RATE_LIMITED";
 
-  constructor() {
+  constructor(readonly retryAfterSeconds = 60) {
     super("Повторный запрос кода пока недоступен.");
   }
 }

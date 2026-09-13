@@ -45,9 +45,19 @@ export const useSessionStore = defineStore("session", {
         this.otpRequestMetadata = metadata;
         this.otpRequestedAt = requestedAt;
         this.otpExpiresAt = requestedAt + metadata.expiresInSeconds * 1000;
+        this.otpCooldownUntil = requestedAt + metadata.retryAfterSeconds * 1000;
 
         return metadata;
       } catch (error) {
+        if (
+          error instanceof ApiError &&
+          error.code === sessionErrorCodes.otpRateLimited &&
+          error.retryAfterSeconds !== null
+        ) {
+          const requestedAt = getSessionDependencies().now();
+          this.pendingPhone = phone;
+          this.otpCooldownUntil = requestedAt + error.retryAfterSeconds * 1000;
+        }
         this.errorMessage = getErrorMessage("requestOtp", error);
         throw error;
       }
@@ -211,6 +221,7 @@ export const useSessionStore = defineStore("session", {
       this.otpRequestMetadata = null;
       this.otpRequestedAt = null;
       this.otpExpiresAt = null;
+      this.otpCooldownUntil = null;
     },
   },
 });

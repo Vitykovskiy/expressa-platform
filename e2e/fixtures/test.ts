@@ -20,6 +20,8 @@ import type {
 
 import { useMultiSessionFixture } from "./multi-session.fixture";
 import type { MultiSessionFixture } from "./multi-session.fixture.types";
+import { useSameBrowserSessionsFixture } from "./same-browser-sessions.fixture";
+import type { SameBrowserSessionsFixture } from "./same-browser-sessions.fixture.types";
 
 export { expectedResult } from "./expected-result";
 
@@ -29,6 +31,7 @@ type E2eFixtures = {
   readonly e2eEnvironment: E2eEnvironment;
   readonly e2eCredentials: E2eCredentials;
   readonly multiSession: MultiSessionFixture;
+  readonly sameBrowserSessions: SameBrowserSessionsFixture;
   readonly backOfficeAuth: BackOfficeAuthPage;
   readonly availabilityManagement: AvailabilityManagementPage;
   readonly menuManagement: MenuManagementPage;
@@ -53,6 +56,9 @@ export const test = base.extend<E2eFixtures>({
   },
   multiSession: async ({ browser }, use) => {
     await useMultiSessionFixture(browser, use);
+  },
+  sameBrowserSessions: async ({ page }, use) => {
+    await useSameBrowserSessionsFixture(page, use);
   },
   backOfficeAuth: async ({ page }, use) => {
     await use(new BackOfficeAuthPage(page));

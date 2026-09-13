@@ -3,3 +3,7 @@ export const otpLifetimeMs = 5 * 60 * 1_000;
 export const otpResendIntervalMs = 60 * 1_000;
 export const otpMaxAttempts = 5;
 export const otpCodePattern = /^\d{6}$/;
+export const otpSecurityWindowMs = 60 * 60 * 1_000;
+export const otpSecurityPhoneLimit = 5;
+export const otpSecuritySourceLimit = 10;
+export const otpSecurityProviderLimit = 100;
