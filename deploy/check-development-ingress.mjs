@@ -94,10 +94,12 @@ function validateMenu(body, url) {
 for (const url of urls) {
   const response = await fetch(url);
   const contentType = response.headers.get("content-type") ?? "";
+  const cacheControl = response.headers.get("cache-control") ?? "";
   const body = await response.json().catch(() => null);
   if (
     !response.ok ||
     !contentType.includes("application/json") ||
+    !cacheControl.includes("no-store") ||
     !Array.isArray(body?.categories)
   ) {
     throw new Error(`Development ingress did not return menu JSON: ${url}`);

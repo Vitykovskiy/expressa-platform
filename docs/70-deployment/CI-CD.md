@@ -29,6 +29,7 @@ smoke или public-ingress acceptance. [Development](../../.github/workflows/de
 После remote development deploy workflow проверяет все public ingress hosts:
 нормативный subset обязан содержать 7 групп, 33 товара, 43 ценовые строки и 7
 платных дополнений.
+Ingress assertion также требует `Cache-Control: no-store` у публичного меню.
 Ручной workflow production до доступа к secrets и SSH проверяет dispatch из
 `main`, владельца репозитория и `confirm_production=true`; затем принимает
 только `staging-v*` с успешной staging-приёмкой и развёртывает manifest этого

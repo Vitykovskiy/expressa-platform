@@ -16,6 +16,8 @@ HTTP-вход — [PublicMenuController](../../backend/src/catalog/transport/pub
 
 У товара и варианта дополнительно может быть nullable `displayLabel`. Клиент
 показывает его как физический объём или порцию, сохраняя fallback к `S`/`M`/`L`.
+Ответ публичного меню отправляется с `Cache-Control: no-store`, чтобы клиент
+не показывал каталог предыдущего deploy.
 
 Административное чтение и команды каталога находятся под
 `/api/v2/backoffice/catalog/*`, требуют administrator и не заменяют публичную

@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Header } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetPublicMenuUseCase } from "../application/get-public-menu.use-case";
 import type { PublicMenu } from "../domain/catalog.types";
@@ -14,6 +14,7 @@ export class PublicMenuController {
   constructor(private readonly getPublicMenu: GetPublicMenuUseCase) {}
 
   @Get()
+  @Header("Cache-Control", "no-store")
   @ApiOperation({ summary: "Получить публичное меню" })
   @ApiResponse({ status: 200, type: PublicMenuDto })
   async getMenu(): Promise<PublicMenuDto> {
