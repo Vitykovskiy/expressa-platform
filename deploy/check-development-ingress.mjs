@@ -1,7 +1,7 @@
 const urls = [
-  "https://dev.expressa.vitykovskiy.ru/api/v2/public/menu",
-  "https://admin.dev.expressa.vitykovskiy.ru/api/v2/public/menu",
-  "https://api.dev.expressa.vitykovskiy.ru/api/v2/public/menu",
+  "https://dev.expressa.vitykovskiy.ru/api/v3/public/menu",
+  "https://admin.dev.expressa.vitykovskiy.ru/api/v3/public/menu",
+  "https://api.dev.expressa.vitykovskiy.ru/api/v3/public/menu",
 ];
 
 const sourceCategories = new Set([
@@ -48,16 +48,6 @@ const sourceProducts = new Set([
   "Кофе-шейк",
   "Аффогато",
 ]);
-const additions = new Set([
-  "Альт. молоко",
-  "Декаф",
-  "Джем",
-  "Кофейный сироп",
-  "Маршмеллоу",
-  "Налить воды",
-  "Доп. шот эспрессо",
-]);
-
 function validateMenu(body, url) {
   const categories = body.categories.filter((category) =>
     sourceCategories.has(category.name),
@@ -65,26 +55,16 @@ function validateMenu(body, url) {
   const products = categories
     .flatMap((category) => category.products)
     .filter((product) => sourceProducts.has(product.name));
-  const rows = products.reduce(
-    (count, product) => count + (product.variants.length || 1),
+  const priceChoices = products.reduce(
+    (count, product) => count + product.priceChoices.length,
     0,
-  );
-  const visibleAdditions = new Set(
-    products
-      .flatMap((product) =>
-        product.modifierGroups.flatMap((group) =>
-          group.options.map((option) => option.name),
-        ),
-      )
-      .filter((name) => additions.has(name)),
   );
   if (
     categories.length !== 7 ||
     products.length !== 33 ||
-    rows !== 43 ||
-    visibleAdditions.size !== 7 ||
+    priceChoices !== 20 ||
     products.some((product) =>
-      product.variants.some((variant) => !variant.displayLabel),
+      product.priceChoices.some((choice) => !choice.portionLabel),
     )
   ) {
     throw new Error(`Development ingress customer menu is incomplete: ${url}`);
