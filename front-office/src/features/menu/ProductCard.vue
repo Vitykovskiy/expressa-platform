@@ -23,19 +23,18 @@
       </span>
     </span>
     <span v-if="props.product.isAvailable" class="product-card__prices">
-      <template v-if="props.product.type === 'DRINK'">
+      <template v-if="props.product.priceChoices?.length">
         <span
-          v-for="variant in props.product.variants"
-          :key="variant.id"
+          v-for="choice in props.product.priceChoices ?? []"
+          :key="choice.id"
           class="product-card__price"
-          :class="{ 'product-card__price--unavailable': !variant.isAvailable }"
-          >{{ variant.displayLabel ?? variant.size }} ·
-          {{ formatRubles(variant.price) }}</span
+          :class="{ 'product-card__price--unavailable': !choice.isAvailable }"
+          >{{ choice.portionLabel }} · {{ formatRubles(choice.price) }}</span
         >
       </template>
       <span v-else class="product-card__price">
-        {{ props.product.displayLabel ? `${props.product.displayLabel} · ` : ""
-        }}{{ formatRubles(props.product.price) }}
+        {{ props.product.portionLabel ? `${props.product.portionLabel} · ` : ""
+        }}{{ formatRubles(props.product.price ?? 0) }}
       </span>
     </span>
     <span

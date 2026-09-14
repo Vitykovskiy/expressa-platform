@@ -12,6 +12,31 @@ const modifierId = "55555555-5555-4555-8555-555555555555";
 const staffId = "66666666-6666-4666-8666-666666666666";
 const staffPhone = "+79991234567";
 
+function availabilityCatalogV3Response() {
+  return {
+    categories: availabilityResponse().categories,
+    products: [
+      {
+        id: productId,
+        categoryId,
+        isActive: true,
+        isAvailable: true,
+        name: "Капучино",
+        sortOrder: 0,
+        priceChoices: [
+          {
+            id: variantId,
+            isAvailable: false,
+            portionLabel: "250 мл",
+            price: 250,
+            sortOrder: 0,
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function createAvailabilityApi(fetcher: typeof fetch): AvailabilityApi {
   return new AvailabilityApi(
     new ApiClient({ baseUrl: "https://api.example.test/api/v2", fetcher }),
@@ -78,7 +103,16 @@ describe("AvailabilityApi", () => {
     const api = createAvailabilityApi(
       vi
         .fn<typeof fetch>()
-        .mockResolvedValue(jsonResponse(availabilityResponse(), 200)),
+        .mockImplementation((input) =>
+          Promise.resolve(
+            jsonResponse(
+              String(input).includes("/v3/backoffice/catalog")
+                ? availabilityCatalogV3Response()
+                : availabilityResponse(),
+              200,
+            ),
+          ),
+        ),
     );
 
     await expect(api.get("access-token")).resolves.toEqual({
@@ -96,9 +130,9 @@ describe("AvailabilityApi", () => {
             {
               id: variantId,
               isAvailable: false,
-              label: "Капучино · M",
-              sublabel: "Размер",
-              type: "variant",
+              label: "Капучино · 250 мл",
+              sublabel: "Порция",
+              type: "priceChoice",
             },
             {
               id: modifierId,
@@ -197,7 +231,18 @@ describe("AvailabilityApi", () => {
     response.intake.updatedBy = null;
     response.intake.updatedByLabel = null;
     const api = createAvailabilityApi(
-      vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(response, 200)),
+      vi
+        .fn<typeof fetch>()
+        .mockImplementation((input) =>
+          Promise.resolve(
+            jsonResponse(
+              String(input).includes("/v3/backoffice/catalog")
+                ? availabilityCatalogV3Response()
+                : response,
+              200,
+            ),
+          ),
+        ),
     );
 
     await expect(api.get("access-token")).resolves.toMatchObject({

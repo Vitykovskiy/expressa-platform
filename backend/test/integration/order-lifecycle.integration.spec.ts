@@ -1,29 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { randomInt, randomUUID } from "node:crypto";
-import { resolve } from "node:path";
 import { Pool } from "pg";
 import { PostgresOrderLifecycleRepository } from "../../src/orders/adapters/postgres-order-lifecycle.repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
-
-function runMigrations(): void {
-  execFileSync("npm", ["run", "migrate"], {
-    cwd: resolve(__dirname, "../.."),
-    env: {
-      ...process.env,
-      JEST_WORKER_ID: undefined,
-      NODE_ENV: "local",
-      PORT: "3000",
-      DATABASE_URL: databaseUrl,
-      AUTH_ACCESS_TOKEN_SECRET: "order-lifecycle-access-token-secret",
-      AUTH_OTP_PEPPER: "order-lifecycle-otp-pepper",
-      AUTH_DEVELOPMENT_OTP: "123456",
-      CORS_ORIGINS: "http://localhost:5173",
-    },
-    stdio: "inherit",
-  });
-}
 
 async function createUser(
   pool: Pool,
@@ -69,7 +49,6 @@ describe("PostgreSQL lifecycle заказа", () => {
     }
     pool = new Pool({ connectionString: databaseUrl });
     repository = new PostgresOrderLifecycleRepository({ pool });
-    runMigrations();
   });
 
   afterAll(async () => {

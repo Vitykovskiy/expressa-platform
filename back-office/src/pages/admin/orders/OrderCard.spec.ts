@@ -39,9 +39,9 @@ describe("OrderCard", () => {
           snapshot: [
             {
               productId: "product-1",
-              variantId: null,
+              priceChoiceId: "price-choice-1",
               productName: "Американо",
-              size: null,
+              portionLabel: "350 мл",
               quantity: 1,
               unitTotal: 320,
               lineTotal: 320,
@@ -57,6 +57,9 @@ describe("OrderCard", () => {
     });
 
     expect(wrapper.get(".order-card__total").text()).toBe("320 ₽");
+    expect(wrapper.get(".order-card__item").text()).toContain(
+      "Американо · 350 мл",
+    );
     expect(wrapper.get(".order-card__item").text()).toContain("320 ₽");
     expect(wrapper.text()).not.toContain(",00");
   });

@@ -14,4 +14,4 @@ Backend пересчитывает конфигурацию по актуаль�
 пересчёт между единицами отсутствуют. `expectedTotal` — проверка ожидаемого
 итога: расхождение возвращает `ORDER_TOTAL_CHANGED` с новым `total` без
 создания заказа; недоступность возвращает `MENU_ITEM_UNAVAILABLE`.
-[Источники: revalidation](../../backend/src/orders/domain/order-revalidation.ts), [OpenAPI](../../backend/openapi/openapi.json), [E2E](../../backend/test/e2e/create-order.e2e-spec.ts).
+[Источники: revalidation](../../backend/src/orders/domain/order-revalidation.ts), [OpenAPI](../../backend/openapi/openapi.json).

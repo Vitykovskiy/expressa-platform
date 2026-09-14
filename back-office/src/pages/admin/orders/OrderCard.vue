@@ -93,7 +93,8 @@
           :key="item.productId"
           class="order-card__item"
         >
-          {{ item.productName }}{{ item.size ? `, ${item.size}` : "" }} ×
+          {{ item.productName
+          }}{{ item.portionLabel ? ` · ${item.portionLabel}` : "" }} ×
           {{ item.quantity }} — {{ formatMoney(item.lineTotal) }}
           <span v-if="item.modifiers.length"
             >({{
@@ -142,7 +143,10 @@ const action = computed(
 const itemsSummary = computed(
   () =>
     props.details?.snapshot
-      .map((item) => `${item.productName} × ${item.quantity}`)
+      .map(
+        (item) =>
+          `${item.productName}${item.portionLabel ? ` · ${item.portionLabel}` : ""} × ${item.quantity}`,
+      )
       .join(", ") ?? "",
 );
 

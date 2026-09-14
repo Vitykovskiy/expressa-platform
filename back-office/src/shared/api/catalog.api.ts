@@ -9,6 +9,8 @@ import {
 import { ApiClient, ApiError } from "./client";
 import type {
   Catalog,
+  AdminV3CatalogResponseDto,
+  AdminV3ProductDto,
   CatalogApiErrorData,
   CatalogCategory,
   CatalogCategoryDto,
@@ -62,15 +64,15 @@ export class CatalogApi {
   constructor(private readonly client: ApiClient) {}
 
   async getCatalog(accessToken: string): Promise<Catalog> {
-    const response = await this.request<CatalogResponseDto>(
+    const response = await this.request<AdminV3CatalogResponseDto>(
       catalogApiPaths.catalog,
-      isCatalogResponseDto,
+      isAdminV3CatalogResponseDto,
       accessToken,
       "GET",
       200,
     );
 
-    return toCatalog(response);
+    return toCatalogV3(response);
   }
 
   async createCategory(
@@ -138,14 +140,14 @@ export class CatalogApi {
   ): Promise<CatalogProduct> {
     const response = await this.request(
       catalogApiPaths.products,
-      isCatalogProductDto,
+      isAdminV3ProductDto,
       accessToken,
       "POST",
       201,
-      product,
+      toV3CatalogProductCommand(product),
     );
 
-    return toCatalogProduct(response);
+    return toCatalogProductV3(response);
   }
 
   async updateProduct(
@@ -155,14 +157,14 @@ export class CatalogApi {
   ): Promise<CatalogProduct> {
     const response = await this.request(
       `${catalogApiPaths.products}/${productId}`,
-      isCatalogProductDto,
+      isAdminV3ProductDto,
       accessToken,
       "PATCH",
       200,
-      product,
+      toV3CatalogProductCommand(product),
     );
 
-    return toCatalogProduct(response);
+    return toCatalogProductV3(response);
   }
 
   async reorderProducts(
@@ -172,14 +174,14 @@ export class CatalogApi {
   ): Promise<readonly CatalogProduct[]> {
     const response = await this.request(
       `${catalogApiPaths.products}/reorder`,
-      isCatalogProductDtos,
+      isAdminV3ProductDtos,
       accessToken,
       "POST",
       200,
       { categoryId, productIds },
     );
 
-    return response.map((product) => toCatalogProduct(product));
+    return response.map(toCatalogProductV3);
   }
 
   archiveProduct(accessToken: string, productId: string): Promise<void> {
@@ -309,6 +311,20 @@ export class CatalogApi {
   }
 }
 
+function toV3CatalogProductCommand(product: CreateCatalogProduct) {
+  return {
+    categoryId: product.categoryId,
+    description: product.description,
+    isActive: product.isActive,
+    isAvailable: product.isAvailable,
+    name: product.name,
+    portionLabel: product.portionLabel,
+    price: product.price,
+    priceChoices: product.priceChoices,
+    sortOrder: product.sortOrder,
+  };
+}
+
 function toCatalogApiError(error: unknown): CatalogApiError {
   if (!(error instanceof ApiError)) {
     return new CatalogApiError({
@@ -350,7 +366,7 @@ function isCatalogValidationField(
   return isRecord(value) && isString(value.path) && isString(value.reason);
 }
 
-function toCatalog(response: CatalogResponseDto): Catalog {
+export function toCatalog(response: CatalogResponseDto): Catalog {
   return {
     categories: response.categories.map(toCatalogCategory),
     categoryModifierGroupAssignments: response.categoryModifierGroups.map(
@@ -368,7 +384,40 @@ function toCatalog(response: CatalogResponseDto): Catalog {
   };
 }
 
-function toCatalogProduct(product: CatalogProductDto): CatalogProduct {
+function toCatalogV3(response: AdminV3CatalogResponseDto): Catalog {
+  return {
+    categories: response.categories.map(toCatalogCategory),
+    categoryModifierGroupAssignments: response.categoryModifierGroups.map(
+      toCatalogCategoryModifierGroupAssignment,
+    ),
+    modifierGroups: response.modifierGroups.map((group) =>
+      toCatalogModifierGroup(
+        group,
+        response.modifierOptions.filter(({ groupId }) => groupId === group.id),
+      ),
+    ),
+    products: response.products.map(toCatalogProductV3),
+  };
+}
+
+function toCatalogProductV3(product: AdminV3ProductDto): CatalogProduct {
+  return {
+    categoryId: product.categoryId,
+    description: product.description,
+    id: product.id,
+    isActive: product.isActive,
+    isAvailable: product.isAvailable,
+    name: product.name,
+    portionLabel: product.portionLabel,
+    price: product.price,
+    priceChoices: product.priceChoices.map((choice) => ({ ...choice })),
+    sortOrder: product.sortOrder,
+    type: "OTHER",
+    variants: [],
+  };
+}
+
+export function toCatalogProduct(product: CatalogProductDto): CatalogProduct {
   return {
     categoryId: product.categoryId,
     description: product.description,
@@ -481,7 +530,9 @@ function toCatalogCategoryModifierGroupAssignment(
   };
 }
 
-function isCatalogResponseDto(value: unknown): value is CatalogResponseDto {
+export function isCatalogResponseDto(
+  value: unknown,
+): value is CatalogResponseDto {
   if (!isRecord(value)) {
     return false;
   }
@@ -516,6 +567,57 @@ function isCatalogResponseDto(value: unknown): value is CatalogResponseDto {
   });
 }
 
+function isAdminV3CatalogResponseDto(
+  value: unknown,
+): value is AdminV3CatalogResponseDto {
+  if (!isRecord(value)) return false;
+  return (
+    isCatalogCategories(value.categories) &&
+    Array.isArray(value.products) &&
+    value.products.every(isAdminV3ProductDto) &&
+    isCatalogModifierGroupDtos(value.modifierGroups) &&
+    isCatalogModifierOptions(value.modifierOptions) &&
+    isCatalogCategoryModifierGroupAssignments(value.categoryModifierGroups)
+  );
+}
+
+function isAdminV3ProductDto(value: unknown): value is AdminV3ProductDto {
+  if (
+    !isRecord(value) ||
+    !isUuid(value.id) ||
+    !isUuid(value.categoryId) ||
+    !isString(value.name) ||
+    !isString(value.description) ||
+    !(value.price === null || isNonNegativeInteger(value.price)) ||
+    !isInteger(value.sortOrder) ||
+    typeof value.isActive !== "boolean" ||
+    typeof value.isAvailable !== "boolean"
+  )
+    return false;
+  return (
+    (value.portionLabel === null || isString(value.portionLabel)) &&
+    Array.isArray(value.priceChoices) &&
+    value.priceChoices.every(isAdminV3PriceChoiceDto)
+  );
+}
+
+function isAdminV3ProductDtos(
+  value: unknown,
+): value is readonly AdminV3ProductDto[] {
+  return Array.isArray(value) && value.every(isAdminV3ProductDto);
+}
+
+function isAdminV3PriceChoiceDto(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isUuid(value.id) &&
+    isString(value.portionLabel) &&
+    isNonNegativeInteger(value.price) &&
+    isInteger(value.sortOrder) &&
+    typeof value.isAvailable === "boolean"
+  );
+}
+
 function isCatalogCategoryDto(value: unknown): value is CatalogCategoryDto {
   return (
     isRecord(value) &&
@@ -543,7 +645,7 @@ function isCatalogProductDto(value: unknown): value is CatalogProductDto {
   );
 }
 
-function isCatalogProductDtos(
+export function isCatalogProductDtos(
   value: unknown,
 ): value is readonly CatalogProductDto[] {
   return Array.isArray(value) && value.every(isCatalogProductDto);

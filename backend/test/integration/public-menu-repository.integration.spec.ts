@@ -12,7 +12,7 @@ import { GetPublicMenuUseCase } from "../../src/catalog/application/get-public-m
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
 
-function runScript(script: "migrate" | "seed"): void {
+function runScript(script: "seed"): void {
   execFileSync("npm", ["run", script], {
     cwd: resolve(__dirname, "../.."),
     env: {
@@ -40,7 +40,7 @@ async function resetCatalog(pool: Pool): Promise<void> {
   );
   await pool.query(
     `TRUNCATE order_item_modifiers, order_items, order_events, orders, category_modifier_groups, modifier_options,
-      modifier_groups, product_variants, products, categories`,
+      modifier_groups, product_price_choices, product_variants, products, categories CASCADE`,
   );
   runScript("seed");
 }
@@ -77,7 +77,6 @@ describe("PostgreSQL repository публичного меню", () => {
 
     pool = new Pool({ connectionString: databaseUrl });
     useCase = new GetPublicMenuUseCase(new PostgresPublicMenuRepository(pool));
-    runScript("migrate");
   });
 
   beforeEach(async () => {

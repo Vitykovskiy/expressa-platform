@@ -51,7 +51,7 @@ describe("CheckoutStore", () => {
             modifierOptionIds: [modifierId],
             productId,
             quantity: 1,
-            variantId,
+            priceChoiceId: variantId,
           },
         ],
       },

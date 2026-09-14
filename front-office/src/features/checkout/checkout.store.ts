@@ -215,7 +215,11 @@ function getAddressableIds(
 
   return [
     item.productId,
-    ...(item.type === "DRINK" ? [item.selectedVariant.id] : []),
+    ...(item.type === "PRICED" && item.selectedPriceChoice !== null
+      ? [item.selectedPriceChoice.id]
+      : item.type === "DRINK"
+        ? [item.selectedVariant.id]
+        : []),
     ...item.selectedModifierOptions.map((option) => option.id),
   ];
 }
@@ -231,7 +235,11 @@ function toCheckoutRequestItem(
     ),
     productId: cartItem.productId,
     quantity: cartItem.quantity,
-    variantId: cartItem.type === "DRINK" ? cartItem.selectedVariant.id : null,
+    ...(cartItem.type === "PRICED" && cartItem.selectedPriceChoice !== null
+      ? { priceChoiceId: cartItem.selectedPriceChoice.id }
+      : cartItem.type === "DRINK"
+        ? { priceChoiceId: cartItem.selectedVariant.id }
+        : {}),
   };
 }
 
@@ -239,9 +247,14 @@ function isPersistedCartItem(
   value: CheckoutSubmission["cartItems"][number],
 ): value is Extract<
   CheckoutSubmission["cartItems"][number],
-  { type: "DRINK" | "OTHER" }
+  { type: "DRINK" | "PRICED" | "OTHER" }
 > {
-  if (value.type !== "DRINK" && value.type !== "OTHER") return false;
+  if (
+    value.type !== "DRINK" &&
+    value.type !== "PRICED" &&
+    value.type !== "OTHER"
+  )
+    return false;
   if (
     !isNonEmptyString(value.productId) ||
     !isPositiveInteger(value.quantity) ||
@@ -259,7 +272,12 @@ function isPersistedCartItem(
     return false;
   }
 
-  return value.type !== "DRINK" || isNonEmptyString(value.selectedVariant.id);
+  return value.type === "DRINK"
+    ? isNonEmptyString(value.selectedVariant.id)
+    : value.type === "PRICED"
+      ? value.selectedPriceChoice !== null &&
+        isNonEmptyString(value.selectedPriceChoice.id)
+      : true;
 }
 
 function getCartTotal(

@@ -119,4 +119,3 @@ sources:
 проверка её не заменяет. Полный технический контракт —
 [Push notifications](../50-interfaces/Push-notifications.md), сессия —
 [Authentication and returnTo](../../front-office/docs/30-features/Authentication-and-returnTo.md),
-сценарии — [ORDER-09](../../e2e/docs/95-testing/scenarios/customer-orders.md).

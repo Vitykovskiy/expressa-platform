@@ -39,5 +39,5 @@ docs/
 - [Карта документации](INDEX.md) ведёт к актуальным материалам по задаче.
 - Детали реализации: [backend](../backend/docs/INDEX.md),
   [front-office](../front-office/docs/INDEX.md),
-  [back-office](../back-office/docs/INDEX.md) и [e2e](../e2e/docs/INDEX.md).
+  [back-office](../back-office/docs/INDEX.md).
 - [Реестр покрытия](COVERAGE.md) помогает оценить документированность области.

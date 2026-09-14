@@ -8,7 +8,8 @@ export type ProductConfiguration = {
   product: PublicMenuProduct;
   quantity: number;
   selectedModifierGroups: ProductConfigurationModifierGroup[];
-  selectedVariantId: string | null;
+  selectedPriceChoiceId: string | null;
+  selectedVariantId?: string | null;
 };
 
 export type ProductConfigurationModifierGroup = {

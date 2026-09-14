@@ -2,19 +2,25 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { Pool } from "pg";
-import { catalogSeed } from "../../scripts/seed.constants";
+import {
+  catalogSeed,
+  customerMenuCatalogSeed,
+} from "../../scripts/seed.constants";
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
 const bootstrapAdministratorPhone = "+79991234567";
 
-function runScript(script: "migrate" | "seed"): void {
+function runScript(
+  script: "seed",
+  nodeEnv: "development" | "local" = "local",
+): void {
   execFileSync("npm", ["run", script], {
     cwd: resolve(__dirname, "../.."),
     env: {
       ...process.env,
       JEST_WORKER_ID: undefined,
-      NODE_ENV: "local",
+      NODE_ENV: nodeEnv,
       PORT: "3000",
       DATABASE_URL: databaseUrl,
       BOOTSTRAP_ADMIN_PHONE: bootstrapAdministratorPhone,
@@ -37,6 +43,7 @@ async function readCatalogState(pool: Pool): Promise<object> {
       'categories', (SELECT jsonb_agg(row_to_json(categories) ORDER BY id) FROM categories),
       'products', (SELECT jsonb_agg(row_to_json(products) ORDER BY id) FROM products),
       'productVariants', (SELECT jsonb_agg(row_to_json(product_variants) ORDER BY id) FROM product_variants),
+      'productPriceChoices', (SELECT jsonb_agg(row_to_json(product_price_choices) ORDER BY id) FROM product_price_choices),
       'modifierGroups', (SELECT jsonb_agg(row_to_json(modifier_groups) ORDER BY id) FROM modifier_groups),
       'modifierOptions', (SELECT jsonb_agg(row_to_json(modifier_options) ORDER BY id) FROM modifier_options),
       'categoryModifierGroups', (
@@ -63,7 +70,6 @@ describe("seed каталога", () => {
     }
 
     pool = new Pool({ connectionString: databaseUrl });
-    runScript("migrate");
   });
 
   afterAll(async () => {
@@ -160,6 +166,134 @@ describe("seed каталога", () => {
             is_default: true,
           }),
         ]),
+      });
+    },
+    externalProcessTimeoutMs,
+  );
+
+  it(
+    "converges the development customer menu as direct prices and ordered price choices",
+    () => {
+      runScript("seed", "development");
+      const firstChoices = pool.query<{
+        id: string;
+        product_id: string;
+        portion_label: string;
+        price: number;
+        sort_order: number;
+        is_available: boolean;
+      }>(
+        `SELECT id, product_id, portion_label, price, sort_order, is_available
+         FROM product_price_choices
+         WHERE id = ANY($1::uuid[]) AND archived_at IS NULL
+         ORDER BY product_id, sort_order`,
+        [
+          customerMenuCatalogSeed.productPriceChoices.map(
+            (choice) => choice.id,
+          ),
+        ],
+      );
+
+      return firstChoices.then(async (choices) => {
+        expect(choices.rows).toEqual(
+          [...customerMenuCatalogSeed.productPriceChoices]
+            .sort(
+              (left, right) =>
+                left.productId.localeCompare(right.productId) ||
+                left.sortOrder - right.sortOrder,
+            )
+            .map((choice) => ({
+              id: choice.id,
+              product_id: choice.productId,
+              portion_label: choice.portionLabel,
+              price: choice.price,
+              sort_order: choice.sortOrder,
+              is_available: choice.isAvailable,
+            })),
+        );
+
+        const directProducts = await pool.query<{
+          id: string;
+          display_label: string | null;
+          price: number;
+          is_available: boolean;
+        }>(
+          `SELECT id, display_label, price, is_available
+           FROM products
+           WHERE id = ANY($1::uuid[]) AND archived_at IS NULL AND price IS NOT NULL
+           ORDER BY id`,
+          [
+            customerMenuCatalogSeed.products
+              .filter((product) => product.price !== null)
+              .map((product) => product.id),
+          ],
+        );
+        expect(directProducts.rows).toEqual(
+          customerMenuCatalogSeed.products
+            .filter(
+              (product): product is typeof product & { price: number } =>
+                product.price !== null,
+            )
+            .sort((left, right) => left.id.localeCompare(right.id))
+            .map((product) => ({
+              id: product.id,
+              display_label: product.displayLabel ?? null,
+              price: product.price,
+              is_available: product.isAvailable,
+            })),
+        );
+
+        const shape = await pool.query<{
+          direct_products: number;
+          labelled_direct_products: number;
+          multi_products: number;
+          price_choices: number;
+        }>(
+          `SELECT
+             COUNT(*) FILTER (WHERE price IS NOT NULL)::int AS direct_products,
+             COUNT(*) FILTER (WHERE price IS NOT NULL AND display_label IS NOT NULL)::int AS labelled_direct_products,
+             COUNT(*) FILTER (WHERE id IN (SELECT DISTINCT product_id FROM product_price_choices WHERE archived_at IS NULL))::int AS multi_products,
+             (SELECT COUNT(*)::int FROM product_price_choices WHERE id = ANY($2::uuid[]) AND archived_at IS NULL) AS price_choices
+           FROM products
+           WHERE id = ANY($1::uuid[]) AND archived_at IS NULL`,
+          [
+            customerMenuCatalogSeed.products.map((product) => product.id),
+            customerMenuCatalogSeed.productPriceChoices.map(
+              (choice) => choice.id,
+            ),
+          ],
+        );
+        expect(shape.rows).toEqual([
+          {
+            direct_products: 23,
+            labelled_direct_products: 19,
+            multi_products: 10,
+            price_choices: 20,
+          },
+        ]);
+
+        runScript("seed", "development");
+
+        const convergence = await pool.query<{
+          direct_products: number;
+          price_choices: number;
+        }>(
+          `SELECT
+             (SELECT COUNT(*)::int FROM products WHERE id = ANY($1::uuid[]) AND archived_at IS NULL AND price IS NOT NULL) AS direct_products,
+             (SELECT COUNT(*)::int FROM product_price_choices WHERE id = ANY($2::uuid[]) AND archived_at IS NULL) AS price_choices`,
+          [
+            customerMenuCatalogSeed.products.map((product) => product.id),
+            customerMenuCatalogSeed.productPriceChoices.map(
+              (choice) => choice.id,
+            ),
+          ],
+        );
+        expect(convergence.rows).toEqual([
+          {
+            direct_products: 23,
+            price_choices: 20,
+          },
+        ]);
       });
     },
     externalProcessTimeoutMs,

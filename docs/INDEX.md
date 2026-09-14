@@ -12,7 +12,7 @@ sources:
 Корневые ноты описывают систему, межконтурные контракты и поставку. Детали
 реализации находятся в [backend](../backend/docs/INDEX.md),
 [front-office](../front-office/docs/INDEX.md), [back-office](../back-office/docs/INDEX.md)
-и [e2e](../e2e/docs/INDEX.md).
+.
 
 ## Текущее устройство
 

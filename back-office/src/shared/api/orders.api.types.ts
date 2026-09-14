@@ -17,9 +17,9 @@ export type OrderModifier = {
 
 export type OrderSnapshotItem = {
   productId: string;
-  variantId: string | null;
+  priceChoiceId: string | null;
+  portionLabel: string | null;
   productName: string;
-  size: "S" | "M" | "L" | null;
   quantity: number;
   unitTotal: number;
   lineTotal: number;
@@ -43,8 +43,9 @@ export type OrderDetails = OrderListItem & {
   events: readonly OrderEvent[];
 };
 
-export type OrderDetailsDto = Omit<OrderDetails, "events"> & {
-  events: readonly OrderEventDto[];
+export type OrderDetailsDto = Omit<OrderDetails, "customer" | "events"> & {
+  customer?: { id: string; phoneE164: string };
+  events?: readonly OrderEventDto[];
 };
 
 export type QueueQuery = {

@@ -35,7 +35,9 @@
           <span class="order-card__item-main">
             <span
               >{{ item.productName
-              }}<template v-if="item.size"> ({{ item.size }})</template></span
+              }}<template v-if="item.portionLabel">
+                ({{ item.portionLabel }})</template
+              ></span
             >
             <span class="order-card__item-quantity">×{{ item.quantity }}</span>
           </span>
@@ -97,7 +99,7 @@ const disclosureAccessibleName = computed(
 function itemKey(item: OrderItem): string {
   return [
     item.productId,
-    item.variantId ?? "other",
+    item.priceChoiceId ?? "other",
     ...item.modifiers.map((modifier) => modifier.modifierOptionId),
   ].join(":");
 }

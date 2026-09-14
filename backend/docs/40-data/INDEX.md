@@ -8,7 +8,7 @@ owner: backend
 
 Вернуться к [карте backend](../INDEX.md).
 
-- [PostgreSQL и миграции](PostgreSQL-and-migrations.md) — схема, ограничения и
+- [PostgreSQL и одноразовая инициализация](PostgreSQL-and-migrations.md) — схема, ограничения и
   транзакции.
-- [Первая миграция](../../migrations/0001_foundation.sql) и
-  [seed](../../scripts/seed.ts) — первичные источники данных.
+- [Схема](../../schema.sql), [инициализатор](../../scripts/initialize-database.ts)
+  и [seed](../../scripts/seed.ts) — первичные источники данных.

@@ -1,13 +1,20 @@
 ---
+title: Снимки заказа
 type: domain
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-09-14
 sources:
+  - ../../backend/schema.sql
   - ../../backend/src/orders/adapters/postgres-order-unit-of-work.ts
 ---
 
 # Снимки заказа
 
-Создание сохраняет заказ, позиции и выбранные добавки как snapshot: исходные id,
-названия, вариант/размер, количество и unit/line total. Поэтому ответ создания
-не зависит от последующей правки каталога. [Источники: unit of work](../../backend/src/orders/adapters/postgres-order-unit-of-work.ts), [E2E](../../backend/test/e2e/create-order.e2e-spec.ts).
+Позиция заказа хранит снимки товара, выбранной ценовой опции, подписи порции,
+цены, количества, модификаторов и сумм. Подпись — точный текст, который видели
+покупатель и бариста; она не разбирается на физическую величину и единицу.
+[Схема](../../backend/schema.sql), [unit of work](../../backend/src/orders/adapters/postgres-order-unit-of-work.ts).
+
+Для товара с одной ценой выбор цены отсутствует. Для нескольких цен позиция
+ссылается на стабильный id выбранной опции. История и очередь показывают
+сохранённый снимок, а не текущие данные каталога.

@@ -1,43 +1,29 @@
 import {
   publicMenuPaths,
-  publicMenuProductTypes,
-  publicMenuSelectionTypes,
   publicMenuStatuses,
   publicMenuUuidPattern,
-  publicMenuVariantSizes,
 } from "./public-menu.api.constants";
 import type {
-  PublicDrinkMenuProduct,
-  PublicDrinkMenuProductResponse,
   PublicMenu,
   PublicMenuApi,
   PublicMenuApiClient,
   PublicMenuCategory,
   PublicMenuCategoryResponse,
-  PublicMenuModifierGroup,
-  PublicMenuModifierGroupResponse,
-  PublicMenuModifierOption,
-  PublicMenuModifierOptionResponse,
+  PublicMenuPriceChoice,
   PublicMenuProduct,
   PublicMenuProductResponse,
   PublicMenuResponse,
-  PublicMenuVariant,
-  PublicMenuVariantResponse,
-  PublicOtherMenuProduct,
-  PublicOtherMenuProductResponse,
 } from "./public-menu.api.types";
 
 export type {
-  PublicDrinkMenuProduct,
   PublicMenu,
   PublicMenuApi,
   PublicMenuApiClient,
   PublicMenuCategory,
-  PublicMenuModifierGroup,
-  PublicMenuModifierOption,
+  PublicMenuPriceChoice,
   PublicMenuProduct,
+  PublicMenuModifierGroup,
   PublicMenuVariant,
-  PublicOtherMenuProduct,
 } from "./public-menu.api.types";
 
 export function createPublicMenuApi(
@@ -50,281 +36,161 @@ export function createPublicMenuApi(
         isPublicMenuResponse,
         { expectedStatus: publicMenuStatuses.success, method: "GET" },
       );
-
-      return toPublicMenu(response);
+      return {
+        acceptsNewOrders: response.acceptsNewOrders,
+        categories: response.categories.map(toCategory),
+      };
     },
   };
 }
-
 function isPublicMenuResponse(value: unknown): value is PublicMenuResponse {
   return (
     isRecord(value) &&
     typeof value.acceptsNewOrders === "boolean" &&
-    isArrayOf(value.categories, isPublicMenuCategoryResponse)
+    arrayOf(value.categories, isCategory)
   );
 }
-
-function isPublicMenuCategoryResponse(
-  value: unknown,
-): value is PublicMenuCategoryResponse {
+function isCategory(value: unknown): value is PublicMenuCategoryResponse {
   return (
     isRecord(value) &&
-    isUuid(value.id) &&
+    uuid(value.id) &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
-    isArrayOf(value.products, isPublicMenuProductResponse)
+    arrayOf(value.products, isProduct)
   );
 }
-
-function isPublicMenuProductResponse(
-  value: unknown,
-): value is PublicMenuProductResponse {
-  if (!isRecord(value) || !isPublicMenuProductBase(value)) {
-    return false;
+function isProduct(value: unknown): value is PublicMenuProductResponse {
+  if (isRecord(value) && (value.type === "DRINK" || value.type === "OTHER")) {
+    return (
+      uuid(value.id) &&
+      typeof value.name === "string" &&
+      typeof value.description === "string" &&
+      typeof value.isAvailable === "boolean" &&
+      (value.type === "DRINK"
+        ? value.price === null && validVariants(value.variants)
+        : nonNegative(value.price) &&
+          Array.isArray(value.variants) &&
+          value.variants.length === 0) &&
+      validModifierGroups(value.modifierGroups)
+    );
   }
-
-  if (value.type === publicMenuProductTypes[0]) {
-    if (
-      value.price !== null ||
-      !isArrayOf(value.variants, isPublicMenuVariantResponse)
-    ) {
-      return false;
-    }
-
-    return hasPublishedDrinkVariants(value.variants);
-  }
-
   return (
-    value.type === publicMenuProductTypes[1] &&
-    isNonNegativeInt32(value.price) &&
-    Array.isArray(value.variants) &&
-    value.variants.length === 0
-  );
-}
-
-function hasPublishedDrinkVariants(
-  variants: PublicMenuVariantResponse[],
-): boolean {
-  return (
-    variants.length > 0 &&
-    variants.some((variant) => variant.isAvailable) &&
-    new Set(variants.map((variant) => variant.size)).size === variants.length
-  );
-}
-
-function isPublicMenuProductBase(value: Record<string, unknown>): boolean {
-  return (
-    isUuid(value.id) &&
+    isRecord(value) &&
+    uuid(value.id) &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
-    isNullableString(value.displayLabel) &&
+    nullablePrice(value.price) &&
+    nullableString(value.portionLabel) &&
     typeof value.isAvailable === "boolean" &&
-    isArrayOf(value.modifierGroups, isPublicMenuModifierGroupResponse)
+    arrayOf(value.priceChoices, isChoice) &&
+    validPricing(value as PublicMenuProductResponse)
   );
 }
-
-function isPublicMenuVariantResponse(
-  value: unknown,
-): value is PublicMenuVariantResponse {
+function validVariants(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.some(
+      (variant) => isRecord(variant) && variant.isAvailable === true,
+    ) &&
+    new Set(value.map((variant) => (isRecord(variant) ? variant.size : null)))
+      .size === value.length &&
+    value.every(
+      (variant) =>
+        isRecord(variant) &&
+        uuid(variant.id) &&
+        (variant.size === "S" ||
+          variant.size === "M" ||
+          variant.size === "L") &&
+        nonNegative(variant.price) &&
+        typeof variant.isAvailable === "boolean",
+    )
+  );
+}
+function validModifierGroups(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (group) =>
+        isRecord(group) &&
+        uuid(group.id) &&
+        typeof group.name === "string" &&
+        (group.selectionType === "single" ||
+          group.selectionType === "multiple") &&
+        typeof group.minSelect === "number" &&
+        typeof group.maxSelect === "number" &&
+        Number.isInteger(group.minSelect) &&
+        Number.isInteger(group.maxSelect) &&
+        group.minSelect >= 0 &&
+        group.maxSelect >= group.minSelect &&
+        (group.selectionType !== "single" || group.maxSelect === 1) &&
+        Array.isArray(group.options) &&
+        group.options.every(
+          (option) =>
+            isRecord(option) &&
+            uuid(option.id) &&
+            typeof option.name === "string" &&
+            nonNegative(option.priceDelta) &&
+            typeof option.isDefault === "boolean" &&
+            typeof option.isAvailable === "boolean",
+        ),
+    )
+  );
+}
+function isChoice(value: unknown): value is PublicMenuPriceChoice {
   return (
     isRecord(value) &&
-    isUuid(value.id) &&
-    publicMenuVariantSizes.some((size) => size === value.size) &&
-    isNullableString(value.displayLabel) &&
-    isNonNegativeInt32(value.price) &&
+    uuid(value.id) &&
+    typeof value.portionLabel === "string" &&
+    nonNegative(value.price) &&
     typeof value.isAvailable === "boolean"
   );
 }
-
-function isPublicMenuModifierGroupResponse(
-  value: unknown,
-): value is PublicMenuModifierGroupResponse {
-  if (!isRecord(value) || !isUuid(value.id) || typeof value.name !== "string") {
-    return false;
+function validPricing(value: PublicMenuProductResponse): boolean {
+  const choices = value.priceChoices ?? [];
+  return choices.length === 0
+    ? value.price !== null
+    : value.price === null &&
+        value.portionLabel === null &&
+        choices.length >= 2;
+}
+function toCategory(category: PublicMenuCategoryResponse): PublicMenuCategory {
+  return { ...category, products: category.products.map(toProduct) };
+}
+function toProduct(product: PublicMenuProductResponse): PublicMenuProduct {
+  const legacy = product as PublicMenuProduct;
+  if (legacy.type === "DRINK" || legacy.type === "OTHER") {
+    return legacy;
   }
-
-  if (
-    !publicMenuSelectionTypes.some(
-      (selectionType) => selectionType === value.selectionType,
-    ) ||
-    !isNonNegativeInteger(value.minSelect) ||
-    !isNonNegativeInteger(value.maxSelect) ||
-    !isArrayOf(value.options, isPublicMenuModifierOptionResponse)
-  ) {
-    return false;
-  }
-
-  return (
-    value.minSelect <= value.maxSelect &&
-    (value.selectionType !== publicMenuSelectionTypes[0] ||
-      value.maxSelect === 1) &&
-    hasValidDefaultOptions(value.minSelect, value.maxSelect, value.options)
-  );
-}
-
-function hasValidDefaultOptions(
-  minSelect: number,
-  maxSelect: number,
-  options: PublicMenuModifierOptionResponse[],
-): boolean {
-  if (minSelect === 0) {
-    return true;
-  }
-
-  const availableOptions = options.filter((option) => option.isAvailable);
-  const defaultOptions = availableOptions.filter((option) => option.isDefault);
-
-  return (
-    availableOptions.length >= minSelect &&
-    defaultOptions.length >= minSelect &&
-    defaultOptions.length <= maxSelect &&
-    defaultOptions.every((option) => option.priceDelta === 0)
-  );
-}
-
-function isPublicMenuModifierOptionResponse(
-  value: unknown,
-): value is PublicMenuModifierOptionResponse {
-  return (
-    isRecord(value) &&
-    isUuid(value.id) &&
-    typeof value.name === "string" &&
-    isNonNegativeInt32(value.priceDelta) &&
-    typeof value.isDefault === "boolean" &&
-    typeof value.isAvailable === "boolean"
-  );
-}
-
-function toPublicMenu(response: PublicMenuResponse): PublicMenu {
   return {
-    acceptsNewOrders: response.acceptsNewOrders,
-    categories: response.categories.map(toPublicMenuCategory),
+    ...product,
+    priceChoices: (product.priceChoices ?? []).map((choice) => ({ ...choice })),
+    modifierGroups: [],
   };
 }
-
-function toPublicMenuCategory(
-  category: PublicMenuCategoryResponse,
-): PublicMenuCategory {
-  return {
-    id: category.id,
-    name: category.name,
-    description: category.description,
-    products: category.products.map(toPublicMenuProduct),
-  };
-}
-
-function toPublicMenuProduct(
-  product: PublicMenuProductResponse,
-): PublicMenuProduct {
-  if (product.type === publicMenuProductTypes[0]) {
-    return toPublicDrinkMenuProduct(product);
-  }
-
-  return toPublicOtherMenuProduct(product);
-}
-
-function toPublicDrinkMenuProduct(
-  product: PublicDrinkMenuProductResponse,
-): PublicDrinkMenuProduct {
-  return {
-    id: product.id,
-    type: product.type,
-    name: product.name,
-    description: product.description,
-    ...(product.displayLabel === undefined
-      ? {}
-      : { displayLabel: product.displayLabel }),
-    price: product.price,
-    isAvailable: product.isAvailable,
-    variants: product.variants.map(toPublicMenuVariant),
-    modifierGroups: product.modifierGroups.map(toPublicMenuModifierGroup),
-  };
-}
-
-function toPublicOtherMenuProduct(
-  product: PublicOtherMenuProductResponse,
-): PublicOtherMenuProduct {
-  return {
-    id: product.id,
-    type: product.type,
-    name: product.name,
-    description: product.description,
-    ...(product.displayLabel === undefined
-      ? {}
-      : { displayLabel: product.displayLabel }),
-    price: product.price,
-    isAvailable: product.isAvailable,
-    variants: [],
-    modifierGroups: product.modifierGroups.map(toPublicMenuModifierGroup),
-  };
-}
-
-function toPublicMenuVariant(
-  variant: PublicMenuVariantResponse,
-): PublicMenuVariant {
-  return {
-    id: variant.id,
-    size: variant.size,
-    ...(variant.displayLabel === undefined
-      ? {}
-      : { displayLabel: variant.displayLabel }),
-    price: variant.price,
-    isAvailable: variant.isAvailable,
-  };
-}
-
-function toPublicMenuModifierGroup(
-  group: PublicMenuModifierGroupResponse,
-): PublicMenuModifierGroup {
-  return {
-    id: group.id,
-    name: group.name,
-    selectionType: group.selectionType,
-    minSelect: group.minSelect,
-    maxSelect: group.maxSelect,
-    options: group.options.map(toPublicMenuModifierOption),
-  };
-}
-
-function toPublicMenuModifierOption(
-  option: PublicMenuModifierOptionResponse,
-): PublicMenuModifierOption {
-  return {
-    id: option.id,
-    name: option.name,
-    priceDelta: option.priceDelta,
-    isDefault: option.isDefault,
-    isAvailable: option.isAvailable,
-  };
-}
-
-function isArrayOf<T>(
+function arrayOf<T>(
   value: unknown,
   predicate: (item: unknown) => item is T,
 ): value is T[] {
   return Array.isArray(value) && value.every(predicate);
 }
-
-function isUuid(value: unknown): value is string {
+function uuid(value: unknown): value is string {
   return typeof value === "string" && publicMenuUuidPattern.test(value);
 }
-
-function isNonNegativeInteger(value: unknown): value is number {
-  return isInteger(value) && value >= 0;
+function nonNegative(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 2_147_483_647
+  );
 }
-
-function isInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value);
+function nullablePrice(value: unknown): value is number | null {
+  return value === null || nonNegative(value);
 }
-
-function isNonNegativeInt32(value: unknown): value is number {
-  return isInteger(value) && value >= 0 && value <= 2_147_483_647;
+function nullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
 }
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isNullableString(value: unknown): value is string | null | undefined {
-  return value === undefined || value === null || typeof value === "string";
 }

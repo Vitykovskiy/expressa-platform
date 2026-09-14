@@ -44,25 +44,32 @@ export type LegacyCartItem = LegacyCartItemDraft & { id: string };
 
 export type CartItemDraft = LegacyCartItemDraft;
 
-export type ConfiguredCartItemDraft = DrinkCartItemDraft | OtherCartItemDraft;
+export type ConfiguredCartItemDraft =
+  DrinkCartItemDraft | OtherCartItemDraft | LegacyConfiguredDrinkCartItemDraft;
 
-export type CartItem = DrinkCartItem | OtherCartItem | LegacyCartItem;
+export type CartItem =
+  | DrinkCartItem
+  | OtherCartItem
+  | LegacyConfiguredDrinkCartItem
+  | LegacyCartItem;
 
 export type DrinkCartItemDraft = ConfiguredCartItemDraftBase & {
-  type: "DRINK";
-  selectedVariant: CartVariantSelection;
-  size: "S" | "M" | "L";
-  sizePrice: number;
+  type: "PRICED";
+  selectedPriceChoice: CartPriceChoiceSelection | null;
+  portionLabel: string | null;
+  price: number;
 };
 
 export type OtherCartItemDraft = ConfiguredCartItemDraftBase & {
   type: "OTHER";
-  selectedVariant?: never;
-  size?: never;
-  sizePrice?: never;
+  selectedPriceChoice?: never;
+  portionLabel?: string | null;
+  price?: number;
 };
 
 export type DrinkCartItem = DrinkCartItemDraft & { id: string };
+export type LegacyConfiguredDrinkCartItem =
+  LegacyConfiguredDrinkCartItemDraft & { id: string };
 
 export type OtherCartItem = OtherCartItemDraft & { id: string };
 
@@ -77,10 +84,21 @@ export type ConfiguredCartItemDraftBase = {
   selectedModifierOptions: CartSelectedModifierOption[];
 };
 
+export type CartPriceChoiceSelection = {
+  id: string;
+  portionLabel: string;
+  price: number;
+};
 export type CartVariantSelection = {
   id: string;
   size: "S" | "M" | "L";
   price: number;
+};
+export type LegacyConfiguredDrinkCartItemDraft = ConfiguredCartItemDraftBase & {
+  type: "DRINK";
+  selectedVariant: CartVariantSelection;
+  size: "S" | "M" | "L";
+  sizePrice: number;
 };
 
 export type CartSelectedModifierOption = {

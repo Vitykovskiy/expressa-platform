@@ -1,7 +1,12 @@
-import { ManageProductsUseCase } from "./manage-products.use-case";
+import {
+  ManageProductsUseCase,
+  ManageV3ProductsUseCase,
+} from "./manage-products.use-case";
 import type {
   ProductsRepository,
   ProductsUnitOfWork,
+  V3ProductsRepository,
+  V3ProductsUnitOfWork,
 } from "./products.repository.types";
 const product = {
   id: "product",
@@ -190,5 +195,158 @@ describe("ManageProductsUseCase", () => {
         }),
       ).rejects.toThrow("PRODUCT_REORDER_INVALID");
     expect(repository.reorder).not.toHaveBeenCalled();
+  });
+});
+
+describe("ManageV3ProductsUseCase", () => {
+  const v3Product = {
+    id: "product",
+    categoryId: "category",
+    name: "Капучино",
+    description: "",
+    price: null,
+    portionLabel: null,
+    priceChoices: [
+      {
+        id: "small",
+        productId: "product",
+        portionLabel: "250 мл",
+        price: 250,
+        sortOrder: 0,
+        isAvailable: true,
+        archivedAt: null,
+      },
+      {
+        id: "large",
+        productId: "product",
+        portionLabel: "350 мл",
+        price: 300,
+        sortOrder: 1,
+        isAvailable: true,
+        archivedAt: null,
+      },
+    ],
+    sortOrder: 0,
+    isActive: true,
+    isAvailable: true,
+    archivedAt: null,
+  };
+  const command = {
+    categoryId: "category",
+    name: "Капучино",
+    description: "",
+    price: null,
+    portionLabel: null,
+    priceChoices: [
+      {
+        id: "small",
+        portionLabel: "250 мл",
+        price: 250,
+        sortOrder: 0,
+        isAvailable: true,
+      },
+      {
+        id: "large",
+        portionLabel: "350 мл",
+        price: 300,
+        sortOrder: 1,
+        isAvailable: true,
+      },
+    ],
+    sortOrder: 0,
+    isActive: true,
+    isAvailable: true,
+    actorId: "actor",
+    requestId: "request",
+  };
+  function setupV3() {
+    const repository: jest.Mocked<V3ProductsRepository> = {
+      categoryExists: jest.fn(),
+      findV3ById: jest.fn(),
+      findCurrentV3ByCategory: jest.fn(),
+      createV3: jest.fn(),
+      updateV3: jest.fn(),
+      reorderV3: jest.fn(),
+      archiveV3: jest.fn(),
+      writeV3Audit: jest.fn(),
+    };
+    const unitOfWork: V3ProductsUnitOfWork = {
+      runV3: async (work, audit) => {
+        const result = await work(repository);
+        await audit(repository, result);
+        return result;
+      },
+    };
+    return { repository, useCase: new ManageV3ProductsUseCase(unitOfWork) };
+  }
+  it("writes audit context for v3 create, update, reorder and archive", async () => {
+    const { repository, useCase } = setupV3();
+    const tea = { ...v3Product, id: "tea", name: "Чай", sortOrder: 1 };
+    repository.categoryExists.mockResolvedValue(true);
+    repository.createV3.mockResolvedValue(v3Product);
+    repository.findV3ById
+      .mockResolvedValueOnce(v3Product)
+      .mockResolvedValueOnce(v3Product);
+    repository.updateV3.mockResolvedValue({ ...v3Product, name: "Латте" });
+    repository.findCurrentV3ByCategory.mockResolvedValue([v3Product, tea]);
+    repository.reorderV3.mockResolvedValue([tea, v3Product]);
+    repository.archiveV3.mockResolvedValue({
+      ...v3Product,
+      archivedAt: new Date("2026-09-14T00:00:00.000Z"),
+    });
+    await useCase.create(command);
+    await useCase.update({
+      ...command,
+      productId: v3Product.id,
+      name: "Латте",
+    });
+    await useCase.reorder({
+      categoryId: "category",
+      productIds: ["tea", "product"],
+      actorId: "actor",
+      requestId: "request",
+    });
+    await useCase.archive({
+      productId: "product",
+      actorId: "actor",
+      requestId: "request",
+    });
+    expect(repository.writeV3Audit).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        action: "PRODUCT_CREATED",
+        actorId: "actor",
+        requestId: "request",
+      }),
+    );
+    expect(repository.writeV3Audit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ action: "PRODUCT_UPDATED" }),
+    );
+    expect(repository.writeV3Audit).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        action: "PRODUCT_REORDERED",
+        productId: "tea",
+      }),
+    );
+    expect(repository.writeV3Audit).toHaveBeenNthCalledWith(
+      5,
+      expect.objectContaining({ action: "PRODUCT_ARCHIVED" }),
+    );
+  });
+  it("rejects a non-full v3 reorder before writing", async () => {
+    const { repository, useCase } = setupV3();
+    repository.categoryExists.mockResolvedValue(true);
+    repository.findCurrentV3ByCategory.mockResolvedValue([v3Product]);
+    await expect(
+      useCase.reorder({
+        categoryId: "category",
+        productIds: [],
+        actorId: "actor",
+        requestId: "request",
+      }),
+    ).rejects.toMatchObject({ code: "PRODUCT_INVALID" });
+    expect(repository.reorderV3).not.toHaveBeenCalled();
   });
 });

@@ -98,7 +98,7 @@ describe("QueuePage", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("использует предоставленный origin для очереди, деталей и перехода", async () => {
+  it("читает очередь и детали v3, а переход выполняет через v2", async () => {
     const fetcher = vi.fn<typeof fetch>(async (url) => {
       const requestedUrl = url.toString();
       if (requestedUrl.endsWith("/accept")) {
@@ -117,16 +117,17 @@ describe("QueuePage", () => {
     await flushPromises();
 
     expect(fetcher.mock.calls.map(([url]) => url.toString())).toEqual([
-      "https://api.example.test/api/v2/backoffice/orders",
-      `https://api.example.test/api/v2/backoffice/orders/${order.id}`,
+      "https://api.example.test/api/v3/backoffice/orders",
+      `https://api.example.test/api/v3/backoffice/orders/${order.id}`,
       `https://api.example.test/api/v2/backoffice/orders/${order.id}/accept`,
+      `https://api.example.test/api/v3/backoffice/orders/${order.id}`,
     ]);
     wrapper.unmount();
   });
 
   it("повторяет ошибочную очередь через настроенный origin и возвращает обычное обновление", async () => {
     const apiBaseUrl = "https://api.example.test";
-    const queueUrl = `${apiBaseUrl}/api/v2/backoffice/orders`;
+    const queueUrl = `${apiBaseUrl}/api/v3/backoffice/orders`;
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -289,8 +290,8 @@ describe("QueuePage", () => {
     expect(
       fetcher.mock.calls.slice(2, 4).map(([url]) => url.toString()),
     ).toEqual([
-      `/api/v2/backoffice/orders?number=${order.number}`,
-      `/api/v2/backoffice/orders?number=${order.number}&stage=CREATED`,
+      `/api/v3/backoffice/orders?number=${order.number}`,
+      `/api/v3/backoffice/orders?number=${order.number}&stage=CREATED`,
     ]);
 
     await wrapper.get(".orders-screen__retry").trigger("click");
@@ -325,7 +326,7 @@ describe("QueuePage", () => {
     await vi.advanceTimersByTimeAsync(50);
 
     expect(fetcher.mock.calls.at(-1)?.[0].toString()).toBe(
-      `/api/v2/backoffice/orders?number=${order.number}&stage=CREATED`,
+      `/api/v3/backoffice/orders?number=${order.number}&stage=CREATED`,
     );
     wrapper.unmount();
   });
@@ -416,14 +417,21 @@ describe("QueuePage", () => {
   it("блокирует повтор деталей до ответа и восстанавливает скрытие и переход", async () => {
     let resolveDetails: (value: Response) => void = () => undefined;
     let detailsRequests = 0;
+    let transitionAccepted = false;
     const fetcher = vi.fn<typeof fetch>((url) => {
       const requestedUrl = url.toString();
       if (requestedUrl.endsWith(`/${order.id}/accept`)) {
+        transitionAccepted = true;
         return Promise.resolve(
           response({ ...detailsFor(order), stage: "ACCEPTED" }),
         );
       }
       if (requestedUrl.endsWith(`/${order.id}`)) {
+        if (transitionAccepted) {
+          return Promise.resolve(
+            response({ ...detailsFor(order), stage: "ACCEPTED" }),
+          );
+        }
         detailsRequests++;
         if (detailsRequests === 1) {
           return Promise.resolve(failure("details-first"));
@@ -503,10 +511,10 @@ describe("QueuePage", () => {
     await flushPromises();
 
     expect(fetcher.mock.calls.map(([url]) => url.toString())).toEqual([
-      "/api/v2/backoffice/orders",
-      `/api/v2/backoffice/orders/${order.id}`,
+      "/api/v3/backoffice/orders",
+      `/api/v3/backoffice/orders/${order.id}`,
       `/api/v2/backoffice/orders/${order.id}/accept`,
-      `/api/v2/backoffice/orders/${order.id}`,
+      `/api/v3/backoffice/orders/${order.id}`,
     ]);
     expect(wrapper.find(".orders-screen__action-error").exists()).toBe(false);
     expect(wrapper.get(".order-card__action").text()).toBe("Принять заказ");
@@ -662,7 +670,7 @@ describe("QueuePage", () => {
     await flushPromises();
 
     expect(fetcher.mock.calls[0]?.[0].toString()).toBe(
-      "/api/v2/backoffice/orders",
+      "/api/v3/backoffice/orders",
     );
     wrapper.unmount();
   });

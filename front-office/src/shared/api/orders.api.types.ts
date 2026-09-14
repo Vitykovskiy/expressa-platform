@@ -22,7 +22,7 @@ export type CreateOrderRequest = {
 
 export type CreateOrderItem = {
   productId: string;
-  variantId: string | null;
+  priceChoiceId?: string;
   modifierOptionIds: string[];
   quantity: number;
 };
@@ -54,9 +54,9 @@ export type CustomerOrdersPage = {
 
 export type OrderItem = {
   productId: string;
-  variantId: string | null;
+  priceChoiceId: string | null;
   productName: string;
-  size: "S" | "M" | "L" | null;
+  portionLabel: string | null;
   quantity: number;
   unitTotal: number;
   lineTotal: number;
@@ -93,13 +93,16 @@ export type OrderResponse = {
 
 export type OrderItemResponse = {
   productId: string;
-  variantId: string | null;
+  priceChoiceId: string | null;
   productName: string;
-  size: "S" | "M" | "L" | null;
+  portionLabel: string | null;
   quantity: number;
   unitTotal: number;
   lineTotal: number;
   modifiers: OrderModifierResponse[];
+  /** Legacy v2 response compatibility for existing persisted/history fixtures. */
+  variantId?: string | null;
+  size?: "S" | "M" | "L" | null;
 };
 
 export type OrderModifierResponse = {

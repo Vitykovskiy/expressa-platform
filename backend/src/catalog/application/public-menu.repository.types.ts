@@ -23,4 +23,20 @@ export type PublicMenuCandidates = {
 
 export interface PublicMenuRepository {
   findCandidates(): Promise<PublicMenuCandidates>;
+  findV3Candidates(): Promise<PublicMenuV3Candidates>;
 }
+
+export type PublicMenuV3Candidates = {
+  acceptsNewOrders: boolean;
+  categories: CatalogCategoryCandidate[];
+  products: CatalogProductCandidate[];
+  priceChoices: Array<{
+    id: string;
+    productId: string;
+    portionLabel: string;
+    price: number;
+    sortOrder: number;
+    isAvailable: boolean;
+    archivedAt: Date | null;
+  }>;
+};

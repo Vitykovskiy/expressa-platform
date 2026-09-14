@@ -4,4 +4,4 @@ export const cartStoreId = "cart";
 
 export const cartConfigurationSeparator = ":";
 
-export const configuredCartProductTypes = ["DRINK", "OTHER"] as const;
+export const configuredCartProductTypes = ["PRICED", "OTHER", "DRINK"] as const;

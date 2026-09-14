@@ -6,8 +6,8 @@ const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
 const bootstrapAdministratorPhone = "+79991234567";
 
-function runScript(script: "migrate" | "seed"): void {
-  execFileSync("npm", ["run", script], {
+function runSeed(): void {
+  execFileSync("npm", ["run", "seed"], {
     cwd: resolve(__dirname, "../.."),
     env: {
       ...process.env,
@@ -16,6 +16,14 @@ function runScript(script: "migrate" | "seed"): void {
       PORT: "3000",
       DATABASE_URL: databaseUrl,
       BOOTSTRAP_ADMIN_PHONE: bootstrapAdministratorPhone,
+      AUTH_ACCESS_TOKEN_SECRET: "example-access-token",
+      AUTH_OTP_PEPPER: "database-foundation-otp-pepper",
+      AUTH_DEVELOPMENT_OTP: "123456",
+      CORS_ORIGINS: "http://localhost:5173",
+      VAPID_SUBJECT: "mailto:database@expressa.test",
+      VAPID_PUBLIC_KEY:
+        "BOT-VsrivTqPsMDCzS45APlNSMbgcTT5jqlrYu2-6PCRGB0YneXQDNsbrIxTAy0jJ-kUlKlWPm94PeirK8A8wCw",
+      VAPID_PRIVATE_KEY: "9rZGGVplNbc2psiiiyOla_ZL-qDyrgIZqD_cpLz1G0c",
     },
     stdio: "inherit",
   });
@@ -28,7 +36,6 @@ describe("PostgreSQL foundation", () => {
     if (databaseUrl === undefined) {
       throw new Error("DATABASE_URL is required for integration tests");
     }
-
     pool = new Pool({ connectionString: databaseUrl });
   });
 
@@ -37,37 +44,15 @@ describe("PostgreSQL foundation", () => {
   });
 
   it(
-    "повторно применяет миграции и idempotent seed администратора",
+    "seeds an initialized current schema idempotently",
     async () => {
-      runScript("migrate");
-      runScript("migrate");
-      runScript("seed");
-      runScript("seed");
-
-      const migrations = await pool.query<{ name: string }>(
-        "SELECT name FROM schema_migrations ORDER BY name",
-      );
+      runSeed();
+      runSeed();
       const administrators = await pool.query<{
         phone_e164: string;
         role: string;
       }>("SELECT phone_e164, role FROM users WHERE phone_e164 = $1", [
         bootstrapAdministratorPhone,
-      ]);
-
-      expect(migrations.rows).toEqual([
-        { name: "0001_foundation.sql" },
-        { name: "0002_e01_core_schema.sql" },
-        { name: "0003_e04_auth.sql" },
-        { name: "0004_e05_catalog.sql" },
-        { name: "0005_e06_catalog_admin.sql" },
-        { name: "0006_e07_orders.sql" },
-        { name: "0007_e08_order_lifecycle.sql" },
-        { name: "0008_e10_customer_order_reads.sql" },
-        { name: "0009_e10_push_subscriptions.sql" },
-        { name: "0010_e11_availability_audit.sql" },
-        { name: "0011_e12_whole_rubles.sql" },
-        { name: "0012_customer_push_association_version.sql" },
-        { name: "0013_auth_otp_security_throttles.sql" },
       ]);
       expect(administrators.rows).toEqual([
         { phone_e164: bootstrapAdministratorPhone, role: "administrator" },

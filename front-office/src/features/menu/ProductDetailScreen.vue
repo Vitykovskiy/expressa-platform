@@ -21,29 +21,42 @@
       <p v-if="description" class="product-detail__description">
         {{ product.description }}
       </p>
-      <p v-if="product.displayLabel" class="product-detail__description">
-        {{ product.displayLabel }}
+      <p v-if="product.portionLabel" class="product-detail__description">
+        {{ product.portionLabel }}
       </p>
 
-      <fieldset v-if="product.type === 'DRINK'" class="product-detail__options">
+      <fieldset
+        v-if="product.priceChoices?.length"
+        class="product-detail__options"
+      >
         <legend class="product-detail__options-title">Размер / порция</legend>
-        <div class="product-detail__choices">
-          <ui-btn
-            v-for="variant in product.variants"
-            :key="variant.id"
-            type="button"
+        <div
+          class="product-detail__choices"
+          role="radiogroup"
+          aria-label="Размер / порция"
+        >
+          <label
+            v-for="choice in product.priceChoices ?? []"
+            :key="choice.id"
+            class="product-detail__choice product-detail__choice--size"
             :class="{
               'product-detail__choice--selected':
-                configuration.selectedVariantId === variant.id,
+                configuration.selectedPriceChoiceId === choice.id,
+              'product-detail__choice--unavailable': !choice.isAvailable,
             }"
-            class="product-detail__choice product-detail__choice--size"
-            :aria-pressed="configuration.selectedVariantId === variant.id"
-            :disabled="!variant.isAvailable"
-            @click="selectVariant(variant.id)"
           >
-            {{ variant.displayLabel ?? variant.size }} ·
-            {{ formatRubles(variant.price) }}
-          </ui-btn>
+            <input
+              type="radio"
+              name="price-choice"
+              :checked="configuration.selectedPriceChoiceId === choice.id"
+              :disabled="!choice.isAvailable"
+              @change="selectPriceChoice(choice.id)"
+            />
+            <span
+              >{{ choice.portionLabel }} ·
+              {{ formatRubles(choice.price) }}</span
+            >
+          </label>
         </div>
       </fieldset>
 
@@ -121,7 +134,7 @@ import {
   createProductConfiguration,
   getProductConfigurationTotals,
   isProductConfigurationValid,
-  selectProductConfigurationVariant,
+  selectProductConfigurationPriceChoice,
   setProductConfigurationQuantity,
   toCartItemDraft,
   toggleProductConfigurationOption,
@@ -153,10 +166,10 @@ watch(
   },
 );
 
-function selectVariant(variantId: string): void {
-  configuration.value = selectProductConfigurationVariant(
+function selectPriceChoice(priceChoiceId: string): void {
+  configuration.value = selectProductConfigurationPriceChoice(
     configuration.value,
-    variantId,
+    priceChoiceId,
   );
 }
 function setQuantity(quantity: number): void {
@@ -211,8 +224,10 @@ function createInitialConfiguration(product = props.product) {
   return {
     ...initial,
     quantity: cartItem.quantity,
-    selectedVariantId:
-      cartItem.type === "DRINK" ? cartItem.selectedVariant.id : null,
+    selectedPriceChoiceId:
+      cartItem.type === "PRICED"
+        ? (cartItem.selectedPriceChoice?.id ?? null)
+        : null,
     selectedModifierGroups: initial.selectedModifierGroups.map((group) => ({
       ...group,
       optionIds: cartItem.selectedModifierOptions

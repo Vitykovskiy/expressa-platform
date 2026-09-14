@@ -1,14 +1,12 @@
 <template>
   <AdminDialog
     :model-value="open"
-    max-width="448"
+    max-width="560"
     :persistent="props.disabled"
-    @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
       <h2 class="add-dialog__title">Новый товар</h2>
-      <p class="add-dialog__description">Добавьте новый товар в меню</p>
       <section
         v-if="hasSaveOutcome"
         class="add-dialog-outcome"
@@ -17,14 +15,14 @@
         <p v-if="props.disabled" role="status">Сохраняем товар…</p>
         <p
           v-else-if="props.saveOutcome === 'rejected'"
-          class="add-dialog-error"
+          class="add-dialog__error"
           role="alert"
         >
           Не удалось сохранить товар. Исправьте отмеченные поля и сохраните ещё
           раз.
         </p>
         <template v-else-if="props.saveOutcome === 'unconfirmed'">
-          <p class="add-dialog-error" role="alert">
+          <p class="add-dialog__error" role="alert">
             Не удалось подтвердить сохранение товара. Обновите меню и проверьте
             товар перед повторным сохранением.
           </p>
@@ -46,670 +44,394 @@
             Идентификатор запроса: {{ props.saveError.requestId }}
           </p>
         </details>
+        <AdminButton
+          v-if="canDiscardDraft"
+          type="button"
+          variant="ghost"
+          @click="discardDraft"
+          >Закрыть форму</AdminButton
+        >
       </section>
-      <v-card-text class="add-dialog-fields">
+      <v-card-text class="add-dialog__fields">
         <label :for="categoryId">Категория</label>
         <AdminSelect
           :id="categoryId"
-          ref="categorySelect"
           v-model="categoryIdValue"
-          :aria-describedby="categoryError ? categoryErrorId : undefined"
-          :aria-invalid="Boolean(categoryError)"
-          autofocus
-          class="add-dialog-input"
           :disabled="props.disabled"
-          @blur="touch('categoryId')"
-          @update:model-value="dismissFieldError('categoryId')"
-        >
-          <option value="">Выберите категорию</option>
+          ><option value="">Выберите категорию</option>
           <option
             v-for="category in props.categories"
             :key="category.id"
             :value="category.id"
           >
             {{ category.name }}
-          </option>
-        </AdminSelect>
-        <p
-          v-if="categoryError"
-          :id="categoryErrorId"
-          class="add-dialog-error"
-          role="alert"
+          </option></AdminSelect
         >
-          {{ categoryError }}
+        <p v-if="errorFor('categoryId')" class="add-dialog__error" role="alert">
+          {{ errorFor("categoryId") }}
         </p>
-        <label :for="typeId">Тип товара</label>
-        <AdminSelect
-          :id="typeId"
-          v-model="type"
-          :aria-describedby="typeError ? typeErrorId : undefined"
-          :aria-invalid="Boolean(typeError)"
-          class="add-dialog-input"
-          :disabled="props.disabled"
-          @update:model-value="dismissFieldError('type')"
-        >
-          <option
-            v-for="option in PRODUCT_TYPE_OPTIONS"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </AdminSelect>
-        <p
-          v-if="typeError"
-          :id="typeErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ typeError }}
-        </p>
-        <label :for="nameId">Название товара</label>
-        <AdminTextField
+        <label :for="nameId">Название товара</label
+        ><AdminTextField
           :id="nameId"
           v-model="name"
-          :aria-describedby="nameError ? nameErrorId : undefined"
-          :aria-invalid="Boolean(nameError)"
-          class="add-dialog-input"
+          :aria-invalid="Boolean(errorFor('name'))"
           :disabled="props.disabled"
-          placeholder="Например: Капучино, Латте"
-          type="text"
-          @blur="touch('name')"
-          @update:model-value="dismissFieldError('name')"
+          placeholder="Например: Капучино"
         />
-        <p
-          v-if="nameError"
-          :id="nameErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ nameError }}
+        <p v-if="errorFor('name')" class="add-dialog__error" role="alert">
+          {{ errorFor("name") }}
         </p>
-        <label :for="descriptionId">Описание</label>
-        <AdminTextField
+        <label :for="descriptionId">Описание</label
+        ><AdminTextField
           :id="descriptionId"
           v-model="description"
-          :aria-describedby="descriptionError ? descriptionErrorId : undefined"
-          :aria-invalid="Boolean(descriptionError)"
-          class="add-dialog-input"
           :disabled="props.disabled"
-          type="text"
-          @update:model-value="dismissFieldError('description')"
         />
-        <p
-          v-if="descriptionError"
-          :id="descriptionErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ descriptionError }}
-        </p>
-        <div class="add-dialog-toggle">
-          <strong :id="activeLabelId">Товар активен</strong>
-          <AdminToggle
-            :model-value="isActive"
-            :aria-describedby="activeError ? activeErrorId : undefined"
-            :aria-invalid="Boolean(activeError)"
-            :aria-labelledby="activeLabelId"
-            :disabled="props.disabled"
-            @update:model-value="updateIsActive"
-          />
-        </div>
-        <p
-          v-if="activeError"
-          :id="activeErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ activeError }}
-        </p>
-        <div class="add-dialog-toggle">
-          <strong :id="availableLabelId">Товар доступен</strong>
-          <AdminToggle
-            :model-value="isAvailable"
-            :aria-describedby="availableError ? availableErrorId : undefined"
-            :aria-invalid="Boolean(availableError)"
-            :aria-labelledby="availableLabelId"
-            :disabled="props.disabled"
-            @update:model-value="updateIsAvailable"
-          />
-        </div>
-        <p
-          v-if="availableError"
-          :id="availableErrorId"
-          class="add-dialog-error"
-          role="alert"
-        >
-          {{ availableError }}
-        </p>
-        <template v-if="type === 'DRINK'">
-          <label>Размеры и цены, ₽</label>
-          <div
-            v-for="(variant, index) in variants"
-            :key="variant.size"
-            class="size-row"
-          >
-            <div class="size-row-heading">
-              <span>{{ variant.size }}</span>
-              <strong :id="`add-product-size-${variant.size}`"
-                >Использовать размер {{ variant.size }}</strong
-              >
-              <AdminToggle
-                :model-value="variant.isConfigured"
-                :aria-labelledby="`add-product-size-${variant.size}`"
-                :disabled="
-                  props.disabled ||
-                  (variant.isConfigured && configuredVariants.length === 1)
-                "
-                @update:model-value="
-                  updateVariant(index, 'isConfigured', Boolean($event))
-                "
-              />
-            </div>
-            <div v-if="variant.isConfigured" class="size-row-fields">
-              <label :for="`add-product-price-${variant.size}`">Цена, ₽</label>
-              <AdminTextField
-                :id="`add-product-price-${variant.size}`"
-                :aria-label="`Цена ${variant.size}, ₽`"
-                :aria-describedby="variantsError ? variantsErrorId : undefined"
-                :aria-invalid="Boolean(variantsError)"
-                :model-value="variant.price"
-                class="add-dialog-input"
-                :disabled="props.disabled"
-                inputmode="numeric"
-                min="0"
-                type="number"
-                @blur="touch('variants')"
-                @input="
-                  updateVariant(
-                    index,
-                    'price',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-              <strong>Доступен</strong>
-              <AdminToggle
-                :model-value="variant.isAvailable"
-                :aria-label="`Размер ${variant.size} доступен`"
-                :aria-describedby="variantsError ? variantsErrorId : undefined"
-                :aria-invalid="Boolean(variantsError)"
-                :disabled="props.disabled"
-                @update:model-value="
-                  updateVariant(index, 'isAvailable', Boolean($event))
-                "
-              />
-            </div>
-            <div v-if="variant.isConfigured" class="size-row-order">
-              <span>Порядок</span>
-              <AdminButton
-                :aria-label="`Поднять размер ${variant.size}`"
-                :disabled="
-                  props.disabled || configuredVariantIndex(index) === 0
-                "
-                class="size-order-button"
-                type="button"
-                variant="secondary"
-                @click="moveConfiguredVariant(index, -1)"
-                >↑</AdminButton
-              >
-              <AdminButton
-                :aria-label="`Опустить размер ${variant.size}`"
-                :disabled="
-                  props.disabled ||
-                  configuredVariantIndex(index) ===
-                    configuredVariants.length - 1
-                "
-                class="size-order-button"
-                type="button"
-                variant="secondary"
-                @click="moveConfiguredVariant(index, 1)"
-                >↓</AdminButton
-              >
-            </div>
+        <section class="add-dialog__pricing" aria-label="Цены и порции">
+          <div class="add-dialog__pricing-heading">
+            <strong>Цена и порция</strong
+            ><AdminButton
+              v-if="!isMultiple"
+              :disabled="props.disabled"
+              type="button"
+              variant="secondary"
+              @click="enableMultiple"
+              >Несколько цен</AdminButton
+            >
           </div>
-          <p
-            v-if="variantsError"
-            :id="variantsErrorId"
-            class="add-dialog-error"
-            role="alert"
+          <template v-if="!isMultiple"
+            ><PriceFields
+              v-model:price="price"
+              v-model:portion-label="portionLabel"
+              :disabled="props.disabled"
+              :error="errorFor('price') ?? errorFor('portionLabel')"
+          /></template>
+          <template v-else
+            ><section
+              v-for="(choice, index) in priceChoices"
+              :key="choice.id ?? index"
+              :aria-label="`Вариант ${index + 1}`"
+              class="add-dialog__choice"
+              role="group"
+            >
+              <PriceFields
+                :price="choice.price"
+                :portion-label="choice.portionLabel"
+                :disabled="props.disabled"
+                :error="choiceError(index)"
+                required-label
+                @update:price="updateChoice(index, 'price', $event)"
+                @update:portion-label="
+                  updateChoice(index, 'portionLabel', $event)
+                "
+              />
+              <div class="add-dialog__choice-actions">
+                <AdminToggle
+                  :model-value="choice.isAvailable"
+                  :aria-label="`Вариант ${index + 1} доступен`"
+                  :disabled="props.disabled"
+                  @update:model-value="choice.isAvailable = Boolean($event)"
+                /><AdminButton
+                  :aria-label="`Поднять вариант ${index + 1}`"
+                  :disabled="props.disabled || index === 0"
+                  type="button"
+                  variant="ghost"
+                  @click="moveChoice(index, -1)"
+                  >↑</AdminButton
+                ><AdminButton
+                  :aria-label="`Опустить вариант ${index + 1}`"
+                  :disabled="
+                    props.disabled || index === priceChoices.length - 1
+                  "
+                  type="button"
+                  variant="ghost"
+                  @click="moveChoice(index, 1)"
+                  >↓</AdminButton
+                ><AdminButton
+                  :aria-label="`Удалить вариант ${index + 1}`"
+                  :disabled="props.disabled"
+                  type="button"
+                  variant="ghost"
+                  @click="removeChoice(index)"
+                  >Удалить</AdminButton
+                >
+              </div>
+            </section>
+            <AdminButton
+              :disabled="props.disabled"
+              type="button"
+              variant="secondary"
+              @click="addChoice"
+              >Добавить вариант</AdminButton
+            ></template
           >
-            {{ variantsError }}
-          </p>
-        </template>
-        <template v-else>
-          <label :for="priceId">Цена, ₽</label>
-          <AdminTextField
-            :id="priceId"
-            v-model="price"
-            :aria-describedby="priceError ? priceErrorId : undefined"
-            :aria-invalid="Boolean(priceError)"
-            class="add-dialog-input"
+        </section>
+        <div class="add-dialog__toggle">
+          <strong>Товар активен</strong
+          ><AdminToggle
+            :model-value="isActive"
             :disabled="props.disabled"
-            inputmode="numeric"
-            min="0"
-            type="number"
-            @blur="touch('price')"
-            @update:model-value="dismissFieldError('price')"
+            @update:model-value="isActive = Boolean($event)"
           />
-          <p
-            v-if="priceError"
-            :id="priceErrorId"
-            class="add-dialog-error"
-            role="alert"
-          >
-            {{ priceError }}
-          </p>
-        </template>
+        </div>
+        <div class="add-dialog__toggle">
+          <strong>Товар доступен</strong
+          ><AdminToggle
+            :model-value="isAvailable"
+            :disabled="props.disabled"
+            @update:model-value="isAvailable = Boolean($event)"
+          />
+        </div>
       </v-card-text>
-      <v-card-actions class="add-dialog-actions admin-dialog-actions">
-        <AdminButton
-          :disabled="
-            props.disabled ||
-            !isValid ||
-            props.saveOutcome === 'unconfirmed' ||
-            props.saveOutcome === 'saved'
-          "
+      <v-card-actions class="admin-dialog-actions"
+        ><AdminButton
+          :disabled="isProtected || !isValid"
           type="button"
           @click="confirm"
           >Добавить товар</AdminButton
-        >
-        <AdminButton
-          :disabled="props.disabled"
+        ><AdminButton
+          :disabled="isProtected"
           type="button"
           variant="ghost"
           @click="cancel"
-          >{{
-            props.saveOutcome === "idle" ? "Отмена" : "Закрыть форму"
-          }}</AdminButton
-        >
-      </v-card-actions>
+          >Отмена</AdminButton
+        ></v-card-actions
+      >
     </v-card>
   </AdminDialog>
 </template>
 
-<script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
-
-import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
-import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
+<script lang="ts">
+import {
+  computed as createComputed,
+  defineComponent,
+  shallowRef as createShallowRef,
+} from "vue";
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
-import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import {
-  PRODUCT_TYPE_OPTIONS,
-  createInitialProductVariantDrafts,
+  customPortionLabelOption,
+  portionLabelSuggestions,
 } from "./AddProductDialog.constants";
-import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
+
+export const PriceFields = defineComponent({
+  components: { AdminSelect, AdminTextField },
+  props: {
+    price: { type: String, required: true },
+    portionLabel: { type: String, required: true },
+    disabled: Boolean,
+    error: { type: String, default: undefined },
+    requiredLabel: Boolean,
+  },
+  emits: ["update:price", "update:portionLabel"],
+  setup(props, { emit }) {
+    const customRequested = createShallowRef(false);
+    const custom = createComputed(
+      () =>
+        customRequested.value ||
+        (props.portionLabel !== "" &&
+          !portionLabelSuggestions.includes(
+            props.portionLabel as (typeof portionLabelSuggestions)[number],
+          )),
+    );
+    const selected = createComputed({
+      get: () => (custom.value ? customPortionLabelOption : props.portionLabel),
+      set: (value: string) => {
+        customRequested.value = value === customPortionLabelOption;
+        emit("update:portionLabel", customRequested.value ? "" : value);
+      },
+    });
+    return {
+      custom,
+      selected,
+      customPortionLabelOption,
+      portionLabelSuggestions,
+      emit,
+    };
+  },
+  template: `<div class="price-fields"><label>Цена, ₽<AdminTextField :model-value="price" :disabled="disabled" inputmode="numeric" min="0" type="number" @update:model-value="emit('update:price', $event)" /></label><label>Порция{{ requiredLabel ? '' : ' (необязательно)' }}<AdminSelect v-model="selected" :disabled="disabled"><option value="">Без подписи</option><option v-for="suggestion in portionLabelSuggestions" :key="suggestion" :value="suggestion">{{ suggestion }}</option><option :value="customPortionLabelOption">{{ customPortionLabelOption }}</option></AdminSelect></label><label v-if="custom">Свой вариант<AdminTextField :model-value="portionLabel" :disabled="disabled" @update:model-value="emit('update:portionLabel', $event)" /></label><p v-if="error" class="price-fields__error" role="alert">{{ error }}</p></div>`,
+});
+</script>
+
+<script setup lang="ts">
+import { computed, shallowRef, useId } from "vue";
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
+import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
+import { createPriceChoiceDraft } from "./AddProductDialog.constants";
 import type {
   AddProductDialogEmits,
   AddProductDialogProps,
-  ProductFormData,
+  PriceChoiceDraft,
+  PriceOptionProductFormData,
   ProductFormField,
-  ProductVariantDraft,
-  ProductVariantMoveDirection,
 } from "./AddProductDialog.types";
 
 const props = withDefaults(defineProps<AddProductDialogProps>(), {
   fieldErrors: () => ({}),
-  saveError: null,
-  saveOutcome: "idle",
 });
-const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<AddProductDialogEmits>();
+const open = defineModel<boolean>("open", { required: true });
 const categoryIdValue = shallowRef("");
-const type = shallowRef<"DRINK" | "OTHER">("OTHER");
 const name = shallowRef("");
 const description = shallowRef("");
 const price = shallowRef("");
+const portionLabel = shallowRef("");
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
-const dismissedFieldErrors = shallowRef<
-  Partial<Record<ProductFormField, true>>
->({});
-const touched = shallowRef<Partial<Record<ProductFormField, true>>>({});
-const variants = shallowRef<ProductVariantDraft[]>(
-  createInitialProductVariantDrafts(),
+const isMultiple = shallowRef(false);
+const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
+const categoryId = `add-product-category-${useId()}`;
+const nameId = `add-product-name-${useId()}`;
+const descriptionId = `add-product-description-${useId()}`;
+const isValid = computed(
+  () =>
+    Boolean(categoryIdValue.value && name.value.trim()) &&
+    (isMultiple.value
+      ? priceChoices.value.every(validChoice)
+      : validPrice(price.value)),
 );
 const hasSaveOutcome = computed(
   () =>
     props.disabled || props.saveOutcome !== "idle" || props.saveError !== null,
 );
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
-const categoryId = `add-product-category-${useId()}`;
-const typeId = `add-product-type-${useId()}`;
-const nameId = `add-product-name-${useId()}`;
-const descriptionId = `add-product-description-${useId()}`;
-const priceId = `add-product-price-${useId()}`;
-const activeLabelId = `add-product-active-${useId()}`;
-const availableLabelId = `add-product-available-${useId()}`;
-const categoryErrorId = `add-product-category-error-${useId()}`;
-const nameErrorId = `add-product-name-error-${useId()}`;
-const typeErrorId = `add-product-type-error-${useId()}`;
-const descriptionErrorId = `add-product-description-error-${useId()}`;
-const priceErrorId = `add-product-price-error-${useId()}`;
-const variantsErrorId = `add-product-variants-error-${useId()}`;
-const activeErrorId = `add-product-active-error-${useId()}`;
-const availableErrorId = `add-product-available-error-${useId()}`;
-const categorySelect =
-  useTemplateRef<InstanceType<typeof AdminSelect>>("categorySelect");
-const categoryError = computed(() =>
-  localError(
-    "categoryId",
-    Boolean(categoryIdValue.value),
-    "Выберите категорию",
-  ),
-);
-const typeError = computed(() => fieldError("type"));
-const nameError = computed(() =>
-  localError("name", Boolean(name.value.trim()), "Введите название товара"),
-);
-const descriptionError = computed(() => fieldError("description"));
-const priceError = computed(() =>
-  localError(
-    "price",
-    isNonNegativeInteger(price.value),
-    "Укажите цену в целых рублях",
-  ),
-);
-const activeError = computed(() => fieldError("isActive"));
-const availableError = computed(() => fieldError("isAvailable"));
-const configuredVariants = computed(() =>
-  variants.value.filter((variant) => variant.isConfigured),
-);
-const variantsValidityError = computed(() => {
-  if (configuredVariants.value.length === 0)
-    return "Выберите хотя бы один размер";
-  if (
-    configuredVariants.value.some(
-      (variant) => !isNonNegativeInteger(variant.price),
-    )
-  )
-    return "Укажите цену для каждого выбранного размера";
-  if (
-    isActive.value &&
-    !configuredVariants.value.some((variant) => variant.isAvailable)
-  )
-    return "Для активного товара нужен хотя бы один доступный размер";
-  return fieldError("variants");
-});
-const variantsError = computed(
+const isProtected = computed(
   () =>
-    fieldError("variants") ??
-    (touched.value.variants ? variantsValidityError.value : undefined),
+    props.disabled ||
+    props.saveOutcome === "unconfirmed" ||
+    props.saveOutcome === "saved",
 );
-const isValid = computed(
+const canDiscardDraft = computed(
   () =>
-    Boolean(categoryIdValue.value) &&
-    Boolean(name.value.trim()) &&
-    !typeError.value &&
-    (type.value === "DRINK"
-      ? !variantsValidityError.value
-      : isNonNegativeInteger(price.value) && !fieldError("price")),
+    !props.disabled &&
+    (props.saveOutcome === "unconfirmed" || props.saveOutcome === "saved"),
 );
-
-function isNonNegativeInteger(value: string): boolean {
+function validPrice(value: string): boolean {
   return /^\d+$/.test(value);
 }
-
-function fieldError(field: ProductFormField): string | undefined {
-  return dismissedFieldErrors.value[field]
-    ? undefined
-    : props.fieldErrors[field];
+function validChoice(choice: PriceChoiceDraft): boolean {
+  return validPrice(choice.price) && Boolean(choice.portionLabel.trim());
 }
-function localError(
-  field: ProductFormField,
-  valid: boolean,
-  message: string,
-): string | undefined {
-  return (
-    fieldError(field) ?? (!valid && touched.value[field] ? message : undefined)
+function errorFor(field: ProductFormField): string | undefined {
+  return props.fieldErrors[field];
+}
+function choiceError(index: number): string | undefined {
+  const choice = priceChoices.value[index];
+  return choice && !validChoice(choice)
+    ? "Укажите подпись порции и цену в целых рублях"
+    : errorFor(`priceChoices.${index}.price` as ProductFormField);
+}
+function enableMultiple(): void {
+  priceChoices.value = [
+    {
+      portionLabel: portionLabel.value,
+      price: price.value,
+      isAvailable: isAvailable.value,
+    },
+    createPriceChoiceDraft(),
+  ];
+  isMultiple.value = true;
+}
+function addChoice(): void {
+  priceChoices.value = [...priceChoices.value, createPriceChoiceDraft()];
+}
+function updateChoice(
+  index: number,
+  field: "portionLabel" | "price",
+  value: string,
+): void {
+  priceChoices.value = priceChoices.value.map((choice, current) =>
+    current === index ? { ...choice, [field]: value } : choice,
   );
 }
-function touch(field: ProductFormField): void {
-  touched.value = { ...touched.value, [field]: true };
+function removeChoice(index: number): void {
+  priceChoices.value = priceChoices.value.filter(
+    (_, current) => current !== index,
+  );
+  if (priceChoices.value.length === 1) {
+    const [choice] = priceChoices.value;
+    price.value = choice.price;
+    portionLabel.value = choice.portionLabel;
+    isMultiple.value = false;
+  }
 }
-
-function dismissFieldError(field: ProductFormField): void {
-  dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
+function moveChoice(index: number, direction: -1 | 1): void {
+  const target = index + direction;
+  if (target < 0 || target >= priceChoices.value.length) return;
+  const next = [...priceChoices.value];
+  [next[index], next[target]] = [next[target]!, next[index]!];
+  priceChoices.value = next;
 }
-function resetBranchVisibility(field: "price" | "variants"): void {
-  touched.value = { ...touched.value, [field]: false };
-  dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
+function confirm(): void {
+  if (isProtected.value || !isValid.value) return;
+  emit("confirm", {
+    categoryId: categoryIdValue.value,
+    type: "OTHER",
+    name: name.value.trim(),
+    description: description.value,
+    isActive: isActive.value,
+    isAvailable: isAvailable.value,
+    price: isMultiple.value ? null : Number(price.value),
+    portionLabel: isMultiple.value ? null : portionLabel.value.trim() || null,
+    priceChoices: isMultiple.value
+      ? priceChoices.value.map((choice, sortOrder) => ({
+          id: choice.id,
+          portionLabel: choice.portionLabel.trim(),
+          price: Number(choice.price),
+          sortOrder,
+          isAvailable: choice.isAvailable,
+        }))
+      : [],
+    variants: [],
+  } satisfies PriceOptionProductFormData);
 }
-
-function resetDraft(): void {
+function reset(): void {
   categoryIdValue.value = "";
-  type.value = "OTHER";
   name.value = "";
   description.value = "";
   price.value = "";
+  portionLabel.value = "";
   isActive.value = true;
   isAvailable.value = true;
-  variants.value = createInitialProductVariantDrafts();
-  dismissedFieldErrors.value = {};
-  touched.value = {};
+  isMultiple.value = false;
+  priceChoices.value = [];
 }
-
 function cancel(): void {
-  if (props.disabled) return;
-  resetDraft();
+  if (isProtected.value) return;
+  reset();
+  open.value = false;
+  emit("cancel");
+}
+function discardDraft(): void {
+  if (!canDiscardDraft.value) return;
+  reset();
   open.value = false;
   emit("cancel");
 }
 function updateOpen(value: boolean): void {
-  if (props.disabled) return;
-  if (value) open.value = true;
-  else cancel();
+  if (!value && !isProtected.value) cancel();
+  else open.value = value;
 }
-function updateVariant(
-  index: number,
-  field: "price" | "isConfigured" | "isAvailable",
-  value: string | boolean,
-): void {
-  if (props.disabled) return;
-  touch("variants");
-  dismissFieldError("variants");
-  if (field === "isConfigured") {
-    const selected = { ...variants.value[index], isConfigured: Boolean(value) };
-    const remaining = variants.value.filter(
-      (_, currentIndex) => currentIndex !== index,
-    );
-    const configured = remaining.filter((variant) => variant.isConfigured);
-    const unconfigured = remaining.filter((variant) => !variant.isConfigured);
-    variants.value = selected.isConfigured
-      ? [...configured, selected, ...unconfigured]
-      : [...configured, ...unconfigured, selected];
-    return;
-  }
-  variants.value = variants.value.map((variant, currentIndex) =>
-    currentIndex === index ? { ...variant, [field]: value } : variant,
-  );
-}
-function configuredVariantIndex(index: number): number {
-  return configuredVariants.value.findIndex(
-    (variant) => variant === variants.value[index],
-  );
-}
-function moveConfiguredVariant(
-  index: number,
-  direction: ProductVariantMoveDirection,
-): void {
-  if (props.disabled) return;
-  const targetIndex = index + direction;
-  if (
-    !variants.value[index]?.isConfigured ||
-    !variants.value[targetIndex]?.isConfigured
-  )
-    return;
-  const reordered = [...variants.value];
-  [reordered[index], reordered[targetIndex]] = [
-    reordered[targetIndex],
-    reordered[index],
-  ];
-  variants.value = reordered;
-  dismissFieldError("variants");
-}
-function updateIsActive(value: boolean | null): void {
-  if (props.disabled) return;
-  isActive.value = Boolean(value);
-  if (type.value === "DRINK") touch("variants");
-  dismissFieldError("isActive");
-}
-function updateIsAvailable(value: boolean | null): void {
-  if (props.disabled) return;
-  isAvailable.value = Boolean(value);
-  dismissFieldError("isAvailable");
-}
-function confirm(): void {
-  if (props.disabled) return;
-  touched.value = { categoryId: true, name: true, price: true, variants: true };
-  if (!isValid.value) return;
-  const data: ProductFormData =
-    type.value === "DRINK"
-      ? {
-          categoryId: categoryIdValue.value,
-          type: "DRINK",
-          name: name.value.trim(),
-          description: description.value.trim(),
-          isActive: isActive.value,
-          isAvailable: isAvailable.value,
-          price: null,
-          variants: configuredVariants.value.map((variant, sortOrder) => ({
-            ...(variant.id ? { id: variant.id } : {}),
-            size: variant.size,
-            price: Number(variant.price),
-            sortOrder,
-            isAvailable: variant.isAvailable,
-          })),
-        }
-      : {
-          categoryId: categoryIdValue.value,
-          type: "OTHER",
-          name: name.value.trim(),
-          description: description.value.trim(),
-          isActive: isActive.value,
-          isAvailable: isAvailable.value,
-          price: Number(price.value),
-          variants: [],
-        };
-  emit("confirm", data);
-}
-function focusFirstField(): void {
-  categorySelect.value?.$el.focus();
-}
-watch(open, (value, previous) => {
-  if (value && !previous) captureReturnFocus();
-  if (!value && previous) {
-    resetDraft();
-    restoreFocus();
-  }
-});
-watch(
-  () => props.fieldErrors,
-  () => {
-    dismissedFieldErrors.value = {};
-  },
-);
-watch(type, (current, previous) => {
-  if (current !== previous) {
-    resetBranchVisibility(current === "DRINK" ? "variants" : "price");
-  }
-});
 </script>
 
 <style scoped lang="scss">
-.add-dialog {
-  flex: none;
+.add-dialog__fields,
+.add-dialog__pricing {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  block-size: min(
-    44rem,
-    calc(100dvh - var(--expressa-space-xl) - var(--expressa-space-xl))
-  );
-  min-block-size: 0;
-  overflow: hidden;
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
+  gap: var(--expressa-space-sm);
 }
-.add-dialog__title {
-  margin: 0;
-  padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-sm);
-  font-size: var(--expressa-font-size-title);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: 28px;
+.add-dialog__pricing {
+  padding-block: var(--expressa-space-sm);
 }
-.add-dialog__description {
-  margin: 0;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: 20px;
-}
-.add-dialog-fields {
-  min-block-size: 0;
-  display: grid;
-  gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-.add-dialog-fields label {
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-body);
-}
-.add-dialog-input {
-  width: 100%;
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-control-block)
-    var(--expressa-space-control-inline);
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-  font: inherit;
-}
-.add-dialog-toggle {
+.add-dialog__pricing-heading,
+.add-dialog__toggle,
+.add-dialog__choice-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-border-width-none);
-  padding: var(--expressa-space-control-inline) 0;
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-}
-.add-dialog-toggle strong {
-  font-size: var(--expressa-font-size-body-strong);
-  line-height: var(--expressa-line-height-body);
-}
-.add-dialog-error {
-  margin: 0;
-  color: var(--expressa-color-status-error);
-  font-size: var(--expressa-font-size-caption);
-}
-.add-dialog-outcome {
-  display: grid;
-  max-block-size: 10rem;
   gap: var(--expressa-space-sm);
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  overflow-y: auto;
-  overflow-wrap: anywhere;
 }
-.add-dialog-outcome > p {
-  margin: 0;
-}
-.add-dialog-technical-details {
-  min-width: 0;
-}
-.add-dialog-technical-details p {
-  margin: var(--expressa-space-sm) 0 0;
-}
-.size-row {
+.add-dialog__choice {
   display: grid;
   gap: var(--expressa-space-sm);
   padding: var(--expressa-space-sm);
@@ -717,76 +439,16 @@ watch(type, (current, previous) => {
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
 }
-.size-row-heading,
-.size-row-fields {
+.add-dialog__error {
+  margin: 0;
+  color: var(--expressa-color-status-error);
+}
+.add-dialog-outcome {
   display: grid;
-  grid-template-columns: var(--expressa-size-option) 1fr auto;
-  align-items: center;
   gap: var(--expressa-space-sm);
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
 }
-.size-row-heading span {
-  display: grid;
-  width: var(--expressa-size-option);
-  height: var(--expressa-size-option);
-  place-items: center;
-  border-radius: var(--expressa-radius-sm);
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-surface-raised);
-  font-weight: var(--expressa-font-weight-semibold);
-}
-.size-row-heading strong,
-.size-row-fields strong {
-  font-size: var(--expressa-font-size-body-strong);
-}
-.size-row-fields {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-}
-.size-row-order {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--expressa-space-sm);
-  color: var(--expressa-color-text-secondary);
-}
-.size-order-button {
-  width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-height: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  padding: 0;
-}
-@media (max-width: 480px) {
-  .size-row-heading {
-    grid-template-columns: var(--expressa-size-option) minmax(0, 1fr);
-  }
-  .size-row-heading :deep(.admin-toggle) {
-    grid-column: 2;
-    justify-self: end;
-  }
-  .size-row-fields {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .size-row-fields label,
-  .size-row-fields .add-dialog-input {
-    grid-column: 1 / -1;
-  }
-  .size-row-fields strong {
-    grid-column: 1;
-  }
-  .size-row-fields :deep(.admin-toggle) {
-    grid-column: 2;
-  }
-}
-.add-dialog-actions {
-  flex: none;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  background: var(--expressa-color-surface);
+.add-dialog-technical-details {
+  overflow-wrap: anywhere;
 }
 </style>

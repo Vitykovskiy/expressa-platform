@@ -28,7 +28,7 @@
   поведение и ответственность изменяемой области по
   [протоколу обновления](docs/00-meta/Update-protocol.md). Это краткая трасса
   решения, а не отдельный процессный артефакт.
-- Перед реализацией определить затронутые контуры и применять соответствующий DoD: [front-office](docs/80-conventions/Code-Definition-of-Done-front-office.md), [back-office](docs/80-conventions/Code-Definition-of-Done-back-office.md), [backend](docs/80-conventions/Code-Definition-of-Done-backend.md), [e2e](e2e/docs/80-conventions/Definition-of-Done.md).
+- Перед реализацией определить затронутые контуры и применять соответствующий DoD: [front-office](docs/80-conventions/Code-Definition-of-Done-front-office.md), [back-office](docs/80-conventions/Code-Definition-of-Done-back-office.md), [backend](docs/80-conventions/Code-Definition-of-Done-backend.md).
 - Для межконтурной задачи применять DoD всех затронутых приложений.
 
 ## Входы контуров
@@ -38,7 +38,11 @@
 - Backend: [README](backend/README.md), [AGENTS](backend/AGENTS.md), [docs](backend/docs/INDEX.md).
 - Front-office: [README](front-office/README.md), [AGENTS](front-office/AGENTS.md), [docs](front-office/docs/INDEX.md).
 - Back-office: [README](back-office/README.md), [AGENTS](back-office/AGENTS.md), [docs](back-office/docs/INDEX.md).
-- E2E: [README](e2e/README.md), [AGENTS](e2e/AGENTS.md), [docs](e2e/docs/INDEX.md).
+
+## Текущие исключения
+
+- Отдельного E2E-контура, E2E-набора и E2E-gate нет. Пользовательские потоки принимают вручную в работающем приложении; применимые существующие проверки других контуров можно запускать.
+- Базы local/test/development одноразовые: при каждом поддерживаемом развёртывании они пересоздаются по текущей [схеме backend](backend/schema.sql) и заполняются детерминированным seed. История миграций, backfill и сохранение данных не поддерживаются. Staging и production не являются поддерживаемым путём поставки до отдельного решения о постоянных данных.
 
 ## Принципы
 

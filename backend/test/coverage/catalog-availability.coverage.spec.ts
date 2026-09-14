@@ -128,5 +128,8 @@ function catalogCandidates(): PublicMenuCandidates {
 }
 
 function publicMenu(candidates: PublicMenuCandidates) {
-  return new GetPublicMenuUseCase({ findCandidates: jest.fn().mockResolvedValue(candidates) }).execute();
+  return new GetPublicMenuUseCase({
+    findCandidates: jest.fn().mockResolvedValue(candidates),
+    findV3Candidates: jest.fn(),
+  }).execute();
 }

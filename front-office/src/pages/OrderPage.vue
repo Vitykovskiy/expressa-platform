@@ -47,7 +47,7 @@
             <span
               >{{ item.quantity }} × {{ formatRubles(item.unitTotal) }}</span
             >
-            <p v-if="item.size">Размер {{ item.size }}</p>
+            <p v-if="item.portionLabel">{{ item.portionLabel }}</p>
             <p
               v-for="modifier in item.modifiers"
               :key="modifier.modifierOptionId"
@@ -434,7 +434,9 @@ function createRepeatItems(
           )
           .map((modifier) => modifier.modifierOptionId),
       })),
-      selectedVariantId: item.variantId,
+      selectedPriceChoiceId: item.priceChoiceId,
+      selectedVariantId:
+        product.type === "DRINK" ? item.priceChoiceId : undefined,
     });
     if (draft === null || !doesDraftPreserveModifiers(draft, item)) {
       warnings.push({
@@ -472,7 +474,7 @@ function getRepeatConfigurationContext(
   item: OrderPageItem,
 ): string | undefined {
   const details = [
-    item.size === null ? null : `Размер ${item.size}`,
+    item.portionLabel,
     ...item.modifiers.map((modifier) => modifier.modifierName),
   ].filter((detail): detail is string => detail !== null);
 
@@ -481,7 +483,7 @@ function getRepeatConfigurationContext(
 function itemKey(item: OrderPageItem): string {
   return [
     item.productId,
-    item.variantId ?? "other",
+    item.priceChoiceId ?? "other",
     ...item.modifiers.map((modifier) => modifier.modifierOptionId),
   ].join(":");
 }

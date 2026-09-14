@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { AvailabilityNotFoundError } from "../application/manage-availability.use-case";
 import type {
   AdminCatalogCandidates,
+  AdminCatalogV3Candidates,
   AdminCatalogRepository,
   AvailabilityCommand,
   AvailabilityRepository,
@@ -123,6 +124,56 @@ export class PostgresAdminCatalogRepository
       client.release();
     }
   }
+  async findV3Candidates(): Promise<AdminCatalogV3Candidates> {
+    const [
+      categories,
+      products,
+      choices,
+      modifierGroups,
+      modifierOptions,
+      categoryModifierGroups,
+    ] = await Promise.all([
+      this.pool.query<DatabaseRow>(
+        "SELECT id,name,description,sort_order,is_active,archived_at FROM categories WHERE archived_at IS NULL ORDER BY sort_order, id",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT p.id,p.category_id,p.type,p.name,p.description,p.portion_label,p.price,p.sort_order,p.is_active,p.is_available,p.archived_at FROM products p INNER JOIN categories c ON c.id=p.category_id WHERE p.archived_at IS NULL AND c.archived_at IS NULL ORDER BY p.category_id,p.sort_order,p.id",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT ppc.id,ppc.product_id,ppc.portion_label,ppc.price,ppc.sort_order,ppc.is_available,ppc.archived_at FROM product_price_choices ppc INNER JOIN products p ON p.id=ppc.product_id INNER JOIN categories c ON c.id=p.category_id WHERE ppc.archived_at IS NULL AND p.archived_at IS NULL AND c.archived_at IS NULL ORDER BY ppc.product_id,ppc.sort_order,ppc.id",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id,name,selection_type,min_select,max_select,is_active,archived_at FROM modifier_groups WHERE archived_at IS NULL ORDER BY id",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT o.id,o.group_id,o.name,o.price_delta,o.sort_order,o.is_default,o.is_available,o.archived_at FROM modifier_options o INNER JOIN modifier_groups g ON g.id=o.group_id WHERE o.archived_at IS NULL AND g.archived_at IS NULL ORDER BY o.group_id,o.sort_order,o.id",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT cmg.category_id,cmg.group_id,cmg.sort_order FROM category_modifier_groups cmg INNER JOIN categories c ON c.id=cmg.category_id INNER JOIN modifier_groups g ON g.id=cmg.group_id WHERE c.archived_at IS NULL AND g.archived_at IS NULL ORDER BY cmg.category_id,cmg.sort_order",
+      ),
+    ]);
+    return {
+      categories: categories.rows.map(parseCategory),
+      products: products.rows.map((row) => ({
+        ...parseProduct(row),
+        portionLabel: readNullableString(row, "portion_label"),
+      })),
+      priceChoices: choices.rows.map((row) => ({
+        id: readString(row, "id"),
+        productId: readString(row, "product_id"),
+        portionLabel: readString(row, "portion_label"),
+        price: readNonNegativeInteger(row, "price"),
+        sortOrder: readNonNegativeInteger(row, "sort_order"),
+        isAvailable: readBoolean(row, "is_available"),
+        archivedAt: readNullableDate(row, "archived_at"),
+      })),
+      modifierGroups: modifierGroups.rows.map(parseModifierGroup),
+      modifierOptions: modifierOptions.rows.map(parseModifierOption),
+      categoryModifierGroups: categoryModifierGroups.rows.map(
+        parseCategoryModifierGroup,
+      ),
+    };
+  }
 
   async updateAvailability(
     command: AvailabilityCommand,
@@ -133,7 +184,9 @@ export class PostgresAdminCatalogRepository
         ? "products"
         : command.type === "variant"
           ? "product_variants"
-          : "modifier_options";
+          : command.type === "price_choice"
+            ? "product_price_choices"
+            : "modifier_options";
     const entityType =
       command.type === "modifier" ? "modifier_option" : command.type;
 

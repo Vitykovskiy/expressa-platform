@@ -23,7 +23,8 @@ export type ServiceIntake = {
   updatedByLabel: string | null;
   updatedAt: Date | null;
 };
-export type AvailabilityEntityType = "product" | "variant" | "modifier";
+export type AvailabilityEntityType =
+  "product" | "variant" | "modifier" | "price_choice";
 export type AvailabilityTarget = {
   type: AvailabilityEntityType;
   id: string;
@@ -41,7 +42,24 @@ export type ServiceIntakeCommand = {
 
 export interface AdminCatalogRepository {
   findCandidates(): Promise<AdminCatalogCandidates>;
+  findV3Candidates(): Promise<AdminCatalogV3Candidates>;
 }
+export type AdminCatalogV3Candidates = {
+  categories: CatalogCategoryCandidate[];
+  products: Array<CatalogProductCandidate & { portionLabel: string | null }>;
+  priceChoices: Array<{
+    id: string;
+    productId: string;
+    portionLabel: string;
+    price: number;
+    sortOrder: number;
+    isAvailable: boolean;
+    archivedAt: Date | null;
+  }>;
+  modifierGroups: CatalogModifierGroupCandidate[];
+  modifierOptions: CatalogModifierOptionCandidate[];
+  categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
+};
 
 export interface AvailabilityRepository {
   updateAvailability(command: AvailabilityCommand): Promise<AvailabilityTarget>;

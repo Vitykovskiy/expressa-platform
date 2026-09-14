@@ -11,9 +11,9 @@
         <h2 class="cart-item__name">
           {{ props.item.productName }}
         </h2>
-        <span v-if="props.item.size" class="cart-item__size"
-          >Размер {{ props.item.size }}</span
-        >
+        <span v-if="portionLabel" class="cart-item__size">{{
+          portionLabel
+        }}</span>
       </div>
       <p
         v-if="props.unavailable"
@@ -97,6 +97,13 @@ import type { CartItemEmits, CartItemProps } from "./CartItem.types";
 const props = defineProps<CartItemProps>();
 const emit = defineEmits<CartItemEmits>();
 const unavailableMessageId = `cart-item-unavailable-${props.item.id}`;
+const portionLabel = computed(() =>
+  "portionLabel" in props.item
+    ? props.item.portionLabel
+    : "size" in props.item
+      ? props.item.size
+      : undefined,
+);
 
 function formatRubAmount(value: number): string {
   return formatRubles(value);

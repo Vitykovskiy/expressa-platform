@@ -94,13 +94,13 @@ export class BackofficeAvailabilityController {
     assertUuid(id, "id");
     assertBoolean(body?.isAvailable, "isAvailable");
     try {
-      return await this.manageAvailability.execute({
+      return (await this.manageAvailability.execute({
         type,
         id,
         isAvailable: body.isAvailable,
         actorId: auth.userId,
         requestId: requestId(request),
-      });
+      })) as AvailabilityUpdateResponseDto;
     } catch (error) {
       throwAvailabilityError(error);
     }

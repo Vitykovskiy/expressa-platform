@@ -117,12 +117,131 @@ function createCandidates(): PublicMenuCandidates {
 function createUseCase(candidates: PublicMenuCandidates): GetPublicMenuUseCase {
   const repository: PublicMenuRepository = {
     findCandidates: jest.fn().mockResolvedValue(candidates),
+    findV3Candidates: jest.fn(),
   };
 
   return new GetPublicMenuUseCase(repository);
 }
 
+function createV3Candidates() {
+  const candidates = createCandidates();
+  return {
+    acceptsNewOrders: candidates.acceptsNewOrders,
+    categories: candidates.categories,
+    products: [
+      {
+        ...candidates.products[0]!,
+        price: null,
+        displayLabel: null,
+      },
+      {
+        ...candidates.products[1]!,
+        price: 170,
+        displayLabel: null,
+      },
+    ],
+    priceChoices: [
+      {
+        id: "cappuccino-250",
+        productId: drinkId,
+        portionLabel: "250 мл",
+        price: 250,
+        sortOrder: 10,
+        isAvailable: false,
+        archivedAt: null,
+      },
+      {
+        id: "cappuccino-350",
+        productId: drinkId,
+        portionLabel: "350 мл",
+        price: 290,
+        sortOrder: 20,
+        isAvailable: true,
+        archivedAt: null,
+      },
+    ],
+  };
+}
+
 describe("GetPublicMenuUseCase", () => {
+  it("v3 returns one price and ordered price choices without inferred units or defaults", async () => {
+    const candidates = createCandidates();
+    const repository: PublicMenuRepository = {
+      findCandidates: jest.fn().mockResolvedValue(candidates),
+      findV3Candidates: jest.fn().mockResolvedValue(createV3Candidates()),
+    };
+
+    await expect(
+      new GetPublicMenuUseCase(repository).executeV3(),
+    ).resolves.toEqual({
+      acceptsNewOrders: true,
+      categories: [
+        {
+          id: categoryId,
+          name: "Кофе",
+          description: "Напитки",
+          products: [
+            {
+              id: drinkId,
+              name: "Капучино",
+              description: "Кофе с молоком",
+              price: null,
+              portionLabel: null,
+              isAvailable: true,
+              priceChoices: [
+                {
+                  id: "cappuccino-250",
+                  portionLabel: "250 мл",
+                  price: 250,
+                  isAvailable: false,
+                },
+                {
+                  id: "cappuccino-350",
+                  portionLabel: "350 мл",
+                  price: 290,
+                  isAvailable: true,
+                },
+              ],
+            },
+            {
+              id: otherId,
+              name: "Круассан",
+              description: "Выпечка",
+              price: 170,
+              portionLabel: null,
+              isAvailable: false,
+              priceChoices: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("v3 omits invalid mixed and singleton-choice storage instead of guessing", async () => {
+    const v3 = createV3Candidates();
+    v3.products[0]!.price = 200;
+    v3.products[1]!.price = null;
+    v3.priceChoices = [
+      {
+        id: "invalid",
+        productId: drinkId,
+        portionLabel: "250 мл",
+        price: 200,
+        sortOrder: 10,
+        isAvailable: true,
+        archivedAt: null,
+      },
+    ];
+    const repository: PublicMenuRepository = {
+      findCandidates: jest.fn().mockResolvedValue(createCandidates()),
+      findV3Candidates: jest.fn().mockResolvedValue(v3),
+    };
+
+    await expect(
+      new GetPublicMenuUseCase(repository).executeV3(),
+    ).resolves.toEqual({ acceptsNewOrders: true, categories: [] });
+  });
   it("возвращает отсортированный агрегат с наследуемыми группами и оперативной доступностью", async () => {
     const result = await createUseCase(createCandidates()).execute();
 

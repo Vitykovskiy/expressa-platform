@@ -1,8 +1,8 @@
 export const catalogApiPaths = {
-  catalog: "/backoffice/catalog",
+  catalog: "/../v3/backoffice/catalog",
   categories: "/backoffice/catalog/categories",
   modifierGroups: "/backoffice/catalog/modifier-groups",
-  products: "/backoffice/catalog/products",
+  products: "/../v3/backoffice/catalog/products",
 } as const;
 
 export const catalogProductTypes = ["DRINK", "OTHER"] as const;

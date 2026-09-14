@@ -37,6 +37,29 @@ error, выбранный/disabled), но `/cart` их не подключает
 исходного заказа: `cart` store не сохраняет его в `localStorage` и очищает его
 на тех же границах, что и предупреждения повтора.
 
-Проверки: [CartScreen spec](../../src/features/checkout/CartScreen.spec.ts), [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [e2e](../../tests/e2e/checkout.e2e.spec.ts).
+Проверки: [CartScreen spec](../../src/features/checkout/CartScreen.spec.ts), [checkout store spec](../../src/features/checkout/checkout.store.spec.ts).
 
 Карта раздела: [сценарии](INDEX.md).
+
+## Выбор цены в корзине и checkout
+
+Сейчас menu selector может показать `displayLabel`, но корзина отбрасывает его:
+она хранит UUID варианта и технический `S/M/L` и так же отображает строку.
+Позиция `POST /api/v2/orders` содержит `productId`, `variantId`,
+`modifierOptionIds` и `quantity`, но не размер; backend по `variantId` разрешает
+вариант, сохраняет legacy-снимок `S/M/L` и возвращает его в заказе.
+Целевой контракт принят в
+[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md),
+но ещё не реализован.
+
+В v3 корзина сохраняет nullable `priceChoiceId`, точную показанную
+`portionLabel` и цену. Одна цена имеет null id и не создаёт выбор. Несколько цен
+требуют id; объединение строк учитывает его, а не визуальное равенство подписей.
+Подпись показывается при наличии, поэтому штучный товар без неё не получает
+пустой badge или выдуманный размер.
+
+Перед checkout сервер заново проверяет форму товара, текущую доступность и
+цену. Заказ отправляется через `/api/v3/orders`; недоступный или архивный
+choice требует явного исправления корзины и не заменяется автоматически.
+Модификаторы остаются отдельной частью ключа конфигурации. Это target state;
+проверки reload, объединения, revalidation и отправки ещё не реализованы.

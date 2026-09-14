@@ -238,6 +238,28 @@
         ]
       }
     },
+    "/api/v3/public/menu": {
+      "get": {
+        "operationId": "PublicMenuV3Controller_getMenu",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMenuV3Dto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Получить публичное меню с ценами и подписями порций",
+        "tags": [
+          "menu-v3"
+        ]
+      }
+    },
     "/api/v2/backoffice/catalog": {
       "get": {
         "operationId": "AdminCatalogController_getCatalog",
@@ -292,6 +314,32 @@
         "summary": "Получить каталог для управления меню",
         "tags": [
           "backoffice"
+        ]
+      }
+    },
+    "/api/v3/backoffice/catalog": {
+      "get": {
+        "operationId": "AdminCatalogV3Controller_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCatalogV3Dto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "catalog-v3"
         ]
       }
     },
@@ -1056,6 +1104,158 @@
         "summary": "Переупорядочить товары категории",
         "tags": [
           "backoffice"
+        ]
+      }
+    },
+    "/api/v3/backoffice/catalog/products": {
+      "post": {
+        "operationId": "CatalogProductsV3Controller_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V3ProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a v3 catalog product",
+        "tags": [
+          "catalog-v3"
+        ]
+      }
+    },
+    "/api/v3/backoffice/catalog/products/{productId}": {
+      "patch": {
+        "operationId": "CatalogProductsV3Controller_update",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V3ProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a v3 catalog product",
+        "tags": [
+          "catalog-v3"
+        ]
+      },
+      "delete": {
+        "operationId": "CatalogProductsV3Controller_archive",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a v3 catalog product",
+        "tags": [
+          "catalog-v3"
+        ]
+      }
+    },
+    "/api/v3/backoffice/catalog/products/reorder": {
+      "post": {
+        "operationId": "CatalogProductsV3Controller_reorder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V3ReorderProductsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V3ProductResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder all current v3 products in a category",
+        "tags": [
+          "catalog-v3"
         ]
       }
     },
@@ -2087,6 +2287,44 @@
         ]
       }
     },
+    "/api/v3/backoffice/availability/price-choice/{id}": {
+      "patch": {
+        "operationId": "BackofficeAvailabilityV3Controller_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V3AvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "availability-v3"
+        ]
+      }
+    },
     "/api/v2/orders": {
       "get": {
         "operationId": "OrdersController_list",
@@ -2895,6 +3133,243 @@
         ]
       }
     },
+    "/api/v3/orders": {
+      "get": {
+        "operationId": "OrdersV3Controller_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrdersV3PageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "orders-v3"
+        ]
+      },
+      "post": {
+        "operationId": "OrdersV3Controller_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderV3Dto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderV3ResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "orders-v3"
+        ]
+      }
+    },
+    "/api/v3/orders/{orderId}": {
+      "get": {
+        "operationId": "OrdersV3Controller_details",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderV3ResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "orders-v3"
+        ]
+      }
+    },
+    "/api/v3/orders/{orderId}/repeat": {
+      "post": {
+        "operationId": "OrdersV3Controller_repeat",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderV3ResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "orders-v3"
+        ]
+      }
+    },
+    "/api/v3/backoffice/orders": {
+      "get": {
+        "operationId": "BackofficeOrdersV3Controller_list",
+        "parameters": [
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "CREATED",
+                "ACCEPTED",
+                "PREPARING",
+                "READY",
+                "ISSUED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackofficeOrderV3ResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "backoffice-orders-v3"
+        ]
+      }
+    },
+    "/api/v3/backoffice/orders/{orderId}": {
+      "get": {
+        "operationId": "BackofficeOrdersV3Controller_details",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderV3ResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "backoffice-orders-v3"
+        ]
+      }
+    },
     "/api/v2/push/public-key": {
       "get": {
         "operationId": "PushSubscriptionsController_publicKey",
@@ -3663,6 +4138,120 @@
           "categories"
         ]
       },
+      "PublicMenuV3PriceChoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "portionLabel": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "portionLabel",
+          "price",
+          "isAvailable"
+        ]
+      },
+      "PublicMenuV3ProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "nullable": true
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "priceChoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuV3PriceChoiceDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "portionLabel",
+          "isAvailable",
+          "priceChoices"
+        ]
+      },
+      "PublicMenuV3CategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuV3ProductDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "products"
+        ]
+      },
+      "PublicMenuV3Dto": {
+        "type": "object",
+        "properties": {
+          "acceptsNewOrders": {
+            "type": "boolean"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuV3CategoryDto"
+            }
+          }
+        },
+        "required": [
+          "acceptsNewOrders",
+          "categories"
+        ]
+      },
       "AdminCatalogCategoryDto": {
         "type": "object",
         "properties": {
@@ -3930,6 +4519,261 @@
           "categories",
           "products",
           "productVariants",
+          "modifierGroups",
+          "modifierOptions",
+          "categoryModifierGroups"
+        ]
+      },
+      "AdminV3CategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "sortOrder",
+          "isActive"
+        ]
+      },
+      "AdminV3ChoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "portionLabel": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "portionLabel",
+          "price",
+          "sortOrder",
+          "isAvailable"
+        ]
+      },
+      "AdminV3ProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceChoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3ChoiceDto"
+            }
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "categoryId",
+          "name",
+          "description",
+          "price",
+          "portionLabel",
+          "priceChoices",
+          "sortOrder",
+          "isActive",
+          "isAvailable"
+        ]
+      },
+      "AdminV3ModifierGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multiple"
+            ]
+          },
+          "minSelect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxSelect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "selectionType",
+          "minSelect",
+          "maxSelect",
+          "isActive"
+        ]
+      },
+      "AdminV3ModifierOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "integer"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "name",
+          "priceDelta",
+          "sortOrder",
+          "isDefault",
+          "isAvailable"
+        ]
+      },
+      "AdminV3CategoryModifierGroupDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "categoryId",
+          "groupId",
+          "sortOrder"
+        ]
+      },
+      "AdminCatalogV3Dto": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3CategoryDto"
+            }
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3ProductDto"
+            }
+          },
+          "modifierGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3ModifierGroupDto"
+            }
+          },
+          "modifierOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3ModifierOptionDto"
+            }
+          },
+          "categoryModifierGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3CategoryModifierGroupDto"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "products",
           "modifierGroups",
           "modifierOptions",
           "categoryModifierGroups"
@@ -4322,6 +5166,168 @@
         ]
       },
       "ReorderProductsDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "categoryId",
+          "productIds"
+        ]
+      },
+      "V3PriceChoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "portionLabel": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "portionLabel",
+          "price",
+          "sortOrder",
+          "isAvailable"
+        ]
+      },
+      "V3ProductDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceChoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3PriceChoiceDto"
+            }
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "categoryId",
+          "name",
+          "description",
+          "price",
+          "portionLabel",
+          "priceChoices",
+          "sortOrder",
+          "isActive",
+          "isAvailable"
+        ]
+      },
+      "V3ProductResponseDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceChoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3PriceChoiceDto"
+            }
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "categoryId",
+          "name",
+          "description",
+          "price",
+          "portionLabel",
+          "priceChoices",
+          "sortOrder",
+          "isActive",
+          "isAvailable",
+          "id"
+        ]
+      },
+      "V3ReorderProductsDto": {
         "type": "object",
         "properties": {
           "categoryId": {
@@ -4791,6 +5797,17 @@
           "acceptsNewOrders"
         ]
       },
+      "V3AvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isAvailable"
+        ]
+      },
       "OrderModifierResponseDto": {
         "type": "object",
         "properties": {
@@ -5183,6 +6200,236 @@
           "customer",
           "snapshot",
           "events"
+        ]
+      },
+      "OrderV3ModifierResponseDto": {
+        "type": "object",
+        "properties": {
+          "modifierOptionId": {
+            "type": "string"
+          },
+          "modifierName": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "modifierOptionId",
+          "modifierName",
+          "priceDelta"
+        ]
+      },
+      "OrderV3ItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "priceChoiceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string"
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitTotal": {
+            "type": "number"
+          },
+          "lineTotal": {
+            "type": "number"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderV3ModifierResponseDto"
+            }
+          }
+        },
+        "required": [
+          "productId",
+          "priceChoiceId",
+          "productName",
+          "portionLabel",
+          "quantity",
+          "unitTotal",
+          "lineTotal",
+          "modifiers"
+        ]
+      },
+      "CustomerOrderV3ResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderV3ItemResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "stage",
+          "total",
+          "items",
+          "createdAt"
+        ]
+      },
+      "CustomerOrdersV3PageResponseDto": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerOrderV3ResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "orders",
+          "nextCursor"
+        ]
+      },
+      "CreateOrderV3ItemDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priceChoiceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modifierOptionIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "productId",
+          "modifierOptionIds",
+          "quantity"
+        ]
+      },
+      "CreateOrderV3Dto": {
+        "type": "object",
+        "properties": {
+          "expectedTotal": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrderV3ItemDto"
+            }
+          }
+        },
+        "required": [
+          "expectedTotal",
+          "items"
+        ]
+      },
+      "OrderV3ResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderV3ItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "stage",
+          "total",
+          "items"
+        ]
+      },
+      "BackofficeOrderV3ResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderV3ItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "createdAt",
+          "total",
+          "stage",
+          "snapshot"
         ]
       },
       "PushPublicKeyDto": {

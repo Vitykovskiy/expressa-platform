@@ -21,13 +21,13 @@ describe('orders and notifications coverage', () => {
         return Promise.resolve({ rows: idempotencyReads === 1 ? [] : [{ id: orderId, number: '20300102-007', stage: 'CREATED', total: 450, request_fingerprint: `{"total":450,"items":[{"productId":"${productId}","variantId":null,"modifierOptionIds":[],"quantity":1}]}` }] });
       }
       if (sql.includes('FROM service_settings')) return Promise.resolve({ rows: [{ value: true }] });
-      if (sql.includes('FROM products')) return Promise.resolve({ rows: [{ id: productId, category_id: 'coffee', type: 'OTHER', name: 'Печенье', price: 450, is_available: true }] });
+      if (sql.includes('FROM products')) return Promise.resolve({ rows: [{ id: productId, category_id: 'coffee', type: 'OTHER', name: 'Печенье', price: 450, portion_label: null, is_available: true }] });
       if (sql.includes('FROM product_variants') || sql.includes('FROM category_modifier_groups') || sql.includes('FROM modifier_options')) return Promise.resolve({ rows: [] });
       if (sql.includes('order_daily_counters')) return Promise.resolve({ rows: [{ last_number: 7 }] });
       if (sql.includes('INSERT INTO orders')) return Promise.resolve({ rows: [{ id: orderId, number: '20300102-007', stage: 'CREATED', total: 450 }] });
       if (sql.includes('INSERT INTO order_items')) return Promise.resolve({ rows: [{ id: itemId }] });
       if (sql.includes('FROM order_item_modifiers')) return Promise.resolve({ rows: [] });
-      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [{ id: itemId, product_id: productId, variant_id: null, product_name: 'Печенье', size: null, quantity: 1, unit_total: 450, line_total: 450 }] });
+      if (sql.includes('FROM order_items')) return Promise.resolve({ rows: [{ id: itemId, product_id: productId, variant_id: null, price_choice_id: null, product_name: 'Печенье', size: null, portion_label: null, quantity: 1, unit_total: 450, line_total: 450 }] });
       return Promise.resolve({ rows: [] });
     });
     const client = { query, release: jest.fn() } as unknown as PoolClient;

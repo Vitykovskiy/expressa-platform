@@ -18,3 +18,23 @@ sources:
 Контракт UI, store и операций каталога — в [Catalog-management](Catalog-management.md). Эта нота остаётся источником транспортной границы: [CatalogApi](../../src/shared/api/catalog.api.ts) и [catalog API tests](../../src/shared/api/catalog.api.spec.ts).
 
 Снимок [OpenAPI](../../contracts/openapi.json) — контрактный источник всех `/api/v2/backoffice/catalog*` путей и auth-путей; `npm run contract:check` посимвольно сравнивает его с `backend/openapi/openapi.json`. Public menu, orders и health есть в снимке, но runtime back-office их не вызывает. При изменении контракта обновляются runtime-проверки и тесты API, затем запускается эта сверка.
+
+## Целевая v3-граница цен
+
+Текущий клиент и OpenAPI-снимок остаются на `/api/v2` и `S/M/L`. Принятый в
+[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
+`/api/v3` контракт ещё не реализован.
+
+Будущий `CatalogApi` проверяет одну из двух форм: `price` с nullable
+`portionLabel` и без choices либо минимум два упорядоченных price choices со
+стабильными `id`, обязательными plain-text labels, ценой и ручной доступностью.
+Он не принимает kind, amount, unit, preset identity, inventory fields или
+default. Ошибки цены, обязательной/дублирующейся подписи и несовместимых форм
+остаются структурированными field/domain errors у конкретной строки.
+
+Availability читает и меняет доступность конкретного choice по id, а staff
+order reads получают nullable id и неизменяемый snapshot label. UI-пресеты не
+входят в OpenAPI и не отличаются от собственного текста на transport-границе.
+Правила совместимости и отключения v2 фиксируются отдельно до cutover;
+предыдущая матрица `410` и 30-дневное окно не являются частью принятой модели.
+Runtime validators, OpenAPI contracts и проверки ещё не приведены к target v3.

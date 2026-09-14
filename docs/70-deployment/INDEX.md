@@ -2,8 +2,9 @@
 
 Вернуться к [карте документации](../INDEX.md).
 
-- [Среды](Environments.md), [CI/CD](CI-CD.md), [выпуск и совместимость](Release-and-version-compatibility.md)
-- [Операционный запуск](Operations-runbook.md), [наблюдаемость](Observability.md),
-  [резервное копирование и восстановление](Backup-and-restore.md)
-- [E2E на VPS](E2E-on-VPS.md)
-- [Тематический маршрут](_MOC-deployment.md)
+Поддерживается только одноразовый development: база пересоздаётся из текущей
+схемы и заполняется seed. Решение и точные границы — в
+[ADR-007](../20-architecture/ADR/ADR-007-disposable-database-bootstrap.md).
+
+Исторические ноты о staging, production и сохранении данных сохранены как
+заменённые записи и не задают рабочий процесс.

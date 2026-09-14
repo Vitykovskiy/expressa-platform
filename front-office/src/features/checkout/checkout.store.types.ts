@@ -27,7 +27,7 @@ export type CheckoutRequestItem = {
   modifierOptionIds: string[];
   productId: string;
   quantity: number;
-  variantId: string | null;
+  priceChoiceId?: string;
 };
 
 export type CheckoutState = {

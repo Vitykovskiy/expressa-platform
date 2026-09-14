@@ -29,6 +29,7 @@ export function revalidateOrder(
     throw new OrderIntakeClosedError();
   }
 
+  if (request.pricingMode === "v3") return revalidateV3Order(request, catalog);
   assertValidRequest(request);
   assertValidCatalog(catalog);
   const validatedItems = request.items.map((item) =>
@@ -49,6 +50,65 @@ export function revalidateOrder(
     throw new OrderTotalChangedError(total);
   }
 
+  return Object.freeze({ total, items: Object.freeze(items) });
+}
+
+function revalidateV3Order(
+  request: OrderRequest,
+  catalog: OrderCatalog,
+): OrderRevalidationResult {
+  if (!isNonNegativeAmount(request.total) || request.items.length === 0)
+    throw new OrderValidationError();
+  const items = request.items.map((item) => {
+    if (!isValidItemShape(item) || item.variantId !== null)
+      throw new OrderValidationError();
+    const product = catalog.products.find(
+      (candidate) => candidate.id === item.productId,
+    );
+    if (product === undefined || !product.isAvailable)
+      throw new MenuItemUnavailableError(item.productId);
+    const choices = product.priceChoices ?? [];
+    const choice =
+      item.priceChoiceId === null
+        ? null
+        : choices.find((candidate) => candidate.id === item.priceChoiceId);
+    if (
+      (choices.length === 0 && item.priceChoiceId !== null) ||
+      (choices.length >= 2 && choice === null) ||
+      choices.length === 1 ||
+      (choices.length >= 2 && !choice?.isAvailable) ||
+      (choices.length === 0 && product.price === null)
+    )
+      throw new OrderValidationError();
+    const modifiers = getValidModifiers(
+      product.modifierGroups,
+      item.modifierOptionIds,
+    );
+    assertAvailable(product, undefined, modifiers);
+    const basePrice = choice?.price ?? product.price;
+    if (basePrice === null) throw new OrderValidationError();
+    const unitTotal =
+      basePrice +
+      modifiers.reduce((sum, modifier) => sum + modifier.priceDelta, 0);
+    const lineTotal = unitTotal * item.quantity;
+    if (!isNonNegativeAmount(unitTotal) || !isNonNegativeAmount(lineTotal))
+      throw new OrderValidationError();
+    return Object.freeze({
+      productId: product.id,
+      variantId: null,
+      priceChoiceId: choice?.id ?? null,
+      productName: product.name,
+      size: null,
+      portionLabel: choice?.portionLabel ?? product.portionLabel ?? null,
+      quantity: item.quantity,
+      unitTotal,
+      lineTotal,
+      modifiers: Object.freeze(modifiers.map(toSnapshotModifier)),
+    });
+  });
+  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  if (!isNonNegativeAmount(total)) throw new OrderValidationError();
+  if (request.total !== total) throw new OrderTotalChangedError(total);
   return Object.freeze({ total, items: Object.freeze(items) });
 }
 
@@ -118,8 +178,10 @@ function createSnapshot(
   return Object.freeze({
     productId: product.id,
     variantId: variant?.id ?? null,
+    priceChoiceId: null,
     productName: product.name,
     size: variant?.size ?? null,
+    portionLabel: null,
     quantity: item.quantity,
     unitTotal,
     lineTotal,
@@ -317,6 +379,7 @@ function createConfigurationKey(item: OrderRequestItem): string {
   return JSON.stringify({
     productId: item.productId,
     variantId: item.variantId,
+    priceChoiceId: item.priceChoiceId ?? null,
     modifierOptionIds: item.modifierOptionIds.toSorted(),
   });
 }

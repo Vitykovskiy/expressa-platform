@@ -60,6 +60,89 @@ function createCatalog(): OrderCatalog {
 }
 
 describe("revalidateOrder", () => {
+  it("v3 snapshots a direct price or the selected stable price choice", () => {
+    const catalog = createCatalog();
+    catalog.products[0]!.price = 250;
+    catalog.products[0]!.portionLabel = "250 мл";
+    catalog.products[0]!.priceChoices = [];
+    const single = revalidateOrder(
+      {
+        pricingMode: "v3",
+        total: 340,
+        items: [
+          {
+            productId: "coffee",
+            variantId: null,
+            priceChoiceId: null,
+            modifierOptionIds: ["oat"],
+            quantity: 1,
+          },
+        ],
+      },
+      catalog,
+    );
+    expect(single.items[0]).toMatchObject({
+      priceChoiceId: null,
+      portionLabel: "250 мл",
+      unitTotal: 340,
+    });
+
+    catalog.products[0]!.price = null;
+    catalog.products[0]!.priceChoices = [
+      {
+        id: "choice-250",
+        portionLabel: "250 мл",
+        price: 250,
+        isAvailable: true,
+      },
+      {
+        id: "choice-350",
+        portionLabel: "350 мл",
+        price: 290,
+        isAvailable: true,
+      },
+    ];
+    const multiple = revalidateOrder(
+      {
+        pricingMode: "v3",
+        total: 380,
+        items: [
+          {
+            productId: "coffee",
+            variantId: null,
+            priceChoiceId: "choice-350",
+            modifierOptionIds: ["oat"],
+            quantity: 1,
+          },
+        ],
+      },
+      catalog,
+    );
+    expect(multiple.items[0]).toMatchObject({
+      priceChoiceId: "choice-350",
+      portionLabel: "350 мл",
+      unitTotal: 380,
+    });
+    expect(() =>
+      revalidateOrder(
+        {
+          pricingMode: "v3",
+          total: 340,
+          items: [
+            {
+              productId: "coffee",
+              variantId: null,
+              priceChoiceId: null,
+              modifierOptionIds: ["oat"],
+              quantity: 1,
+            },
+          ],
+        },
+        catalog,
+      ),
+    ).toThrow(OrderValidationError);
+  });
+
   it("создаёт независимый неизменяемый снимок по серверной цене", () => {
     const catalog = createCatalog();
     const result = revalidateOrder(request, catalog);
@@ -73,8 +156,10 @@ describe("revalidateOrder", () => {
         {
           productId: "coffee",
           variantId: "medium",
+          priceChoiceId: null,
           productName: "Капучино",
           size: "M",
+          portionLabel: null,
           quantity: 2,
           unitTotal: 410,
           lineTotal: 820,

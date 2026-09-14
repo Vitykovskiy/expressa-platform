@@ -14,7 +14,6 @@
     "format:check": "prettier --check \"src/**/*.{vue,ts,css}\" \"tests/**/*.{ts,vue,mjs}\" \"*.{js,mjs,cjs,json}\"",
     "typecheck": "vue-tsc --build",
     "test": "vitest",
-    "test:e2e": "playwright test",
     "contract:check": "node scripts/check-openapi.mjs",
     "deploy-build": "vite build"
   },
@@ -27,9 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.62.1",
     "@types/node": "24.13.3",
-    "@types/pg": "8.20.3",
     "@vitejs/plugin-vue": "6.0.8",
     "@vue/test-utils": "2.4.11",
     "eslint": "10.8.0",
@@ -37,8 +34,6 @@
     "eslint-plugin-vue": "10.10.0",
     "globals": "17.8.0",
     "jsdom": "30.0.1",
-    "pg": "8.16.3",
-    "playwright": "1.62.1",
     "prettier": "3.9.6",
     "sass": "1.93.2",
     "typescript": "6.0.3",

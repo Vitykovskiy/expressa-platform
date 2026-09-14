@@ -1,5 +1,6 @@
 export const ordersApiPaths = {
-  orders: "/backoffice/orders",
+  orders: "/../v3/backoffice/orders",
+  transitions: "/backoffice/orders",
 } as const;
 
 export const orderStages = [

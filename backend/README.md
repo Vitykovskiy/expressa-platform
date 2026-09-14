@@ -9,10 +9,10 @@ Backend — HTTP API Expressa. Он обслуживает меню, заказ�
 ```text
 backend/
 ├── docs/               # документация, правила и карта текущего устройства
-├── migrations/         # последовательные SQL-миграции PostgreSQL
-├── scripts/            # миграции, заполнение данных и служебные команды
+├── schema.sql          # единственная декларативная актуальная схема PostgreSQL
+├── scripts/            # инициализация пустой БД, seed и служебные команды
 ├── src/                # NestJS-модули и исполняемый код API
-├── test/               # интеграционные и HTTP e2e-проверки
+├── test/               # модульные и интеграционные проверки
 ├── .env.example        # безопасный шаблон переменных окружения
 ├── compose.local.yml   # локальный PostgreSQL
 ├── package.json        # команды разработки и зависимости
@@ -26,7 +26,7 @@ npm ci
 docker compose -f compose.local.yml up -d
 cp .env.example .env
 set -a; source .env; set +a
-npm run migrate
+npm run db:init
 npm run seed
 npm run start:dev
 ```
@@ -59,12 +59,17 @@ npm run typecheck
 npm test -- --runInBand
 npm run build
 npm run openapi:check
-npm run migrate
+npm run db:init
 npm run seed
 npm run staff -- upsert --phone +79991234567 --role administrator
 ```
 
 `npm run staff` создаёт или обновляет сотрудника.
+
+`npm run db:init` применяется только к пустой одноразовой базе и завершается
+ошибкой для базы с прикладными таблицами. Он не обновляет и не сохраняет данные.
+Поддерживаемые базы local/test/development пересоздаются из `schema.sql`, затем
+заполняются `npm run seed`; миграций, backfill и сохранения данных нет.
 
 Допустимые роли: `barista`, `administrator`, `customer` (последняя безопасно
 понижает сотрудника). Формат телефона —

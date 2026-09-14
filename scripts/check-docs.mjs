@@ -5,16 +5,7 @@
  * Links in fenced code blocks, external URLs, anchors and mail links are
  * deliberately ignored.
  */
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, extname, normalize, relative, resolve, sep } from "node:path";
 
@@ -30,7 +21,6 @@ const SCOPES = {
     docs: "back-office/docs",
     index: "back-office/docs/INDEX.md",
   },
-  e2e: { docs: "e2e/docs", index: "e2e/docs/INDEX.md" },
 };
 const EXCLUDED_DIRECTORIES = new Set([
   ".cache",
@@ -44,7 +34,6 @@ const EXCLUDED_DIRECTORIES = new Set([
   "dist",
   "generated",
   "node_modules",
-  "playwright-report",
   "reports",
   "test-results",
   "tmp",
@@ -172,6 +161,7 @@ function trackedNestedReadmes() {
   return [...new Set(paths)]
     .map((path) => resolve(root, path))
     .filter((file) => file !== resolve(root, "README.md"))
+    .filter(existsSync)
     .filter(
       (file) =>
         !relative(root, file)
@@ -218,8 +208,7 @@ function isHistoricalNote(file, scope) {
   const local = relative(resolve(root, scope.docs), file).split(sep);
   return (
     local.some((segment) => HISTORICAL_DIRECTORIES.has(segment)) ||
-    local.includes("backlog") ||
-    frontmatter(readFileSync(file, "utf8")).status === "superseded"
+    local.includes("backlog")
   );
 }
 
@@ -227,10 +216,6 @@ function isExcludedFromLinkChecks(file, scope) {
   return relative(resolve(root, scope.docs), file)
     .split(sep)
     .some((segment) => HISTORICAL_DIRECTORIES.has(segment));
-}
-
-function usesLegacyContentChecks(scope) {
-  return scope.name !== "e2e";
 }
 
 function isHistoricalDirectory(directory, scope) {
@@ -447,10 +432,8 @@ function validateScope(scope, sampleSize = null) {
   checkEntrypoints(scope);
   checkLinks(scope, scopeNavigationFiles(scope, files));
   checkIndexes(scope);
-  if (usesLegacyContentChecks(scope)) {
-    checkMetadata(scope, files);
-    checkCoverage(scope);
-  }
+  checkMetadata(scope, files);
+  checkCoverage(scope);
   checkReachability(scope, files);
   return { files, sources: checkSources(scope, files, sampleSize) };
 }
@@ -763,7 +746,7 @@ function parseArguments(argumentsList) {
     else if (argument === "--self-test") selfTest = true;
     else if (argument === "--help") {
       console.log(
-        "Usage: node scripts/check-docs.mjs [--scope all|root|backend|front-office|back-office|e2e] [--sample N] [--self-test]",
+        "Usage: node scripts/check-docs.mjs [--scope all|root|backend|front-office|back-office] [--sample N] [--self-test]",
       );
       process.exit(0);
     } else throw new Error(`unknown argument: ${argument}`);
@@ -775,54 +758,9 @@ function parseArguments(argumentsList) {
   return { selected, sampleSize, selfTest };
 }
 
-function writeFixture(directory, files) {
-  for (const [path, text] of Object.entries(files)) {
-    const file = resolve(directory, path);
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, text);
-  }
-}
-
-function e2eFixtureFailures(files) {
-  mkdirSync(resolve(root, ".codex/tmp"), { recursive: true });
-  const directory = mkdtempSync(
-    resolve(root, ".codex/tmp/check-docs-self-test-"),
-  );
-  try {
-    writeFixture(directory, {
-      "e2e/README.md":
-        "# E2E\n\nКраткое назначение.\n\n## Структура каталога\n\n```text\ne2e/\n└── docs/\n```\n\n[Документация](docs/INDEX.md)\n",
-      "e2e/AGENTS.md": "[Документация](docs/INDEX.md)\n",
-      "e2e/docs/INDEX.md": "# E2E\n",
-      ...files,
-    });
-    const scope = {
-      name: "e2e",
-      appRoot: resolve(directory, "e2e"),
-      docs: relative(root, resolve(directory, "e2e/docs")),
-      index: relative(root, resolve(directory, "e2e/docs/INDEX.md")),
-    };
-    const firstFailure = failures.length;
-    validateScope(scope);
-    checkReadmeStructures(readmesIn(scope.appRoot), scope.name);
-    return failures.splice(firstFailure);
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-}
-
 function runSelfTest() {
   const expected = (actual, value, name) => {
     if (actual !== value) throw new Error(`self-test failed: ${name}`);
-  };
-  const finds = (files, message, name) => {
-    if (
-      !e2eFixtureFailures(files).some((failure) =>
-        failure.message.includes(message),
-      )
-    ) {
-      throw new Error(`self-test failed: ${name}`);
-    }
   };
   expected(
     links("[valid](note.md) `[[not-a-link]]` [[Note|label]]").join(","),
@@ -854,7 +792,6 @@ function runSelfTest() {
     "../../back-office/package.json",
     "json source extension",
   );
-  expected(Boolean(SCOPES.e2e), true, "e2e scope");
   expected(
     wikilinks("[valid](note.md) `[[not-a-link]]` [[Note|label]]").join(","),
     "[[Note|label]]",
@@ -864,79 +801,6 @@ function runSelfTest() {
     needsIndex(resolve(root, "docs")),
     true,
     "nested docs directory needs index",
-  );
-  finds(
-    {
-      "e2e/README.md": "# E2E\n\nКраткое назначение.\n",
-    },
-    "must contain exactly one",
-    "missing README structure section",
-  );
-  finds(
-    {
-      "e2e/README.md":
-        "# E2E\n\nКраткое назначение.\n\n## Команды\n\n## Структура каталога\n\n```text\ne2e/\n```\n",
-    },
-    "must be the first level-two heading",
-    "README structure section order",
-  );
-  finds(
-    {
-      "e2e/README.md":
-        "# E2E\n\nКраткое назначение.\n\n## Структура каталога\n\nТекст вместо дерева.\n",
-    },
-    "must be followed by a fenced text tree",
-    "README structure tree",
-  );
-  finds(
-    {
-      "e2e/docs/child/INDEX.md": "[Родитель](../INDEX.md)\n",
-    },
-    "missing child INDEX.md link",
-    "parent to child index",
-  );
-  finds(
-    {
-      "e2e/docs/INDEX.md": "[Нет](missing.md)\n",
-    },
-    "broken link",
-    "broken link",
-  );
-  finds(
-    {
-      "e2e/docs/INDEX.md": "[Каталог](pages/)\n",
-      "e2e/docs/pages/.keep": "",
-    },
-    "link must target a file",
-    "directory link",
-  );
-  finds(
-    {
-      "e2e/docs/INDEX.md": "[[Guide]]\n",
-      "e2e/docs/Guide.md": "# Guide\n",
-    },
-    "Obsidian wikilink is not allowed",
-    "wikilink",
-  );
-  expected(
-    e2eFixtureFailures({
-      "e2e/docs/INDEX.md": "[Guide](Guide.md)\n",
-      "e2e/docs/Guide.md": "# Guide\n",
-    }).length,
-    0,
-    "e2e navigation without legacy checks",
-  );
-  expected(
-    e2eFixtureFailures({
-      "e2e/generated/README.md": "# Generated\n",
-      "e2e/vendor/README.md": "# Vendor\n",
-      "e2e/docs/generated/README.md": "# Generated\n",
-      "e2e/docs/generated/Note.md": "# Generated note\n",
-      "e2e/docs/vendor/README.md": "# Vendor\n",
-      "e2e/docs/vendor/Note.md": "# Vendor note\n",
-    }).length,
-    0,
-    "generated and vendor files are excluded",
   );
 }
 

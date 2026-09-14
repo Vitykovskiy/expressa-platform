@@ -126,3 +126,33 @@ export type PublicMenuModifierOption = {
   isDefault: boolean;
   isAvailable: boolean;
 };
+
+/** The v3 pricing projection intentionally has no physical-unit semantics. */
+export type PublicMenuV3PriceChoice = {
+  id: string;
+  portionLabel: string;
+  price: number;
+  isAvailable: boolean;
+};
+
+export type PublicMenuV3Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number | null;
+  portionLabel: string | null;
+  isAvailable: boolean;
+  priceChoices: PublicMenuV3PriceChoice[];
+};
+
+export type PublicMenuV3Category = {
+  id: string;
+  name: string;
+  description: string;
+  products: PublicMenuV3Product[];
+};
+
+export type PublicMenuV3 = {
+  acceptsNewOrders: boolean;
+  categories: PublicMenuV3Category[];
+};

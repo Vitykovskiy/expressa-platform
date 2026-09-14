@@ -1,69 +1,16 @@
 ---
-title: Резервное копирование и восстановление
+title: Данные development
 type: operations
 owner: root
-last_verified: 2026-08-16
+last_verified: 2026-09-14
 sources:
-  - ../../deploy/compose.yml
-  - ../../deploy/backup.sh
-  - ../../deploy/restore-verify.sh
+  - ../../deploy/deploy.sh
+  - ../../backend/schema.sql
 ---
 
-# Резервное копирование и восстановление
+# Данные development
 
-PostgreSQL использует именованный Docker volume. Ежедневный GitHub Actions запуск
-`operations-verification.yml` вызывает `backup.sh` на development-host: тот
-обращается к уже запущенному PostgreSQL через `docker exec` и явный
-`POSTGRES_CONTAINER`, создаёт `pg_dump`, шифрует его AES-256-CBC с PBKDF2 и
-хранит вне runtime volume. Для каждой копии
-создаётся sibling HMAC-SHA-256 с отдельным ключом целостности; restore проверяет
-MAC до расшифровки. Копии старше
-`BACKUP_RETENTION_DAYS` удаляются. После успеха
-скрипт записывает текстовую метрику node-exporter
-`expressa_backup_last_success_timestamp_seconds`; её контролирует alert.
-[Backup script](../../deploy/backup.sh),
-[alert](../../deploy/prometheus/alerts.yml).
-
-Поставка всегда передаёт `BACKUP_RETENTION_DAYS=7`, поэтому рабочие копии
-хранятся семь дней. Перед любым изменением Compose deployment проверяет, что
-пути к ключам шифрования и HMAC указывают на owner-owned обычные читаемые
-файлы с режимом `0600`; символьные ссылки и другой режим отклоняются.
-
-Workflow использует user-owned каталоги development
-`/srv/expressa/development/state/operations/{backups,backup-metrics}` с режимом
-`0700`. Ключи backup и VAPID передаются на host только для запуска через
-NUL-разделённый stdin. Ключи backup записываются в каталог временной поставки
-как файлы `0600`; в `deploy.sh` передаются только их пути и срок хранения, а
-cleanup удаляет каталог вместе с файлами. VAPID не записывается во временные
-файлы или `runtime.env`. Значения ключей, пароля и `runtime.env` не попадают в
-логи, Git или evidence-артефакт.
-
-`restore-verify.sh` принимает путь к конкретной копии, ключи шифрования и
-целостности, `runtime.env`,
-`compose.yml` и три immutable image reference. Он создаёт отдельные Compose
-project, volume и сети, проверяет MAC, расшифровывает копию, применяет миграции, ждёт backend
-и проверяет `/health/ready` и непустое меню в `/api/v2/public/menu`. Имя
-допускаемой копии — `expressa-YYYYMMDDTHHMMSSZ.sql.enc`; выбирается только
-новейшая корректная UTC-копия. RPO — разность UTC между началом restore и
-временем из имени копии, цель `RPO <= 93600s`. RTO — время от момента
-непосредственно перед HMAC-проверкой до успешно проверенного public-menu smoke,
-цель `RTO <= 900s`; очистка изолированных ресурсов в RTO не входит. Отсутствие,
-некорректное или будущее имя, ошибка restore или menu smoke, а также превышение
-любой цели завершают проверку ошибкой. В конце успешный запуск выводит только
-evidence-маркер с фактическими значениями и целями. Его запускают только против
-непроизводственной копии перед выпуском; фактические RPO/RTO попадают в evidence
-только после успешного запуска. [Restore script](../../deploy/restore-verify.sh),
-[проверка выпуска](../95-testing/Release-verification.md).
-
-Перед live-миграцией поставщик запускает без пересоздания уже существующие
-остановленные backend, front и back, делает новую backup с HMAC и выполняет
-изолированное restore. До успешного завершения этой проверки приложения
-остаются доступны; только затем поставщик останавливает их и запускает
-миграцию. Ошибка preflight, backup или restore не останавливает работающие
-приложения.
-
-Подтверждённая проверка: run `31928673857` для
-`930e71cc06b65bb685635a60621937a97e656087`, artifact
-`development-operations-evidence-31928673857`: backup
-`expressa-20260816T051813Z.sql.enc` с HMAC и метрикой, RPO `0/93600s`, RTO
-`16/900s` и public-menu smoke прошли.
+Development не хранит данные между поддерживаемыми поставками. `deploy.sh`
+пересоздаёт PostgreSQL, после чего backend применяет `schema.sql` и seed.
+Поэтому backup, restore, миграции и backfill для development не поддерживаются.
+Постоянные среды появятся только после отдельного решения о модели данных.

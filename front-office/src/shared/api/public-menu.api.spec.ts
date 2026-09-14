@@ -4,6 +4,48 @@ import { ApiClient, ApiError } from "./client";
 import { createPublicMenuApi } from "./public-menu.api";
 
 describe("PublicMenuApi", () => {
+  it("keeps v3 plain portion labels and ordered price choices without parsing", async () => {
+    const response = {
+      acceptsNewOrders: true,
+      categories: [
+        {
+          id: "00000000-0000-4000-8000-000000000001",
+          name: "Кофе",
+          description: "",
+          products: [
+            {
+              id: "00000000-0000-4000-8000-000000000002",
+              name: "Капучино",
+              description: "",
+              price: null,
+              portionLabel: null,
+              isAvailable: true,
+              priceChoices: [
+                {
+                  id: "00000000-0000-4000-8000-000000000003",
+                  portionLabel: "Маленький стакан",
+                  price: 250,
+                  isAvailable: false,
+                },
+                {
+                  id: "00000000-0000-4000-8000-000000000004",
+                  portionLabel: "350 мл",
+                  price: 290,
+                  isAvailable: true,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const menu = await createPublicMenuApi(client(response)).getMenu();
+
+    expect(menu.categories[0]?.products[0]?.priceChoices).toEqual(
+      response.categories[0]?.products[0]?.priceChoices,
+    );
+  });
   it("запрашивает публичное меню exact GET 200 и преобразует вложенные данные", async () => {
     const calls: RequestInit[] = [];
     const menu = await createPublicMenuApi(

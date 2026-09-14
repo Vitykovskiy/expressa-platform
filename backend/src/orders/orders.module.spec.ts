@@ -13,6 +13,8 @@ import { OrdersModule } from "./orders.module";
 import { SendOrderPushUseCase } from "../notifications/application/send-order-push.use-case";
 import { OrdersController } from "./transport/orders.controller";
 import { BackofficeOrdersController } from "./transport/backoffice-orders.controller";
+import { BackofficeOrdersV3Controller } from "./transport/backoffice-orders-v3.controller";
+import { OrdersV3Controller } from "./transport/orders-v3.controller";
 
 describe("OrdersModule", () => {
   it("связывает создание заказа с PostgreSQL и зависимостями аутентификации", async () => {
@@ -55,7 +57,12 @@ describe("OrdersModule", () => {
   it("регистрирует только контроллер заказов и необходимые модули", () => {
     expect(
       Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, OrdersModule),
-    ).toEqual([OrdersController, BackofficeOrdersController]);
+    ).toEqual([
+      OrdersController,
+      BackofficeOrdersController,
+      OrdersV3Controller,
+      BackofficeOrdersV3Controller,
+    ]);
     expect(Reflect.getMetadata(MODULE_METADATA.IMPORTS, OrdersModule)).toEqual([
       AuthModule,
       DatabaseModule,

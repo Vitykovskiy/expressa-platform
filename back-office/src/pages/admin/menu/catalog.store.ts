@@ -19,6 +19,7 @@ import type {
   ModifierGroup,
   ModifierOption,
   Product,
+  ProductPriceChoice,
   ProductVariant,
 } from "./catalog.types";
 
@@ -341,7 +342,16 @@ function toCategory(
 }
 
 function toProduct(product: CatalogApiResult["products"][number]): Product {
-  return { ...product, variants: product.variants.map(toProductVariant) };
+  return {
+    ...product,
+    portionLabel: product.portionLabel ?? null,
+    priceChoices: (product.priceChoices ?? []).map(toProductPriceChoice),
+    variants: product.variants.map(toProductVariant),
+  };
+}
+
+function toProductPriceChoice(choice: ProductPriceChoice): ProductPriceChoice {
+  return { ...choice };
 }
 
 function toProductVariant(

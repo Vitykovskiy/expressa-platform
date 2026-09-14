@@ -1,10 +1,9 @@
 import type {
   CatalogSeed,
-  E2eSeedScenarioDefinition,
   ModifierGroupSeed,
   ModifierOptionSeed,
   ProductSeed,
-  ProductVariantSeed,
+  ProductPriceChoiceSeed,
 } from "./seed.types";
 
 const coffeeCategoryId = "00000000-0000-4000-8000-000000000001";
@@ -15,205 +14,6 @@ const croissantId = "00000000-0000-4000-8000-000000000030";
 const unavailableDessertId = "00000000-0000-4000-8000-000000000040";
 const unpublishedDrinkId = "00000000-0000-4000-8000-000000000050";
 const milkGroupId = "00000000-0000-4000-8000-000000000100";
-
-export const e2eSeedScenarioEnvironmentVariable = "E2E_SEED_SCENARIO";
-
-export const e2eSeedScenarios = [
-  "canonical",
-  "customer-new",
-  "customer-existing",
-  "intake-closed",
-  "modifier-unavailable",
-  "product-unavailable",
-  "size-unavailable",
-  "catalog-mutation",
-  "order-created",
-  "order-accepted",
-  "order-preparing",
-  "order-ready",
-  "order-issued",
-  "order-snapshot",
-  "order-repeat-unavailable",
-  "order-repeat-partial",
-  "customer-history",
-  "queue-populated",
-] as const;
-
-export const e2eSeedScenarioDefinitions: Readonly<
-  Record<(typeof e2eSeedScenarios)[number], E2eSeedScenarioDefinition>
-> = {
-  canonical: {
-    customerState: "new",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "customer-new": {
-    customerState: "new",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "customer-existing": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "intake-closed": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: false,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "modifier-unavailable": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "modifier",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "product-unavailable": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "product",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "size-unavailable": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "size",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "catalog-mutation": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-created": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["CREATED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-accepted": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["ACCEPTED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-preparing": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["PREPARING"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-ready": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["READY"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-issued": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["ISSUED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-snapshot": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["CREATED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-repeat-unavailable": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["ISSUED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "order-repeat-partial": {
-    customerState: "existing",
-    secondCustomerState: "new",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["ISSUED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-  "customer-history": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: [],
-    customerHistoryCount: 21,
-    includeForeignOrder: true,
-  },
-  "queue-populated": {
-    customerState: "existing",
-    secondCustomerState: "existing",
-    acceptsNewOrders: true,
-    unavailableTarget: "none",
-    orderStages: ["CREATED", "ACCEPTED", "PREPARING", "READY", "ISSUED"],
-    customerHistoryCount: 0,
-    includeForeignOrder: false,
-  },
-};
-
-export const e2eSeedIds = {
-  coffeeCategory: coffeeCategoryId,
-  cappuccino: cappuccinoId,
-  cappuccinoMedium: "00000000-0000-4000-8000-000000000012",
-  unavailableDessert: unavailableDessertId,
-  regularMilk: "00000000-0000-4000-8000-000000000101",
-  oatMilk: "00000000-0000-4000-8000-000000000102",
-} as const;
 
 export const catalogSeed: CatalogSeed = {
   categories: [
@@ -323,6 +123,7 @@ export const catalogSeed: CatalogSeed = {
       isAvailable: true,
     },
   ],
+  productPriceChoices: [],
   modifierGroups: [
     {
       id: milkGroupId,
@@ -399,6 +200,20 @@ export const productVariantUpsertSql = `
     product_id = EXCLUDED.product_id,
     size = EXCLUDED.size,
     display_label = EXCLUDED.display_label,
+    price = EXCLUDED.price,
+    sort_order = EXCLUDED.sort_order,
+    is_available = EXCLUDED.is_available,
+    archived_at = NULL
+`;
+
+export const productPriceChoiceUpsertSql = `
+  INSERT INTO product_price_choices (
+    id, product_id, portion_label, price, sort_order, is_available, archived_at
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, NULL)
+  ON CONFLICT (id) DO UPDATE SET
+    product_id = EXCLUDED.product_id,
+    portion_label = EXCLUDED.portion_label,
     price = EXCLUDED.price,
     sort_order = EXCLUDED.sort_order,
     is_available = EXCLUDED.is_available,
@@ -672,8 +487,9 @@ const customerProductRows = [
 
 const customerProductId = (suffix: string) =>
   `10000000-0000-4000-8000-000000000${suffix}`;
-const customerVariantId = (suffix: string, variant: number) =>
-  `10000000-0000-4000-8100-${suffix.padStart(8, "0")}${variant.toString().padStart(4, "0")}`;
+const customerPriceChoiceId = (suffix: string, choice: number) =>
+  `10000000-0000-4000-8200-${suffix.padStart(8, "0")}${choice.toString().padStart(4, "0")}`;
+const retiredCustomerPriceChoiceId = "10000000-0000-4000-8200-000000000000";
 
 const customerProducts: ProductSeed[] = customerProductRows.map(
   (row, sortOrder) => {
@@ -687,14 +503,20 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
       displayLabel,
     ] = row;
     const isDrink = type === "DRINK";
+    const priceChoices = Array.isArray(pricing)
+      ? (pricing as readonly (readonly [string, number])[])
+      : null;
+    const singlePriceChoice =
+      priceChoices?.length === 1 ? priceChoices[0] : undefined;
     return {
       id: customerProductId(suffix),
       categoryId: customerCategoryIds[categoryIndex as number]!,
       type,
       name,
       description,
-      displayLabel: isDrink ? null : (displayLabel ?? null),
-      price: isDrink ? null : (pricing as number),
+      displayLabel:
+        singlePriceChoice?.[0] ?? (isDrink ? null : (displayLabel ?? null)),
+      price: singlePriceChoice?.[1] ?? (isDrink ? null : (pricing as number)),
       sortOrder,
       isActive: true,
       isAvailable: true,
@@ -702,16 +524,16 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
   },
 );
 
-const customerProductVariants: ProductVariantSeed[] =
+const customerProductPriceChoices: ProductPriceChoiceSeed[] =
   customerProductRows.flatMap((row) => {
     const [suffix, , type, , , pricing] = row;
-    if (type !== "DRINK") return [];
+    if (type !== "DRINK" || !Array.isArray(pricing) || pricing.length < 2)
+      return [];
     return (pricing as readonly (readonly [string, number])[]).map(
-      ([displayLabel, price], sortOrder) => ({
-        id: customerVariantId(suffix, sortOrder + 1),
+      ([portionLabel, price], sortOrder) => ({
+        id: customerPriceChoiceId(suffix, sortOrder + 1),
         productId: customerProductId(suffix),
-        size: (sortOrder === 0 ? "S" : "M") as "S" | "M",
-        displayLabel,
+        portionLabel,
         price,
         sortOrder,
         isAvailable: true,
@@ -844,7 +666,8 @@ export const customerMenuCatalogSeed: CatalogSeed = {
     isActive: true,
   })),
   products: customerProducts,
-  productVariants: customerProductVariants,
+  productVariants: [],
+  productPriceChoices: customerProductPriceChoices,
   modifierGroups: customerModifierGroups,
   modifierOptions: customerModifierOptions,
   categoryModifierGroups: [],
@@ -862,11 +685,14 @@ export const developmentCatalogOwnedIds = {
     unpublishedDrinkId,
   ],
   variants: [
-    ...customerProductVariants.map((variant) => variant.id),
     "00000000-0000-4000-8000-000000000011",
     "00000000-0000-4000-8000-000000000012",
     "00000000-0000-4000-8000-000000000013",
     "00000000-0000-4000-8000-000000000021",
+  ],
+  priceChoices: [
+    ...customerProductPriceChoices.map((choice) => choice.id),
+    retiredCustomerPriceChoiceId,
   ],
   groups: [...customerModifierGroups.map((group) => group.id), milkGroupId],
   options: [

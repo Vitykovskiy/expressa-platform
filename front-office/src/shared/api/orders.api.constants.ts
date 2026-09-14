@@ -1,7 +1,7 @@
 export const ordersPaths = {
-  create: "/orders",
-  details: (orderId: string) => `/orders/${orderId}`,
-  list: "/orders",
+  create: "../v3/orders",
+  details: (orderId: string) => `../v3/orders/${orderId}`,
+  list: "../v3/orders",
 } as const;
 
 export const ordersStatuses = {
@@ -17,8 +17,6 @@ export const customerOrderStages = [
   "READY",
   "ISSUED",
 ] as const;
-
-export const ordersSizes = ["S", "M", "L"] as const;
 
 export const ordersUuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -4,14 +4,17 @@ import type {
   Availability,
   AvailabilityApiError,
   AvailabilityCategoryDto,
+  AvailabilityCatalogV3Dto,
   AvailabilityCategoryModifierGroupDto,
   AvailabilityEntityType,
   AvailabilityGroup,
   AvailabilityModifierDto,
   AvailabilityModifierGroupDto,
   AvailabilityProductDto,
+  AvailabilityPriceChoiceDto,
   AvailabilityResponseDto,
   AvailabilityUpdate,
+  AvailabilityV3ProductDto,
   AvailabilityVariantDto,
   ServiceIntake,
   ServiceIntakeDto,
@@ -21,14 +24,22 @@ export class AvailabilityApi {
   constructor(private readonly client: ApiClient) {}
 
   async get(accessToken: string): Promise<Availability> {
-    const response = await this.request(
-      "/backoffice/availability",
-      isAvailabilityResponseDto,
-      accessToken,
-      "GET",
-    );
+    const [response, catalog] = await Promise.all([
+      this.request(
+        "/backoffice/availability",
+        isAvailabilityResponseDto,
+        accessToken,
+        "GET",
+      ),
+      this.request(
+        "/../v3/backoffice/catalog",
+        isAvailabilityCatalogV3Dto,
+        accessToken,
+        "GET",
+      ),
+    ]);
 
-    return toAvailability(response);
+    return toAvailability(response, catalog);
   }
 
   update(
@@ -37,6 +48,15 @@ export class AvailabilityApi {
     id: string,
     isAvailable: boolean,
   ): Promise<AvailabilityUpdate> {
+    if (type === "priceChoice") {
+      return this.request(
+        `/../v3/backoffice/availability/price-choice/${id}`,
+        isPriceChoiceAvailabilityUpdate,
+        accessToken,
+        "PATCH",
+        { isAvailable },
+      ).then((update) => ({ ...update, type: "priceChoice" as const }));
+    }
     return this.request(
       `/backoffice/availability/${type}/${id}`,
       isAvailabilityUpdate,
@@ -101,12 +121,15 @@ function toAvailabilityApiError(error: unknown): AvailabilityApiError {
   };
 }
 
-function toAvailability(response: AvailabilityResponseDto): Availability {
+function toAvailability(
+  response: AvailabilityResponseDto,
+  catalog: AvailabilityCatalogV3Dto,
+): Availability {
   const groups = response.categories
     .filter((category) => category.isActive)
     .slice()
     .sort(bySortOrder)
-    .map((category) => toAvailabilityGroup(category, response));
+    .map((category) => toAvailabilityGroup(category, response, catalog));
 
   return { groups, intake: toServiceIntake(response.intake) };
 }
@@ -122,18 +145,18 @@ function toServiceIntake(intake: ServiceIntakeDto): ServiceIntake {
 function toAvailabilityGroup(
   category: AvailabilityCategoryDto,
   response: AvailabilityResponseDto,
+  catalog: AvailabilityCatalogV3Dto,
 ): AvailabilityGroup {
-  const products = response.products
+  const products = catalog.products
     .filter((product) => product.categoryId === category.id && product.isActive)
     .slice()
     .sort(bySortOrder);
   const productItems = products.flatMap((product) => [
     toProductItem(product),
-    ...response.productVariants
-      .filter((variant) => variant.productId === product.id)
+    ...product.priceChoices
       .slice()
       .sort(bySortOrder)
-      .map((variant) => toVariantItem(product, variant)),
+      .map((choice) => toPriceChoiceItem(product, choice)),
   ]);
   const modifierItems = response.categoryModifierGroups
     .filter((assignment) => assignment.categoryId === category.id)
@@ -160,7 +183,9 @@ function toAvailabilityGroup(
   };
 }
 
-function toProductItem(product: AvailabilityProductDto) {
+function toProductItem(
+  product: AvailabilityProductDto | AvailabilityV3ProductDto,
+) {
   return {
     id: product.id,
     isAvailable: product.isAvailable,
@@ -170,17 +195,62 @@ function toProductItem(product: AvailabilityProductDto) {
   };
 }
 
-function toVariantItem(
-  product: AvailabilityProductDto,
-  variant: AvailabilityVariantDto,
+function toPriceChoiceItem(
+  product: AvailabilityV3ProductDto,
+  choice: AvailabilityPriceChoiceDto,
 ) {
   return {
-    id: variant.id,
-    isAvailable: variant.isAvailable,
-    label: `${product.name} · ${variant.size}`,
-    sublabel: "Размер",
-    type: "variant" as const,
+    id: choice.id,
+    isAvailable: choice.isAvailable,
+    label: `${product.name} · ${choice.portionLabel}`,
+    sublabel: "Порция",
+    type: "priceChoice" as const,
   };
+}
+
+function isAvailabilityCatalogV3Dto(
+  value: unknown,
+): value is AvailabilityCatalogV3Dto {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.categories) ||
+    !Array.isArray(value.products)
+  )
+    return false;
+  return (
+    value.categories.every(isAvailabilityCategory) &&
+    value.products.every(isAvailabilityV3Product)
+  );
+}
+
+function isAvailabilityV3Product(
+  value: unknown,
+): value is AvailabilityV3ProductDto {
+  if (
+    !isRecord(value) ||
+    !isUuid(value.id) ||
+    !isUuid(value.categoryId) ||
+    typeof value.isActive !== "boolean" ||
+    typeof value.isAvailable !== "boolean" ||
+    !isString(value.name) ||
+    !isNonNegativeNumber(value.sortOrder) ||
+    !Array.isArray(value.priceChoices)
+  )
+    return false;
+  return value.priceChoices.every(isAvailabilityPriceChoice);
+}
+
+function isAvailabilityPriceChoice(
+  value: unknown,
+): value is AvailabilityPriceChoiceDto {
+  return (
+    isRecord(value) &&
+    isUuid(value.id) &&
+    typeof value.isAvailable === "boolean" &&
+    isString(value.portionLabel) &&
+    isNonNegativeNumber(value.price) &&
+    isNonNegativeNumber(value.sortOrder)
+  );
 }
 
 function toModifierItem(
@@ -236,6 +306,17 @@ function isAvailabilityUpdate(value: unknown): value is AvailabilityUpdate {
   return (
     isRecord(value) &&
     isAvailabilityEntityType(value.type) &&
+    isUuid(value.id) &&
+    typeof value.isAvailable === "boolean"
+  );
+}
+
+function isPriceChoiceAvailabilityUpdate(
+  value: unknown,
+): value is Omit<AvailabilityUpdate, "type"> & { type: "price_choice" } {
+  return (
+    isRecord(value) &&
+    value.type === "price_choice" &&
     isUuid(value.id) &&
     typeof value.isAvailable === "boolean"
   );
@@ -400,7 +481,12 @@ function bySortOrder<T extends { sortOrder: number }>(left: T, right: T) {
 function isAvailabilityEntityType(
   value: unknown,
 ): value is AvailabilityEntityType {
-  return value === "modifier" || value === "product" || value === "variant";
+  return (
+    value === "modifier" ||
+    value === "product" ||
+    value === "priceChoice" ||
+    value === "variant"
+  );
 }
 
 function isUuid(value: unknown): value is string {
@@ -422,6 +508,10 @@ function isDateTime(value: unknown): value is string {
 
 function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
+}
+
+function isNonNegativeNumber(value: unknown): value is number {
+  return isInteger(value) && value >= 0;
 }
 
 function isString(value: unknown): value is string {

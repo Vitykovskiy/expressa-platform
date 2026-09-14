@@ -36,10 +36,20 @@ export interface Product {
   name: string;
   description: string;
   price: number | null;
+  portionLabel?: string | null;
+  priceChoices?: readonly ProductPriceChoice[];
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
   variants: readonly ProductVariant[];
+}
+
+export interface ProductPriceChoice {
+  id: string;
+  portionLabel: string;
+  price: number;
+  sortOrder: number;
+  isAvailable: boolean;
 }
 
 export interface ProductVariant {

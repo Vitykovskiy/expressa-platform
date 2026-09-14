@@ -13,7 +13,7 @@ import type { OrderRequest } from "../../src/orders/domain/order.types";
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
 
-function runScript(script: "migrate" | "seed"): void {
+function runScript(script: "seed"): void {
   execFileSync("npm", ["run", script], {
     cwd: resolve(__dirname, "../.."),
     env: {
@@ -72,7 +72,6 @@ describe("PostgreSQL unit of work заказа", () => {
     }
     pool = new Pool({ connectionString: databaseUrl });
     unitOfWork = new PostgresOrderUnitOfWork({ pool });
-    runScript("migrate");
     runScript("seed");
   });
 

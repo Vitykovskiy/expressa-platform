@@ -99,32 +99,6 @@
         >
           {{ categoryError }}
         </p>
-        <label :for="typeId">Тип товара</label>
-        <AdminSelect
-          :id="typeId"
-          v-model="type"
-          :aria-describedby="typeError ? typeErrorId : undefined"
-          :aria-invalid="Boolean(typeError)"
-          class="edit-dialog-input edit-dialog-type-input"
-          :disabled="props.disabled"
-          @update:model-value="dismissFieldError('type')"
-        >
-          <option
-            v-for="option in PRODUCT_TYPE_OPTIONS"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </AdminSelect>
-        <p
-          v-if="typeError"
-          :id="typeErrorId"
-          class="edit-dialog-error"
-          role="alert"
-        >
-          {{ typeError }}
-        </p>
         <label :for="descriptionId">Описание</label>
         <AdminTextField
           :id="descriptionId"
@@ -182,125 +156,90 @@
         >
           {{ availableError }}
         </p>
-        <template v-if="type === 'DRINK'">
-          <label>Размеры и цены, ₽</label>
-          <div
-            v-for="(variant, index) in variants"
-            :key="variant.size"
-            class="size-row"
-          >
-            <div class="size-row-heading">
-              <span>{{ variant.size }}</span>
-              <strong :id="`edit-product-size-${variant.size}`"
-                >Использовать размер {{ variant.size }}</strong
-              >
-              <AdminToggle
-                :model-value="variant.isConfigured"
-                :aria-labelledby="`edit-product-size-${variant.size}`"
-                :disabled="
-                  props.disabled ||
-                  (variant.isConfigured && configuredVariants.length === 1)
-                "
-                @update:model-value="
-                  updateVariant(index, 'isConfigured', Boolean($event))
-                "
-              />
-            </div>
-            <div v-if="variant.isConfigured" class="size-row-fields">
-              <label :for="`edit-product-price-${variant.size}`">Цена, ₽</label>
-              <AdminTextField
-                :id="`edit-product-price-${variant.size}`"
-                :aria-label="`Цена ${variant.size}, ₽`"
-                :aria-describedby="variantsError ? variantsErrorId : undefined"
-                :aria-invalid="Boolean(variantsError)"
-                :model-value="variant.price"
-                class="edit-dialog-input"
-                :disabled="props.disabled"
-                inputmode="numeric"
-                min="0"
-                type="number"
-                @blur="touch('variants')"
-                @input="
-                  updateVariant(
-                    index,
-                    'price',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-              <strong>Доступен</strong>
-              <AdminToggle
-                :model-value="variant.isAvailable"
-                :aria-label="`Размер ${variant.size} доступен`"
-                :aria-describedby="variantsError ? variantsErrorId : undefined"
-                :aria-invalid="Boolean(variantsError)"
-                :disabled="props.disabled"
-                @update:model-value="
-                  updateVariant(index, 'isAvailable', Boolean($event))
-                "
-              />
-            </div>
-            <div v-if="variant.isConfigured" class="size-row-order">
-              <span>Порядок</span>
-              <AdminButton
-                :aria-label="`Поднять размер ${variant.size}`"
-                :disabled="
-                  props.disabled || configuredVariantIndex(index) === 0
-                "
-                class="size-order-button"
-                type="button"
-                variant="secondary"
-                @click="moveConfiguredVariant(index, -1)"
-                >↑</AdminButton
-              >
-              <AdminButton
-                :aria-label="`Опустить размер ${variant.size}`"
-                :disabled="
-                  props.disabled ||
-                  configuredVariantIndex(index) ===
-                    configuredVariants.length - 1
-                "
-                class="size-order-button"
-                type="button"
-                variant="secondary"
-                @click="moveConfiguredVariant(index, 1)"
-                >↓</AdminButton
-              >
-            </div>
+        <section class="edit-dialog-pricing" aria-label="Цены и порции">
+          <div class="edit-dialog-pricing-heading">
+            <strong>Цена и порция</strong>
+            <AdminButton
+              v-if="!isMultiple"
+              :disabled="props.disabled"
+              type="button"
+              variant="secondary"
+              @click="enableMultiple"
+              >Несколько цен</AdminButton
+            >
           </div>
-          <p
-            v-if="variantsError"
-            :id="variantsErrorId"
-            class="edit-dialog-error"
-            role="alert"
-          >
-            {{ variantsError }}
-          </p>
-        </template>
-        <template v-else>
-          <label :for="priceId">Цена, ₽</label>
-          <AdminTextField
-            :id="priceId"
-            v-model="price"
-            :aria-describedby="priceError ? priceErrorId : undefined"
-            :aria-invalid="Boolean(priceError)"
-            class="edit-dialog-input"
+          <PriceFields
+            v-if="!isMultiple"
+            v-model:price="price"
+            v-model:portion-label="portionLabel"
             :disabled="props.disabled"
-            inputmode="numeric"
-            min="0"
-            type="number"
-            @blur="touch('price')"
-            @update:model-value="dismissFieldError('price')"
+            :error="priceError"
           />
-          <p
-            v-if="priceError"
-            :id="priceErrorId"
-            class="edit-dialog-error"
-            role="alert"
-          >
-            {{ priceError }}
-          </p>
-        </template>
+          <template v-else>
+            <section
+              v-for="(choice, index) in priceChoices"
+              :key="choice.id ?? index"
+              :aria-label="`Вариант ${index + 1}`"
+              class="edit-dialog-choice"
+              role="group"
+            >
+              <PriceFields
+                :price="choice.price"
+                :portion-label="choice.portionLabel"
+                :disabled="props.disabled"
+                :error="choiceError(index)"
+                required-label
+                @update:price="updateChoice(index, 'price', $event)"
+                @update:portion-label="
+                  updateChoice(index, 'portionLabel', $event)
+                "
+              />
+              <div class="edit-dialog-choice-actions">
+                <AdminToggle
+                  :model-value="choice.isAvailable"
+                  :aria-label="`Вариант ${index + 1} доступен`"
+                  :disabled="props.disabled"
+                  @update:model-value="
+                    updateChoice(index, 'isAvailable', Boolean($event))
+                  "
+                />
+                <AdminButton
+                  :aria-label="`Поднять вариант ${index + 1}`"
+                  :disabled="props.disabled || index === 0"
+                  type="button"
+                  variant="ghost"
+                  @click="moveChoice(index, -1)"
+                  >↑</AdminButton
+                >
+                <AdminButton
+                  :aria-label="`Опустить вариант ${index + 1}`"
+                  :disabled="
+                    props.disabled || index === priceChoices.length - 1
+                  "
+                  type="button"
+                  variant="ghost"
+                  @click="moveChoice(index, 1)"
+                  >↓</AdminButton
+                >
+                <AdminButton
+                  :aria-label="`Удалить вариант ${index + 1}`"
+                  :disabled="props.disabled"
+                  type="button"
+                  variant="ghost"
+                  @click="removeChoice(index)"
+                  >Удалить</AdminButton
+                >
+              </div>
+            </section>
+            <AdminButton
+              :disabled="props.disabled"
+              type="button"
+              variant="secondary"
+              @click="addChoice"
+              >Добавить вариант</AdminButton
+            >
+          </template>
+        </section>
       </v-card-text>
       <v-card-actions
         class="edit-dialog-actions admin-dialog-actions admin-dialog-actions--with-destructive"
@@ -354,14 +293,14 @@ import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
-import { PRODUCT_TYPE_OPTIONS } from "./AddProductDialog.constants";
-import { createEditProductVariantDrafts } from "./EditProductDialog.constants";
+import { createPriceChoiceDraft } from "./AddProductDialog.constants";
+import { PriceFields } from "./AddProductDialog.vue";
 import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   ProductFormData,
   ProductFormField,
-  ProductVariantDraft,
-  ProductVariantMoveDirection,
+  PriceChoiceDraft,
+  PriceOptionProductFormData,
 } from "./AddProductDialog.types";
 import type {
   EditProductDialogEmits,
@@ -376,19 +315,18 @@ const props = withDefaults(defineProps<EditProductDialogProps>(), {
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<EditProductDialogEmits>();
 const categoryIdValue = shallowRef("");
-const type = shallowRef<"DRINK" | "OTHER">("OTHER");
 const name = shallowRef("");
 const description = shallowRef("");
 const price = shallowRef("");
+const portionLabel = shallowRef("");
+const isMultiple = shallowRef(false);
+const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const dismissedFieldErrors = shallowRef<
   Partial<Record<ProductFormField, true>>
 >({});
 const touched = shallowRef<Partial<Record<ProductFormField, true>>>({});
-const variants = shallowRef<ProductVariantDraft[]>(
-  createEditProductVariantDrafts(null),
-);
 const hasSaveOutcome = computed(
   () =>
     props.disabled || props.saveOutcome !== "idle" || props.saveError !== null,
@@ -397,17 +335,12 @@ const deleteOpen = shallowRef(false);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const nameId = `edit-product-name-${useId()}`;
 const categoryId = `edit-product-category-${useId()}`;
-const typeId = `edit-product-type-${useId()}`;
 const descriptionId = `edit-product-description-${useId()}`;
-const priceId = `edit-product-price-${useId()}`;
 const activeLabelId = `edit-product-active-${useId()}`;
 const availableLabelId = `edit-product-available-${useId()}`;
 const categoryErrorId = `edit-product-category-error-${useId()}`;
 const nameErrorId = `edit-product-name-error-${useId()}`;
-const typeErrorId = `edit-product-type-error-${useId()}`;
 const descriptionErrorId = `edit-product-description-error-${useId()}`;
-const priceErrorId = `edit-product-price-error-${useId()}`;
-const variantsErrorId = `edit-product-variants-error-${useId()}`;
 const activeErrorId = `edit-product-active-error-${useId()}`;
 const availableErrorId = `edit-product-available-error-${useId()}`;
 const nameInput =
@@ -424,7 +357,6 @@ const categoryError = computed(() =>
     "Выберите категорию",
   ),
 );
-const typeError = computed(() => fieldError("type"));
 const nameError = computed(() =>
   localError("name", Boolean(name.value.trim()), "Введите название товара"),
 );
@@ -438,42 +370,28 @@ const priceError = computed(() =>
 );
 const activeError = computed(() => fieldError("isActive"));
 const availableError = computed(() => fieldError("isAvailable"));
-const configuredVariants = computed(() =>
-  variants.value.filter((variant) => variant.isConfigured),
-);
-const variantsValidityError = computed(() => {
-  if (configuredVariants.value.length === 0)
-    return "Выберите хотя бы один размер";
-  if (
-    configuredVariants.value.some(
-      (variant) => !isNonNegativeInteger(variant.price),
-    )
-  )
-    return "Укажите цену для каждого выбранного размера";
-  if (
-    isActive.value &&
-    !configuredVariants.value.some((variant) => variant.isAvailable)
-  )
-    return "Для активного товара нужен хотя бы один доступный размер";
-  return fieldError("variants");
-});
-const variantsError = computed(
-  () =>
-    fieldError("variants") ??
-    (touched.value.variants ? variantsValidityError.value : undefined),
-);
 const isValid = computed(
   () =>
     Boolean(categoryIdValue.value) &&
     Boolean(name.value.trim()) &&
-    !typeError.value &&
-    (type.value === "DRINK"
-      ? !variantsValidityError.value
+    (isMultiple.value
+      ? priceChoices.value.every(validChoice)
       : isNonNegativeInteger(price.value) && !fieldError("price")),
 );
 
 function isNonNegativeInteger(value: string): boolean {
   return /^\d+$/.test(value);
+}
+function validChoice(choice: PriceChoiceDraft): boolean {
+  return (
+    isNonNegativeInteger(choice.price) && Boolean(choice.portionLabel.trim())
+  );
+}
+function choiceError(index: number): string | undefined {
+  const choice = priceChoices.value[index];
+  return choice && !validChoice(choice)
+    ? "Укажите подпись порции и цену в целых рублях"
+    : fieldError(`priceChoices.${index}.price` as ProductFormField);
 }
 function fieldError(field: ProductFormField): string | undefined {
   return dismissedFieldErrors.value[field]
@@ -495,20 +413,26 @@ function touch(field: ProductFormField): void {
 function dismissFieldError(field: ProductFormField): void {
   dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
 }
-function resetBranchVisibility(field: "price" | "variants"): void {
-  touched.value = { ...touched.value, [field]: false };
-  dismissedFieldErrors.value = { ...dismissedFieldErrors.value, [field]: true };
-}
 function resetDraft(): void {
   const product = props.product;
   categoryIdValue.value = product?.categoryId ?? "";
-  type.value = product?.type ?? "OTHER";
   name.value = product?.name ?? "";
   description.value = product?.description ?? "";
   price.value = product?.price?.toString() ?? "";
+  portionLabel.value = product?.portionLabel ?? "";
+  priceChoices.value = (product?.priceChoices ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((choice) => ({ ...choice, price: choice.price.toString() }));
+  isMultiple.value = priceChoices.value.length > 1;
+  if (priceChoices.value.length === 1) {
+    const [choice] = priceChoices.value;
+    price.value = choice.price;
+    portionLabel.value = choice.portionLabel;
+    priceChoices.value = [];
+  }
   isActive.value = product?.isActive ?? true;
   isAvailable.value = product?.isAvailable ?? true;
-  variants.value = createEditProductVariantDrafts(product);
   dismissedFieldErrors.value = {};
   touched.value = {};
 }
@@ -528,58 +452,51 @@ function updateOpen(value: boolean): void {
   if (value) open.value = true;
   else closeAsCancelled();
 }
-function updateVariant(
-  index: number,
-  field: "price" | "isConfigured" | "isAvailable",
-  value: string | boolean,
-): void {
-  if (props.disabled) return;
-  touch("variants");
-  dismissFieldError("variants");
-  if (field === "isConfigured") {
-    const selected = { ...variants.value[index], isConfigured: Boolean(value) };
-    const remaining = variants.value.filter(
-      (_, currentIndex) => currentIndex !== index,
-    );
-    const configured = remaining.filter((variant) => variant.isConfigured);
-    const unconfigured = remaining.filter((variant) => !variant.isConfigured);
-    variants.value = selected.isConfigured
-      ? [...configured, selected, ...unconfigured]
-      : [...configured, ...unconfigured, selected];
-    return;
-  }
-  variants.value = variants.value.map((variant, currentIndex) =>
-    currentIndex === index ? { ...variant, [field]: value } : variant,
-  );
-}
-function configuredVariantIndex(index: number): number {
-  return configuredVariants.value.findIndex(
-    (variant) => variant === variants.value[index],
-  );
-}
-function moveConfiguredVariant(
-  index: number,
-  direction: ProductVariantMoveDirection,
-): void {
-  if (props.disabled) return;
-  const targetIndex = index + direction;
-  if (
-    !variants.value[index]?.isConfigured ||
-    !variants.value[targetIndex]?.isConfigured
-  )
-    return;
-  const reordered = [...variants.value];
-  [reordered[index], reordered[targetIndex]] = [
-    reordered[targetIndex],
-    reordered[index],
+function enableMultiple(): void {
+  priceChoices.value = [
+    {
+      portionLabel: portionLabel.value,
+      price: price.value,
+      isAvailable: isAvailable.value,
+    },
+    createPriceChoiceDraft(),
   ];
-  variants.value = reordered;
-  dismissFieldError("variants");
+  isMultiple.value = true;
+}
+function addChoice(): void {
+  priceChoices.value = [...priceChoices.value, createPriceChoiceDraft()];
+}
+function updateChoice(
+  index: number,
+  field: "isAvailable" | "portionLabel" | "price",
+  value: boolean | string,
+): void {
+  priceChoices.value = priceChoices.value.map((choice, current) =>
+    current === index ? { ...choice, [field]: value } : choice,
+  );
+}
+function removeChoice(index: number): void {
+  priceChoices.value = priceChoices.value.filter(
+    (_, current) => current !== index,
+  );
+  if (priceChoices.value.length === 1) {
+    const [choice] = priceChoices.value;
+    price.value = choice.price;
+    portionLabel.value = choice.portionLabel;
+    priceChoices.value = [];
+    isMultiple.value = false;
+  }
+}
+function moveChoice(index: number, direction: -1 | 1): void {
+  const target = index + direction;
+  if (target < 0 || target >= priceChoices.value.length) return;
+  const next = [...priceChoices.value];
+  [next[index], next[target]] = [next[target]!, next[index]!];
+  priceChoices.value = next;
 }
 function updateIsActive(value: boolean | null): void {
   if (props.disabled) return;
   isActive.value = Boolean(value);
-  if (type.value === "DRINK") touch("variants");
   dismissFieldError("isActive");
 }
 function updateIsAvailable(value: boolean | null): void {
@@ -589,36 +506,33 @@ function updateIsAvailable(value: boolean | null): void {
 }
 function save(): void {
   if (props.disabled) return;
-  touched.value = { categoryId: true, name: true, price: true, variants: true };
+  touched.value = {
+    categoryId: true,
+    name: true,
+    price: true,
+    priceChoices: true,
+  };
   if (!isValid.value) return;
-  const data: ProductFormData =
-    type.value === "DRINK"
-      ? {
-          categoryId: categoryIdValue.value,
-          type: "DRINK",
-          name: name.value.trim(),
-          description: description.value.trim(),
-          isActive: isActive.value,
-          isAvailable: isAvailable.value,
-          price: null,
-          variants: configuredVariants.value.map((variant, sortOrder) => ({
-            ...(variant.id ? { id: variant.id } : {}),
-            size: variant.size,
-            price: Number(variant.price),
-            sortOrder,
-            isAvailable: variant.isAvailable,
-          })),
-        }
-      : {
-          categoryId: categoryIdValue.value,
-          type: "OTHER",
-          name: name.value.trim(),
-          description: description.value.trim(),
-          isActive: isActive.value,
-          isAvailable: isAvailable.value,
-          price: Number(price.value),
-          variants: [],
-        };
+  const data: ProductFormData = {
+    categoryId: categoryIdValue.value,
+    type: "OTHER",
+    name: name.value.trim(),
+    description: description.value.trim(),
+    isActive: isActive.value,
+    isAvailable: isAvailable.value,
+    price: isMultiple.value ? null : Number(price.value),
+    portionLabel: isMultiple.value ? null : portionLabel.value.trim() || null,
+    priceChoices: isMultiple.value
+      ? priceChoices.value.map((choice, sortOrder) => ({
+          ...(choice.id ? { id: choice.id } : {}),
+          portionLabel: choice.portionLabel.trim(),
+          price: Number(choice.price),
+          sortOrder,
+          isAvailable: choice.isAvailable,
+        }))
+      : [],
+    variants: [],
+  } satisfies PriceOptionProductFormData;
   emit("save", data);
 }
 function confirmDelete(): void {
@@ -644,6 +558,7 @@ watch(
       restoreFocus();
     }
   },
+  { immediate: true },
 );
 watch(
   () => props.fieldErrors,
@@ -651,11 +566,6 @@ watch(
     dismissedFieldErrors.value = {};
   },
 );
-watch(type, (current, previous) => {
-  if (current !== previous) {
-    resetBranchVisibility(current === "DRINK" ? "variants" : "price");
-  }
-});
 </script>
 
 <style scoped lang="scss">

@@ -63,3 +63,23 @@ stateless. Details: [ADR-005](../../../docs/20-architecture/ADR/ADR-005-customer
 [checkout](../../src/features/checkout/checkout.store.spec.ts).
 
 Карта раздела: [архитектура](INDEX.md).
+
+## Граница одной и нескольких цен
+
+Сейчас stores и runtime-валидаторы работают с `/api/v2` и фиксированными
+`S/M/L` с `displayLabel`. Принятый в
+[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
+целевой контракт ещё не реализован.
+
+Целевой v3 API-слой валидирует одну из двух форм. Одна цена приходит на товаре
+как `price` и nullable `portionLabel` с пустым `priceChoices`. Несколько цен
+приходят как минимум два упорядоченных choice со стабильными `id`, обязательной
+подписью, ценой и ручной доступностью; цена и подпись товара тогда равны null.
+Клиент не знает kind, amount, unit, preset или default.
+
+Menu state сохраняет серверный порядок и вычисляет первый доступный choice.
+Cart state хранит nullable `priceChoiceId` и показанную подпись: для одной цены
+id отсутствует, а для нескольких обязателен. History принимает только
+серверный снимок подписи и цены; legacy `S/M/L` остаётся строкой без физической
+интерпретации. Это target state: runtime-контракты и проверки ещё должны быть
+переключены согласованно.

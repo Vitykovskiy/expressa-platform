@@ -35,10 +35,20 @@ export interface CatalogProduct {
   name: string;
   description: string;
   price: number | null;
+  portionLabel?: string | null;
+  priceChoices?: readonly CatalogPriceChoice[];
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
   variants: readonly CatalogProductVariant[];
+}
+
+export interface CatalogPriceChoice {
+  id: string;
+  portionLabel: string;
+  price: number;
+  sortOrder: number;
+  isAvailable: boolean;
 }
 
 export interface CatalogModifierOption {
@@ -96,6 +106,8 @@ export interface CreateCatalogProduct {
   name: string;
   description: string;
   price: number | null;
+  portionLabel?: string | null;
+  priceChoices?: readonly Omit<CatalogPriceChoice, "id">[];
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
@@ -209,6 +221,35 @@ export interface CatalogResponseDto {
   modifierGroups: readonly CatalogModifierGroupDto[];
   modifierOptions: readonly CatalogModifierOptionDto[];
   categoryModifierGroups: readonly CatalogCategoryModifierGroupAssignmentDto[];
+}
+
+export interface AdminV3CatalogResponseDto {
+  categories: readonly CatalogCategoryDto[];
+  products: readonly AdminV3ProductDto[];
+  modifierGroups: readonly CatalogModifierGroupDto[];
+  modifierOptions: readonly CatalogModifierOptionDto[];
+  categoryModifierGroups: readonly CatalogCategoryModifierGroupAssignmentDto[];
+}
+
+export interface AdminV3PriceChoiceDto {
+  id: string;
+  portionLabel: string;
+  price: number;
+  sortOrder: number;
+  isAvailable: boolean;
+}
+
+export interface AdminV3ProductDto {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number | null;
+  portionLabel: string | null;
+  priceChoices: readonly AdminV3PriceChoiceDto[];
+  sortOrder: number;
+  isActive: boolean;
+  isAvailable: boolean;
 }
 
 export interface CatalogProductResponseDto {

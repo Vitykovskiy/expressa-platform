@@ -16,6 +16,7 @@ import { ManageCategoriesUseCase } from "./application/manage-categories.use-cas
 import { ManageCategoryModifiersUseCase } from "./application/manage-category-modifiers.use-case";
 import { ManageModifiersUseCase } from "./application/manage-modifiers.use-case";
 import { ManageProductsUseCase } from "./application/manage-products.use-case";
+import { ManageV3ProductsUseCase } from "./application/manage-products.use-case";
 import { ManageAvailabilityUseCase } from "./application/manage-availability.use-case";
 import { ManageServiceIntakeUseCase } from "./application/manage-service-intake.use-case";
 import type {
@@ -25,7 +26,10 @@ import type {
 import type { CategoriesUnitOfWork } from "./application/categories.repository.types";
 import type { CategoryModifiersUnitOfWork } from "./application/category-modifiers.repository.types";
 import type { ModifiersUnitOfWork } from "./application/modifiers.repository.types";
-import type { ProductsUnitOfWork } from "./application/products.repository.types";
+import type {
+  ProductsUnitOfWork,
+  V3ProductsUnitOfWork,
+} from "./application/products.repository.types";
 import type { PublicMenuRepository } from "./application/public-menu.repository.types";
 import {
   adminCatalogRepositoryPort,
@@ -36,23 +40,31 @@ import {
   publicMenuRepositoryPort,
 } from "./catalog.module.constants";
 import { AdminCatalogController } from "./transport/admin-catalog.controller";
+import { AdminCatalogV3Controller } from "./transport/admin-catalog-v3.controller";
 import { CatalogCategoriesController } from "./transport/catalog-categories.controller";
 import { CatalogCategoryModifiersController } from "./transport/catalog-category-modifiers.controller";
 import { CatalogModifiersController } from "./transport/catalog-modifiers.controller";
 import { CatalogProductsController } from "./transport/catalog-products.controller";
+import { CatalogProductsV3Controller } from "./transport/catalog-products-v3.controller";
 import { PublicMenuController } from "./transport/public-menu.controller";
+import { PublicMenuV3Controller } from "./transport/public-menu-v3.controller";
 import { BackofficeAvailabilityController } from "./transport/backoffice-availability.controller";
+import { BackofficeAvailabilityV3Controller } from "./transport/backoffice-availability-v3.controller";
 
 @Module({
   imports: [AuthModule, DatabaseModule],
   controllers: [
     PublicMenuController,
+    PublicMenuV3Controller,
     AdminCatalogController,
+    AdminCatalogV3Controller,
     CatalogCategoriesController,
     CatalogProductsController,
+    CatalogProductsV3Controller,
     CatalogModifiersController,
     CatalogCategoryModifiersController,
     BackofficeAvailabilityController,
+    BackofficeAvailabilityV3Controller,
   ],
   providers: [
     {
@@ -132,6 +144,12 @@ import { BackofficeAvailabilityController } from "./transport/backoffice-availab
       inject: [productsUnitOfWorkPort],
       useFactory: (unitOfWork: ProductsUnitOfWork) =>
         new ManageProductsUseCase(unitOfWork),
+    },
+    {
+      provide: ManageV3ProductsUseCase,
+      inject: [productsUnitOfWorkPort],
+      useFactory: (unitOfWork: ProductsUnitOfWork & V3ProductsUnitOfWork) =>
+        new ManageV3ProductsUseCase(unitOfWork),
     },
     {
       provide: ManageModifiersUseCase,

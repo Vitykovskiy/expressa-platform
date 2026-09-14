@@ -39,8 +39,7 @@ Runtime находится в `src` и разделён по ролям:
 - `entities` содержат предметные данные;
 - `shared` содержит общие примитивы клиента.
 
-Unit-тесты располагаются рядом с runtime-кодом, браузерные сценарии — в
-`tests/e2e`.
+Unit-тесты располагаются рядом с runtime-кодом.
 
 Команды проверки:
 
@@ -48,7 +47,6 @@ Unit-тесты располагаются рядом с runtime-кодом, б�
 - `npm run lint`;
 - `npm run format:check`;
 - `npm test`;
-- `npm run test:e2e`;
 - `npm run contract:check`.
 
 Полный список и параметры — в [package.json](package.json).

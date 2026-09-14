@@ -18,4 +18,4 @@ sources:
 - [Активные и неактивные экраны](Inactive-screens.md) — очередь, доступность и границы неиспользуемого UI.
 - [API-интеграция и граница ошибок](api-integration-and-errors.md) — HTTP-клиент, OpenAPI и проверка контракта.
 
-Проверки сценариев и команд: [95-testing/README.md](../95-testing/README.md). Полное соответствие runtime, API и тестов: [COVERAGE.md](../COVERAGE.md).
+Команды проверки задаёт [package.json](../../package.json). Полное соответствие runtime и API: [COVERAGE.md](../COVERAGE.md).

@@ -27,7 +27,7 @@ describe("OrderPage", () => {
     expect(wrapper.text()).toContain("Заказ принят бариста");
     expect(wrapper.text()).toContain("Заказ №1042");
     expect(wrapper.text()).toContain("Капучино");
-    expect(wrapper.text()).toContain("Размер M");
+    expect(wrapper.text()).toContain("M");
     expect(wrapper.text()).toContain("Овсяное молоко");
     expect(wrapper.text()).toMatch(/Итого560\s₽/u);
     expect(wrapper.text()).toContain("Оплата на кассе при получении");
@@ -394,7 +394,7 @@ describe("OrderPage", () => {
     await flushPromises();
 
     expect(detailRequests).toEqual([
-      { method: "GET", path: `/api/v2/orders/${orderId}` },
+      { method: "GET", path: `/api/v3/orders/${orderId}` },
     ]);
   });
 
@@ -416,8 +416,8 @@ describe("OrderPage", () => {
     await flushPromises();
 
     expect(detailRequests).toEqual([
-      { method: "GET", path: `/api/v2/orders/${orderId}` },
-      { method: "GET", path: `/api/v2/orders/${nextOrderId}` },
+      { method: "GET", path: `/api/v3/orders/${orderId}` },
+      { method: "GET", path: `/api/v3/orders/${nextOrderId}` },
     ]);
   });
 
@@ -692,12 +692,12 @@ describe("OrderPage", () => {
     expect(router.currentRoute.value.path).toBe("/cart");
     expect(cart.repeatWarnings).toEqual([
       {
-        context: "Размер S, Овсяное молоко",
+        context: "S, Овсяное молоко",
         productName: "Капучино",
         reason: "Выбранная конфигурация больше недоступна.",
       },
       {
-        context: "Размер M, Овсяное молоко",
+        context: "M, Овсяное молоко",
         productName: "Капучино",
         reason: "Выбранная конфигурация больше недоступна.",
       },
@@ -864,7 +864,7 @@ function isCurrentDetailRequest(
   pathname: string,
   currentOrderId: string,
 ): boolean {
-  return method === "GET" && pathname === `/api/v2/orders/${currentOrderId}`;
+  return method === "GET" && pathname === `/api/v3/orders/${currentOrderId}`;
 }
 
 type PushOptions = {

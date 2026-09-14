@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CatalogApi, CatalogApiError } from "./catalog.api";
 import type {
+  AdminV3CatalogResponseDto,
+  AdminV3ProductDto,
   CatalogCategory,
   CatalogModifierGroupDto,
   CatalogModifierOption,
@@ -44,6 +46,39 @@ function catalogResponse(): CatalogResponseDto {
       },
     ],
     products: [product()],
+  };
+}
+
+function v3Product(): AdminV3ProductDto {
+  return {
+    categoryId,
+    description: "Кофе с молоком",
+    id: productId,
+    isActive: true,
+    isAvailable: true,
+    name: "Капучино",
+    portionLabel: null,
+    price: null,
+    priceChoices: [
+      {
+        id: variantId,
+        isAvailable: true,
+        portionLabel: "250 мл",
+        price: 320,
+        sortOrder: 0,
+      },
+    ],
+    sortOrder: 0,
+  };
+}
+
+function v3CatalogResponse(): AdminV3CatalogResponseDto {
+  return {
+    categories: [category()],
+    categoryModifierGroups: [{ categoryId, groupId, sortOrder: 0 }],
+    modifierGroups: [group()],
+    modifierOptions: [option()],
+    products: [v3Product()],
   };
 }
 
@@ -220,7 +255,7 @@ describe("CatalogApi", () => {
     const api = createCatalogApi(
       vi
         .fn<typeof fetch>()
-        .mockResolvedValue(jsonResponse(catalogResponse(), 200)),
+        .mockResolvedValue(jsonResponse(v3CatalogResponse(), 200)),
     );
 
     await expect(api.getCatalog("access-token")).resolves.toEqual({
@@ -231,14 +266,15 @@ describe("CatalogApi", () => {
       modifierGroups: [{ ...group(), options: [option()] }],
       products: [
         {
-          ...product(),
-          variants: [
+          ...v3Product(),
+          type: "OTHER",
+          variants: [],
+          priceChoices: [
             {
               id: variantId,
               isAvailable: true,
               price: 320,
-              productId,
-              size: "M",
+              portionLabel: "250 мл",
               sortOrder: 0,
             },
           ],
@@ -391,15 +427,17 @@ describe("CatalogApi", () => {
       name: "Капучино",
       price: null,
       sortOrder: 0,
-      type: "DRINK" as const,
-      variants: [
+      portionLabel: null,
+      priceChoices: [
         {
           isAvailable: true,
+          portionLabel: "250 мл",
           price: 320,
-          size: "M" as const,
           sortOrder: 0,
         },
       ],
+      type: "OTHER" as const,
+      variants: [],
     };
 
     await expect(
@@ -459,16 +497,36 @@ describe("CatalogApi", () => {
       isAvailable: true,
       name: "Капучино",
       price: null,
-      sortOrder: 0,
-      type: "DRINK" as const,
-      variants: [
+      portionLabel: null,
+      priceChoices: [
         {
           isAvailable: true,
+          portionLabel: "250 мл",
           price: 320,
-          size: "M" as const,
           sortOrder: 0,
         },
       ],
+      sortOrder: 0,
+      type: "OTHER" as const,
+      variants: [],
+    };
+    const v3ProductCommand = {
+      categoryId,
+      description: "Кофе с молоком",
+      isActive: true,
+      isAvailable: true,
+      name: "Капучино",
+      portionLabel: null,
+      price: null,
+      priceChoices: [
+        {
+          isAvailable: true,
+          portionLabel: "250 мл",
+          price: 320,
+          sortOrder: 0,
+        },
+      ],
+      sortOrder: 0,
     };
     const optionCommand = {
       isAvailable: true,
@@ -506,15 +564,15 @@ describe("CatalogApi", () => {
         };
       }),
     ).toEqual([
-      request("GET", "/backoffice/catalog"),
+      requestV3("GET", "/backoffice/catalog"),
       request("POST", "/backoffice/catalog/categories"),
       request("PATCH", `/backoffice/catalog/categories/${categoryId}`),
       request("POST", "/backoffice/catalog/categories/reorder"),
       request("DELETE", `/backoffice/catalog/categories/${categoryId}`),
-      request("POST", "/backoffice/catalog/products"),
-      request("PATCH", `/backoffice/catalog/products/${productId}`),
-      request("POST", "/backoffice/catalog/products/reorder"),
-      request("DELETE", `/backoffice/catalog/products/${productId}`),
+      requestV3("POST", "/backoffice/catalog/products"),
+      requestV3("PATCH", `/backoffice/catalog/products/${productId}`),
+      requestV3("POST", "/backoffice/catalog/products/reorder"),
+      requestV3("DELETE", `/backoffice/catalog/products/${productId}`),
       request("DELETE", `/backoffice/catalog/modifier-groups/${groupId}`),
       request("POST", `/backoffice/catalog/modifier-groups/${groupId}/options`),
       request(
@@ -538,8 +596,8 @@ describe("CatalogApi", () => {
       JSON.stringify(categoryCommand),
       JSON.stringify({ categoryIds: [categoryId] }),
       undefined,
-      JSON.stringify(productCommand),
-      JSON.stringify(productCommand),
+      JSON.stringify(v3ProductCommand),
+      JSON.stringify(v3ProductCommand),
       JSON.stringify({ categoryId, productIds: [productId] }),
       undefined,
       undefined,
@@ -620,6 +678,10 @@ describe("CatalogApi", () => {
 });
 
 function responseFor(method: string | undefined, url: string): Response {
+  if (method === "GET" && url.includes("/api/v3/backoffice/catalog")) {
+    return jsonResponse(v3CatalogResponse(), 200);
+  }
+
   if (method === "GET") {
     return jsonResponse(catalogResponse(), 200);
   }
@@ -653,11 +715,11 @@ function responseFor(method: string | undefined, url: string): Response {
   }
 
   if (url.includes("/products/reorder")) {
-    return jsonResponse([productResponse()], 200);
+    return jsonResponse([v3Product()], 200);
   }
 
   if (url.includes("/products")) {
-    return jsonResponse(productResponse(), method === "POST" ? 201 : 200);
+    return jsonResponse(v3Product(), method === "POST" ? 201 : 200);
   }
 
   if (url.endsWith("/categories/reorder")) {
@@ -672,5 +734,13 @@ function request(method: string, path: string): object {
     authorization: "Bearer access-token",
     method,
     url: `https://api.example.test/api/v2${path}`,
+  };
+}
+
+function requestV3(method: string, path: string): object {
+  return {
+    authorization: "Bearer access-token",
+    method,
+    url: `https://api.example.test/api/v3${path}`,
   };
 }

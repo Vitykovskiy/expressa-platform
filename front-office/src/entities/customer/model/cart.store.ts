@@ -17,6 +17,7 @@ import type {
   CartVariantSelection,
   ConfiguredCartItemDraft,
   DrinkCartItem,
+  LegacyConfiguredDrinkCartItem,
   OtherCartItem,
 } from "./customer.types";
 
@@ -154,7 +155,7 @@ function isLegacyCartItem(value: unknown): boolean {
 
 function isConfiguredCartItem(
   value: unknown,
-): value is DrinkCartItem | OtherCartItem {
+): value is DrinkCartItem | OtherCartItem | LegacyConfiguredDrinkCartItem {
   if (!isConfiguredCartItemShape(value)) {
     return false;
   }
@@ -173,7 +174,7 @@ function isConfiguredCartItemShape(
     return false;
   }
 
-  if (value.type === configuredCartProductTypes[0]) {
+  if (value.type === "DRINK") {
     const selectedVariant = value.selectedVariant;
     if (!isVariantSelection(selectedVariant)) return false;
 
@@ -185,6 +186,18 @@ function isConfiguredCartItemShape(
     );
   }
 
+  if (value.type === "PRICED") {
+    return (
+      isRecord(value.selectedPriceChoice) &&
+      typeof value.selectedPriceChoice.id === "string" &&
+      typeof value.selectedPriceChoice.portionLabel === "string" &&
+      isNonNegativeInteger(value.selectedPriceChoice.price) &&
+      typeof value.portionLabel === "string" &&
+      value.portionLabel === value.selectedPriceChoice.portionLabel &&
+      isNonNegativeInteger(value.price) &&
+      value.price === value.selectedPriceChoice.price
+    );
+  }
   return (
     value.type === configuredCartProductTypes[1] &&
     value.selectedVariant === undefined &&
@@ -295,9 +308,11 @@ function createConfiguredCartItem(
 function createCartItemId(item: ConfiguredCartItemDraft): string {
   return [
     item.productId,
-    item.type === configuredCartProductTypes[0]
+    item.type === "DRINK"
       ? item.selectedVariant.id
-      : item.type,
+      : item.type === "PRICED"
+        ? (item.selectedPriceChoice?.id ?? "direct")
+        : item.type,
     ...item.selectedModifierOptions.map((option) => option.id).sort(),
   ].join(cartConfigurationSeparator);
 }

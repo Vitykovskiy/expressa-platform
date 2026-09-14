@@ -33,10 +33,8 @@
 
 ## Доказательства
 
-- [Миграция заказов](../../../../backend/migrations/0006_e07_orders.sql),
-  [HTTP E2E](../../../../backend/test/e2e/create-order.e2e-spec.ts) и
-  [интеграция транзакции](../../../../backend/test/integration/order-unit-of-work.integration.spec.ts).
-- [Browser checkout E2E](../../../../front-office/tests/e2e/checkout.e2e.spec.ts)
+- [Интеграция транзакции](../../../../backend/test/integration/order-unit-of-work.integration.spec.ts).
+- [Ручная приёмка пользовательских потоков](../../../95-testing/Mandatory-scenarios.md)
   и [front-office CI](../../../../.github/workflows/front-office-ci.yml).
 - [OpenAPI](../../../../backend/openapi/openapi.json) содержит только реализованный
   в E07 `POST /api/v1/orders`.

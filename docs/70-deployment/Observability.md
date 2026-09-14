@@ -15,7 +15,7 @@ Backend выдаёт `/health/live` для процесса, `/health/ready` п�
 непрефиксный `/metrics` для Prometheus. Каждый scrape `/metrics` выполняет
 `SELECT 1` через существующий PostgreSQL boundary и публикует
 `expressa_backend_readiness`: `1` при успехе, `0` при ошибке. Compose health-check backend использует live, а deploy
-script проверяет готовность после миграций. [Health controller](../../backend/src/platform/health/health.controller.ts),
+script проверяет готовность после пересоздания базы, `db:init` и seed. [Health controller](../../backend/src/platform/health/health.controller.ts),
 [метрики](../../backend/src/platform/observability/observability-metrics.service.ts),
 [Compose](../../deploy/compose.yml), [deploy](../../deploy/deploy.sh).
 
@@ -43,8 +43,6 @@ down, отсутствии gauge либо значении `0`. Перед за�
 [alerts](../../deploy/prometheus/alerts.yml),
 [dashboard](../../deploy/grafana/dashboards/expressa-operations.json).
 
-`operations-verification.yml` проверяет delivery Alertmanager изолированно:
-Prometheus передаёт test alert временному receiver, который подтверждает
-состояния `firing` и `resolved`. Получатель и evidence удаляются cleanup;
-санитизированный artifact хранит только acknowledgement; host
-`ALERTMANAGER_CONFIG_FILE` этот workflow не использует.
+Автоматический workflow проверки операций не поддерживается. Проверку
+наблюдаемости и Alertmanager оператор выполняет вручную в development; её
+результат не является E2E-gate или подтверждением постоянного хранения данных.

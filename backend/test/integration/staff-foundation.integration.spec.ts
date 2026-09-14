@@ -19,20 +19,6 @@ function runStaff(...arguments_: string[]): void {
   });
 }
 
-function runMigrations(): void {
-  execFileSync("npm", ["run", "migrate"], {
-    cwd: resolve(__dirname, "../.."),
-    env: {
-      ...process.env,
-      JEST_WORKER_ID: undefined,
-      NODE_ENV: "local",
-      PORT: "3000",
-      DATABASE_URL: databaseUrl,
-    },
-    stdio: "pipe",
-  });
-}
-
 function expectUsageExit(...arguments_: string[]): void {
   try {
     runStaff(...arguments_);
@@ -53,7 +39,6 @@ describe("staff foundation CLI", () => {
     }
 
     pool = new Pool({ connectionString: databaseUrl });
-    runMigrations();
   });
 
   afterAll(async () => {

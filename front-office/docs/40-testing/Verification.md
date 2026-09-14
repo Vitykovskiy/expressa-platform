@@ -10,16 +10,14 @@ sources:
 
 Команды и параметры принадлежат [package.json](../../package.json). `lint`,
 `typecheck`, `test -- --run` и `build` проверяют код; `contract:check` сверяет
-OpenAPI; `test:e2e` запускает приложение.
+OpenAPI.
 
-| Сценарий                               | Основные доказательства                                                                                                                                                                                                                                       |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Меню, навигация, конфигурация, корзина | [MenuPage spec](../../src/pages/MenuPage.spec.ts), [shell spec](../../src/widgets/customer-shell/ShellNavigation.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
-| Phone/OTP и безопасный возврат         | [form spec](../../src/features/auth/AuthForm.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                                                                                  |
-| Оформление и ошибки API                | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                                                                                         |
-| Браузерные сценарии                    | [меню](../../tests/e2e/menu.e2e.spec.ts), [вход](../../tests/e2e/auth.e2e.spec.ts), [оформление](../../tests/e2e/checkout.e2e.spec.ts), [push](../../tests/e2e/push.e2e.spec.ts)                                                                              |
-
-Покрытие объектов и их авторитетные ноты: [COVERAGE](../COVERAGE.md).
+| Сценарий                                                              | Основные доказательства                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Меню, навигация, конфигурация, корзина                                | [MenuPage spec](../../src/pages/MenuPage.spec.ts), [shell spec](../../src/widgets/customer-shell/ShellNavigation.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
+| Phone/OTP и безопасный возврат                                        | [form spec](../../src/features/auth/AuthForm.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                                                                                  |
+| Оформление и ошибки API                                               | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                                                                                         |
+| Покрытие объектов и их авторитетные ноты: [COVERAGE](../COVERAGE.md). |
 
 Visual snapshots с OS suffix — evidence, созданное на указанной платформе из
 одной revision, а не ветка дизайна. Darwin image нельзя выдавать за Linux или

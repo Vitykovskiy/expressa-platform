@@ -8,10 +8,14 @@ import {
 import { rolesMetadataKey } from "../../auth/transport/roles.decorator.constants";
 import { RolesGuard } from "../../auth/transport/roles.guard";
 import { SessionGuard } from "../../auth/transport/session.guard";
-import { ManageProductsUseCase } from "../application/manage-products.use-case";
+import {
+  ManageProductsUseCase,
+  ManageV3ProductsUseCase,
+} from "../application/manage-products.use-case";
 import { ProductAdminError } from "../domain/product-admin.policy";
 import { catalogProductsControllerPath } from "./catalog-products.controller.constants";
 import { CatalogProductsController } from "./catalog-products.controller";
+import { CatalogProductsV3Controller } from "./catalog-products-v3.controller";
 import { ReorderProductsDto } from "./catalog-products.controller.dto";
 
 const swaggerResponsesMetadataKey = "swagger/apiResponse";
@@ -192,6 +196,54 @@ describe("CatalogProductsController", () => {
       format: "uuid",
       isArray: true,
     });
+  });
+});
+
+describe("CatalogProductsV3Controller", () => {
+  const v3Product = {
+    id: "73444b86-4c6f-459e-871d-0f7995c1af36",
+    categoryId: "73444b86-4c6f-459e-871d-0f7995c1af35",
+    name: "Капучино",
+    description: "",
+    price: 250,
+    portionLabel: "250 мл",
+    priceChoices: [],
+    sortOrder: 0,
+    isActive: true,
+    isAvailable: true,
+  };
+  it("passes audit context and exposes reorder/archive without legacy fields", async () => {
+    const manage = {
+      create: jest.fn().mockResolvedValue(v3Product),
+      update: jest.fn(),
+      reorder: jest.fn().mockResolvedValue([v3Product]),
+      archive: jest.fn().mockResolvedValue(undefined),
+    };
+    const controller = new CatalogProductsV3Controller(
+      manage as unknown as ManageV3ProductsUseCase,
+    );
+    await expect(controller.create(v3Product, auth, request)).resolves.toEqual(
+      v3Product,
+    );
+    await expect(
+      controller.reorder(
+        { categoryId: v3Product.categoryId, productIds: [v3Product.id] },
+        auth,
+        request,
+      ),
+    ).resolves.toEqual([v3Product]);
+    await expect(
+      controller.archive(v3Product.id, auth, request),
+    ).resolves.toBeUndefined();
+    expect(manage.create).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: "actor-id", requestId: "request-id" }),
+    );
+    expect(manage.reorder).toHaveBeenCalledWith(
+      expect.objectContaining({ productIds: [v3Product.id] }),
+    );
+    expect(manage.archive).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: v3Product.id }),
+    );
   });
 });
 

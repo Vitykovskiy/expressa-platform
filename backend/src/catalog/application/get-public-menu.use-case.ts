@@ -10,6 +10,8 @@ import type {
   PublicMenuModifierOption,
   PublicMenuProduct,
   PublicMenuProductVariant,
+  PublicMenuV3,
+  PublicMenuV3Product,
 } from "../domain/catalog.types";
 import type {
   PublicMenuCandidates,
@@ -30,6 +32,70 @@ export class GetPublicMenuUseCase {
         .map((category) =>
           createCategory(category, candidates, publishableGroups),
         )
+        .filter((category) => category.products.length > 0),
+    };
+  }
+
+  async executeV3(): Promise<PublicMenuV3> {
+    const candidates = await this.repository.findV3Candidates();
+    return {
+      acceptsNewOrders: candidates.acceptsNewOrders,
+      categories: candidates.categories
+        .filter(isPublishedCatalogEntity)
+        .map((category) => ({
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          products: candidates.products
+            .filter((product) => product.categoryId === category.id)
+            .filter(isPublishedCatalogEntity)
+            .flatMap<PublicMenuV3Product>((product) => {
+              const priceChoices = candidates.priceChoices
+                .filter(
+                  (choice) =>
+                    choice.productId === product.id &&
+                    choice.archivedAt === null,
+                )
+                .map(({ id, portionLabel, price, isAvailable }) => ({
+                  id,
+                  portionLabel,
+                  price,
+                  isAvailable,
+                }));
+              if (
+                priceChoices.length >= 2 &&
+                product.price === null &&
+                product.displayLabel === null
+              ) {
+                return [
+                  {
+                    id: product.id,
+                    name: product.name,
+                    description: product.description,
+                    price: null,
+                    portionLabel: null,
+                    isAvailable: priceChoices.some(
+                      (choice) => choice.isAvailable,
+                    ),
+                    priceChoices,
+                  },
+                ];
+              }
+              if (priceChoices.length !== 0 || product.price === null)
+                return [];
+              return [
+                {
+                  id: product.id,
+                  name: product.name,
+                  description: product.description,
+                  price: product.price,
+                  portionLabel: product.displayLabel ?? null,
+                  isAvailable: product.isAvailable,
+                  priceChoices: [],
+                },
+              ];
+            }),
+        }))
         .filter((category) => category.products.length > 0),
     };
   }

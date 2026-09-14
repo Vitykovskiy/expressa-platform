@@ -184,7 +184,7 @@ async function readCustomerOrders(
   const orderIds = rows.map((row) => readString(row, "id"));
   const [items, modifiers] = await Promise.all([
     client.query<DatabaseRow>(
-      `SELECT id, order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total
+      `SELECT id, order_id, product_id, variant_id, price_choice_id, product_name, size, portion_label, quantity, unit_total, line_total
        FROM order_items WHERE order_id = ANY($1::uuid[]) ORDER BY order_id, sort_order`,
       [orderIds],
     ),
@@ -208,7 +208,7 @@ async function readSnapshot(
 ): Promise<readonly OrderSnapshotItem[]> {
   const [items, modifiers] = await Promise.all([
     client.query<DatabaseRow>(
-      `SELECT id, product_id, variant_id, product_name, size, quantity, unit_total, line_total FROM order_items WHERE order_id = $1 ORDER BY sort_order`,
+      `SELECT id, product_id, variant_id, price_choice_id, product_name, size, portion_label, quantity, unit_total, line_total FROM order_items WHERE order_id = $1 ORDER BY sort_order`,
       [orderId],
     ),
     client.query<DatabaseRow>(
@@ -256,8 +256,10 @@ function snapshotItems(
   return items.map((row) => ({
     productId: readString(row, "product_id"),
     variantId: readNullableString(row, "variant_id"),
+    priceChoiceId: readNullableString(row, "price_choice_id"),
     productName: readString(row, "product_name"),
     size: readNullableSize(row, "size"),
+    portionLabel: readNullableString(row, "portion_label"),
     quantity: readPositiveInteger(row, "quantity"),
     unitTotal: readNonNegativeInteger(row, "unit_total"),
     lineTotal: readNonNegativeInteger(row, "line_total"),

@@ -34,7 +34,15 @@ describe("OrdersApi", () => {
         method: "POST",
       }),
     ]);
-    expect(order).toEqual(orderResponse);
+    expect(order).toMatchObject({
+      ...orderResponse,
+      items: [
+        expect.objectContaining({
+          priceChoiceId: orderResponse.items[0]?.variantId,
+          portionLabel: orderResponse.items[0]?.size,
+        }),
+      ],
+    });
     expect(order).not.toBe(orderResponse);
     expect(order.items[0]).not.toBe(orderResponse.items[0]);
     expect(order.items[0]?.modifiers[0]).not.toBe(
@@ -61,7 +69,12 @@ describe("OrdersApi", () => {
         createOrderRequest,
         idempotencyKey,
       ),
-    ).resolves.toEqual(response);
+    ).resolves.toMatchObject({
+      ...response,
+      items: [
+        expect.objectContaining({ priceChoiceId: null, portionLabel: null }),
+      ],
+    });
   });
 
   it.each(invalidOrderResponses)(

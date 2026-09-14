@@ -1,16 +1,11 @@
 import type { ApiClient } from "./client";
 
-export type PublicMenuApi = {
-  getMenu(): Promise<PublicMenu>;
-};
-
+export type PublicMenuApi = { getMenu(): Promise<PublicMenu> };
 export type PublicMenuApiClient = Pick<ApiClient, "request">;
-
 export type PublicMenu = {
   acceptsNewOrders: boolean;
   categories: PublicMenuCategory[];
 };
-
 export type PublicMenuCategory = {
   id: string;
   name: string;
@@ -18,37 +13,35 @@ export type PublicMenuCategory = {
   products: PublicMenuProduct[];
 };
 
-export type PublicMenuProduct = PublicDrinkMenuProduct | PublicOtherMenuProduct;
-
-export type PublicDrinkMenuProduct = PublicMenuProductBase & {
-  type: "DRINK";
-  price: null;
-  variants: PublicMenuVariant[];
-};
-
-export type PublicOtherMenuProduct = PublicMenuProductBase & {
-  type: "OTHER";
-  price: number;
-  variants: [];
-};
-
-export type PublicMenuProductBase = {
+/** Plain labels are display text, never a measurement to parse. */
+export type PublicMenuProduct = {
   id: string;
   name: string;
   description: string;
-  displayLabel?: string | null;
+  price: number | null;
+  portionLabel?: string | null;
   isAvailable: boolean;
+  priceChoices?: PublicMenuPriceChoice[];
+  /** V3 has no public modifier groups yet; retain the client extension point. */
   modifierGroups: PublicMenuModifierGroup[];
-};
-
-export type PublicMenuVariant = {
-  id: string;
-  size: "S" | "M" | "L";
+  /** Legacy v2 compatibility for stored tests only; v3 responses never populate these. */
+  type?: "DRINK" | "OTHER";
+  variants?: PublicMenuVariant[];
   displayLabel?: string | null;
+};
+export type PublicMenuPriceChoice = {
+  id: string;
+  portionLabel: string;
   price: number;
   isAvailable: boolean;
 };
-
+export type PublicMenuVariant = {
+  id: string;
+  size: "S" | "M" | "L";
+  price: number;
+  isAvailable: boolean;
+  displayLabel?: string | null;
+};
 export type PublicMenuModifierGroup = {
   id: string;
   name: string;
@@ -57,7 +50,6 @@ export type PublicMenuModifierGroup = {
   maxSelect: number;
   options: PublicMenuModifierOption[];
 };
-
 export type PublicMenuModifierOption = {
   id: string;
   name: string;
@@ -70,59 +62,16 @@ export type PublicMenuResponse = {
   acceptsNewOrders: boolean;
   categories: PublicMenuCategoryResponse[];
 };
-
 export type PublicMenuCategoryResponse = {
   id: string;
   name: string;
   description: string;
   products: PublicMenuProductResponse[];
 };
-
-export type PublicMenuProductResponse =
-  PublicDrinkMenuProductResponse | PublicOtherMenuProductResponse;
-
-export type PublicDrinkMenuProductResponse = PublicMenuProductResponseBase & {
-  type: "DRINK";
-  price: null;
-  variants: PublicMenuVariantResponse[];
-};
-
-export type PublicOtherMenuProductResponse = PublicMenuProductResponseBase & {
-  type: "OTHER";
-  price: number;
-  variants: [];
-};
-
-export type PublicMenuProductResponseBase = {
-  id: string;
-  name: string;
-  description: string;
-  displayLabel?: string | null;
-  isAvailable: boolean;
-  modifierGroups: PublicMenuModifierGroupResponse[];
-};
-
-export type PublicMenuVariantResponse = {
-  id: string;
-  size: "S" | "M" | "L";
-  displayLabel?: string | null;
-  price: number;
-  isAvailable: boolean;
-};
-
-export type PublicMenuModifierGroupResponse = {
-  id: string;
-  name: string;
-  selectionType: "single" | "multiple";
-  minSelect: number;
-  maxSelect: number;
-  options: PublicMenuModifierOptionResponse[];
-};
-
-export type PublicMenuModifierOptionResponse = {
-  id: string;
-  name: string;
-  priceDelta: number;
-  isDefault: boolean;
-  isAvailable: boolean;
-};
+export type PublicMenuProductResponse = Omit<
+  PublicMenuProduct,
+  "modifierGroups" | "type" | "variants" | "displayLabel"
+>;
+export type PublicMenuPriceChoiceResponse = PublicMenuPriceChoice;
+export type PublicMenuModifierGroupResponse = PublicMenuModifierGroup;
+export type PublicMenuModifierOptionResponse = PublicMenuModifierOption;

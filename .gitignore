@@ -3,7 +3,6 @@
 !.codex/agents/
 !.codex/agents/*.toml
 .codex/tmp/
-/.playwright-cli/
 /test-results/
 **/.codex/tmp/
 deploy/stand-urls.env

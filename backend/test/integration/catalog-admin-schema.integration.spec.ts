@@ -1,28 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { resolve } from "node:path";
 import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
-
-function runMigrations(): void {
-  execFileSync("npm", ["run", "migrate"], {
-    cwd: resolve(__dirname, "../.."),
-    env: {
-      ...process.env,
-      JEST_WORKER_ID: undefined,
-      NODE_ENV: "local",
-      PORT: "3000",
-      DATABASE_URL: databaseUrl,
-      AUTH_ACCESS_TOKEN_SECRET: "catalog-admin-schema-access-token-secret",
-      AUTH_OTP_PEPPER: "catalog-admin-schema-otp-pepper",
-      AUTH_DEVELOPMENT_OTP: "123456",
-      CORS_ORIGINS: "http://localhost:5173",
-    },
-    stdio: "inherit",
-  });
-}
 
 describe("схема управления каталогом", () => {
   let pool: Pool;
@@ -33,7 +13,6 @@ describe("схема управления каталогом", () => {
     }
 
     pool = new Pool({ connectionString: databaseUrl });
-    runMigrations();
   });
 
   afterAll(async () => {

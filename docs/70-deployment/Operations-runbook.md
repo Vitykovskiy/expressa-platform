@@ -2,139 +2,22 @@
 title: Операционный запуск
 type: operations
 owner: root
-last_verified: 2026-08-16
+last_verified: 2026-09-14
 sources:
   - ../../deploy/deploy.sh
   - ../../deploy/compose.yml
-  - ../../deploy/smoke-production.mjs
-  - ../../.github/workflows/development-delivery.yml
-  - ../../.github/workflows/staging-deploy.yml
-  - ../../.github/workflows/production-promotion.yml
+  - ../../deploy/run-remote.sh
 ---
 
 # Операционный запуск
 
-Поддерживаемая поставка выполняется workflow, а не ручной пересборкой: remote
-script читает VPS `runtime.env`, валидирует ключи, применяет compose, ждёт
-PostgreSQL, запускает миграции и seed, затем проверяет сервисы. [Deploy script](../../deploy/deploy.sh),
-[remote runner](../../deploy/run-remote.sh).
+Поддерживаемый запуск — `deploy.sh --environment development deploy all` через
+development workflow. Скрипт читает VPS `runtime.env`, проверяет обязательные
+секреты и image digest, поднимает PostgreSQL, пересоздаёт development-базу,
+выполняет `db:init` и seed, затем ждёт health backend, front-office и
+back-office.
 
-До первой поставки оператор создаёт `/srv/expressa/development`,
-`/srv/expressa/staging` и `/srv/expressa/production` с `runtime.env` и каталогом `state` для `flock`; на VPS
-должны быть Docker с Compose, локальный registry `127.0.0.1:5000`, внешние
-`expressa-<environment>-edge` и `expressa-<environment>-data`, а для CI
-настроены SSH user/key/known-hosts. Для staging workflow передаёт через SSH
-синтетический staff `BOOTSTRAP_ADMIN_PHONE` и auth/CORS-секреты. Все workflow
-передают VAPID credentials, а development также `AUTH_DEVELOPMENT_OTP`, только
-через NUL-разделённый SSH stdin. Remote runner передаёт их `deploy.sh` для
-текущего процесса поставки; эти значения не сохраняются в `runtime.env`,
-временном каталоге или логах.
-`deploy.sh`
-включает `staging_test` с фиксированным OTP. Allowlist содержит ровно этот staff
-и customer `+79990000001`; другие номера OTP не получают. После health-checks
-поставка автоматически запускает smoke: customer создаёт заказ, staff проверяет
-E08/E09 — запреты ролей и неверного перехода, последовательность
-`CREATED`–`ACCEPTED`–`PREPARING`–`READY`–`ISSUED` и четыре события. Smoke
-оставляет синтетический заказ и аудит. `runtime.env` хранит пароль PostgreSQL,
-но не digest образов; секреты не попадают в Git или логи.
-[Deploy preconditions](../../deploy/deploy.sh), [Compose networks](../../deploy/compose.yml),
-[workflow SSH](../../.github/workflows/staging-deploy.yml).
-
-Auth topology: backend не имеет host port и принимает запросы только из private
-`edge` network. Front-office и back-office имеют разные UI origins и каждый
-проксирует собственный `/api/v2`; host-only refresh cookie никогда не покидает
-origin UI. Nginx добавляет один `X-Forwarded-For` hop, которому backend доверяет
-для security throttle. Публикация backend port или дополнительный proxy без
-изменения этой конфигурации запрещены.
-
-Автоматические migration, seed, внутренние health-проверки и staging smoke
-пишут только именные evidence-маркеры `expressa-release-evidence: check=… status=passed`
-или `expressa-staging-smoke: check=… status=passed`. Маркеры подтверждают
-проверку, но не содержат телефон, OTP, токен, URL или идентификатор заказа.
-
-Для диагностики используются backend `/health/live` и `/health/ready`, client
-`/health` и container health-checks. Значения `runtime.env` — секреты и не
-выводятся. [Compose](../../deploy/compose.yml), [backend health](../../backend/src/platform/health/health.controller.ts).
-
-## Диск VPS
-
-Перед очисткой оператор снимает только читаемый инвентарь `df`, `docker system df`,
-контейнеров, образов, volume, networks, `/var/log` и `/tmp`. Защищены работающие
-контейнеры и используемые ими digest образов, все volume и networks,
-`/srv/expressa/<environment>/runtime.env` и копии в пределах срока хранения.
-Удаляют только по инвентарю остановленные одноразовые контейнеры, неиспользуемые
-образы и build cache, истёкшие копии и временные каталоги поставки. Команда
-`docker system prune --volumes` не применяется: она может удалить данные
-состояния. После очистки оператор повторяет инвентарь и health-проверки сред.
-
-Перед созданием переменной окружения, GitHub Secret, SSH alias или Compose project
-оператор сверяет существующие источники и корни сред: `/srv/expressa/<environment>`
-с `runtime.env`, workflows и `deploy.sh` задают `expressa-<environment>`.
-
-## Тестовые доступы и ротация
-
-Standalone E2E запускается только в development. Он использует administrator
-из `BOOTSTRAP_ADMIN_PHONE`, OTP из `AUTH_DEVELOPMENT_OTP`, а staff и customer —
-два свободных номера из пула `+79990000002…+79990000004`. До seed и staff upsert runner и VPS
-runtime отклоняют совпадение любой пары этих ролей. `E2E_REPORT_ALLOWLIST` —
-единственный новый E2E secret; порядок запуска описан в
-[E2E на VPS](E2E-on-VPS.md). Адреса Customer, Admin и API приведены в
-[средах](Environments.md).
-
-Замена `BOOTSTRAP_ADMIN_PHONE` добавляет или повышает нового administrator, но
-сама по себе не отзывает доступ прежнего номера. Для ротации оператор сначала
-назначает новый номер, проверяет его вход, затем отдельно понижает прежний
-номер командой `npm run staff -- upsert --phone +7XXXXXXXXXX --role customer`;
-текущие сессии сразу теряют staff-доступ благодаря DB role lookup. После этого
-оператор заменяет `BOOTSTRAP_ADMIN_PHONE` на новый
-номер формата `+7XXXXXXXXXX` в GitHub Environments `development` и `staging`.
-Значение вводится только в интерфейсе GitHub Secrets и не помещается в команду,
-Git, логи или `runtime.env`. Следующая поставка seed-ом создаёт либо обновляет
-пользователя с ролью `administrator`.
-
-Для восстановления development OTP оператор заменяет
-`AUTH_DEVELOPMENT_OTP` в GitHub Environment `development`. Значение вводится
-только в интерфейсе GitHub Secrets; workflow передаёт его NUL-разделённым stdin
-только на время поставки, без записи в `runtime.env`, временный каталог или
-логи.
-
-После изменения GitHub Secret оператор запускает development
-delivery из `main`; для staging повторно запускает deployment существующего
-тега. Production не меняется. После успешной поставки проверяет оба API по
-`/health/live` и `/health/ready`, вход customer и administrator с OTP текущей
-среды, роль `administrator` в Admin и staging smoke. Если ротация меняет номер,
-обновляет таблицу [CI/CD](CI-CD.md) тем же change.
-
-Для наблюдаемости оператор запускает отдельный `ops-compose.yml` в edge-сети
-среды и проверяет непрефиксный backend `/metrics`, панель Grafana и targets
-Prometheus. При alert readiness/5xx
-сначала проверяет `/health/ready`, затем backend logs с `x-request-id`; при
-backup alert — последний operations artifact, каталог копий и текстовую метрику
-node-exporter. Получатель alert настраивается вне Git. [Наблюдаемость](Observability.md),
-[backup/restore](Backup-and-restore.md).
-
-Перед выпуском оператор запускает изолированную проверку восстановления только
-на тестовой копии и сохраняет её безопасный evidence-маркер с RPO/RTO. После
-приёмки staging владелец репозитория вручную запускает production workflow из
-`main` с `confirm_production=true` и тегом `staging-v*`. До secrets и SSH
-workflow проверяет эти условия; `environment: production` остаётся только
-меткой аудита и поставки. Workflow проверяет успешную staging-приёмку и точный
-трёхкомпонентный manifest, затем запускает migration, seed, health и API smoke
-в изолированной production-среде. Production `runtime.env` с PostgreSQL, auth,
-SMS и bootstrap-секретами
-предварительно создаются на VPS; [production.env.example](../../deploy/production.env.example)
-показывает только форму manifest и не используется для поставки.
-
-Проверка операций выполняется из `main` workflow
-`operations-verification.yml` ежедневно по cron `0 2 * * *` или вручную с
-`confirm_operations_verification=true`; concurrency не допускает параллельных
-запусков. Она использует Environment `development`, не запускает staging или
-production поставку, создаёт backup, проверяет isolated restore с public-menu
-smoke и безопасный test receiver Alertmanager. Артефакт
-`development-operations-evidence-<run_id>` содержит только имя копии, revision,
-фактические RPO/RTO с целями и acknowledgement test receiver; он не содержит
-секретов, URL или credentials. Run `31928673857` для
-`930e71cc06b65bb685635a60621937a97e656087` подтвердил backup
-`expressa-20260816T051813Z.sql.enc` с HMAC и метрикой, RPO `0/93600s`, RTO
-`16/900s`, delivery `firing` и `resolved`; artifact
-`development-operations-evidence-31928673857`. [Operations workflow](../../.github/workflows/operations-verification.yml).
+Пересоздание разрешено только compose-проекту `expressa-development` и его
+сервису PostgreSQL. Это намеренно удаляет данные development. Миграций,
+backfill, restore и отдельного E2E-стенда нет. Пользовательские потоки
+принимаются вручную в работающем интерфейсе.

@@ -5,7 +5,6 @@ last_verified: 2026-08-11
 sources:
   - ../../backend/src/auth/domain/otp-policy.constants.ts
   - ../../backend/src/auth/transport/auth.controller.ts
-  - ../../backend/test/e2e/auth.e2e-spec.ts
 ---
 
 # Идентификация и доступ

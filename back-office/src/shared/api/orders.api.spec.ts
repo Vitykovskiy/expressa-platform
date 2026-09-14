@@ -39,7 +39,18 @@ function detailsResponse() {
         to: "ACCEPTED" as const,
       },
     ],
-    snapshot: [],
+    snapshot: [
+      {
+        productId: "44444444-4444-4444-8444-444444444444",
+        priceChoiceId: "55555555-5555-4555-8555-555555555555",
+        productName: "Капучино",
+        portionLabel: "350 мл",
+        quantity: 1,
+        unitTotal: 320,
+        lineTotal: 320,
+        modifiers: [],
+      },
+    ],
   };
 }
 
@@ -57,7 +68,7 @@ describe("OrdersApi", () => {
     },
   );
 
-  it("передаёт поиск и стадию каноническому маршруту очереди", async () => {
+  it("читает очередь v3 и сохраняет подпись порции из снимка", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response([order]));
 
     await expect(
@@ -69,7 +80,7 @@ describe("OrdersApi", () => {
 
     const [url, request] = fetcher.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(
-      "https://api.example.test/api/v2/backoffice/orders?number=20300102-001&stage=CREATED",
+      "https://api.example.test/api/v3/backoffice/orders?number=20300102-001&stage=CREATED",
     );
     expect(request).toMatchObject({
       method: "GET",
@@ -77,11 +88,12 @@ describe("OrdersApi", () => {
     });
   });
 
-  it("вызывает только следующее действие и сохраняет детали", async () => {
+  it("выполняет переход через v2 и читает обновлённые детали v3", async () => {
     const details = { ...detailsResponse(), events: [] };
     const fetcher = vi
       .fn<typeof fetch>()
-      .mockResolvedValue(response({ ...details, stage: "ACCEPTED" }));
+      .mockResolvedValueOnce(response({ ...details, stage: "ACCEPTED" }))
+      .mockResolvedValueOnce(response({ ...details, stage: "ACCEPTED" }));
 
     await expect(
       createApi(fetcher).transition("access-token", details),
@@ -89,6 +101,30 @@ describe("OrdersApi", () => {
 
     expect(fetcher.mock.calls[0]?.[0]).toBe(
       `https://api.example.test/api/v2/backoffice/orders/${order.id}/accept`,
+    );
+    expect(fetcher.mock.calls[1]?.[0]).toBe(
+      `https://api.example.test/api/v3/backoffice/orders/${order.id}`,
+    );
+  });
+
+  it("принимает v3-снимок с произвольной подписью порции", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response(detailsResponse()));
+
+    await expect(
+      createApi(fetcher).details("access-token", order.id),
+    ).resolves.toMatchObject({
+      snapshot: [
+        {
+          priceChoiceId: "55555555-5555-4555-8555-555555555555",
+          portionLabel: "350 мл",
+        },
+      ],
+    });
+
+    expect(fetcher.mock.calls[0]?.[0]).toBe(
+      `https://api.example.test/api/v3/backoffice/orders/${order.id}`,
     );
   });
 
@@ -121,19 +157,19 @@ describe("OrdersApi", () => {
   });
 
   it.each([
-    ["без подписи автора", undefined],
-    ["с неверной подписью автора", "79991234567"],
-  ])("отклоняет детали %s", async (_description, actorLabelValue) => {
+    ["без подписи порции", undefined],
+    ["с нестроковой подписью порции", 350],
+  ])("отклоняет v3-снимок %s", async (_description, portionLabelValue) => {
     const details = detailsResponse();
-    const event = { ...details.events[0] } as Record<string, unknown>;
-    if (actorLabelValue === undefined) {
-      delete event.actorLabel;
+    const item = { ...details.snapshot[0] } as Record<string, unknown>;
+    if (portionLabelValue === undefined) {
+      delete item.portionLabel;
     } else {
-      event.actorLabel = actorLabelValue;
+      item.portionLabel = portionLabelValue;
     }
     const fetcher = vi
       .fn<typeof fetch>()
-      .mockResolvedValue(response({ ...details, events: [event] }));
+      .mockResolvedValue(response({ ...details, snapshot: [item] }));
 
     await expect(
       createApi(fetcher).details("access-token", order.id),

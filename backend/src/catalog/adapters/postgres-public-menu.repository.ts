@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import type {
   PublicMenuCandidates,
   PublicMenuRepository,
+  PublicMenuV3Candidates,
 } from "../application/public-menu.repository.types";
 import {
   acceptsNewOrdersSettingKey,
@@ -105,6 +106,41 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
     } finally {
       client.release();
     }
+  }
+
+  async findV3Candidates(): Promise<PublicMenuV3Candidates> {
+    const [settings, categories, products, choices] = await Promise.all([
+      this.pool.query<DatabaseRow>(
+        "SELECT value FROM service_settings WHERE key = $1",
+        [acceptsNewOrdersSettingKey],
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id, name, description, sort_order, is_active, archived_at FROM categories ORDER BY sort_order",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id, category_id, type, name, description, portion_label, price, sort_order, is_active, is_available, archived_at FROM products ORDER BY sort_order",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id, product_id, portion_label, price, sort_order, is_available, archived_at FROM product_price_choices ORDER BY product_id, sort_order",
+      ),
+    ]);
+    return {
+      acceptsNewOrders: readAcceptsNewOrders(settings.rows),
+      categories: categories.rows.map(parseCategory),
+      products: products.rows.map((row) => ({
+        ...parseProduct(row),
+        displayLabel: readNullableString(row, "portion_label"),
+      })),
+      priceChoices: choices.rows.map((row) => ({
+        id: readString(row, "id"),
+        productId: readString(row, "product_id"),
+        portionLabel: readString(row, "portion_label"),
+        price: readNonNegativeInteger(row, "price"),
+        sortOrder: readNonNegativeInteger(row, "sort_order"),
+        isAvailable: readBoolean(row, "is_available"),
+        archivedAt: readNullableDate(row, "archived_at"),
+      })),
+    };
   }
 }
 

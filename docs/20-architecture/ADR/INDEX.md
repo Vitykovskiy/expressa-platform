@@ -7,3 +7,5 @@
 - [ADR-003: локальная документация и Storybook](ADR-003-local-application-documentation-and-storybook.md)
 - [ADR-004: удаление Storybook](ADR-004-remove-storybook.md)
 - [ADR-005: связь customer-уведомлений с установкой](ADR-005-customer-notification-association.md)
+- [ADR-006: одна цена и варианты цены товара](ADR-006-product-variant-portions.md)
+- [ADR-007: одноразовые базы и текущая схема](ADR-007-disposable-database-bootstrap.md)

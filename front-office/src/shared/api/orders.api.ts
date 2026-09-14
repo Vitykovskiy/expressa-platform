@@ -1,7 +1,6 @@
 import {
   customerOrderStages,
   ordersPaths,
-  ordersSizes,
   ordersStages,
   ordersStatuses,
   ordersUuidPattern,
@@ -131,9 +130,17 @@ function isOrderItemResponse(value: unknown): value is OrderItemResponse {
   return (
     isRecord(value) &&
     isUuid(value.productId) &&
-    (value.variantId === null || isUuid(value.variantId)) &&
+    (value.priceChoiceId === null ||
+      isUuid(value.priceChoiceId) ||
+      value.variantId === null ||
+      isUuid(value.variantId)) &&
     typeof value.productName === "string" &&
-    (value.size === null || ordersSizes.some((size) => size === value.size)) &&
+    (value.portionLabel === null ||
+      typeof value.portionLabel === "string" ||
+      value.size === null ||
+      value.size === "S" ||
+      value.size === "M" ||
+      value.size === "L") &&
     isInteger(value.quantity) &&
     isNonNegativeInt32(value.unitTotal) &&
     isNonNegativeInt32(value.lineTotal) &&
@@ -176,9 +183,9 @@ function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
 function toOrderItem(response: OrderItemResponse): OrderItem {
   return {
     productId: response.productId,
-    variantId: response.variantId,
+    priceChoiceId: response.priceChoiceId ?? response.variantId ?? null,
     productName: response.productName,
-    size: response.size,
+    portionLabel: response.portionLabel ?? response.size ?? null,
     quantity: response.quantity,
     unitTotal: response.unitTotal,
     lineTotal: response.lineTotal,

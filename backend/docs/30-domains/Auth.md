@@ -42,14 +42,13 @@ Cookie имеет `HttpOnly`, `SameSite=Strict`, путь refresh и `Secure` в
 customer, `Staff` — barista/administrator, `Administrator` — администратора.
 Эти правила применяют защищённые контроллеры, а `/me` возвращает id, телефон и
 роль. [RolesGuard](../../src/auth/transport/roles.guard.ts),
-[схема ролей](../../migrations/0002_e01_core_schema.sql).
+[схема ролей](../../schema.sql).
 
-В local/development один adapter выдаёт development OTP. Staging требует режим
-`staging_test`, фиксированный test OTP и allowlist номеров; production
-генерирует криптографический код и отправляет его через SMS.ru. Секреты не попадают в
-документацию. [Сборка adapters](../../src/auth/auth.module.ts),
+В local/development один adapter выдаёт development OTP. Staging и production
+не входят в поддерживаемый путь поставки. Секреты не попадают в документацию.
+[Сборка adapters](../../src/auth/auth.module.ts),
 [переменные](../../.env.example).
 
-Проверки: unit покрывают OTP, refresh, guards и cookie; e2e — безопасные ошибки,
+Проверки: unit покрывают OTP, refresh, guards и cookie; интеграционные — безопасные ошибки,
 role, `/me`, rotation и logout. [unit](../../src/auth/application/request-otp.use-case.spec.ts),
-[e2e](../../test/e2e/auth.e2e-spec.ts).
+[команды integration-проверок](../../package.json).

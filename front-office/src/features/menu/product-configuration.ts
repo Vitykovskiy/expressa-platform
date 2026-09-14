@@ -1,29 +1,20 @@
-import {
-  publicMenuProductTypes,
-  publicMenuSelectionTypes,
-} from "@/shared/api/public-menu.api.constants";
 import type {
   CartSelectedModifierOption,
   ConfiguredCartItemDraft,
 } from "@/entities/customer/model/customer.types";
-import {
-  initialProductConfigurationQuantity,
-  preferredDrinkVariantSize,
-} from "./product-configuration.constants";
+import type {
+  PublicMenuPriceChoice,
+  PublicMenuProduct,
+} from "@/shared/api/public-menu.api";
+import { initialProductConfigurationQuantity } from "./product-configuration.constants";
 import type {
   ProductConfiguration,
-  ProductConfigurationGroupSelection,
   ProductConfigurationSelectedOptions,
   ProductConfigurationTotals,
 } from "./product-configuration.types";
-import type {
-  PublicMenuModifierGroup,
-  PublicMenuProduct,
-} from "@/shared/api/public-menu.api";
 
 export type {
   ProductConfiguration,
-  ProductConfigurationGroupSelection,
   ProductConfigurationSelectedOptions,
   ProductConfigurationTotals,
 } from "./product-configuration.types";
@@ -36,31 +27,53 @@ export function createProductConfiguration(
     quantity: initialProductConfigurationQuantity,
     selectedModifierGroups: product.modifierGroups.map((group) => ({
       groupId: group.id,
-      optionIds: getDefaultOptionIds(group),
+      optionIds:
+        group.minSelect === 0
+          ? []
+          : group.options
+              .filter(
+                (option) =>
+                  option.isAvailable &&
+                  option.isDefault &&
+                  option.priceDelta === 0,
+              )
+              .map((option) => option.id),
     })),
-    selectedVariantId: getInitialVariantId(product),
+    selectedPriceChoiceId:
+      (product.priceChoices ?? []).find((choice) => choice.isAvailable)?.id ??
+      null,
+    selectedVariantId:
+      product.variants?.find(
+        (variant) => variant.size === "M" && variant.isAvailable,
+      )?.id ??
+      product.variants?.find((variant) => variant.isAvailable)?.id ??
+      null,
   };
 }
-
-export function selectProductConfigurationVariant(
+export function selectProductConfigurationPriceChoice(
+  configuration: ProductConfiguration,
+  priceChoiceId: string,
+): ProductConfiguration {
+  const choice = (configuration.product.priceChoices ?? []).find(
+    (candidate) => candidate.id === priceChoiceId,
+  );
+  return choice?.isAvailable
+    ? { ...configuration, selectedPriceChoiceId: choice.id }
+    : configuration;
+}
+/** @deprecated V2 compatibility; V3 uses price-choice IDs. */
+export const selectProductConfigurationVariant = (
   configuration: ProductConfiguration,
   variantId: string,
-): ProductConfiguration {
-  if (configuration.product.type !== publicMenuProductTypes[0]) {
-    return configuration;
-  }
-
-  const variant = configuration.product.variants.find(
+) => {
+  const variant = configuration.product.variants?.find(
     (candidate) => candidate.id === variantId,
   );
-
-  if (variant === undefined || !variant.isAvailable) {
-    return configuration;
-  }
-
-  return { ...configuration, selectedVariantId: variant.id };
-}
-
+  return variant?.isAvailable
+    ? { ...configuration, selectedVariantId: variant.id }
+    : configuration;
+};
+/** @deprecated V3 public menu does not expose modifiers. */
 export function toggleProductConfigurationOption(
   configuration: ProductConfiguration,
   groupId: string,
@@ -69,156 +82,99 @@ export function toggleProductConfigurationOption(
   const group = configuration.product.modifierGroups.find(
     (candidate) => candidate.id === groupId,
   );
-
-  if (group === undefined || !isAvailableOption(group, optionId)) {
+  if (
+    !group ||
+    !group.options.some(
+      (option) => option.id === optionId && option.isAvailable,
+    )
+  )
     return configuration;
-  }
-
-  const currentSelection = getGroupSelection(configuration, group);
-  const optionIds = getNextOptionIds(
-    group,
-    currentSelection.optionIds,
-    optionId,
-  );
-
-  if (optionIds === currentSelection.optionIds) {
-    return configuration;
-  }
-
+  const current =
+    configuration.selectedModifierGroups.find(
+      (item) => item.groupId === groupId,
+    )?.optionIds ?? [];
+  const selected = current.includes(optionId);
+  const next =
+    group.selectionType === "single"
+      ? selected
+        ? group.minSelect === 0
+          ? []
+          : current
+        : [optionId]
+      : selected
+        ? current.length > group.minSelect
+          ? current.filter((id) => id !== optionId)
+          : current
+        : current.length < group.maxSelect
+          ? [...current, optionId]
+          : current;
   return {
     ...configuration,
-    selectedModifierGroups: configuration.selectedModifierGroups.map(
-      (selection) =>
-        selection.groupId === group.id
-          ? { ...selection, optionIds }
-          : selection,
+    selectedModifierGroups: configuration.selectedModifierGroups.map((item) =>
+      item.groupId === groupId ? { ...item, optionIds: next } : item,
     ),
   };
 }
-
 export function setProductConfigurationQuantity(
   configuration: ProductConfiguration,
   quantity: number,
 ): ProductConfiguration {
-  if (
-    !Number.isInteger(quantity) ||
-    quantity < initialProductConfigurationQuantity
-  ) {
-    return configuration;
-  }
-
-  return { ...configuration, quantity };
+  return Number.isInteger(quantity) &&
+    quantity >= initialProductConfigurationQuantity
+    ? { ...configuration, quantity }
+    : configuration;
 }
-
 export function isProductConfigurationValid(
   configuration: ProductConfiguration,
 ): boolean {
-  if (
-    !configuration.product.isAvailable ||
-    !Number.isInteger(configuration.quantity) ||
-    configuration.quantity < initialProductConfigurationQuantity ||
-    !hasValidSelectedVariant(configuration)
-  ) {
-    return false;
-  }
-
-  return configuration.product.modifierGroups.every((group) =>
-    isGroupSelectionValid(getGroupSelection(configuration, group)),
+  return (
+    configuration.product.isAvailable &&
+    Number.isInteger(configuration.quantity) &&
+    configuration.quantity >= 1 &&
+    getSelectedPrice(configuration) !== null &&
+    getSelectedModifierOptions(configuration).valid
   );
 }
-
 export function getProductConfigurationTotals(
   configuration: ProductConfiguration,
 ): ProductConfigurationTotals | null {
-  const basePrice = getBasePrice(configuration);
-  const selectedOptions = getSelectedModifierOptions(configuration);
-
-  if (basePrice === null || !selectedOptions.valid) {
-    return null;
-  }
-
-  const unitTotal = selectedOptions.options.reduce(
-    (total, option) => total + option.priceDelta,
-    basePrice,
-  );
-
-  return {
-    lineTotal: unitTotal * configuration.quantity,
-    unitTotal,
-  };
+  const price = getSelectedPrice(configuration);
+  const options = getSelectedModifierOptions(configuration);
+  return price === null || !options.valid
+    ? null
+    : {
+        unitTotal:
+          price +
+          options.options.reduce((sum, option) => sum + option.priceDelta, 0),
+        lineTotal:
+          (price +
+            options.options.reduce(
+              (sum, option) => sum + option.priceDelta,
+              0,
+            )) *
+          configuration.quantity,
+      };
 }
-
-export function toCartItemDraft(
-  configuration: ProductConfiguration,
-): ConfiguredCartItemDraft | null {
-  const totals = getProductConfigurationTotals(configuration);
-  const selectedOptions = getSelectedModifierOptions(configuration);
-
-  if (
-    !isProductConfigurationValid(configuration) ||
-    totals === null ||
-    !selectedOptions.valid
-  ) {
-    return null;
-  }
-
-  const item = {
-    productId: configuration.product.id,
-    productName: configuration.product.name,
-    addons: selectedOptions.options.map(toCartAddon),
-    quantity: configuration.quantity,
-    lineTotalRub: totals.lineTotal,
-    unitTotal: totals.unitTotal,
-    lineTotal: totals.lineTotal,
-    selectedModifierOptions: selectedOptions.options,
-  };
-
-  if (configuration.product.type === publicMenuProductTypes[0]) {
-    const selectedVariant = configuration.product.variants.find(
-      (variant) => variant.id === configuration.selectedVariantId,
-    );
-
-    if (selectedVariant === undefined) {
-      return null;
-    }
-
-    return {
-      ...item,
-      type: configuration.product.type,
-      selectedVariant: {
-        id: selectedVariant.id,
-        size: selectedVariant.size,
-        price: selectedVariant.price,
-      },
-      size: selectedVariant.size,
-      sizePrice: selectedVariant.price,
-    };
-  }
-
-  return { ...item, type: configuration.product.type };
-}
-
 export function getSelectedModifierOptions(
   configuration: ProductConfiguration,
 ): ProductConfigurationSelectedOptions {
   const options: CartSelectedModifierOption[] = [];
-
   for (const group of configuration.product.modifierGroups) {
-    const selection = getGroupSelection(configuration, group);
-
-    if (!isGroupSelectionValid(selection)) {
+    const ids =
+      configuration.selectedModifierGroups.find(
+        (item) => item.groupId === group.id,
+      )?.optionIds ?? [];
+    if (
+      ids.length < group.minSelect ||
+      ids.length > group.maxSelect ||
+      new Set(ids).size !== ids.length
+    )
       return { options: [], valid: false };
-    }
-
-    for (const optionId of selection.optionIds) {
+    for (const id of ids) {
       const option = group.options.find(
-        (candidate) => candidate.id === optionId,
+        (candidate) => candidate.id === id && candidate.isAvailable,
       );
-
-      if (option === undefined) {
-        return { options: [], valid: false };
-      }
-
+      if (!option) return { options: [], valid: false };
       options.push({
         groupId: group.id,
         id: option.id,
@@ -227,141 +183,90 @@ export function getSelectedModifierOptions(
       });
     }
   }
-
   return {
-    options: [...options].sort((first, second) =>
-      first.id.localeCompare(second.id),
-    ),
+    options: options.sort((a, b) => a.id.localeCompare(b.id)),
     valid: true,
   };
 }
-
-function getInitialVariantId(product: PublicMenuProduct): string | null {
-  if (product.type !== publicMenuProductTypes[0]) {
-    return null;
-  }
-
-  return (
-    product.variants.find(
-      (variant) =>
-        variant.size === preferredDrinkVariantSize && variant.isAvailable,
-    )?.id ??
-    product.variants.find((variant) => variant.isAvailable)?.id ??
-    null
-  );
-}
-
-function getDefaultOptionIds(group: PublicMenuModifierGroup): string[] {
-  if (group.minSelect === 0) {
-    return [];
-  }
-
-  return group.options
-    .filter(
-      (option) =>
-        option.isAvailable && option.isDefault && option.priceDelta === 0,
-    )
-    .map((option) => option.id);
-}
-
-function getGroupSelection(
+export function toCartItemDraft(
   configuration: ProductConfiguration,
-  group: PublicMenuModifierGroup,
-): ProductConfigurationGroupSelection {
-  const selection = configuration.selectedModifierGroups.find(
-    (candidate) => candidate.groupId === group.id,
+): ConfiguredCartItemDraft | null {
+  const totals = getProductConfigurationTotals(configuration);
+  if (!isProductConfigurationValid(configuration) || totals === null)
+    return null;
+  const choice = getSelectedChoice(configuration);
+  const selectedOptions = getSelectedModifierOptions(configuration).options;
+  const legacyVariant = configuration.product.variants?.find(
+    (variant) => variant.id === configuration.selectedVariantId,
   );
-
-  return { group, optionIds: selection?.optionIds ?? [] };
-}
-
-function getNextOptionIds(
-  group: PublicMenuModifierGroup,
-  optionIds: string[],
-  optionId: string,
-): string[] {
-  const isSelected = optionIds.includes(optionId);
-
-  if (group.selectionType === publicMenuSelectionTypes[0]) {
-    if (isSelected) {
-      return group.minSelect === 0 ? [] : optionIds;
-    }
-
-    return [optionId];
-  }
-
-  if (isSelected) {
-    return optionIds.length > group.minSelect
-      ? optionIds.filter((id) => id !== optionId)
-      : optionIds;
-  }
-
-  return optionIds.length < group.maxSelect
-    ? [...optionIds, optionId]
-    : optionIds;
-}
-
-function hasValidSelectedVariant(configuration: ProductConfiguration): boolean {
-  if (configuration.product.type !== publicMenuProductTypes[0]) {
-    return configuration.selectedVariantId === null;
-  }
-
-  return configuration.product.variants.some(
-    (variant) =>
-      variant.id === configuration.selectedVariantId && variant.isAvailable,
-  );
-}
-
-function isGroupSelectionValid(
-  selection: ProductConfigurationGroupSelection,
-): boolean {
-  const optionIds = selection.optionIds;
-
-  if (
-    optionIds.length < selection.group.minSelect ||
-    optionIds.length > selection.group.maxSelect ||
-    new Set(optionIds).size !== optionIds.length
-  ) {
-    return false;
-  }
-
-  if (
-    selection.group.selectionType === publicMenuSelectionTypes[0] &&
-    optionIds.length > 1
-  ) {
-    return false;
-  }
-
-  return optionIds.every((optionId) =>
-    isAvailableOption(selection.group, optionId),
-  );
-}
-
-function isAvailableOption(
-  group: PublicMenuModifierGroup,
-  optionId: string,
-): boolean {
-  return group.options.some(
-    (option) => option.id === optionId && option.isAvailable,
-  );
-}
-
-function getBasePrice(configuration: ProductConfiguration): number | null {
-  if (configuration.product.type !== publicMenuProductTypes[0]) {
-    return configuration.product.price;
-  }
-
-  return (
-    configuration.product.variants.find(
-      (variant) => variant.id === configuration.selectedVariantId,
-    )?.price ?? null
-  );
-}
-
-function toCartAddon(option: CartSelectedModifierOption) {
+  if (legacyVariant && configuration.product.type === "DRINK")
+    return {
+      productId: configuration.product.id,
+      productName: configuration.product.name,
+      addons: selectedOptions.map((option) => ({
+        id: option.id,
+        name: option.name,
+        priceRub: option.priceDelta,
+      })),
+      quantity: configuration.quantity,
+      lineTotalRub: totals.lineTotal,
+      unitTotal: totals.unitTotal,
+      lineTotal: totals.lineTotal,
+      selectedModifierOptions: selectedOptions,
+      type: "DRINK",
+      selectedVariant: {
+        id: legacyVariant.id,
+        size: legacyVariant.size,
+        price: legacyVariant.price,
+      },
+      size: legacyVariant.size,
+      sizePrice: legacyVariant.price,
+    };
   return {
-    id: option.id,
-    name: option.name,
-    priceRub: option.priceDelta,
-  };
+    productId: configuration.product.id,
+    productName: configuration.product.name,
+    addons: selectedOptions.map((option) => ({
+      id: option.id,
+      name: option.name,
+      priceRub: option.priceDelta,
+    })),
+    quantity: configuration.quantity,
+    lineTotalRub: totals.lineTotal,
+    unitTotal: totals.unitTotal,
+    lineTotal: totals.lineTotal,
+    selectedModifierOptions: selectedOptions,
+    type:
+      (configuration.product.priceChoices ?? []).length === 0
+        ? "OTHER"
+        : "PRICED",
+    selectedPriceChoice:
+      choice === null
+        ? undefined
+        : {
+            id: choice.id,
+            portionLabel: choice.portionLabel,
+            price: choice.price,
+          },
+    portionLabel: choice?.portionLabel ?? configuration.product.portionLabel,
+    price: totals.unitTotal,
+  } as ConfiguredCartItemDraft;
+}
+function getSelectedChoice(
+  configuration: ProductConfiguration,
+): PublicMenuPriceChoice | null {
+  return (
+    (configuration.product.priceChoices ?? []).find(
+      (choice) =>
+        choice.id === configuration.selectedPriceChoiceId && choice.isAvailable,
+    ) ?? null
+  );
+}
+function getSelectedPrice(configuration: ProductConfiguration): number | null {
+  if ((configuration.product.priceChoices ?? []).length === 0)
+    return (
+      configuration.product.variants?.find(
+        (variant) => variant.id === configuration.selectedVariantId,
+      )?.price ?? configuration.product.price
+    );
+  return getSelectedChoice(configuration)?.price ?? null;
 }

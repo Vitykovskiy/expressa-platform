@@ -11,6 +11,7 @@ import type {
   OrderCatalogModifierGroup,
   OrderCatalogModifierOption,
   OrderCatalogProduct,
+  OrderCatalogPriceChoice,
   OrderCatalogVariant,
   OrderRevalidationResult,
   OrderSnapshotItem,
@@ -132,7 +133,7 @@ async function readSnapshotItems(
   orderId: string,
 ): Promise<readonly OrderSnapshotItem[]> {
   const items = await client.query<DatabaseRow>(
-    `SELECT id, product_id, variant_id, product_name, size, quantity, unit_total, line_total
+    `SELECT id, product_id, variant_id, price_choice_id, product_name, size, portion_label, quantity, unit_total, line_total
      FROM order_items
      WHERE order_id = $1
      ORDER BY sort_order`,
@@ -162,8 +163,10 @@ async function readSnapshotItems(
     return {
       productId: readString(row, "product_id"),
       variantId: readNullableString(row, "variant_id"),
+      priceChoiceId: readNullableString(row, "price_choice_id"),
       productName: readString(row, "product_name"),
       size: readNullableProductSize(row, "size"),
+      portionLabel: readNullableString(row, "portion_label"),
       quantity: readPositiveInteger(row, "quantity"),
       unitTotal: readNonNegativeInteger(row, "unit_total"),
       lineTotal: readNonNegativeInteger(row, "line_total"),
@@ -176,32 +179,43 @@ async function readCurrentCatalog(
   client: TransactionClient,
   productIds: readonly string[],
 ): Promise<OrderCatalog> {
-  const [setting, products, variants, groups, options] = await Promise.all([
-    client.query<DatabaseRow>(
-      `SELECT value FROM service_settings WHERE key = $1`,
-      [acceptsNewOrdersSettingKey],
-    ),
-    client.query<DatabaseRow>(
-      `SELECT products.id, products.category_id, products.type, products.name, products.price, products.is_available
+  const [setting, products, choices, variants, groups, options] =
+    await Promise.all([
+      client.query<DatabaseRow>(
+        `SELECT value FROM service_settings WHERE key = $1`,
+        [acceptsNewOrdersSettingKey],
+      ),
+      client.query<DatabaseRow>(
+        `SELECT products.id, products.category_id, products.type, products.name, products.price, products.portion_label, products.is_available
        FROM products
        JOIN categories ON categories.id = products.category_id
        WHERE products.archived_at IS NULL AND products.is_active
          AND categories.archived_at IS NULL AND categories.is_active
          AND products.id = ANY($1)`,
-      [productIds],
-    ),
-    client.query<DatabaseRow>(
-      `SELECT variants.id, variants.product_id, variants.size, variants.price, variants.is_available
+        [productIds],
+      ),
+      client.query<DatabaseRow>(
+        `SELECT choices.id, choices.product_id, choices.portion_label, choices.price, choices.is_available
+       FROM product_price_choices choices
+       JOIN products ON products.id = choices.product_id
+       JOIN categories ON categories.id = products.category_id
+       WHERE choices.archived_at IS NULL AND products.archived_at IS NULL AND products.is_active
+         AND categories.archived_at IS NULL AND categories.is_active
+         AND products.id = ANY($1)`,
+        [productIds],
+      ),
+      client.query<DatabaseRow>(
+        `SELECT variants.id, variants.product_id, variants.size, variants.price, variants.is_available
        FROM product_variants variants
        JOIN products ON products.id = variants.product_id
        JOIN categories ON categories.id = products.category_id
        WHERE variants.archived_at IS NULL AND products.archived_at IS NULL AND products.is_active
          AND categories.archived_at IS NULL AND categories.is_active
          AND products.id = ANY($1)`,
-      [productIds],
-    ),
-    client.query<DatabaseRow>(
-      `SELECT DISTINCT assignments.category_id, NULL::uuid AS product_id, groups.id, groups.selection_type, groups.min_select, groups.max_select
+        [productIds],
+      ),
+      client.query<DatabaseRow>(
+        `SELECT DISTINCT assignments.category_id, NULL::uuid AS product_id, groups.id, groups.selection_type, groups.min_select, groups.max_select
        FROM category_modifier_groups assignments
        JOIN modifier_groups groups ON groups.id = assignments.group_id
        JOIN categories ON categories.id = assignments.category_id
@@ -220,21 +234,22 @@ async function readCurrentCatalog(
          AND products.archived_at IS NULL AND products.is_active
          AND categories.archived_at IS NULL AND categories.is_active
          AND products.id = ANY($1)`,
-      [productIds],
-    ),
-    client.query<DatabaseRow>(
-      `SELECT options.group_id, options.id, options.name, options.price_delta, options.is_default, options.is_available
+        [productIds],
+      ),
+      client.query<DatabaseRow>(
+        `SELECT options.group_id, options.id, options.name, options.price_delta, options.is_default, options.is_available
        FROM modifier_options options
        JOIN modifier_groups groups ON groups.id = options.group_id
        WHERE options.archived_at IS NULL AND groups.archived_at IS NULL AND groups.is_active`,
-    ),
-  ]);
+      ),
+    ]);
 
   return {
     acceptsNewOrders: readAcceptsNewOrders(setting.rows),
     products: buildCatalogProducts(
       products.rows,
       variants.rows,
+      choices.rows,
       groups.rows,
       options.rows,
     ),
@@ -244,6 +259,7 @@ async function readCurrentCatalog(
 function buildCatalogProducts(
   productRows: DatabaseRow[],
   variantRows: DatabaseRow[],
+  choiceRows: DatabaseRow[],
   groupRows: DatabaseRow[],
   optionRows: DatabaseRow[],
 ): readonly OrderCatalogProduct[] {
@@ -258,6 +274,19 @@ function buildCatalogProducts(
       isAvailable: readBoolean(row, "is_available"),
     });
     variantsByProductId.set(productId, variants);
+  }
+
+  const choicesByProductId = new Map<string, OrderCatalogPriceChoice[]>();
+  for (const row of choiceRows) {
+    const productId = readString(row, "product_id");
+    const choices = choicesByProductId.get(productId) ?? [];
+    choices.push({
+      id: readString(row, "id"),
+      portionLabel: readString(row, "portion_label"),
+      price: readNonNegativeInteger(row, "price"),
+      isAvailable: readBoolean(row, "is_available"),
+    });
+    choicesByProductId.set(productId, choices);
   }
 
   const optionsByGroupId = new Map<string, OrderCatalogModifierOption[]>();
@@ -323,8 +352,10 @@ function buildCatalogProducts(
       type: readProductType(row),
       name: readString(row, "name"),
       price: readNullableInteger(row, "price"),
+      portionLabel: readNullableString(row, "portion_label"),
       isAvailable: readBoolean(row, "is_available"),
       variants: variantsByProductId.get(productId) ?? [],
+      priceChoices: choicesByProductId.get(productId) ?? [],
       modifierGroups: [
         ...categoryGroups,
         ...assignedGroups.filter(
@@ -369,15 +400,17 @@ async function insertOrder(
   for (const [itemSortOrder, item] of snapshot.items.entries()) {
     const insertedItem = await client.query<DatabaseRow>(
       `INSERT INTO order_items (
-         order_id, product_id, variant_id, product_name, size, quantity, unit_total, line_total, sort_order
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         order_id, product_id, variant_id, price_choice_id, product_name, size, portion_label, quantity, unit_total, line_total, sort_order
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id`,
       [
         orderId,
         item.productId,
         item.variantId,
+        item.priceChoiceId,
         item.productName,
         item.size,
+        item.portionLabel,
         item.quantity,
         item.unitTotal,
         item.lineTotal,

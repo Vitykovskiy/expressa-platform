@@ -29,10 +29,17 @@ import {
 } from "./orders.module.constants";
 import { OrdersController } from "./transport/orders.controller";
 import { BackofficeOrdersController } from "./transport/backoffice-orders.controller";
+import { OrdersV3Controller } from "./transport/orders-v3.controller";
+import { BackofficeOrdersV3Controller } from "./transport/backoffice-orders-v3.controller";
 
 @Module({
   imports: [AuthModule, DatabaseModule, NotificationsModule],
-  controllers: [OrdersController, BackofficeOrdersController],
+  controllers: [
+    OrdersController,
+    BackofficeOrdersController,
+    OrdersV3Controller,
+    BackofficeOrdersV3Controller,
+  ],
   providers: [
     {
       provide: orderUnitOfWorkPort,

@@ -1,6 +1,4 @@
-import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { resolve } from "node:path";
 import { Pool } from "pg";
 import { PostgresAuthRepository } from "../../src/auth/adapters/postgres-auth.repository";
 import type { StoredOtpChallenge } from "../../src/auth/application/auth-repository.types";
@@ -13,20 +11,6 @@ import {
 
 const databaseUrl = process.env.DATABASE_URL;
 const externalProcessTimeoutMs = 30_000;
-
-function runMigrations(): void {
-  execFileSync("npm", ["run", "migrate"], {
-    cwd: resolve(__dirname, "../.."),
-    env: {
-      ...process.env,
-      JEST_WORKER_ID: undefined,
-      NODE_ENV: "local",
-      PORT: "3000",
-      DATABASE_URL: databaseUrl,
-    },
-    stdio: "inherit",
-  });
-}
 
 function createPhone(): string {
   return (
@@ -101,7 +85,6 @@ describe("PostgreSQL repository авторизации", () => {
 
     pool = new Pool({ connectionString: databaseUrl });
     repository = new PostgresAuthRepository(pool);
-    runMigrations();
     await pool.query("DELETE FROM auth_otp_security_throttles");
   });
 

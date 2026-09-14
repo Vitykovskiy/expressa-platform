@@ -5,6 +5,7 @@ import {
 } from "../domain/order-lifecycle.errors";
 import { GetOrdersUseCase } from "../application/get-orders.use-case";
 import { TransitionOrderUseCase } from "../application/transition-order.use-case";
+import { BackofficeOrdersV3Controller } from "./backoffice-orders-v3.controller";
 
 const orderId = "6f7ef502-6ee5-4b27-84db-a118d9c710de";
 const auth = {
@@ -33,6 +34,27 @@ const details = {
 };
 
 describe("BackofficeOrdersController", () => {
+  it("v3 passes queue filters to the read use case", async () => {
+    const getOrders = {
+      list: jest.fn().mockResolvedValue([details]),
+      details: jest.fn().mockResolvedValue(details),
+    };
+    const controller = new BackofficeOrdersV3Controller(
+      getOrders as unknown as GetOrdersUseCase,
+    );
+
+    await expect(
+      controller.list({ stage: "READY", number: "042" }),
+    ).resolves.toHaveLength(1);
+    expect(getOrders.list).toHaveBeenCalledWith({
+      stage: "READY",
+      number: "042",
+    });
+    await expect(
+      controller.list({ stage: "CANCELLED" as "READY" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
   it("отдаёт staff-очередь и детали в каноническом DTO", async () => {
     const getOrders = {
       list: jest.fn().mockResolvedValue([details]),

@@ -25,8 +25,6 @@ Storybook выполнил задачу каталога UI. Дальнейша�
 ## Решение
 
 Storybook удаляется из `front-office` и `back-office`. UI проверяется в runtime
-применимыми автоматическими и браузерными проверками. Локальный `test:catalog:e2e`
-back-office остаётся runtime E2E с test backend.
 
 ## Последствия
 

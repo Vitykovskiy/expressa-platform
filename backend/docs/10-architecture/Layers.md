@@ -34,6 +34,7 @@ domain/application не знают HTTP, декораторы или драйв�
 | `OrdersController`               | создание заказа; `OrderUnitOfWork`                                                           | PostgreSQL-транзакция, снимок заказа. [orders](../../src/orders/orders.module.ts)                         |
 | health controller                | liveness/readiness                                                                           | процесс и PostgreSQL. [health](../../src/platform/health/health.controller.ts)                            |
 
-Границы проверяют unit-спеки use case и адаптеров; e2e проверяют HTTP-цепочку.
+Границы проверяют unit-спеки use case и адаптеров; HTTP-цепочку покрывают
+интеграционные проверки.
 [Тесты auth](../../src/auth/application/verify-otp.use-case.spec.ts),
-[e2e](../../test/e2e/auth.e2e-spec.ts).
+[команды integration-проверок](../../package.json).

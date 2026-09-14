@@ -25,4 +25,3 @@ sources:
 - [E10 — Текущий заказ, история, повтор и уведомления](backlog/E10/INDEX.md)
 - [E11 — Оперативная доступность](backlog/E11/INDEX.md)
 - [E12 — Приёмка и выпуск](backlog/E12/INDEX.md)
-- [E13 — Standalone E2E-система](backlog/E13/INDEX.md)

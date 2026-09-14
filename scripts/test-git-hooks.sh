@@ -95,22 +95,6 @@ if ! git -C "$temporary_repository" commit -qm allow-reference >/dev/null 2>&1; 
   exit 1
 fi
 
-mkdir -p "$temporary_repository/back-office/tests/e2e"
-printf '%s%s%s\n' 'const accessToken = "' 'e2e-dummy-access-token' '";' > "$temporary_repository/back-office/tests/e2e/orders.e2e.ts"
-git -C "$temporary_repository" add back-office/tests/e2e/orders.e2e.ts
-if ! git -C "$temporary_repository" commit -qm allow-e2e-dummy >/dev/null 2>&1; then
-  printf '%s\n' 'test-git-hooks: exact E2E dummy fixture was rejected.' >&2
-  exit 1
-fi
-
-printf '%s%s%s\n' 'const accessToken = "' 'production-secret-token' '";' > "$temporary_repository/back-office/tests/e2e/orders.e2e.ts"
-git -C "$temporary_repository" add back-office/tests/e2e/orders.e2e.ts
-if git -C "$temporary_repository" commit -qm reject-e2e-secret >/dev/null 2>&1; then
-  printf '%s\n' 'test-git-hooks: E2E secret-like content was accepted.' >&2
-  exit 1
-fi
-
-git -C "$temporary_repository" reset -q
 mkdir -p "$temporary_repository/deploy"
 printf '%s%s%s\n' 'const accessToken = "' 'production-secret-token' '";' > "$temporary_repository/deploy/runtime.mjs"
 git -C "$temporary_repository" add deploy/runtime.mjs
