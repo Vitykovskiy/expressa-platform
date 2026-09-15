@@ -28,8 +28,8 @@
       <fieldset
         v-if="product.priceChoices?.length"
         class="product-detail__options"
+        aria-label="Размер / порция"
       >
-        <legend class="product-detail__options-title">Размер / порция</legend>
         <div class="product-detail__choices">
           <ui-btn
             v-for="choice in product.priceChoices ?? []"
@@ -54,8 +54,8 @@
         v-for="group in product.modifierGroups"
         :key="group.id"
         class="product-detail__options"
+        :aria-label="group.name"
       >
-        <legend class="product-detail__options-title">{{ group.name }}</legend>
         <div class="product-detail__choices">
           <ui-btn
             v-for="option in group.options"
@@ -74,7 +74,10 @@
             "
             @click="toggleOption(group.id, option.id)"
           >
-            {{ option.name }} · {{ formatRubles(option.priceDelta) }}
+            {{ option.name }}
+            <template v-if="option.priceDelta > 0">
+              · {{ formatRubles(option.priceDelta) }}
+            </template>
           </ui-btn>
         </div>
       </fieldset>
@@ -247,8 +250,7 @@ function createInitialConfiguration(product = props.product) {
   justify-content: flex-start;
   padding: var(--customer-space-7) var(--customer-space-9) 0;
 }
-.product-detail__eyebrow,
-.product-detail__options-title {
+.product-detail__eyebrow {
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-bold);
@@ -289,9 +291,6 @@ function createInitialConfiguration(product = props.product) {
   margin: 0;
   padding: 0;
   border: 0;
-}
-.product-detail__options-title {
-  padding: 0 0 var(--customer-space-6);
 }
 .product-detail__choices {
   display: flex;
