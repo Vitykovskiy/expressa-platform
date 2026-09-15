@@ -29,17 +29,22 @@ export function hasPushSubscriptionProof(
 export function isValidPushSubscriptionProof(
   proof: PushSubscriptionProof,
 ): boolean {
-  return isAuth(decodeBase64(proof.auth)) && isPublicKey(decodeBase64(proof.p256dh));
+  return (
+    isAuth(decodeBase64(proof.auth)) && isPublicKey(decodeBase64(proof.p256dh))
+  );
 }
 
 function decodeBase64(value: string): Buffer | null {
-  const match = /^(?<body>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)(?<padding>={0,2})$/.exec(
-    value,
-  );
+  const match =
+    /^(?<body>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)(?<padding>={0,2})$/.exec(value);
   if (match?.groups === undefined) return null;
   const body = match.groups.body;
   const padding = match.groups.padding;
-  if (body === undefined || padding === undefined || !hasValidPadding(body, padding))
+  if (
+    body === undefined ||
+    padding === undefined ||
+    !hasValidPadding(body, padding)
+  )
     return null;
   const isUrl = /[-_]/.test(body);
   const standard = isUrl

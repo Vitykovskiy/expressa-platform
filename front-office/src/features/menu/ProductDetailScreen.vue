@@ -30,12 +30,8 @@
         class="product-detail__options"
       >
         <legend class="product-detail__options-title">Размер / порция</legend>
-        <div
-          class="product-detail__choices"
-          role="radiogroup"
-          aria-label="Размер / порция"
-        >
-          <label
+        <div class="product-detail__choices">
+          <ui-btn
             v-for="choice in product.priceChoices ?? []"
             :key="choice.id"
             class="product-detail__choice product-detail__choice--size"
@@ -44,19 +40,13 @@
                 configuration.selectedPriceChoiceId === choice.id,
               'product-detail__choice--unavailable': !choice.isAvailable,
             }"
+            type="button"
+            :aria-pressed="configuration.selectedPriceChoiceId === choice.id"
+            :disabled="!choice.isAvailable"
+            @click="selectPriceChoice(choice.id)"
           >
-            <input
-              type="radio"
-              name="price-choice"
-              :checked="configuration.selectedPriceChoiceId === choice.id"
-              :disabled="!choice.isAvailable"
-              @change="selectPriceChoice(choice.id)"
-            />
-            <span
-              >{{ choice.portionLabel }} ·
-              {{ formatRubles(choice.price) }}</span
-            >
-          </label>
+            {{ choice.portionLabel }} · {{ formatRubles(choice.price) }}
+          </ui-btn>
         </div>
       </fieldset>
 

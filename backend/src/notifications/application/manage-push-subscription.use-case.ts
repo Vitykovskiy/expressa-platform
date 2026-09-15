@@ -51,9 +51,15 @@ export class ManagePushSubscriptionUseCase {
         ...subscription,
         userId,
       });
-      if (inserted !== null) return { association: "current", version: inserted };
-      const stored = await this.repository.findByEndpoint(subscription.endpoint);
-      if (stored?.userId === userId && hasPushSubscriptionProof(stored, subscription))
+      if (inserted !== null)
+        return { association: "current", version: inserted };
+      const stored = await this.repository.findByEndpoint(
+        subscription.endpoint,
+      );
+      if (
+        stored?.userId === userId &&
+        hasPushSubscriptionProof(stored, subscription)
+      )
         return { association: "current", version: stored.associationVersion };
       throw new PushAssociationConflictError();
     }
@@ -68,7 +74,8 @@ export class ManagePushSubscriptionUseCase {
       throw new PushAssociationConflictError();
     if (stored.userId === userId)
       return { association: "current", version: stored.associationVersion };
-    if (stored.ownerRole !== "customer") throw new PushAssociationConflictError();
+    if (stored.ownerRole !== "customer")
+      throw new PushAssociationConflictError();
     const version = await this.repository.transferAssociation(
       stored,
       userId,

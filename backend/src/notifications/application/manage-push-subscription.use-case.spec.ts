@@ -49,7 +49,12 @@ describe("ManagePushSubscriptionUseCase", () => {
     await expect(
       useCase.associate(
         "customer-b",
-        { userId: "customer-b", endpoint: "https://push.example/subscription", p256dh: "key", auth: "auth" },
+        {
+          userId: "customer-b",
+          endpoint: "https://push.example/subscription",
+          p256dh: "key",
+          auth: "auth",
+        },
         "enable",
         null,
       ),

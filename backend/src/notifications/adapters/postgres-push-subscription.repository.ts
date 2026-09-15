@@ -26,7 +26,8 @@ export class PostgresPushSubscriptionRepository implements PushSubscriptionRepos
 
   async delete(userId: string, endpoint: string): Promise<void> {
     const subscription = await this.findByEndpoint(endpoint);
-    if (subscription?.userId === userId) await this.deleteAssociation(subscription);
+    if (subscription?.userId === userId)
+      await this.deleteAssociation(subscription);
   }
 
   async findByEndpoint(endpoint: string): Promise<PushSubscription | null> {
@@ -41,7 +42,9 @@ export class PostgresPushSubscriptionRepository implements PushSubscriptionRepos
     return row === undefined ? null : toSubscription(row);
   }
 
-  async createAssociation(command: PushSubscriptionCommand): Promise<string | null> {
+  async createAssociation(
+    command: PushSubscriptionCommand,
+  ): Promise<string | null> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
       `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
        VALUES ($1, $2, $3, $4)

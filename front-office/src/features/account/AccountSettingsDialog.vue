@@ -19,9 +19,14 @@
         </ui-icon-btn>
       </header>
       <template v-if="props.authenticated">
-        <div class="account-settings__phone">
-          <span>Телефон</span>
-          <p>{{ props.accountLabel }}</p>
+        <div class="account-settings__row account-settings__phone">
+          <span class="account-settings__row-icon" aria-hidden="true">
+            <Phone :size="22" :stroke-width="2.5" />
+          </span>
+          <div class="account-settings__row-content">
+            <span class="account-settings__row-label">Текущий номер</span>
+            <p>{{ props.accountLabel }}</p>
+          </div>
         </div>
       </template>
       <template v-else>
@@ -35,69 +40,52 @@
       </template>
       <section
         v-if="props.authenticated"
-        class="account-settings__notifications"
+        class="account-settings__row account-settings__notifications"
         aria-labelledby="account-notifications-title"
       >
-        <h3 id="account-notifications-title">Уведомления о заказах</h3>
-        <p
-          v-if="notificationFeedback === null"
-          class="account-settings__status"
-        >
-          {{ description }}
-        </p>
-        <ui-field-message :message="notificationFeedback ?? ''" tone="error" />
+        <span class="account-settings__row-icon" aria-hidden="true">
+          <Bell :size="22" :stroke-width="2.5" />
+        </span>
+        <div class="account-settings__row-content">
+          <h3 id="account-notifications-title">Уведомления о заказах</h3>
+          <p
+            v-if="notificationFeedback === null"
+            class="account-settings__status"
+          >
+            {{ description }}
+          </p>
+          <ui-field-message
+            :message="notificationFeedback ?? ''"
+            tone="error"
+          />
+        </div>
         <ui-btn
-          v-if="
-            notifications.state === 'denied' ||
-            notifications.state === 'failed_check'
-          "
+          v-if="notificationControl !== null"
+          class="account-settings__notification-switch"
           type="button"
+          :aria-label="notificationControl.label"
+          :aria-pressed="notificationControl.isEnabled"
           :disabled="isBusy"
           :loading="notifications.operation !== null"
-          @click="notifications.inspect"
-          >{{
-            notifications.state === "denied" ? "Проверить снова" : "Повторить"
-          }}</ui-btn
+          @click="runNotificationAction(notificationControl.action)"
         >
-        <ui-btn
-          v-else-if="
-            notifications.state === 'off_current' ||
-            notifications.state === 'other_account' ||
-            notifications.state === 'failed_enable'
-          "
-          class="account-settings__primary"
-          type="button"
-          :disabled="isBusy"
-          :loading="notifications.operation !== null"
-          @click="enable"
-          >Включить уведомления</ui-btn
-        >
-        <ui-btn
-          v-else-if="
-            notifications.state === 'on_current' ||
-            notifications.state === 'failed_disable'
-          "
-          type="button"
-          :disabled="isBusy"
-          :loading="notifications.operation !== null"
-          @click="disable"
-          >{{
-            notifications.state === "failed_disable"
-              ? "Повторить"
-              : "Отключить уведомления"
-          }}</ui-btn
-        >
+          <span aria-hidden="true" class="account-settings__switch-thumb" />
+        </ui-btn>
       </section>
       <footer v-if="props.authenticated" class="account-settings__footer">
         <ui-field-message :message="props.logoutError ?? ''" tone="error" />
         <ui-btn
-          color="error"
+          class="account-settings__logout"
           :disabled="notifications.operation !== null"
           type="button"
           :loading="props.logoutPending"
           @click="emit('signOut')"
-          >Выйти из аккаунта</ui-btn
         >
+          <span class="account-settings__row-icon" aria-hidden="true">
+            <LogOut :size="22" :stroke-width="2.5" />
+          </span>
+          <span>Выйти из аккаунта</span>
+        </ui-btn>
       </footer>
     </section>
   </ui-dialog>
@@ -105,7 +93,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import { X } from "lucide-vue-next";
+import { Bell, LogOut, Phone, X } from "lucide-vue-next";
 import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiDialog from "@/shared/ui/customer/dialog/UiDialog.vue";
@@ -136,7 +124,7 @@ const description = computed(
         "Не удалось отключить уведомления на этом устройстве. Попробуйте ещё раз.",
       off_current:
         "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
-      on_current: "Уведомления включены.",
+      on_current: "Сообщим, когда заказ примут, приготовят и выдадут.",
       other_account:
         "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
       anonymous_subscription: "",
@@ -150,6 +138,46 @@ const notificationFeedback = computed(() => {
     return "Не удалось включить уведомления. Попробуйте ещё раз.";
   if (notifications.state === "failed_disable")
     return "Не удалось отключить уведомления на этом устройстве. Попробуйте ещё раз.";
+  return null;
+});
+const notificationControl = computed(() => {
+  switch (notifications.state) {
+    case "denied":
+      return {
+        action: "inspect" as const,
+        isEnabled: false,
+        label: "Проверить уведомления снова",
+      };
+    case "failed_check":
+      return {
+        action: "inspect" as const,
+        isEnabled: false,
+        label: "Повторить проверку уведомлений",
+      };
+    case "off_current":
+    case "other_account":
+    case "failed_enable":
+      return {
+        action: "enable" as const,
+        isEnabled: false,
+        label: "Включить уведомления о заказах",
+      };
+    case "on_current":
+    case "failed_disable":
+      return {
+        action: "disable" as const,
+        isEnabled: true,
+        label:
+          notifications.state === "failed_disable"
+            ? "Повторить отключение уведомлений"
+            : "Отключить уведомления о заказах",
+      };
+    case "anonymous_off":
+    case "anonymous_subscription":
+    case "checking":
+    case "unsupported":
+      return null;
+  }
   return null;
 });
 watch(
@@ -169,6 +197,19 @@ function disable(): Promise<void> {
   return notifications.disable();
 }
 
+function runNotificationAction(
+  action: "inspect" | "enable" | "disable",
+): Promise<void> {
+  switch (action) {
+    case "inspect":
+      return notifications.inspect();
+    case "enable":
+      return enable();
+    case "disable":
+      return disable();
+  }
+}
+
 function rememberChoice(): void {
   if (props.accountId !== null)
     rememberNotificationInvitationChoice(props.accountId);
@@ -178,7 +219,7 @@ function rememberChoice(): void {
 <style scoped lang="scss">
 .account-settings {
   display: grid;
-  gap: var(--customer-space-9);
+  gap: var(--customer-space-7);
   max-height: min(42rem, calc(100dvh - var(--customer-space-18)));
   padding: var(--customer-space-12);
   overflow-y: auto;
@@ -201,26 +242,50 @@ function rememberChoice(): void {
   font-size: var(--customer-font-size-2xl);
   font-weight: var(--customer-font-weight-black);
 }
-.account-settings__notifications {
-  display: grid;
-  gap: var(--customer-space-5);
+.account-settings__row {
+  display: flex;
+  align-items: center;
+  gap: var(--customer-space-7);
   padding: var(--customer-space-8);
   background: var(--customer-surface-info);
   border-radius: var(--customer-radius-md);
 }
 .account-settings__phone {
-  display: grid;
-  gap: var(--customer-space-3);
+  min-height: calc(var(--customer-size-control-xl) * 1.5);
 }
-.account-settings__phone span,
+.account-settings__row-icon {
+  display: grid;
+  flex: 0 0 var(--customer-size-control-xl);
+  width: var(--customer-size-control-xl);
+  height: var(--customer-size-control-xl);
+  place-items: center;
+  color: var(--customer-primary);
+  background: var(--customer-color-blue-500-10);
+  border-radius: var(--customer-radius-round);
+}
+.account-settings__row-content {
+  display: grid;
+  flex: 1;
+  gap: var(--customer-space-3);
+  min-width: 0;
+}
+.account-settings__row-label,
 .account-settings__notifications h3 {
   color: var(--customer-text-on-surface);
   font-size: var(--customer-font-size-md);
   font-weight: var(--customer-font-weight-extrabold);
 }
-.account-settings__phone p {
-  font-size: var(--customer-font-size-lg);
+.account-settings__row-label {
+  color: var(--customer-color-text-secondary-on-surface);
   font-weight: var(--customer-font-weight-semibold);
+}
+.account-settings__notifications h3 {
+  line-height: var(--customer-line-height-label);
+}
+.account-settings__phone p {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-extrabold);
 }
 .account-settings p {
   color: var(--customer-color-text-secondary-on-surface);
@@ -230,6 +295,13 @@ function rememberChoice(): void {
 .account-settings__guest-message {
   line-height: var(--customer-line-height-relaxed);
 }
+.account-settings__switch-thumb {
+  width: calc(var(--customer-size-control-sm) - var(--customer-space-6));
+  height: calc(var(--customer-size-control-sm) - var(--customer-space-6));
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-round);
+  box-shadow: var(--customer-shadow-card);
+}
 .account-settings .ui-btn {
   justify-self: start;
   padding: 0 var(--customer-space-8);
@@ -237,9 +309,40 @@ function rememberChoice(): void {
   border-radius: var(--customer-radius-pill);
   font-weight: var(--customer-font-weight-extrabold);
 }
+.account-settings :deep(.account-settings__notification-switch) {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  width: calc(var(--customer-size-control-xl) + var(--customer-space-5));
+  min-height: var(--customer-size-control-sm);
+  padding: var(--customer-space-3);
+  background: var(--customer-color-text-muted-on-surface);
+  border: 0;
+  border-radius: var(--customer-radius-pill);
+  transition: var(--customer-transition-surface);
+}
+.account-settings
+  :deep(.account-settings__notification-switch[aria-pressed="true"]) {
+  justify-content: flex-end;
+  background: var(--customer-primary);
+}
 .account-settings__primary {
   color: var(--customer-color-black);
   background: var(--customer-primary);
+}
+.account-settings :deep(.account-settings__logout) {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: calc(var(--customer-size-control-xl) * 1.5);
+  gap: var(--customer-space-7);
+  padding: var(--customer-space-8);
+  color: var(--customer-danger);
+  background: var(--customer-danger-pale);
+  border: 0;
+  border-radius: var(--customer-radius-md);
+}
+.account-settings :deep(.account-settings__logout .account-settings__row-icon) {
+  color: var(--customer-danger);
+  background: var(--customer-danger-10);
 }
 .account-settings :deep(.account-settings__close) {
   color: var(--customer-text-on-surface);
@@ -250,7 +353,7 @@ function rememberChoice(): void {
   background: var(--customer-color-blue-500-10);
 }
 .account-settings__footer {
-  padding-top: var(--customer-space-7);
-  border-top: 1px solid var(--customer-border-subtle-on-surface);
+  display: grid;
+  gap: var(--customer-space-5);
 }
 </style>

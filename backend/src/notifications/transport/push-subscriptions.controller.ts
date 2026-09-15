@@ -112,7 +112,10 @@ export class PushSubscriptionsController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<PushSubscriptionInspection> {
     const subscription = parseSubscription(body);
-    return this.subscriptions.inspect(auth.userId, toCommand(auth.userId, subscription));
+    return this.subscriptions.inspect(
+      auth.userId,
+      toCommand(auth.userId, subscription),
+    );
   }
 
   @Put("subscriptions/association")
@@ -205,7 +208,8 @@ function parseAssociationRequest(value: unknown): PushAssociationRequest {
     !("expectedVersion" in value) ||
     (value.action !== "enable" && value.action !== "transfer") ||
     (value.expectedVersion !== null &&
-      (typeof value.expectedVersion !== "string" || !isUuid(value.expectedVersion)))
+      (typeof value.expectedVersion !== "string" ||
+        !isUuid(value.expectedVersion)))
   )
     validationError();
   return {
@@ -214,7 +218,9 @@ function parseAssociationRequest(value: unknown): PushAssociationRequest {
     expectedVersion: value.expectedVersion,
   };
 }
-function parseDeleteAssociationRequest(value: unknown): PushAssociationDeleteRequest {
+function parseDeleteAssociationRequest(
+  value: unknown,
+): PushAssociationDeleteRequest {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -239,7 +245,8 @@ function rethrowAssociationConflict(error: unknown): never {
   throw new HttpException(
     {
       code: error.code,
-      message: "Связь уведомлений изменилась. Проверьте состояние и повторите действие.",
+      message:
+        "Связь уведомлений изменилась. Проверьте состояние и повторите действие.",
       details: null,
     },
     HttpStatus.CONFLICT,

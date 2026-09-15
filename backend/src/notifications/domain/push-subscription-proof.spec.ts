@@ -4,9 +4,10 @@ import {
 } from "./push-subscription-proof";
 
 const auth = Buffer.alloc(16, 7).toString("base64");
-const publicKey = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 9)]).toString(
-  "base64",
-);
+const publicKey = Buffer.concat([
+  Buffer.from([4]),
+  Buffer.alloc(64, 9),
+]).toString("base64");
 const stored = {
   endpoint: "https://push.example/subscription",
   auth,
@@ -28,8 +29,14 @@ describe("hasPushSubscriptionProof", () => {
   });
 
   it.each([
-    ["a guessed endpoint", { ...stored, endpoint: "https://push.example/other" }],
-    ["a wrong secret", { ...stored, auth: Buffer.alloc(16, 8).toString("base64") }],
+    [
+      "a guessed endpoint",
+      { ...stored, endpoint: "https://push.example/other" },
+    ],
+    [
+      "a wrong secret",
+      { ...stored, auth: Buffer.alloc(16, 8).toString("base64") },
+    ],
     [
       "a changed public key",
       {
@@ -53,9 +60,18 @@ describe("hasPushSubscriptionProof", () => {
       },
     ],
     ["invalid padding", { ...stored, auth: auth.replace(/==$/, "=") }],
-    ["invalid auth length", { ...stored, auth: Buffer.alloc(15).toString("base64") }],
-    ["invalid public key length", { ...stored, p256dh: Buffer.alloc(64).toString("base64") }],
-    ["invalid public key prefix", { ...stored, p256dh: Buffer.alloc(65).toString("base64") }],
+    [
+      "invalid auth length",
+      { ...stored, auth: Buffer.alloc(15).toString("base64") },
+    ],
+    [
+      "invalid public key length",
+      { ...stored, p256dh: Buffer.alloc(64).toString("base64") },
+    ],
+    [
+      "invalid public key prefix",
+      { ...stored, p256dh: Buffer.alloc(65).toString("base64") },
+    ],
   ])("rejects malformed %s", (_reason, supplied) => {
     expect(isValidPushSubscriptionProof(supplied)).toBe(false);
   });

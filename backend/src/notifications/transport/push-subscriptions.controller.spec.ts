@@ -73,8 +73,14 @@ describe("PushSubscriptionsController", () => {
 
   it("передаёт inspection, explicit transfer и owner stop только текущему customer", async () => {
     const useCase = {
-      inspect: jest.fn().mockResolvedValue({ association: "other", version: associationVersion }),
-      associate: jest.fn().mockResolvedValue({ association: "current", version: associationVersion }),
+      inspect: jest.fn().mockResolvedValue({
+        association: "other",
+        version: associationVersion,
+      }),
+      associate: jest.fn().mockResolvedValue({
+        association: "current",
+        version: associationVersion,
+      }),
       deleteAssociation: jest.fn(),
     } as unknown as ManagePushSubscriptionUseCase;
     const controller = new PushSubscriptionsController(

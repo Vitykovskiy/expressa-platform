@@ -21,6 +21,8 @@ describe("PostgresPushSubscriptionRepository", () => {
       ["other-user", "https://push.example/subscription", "key", "auth"],
     );
     expect(query.mock.calls[0][0]).not.toContain("user_id = EXCLUDED.user_id,");
-    expect(query.mock.calls[0][0]).toContain("association_version = gen_random_uuid()");
+    expect(query.mock.calls[0][0]).toContain(
+      "association_version = gen_random_uuid()",
+    );
   });
 });
