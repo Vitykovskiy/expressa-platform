@@ -10,6 +10,7 @@ import type {
   SessionWithUser,
   StoredOtpChallenge,
 } from "../application/auth-repository.types";
+import type { LogoutPushSubscription } from "../application/logout.use-case.types";
 import { userRoles } from "../domain/auth.constants";
 import type { UserRole } from "../domain/auth.types";
 import {
@@ -496,6 +497,59 @@ export class PostgresAuthRepository implements AuthRepository {
     });
   }
 
+  async logoutSessionWithPushSubscription(
+    sessionId: string | null,
+    expectedRefreshHash: string | null,
+    subscription: LogoutPushSubscription,
+    now: Date,
+  ): Promise<SessionLogout> {
+    return this.withTransaction(async (client) => {
+      const session =
+        sessionId === null
+          ? null
+          : await this.findSessionForLogout(client, sessionId);
+
+      if (
+        session !== null &&
+        expectedRefreshHash !== null &&
+        session.refreshTokenHash === expectedRefreshHash &&
+        session.revokedAt !== null
+      ) {
+        await this.deletePushSubscription(client, session.userId, subscription);
+        return { status: "unavailable" };
+      }
+
+      if (
+        session !== null &&
+        expectedRefreshHash !== null &&
+        session.refreshTokenHash === expectedRefreshHash &&
+        session.revokedAt === null &&
+        session.expiresAt > now
+      ) {
+        await this.deletePushSubscription(client, session.userId, subscription);
+        const revoked = await client.query<DatabaseRow>(
+          `UPDATE sessions
+           SET revoked_at = GREATEST($2, created_at)
+           WHERE id = $1
+           RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+          [session.id, now],
+        );
+
+        return {
+          status: "revoked",
+          session: parseRequiredRow(revoked.rows[0], parseSession),
+        };
+      }
+
+      await client.query(
+        `DELETE FROM push_subscriptions
+         WHERE endpoint = $1 AND p256dh = $2 AND auth = $3`,
+        [subscription.endpoint, subscription.p256dh, subscription.auth],
+      );
+      return { status: "unavailable" };
+    });
+  }
+
   async findCurrentUser(
     sessionId: string,
     now: Date,
@@ -527,6 +581,32 @@ export class PostgresAuthRepository implements AuthRepository {
     } finally {
       client.release();
     }
+  }
+
+  private async findSessionForLogout(
+    client: PoolClient,
+    sessionId: string,
+  ): Promise<AuthSession | null> {
+    const selected = await client.query<DatabaseRow>(
+      `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
+       FROM sessions
+       WHERE id = $1
+       FOR UPDATE`,
+      [sessionId],
+    );
+    return parseOptionalRow(selected.rows[0], parseSession);
+  }
+
+  private async deletePushSubscription(
+    client: PoolClient,
+    userId: string,
+    subscription: LogoutPushSubscription,
+  ): Promise<void> {
+    await client.query(
+      `DELETE FROM push_subscriptions
+       WHERE user_id = $1 AND endpoint = $2 AND p256dh = $3 AND auth = $4`,
+      [userId, subscription.endpoint, subscription.p256dh, subscription.auth],
+    );
   }
 }
 

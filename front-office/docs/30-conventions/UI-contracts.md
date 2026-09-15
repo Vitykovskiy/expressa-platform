@@ -13,12 +13,12 @@ sources:
 Нота покрывает оболочку, примитивы и общие правила; поведение экранов находится
 в feature-нотах. [Источник: shell](../../src/widgets/customer-shell/CustomerShell.vue).
 
-| Контракт                | Поведение, данные и состояния                                                                                                                                                                                                                                                                             | Источник и проверка                                                                                                                                                                                                          |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Контракт                | Поведение, данные и состояния                                                                                                                                                                                                                                                                                                                                          | Источник и проверка                                                                                                                                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Shell/navigation        | ниже 1024px показывает left-aligned button «Экспресса» без House с именем «Перейти в меню», а также постоянные Account, History и Cart. Back не входит в shell: category, product и order detail рендерят его в отдельной left-aligned contextual row под header и перед primary content, но не в title row. Отдельного Home-action нет. От 1024px сохраняется sidebar | [shell](../../src/widgets/customer-shell/CustomerShell.vue), [navigation](../../src/widgets/customer-shell/ShellNavigation.vue)                                                                                              |
-| Button/icon button      | `disabled`/`loading` блокируют действие; icon button требует доступного имени. Profile icon имеет имя «Аккаунт», `aria-haspopup="dialog"` и возвращает фокус после закрытия диалога                                                                                                                       | [UiBtn](../../src/shared/ui/customer/btn/UiBtn.vue), [UiIconBtn](../../src/shared/ui/customer/icon-btn/UiIconBtn.vue)                                                                                                        |
-| Phone/OTP поля          | оба принимают `modelValue`, `label`, `loading`, `disabled`, `readonly` и испускают только `update:modelValue`; loading отключает поле, phone задаёт tel/inputmode/auto-complete, OTP оставляет цифры и максимум шесть                                                                                     | [PhoneInput](../../src/shared/ui/customer/phone-input/UiPhoneInput.vue), [OtpInput](../../src/shared/ui/customer/otp-input/UiOtpInput.vue)                                                                                   |
-| Dialog/progress/message | `UiDialog` принимает `modelValue`, необязательные `label` и `returnFocusTo`, сообщает `update:modelValue`; consumer повтора заказа передаёт actual trigger. Browser-проверка подтверждает контекстное имя и возврат фокуса после Escape/Отмены. Progress и field message показывают состояние вызывающего | [Dialog](../../src/shared/ui/customer/dialog/UiDialog.vue), [dialog spec](../../src/shared/ui/customer/dialog/UiDialog.spec.ts), [OrderPage](../../src/pages/OrderPage.vue), [order spec](../../src/pages/OrderPage.spec.ts) |
+| Button/icon button      | `disabled`/`loading` блокируют действие; icon button требует доступного имени. Profile icon имеет имя «Аккаунт», `aria-haspopup="dialog"` и возвращает фокус после закрытия диалога                                                                                                                                                                                    | [UiBtn](../../src/shared/ui/customer/btn/UiBtn.vue), [UiIconBtn](../../src/shared/ui/customer/icon-btn/UiIconBtn.vue)                                                                                                        |
+| Phone/OTP поля          | оба принимают `modelValue`, `label`, `loading`, `disabled`, `readonly` и испускают только `update:modelValue`; loading отключает поле, phone задаёт tel/inputmode/auto-complete, OTP оставляет цифры и максимум шесть                                                                                                                                                  | [PhoneInput](../../src/shared/ui/customer/phone-input/UiPhoneInput.vue), [OtpInput](../../src/shared/ui/customer/otp-input/UiOtpInput.vue)                                                                                   |
+| Dialog/progress/message | `UiDialog` принимает `modelValue`, необязательные `label` и `returnFocusTo`, сообщает `update:modelValue`; consumer повтора заказа передаёт actual trigger. Browser-проверка подтверждает контекстное имя и возврат фокуса после Escape/Отмены. Progress и field message показывают состояние вызывающего                                                              | [Dialog](../../src/shared/ui/customer/dialog/UiDialog.vue), [dialog spec](../../src/shared/ui/customer/dialog/UiDialog.spec.ts), [OrderPage](../../src/pages/OrderPage.vue), [order spec](../../src/pages/OrderPage.spec.ts) |
 
 `AuthGatePrompt`, `UiPhoneInput`, `UiOtpInput`, `UiSurfaceCard` и `UiToggle` не
 имеют runtime consumer и не описывают активный пользовательский
@@ -59,9 +59,20 @@ Disclosure использует единственную native button-обла�
 
 Диалог «Аккаунт» является feature composition, а не новым primitive: он
 переиспользует `UiDialog`, `UiIconBtn`, `UiBtn` и `UiFieldMessage`; `UiToggle`
-не используется для opt-in. Нужны существующие surface/text/primary/danger/
-border/focus, spacing, radius и typography tokens, прокрутка содержимого и
-разделённый footer logout. Требуются label, Escape/close, focus containment и
-возврат к фактическому trigger, 44px targets и один feedback announcement.
-Это required UI contract; policy и непроверенные assistive-technology claims не
-дублируются здесь.
+не используется для opt-in. Нужны существующие
+surface/text/primary/danger/border/focus, spacing, radius и typography tokens,
+max-width 28rem, внутренний scroll и разделённый footer logout. Белая surface и
+текст должны проходить применимый contrast; конфликтная orange-on-blue пара не
+используется.
+
+App — единственный владелец accountOpen. Account composition только эмитит
+close. Внешний returnFocusTo — focus target, а не Vuetify activator; реальный
+slot activator других consumers сохраняет прежнюю семантику. X, Escape и
+backdrop закрывают один раз, после leave фокус возвращается точно в
+desktop/mobile trigger. Быстрые повторные клики создают не более одного dialog.
+При prefers-reduced-motion: reduce нет пространственного выезда к trigger.
+Видимая close-control и все targets не меньше 44px.
+
+На 479/480 и 1023/1024 px нет horizontal overflow, обрезанного close или layout
+jump; mobile actions могут занимать полную ширину, desktop dialog центрирован.
+Это accepted target, ещё не полностью реализованный runtime contract.

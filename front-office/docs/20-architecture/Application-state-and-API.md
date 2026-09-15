@@ -48,16 +48,29 @@ callback сообщает о waiting worker; тогда worker активиру�
 [Источники: PWA](../../src/app/pwa.ts), [worker](../../src/app/push-notifications.ts),
 [Nginx](../../nginx.conf).
 
-## Required notification and session state
+## Accepted target: notification, session и Account
 
-Planned notification entity owns support, permission, local capability,
-server-association inspection and serialized operation state; browser
-subscription and secrets остаются transient и не попадают в local storage.
-Account/route generations invalidate delayed results: старое действие не
-привязывает новый аккаунт и не открывает диалог. Invitation memory локальна для
-аккаунта и установки; write/readback failure suppresses automatic invitation.
-Session store owns one recovery flow for protected reads; API client remains
-stateless. Details: [ADR-005](../../../docs/20-architecture/ADR/ADR-005-customer-notification-association.md).
+Notification store отдельно хранит support/permission, локальную transient
+capability, server association и один сериализованный operation state. Секреты
+подписки не попадают в local storage. Гостевое состояние не запускает
+inspection; после входа нет автоматической association. other — внутреннее
+состояние: UI показывает обычное выключенное состояние, а явное включение
+выполняет безопасный transfer без раскрытия owner.
+
+Перед customer logout session owner надёжно читает текущую capability и
+передаёт её в расширенный logout API. До успешного 204 клиент сохраняет
+авторизованное состояние; ошибка чтения, transport или 503 даёт одну повторную
+попытку полного logout. Structurally valid object-body не получает credential
+401: backend использует capability-only detach, если refresh credential
+недействителен. После 204 открывается обычный guest. Клиент никогда не вызывает
+local unsubscribe при logout.
+После 204 session и customer-scoped notification state очищаются, но browser
+permission и локальная capability остаются. App остаётся единственным
+владельцем accountOpen; диалог только сообщает close, а returnFocusTo
+является исключительно focus target.
+
+Это принятый target, ещё не реализованный полностью в runtime. Details:
+[ADR-005](../../../docs/20-architecture/ADR/ADR-005-customer-notification-association.md).
 
 Проверки: [session](../../src/app/session.store.spec.ts), [API](../../src/shared/api/client.spec.ts),
 [checkout](../../src/features/checkout/checkout.store.spec.ts).

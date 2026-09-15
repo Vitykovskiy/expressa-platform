@@ -10,6 +10,7 @@
       <header class="account-settings__header">
         <h2 id="account-settings-title">Аккаунт</h2>
         <ui-icon-btn
+          class="account-settings__close"
           aria-label="Закрыть настройки аккаунта"
           type="button"
           @click="emit('update:modelValue', false)"
@@ -18,13 +19,13 @@
         </ui-icon-btn>
       </header>
       <template v-if="props.authenticated">
-        <div>
-          <h3>Телефон</h3>
+        <div class="account-settings__phone">
+          <span>Телефон</span>
           <p>{{ props.accountLabel }}</p>
         </div>
       </template>
       <template v-else>
-        <p>Вы не вошли в аккаунт</p>
+        <p class="account-settings__guest-message">Вы не вошли в аккаунт</p>
         <ui-btn
           class="account-settings__primary"
           type="button"
@@ -33,23 +34,18 @@
         >
       </template>
       <section
+        v-if="props.authenticated"
         class="account-settings__notifications"
         aria-labelledby="account-notifications-title"
       >
         <h3 id="account-notifications-title">Уведомления о заказах</h3>
-        <p v-if="notificationFeedback === null">{{ description }}</p>
-        <ui-field-message :message="notificationFeedback ?? ''" tone="error" />
         <p
-          v-if="notifications.state === 'other_account'"
-          class="account-settings__disclosure"
+          v-if="notificationFeedback === null"
+          class="account-settings__status"
         >
-          Подключение отключит уведомления прежнего аккаунта на этом устройстве
-          и подключит их к текущему аккаунту.
+          {{ description }}
         </p>
-        <p v-if="showsDisclosure" class="account-settings__disclosure">
-          Уведомления будут приходить на это устройство и после выхода из
-          аккаунта. На общем устройстве их смогут увидеть другие люди.
-        </p>
+        <ui-field-message :message="notificationFeedback ?? ''" tone="error" />
         <ui-btn
           v-if="
             notifications.state === 'denied' ||
@@ -60,14 +56,13 @@
           :loading="notifications.operation !== null"
           @click="notifications.inspect"
           >{{
-            notifications.state === "denied"
-              ? "Проверить снова"
-              : "Повторить проверку"
+            notifications.state === "denied" ? "Проверить снова" : "Повторить"
           }}</ui-btn
         >
         <ui-btn
           v-else-if="
             notifications.state === 'off_current' ||
+            notifications.state === 'other_account' ||
             notifications.state === 'failed_enable'
           "
           class="account-settings__primary"
@@ -77,34 +72,20 @@
           @click="enable"
           >Включить уведомления</ui-btn
         >
-        <template v-else-if="notifications.state === 'other_account'">
-          <ui-btn
-            class="account-settings__primary"
-            type="button"
-            :disabled="isBusy"
-            :loading="notifications.operation !== null"
-            @click="transfer"
-            >Подключить к этому аккаунту</ui-btn
-          >
-          <ui-btn
-            type="button"
-            :disabled="isBusy"
-            :loading="notifications.operation !== null"
-            @click="disable"
-            >Отключить на этом устройстве</ui-btn
-          >
-        </template>
         <ui-btn
           v-else-if="
             notifications.state === 'on_current' ||
-            notifications.state === 'anonymous_subscription' ||
             notifications.state === 'failed_disable'
           "
           type="button"
           :disabled="isBusy"
           :loading="notifications.operation !== null"
           @click="disable"
-          >Отключить на этом устройстве</ui-btn
+          >{{
+            notifications.state === "failed_disable"
+              ? "Повторить"
+              : "Отключить уведомления"
+          }}</ui-btn
         >
       </section>
       <footer v-if="props.authenticated" class="account-settings__footer">
@@ -153,20 +134,14 @@ const description = computed(
       failed_enable: "Не удалось включить уведомления. Попробуйте ещё раз.",
       failed_disable:
         "Не удалось отключить уведомления на этом устройстве. Попробуйте ещё раз.",
-      off_current: "Не включены для этого аккаунта на этом устройстве.",
-      on_current: "Включены для этого аккаунта на этом устройстве.",
+      off_current:
+        "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
+      on_current: "Уведомления включены.",
       other_account:
-        "На этом устройстве включены уведомления другого аккаунта.",
-      anonymous_subscription:
-        "На этом устройстве могут приходить уведомления о заказах.",
-      anonymous_off: "Уведомления на этом устройстве отключены.",
+        "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
+      anonymous_subscription: "",
+      anonymous_off: "",
     })[notifications.state],
-);
-const showsDisclosure = computed(
-  () =>
-    notifications.subscription !== null ||
-    notifications.state === "off_current" ||
-    notifications.state === "failed_enable",
 );
 const notificationFeedback = computed(() => {
   if (notifications.state === "failed_check")
@@ -180,18 +155,13 @@ const notificationFeedback = computed(() => {
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) void notifications.inspect();
+    if (open && props.authenticated) void notifications.inspect();
   },
 );
 
 function enable(): Promise<void> {
   rememberChoice();
-  return notifications.enable();
-}
-
-function transfer(): Promise<void> {
-  rememberChoice();
-  return notifications.enable(true);
+  return notifications.enable(notifications.state === "other_account");
 }
 
 function disable(): Promise<void> {
@@ -208,8 +178,10 @@ function rememberChoice(): void {
 <style scoped lang="scss">
 .account-settings {
   display: grid;
-  gap: var(--customer-space-7);
-  padding: var(--customer-space-10);
+  gap: var(--customer-space-9);
+  max-height: min(42rem, calc(100dvh - var(--customer-space-18)));
+  padding: var(--customer-space-12);
+  overflow-y: auto;
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);
   border-radius: var(--customer-radius-lg);
@@ -226,19 +198,37 @@ function rememberChoice(): void {
   gap: var(--customer-space-6);
 }
 .account-settings__header h2 {
-  font-size: var(--customer-font-size-xl);
+  font-size: var(--customer-font-size-2xl);
   font-weight: var(--customer-font-weight-black);
 }
 .account-settings__notifications {
   display: grid;
-  gap: var(--customer-space-4);
+  gap: var(--customer-space-5);
+  padding: var(--customer-space-8);
+  background: var(--customer-surface-info);
+  border-radius: var(--customer-radius-md);
+}
+.account-settings__phone {
+  display: grid;
+  gap: var(--customer-space-3);
+}
+.account-settings__phone span,
+.account-settings__notifications h3 {
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.account-settings__phone p {
+  font-size: var(--customer-font-size-lg);
+  font-weight: var(--customer-font-weight-semibold);
 }
 .account-settings p {
   color: var(--customer-color-text-secondary-on-surface);
   overflow-wrap: anywhere;
 }
-.account-settings__disclosure {
-  font-size: var(--customer-font-size-sm);
+.account-settings__status,
+.account-settings__guest-message {
+  line-height: var(--customer-line-height-relaxed);
 }
 .account-settings .ui-btn {
   justify-self: start;
@@ -248,8 +238,16 @@ function rememberChoice(): void {
   font-weight: var(--customer-font-weight-extrabold);
 }
 .account-settings__primary {
-  color: var(--customer-background);
+  color: var(--customer-color-black);
   background: var(--customer-primary);
+}
+.account-settings :deep(.account-settings__close) {
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface-info);
+  border-color: var(--customer-border-subtle-on-surface);
+}
+.account-settings :deep(.account-settings__close:hover:not(:disabled)) {
+  background: var(--customer-color-blue-500-10);
 }
 .account-settings__footer {
   padding-top: var(--customer-space-7);

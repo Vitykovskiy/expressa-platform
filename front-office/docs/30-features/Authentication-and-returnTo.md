@@ -61,3 +61,24 @@ auth-маршруты; `//`, внешний URL и auth-пути заменяю�
 Проверки: [router spec](../../src/app/router.spec.ts), [phone spec](../../src/pages/AuthPhonePage.spec.ts), [code spec](../../src/pages/AuthCodePage.spec.ts), [composition spec](../../src/pages/AuthCodePage.composition.spec.ts), [form spec](../../src/features/auth/AuthForm.spec.ts).
 
 Карта раздела: [сценарии](INDEX.md).
+
+## Accepted target: Account и logout
+
+Гостевой Account показывает ровно заголовок «Аккаунт», «Вы не вошли в аккаунт»
+и «Войти», без дополнительного объяснения. Он не проверяет permission, local
+subscription или server association и не показывает «Проверяем уведомления…».
+
+Customer logout сначала получает текущую PushSubscription. Объект передаётся
+в POST /api/v2/auth/logout; null используется только при подтверждённом
+отсутствии или unsupported Push API. При невозможности чтения либо неуспешном
+API transport/503 клиент остаётся authenticated, показывает понятную ошибку и
+одну «Повторить». Structurally valid object-body не имеет credential-401:
+backend при недействительном refresh использует capability-only detach. 204
+очищает session/customer state и переводит Account в guest. Клиент не вызывает
+local unsubscribe; permission, локальная PushSubscription и другие браузеры
+всегда сохраняются.
+После следующего входа уведомления включаются только явным действием.
+
+Это принятый target, ещё не полностью реализованный runtime contract.
+[API](../../../docs/50-interfaces/Authentication-API.md),
+[ADR](../../../docs/20-architecture/ADR/ADR-005-customer-notification-association.md).

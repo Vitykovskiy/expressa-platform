@@ -2,7 +2,16 @@ import type { AuthCrypto } from "./auth-crypto.types";
 import type { AuthRepository } from "./auth-repository.types";
 import type { Clock } from "./clock.types";
 import { AccessDeniedError } from "../domain/auth.errors";
-import type { RefreshTokenParts } from "./logout.use-case.types";
+import type {
+  LogoutPushSubscription,
+  RefreshTokenParts,
+} from "./logout.use-case.types";
+
+export class LogoutUnavailableError extends Error {
+  constructor() {
+    super("Logout storage is unavailable.");
+  }
+}
 
 export class LogoutUseCase {
   constructor(
@@ -11,19 +20,61 @@ export class LogoutUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(refreshToken: string): Promise<void> {
-    const parsedToken = parseRefreshToken(refreshToken);
-    const refreshTokenHash = this.crypto.hashRefreshToken(refreshToken);
-
-    if (refreshTokenHash === null) {
-      throw new AccessDeniedError();
+  async execute(
+    refreshToken: string,
+    subscription?: LogoutPushSubscription,
+  ): Promise<void> {
+    if (subscription === undefined) {
+      await this.executeLegacy(refreshToken);
+      return;
     }
 
-    await this.repository.logoutSession(
-      parsedToken.sessionId,
-      refreshTokenHash,
-      this.clock.now(),
-    );
+    const parsedCredential = tryParseRefreshToken(refreshToken);
+    const refreshHash = this.crypto.hashRefreshToken(refreshToken);
+    const logoutWithPushSubscription =
+      this.repository.logoutSessionWithPushSubscription;
+
+    if (logoutWithPushSubscription === undefined) {
+      throw new LogoutUnavailableError();
+    }
+
+    try {
+      await logoutWithPushSubscription.call(
+        this.repository,
+        parsedCredential?.sessionId ?? null,
+        refreshHash,
+        subscription,
+        this.clock.now(),
+      );
+    } catch {
+      throw new LogoutUnavailableError();
+    }
+  }
+
+  private async executeLegacy(refreshToken: string): Promise<void> {
+    const parsedCredential = parseRefreshToken(refreshToken);
+    const refreshHash = this.crypto.hashRefreshToken(refreshToken);
+
+    if (refreshHash === null) throw new AccessDeniedError();
+
+    try {
+      await this.repository.logoutSession(
+        parsedCredential.sessionId,
+        refreshHash,
+        this.clock.now(),
+      );
+    } catch {
+      throw new LogoutUnavailableError();
+    }
+  }
+}
+
+function tryParseRefreshToken(value: string): RefreshTokenParts | null {
+  try {
+    return parseRefreshToken(value);
+  } catch (error) {
+    if (error instanceof AccessDeniedError) return null;
+    throw error;
   }
 }
 

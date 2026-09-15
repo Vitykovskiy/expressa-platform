@@ -2,14 +2,12 @@
   <v-dialog
     v-bind="$attrs"
     :aria-label="props.label"
-    :activator="activator"
     :model-value="props.modelValue"
+    :persistent="dismissalLocked"
     @after-leave="focusReturnTarget"
+    @keydown="handleKeydown"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <template v-if="$slots.activator" #activator="slotProps">
-      <slot name="activator" v-bind="slotProps" />
-    </template>
     <template #default="slotProps">
       <slot v-bind="slotProps" />
     </template>
@@ -17,23 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import type { ComponentPublicInstance, Ref } from "vue";
-import { UI_DIALOG_DEFAULTS } from "./UiDialog.constants";
+import { onUnmounted, shallowRef, watch } from "vue";
+import type { Ref } from "vue";
+import {
+  UI_DIALOG_DEFAULTS,
+  UI_DIALOG_OPEN_GUARD_MS,
+} from "./UiDialog.constants";
 import type { UiDialogEmits, UiDialogProps } from "./UiDialog.types";
-
-type UiDialogActivatorTargetRef = {
-  (
-    target:
-      InstanceType<typeof globalThis.Element> | ComponentPublicInstance | null,
-  ): void;
-  value:
-    | InstanceType<typeof globalThis.HTMLElement>
-    | ComponentPublicInstance
-    | null
-    | undefined;
-  readonly el: InstanceType<typeof globalThis.HTMLElement> | undefined;
-};
 
 defineOptions({ inheritAttrs: false });
 
@@ -42,17 +30,46 @@ const props = withDefaults(defineProps<UiDialogProps>(), {
   label: "Диалог",
 });
 const emit = defineEmits<UiDialogEmits>();
-const activator = computed(
-  () => getFocusElement(props.returnFocusTo) ?? undefined,
-);
+const dismissalLocked = shallowRef(false);
+let openGuardTimer: ReturnType<typeof setTimeout> | null = null;
 defineSlots<{
-  activator?: (props: {
-    isActive: boolean;
-    props: Record<string, unknown>;
-    targetRef: UiDialogActivatorTargetRef;
-  }) => unknown;
   default?: (props: { isActive: Ref<boolean> }) => unknown;
 }>();
+
+watch(
+  () => props.modelValue,
+  (open, wasOpen) => {
+    if (open && !wasOpen) startOpenGuard();
+    if (!open) {
+      stopOpenGuard();
+      if (wasOpen) focusReturnTarget();
+    }
+  },
+);
+
+onUnmounted(stopOpenGuard);
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (dismissalLocked.value && event.key === "Escape") {
+    event.preventDefault();
+    emit("update:modelValue", false);
+  }
+}
+
+function startOpenGuard(): void {
+  stopOpenGuard();
+  dismissalLocked.value = true;
+  openGuardTimer = setTimeout(() => {
+    dismissalLocked.value = false;
+    openGuardTimer = null;
+  }, UI_DIALOG_OPEN_GUARD_MS);
+}
+
+function stopOpenGuard(): void {
+  if (openGuardTimer !== null) clearTimeout(openGuardTimer);
+  openGuardTimer = null;
+  dismissalLocked.value = false;
+}
 
 function focusReturnTarget(): void {
   getFocusElement(props.returnFocusTo)?.focus();

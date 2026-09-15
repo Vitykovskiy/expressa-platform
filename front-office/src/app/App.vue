@@ -198,6 +198,8 @@ function signIn(): void {
 }
 
 function openAccount(): void {
+  if (accountSettingsOpen.value) return;
+
   accountSettingsTrigger.value =
     document.activeElement instanceof HTMLElement
       ? document.activeElement

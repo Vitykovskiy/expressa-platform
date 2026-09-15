@@ -1,4 +1,5 @@
 import type { OtpChallenge, UserRole } from "../domain/auth.types";
+import type { LogoutPushSubscription } from "./logout.use-case.types";
 
 export type AuthUser = {
   id: string;
@@ -81,6 +82,12 @@ export interface AuthRepository {
   logoutSession(
     sessionId: string,
     expectedRefreshTokenHash: string,
+    now: Date,
+  ): Promise<SessionLogout>;
+  logoutSessionWithPushSubscription?(
+    sessionId: string | null,
+    expectedRefreshHash: string | null,
+    subscription: LogoutPushSubscription,
     now: Date,
   ): Promise<SessionLogout>;
   revokeSession(sessionId: string, now: Date): Promise<AuthSession | null>;

@@ -42,11 +42,22 @@
     </div>
     <div
       v-else-if="props.orders.length === 0"
-      class="orders-history__state"
+      class="orders-history__empty"
       role="status"
     >
-      <p>История заказов пуста</p>
-      <ui-btn to="/" type="button">Перейти в меню</ui-btn>
+      <div class="orders-history__empty-icon" aria-hidden="true">
+        <History class="orders-history__empty-icon-glyph" />
+      </div>
+      <p class="orders-history__empty-message">История заказов пуста</p>
+      <ui-btn
+        class="orders-history__empty-action"
+        color="surface"
+        size="large"
+        to="/"
+        type="button"
+      >
+        Перейти в меню
+      </ui-btn>
     </div>
     <template v-else>
       <ul class="orders-history__grid" aria-label="История заказов">
@@ -70,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { RefreshCw } from "lucide-vue-next";
+import { History, RefreshCw } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import OrderCard from "./OrderCard.vue";
@@ -134,6 +145,44 @@ const emit = defineEmits<OrdersHistoryScreenEmits>();
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-lg);
   font-weight: var(--customer-font-weight-bold);
+}
+.orders-history__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--customer-space-11);
+  min-width: 0;
+  padding: var(--customer-space-18) var(--customer-space-9);
+  text-align: center;
+}
+.orders-history__empty-icon {
+  display: grid;
+  width: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
+  height: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
+  padding: var(--customer-space-11);
+  place-items: center;
+  border-radius: var(--customer-radius-round);
+  background: var(--customer-color-surface-subtle);
+}
+.orders-history__empty-icon-glyph {
+  width: var(--customer-font-size-7xl);
+  height: var(--customer-font-size-7xl);
+  color: var(--customer-color-text-on-brand);
+}
+.orders-history__empty-message {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--customer-color-text-muted-on-brand);
+  font-weight: var(--customer-font-weight-bold);
+}
+.orders-history__empty-action {
+  padding: var(--customer-space-7) var(--customer-space-15);
+  border-radius: var(--customer-radius-md);
+  font-size: var(--customer-font-size-md);
+  font-weight: var(--customer-font-weight-extrabold);
+  line-height: 1.5;
 }
 .orders-history__stale {
   margin: 0 var(--customer-space-9) var(--customer-space-7);

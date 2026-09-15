@@ -173,9 +173,77 @@
       "post": {
         "operationId": "AuthController_logoutSession",
         "parameters": [],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "pushSubscription": {
+                    "additionalProperties": false,
+                    "nullable": true,
+                    "properties": {
+                      "endpoint": {
+                        "format": "uri",
+                        "minLength": 1,
+                        "pattern": "^https://",
+                        "type": "string"
+                      },
+                      "keys": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "auth": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "p256dh": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "p256dh",
+                          "auth"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "endpoint",
+                      "keys"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
           }
         },
         "security": [

@@ -76,9 +76,31 @@ House. Его доступное имя — «Перейти в меню»: с �
 
 От 1024px сохраняется существующая боковая навигация: clickable brand, Menu,
 History, Cart, categories и нижняя строка Account. Account остаётся постоянным
-местом управления уведомлениями устройства; выход не отключает их. Точный
+местом управления уведомлениями. Текущее утверждение, что выход не отключает
+доставку, является legacy-поведением; принятый target отвязывает только текущий
+браузер при явном logout. Точный
 сценарий уведомлений — в [системной feature-ноте](../40-features/Track-history-and-repeat-order.md),
 а контракт shell — в [UI-контрактах front-office](../../front-office/docs/30-conventions/UI-contracts.md).
+
+## Accepted target: Account и пустая History
+
+Гость открывает компактный Account ровно с заголовком «Аккаунт», текстом «Вы
+не вошли в аккаунт» и действием «Войти»; дополнительного объяснения и
+notification inspection нет.
+Вошедший customer видит телефон, один статус «Уведомления о заказах», только
+применимое действие и визуально отделённый logout. Endpoint, owner,
+association/version и предупреждения о технической привязке не показываются.
+
+Диалог имеет один источник open-состояния, видимую 44px кнопку закрытия и
+возвращает фокус фактическому desktop/mobile trigger после X, Escape и
+backdrop. Повторное и быстрое открытие не создаёт второй диалог; reduced motion
+не использует выезд из trigger. На 479/480 и 1023/1024 px нет overflow или
+скачка layout.
+
+Пустая History повторяет уже применённый паттерн пустой Cart: центрированный
+блок в доступной content area, круглая subtle-surface иконка, текст «История
+заказов пуста» и крупная surface-кнопка «Перейти в меню». Refresh остаётся
+вторичным действием header.
 
 Повторно используемая кнопка связывает disabled/loading с `aria-busy` и
 показывает progressbar во время loading. [front-office/src/shared/ui/customer/btn/UiBtn.vue:entry](../../front-office/src/shared/ui/customer/btn/UiBtn.vue).

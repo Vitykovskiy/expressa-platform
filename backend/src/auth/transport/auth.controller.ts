@@ -16,6 +16,7 @@ import {
 import type { Request } from "express";
 import {
   ApiCookieAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -23,7 +24,11 @@ import {
 import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
 import { clockPort } from "../application/clock.constants";
 import type { Clock } from "../application/clock.types";
-import { LogoutUseCase } from "../application/logout.use-case";
+import {
+  LogoutUnavailableError,
+  LogoutUseCase,
+} from "../application/logout.use-case";
+import type { LogoutPushSubscription } from "../application/logout.use-case.types";
 import { RefreshSessionUseCase } from "../application/refresh-session.use-case";
 import {
   OtpDeliveryUnavailableError,
@@ -58,6 +63,8 @@ import type {
   AccessTokenResponse,
   AuthCookieResponse,
   AuthHeaderResponse,
+  AuthErrorResponse,
+  AuthRequest,
 } from "./auth.controller.types";
 
 @ApiTags("auth")
@@ -174,20 +181,78 @@ export class AuthController {
   @UseGuards(OriginGuard)
   @ApiCookieAuth("expressa_refresh")
   @ApiOperation({ summary: "Завершить сессию" })
+  @ApiBody({
+    required: false,
+    schema: {
+      additionalProperties: false,
+      properties: {
+        pushSubscription: {
+          additionalProperties: false,
+          nullable: true,
+          properties: {
+            endpoint: {
+              format: "uri",
+              minLength: 1,
+              pattern: "^https://",
+              type: "string",
+            },
+            keys: {
+              additionalProperties: false,
+              properties: {
+                auth: { minLength: 1, type: "string" },
+                p256dh: { minLength: 1, type: "string" },
+              },
+              required: ["p256dh", "auth"],
+              type: "object",
+            },
+          },
+          required: ["endpoint", "keys"],
+          type: "object",
+        },
+      },
+      type: "object",
+    },
+  })
   @ApiResponse({ status: 204 })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    type: ApiHttpErrorDto,
+  })
   async logoutSession(
     @Headers("cookie") cookie: string | undefined,
     @Res({ passthrough: true }) response: AuthCookieResponse,
-  ): Promise<void> {
+    @Body() body: unknown = undefined,
+    @Req() request?: AuthRequest,
+  ): Promise<AuthErrorResponse | void> {
     const refreshToken = readRefreshCookie(cookie);
+    const pushSubscription = parseLogoutRequest(body);
 
     if (refreshToken !== null) {
       try {
-        await this.logout.execute(refreshToken);
-      } catch (error) {
-        if (!(error instanceof AccessDeniedError)) {
-          throw error;
+        if (pushSubscription === undefined) {
+          await this.logout.execute(refreshToken);
+        } else if (pushSubscription === null) {
+          await this.logout.execute(refreshToken);
+        } else {
+          await this.logout.execute(refreshToken, pushSubscription);
         }
+      } catch (error) {
+        if (error instanceof LogoutUnavailableError) {
+          return this.returnLogoutUnavailable(response, request);
+        }
+
+        if (!(error instanceof AccessDeniedError)) throw error;
+      }
+    } else if (pushSubscription !== undefined && pushSubscription !== null) {
+      try {
+        await this.logout.execute("", pushSubscription);
+      } catch (error) {
+        if (error instanceof LogoutUnavailableError) {
+          return this.returnLogoutUnavailable(response, request);
+        }
+
+        throw error;
       }
     }
 
@@ -196,6 +261,17 @@ export class AuthController {
 
   private getCookieMaxAge(expiresAt: Date): number {
     return Math.max(0, expiresAt.getTime() - this.clock.now().getTime());
+  }
+
+  private returnLogoutUnavailable(
+    response: AuthCookieResponse,
+    request: AuthRequest | undefined,
+  ): AuthErrorResponse {
+    response.status?.(HttpStatus.SERVICE_UNAVAILABLE);
+    return {
+      ...authErrorResponses.serviceUnavailable,
+      requestId: request?.requestId ?? "unknown",
+    };
   }
 }
 
@@ -230,6 +306,72 @@ function assertVerifyOtpBody(body: VerifyOtpDto): void {
   if (typeof body?.phone !== "string" || typeof body?.code !== "string") {
     throw new BadRequestException(authErrorResponses.validation);
   }
+}
+
+function parseLogoutRequest(
+  body: unknown,
+): LogoutPushSubscription | null | undefined {
+  if (body === undefined) return undefined;
+  if (!isExactObject(body, ["pushSubscription"])) validationError();
+  if (!("pushSubscription" in body)) return undefined;
+
+  const subscription = body.pushSubscription;
+  if (subscription === null) return null;
+  if (!isExactObject(subscription, ["endpoint", "keys"])) validationError();
+  if (
+    typeof subscription.endpoint !== "string" ||
+    subscription.endpoint.trim() === "" ||
+    !isHttpsUrl(subscription.endpoint) ||
+    !isExactObject(subscription.keys, ["p256dh", "auth"]) ||
+    typeof subscription.keys.p256dh !== "string" ||
+    subscription.keys.p256dh.trim() === "" ||
+    typeof subscription.keys.auth !== "string" ||
+    subscription.keys.auth.trim() === ""
+  ) {
+    validationError();
+  }
+
+  return {
+    endpoint: subscription.endpoint,
+    p256dh: subscription.keys.p256dh,
+    auth: subscription.keys.auth,
+  };
+}
+
+function isExactObject(
+  value: unknown,
+  expectedKeys: readonly string[],
+): value is Record<string, unknown> {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype
+  ) {
+    return false;
+  }
+
+  const keys = Object.keys(value);
+  return (
+    (keys.length === expectedKeys.length ||
+      (expectedKeys.length === 1 && keys.length === 0)) &&
+    keys.every((key) => expectedKeys.includes(key))
+  );
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function validationError(): never {
+  throw new HttpException(
+    authErrorResponses.validation,
+    HttpStatus.BAD_REQUEST,
+  );
 }
 
 function throwSafeAuthError(error: unknown): never {

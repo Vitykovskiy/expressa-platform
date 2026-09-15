@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 
 import { useCartStore } from "@/entities/customer/model/cart.store";
+import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
 import { ApiError } from "../shared/api/client";
 import {
   anonymousSessionState,
@@ -93,9 +94,11 @@ export const useSessionStore = defineStore("session", {
       }
     },
     async completeLogout(): Promise<void> {
-      const generation = ++this.generation;
       try {
-        await getSessionDependencies().authApi.logout();
+        const pushSubscription =
+          await useOrderNotificationsStore().readLogoutPushSubscription();
+        const generation = ++this.generation;
+        await getSessionDependencies().authApi.logout(pushSubscription);
         if (this.generation !== generation) return;
         this.clear();
         useCartStore().clear();

@@ -4,6 +4,7 @@ import {
   createPushApi,
   type PushSubscriptionRequest,
 } from "@/shared/api/push.api";
+import type { LogoutPushSubscription } from "@/shared/api/auth.api.types";
 import { initialOrderNotificationsState } from "./order-notifications.store.constants";
 import { getOrderNotificationsDependencies } from "./order-notifications.store.dependencies";
 import type { OrderNotificationsState } from "./order-notifications.store.types";
@@ -89,6 +90,11 @@ export const useOrderNotificationsStore = defineStore("order-notifications", {
       } finally {
         operationLocks.delete(this);
       }
+    },
+    async readLogoutPushSubscription(): Promise<LogoutPushSubscription | null> {
+      if (!supportsPush()) return null;
+
+      return getBrowserSubscription();
     },
     async enable(transfer = false): Promise<void> {
       if (

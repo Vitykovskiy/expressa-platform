@@ -13,5 +13,6 @@ sources:
 - [Авторизация](Auth.md)
 - [Каталог](Catalog.md)
 - [Заказы](Orders.md)
+- [Уведомления](Notifications.md)
 
 `/me` принадлежит [авторизации](Auth.md); health — [операциям](../60-operations/Run-and-environment.md).

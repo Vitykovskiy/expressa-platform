@@ -28,8 +28,9 @@ export function createAuthApi(client: AuthApiClient): AuthApi {
         method: "POST",
         expectedStatus: authStatuses.success,
       }),
-    logout: () =>
+    logout: (pushSubscription) =>
       client.request(authPaths.logout, isEmptyResponse, {
+        body: pushSubscription === undefined ? undefined : { pushSubscription },
         credentials: "include",
         method: "POST",
         expectedStatus: authStatuses.logout,
