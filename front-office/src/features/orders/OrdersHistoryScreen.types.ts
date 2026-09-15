@@ -9,6 +9,7 @@ export interface OrdersHistoryScreenProps {
 }
 
 export type OrdersHistoryScreenEmits = {
+  continueShopping: [];
   loadMore: [];
   repeat: [orderId: string];
   retry: [];

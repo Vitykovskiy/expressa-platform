@@ -1,10 +1,10 @@
 <template>
   <section class="cart-screen" aria-labelledby="cart-title">
     <header class="cart-screen__header">
+      <h1 id="cart-title" class="cart-screen__title">Корзина</h1>
       <p class="cart-screen__eyebrow">
         {{ totalQuantity }} {{ cartItemLabel }}
       </p>
-      <h1 id="cart-title" class="cart-screen__title">Корзина</h1>
     </header>
 
     <section
@@ -298,12 +298,17 @@ function emitCheckout(): void {
 }
 .cart-screen__eyebrow,
 .cart-screen__summary-label {
-  margin: 0 0 var(--customer-space-4);
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-xs);
   font-weight: var(--customer-font-weight-bold);
   letter-spacing: var(--customer-letter-spacing-overline);
   text-transform: uppercase;
+}
+.cart-screen__eyebrow {
+  margin: var(--customer-space-4) 0 0;
+}
+.cart-screen__summary-label {
+  margin: 0 0 var(--customer-space-4);
 }
 .cart-screen__title {
   margin-top: 0;

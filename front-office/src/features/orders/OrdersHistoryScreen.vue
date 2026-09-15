@@ -53,8 +53,7 @@
         class="orders-history__empty-action"
         color="surface"
         size="large"
-        to="/"
-        type="button"
+        @click="emit('continueShopping')"
       >
         Перейти в меню
       </ui-btn>

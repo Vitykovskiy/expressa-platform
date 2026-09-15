@@ -1,6 +1,7 @@
 <template>
   <OrdersHistoryScreen
     v-bind="screenProps"
+    @continue-shopping="continueShopping"
     @load-more="loadMore"
     @repeat="repeatOrder"
     @retry="retry"
@@ -64,6 +65,9 @@ async function retry(): Promise<void> {
     return;
   }
   await reload();
+}
+function continueShopping(): void {
+  void router.push("/");
 }
 function hasAuthenticatedSession(): boolean {
   return sessionStore.status === "authenticated";

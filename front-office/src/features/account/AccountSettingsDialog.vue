@@ -76,6 +76,7 @@
         <ui-field-message :message="props.logoutError ?? ''" tone="error" />
         <ui-btn
           class="account-settings__logout"
+          color="error"
           :disabled="notifications.operation !== null"
           type="button"
           :loading="props.logoutPending"
@@ -116,17 +117,15 @@ const description = computed(
   () =>
     ({
       checking: "Проверяем уведомления…",
-      unsupported: "Уведомления недоступны в этом браузере.",
-      denied: "Уведомления запрещены в настройках устройства или браузера.",
+      unsupported: "Этот браузер не поддерживает уведомления.",
+      denied: "Уведомления заблокированы в настройках устройства или браузера.",
       failed_check: "Не удалось проверить уведомления. Попробуйте ещё раз.",
       failed_enable: "Не удалось включить уведомления. Попробуйте ещё раз.",
-      failed_disable:
-        "Не удалось отключить уведомления на этом устройстве. Попробуйте ещё раз.",
-      off_current:
-        "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
+      failed_disable: "Не удалось выключить уведомления. Попробуйте ещё раз.",
+      off_current: "Включите уведомления, чтобы следить за статусом заказа.",
       on_current: "Сообщим, когда заказ примут, приготовят и выдадут.",
       other_account:
-        "Уведомления выключены. Сообщим, когда заказ примут, приготовят и выдадут.",
+        "На этом устройстве уведомления включены для другого аккаунта.",
       anonymous_subscription: "",
       anonymous_off: "",
     })[notifications.state],
@@ -137,7 +136,7 @@ const notificationFeedback = computed(() => {
   if (notifications.state === "failed_enable")
     return "Не удалось включить уведомления. Попробуйте ещё раз.";
   if (notifications.state === "failed_disable")
-    return "Не удалось отключить уведомления на этом устройстве. Попробуйте ещё раз.";
+    return "Не удалось выключить уведомления. Попробуйте ещё раз.";
   return null;
 });
 const notificationControl = computed(() => {
@@ -169,8 +168,8 @@ const notificationControl = computed(() => {
         isEnabled: true,
         label:
           notifications.state === "failed_disable"
-            ? "Повторить отключение уведомлений"
-            : "Отключить уведомления о заказах",
+            ? "Повторить выключение уведомлений"
+            : "Выключить уведомления о заказах",
       };
     case "anonymous_off":
     case "anonymous_subscription":
@@ -335,8 +334,6 @@ function rememberChoice(): void {
   min-height: calc(var(--customer-size-control-xl) * 1.5);
   gap: var(--customer-space-7);
   padding: var(--customer-space-8);
-  color: var(--customer-danger);
-  background: var(--customer-danger-pale);
   border: 0;
   border-radius: var(--customer-radius-md);
 }
