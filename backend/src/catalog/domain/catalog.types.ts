@@ -143,6 +143,7 @@ export type PublicMenuV3Product = {
   portionLabel: string | null;
   isAvailable: boolean;
   priceChoices: PublicMenuV3PriceChoice[];
+  modifierGroups: PublicMenuModifierGroup[];
 };
 
 export type PublicMenuV3Category = {

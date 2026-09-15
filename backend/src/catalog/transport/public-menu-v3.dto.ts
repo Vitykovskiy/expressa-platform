@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { PublicMenuModifierGroupDto } from "./public-menu.dto";
 
 export class PublicMenuV3PriceChoiceDto {
   @ApiProperty({ format: "uuid" }) id!: string;
@@ -17,6 +18,8 @@ export class PublicMenuV3ProductDto {
   @ApiProperty() isAvailable!: boolean;
   @ApiProperty({ isArray: true, type: () => PublicMenuV3PriceChoiceDto })
   priceChoices!: PublicMenuV3PriceChoiceDto[];
+  @ApiProperty({ isArray: true, type: () => PublicMenuModifierGroupDto })
+  modifierGroups!: PublicMenuModifierGroupDto[];
 }
 
 export class PublicMenuV3CategoryDto {

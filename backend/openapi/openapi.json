@@ -4263,6 +4263,12 @@
             "items": {
               "$ref": "#/components/schemas/PublicMenuV3PriceChoiceDto"
             }
+          },
+          "modifierGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMenuModifierGroupDto"
+            }
           }
         },
         "required": [
@@ -4272,7 +4278,8 @@
           "price",
           "portionLabel",
           "isAvailable",
-          "priceChoices"
+          "priceChoices",
+          "modifierGroups"
         ]
       },
       "PublicMenuV3CategoryDto": {

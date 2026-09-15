@@ -16,6 +16,7 @@ import type {
 import type {
   PublicMenuCandidates,
   PublicMenuRepository,
+  PublicMenuV3Candidates,
 } from "./public-menu.repository.types";
 
 export class GetPublicMenuUseCase {
@@ -38,67 +39,106 @@ export class GetPublicMenuUseCase {
 
   async executeV3(): Promise<PublicMenuV3> {
     const candidates = await this.repository.findV3Candidates();
+    const publishableGroups = createPublishableModifierGroups(candidates);
     return {
       acceptsNewOrders: candidates.acceptsNewOrders,
       categories: candidates.categories
         .filter(isPublishedCatalogEntity)
-        .map((category) => ({
-          id: category.id,
-          name: category.name,
-          description: category.description,
-          products: candidates.products
-            .filter((product) => product.categoryId === category.id)
-            .filter(isPublishedCatalogEntity)
-            .flatMap<PublicMenuV3Product>((product) => {
-              const priceChoices = candidates.priceChoices
-                .filter(
-                  (choice) =>
-                    choice.productId === product.id &&
-                    choice.archivedAt === null,
-                )
-                .map(({ id, portionLabel, price, isAvailable }) => ({
-                  id,
-                  portionLabel,
-                  price,
-                  isAvailable,
-                }));
-              if (
-                priceChoices.length >= 2 &&
-                product.price === null &&
-                product.displayLabel === null
-              ) {
-                return [
-                  {
-                    id: product.id,
-                    name: product.name,
-                    description: product.description,
-                    price: null,
-                    portionLabel: null,
-                    isAvailable: priceChoices.some(
-                      (choice) => choice.isAvailable,
-                    ),
-                    priceChoices,
-                  },
-                ];
-              }
-              if (priceChoices.length !== 0 || product.price === null)
-                return [];
-              return [
-                {
-                  id: product.id,
-                  name: product.name,
-                  description: product.description,
-                  price: product.price,
-                  portionLabel: product.displayLabel ?? null,
-                  isAvailable: product.isAvailable,
-                  priceChoices: [],
-                },
-              ];
-            }),
-        }))
+        .map((category) =>
+          createV3Category(category, candidates, publishableGroups),
+        )
         .filter((category) => category.products.length > 0),
     };
   }
+}
+
+function createV3Category(
+  category: CatalogCategoryCandidate,
+  candidates: PublicMenuV3Candidates,
+  publishableGroups: Map<string, PublicMenuModifierGroup>,
+) {
+  const { modifierGroups, hasInvalidGroup } = getCategoryModifierGroups(
+    category.id,
+    candidates.categoryModifierGroups,
+    candidates.modifierGroups,
+    publishableGroups,
+  );
+  const hasInvalidRequiredGroup = modifierGroups.some(
+    (group) => !isValidRequiredGroup(group),
+  );
+
+  return {
+    id: category.id,
+    name: category.name,
+    description: category.description,
+    products:
+      hasInvalidGroup || hasInvalidRequiredGroup
+        ? []
+        : candidates.products
+            .filter((product) => product.categoryId === category.id)
+            .filter(isPublishedCatalogEntity)
+            .flatMap<PublicMenuV3Product>((product) =>
+              createV3Product(
+                product,
+                candidates,
+                mergeModifierGroups(
+                  product.id,
+                  modifierGroups,
+                  candidates.productModifierGroups,
+                  candidates.modifierGroups,
+                  publishableGroups,
+                ),
+              ),
+            ),
+  };
+}
+
+function createV3Product(
+  product: CatalogProductCandidate,
+  candidates: PublicMenuV3Candidates,
+  modifierGroups: PublicMenuModifierGroup[],
+): PublicMenuV3Product[] {
+  const priceChoices = candidates.priceChoices
+    .filter(
+      (choice) => choice.productId === product.id && choice.archivedAt === null,
+    )
+    .map(({ id, portionLabel, price, isAvailable }) => ({
+      id,
+      portionLabel,
+      price,
+      isAvailable,
+    }));
+  if (
+    priceChoices.length >= 2 &&
+    product.price === null &&
+    product.displayLabel === null
+  ) {
+    return [
+      {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: null,
+        portionLabel: null,
+        isAvailable: priceChoices.some((choice) => choice.isAvailable),
+        priceChoices,
+        modifierGroups,
+      },
+    ];
+  }
+  if (priceChoices.length !== 0 || product.price === null) return [];
+  return [
+    {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      portionLabel: product.displayLabel ?? null,
+      isAvailable: product.isAvailable,
+      priceChoices: [],
+      modifierGroups,
+    },
+  ];
 }
 
 function createCategory(
@@ -145,9 +185,7 @@ function createCategory(
 function mergeModifierGroups(
   productId: string,
   categoryGroups: PublicMenuModifierGroup[],
-  assignments: Array<
-    CatalogCategoryModifierGroupCandidate & { productId?: string }
-  >,
+  assignments: Array<{ productId?: string; groupId: string }>,
   candidates: CatalogModifierGroupCandidate[],
   groups: Map<string, PublicMenuModifierGroup>,
 ): PublicMenuModifierGroup[] {
@@ -204,7 +242,9 @@ function createProduct(
   return [{ ...toPublicProduct(product), variants: [], modifierGroups }];
 }
 
-function createPublishableModifierGroups(candidates: PublicMenuCandidates) {
+function createPublishableModifierGroups(
+  candidates: Pick<PublicMenuCandidates, "modifierGroups" | "modifierOptions">,
+) {
   return new Map(
     candidates.modifierGroups
       .filter(isPublishedCatalogEntity)

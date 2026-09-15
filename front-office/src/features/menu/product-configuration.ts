@@ -73,7 +73,6 @@ export const selectProductConfigurationVariant = (
     ? { ...configuration, selectedVariantId: variant.id }
     : configuration;
 };
-/** @deprecated V3 public menu does not expose modifiers. */
 export function toggleProductConfigurationOption(
   configuration: ProductConfiguration,
   groupId: string,

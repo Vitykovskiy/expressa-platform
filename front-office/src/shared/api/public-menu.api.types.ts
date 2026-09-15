@@ -22,9 +22,8 @@ export type PublicMenuProduct = {
   portionLabel?: string | null;
   isAvailable: boolean;
   priceChoices?: PublicMenuPriceChoice[];
-  /** V3 has no public modifier groups yet; retain the client extension point. */
   modifierGroups: PublicMenuModifierGroup[];
-  /** Legacy v2 compatibility for stored tests only; v3 responses never populate these. */
+  /** Legacy v2 compatibility for stored responses. */
   type?: "DRINK" | "OTHER";
   variants?: PublicMenuVariant[];
   displayLabel?: string | null;
@@ -70,7 +69,7 @@ export type PublicMenuCategoryResponse = {
 };
 export type PublicMenuProductResponse = Omit<
   PublicMenuProduct,
-  "modifierGroups" | "type" | "variants" | "displayLabel"
+  "type" | "variants" | "displayLabel"
 >;
 export type PublicMenuPriceChoiceResponse = PublicMenuPriceChoice;
 export type PublicMenuModifierGroupResponse = PublicMenuModifierGroup;

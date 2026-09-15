@@ -30,6 +30,10 @@ export type PublicMenuV3Candidates = {
   acceptsNewOrders: boolean;
   categories: CatalogCategoryCandidate[];
   products: CatalogProductCandidate[];
+  modifierGroups: CatalogModifierGroupCandidate[];
+  modifierOptions: CatalogModifierOptionCandidate[];
+  categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
+  productModifierGroups: CatalogProductModifierGroupCandidate[];
   priceChoices: Array<{
     id: string;
     productId: string;

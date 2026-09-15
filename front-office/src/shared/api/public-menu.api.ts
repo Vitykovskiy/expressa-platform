@@ -83,6 +83,7 @@ function isProduct(value: unknown): value is PublicMenuProductResponse {
     nullableString(value.portionLabel) &&
     typeof value.isAvailable === "boolean" &&
     arrayOf(value.priceChoices, isChoice) &&
+    validModifierGroups(value.modifierGroups) &&
     validPricing(value as PublicMenuProductResponse)
   );
 }
@@ -108,33 +109,69 @@ function validVariants(value: unknown): boolean {
   );
 }
 function validModifierGroups(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (group) =>
-        isRecord(group) &&
-        uuid(group.id) &&
-        typeof group.name === "string" &&
-        (group.selectionType === "single" ||
-          group.selectionType === "multiple") &&
-        typeof group.minSelect === "number" &&
-        typeof group.maxSelect === "number" &&
-        Number.isInteger(group.minSelect) &&
-        Number.isInteger(group.maxSelect) &&
-        group.minSelect >= 0 &&
-        group.maxSelect >= group.minSelect &&
-        (group.selectionType !== "single" || group.maxSelect === 1) &&
-        Array.isArray(group.options) &&
-        group.options.every(
-          (option) =>
-            isRecord(option) &&
-            uuid(option.id) &&
-            typeof option.name === "string" &&
-            nonNegative(option.priceDelta) &&
-            typeof option.isDefault === "boolean" &&
-            typeof option.isAvailable === "boolean",
-        ),
+  if (!Array.isArray(value)) return false;
+  const groupIds = new Set<string>();
+  const optionIds = new Set<string>();
+  return value.every((group) => validModifierGroup(group, groupIds, optionIds));
+}
+function validModifierGroup(
+  value: unknown,
+  groupIds: Set<string>,
+  optionIds: Set<string>,
+): boolean {
+  if (
+    !isRecord(value) ||
+    !uuid(value.id) ||
+    groupIds.has(value.id) ||
+    typeof value.name !== "string" ||
+    (value.selectionType !== "single" && value.selectionType !== "multiple") ||
+    typeof value.minSelect !== "number" ||
+    typeof value.maxSelect !== "number" ||
+    !Number.isInteger(value.minSelect) ||
+    !Number.isInteger(value.maxSelect) ||
+    value.minSelect < 0 ||
+    value.maxSelect < value.minSelect ||
+    (value.selectionType === "single" && value.maxSelect !== 1) ||
+    !Array.isArray(value.options) ||
+    !value.options.every(isModifierOption)
+  )
+    return false;
+
+  const availableOptions = value.options.filter((option) => option.isAvailable);
+  const defaultOptions = availableOptions.filter((option) => option.isDefault);
+  const freeDefaultOptions = defaultOptions.filter(
+    (option) => option.priceDelta === 0,
+  );
+  if (
+    availableOptions.length < value.minSelect ||
+    (value.minSelect > 0 &&
+      (defaultOptions.length < value.minSelect ||
+        defaultOptions.length > value.maxSelect ||
+        defaultOptions.some((option) => option.priceDelta !== 0) ||
+        freeDefaultOptions.length < value.minSelect)) ||
+    value.options.some(
+      (option) => optionIds.has(option.id) || !optionIds.add(option.id),
     )
+  )
+    return false;
+
+  groupIds.add(value.id);
+  return true;
+}
+function isModifierOption(value: unknown): value is {
+  id: string;
+  name: string;
+  priceDelta: number;
+  isDefault: boolean;
+  isAvailable: boolean;
+} {
+  return (
+    isRecord(value) &&
+    uuid(value.id) &&
+    typeof value.name === "string" &&
+    nonNegative(value.priceDelta) &&
+    typeof value.isDefault === "boolean" &&
+    typeof value.isAvailable === "boolean"
   );
 }
 function isChoice(value: unknown): value is PublicMenuPriceChoice {
@@ -165,7 +202,10 @@ function toProduct(product: PublicMenuProductResponse): PublicMenuProduct {
   return {
     ...product,
     priceChoices: (product.priceChoices ?? []).map((choice) => ({ ...choice })),
-    modifierGroups: [],
+    modifierGroups: product.modifierGroups.map((group) => ({
+      ...group,
+      options: group.options.map((option) => ({ ...option })),
+    })),
   };
 }
 function arrayOf<T>(

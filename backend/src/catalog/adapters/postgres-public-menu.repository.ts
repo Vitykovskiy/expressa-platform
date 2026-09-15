@@ -16,6 +16,7 @@ import type {
   CatalogModifierGroupCandidate,
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
+  CatalogProductModifierGroupCandidate,
   CatalogProductSize,
   CatalogProductType,
   CatalogProductVariantCandidate,
@@ -109,7 +110,16 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
   }
 
   async findV3Candidates(): Promise<PublicMenuV3Candidates> {
-    const [settings, categories, products, choices] = await Promise.all([
+    const [
+      settings,
+      categories,
+      products,
+      choices,
+      modifierGroups,
+      modifierOptions,
+      categoryModifierGroups,
+      productModifierGroups,
+    ] = await Promise.all([
       this.pool.query<DatabaseRow>(
         "SELECT value FROM service_settings WHERE key = $1",
         [acceptsNewOrdersSettingKey],
@@ -123,6 +133,18 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
       this.pool.query<DatabaseRow>(
         "SELECT id, product_id, portion_label, price, sort_order, is_available, archived_at FROM product_price_choices ORDER BY product_id, sort_order",
       ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id, name, selection_type, min_select, max_select, is_active, archived_at FROM modifier_groups",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at FROM modifier_options ORDER BY sort_order",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT category_id, group_id, sort_order FROM category_modifier_groups ORDER BY sort_order",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT product_id, group_id, sort_order FROM product_modifier_groups ORDER BY sort_order",
+      ),
     ]);
     return {
       acceptsNewOrders: readAcceptsNewOrders(settings.rows),
@@ -131,6 +153,14 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
         ...parseProduct(row),
         displayLabel: readNullableString(row, "portion_label"),
       })),
+      modifierGroups: modifierGroups.rows.map(parseModifierGroup),
+      modifierOptions: modifierOptions.rows.map(parseModifierOption),
+      categoryModifierGroups: categoryModifierGroups.rows.map(
+        parseCategoryModifierGroup,
+      ),
+      productModifierGroups: productModifierGroups.rows.map(
+        parseProductModifierGroup,
+      ),
       priceChoices: choices.rows.map((row) => ({
         id: readString(row, "id"),
         productId: readString(row, "product_id"),
@@ -234,6 +264,16 @@ function parseCategoryModifierGroup(
     ...(row["product_id"] === null || row["product_id"] === undefined
       ? {}
       : { productId: readString(row, "product_id") }),
+    groupId: readString(row, "group_id"),
+    sortOrder: readNonNegativeInteger(row, "sort_order"),
+  };
+}
+
+function parseProductModifierGroup(
+  row: DatabaseRow,
+): CatalogProductModifierGroupCandidate {
+  return {
+    productId: readString(row, "product_id"),
     groupId: readString(row, "group_id"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
   };
