@@ -72,8 +72,8 @@ export type OrderModifier = {
 export type CustomerOrderResponse = {
   createdAt: string;
   id: string;
+  items: OrderItemResponse[];
   number: string;
-  snapshot: OrderItemResponse[];
   stage: CustomerOrderStage;
   total: number;
 };

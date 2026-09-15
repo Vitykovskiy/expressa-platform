@@ -22,7 +22,13 @@
         {{ description }}
       </span>
     </span>
-    <span v-if="props.product.isAvailable" class="product-card__prices">
+    <span
+      v-if="props.product.isAvailable"
+      class="product-card__prices"
+      :class="{
+        'product-card__prices--without-description': !description,
+      }"
+    >
       <template v-if="props.product.priceChoices?.length">
         <span
           v-for="choice in props.product.priceChoices ?? []"
@@ -121,6 +127,14 @@ const descriptionId = computed(() =>
   justify-content: flex-start;
   width: 100%;
   margin-top: auto;
+}
+.product-card__prices--without-description {
+  margin-top: var(--customer-space-7);
+}
+@media (min-width: 1024px) {
+  .product-card__prices--without-description {
+    margin-top: auto;
+  }
 }
 .product-card__unavailable-veil {
   position: absolute;

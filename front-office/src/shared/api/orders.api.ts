@@ -122,7 +122,7 @@ function isCustomerOrderResponse(
     !Number.isNaN(Date.parse(value.createdAt)) &&
     customerOrderStages.some((stage) => stage === value.stage) &&
     isNonNegativeInt32(value.total) &&
-    isArrayOf(value.snapshot, isOrderItemResponse)
+    isArrayOf(value.items, isOrderItemResponse)
   );
 }
 
@@ -173,7 +173,7 @@ function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
   return {
     createdAt: response.createdAt,
     id: response.id,
-    items: response.snapshot.map(toOrderItem),
+    items: response.items.map(toOrderItem),
     number: response.number,
     stage: response.stage,
     total: response.total,
