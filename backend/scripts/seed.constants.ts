@@ -277,7 +277,7 @@ const customerProductRows = [
     0,
     "DRINK",
     "Какао",
-    "На выбор: сладкое или несладкое",
+    "",
     [
       ["250 мл", 240],
       ["350 мл", 280],
@@ -556,6 +556,7 @@ const customerModifierGroupRows: readonly (readonly [
   ["206", "Маршмеллоу", "single", 0, 1],
   ["207", "Налить воды", "single", 0, 1],
   ["208", "Доп. шот эспрессо", "single", 0, 1],
+  ["209", "Сахар", "single", 1, 1],
 ];
 const customerModifierGroups: ModifierGroupSeed[] =
   customerModifierGroupRows.map(
@@ -576,8 +577,8 @@ const customerModifierOptionRows: readonly (readonly [
   number,
   boolean,
 ])[] = [
-  ["301", "201", "Сладкое", 0, true],
-  ["302", "201", "Несладкое", 0, false],
+  ["301", "201", "Сладкий", 0, true],
+  ["302", "201", "Несладкий", 0, false],
   ["303", "202", "Альт. молоко", 40, false],
   ["304", "203", "Декаф", 40, false],
   ["305", "204", "Джем", 30, false],
@@ -585,6 +586,8 @@ const customerModifierOptionRows: readonly (readonly [
   ["307", "206", "Маршмеллоу", 30, false],
   ["308", "207", "Налить воды", 40, false],
   ["309", "208", "Доп. шот эспрессо", 70, false],
+  ["310", "209", "С сахаром", 0, true],
+  ["311", "209", "Без сахара", 0, false],
 ];
 const customerModifierOptions: ModifierOptionSeed[] =
   customerModifierOptionRows.map(
@@ -603,6 +606,25 @@ const productIds = (suffixes: readonly string[]) =>
   suffixes.map(customerProductId);
 const customerProductModifierGroups = [
   ...productIds(["101"]).map((productId) => [productId, "201"] as const),
+  ...productIds([
+    "106",
+    "107",
+    "119",
+    "120",
+    "121",
+    "122",
+    "123",
+    "124",
+    "125",
+    "126",
+    "127",
+    "128",
+    "129",
+    "130",
+    "131",
+    "132",
+    "133",
+  ]).map((productId) => [productId, "209"] as const),
   ...productIds([
     "101",
     "102",
