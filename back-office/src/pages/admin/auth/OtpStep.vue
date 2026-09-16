@@ -17,7 +17,7 @@
         inputmode="numeric"
         maxlength="6"
         name="otp"
-        placeholder="• • • •"
+        placeholder="• • • • • •"
         @keydown.enter.prevent="emit('submit')"
       />
     </div>
