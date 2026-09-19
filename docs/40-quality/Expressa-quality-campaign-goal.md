@@ -73,7 +73,7 @@ Root не принимает собственные продуктовые из�
 ## Resume
 
 Исходное состояние кампании находится в
-[`state.yaml`](../../.codex/tmp/tasks/expressa-quality-baseline/state.yaml).
+`.codex/tmp/tasks/<task-id>/state.yaml`.
 Это путь продолжения, а не новый baseline. Перед работой прочтите корневые
 `README.md` и `AGENTS.md`, применимые контурные README/AGENTS/INDEX, актуальные
 skills, `state.yaml`, исходную карту и относящиеся отчёты следующей задачи.
