@@ -60,6 +60,14 @@ const props = defineProps<MenuProductRowProps>();
 const emit = defineEmits<MenuProductRowEmits>();
 
 function priceLabel(product: Product): string {
+  if (product.priceChoices && product.priceChoices.length > 0) {
+    return product.priceChoices
+      .slice()
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((choice) => `${choice.portionLabel}: ${formatPrice(choice.price)}`)
+      .join(" · ");
+  }
+
   if (product.type === "DRINK") {
     return product.variants
       .map((variant) => `${variant.size}: ${formatPrice(variant.price)}`)

@@ -170,6 +170,7 @@
           <strong>Товар активен</strong
           ><AdminToggle
             :model-value="isActive"
+            aria-label="Товар активен"
             :disabled="props.disabled"
             @update:model-value="isActive = Boolean($event)"
           />
@@ -178,6 +179,7 @@
           <strong>Товар доступен</strong
           ><AdminToggle
             :model-value="isAvailable"
+            aria-label="Товар доступен"
             :disabled="props.disabled"
             @update:model-value="isAvailable = Boolean($event)"
           />
@@ -201,64 +203,13 @@
   </AdminDialog>
 </template>
 
-<script lang="ts">
-import {
-  computed as createComputed,
-  defineComponent,
-  shallowRef as createShallowRef,
-} from "vue";
-import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
-import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
-import {
-  customPortionLabelOption,
-  portionLabelSuggestions,
-} from "./AddProductDialog.constants";
-
-export const PriceFields = defineComponent({
-  components: { AdminSelect, AdminTextField },
-  props: {
-    price: { type: String, required: true },
-    portionLabel: { type: String, required: true },
-    disabled: Boolean,
-    error: { type: String, default: undefined },
-    requiredLabel: Boolean,
-  },
-  emits: ["update:price", "update:portionLabel"],
-  setup(props, { emit }) {
-    const customRequested = createShallowRef(false);
-    const custom = createComputed(
-      () =>
-        customRequested.value ||
-        (props.portionLabel !== "" &&
-          !portionLabelSuggestions.includes(
-            props.portionLabel as (typeof portionLabelSuggestions)[number],
-          )),
-    );
-    const selected = createComputed({
-      get: () => (custom.value ? customPortionLabelOption : props.portionLabel),
-      set: (value: string) => {
-        customRequested.value = value === customPortionLabelOption;
-        emit("update:portionLabel", customRequested.value ? "" : value);
-      },
-    });
-    return {
-      custom,
-      selected,
-      customPortionLabelOption,
-      portionLabelSuggestions,
-      emit,
-    };
-  },
-  template: `<div class="price-fields"><label>Цена, ₽<AdminTextField :model-value="price" :disabled="disabled" inputmode="numeric" min="0" type="number" @update:model-value="emit('update:price', $event)" /></label><label>Порция{{ requiredLabel ? '' : ' (необязательно)' }}<AdminSelect v-model="selected" :disabled="disabled"><option value="">Без подписи</option><option v-for="suggestion in portionLabelSuggestions" :key="suggestion" :value="suggestion">{{ suggestion }}</option><option :value="customPortionLabelOption">{{ customPortionLabelOption }}</option></AdminSelect></label><label v-if="custom">Свой вариант<AdminTextField :model-value="portionLabel" :disabled="disabled" @update:model-value="emit('update:portionLabel', $event)" /></label><p v-if="error" class="price-fields__error" role="alert">{{ error }}</p></div>`,
-});
-</script>
-
 <script setup lang="ts">
 import { computed, shallowRef, useId } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import { createPriceChoiceDraft } from "./AddProductDialog.constants";
+import PriceFields from "./PriceFields.vue";
 import type {
   AddProductDialogEmits,
   AddProductDialogProps,

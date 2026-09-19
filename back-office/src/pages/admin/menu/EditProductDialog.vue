@@ -294,7 +294,7 @@ import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextF
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import { createPriceChoiceDraft } from "./AddProductDialog.constants";
-import { PriceFields } from "./AddProductDialog.vue";
+import PriceFields from "./PriceFields.vue";
 import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   ProductFormData,
