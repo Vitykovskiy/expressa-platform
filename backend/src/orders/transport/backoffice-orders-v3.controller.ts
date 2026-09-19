@@ -64,7 +64,15 @@ export class BackofficeOrdersV3Controller {
         createdAt: order.createdAt.toISOString(),
         total: order.total,
         stage: order.stage,
+        customer: { ...order.customer },
         snapshot: order.snapshot.map(toItem),
+        events: order.events.map((event) => ({
+          actorId: event.actorId,
+          actorLabel: event.actorLabel,
+          occurredAt: event.occurredAt.toISOString(),
+          from: event.from,
+          to: event.to,
+        })),
       };
     } catch (error) {
       if (error instanceof OrderNotFoundError)

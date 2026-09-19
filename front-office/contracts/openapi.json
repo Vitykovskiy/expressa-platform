@@ -6491,10 +6491,19 @@
           "stage": {
             "type": "string"
           },
+          "customer": {
+            "$ref": "#/components/schemas/BackofficeOrderCustomerResponseDto"
+          },
           "snapshot": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OrderV3ItemResponseDto"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderEventResponseDto"
             }
           }
         },
@@ -6504,7 +6513,9 @@
           "createdAt",
           "total",
           "stage",
-          "snapshot"
+          "customer",
+          "snapshot",
+          "events"
         ]
       },
       "PushPublicKeyDto": {

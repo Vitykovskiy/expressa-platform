@@ -9,6 +9,7 @@ import type {
   OrderApiError,
   OrderDetails,
   OrderDetailsDto,
+  OrderEventDto,
   OrderListItem,
   OrderModifier,
   OrderSnapshotItem,
@@ -112,8 +113,7 @@ function isOrderList(value: unknown): value is readonly OrderListItem[] {
 function toOrderDetails(details: OrderDetailsDto): OrderDetails {
   return {
     ...details,
-    customer: details.customer ?? { id: "", phoneE164: "" },
-    events: (details.events ?? []).map((event) => ({
+    events: details.events.map((event) => ({
       actorLabel: event.actorLabel,
       from: event.from,
       occurredAt: event.occurredAt,
@@ -127,7 +127,31 @@ function isOrderDetailsDto(value: unknown): value is OrderDetailsDto {
 
   const record = value as Record<string, unknown>;
   return (
-    Array.isArray(record.snapshot) && record.snapshot.every(isOrderSnapshotItem)
+    isOrderCustomer(record.customer) &&
+    Array.isArray(record.snapshot) &&
+    record.snapshot.every(isOrderSnapshotItem) &&
+    Array.isArray(record.events) &&
+    record.events.every(isOrderEventDto)
+  );
+}
+
+function isOrderCustomer(
+  value: unknown,
+): value is { id: string; phoneE164: string } {
+  if (!isRecord(value)) return false;
+
+  return isUuid(value.id) && isPhoneE164(value.phoneE164);
+}
+
+function isOrderEventDto(value: unknown): value is OrderEventDto {
+  if (!isRecord(value)) return false;
+
+  return (
+    isUuid(value.actorId) &&
+    isNonEmptyString(value.actorLabel) &&
+    isIsoDateTime(value.occurredAt) &&
+    isOrderStage(value.from) &&
+    isOrderStage(value.to)
   );
 }
 
@@ -188,6 +212,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return isString(value) && value.trim() !== "";
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    isString(value) &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
+}
+
+function isPhoneE164(value: unknown): value is string {
+  return isString(value) && /^\+[1-9]\d{1,14}$/.test(value);
+}
+
+function isIsoDateTime(value: unknown): value is string {
+  return isString(value) && !Number.isNaN(Date.parse(value));
 }
 
 function isNumber(value: unknown): value is number {

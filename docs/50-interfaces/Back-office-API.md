@@ -11,6 +11,7 @@ sources:
   - ../../backend/src/catalog/transport/catalog-modifiers.controller.ts
   - ../../backend/src/catalog/transport/catalog-category-modifiers.controller.ts
   - ../../backend/src/orders/transport/backoffice-orders.controller.ts
+  - ../../backend/src/orders/transport/backoffice-orders-v3.controller.ts
 ---
 
 # API back-office
@@ -52,6 +53,6 @@ sources:
 [backend/src/platform/observability/unified-exception.filter.ts:UnifiedExceptionFilter](../../backend/src/platform/observability/unified-exception.filter.ts).
 
 Контракты очереди доступны только сотруднику. Список принимает фильтры `stage`
-и `number`; детали и успешный переход возвращают снимок заказа и события
-переходов. Ошибки используют единую структуру с `code`, `message`, `details` и
-`requestId`. [Контроллер заказов](../../backend/src/orders/transport/backoffice-orders.controller.ts), [OpenAPI](../../backend/openapi/openapi.json).
+и `number`; v2 и v3 детали возвращают customer (`id`, `phoneE164`), снимок
+заказа и события переходов. Ошибки используют единую структуру с `code`,
+`message`, `details` и `requestId`. [v2 controller](../../backend/src/orders/transport/backoffice-orders.controller.ts), [v3 controller](../../backend/src/orders/transport/backoffice-orders-v3.controller.ts), [OpenAPI](../../backend/openapi/openapi.json).

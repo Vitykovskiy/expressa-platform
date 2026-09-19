@@ -1,4 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
+import {
+  BackofficeOrderCustomerResponseDto,
+  BackofficeOrderEventResponseDto,
+} from "./backoffice-orders.dto";
 import { OrderV3ItemResponseDto } from "./order-v3.dto";
 import type {
   BackofficeOrderV3Dto,
@@ -20,6 +24,10 @@ export class BackofficeOrderV3ResponseDto implements BackofficeOrderV3Dto {
   @ApiProperty() createdAt!: string;
   @ApiProperty() total!: number;
   @ApiProperty() stage!: string;
+  @ApiProperty({ type: () => BackofficeOrderCustomerResponseDto })
+  customer!: BackofficeOrderCustomerResponseDto;
   @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })
   snapshot!: import("./order-v3.dto.types").OrderV3ItemDto[];
+  @ApiProperty({ isArray: true, type: () => BackofficeOrderEventResponseDto })
+  events!: BackofficeOrderEventResponseDto[];
 }

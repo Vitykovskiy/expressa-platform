@@ -43,9 +43,8 @@ export type OrderDetails = OrderListItem & {
   events: readonly OrderEvent[];
 };
 
-export type OrderDetailsDto = Omit<OrderDetails, "customer" | "events"> & {
-  customer?: { id: string; phoneE164: string };
-  events?: readonly OrderEventDto[];
+export type OrderDetailsDto = Omit<OrderDetails, "events"> & {
+  events: readonly OrderEventDto[];
 };
 
 export type QueueQuery = {
