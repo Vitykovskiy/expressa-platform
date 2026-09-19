@@ -3,6 +3,7 @@
     :model-value="open"
     max-width="560"
     :persistent="props.disabled"
+    @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
@@ -56,6 +57,7 @@
         <label :for="categoryId">Категория</label>
         <AdminSelect
           :id="categoryId"
+          ref="categoryInput"
           v-model="categoryIdValue"
           :disabled="props.disabled"
           ><option value="">Выберите категорию</option>
@@ -204,12 +206,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId } from "vue";
+import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
+import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
+import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import { createPriceChoiceDraft } from "./AddProductDialog.constants";
 import PriceFields from "./PriceFields.vue";
+import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   AddProductDialogEmits,
   AddProductDialogProps,
@@ -232,9 +237,12 @@ const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const isMultiple = shallowRef(false);
 const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
+const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const categoryId = `add-product-category-${useId()}`;
 const nameId = `add-product-name-${useId()}`;
 const descriptionId = `add-product-description-${useId()}`;
+const categoryInput =
+  useTemplateRef<InstanceType<typeof AdminSelect>>("categoryInput");
 const isValid = computed(
   () =>
     Boolean(categoryIdValue.value && name.value.trim()) &&
@@ -347,22 +355,36 @@ function reset(): void {
   isMultiple.value = false;
   priceChoices.value = [];
 }
-function cancel(): void {
+function closeDialog(): void {
   if (isProtected.value) return;
   reset();
   open.value = false;
+  restoreFocus();
+}
+function cancel(): void {
+  if (isProtected.value) return;
+  closeDialog();
   emit("cancel");
 }
 function discardDraft(): void {
   if (!canDiscardDraft.value) return;
-  reset();
-  open.value = false;
+  closeDialog();
   emit("cancel");
 }
 function updateOpen(value: boolean): void {
   if (!value && !isProtected.value) cancel();
   else open.value = value;
 }
+function focusFirstField(): void {
+  categoryInput.value?.$el.focus();
+}
+watch(open, (isOpen, wasOpen) => {
+  if (isOpen && !wasOpen) captureReturnFocus();
+  if (!isOpen && wasOpen) {
+    reset();
+    restoreFocus();
+  }
+});
 </script>
 
 <style scoped lang="scss">
