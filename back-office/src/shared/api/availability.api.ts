@@ -4,7 +4,6 @@ import type {
   Availability,
   AvailabilityApiError,
   AvailabilityCategoryDto,
-  AvailabilityCatalogV3Dto,
   AvailabilityCategoryModifierGroupDto,
   AvailabilityEntityType,
   AvailabilityGroup,
@@ -12,9 +11,8 @@ import type {
   AvailabilityModifierGroupDto,
   AvailabilityProductDto,
   AvailabilityPriceChoiceDto,
-  AvailabilityResponseDto,
+  AvailabilityResponseWithPriceChoicesDto,
   AvailabilityUpdate,
-  AvailabilityV3ProductDto,
   AvailabilityVariantDto,
   ServiceIntake,
   ServiceIntakeDto,
@@ -24,22 +22,14 @@ export class AvailabilityApi {
   constructor(private readonly client: ApiClient) {}
 
   async get(accessToken: string): Promise<Availability> {
-    const [response, catalog] = await Promise.all([
-      this.request(
-        "/backoffice/availability",
-        isAvailabilityResponseDto,
-        accessToken,
-        "GET",
-      ),
-      this.request(
-        "/../v3/backoffice/catalog",
-        isAvailabilityCatalogV3Dto,
-        accessToken,
-        "GET",
-      ),
-    ]);
+    const response = await this.request(
+      "/backoffice/availability",
+      isAvailabilityResponseDto,
+      accessToken,
+      "GET",
+    );
 
-    return toAvailability(response, catalog);
+    return toAvailability(response);
   }
 
   update(
@@ -122,14 +112,13 @@ function toAvailabilityApiError(error: unknown): AvailabilityApiError {
 }
 
 function toAvailability(
-  response: AvailabilityResponseDto,
-  catalog: AvailabilityCatalogV3Dto,
+  response: AvailabilityResponseWithPriceChoicesDto,
 ): Availability {
   const groups = response.categories
     .filter((category) => category.isActive)
     .slice()
     .sort(bySortOrder)
-    .map((category) => toAvailabilityGroup(category, response, catalog));
+    .map((category) => toAvailabilityGroup(category, response));
 
   return { groups, intake: toServiceIntake(response.intake) };
 }
@@ -144,16 +133,16 @@ function toServiceIntake(intake: ServiceIntakeDto): ServiceIntake {
 
 function toAvailabilityGroup(
   category: AvailabilityCategoryDto,
-  response: AvailabilityResponseDto,
-  catalog: AvailabilityCatalogV3Dto,
+  response: AvailabilityResponseWithPriceChoicesDto,
 ): AvailabilityGroup {
-  const products = catalog.products
+  const products = response.products
     .filter((product) => product.categoryId === category.id && product.isActive)
     .slice()
     .sort(bySortOrder);
   const productItems = products.flatMap((product) => [
     toProductItem(product),
-    ...product.priceChoices
+    ...response.priceChoices
+      .filter((choice) => choice.productId === product.id)
       .slice()
       .sort(bySortOrder)
       .map((choice) => toPriceChoiceItem(product, choice)),
@@ -183,9 +172,7 @@ function toAvailabilityGroup(
   };
 }
 
-function toProductItem(
-  product: AvailabilityProductDto | AvailabilityV3ProductDto,
-) {
+function toProductItem(product: AvailabilityProductDto) {
   return {
     id: product.id,
     isAvailable: product.isAvailable,
@@ -196,7 +183,7 @@ function toProductItem(
 }
 
 function toPriceChoiceItem(
-  product: AvailabilityV3ProductDto,
+  product: AvailabilityProductDto,
   choice: AvailabilityPriceChoiceDto,
 ) {
   return {
@@ -208,38 +195,6 @@ function toPriceChoiceItem(
   };
 }
 
-function isAvailabilityCatalogV3Dto(
-  value: unknown,
-): value is AvailabilityCatalogV3Dto {
-  if (
-    !isRecord(value) ||
-    !Array.isArray(value.categories) ||
-    !Array.isArray(value.products)
-  )
-    return false;
-  return (
-    value.categories.every(isAvailabilityCategory) &&
-    value.products.every(isAvailabilityV3Product)
-  );
-}
-
-function isAvailabilityV3Product(
-  value: unknown,
-): value is AvailabilityV3ProductDto {
-  if (
-    !isRecord(value) ||
-    !isUuid(value.id) ||
-    !isUuid(value.categoryId) ||
-    typeof value.isActive !== "boolean" ||
-    typeof value.isAvailable !== "boolean" ||
-    !isString(value.name) ||
-    !isNonNegativeNumber(value.sortOrder) ||
-    !Array.isArray(value.priceChoices)
-  )
-    return false;
-  return value.priceChoices.every(isAvailabilityPriceChoice);
-}
-
 function isAvailabilityPriceChoice(
   value: unknown,
 ): value is AvailabilityPriceChoiceDto {
@@ -247,6 +202,7 @@ function isAvailabilityPriceChoice(
     isRecord(value) &&
     isUuid(value.id) &&
     typeof value.isAvailable === "boolean" &&
+    isUuid(value.productId) &&
     isString(value.portionLabel) &&
     isNonNegativeNumber(value.price) &&
     isNonNegativeNumber(value.sortOrder)
@@ -268,7 +224,7 @@ function toModifierItem(
 
 function isAvailabilityResponseDto(
   value: unknown,
-): value is AvailabilityResponseDto {
+): value is AvailabilityResponseWithPriceChoicesDto {
   if (!isRecord(value)) return false;
 
   const {
@@ -277,6 +233,7 @@ function isAvailabilityResponseDto(
     intake,
     modifierGroups,
     modifierOptions,
+    priceChoices,
     productVariants,
     products,
   } = value;
@@ -286,6 +243,7 @@ function isAvailabilityResponseDto(
     !isServiceIntakeDto(intake) ||
     !isAvailabilityModifierGroups(modifierGroups) ||
     !isAvailabilityModifiers(modifierOptions) ||
+    !isAvailabilityPriceChoices(priceChoices) ||
     !isAvailabilityVariants(productVariants) ||
     !isAvailabilityProducts(products)
   ) {
@@ -297,6 +255,7 @@ function isAvailabilityResponseDto(
     categoryModifierGroups,
     modifierGroups,
     modifierOptions,
+    priceChoices,
     productVariants,
     products,
   });
@@ -354,6 +313,12 @@ function isAvailabilityProducts(
   value: unknown,
 ): value is readonly AvailabilityProductDto[] {
   return Array.isArray(value) && value.every(isAvailabilityProduct);
+}
+
+function isAvailabilityPriceChoices(
+  value: unknown,
+): value is readonly AvailabilityPriceChoiceDto[] {
+  return Array.isArray(value) && value.every(isAvailabilityPriceChoice);
 }
 
 function isAvailabilityProduct(
@@ -446,11 +411,12 @@ function isAvailabilityCategoryModifierGroup(
 
 function hasValidReferences(
   response: Pick<
-    AvailabilityResponseDto,
+    AvailabilityResponseWithPriceChoicesDto,
     | "categories"
     | "categoryModifierGroups"
     | "modifierGroups"
     | "modifierOptions"
+    | "priceChoices"
     | "productVariants"
     | "products"
   >,
@@ -464,6 +430,7 @@ function hasValidReferences(
     response.productVariants.every(({ productId }) =>
       productIds.has(productId),
     ) &&
+    response.priceChoices.every(({ productId }) => productIds.has(productId)) &&
     response.modifierOptions.every(({ groupId }) =>
       modifierGroupIds.has(groupId),
     ) &&

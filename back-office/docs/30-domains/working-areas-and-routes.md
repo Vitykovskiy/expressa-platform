@@ -2,7 +2,7 @@
 type: guide
 implementation_status: current
 owner: back-office
-last_verified: 2026-09-19
+last_verified: 2026-09-20
 sources:
   - ../../src/app/router.ts
   - ../../src/app/router.constants.ts
@@ -32,8 +32,9 @@ sources:
 
 Маршруты используют гибридную API-границу: `/menu` читает v3 catalog и
 управляет товарами через v3 price-choice endpoints, а категории и modifiers
-остаются v2. `/availability` сочетает v2 availability/intake с v3
-price-choice availability. `/queue` читает list/details через v3, а lifecycle
+остаются v2. `/availability` читает Staff v2 availability/intake, включая
+active non-archived price choices, и использует v3 только для price-choice
+availability mutation. `/queue` читает list/details через v3, а lifecycle
 transitions остаются v2. Принятый
 целевой контракт описан в
 [ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)

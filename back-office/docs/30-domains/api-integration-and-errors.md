@@ -2,7 +2,7 @@
 type: guide
 implementation_status: current
 owner: back-office
-last_verified: 2026-09-19
+last_verified: 2026-09-20
 sources:
   - ../../src/shared/api/client.ts
   - ../../src/shared/api/auth.api.ts
@@ -38,9 +38,11 @@ order reads получают nullable id и неизменяемый snapshot la
 входят в OpenAPI и не отличаются от собственного текста на transport-границе.
 Правила совместимости и отключения v2 фиксируются отдельно до cutover;
 предыдущая матрица `410` и 30-дневное окно не являются частью принятой модели.
-`/availability` читает базовую доступность через v2 и получает v3 catalog;
-изменение price-choice availability использует v3, а product/variant
-availability и intake остаются v2. Очередь читает list/details через v3 и
+`/availability` читает один Staff v2 availability snapshot, включая active
+non-archived price choices с plain-text подписью, ценой, порядком и ручной
+доступностью; оно не читает Administrator v3 catalog. Изменение price-choice
+availability использует v3, а product/variant availability и intake остаются
+v2. Очередь читает list/details через v3 и
 получает customer, v3 snapshot и events; lifecycle transitions остаются v2.
 Legacy v2 endpoints могут оставаться в OpenAPI для совместимости; наличие в
 OpenAPI не означает активного caller-а back-office.

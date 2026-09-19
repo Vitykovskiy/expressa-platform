@@ -98,28 +98,20 @@ export type AvailabilityResponseDto = {
   intake: ServiceIntakeDto;
   modifierGroups: readonly AvailabilityModifierGroupDto[];
   modifierOptions: readonly AvailabilityModifierDto[];
+  priceChoices?: readonly AvailabilityPriceChoiceDto[];
   productVariants: readonly AvailabilityVariantDto[];
   products: readonly AvailabilityProductDto[];
 };
 
-export type AvailabilityCatalogV3Dto = {
-  categories: readonly AvailabilityCategoryDto[];
-  products: readonly AvailabilityV3ProductDto[];
-};
-
-export type AvailabilityV3ProductDto = {
-  id: string;
-  categoryId: string;
-  isActive: boolean;
-  isAvailable: boolean;
-  name: string;
-  sortOrder: number;
-  priceChoices: readonly AvailabilityPriceChoiceDto[];
-};
+export type AvailabilityResponseWithPriceChoicesDto =
+  AvailabilityResponseDto & {
+    priceChoices: readonly AvailabilityPriceChoiceDto[];
+  };
 
 export type AvailabilityPriceChoiceDto = {
   id: string;
   isAvailable: boolean;
+  productId: string;
   portionLabel: string;
   price: number;
   sortOrder: number;

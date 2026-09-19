@@ -14,7 +14,17 @@ export type AdminCatalogCandidates = {
   modifierGroups: CatalogModifierGroupCandidate[];
   modifierOptions: CatalogModifierOptionCandidate[];
   categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
+  priceChoices?: AvailabilityPriceChoiceCandidate[];
   intake?: ServiceIntake;
+};
+
+export type AvailabilityPriceChoiceCandidate = {
+  id: string;
+  productId: string;
+  portionLabel: string;
+  price: number;
+  sortOrder: number;
+  isAvailable: boolean;
 };
 
 export type ServiceIntake = {

@@ -4,6 +4,7 @@ import type {
   AdminCatalogCandidates,
   AdminCatalogV3Candidates,
   AdminCatalogRepository,
+  AvailabilityPriceChoiceCandidate,
   AvailabilityCommand,
   AvailabilityRepository,
   AvailabilityTarget,
@@ -49,6 +50,7 @@ export class PostgresAdminCatalogRepository
         categories,
         products,
         productVariants,
+        priceChoices,
         modifierGroups,
         modifierOptions,
         categoryModifierGroups,
@@ -81,6 +83,14 @@ export class PostgresAdminCatalogRepository
              ORDER BY v.product_id, v.sort_order`,
         ),
         client.query<DatabaseRow>(
+          `SELECT ppc.id, ppc.product_id, ppc.portion_label, ppc.price, ppc.sort_order, ppc.is_available
+             FROM product_price_choices ppc
+             INNER JOIN products p ON p.id = ppc.product_id
+             INNER JOIN categories c ON c.id = p.category_id
+             WHERE ppc.archived_at IS NULL AND p.archived_at IS NULL AND c.archived_at IS NULL
+             ORDER BY ppc.product_id, ppc.sort_order`,
+        ),
+        client.query<DatabaseRow>(
           `SELECT g.id, g.name, g.selection_type, g.min_select, g.max_select, g.is_active, g.archived_at
              FROM modifier_groups g
              WHERE g.archived_at IS NULL
@@ -108,6 +118,7 @@ export class PostgresAdminCatalogRepository
         categories: categories.rows.map(parseCategory),
         products: products.rows.map(parseProduct),
         productVariants: productVariants.rows.map(parseProductVariant),
+        priceChoices: priceChoices.rows.map(parseAvailabilityPriceChoice),
         modifierGroups: modifierGroups.rows.map(parseModifierGroup),
         modifierOptions: modifierOptions.rows.map(parseModifierOption),
         categoryModifierGroups: categoryModifierGroups.rows.map(
@@ -341,6 +352,19 @@ function parseProductVariant(row: DatabaseRow): CatalogProductVariantCandidate {
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isAvailable: readBoolean(row, "is_available"),
     archivedAt: readNullableDate(row, "archived_at"),
+  };
+}
+
+function parseAvailabilityPriceChoice(
+  row: DatabaseRow,
+): AvailabilityPriceChoiceCandidate {
+  return {
+    id: readString(row, "id"),
+    productId: readString(row, "product_id"),
+    portionLabel: readString(row, "portion_label"),
+    price: readNonNegativeInteger(row, "price"),
+    sortOrder: readNonNegativeInteger(row, "sort_order"),
+    isAvailable: readBoolean(row, "is_available"),
   };
 }
 

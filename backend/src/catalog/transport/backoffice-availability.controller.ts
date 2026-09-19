@@ -25,7 +25,10 @@ import {
   ApiHttpErrorDto,
   ApiValidationErrorDto,
 } from "../../platform/observability/http-error.dto";
-import type { AvailabilityEntityType } from "../application/admin-catalog.repository.types";
+import type {
+  AdminCatalogCandidates,
+  AvailabilityEntityType,
+} from "../application/admin-catalog.repository.types";
 import { GetAdminCatalogUseCase } from "../application/get-admin-catalog.use-case";
 import {
   AvailabilityNotFoundError,
@@ -71,9 +74,7 @@ export class BackofficeAvailabilityController {
   @ApiResponse({ status: 200, type: AvailabilityResponseDto })
   async getAvailability(): Promise<AvailabilityResponseDto> {
     const catalog = await this.getAdminCatalog.execute();
-    if (catalog.intake === undefined)
-      throw new Error("Availability intake is missing");
-    return { ...catalog, intake: catalog.intake };
+    return toAvailabilityDto(catalog);
   }
 
   @Patch("availability/:type/:id")
@@ -122,6 +123,82 @@ export class BackofficeAvailabilityController {
       requestId: requestId(request),
     });
   }
+}
+
+function toAvailabilityDto(
+  catalog: AdminCatalogCandidates,
+): AvailabilityResponseDto {
+  if (catalog.intake === undefined)
+    throw new Error("Availability intake is missing");
+  if (catalog.priceChoices === undefined)
+    throw new Error("Availability price choices are missing");
+
+  return {
+    categories: catalog.categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      sortOrder: category.sortOrder,
+      isActive: category.isActive,
+    })),
+    products: catalog.products.map((product) => ({
+      id: product.id,
+      categoryId: product.categoryId,
+      type: product.type,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      sortOrder: product.sortOrder,
+      isActive: product.isActive,
+      isAvailable: product.isAvailable,
+    })),
+    productVariants: catalog.productVariants.map((variant) => ({
+      id: variant.id,
+      productId: variant.productId,
+      size: variant.size,
+      price: variant.price,
+      sortOrder: variant.sortOrder,
+      isAvailable: variant.isAvailable,
+    })),
+    priceChoices: catalog.priceChoices.map((choice) => ({
+      id: choice.id,
+      productId: choice.productId,
+      portionLabel: choice.portionLabel,
+      price: choice.price,
+      sortOrder: choice.sortOrder,
+      isAvailable: choice.isAvailable,
+    })),
+    modifierGroups: catalog.modifierGroups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      selectionType: group.selectionType,
+      minSelect: group.minSelect,
+      maxSelect: group.maxSelect,
+      isActive: group.isActive,
+    })),
+    modifierOptions: catalog.modifierOptions.map((option) => ({
+      id: option.id,
+      groupId: option.groupId,
+      name: option.name,
+      priceDelta: option.priceDelta,
+      sortOrder: option.sortOrder,
+      isDefault: option.isDefault,
+      isAvailable: option.isAvailable,
+    })),
+    categoryModifierGroups: catalog.categoryModifierGroups.map(
+      (assignment) => ({
+        categoryId: assignment.categoryId,
+        groupId: assignment.groupId,
+        sortOrder: assignment.sortOrder,
+      }),
+    ),
+    intake: {
+      acceptsNewOrders: catalog.intake.acceptsNewOrders,
+      updatedBy: catalog.intake.updatedBy,
+      updatedByLabel: catalog.intake.updatedByLabel,
+      updatedAt: catalog.intake.updatedAt,
+    },
+  };
 }
 
 function assertAvailabilityType(

@@ -5742,6 +5742,43 @@
           "sortOrder"
         ]
       },
+      "AvailabilityPriceChoiceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "portionLabel": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "productId",
+          "portionLabel",
+          "price",
+          "sortOrder",
+          "isAvailable"
+        ]
+      },
       "ServiceIntakeResponseDto": {
         "type": "object",
         "properties": {
@@ -5811,6 +5848,12 @@
               "$ref": "#/components/schemas/AdminCatalogCategoryModifierGroupDto"
             }
           },
+          "priceChoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityPriceChoiceResponseDto"
+            }
+          },
           "intake": {
             "$ref": "#/components/schemas/ServiceIntakeResponseDto"
           }
@@ -5822,6 +5865,7 @@
           "modifierGroups",
           "modifierOptions",
           "categoryModifierGroups",
+          "priceChoices",
           "intake"
         ]
       },
