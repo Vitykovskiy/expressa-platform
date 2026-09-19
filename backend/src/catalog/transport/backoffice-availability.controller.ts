@@ -132,6 +132,8 @@ function toAvailabilityDto(
     throw new Error("Availability intake is missing");
   if (catalog.priceChoices === undefined)
     throw new Error("Availability price choices are missing");
+  if (catalog.productModifierGroups === undefined)
+    throw new Error("Availability product modifier groups are missing");
 
   return {
     categories: catalog.categories.map((category) => ({
@@ -167,6 +169,11 @@ function toAvailabilityDto(
       price: choice.price,
       sortOrder: choice.sortOrder,
       isAvailable: choice.isAvailable,
+    })),
+    productModifierGroups: catalog.productModifierGroups.map((assignment) => ({
+      productId: assignment.productId,
+      groupId: assignment.groupId,
+      sortOrder: assignment.sortOrder,
     })),
     modifierGroups: catalog.modifierGroups.map((group) => ({
       id: group.id,

@@ -92,6 +92,12 @@ export type AvailabilityCategoryModifierGroupDto = {
   sortOrder: number;
 };
 
+export type AvailabilityProductModifierGroupDto = {
+  groupId: string;
+  productId: string;
+  sortOrder: number;
+};
+
 export type AvailabilityResponseDto = {
   categories: readonly AvailabilityCategoryDto[];
   categoryModifierGroups: readonly AvailabilityCategoryModifierGroupDto[];
@@ -99,13 +105,15 @@ export type AvailabilityResponseDto = {
   modifierGroups: readonly AvailabilityModifierGroupDto[];
   modifierOptions: readonly AvailabilityModifierDto[];
   priceChoices?: readonly AvailabilityPriceChoiceDto[];
+  productModifierGroups?: readonly AvailabilityProductModifierGroupDto[];
   productVariants: readonly AvailabilityVariantDto[];
   products: readonly AvailabilityProductDto[];
 };
 
-export type AvailabilityResponseWithPriceChoicesDto =
+export type AvailabilityResponseWithAvailabilityMembershipDto =
   AvailabilityResponseDto & {
     priceChoices: readonly AvailabilityPriceChoiceDto[];
+    productModifierGroups: readonly AvailabilityProductModifierGroupDto[];
   };
 
 export type AvailabilityPriceChoiceDto = {

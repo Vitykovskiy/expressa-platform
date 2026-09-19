@@ -4,6 +4,7 @@ import type {
   CatalogModifierGroupCandidate,
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
+  CatalogProductModifierGroupCandidate,
   CatalogProductVariantCandidate,
 } from "../domain/catalog.types";
 
@@ -14,6 +15,7 @@ export type AdminCatalogCandidates = {
   modifierGroups: CatalogModifierGroupCandidate[];
   modifierOptions: CatalogModifierOptionCandidate[];
   categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
+  productModifierGroups?: CatalogProductModifierGroupCandidate[];
   priceChoices?: AvailabilityPriceChoiceCandidate[];
   intake?: ServiceIntake;
 };

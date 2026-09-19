@@ -39,10 +39,10 @@ order reads получают nullable id и неизменяемый snapshot la
 Правила совместимости и отключения v2 фиксируются отдельно до cutover;
 предыдущая матрица `410` и 30-дневное окно не являются частью принятой модели.
 `/availability` читает один Staff v2 availability snapshot, включая active
-non-archived price choices с plain-text подписью, ценой, порядком и ручной
-доступностью; оно не читает Administrator v3 catalog. Изменение price-choice
-availability использует v3, а product/variant availability и intake остаются
-v2. Очередь читает list/details через v3 и
+non-archived price choices и product-level modifier assignments с plain-text
+подписью, ценой, порядком и ручной доступностью; оно не читает Administrator
+v3 catalog. Изменение price-choice availability использует v3, а
+product/variant availability и intake остаются v2. Очередь читает list/details через v3 и
 получает customer, v3 snapshot и events; lifecycle transitions остаются v2.
 Legacy v2 endpoints могут оставаться в OpenAPI для совместимости; наличие в
 OpenAPI не означает активного caller-а back-office.

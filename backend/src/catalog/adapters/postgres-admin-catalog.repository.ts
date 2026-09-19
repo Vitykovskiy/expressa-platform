@@ -23,6 +23,7 @@ import type {
   CatalogModifierOptionCandidate,
   CatalogModifierSelectionType,
   CatalogProductCandidate,
+  CatalogProductModifierGroupCandidate,
   CatalogProductSize,
   CatalogProductType,
   CatalogProductVariantCandidate,
@@ -54,6 +55,7 @@ export class PostgresAdminCatalogRepository
         modifierGroups,
         modifierOptions,
         categoryModifierGroups,
+        productModifierGroups,
       ] = await Promise.all([
         client.query<DatabaseRow>(
           `SELECT s.value, s.updated_by, u.phone_e164 AS updated_by_label, s.updated_at
@@ -111,6 +113,15 @@ export class PostgresAdminCatalogRepository
              WHERE c.archived_at IS NULL AND g.archived_at IS NULL
              ORDER BY cmg.category_id, cmg.sort_order`,
         ),
+        client.query<DatabaseRow>(
+          `SELECT pmg.product_id, pmg.group_id, pmg.sort_order
+             FROM product_modifier_groups pmg
+             INNER JOIN products p ON p.id = pmg.product_id
+             INNER JOIN categories c ON c.id = p.category_id
+             INNER JOIN modifier_groups g ON g.id = pmg.group_id
+             WHERE p.archived_at IS NULL AND c.archived_at IS NULL AND g.archived_at IS NULL
+             ORDER BY pmg.product_id, pmg.sort_order`,
+        ),
       ]);
 
       const candidates = {
@@ -123,6 +134,9 @@ export class PostgresAdminCatalogRepository
         modifierOptions: modifierOptions.rows.map(parseModifierOption),
         categoryModifierGroups: categoryModifierGroups.rows.map(
           parseCategoryModifierGroup,
+        ),
+        productModifierGroups: productModifierGroups.rows.map(
+          parseProductModifierGroup,
         ),
       };
 
@@ -398,6 +412,16 @@ function parseCategoryModifierGroup(
 ): CatalogCategoryModifierGroupCandidate {
   return {
     categoryId: readString(row, "category_id"),
+    groupId: readString(row, "group_id"),
+    sortOrder: readNonNegativeInteger(row, "sort_order"),
+  };
+}
+
+function parseProductModifierGroup(
+  row: DatabaseRow,
+): CatalogProductModifierGroupCandidate {
+  return {
+    productId: readString(row, "product_id"),
     groupId: readString(row, "group_id"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
   };

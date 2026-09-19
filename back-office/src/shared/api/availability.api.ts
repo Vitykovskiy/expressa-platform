@@ -11,7 +11,8 @@ import type {
   AvailabilityModifierGroupDto,
   AvailabilityProductDto,
   AvailabilityPriceChoiceDto,
-  AvailabilityResponseWithPriceChoicesDto,
+  AvailabilityProductModifierGroupDto,
+  AvailabilityResponseWithAvailabilityMembershipDto,
   AvailabilityUpdate,
   AvailabilityVariantDto,
   ServiceIntake,
@@ -112,7 +113,7 @@ function toAvailabilityApiError(error: unknown): AvailabilityApiError {
 }
 
 function toAvailability(
-  response: AvailabilityResponseWithPriceChoicesDto,
+  response: AvailabilityResponseWithAvailabilityMembershipDto,
 ): Availability {
   const groups = response.categories
     .filter((category) => category.isActive)
@@ -133,7 +134,7 @@ function toServiceIntake(intake: ServiceIntakeDto): ServiceIntake {
 
 function toAvailabilityGroup(
   category: AvailabilityCategoryDto,
-  response: AvailabilityResponseWithPriceChoicesDto,
+  response: AvailabilityResponseWithAvailabilityMembershipDto,
 ): AvailabilityGroup {
   const products = response.products
     .filter((product) => product.categoryId === category.id && product.isActive)
@@ -147,22 +148,7 @@ function toAvailabilityGroup(
       .sort(bySortOrder)
       .map((choice) => toPriceChoiceItem(product, choice)),
   ]);
-  const modifierItems = response.categoryModifierGroups
-    .filter((assignment) => assignment.categoryId === category.id)
-    .slice()
-    .sort(bySortOrder)
-    .flatMap((assignment) => {
-      const group = response.modifierGroups.find(
-        (currentGroup) => currentGroup.id === assignment.groupId,
-      );
-      if (group === undefined || !group.isActive) return [];
-
-      return response.modifierOptions
-        .filter((option) => option.groupId === group.id)
-        .slice()
-        .sort(bySortOrder)
-        .map((option) => toModifierItem(group, option));
-    });
+  const modifierItems = toModifierItems(category, products, response);
 
   return {
     id: category.id,
@@ -170,6 +156,40 @@ function toAvailabilityGroup(
     name: category.name,
     sortOrder: category.sortOrder,
   };
+}
+
+function toModifierItems(
+  category: AvailabilityCategoryDto,
+  products: readonly AvailabilityProductDto[],
+  response: AvailabilityResponseWithAvailabilityMembershipDto,
+) {
+  const groupIds = [
+    ...response.categoryModifierGroups
+      .filter((assignment) => assignment.categoryId === category.id)
+      .slice()
+      .sort(bySortOrder)
+      .map((assignment) => assignment.groupId),
+    ...products.flatMap((product) =>
+      response.productModifierGroups
+        .filter((assignment) => assignment.productId === product.id)
+        .slice()
+        .sort(bySortOrder)
+        .map((assignment) => assignment.groupId),
+    ),
+  ];
+
+  return [...new Set(groupIds)].flatMap((groupId) => {
+    const group = response.modifierGroups.find(
+      (currentGroup) => currentGroup.id === groupId,
+    );
+    if (group === undefined || !group.isActive) return [];
+
+    return response.modifierOptions
+      .filter((option) => option.groupId === group.id)
+      .slice()
+      .sort(bySortOrder)
+      .map((option) => toModifierItem(group, option));
+  });
 }
 
 function toProductItem(product: AvailabilityProductDto) {
@@ -224,7 +244,7 @@ function toModifierItem(
 
 function isAvailabilityResponseDto(
   value: unknown,
-): value is AvailabilityResponseWithPriceChoicesDto {
+): value is AvailabilityResponseWithAvailabilityMembershipDto {
   if (!isRecord(value)) return false;
 
   const {
@@ -234,6 +254,7 @@ function isAvailabilityResponseDto(
     modifierGroups,
     modifierOptions,
     priceChoices,
+    productModifierGroups,
     productVariants,
     products,
   } = value;
@@ -244,6 +265,7 @@ function isAvailabilityResponseDto(
     !isAvailabilityModifierGroups(modifierGroups) ||
     !isAvailabilityModifiers(modifierOptions) ||
     !isAvailabilityPriceChoices(priceChoices) ||
+    !isAvailabilityProductModifierGroups(productModifierGroups) ||
     !isAvailabilityVariants(productVariants) ||
     !isAvailabilityProducts(products)
   ) {
@@ -256,6 +278,7 @@ function isAvailabilityResponseDto(
     modifierGroups,
     modifierOptions,
     priceChoices,
+    productModifierGroups,
     productVariants,
     products,
   });
@@ -319,6 +342,25 @@ function isAvailabilityPriceChoices(
   value: unknown,
 ): value is readonly AvailabilityPriceChoiceDto[] {
   return Array.isArray(value) && value.every(isAvailabilityPriceChoice);
+}
+
+function isAvailabilityProductModifierGroups(
+  value: unknown,
+): value is readonly AvailabilityProductModifierGroupDto[] {
+  return (
+    Array.isArray(value) && value.every(isAvailabilityProductModifierGroup)
+  );
+}
+
+function isAvailabilityProductModifierGroup(
+  value: unknown,
+): value is AvailabilityProductModifierGroupDto {
+  return (
+    isRecord(value) &&
+    isUuid(value.groupId) &&
+    isUuid(value.productId) &&
+    isNonNegativeNumber(value.sortOrder)
+  );
 }
 
 function isAvailabilityProduct(
@@ -411,12 +453,13 @@ function isAvailabilityCategoryModifierGroup(
 
 function hasValidReferences(
   response: Pick<
-    AvailabilityResponseWithPriceChoicesDto,
+    AvailabilityResponseWithAvailabilityMembershipDto,
     | "categories"
     | "categoryModifierGroups"
     | "modifierGroups"
     | "modifierOptions"
     | "priceChoices"
+    | "productModifierGroups"
     | "productVariants"
     | "products"
   >,
@@ -431,6 +474,10 @@ function hasValidReferences(
       productIds.has(productId),
     ) &&
     response.priceChoices.every(({ productId }) => productIds.has(productId)) &&
+    response.productModifierGroups.every(
+      ({ groupId, productId }) =>
+        modifierGroupIds.has(groupId) && productIds.has(productId),
+    ) &&
     response.modifierOptions.every(({ groupId }) =>
       modifierGroupIds.has(groupId),
     ) &&

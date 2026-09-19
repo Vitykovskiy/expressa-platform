@@ -36,12 +36,24 @@ export class AvailabilityPriceChoiceResponseDto {
   sortOrder!: number;
   @ApiProperty() isAvailable!: boolean;
 }
+
+export class AvailabilityProductModifierGroupResponseDto {
+  @ApiProperty({ format: "uuid" }) productId!: string;
+  @ApiProperty({ format: "uuid" }) groupId!: string;
+  @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
+  sortOrder!: number;
+}
 export class AvailabilityResponseDto extends AdminCatalogDto {
   @ApiProperty({
     isArray: true,
     type: () => AvailabilityPriceChoiceResponseDto,
   })
   priceChoices!: AvailabilityPriceChoiceResponseDto[];
+  @ApiProperty({
+    isArray: true,
+    type: () => AvailabilityProductModifierGroupResponseDto,
+  })
+  productModifierGroups!: AvailabilityProductModifierGroupResponseDto[];
   @ApiProperty({ type: () => ServiceIntakeResponseDto })
   intake!: ServiceIntakeResponseDto;
 }
