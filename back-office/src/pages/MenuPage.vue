@@ -296,6 +296,7 @@
     />
     <AdminDialog
       :model-value="modifierGroupEditorOpen"
+      aria-labelledby="modifier-group-editor-title"
       max-width="800"
       :persistent="modifierDialogPending"
       @update:model-value="updateModifierGroupEditorOpen"

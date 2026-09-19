@@ -1,13 +1,14 @@
 <template>
   <AdminDialog
     :model-value="open"
+    :aria-labelledby="titleId"
     max-width="560"
     :persistent="props.disabled"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <h2 class="add-dialog__title">Новый товар</h2>
+      <h2 :id="titleId" class="add-dialog__title">Новый товар</h2>
       <section
         v-if="hasSaveOutcome"
         class="add-dialog-outcome"
@@ -238,6 +239,7 @@ const isAvailable = shallowRef(true);
 const isMultiple = shallowRef(false);
 const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
+const titleId = `add-product-title-${useId()}`;
 const categoryId = `add-product-category-${useId()}`;
 const nameId = `add-product-name-${useId()}`;
 const descriptionId = `add-product-description-${useId()}`;

@@ -1,13 +1,14 @@
 <template>
   <AdminDialog
     :model-value="open"
+    :aria-labelledby="titleId"
     max-width="448"
     :persistent="isProtected"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <h2 class="add-dialog__title">Новая категория</h2>
+      <h2 :id="titleId" class="add-dialog__title">Новая категория</h2>
       <p class="add-dialog__description">
         Создайте новую категорию для товаров меню
       </p>
@@ -179,6 +180,7 @@ const dismissedFieldErrors = shallowRef<ReadonlySet<CategoryFormField>>(
   new Set(),
 );
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
+const titleId = `add-category-title-${useId()}`;
 const nameId = `add-category-name-${useId()}`;
 const descriptionId = `add-category-description-${useId()}`;
 const activeLabelId = `add-category-active-${useId()}`;

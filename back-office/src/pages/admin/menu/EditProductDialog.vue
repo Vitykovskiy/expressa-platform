@@ -1,13 +1,14 @@
 <template>
   <AdminDialog
     :model-value="open"
+    :aria-labelledby="titleId"
     max-width="448"
     :persistent="props.disabled"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <v-card class="edit-dialog">
-      <v-card-title>Редактировать товар</v-card-title>
+      <v-card-title :id="titleId">Редактировать товар</v-card-title>
       <section
         v-if="hasSaveOutcome"
         class="edit-dialog-outcome"
@@ -333,6 +334,7 @@ const hasSaveOutcome = computed(
 );
 const deleteOpen = shallowRef(false);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
+const titleId = `edit-product-title-${useId()}`;
 const nameId = `edit-product-name-${useId()}`;
 const categoryId = `edit-product-category-${useId()}`;
 const descriptionId = `edit-product-description-${useId()}`;
