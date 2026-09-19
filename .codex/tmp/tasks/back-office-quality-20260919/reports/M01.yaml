@@ -1,0 +1,47 @@
+status: completed
+changed_files:
+  - back-office/docs/30-domains/Catalog-management.md
+  - back-office/docs/30-domains/api-integration-and-errors.md
+  - back-office/docs/30-domains/working-areas-and-routes.md
+  - back-office/docs/COVERAGE.md
+  - docs/50-interfaces/Back-office-API.md
+checks:
+  - command: "git diff --check"
+    execution_status: checked
+    result: passed
+  - command: "npx prettier --check back-office/docs/30-domains/Catalog-management.md back-office/docs/30-domains/api-integration-and-errors.md back-office/docs/30-domains/working-areas-and-routes.md back-office/docs/COVERAGE.md docs/50-interfaces/Back-office-API.md"
+    execution_status: checked
+    result: passed
+  - command: "node scripts/check-docs.mjs"
+    execution_status: checked
+    result: failed
+    reason: "Three pre-existing root violations remain: missing .codex/tmp/tasks/expressa-quality-baseline/state.yaml and unsupported skill://caveman link; no target-file violation remained."
+  - command: "npm run lint (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "npm run typecheck (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "npm run build (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "automated tests"
+    execution_status: not_run
+    result: null
+    reason: "Forbidden before explicit user acceptance by root AGENTS.md."
+result:
+  assignment:
+    id: M01
+    attempt: 1
+    goal_version: 1
+    snapshot: a12ee7060f88d074171db3db1983d5789b1c0053
+  accepts: null
+  evidence:
+    - "Source tracing against back-office API constants/client methods, checked-in OpenAPI, ADR-006, and accepted R02/R03/R04 evidence produced one consistent hybrid matrix: v2 auth/category/modifier/availability/intake/transitions; v3 catalog/product/price-choice availability/queue reads; legacy v2 inventory is compatibility-only where no active caller exists."
+    - "F006 stale future/unimplemented status was removed from the five-file write-set; product semantics, role gates, lifecycle meaning, and compatibility policy were preserved."
+    - "Commit a12ee7060f88d074171db3db1983d5789b1c0053 was pushed to origin/main."
+  findings: []
+risks:
+  - "Independent documentation reviewer must correlate the immutable commit and verify every route/schema claim per R05."
+  - "Root documentation checker remains red on unrelated pre-existing quality-state and skill-link violations."
+next_action: ".codex/tmp/tasks/back-office-quality-20260919/assignments/R05.yaml"
