@@ -2,7 +2,7 @@
 type: guide
 implementation_status: current
 owner: back-office
-last_verified: 2026-08-11
+last_verified: 2026-09-19
 sources:
   - ../../src/app/router.ts
   - ../../src/app/router.constants.ts
@@ -30,7 +30,11 @@ sources:
 
 ## Цена и подпись в существующих рабочих разделах
 
-Маршруты и текущая реализация пока используют `/api/v2` и `S/M/L`. Принятый
+Маршруты используют гибридную API-границу: `/menu` читает v3 catalog и
+управляет товарами через v3 price-choice endpoints, а категории и modifiers
+остаются v2. `/availability` сочетает v2 availability/intake с v3
+price-choice availability. `/queue` читает list/details через v3, а lifecycle
+transitions остаются v2. Принятый
 целевой контракт описан в
 [ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
 и не требует новых маршрутов:
@@ -43,5 +47,6 @@ sources:
   подпись при её наличии и количество, а модификаторы — отдельно. Legacy
   `S/M/L` остаётся дословным снимком.
 
-Новые маршруты не нужны. Экраны переключаются на v3 согласованно с backend;
-target component-проверки ещё не реализованы.
+Новые маршруты не нужны. Legacy `S/M/L` сохраняется только как дословный
+снимок старых заказов; автоматизированные component-проверки не запускались в
+рамках текущего ограничения приёмки.

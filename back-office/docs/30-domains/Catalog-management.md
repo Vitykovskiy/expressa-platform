@@ -3,7 +3,7 @@ title: Управление каталогом back-office
 type: feature
 implementation_status: current
 owner: back-office
-last_verified: 2026-08-11
+last_verified: 2026-09-19
 sources:
   - ../../src/pages/MenuPage.vue
   - ../../src/pages/admin/menu/catalog.store.ts
@@ -16,12 +16,12 @@ sources:
 
 Пользователь раскрывает категории и группы опций, открывает management mode, создаёт/редактирует/архивирует категории и товары, меняет порядок, создаёт/редактирует/архивирует группы добавок и варианты, переставляет варианты и сохраняет назначения групп категории. Страница хранит выбранную сущность и открытый диалог; store вызывает `CatalogApi` и обновляет подтверждённые сервером данные. Источники: [MenuPage.vue](../../src/pages/MenuPage.vue), [CatalogApi](../../src/shared/api/catalog.api.ts), [catalog store tests](../../src/pages/admin/menu/catalog.store.spec.ts).
 
-## Редактор цен: принятый target UX
+## Редактор цен: текущий принятый UX
 
-Текущий редактор напитка управляет только фиксированными слотами `S/M/L` и не
-читает и не редактирует физический `displayLabel`. Целевой контракт из
-[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
-ещё не реализован.
+Текущий редактор использует v3 price-choice API. Он не спрашивает технический
+тип цены и не передаёт preset identity, amount, unit или inventory semantics.
+Принятый смысл подписей и упорядоченных вариантов определён в
+[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md).
 
 Редактор v3 не спрашивает технический тип цены. Он начинается с одной строки
 `Цена` и необязательного поля `Порция или размер`. Действие `Добавить ещё цену`
@@ -42,8 +42,9 @@ sources:
 
 Стабильный id варианта не меняется при правке цены, подписи, доступности или
 порядка; старые заказы всё равно используют собственный снимок. При удалении
-строка архивируется, а не переназначается. Это target UX после готовности v3
-admin API; component-проверки редактора ещё не реализованы.
+строка архивируется, а не переназначается. Редактор и runtime v3 validation
+реализованы; автоматизированные component-проверки не запускались в рамках
+текущего ограничения приёмки.
 
 Текущие формы не подтверждают пустые обязательные поля, отрицательные цены или напиток без выбранного размера; активному напитку нужен хотя бы один доступный размер. Ошибки полей от сервера остаются у соответствующей формы и снимаются после изменения поля. Архивирование подтверждает `ConfirmDialog`; cancel очищает черновик и возвращает фокус. Селекты, text fields и switches используют нативную или явно заданную ARIA-семантику, а dialog — bottom sheet до 767px и центрированный 90vh от 768px. Источники: [AddProductDialog.vue](../../src/pages/admin/menu/AddProductDialog.vue), [ModifierGroupEditor.vue](../../src/pages/admin/menu/ModifierGroupEditor.vue), [ConfirmDialog.vue](../../src/shared/ui/admin/confirm-dialog/ConfirmDialog.vue), [AdminDialog.vue](../../src/shared/ui/admin/admin-dialog/AdminDialog.vue).
 
