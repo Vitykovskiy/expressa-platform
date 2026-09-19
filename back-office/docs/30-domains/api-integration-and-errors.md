@@ -26,7 +26,7 @@ sources:
 [ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
 контракт реализован в текущем клиенте и runtime validation.
 
-Будущий `CatalogApi` проверяет одну из двух форм: `price` с nullable
+Текущий `CatalogApi` и runtime validation проверяют одну из двух форм: `price` с nullable
 `portionLabel` и без choices либо минимум два упорядоченных price choices со
 стабильными `id`, обязательными plain-text labels, ценой и ручной доступностью.
 Он не принимает kind, amount, unit, preset identity, inventory fields или
