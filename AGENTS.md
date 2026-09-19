@@ -25,7 +25,7 @@
 
 ## Маршрут применимых инструкций
 
-- До действия и при изменении задачи следуйте [маршруту применимости](docs/80-conventions/Agent-system.md).
+- До действия и при изменении задачи следуйте [маршруту применимости и поиска документации](docs/80-conventions/Agent-system.md).
 - Краткую трассу назначения ведите по [протоколу обновления](docs/00-meta/Update-protocol.md).
 - Решение о version/changelog/tag принимайте по [правилам выпуска](docs/70-deployment/Release-and-version-compatibility.md).
 

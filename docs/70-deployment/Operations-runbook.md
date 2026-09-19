@@ -20,7 +20,7 @@ back-office.
 Перед development-поставкой синхронизируйте `BOOTSTRAP_ADMIN_PHONE` и
 `AUTH_DEVELOPMENT_OTP` из игнорируемого локального
 `deploy/development-access.env` в GitHub Environment `development` по
-[инструкции доступа](Environments.md#доступ-администратора-development).
+[инструкции доступа](Environments.md#доступ-к-development).
 Изменение файла без этой синхронизации и следующей development-поставки не
 меняет учётные данные работающего стенда.
 

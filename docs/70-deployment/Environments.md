@@ -19,11 +19,13 @@ admin — <https://admin.dev.expressa.vitykovskiy.ru/>, API —
 `backend/schema.sql` и заполняет seed. Staging и production не поддерживаются,
 пока не принято отдельное решение о постоянных данных.
 
-## Доступ администратора development
+## Доступ к development
 
 Для единственного оператора локальный файл
-`deploy/development-access.env` — источник истины для номера первого
-administrator, development OTP и фиксированного номера development customer.
+`deploy/development-access.env` — источник значений для номера первого
+администратора, OTP для development и фиксированного номера клиента development;
+он не является источником полномочий. Полномочия и поддерживаемая операция
+задаются этой инструкцией и применимыми правилами работы.
 Он должен содержать только:
 
 ```dotenv
