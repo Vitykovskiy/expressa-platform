@@ -1,0 +1,42 @@
+status: completed
+changed_files:
+  - back-office/docs/30-domains/api-integration-and-errors.md
+checks:
+  - command: "git diff --check"
+    execution_status: checked
+    result: passed
+  - command: "npx prettier --check back-office/docs/30-domains/api-integration-and-errors.md"
+    execution_status: checked
+    result: passed
+  - command: "node scripts/check-docs.mjs"
+    execution_status: checked
+    result: failed
+    reason: "Three pre-existing root violations remain: missing .codex/tmp/tasks/expressa-quality-baseline/state.yaml and unsupported skill://caveman link."
+  - command: "npm run lint (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "npm run typecheck (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "npm run build (back-office pre-push hook)"
+    execution_status: checked
+    result: passed
+  - command: "automated tests"
+    execution_status: not_run
+    result: null
+    reason: "Forbidden before explicit user acceptance by root AGENTS.md."
+result:
+  assignment:
+    id: M01
+    attempt: 2
+    goal_version: 1
+    snapshot: bb5910cb266dab9cca483a8eeaaa43eac0aeb97e
+  accepts: null
+  evidence:
+    - "Corrected only the stale 'Будущий CatalogApi' wording to current CatalogApi/runtime validation; all price-choice semantics and hybrid route statements remain unchanged."
+    - "Commit bb5910cb266dab9cca483a8eeaaa43eac0aeb97e was pushed to origin/main."
+  findings: []
+risks:
+  - "Independent R05 attempt 2 must recheck the corrected sentence and affected hybrid documentation matrix."
+  - "Repository docs checker remains red only on unrelated pre-existing root violations."
+next_action: ".codex/tmp/tasks/back-office-quality-20260919/assignments/R05-attempt2.yaml"
