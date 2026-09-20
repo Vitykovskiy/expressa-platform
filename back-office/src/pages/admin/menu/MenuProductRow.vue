@@ -28,6 +28,7 @@
       <AdminButton
         :disabled="props.disabled || !props.canMoveUp"
         :aria-label="`Переместить товар ${props.product.name} вверх`"
+        :data-menu-product-order-action="`${props.product.id}:up`"
         class="menu-product-row__move"
         type="button"
         variant="ghost"
@@ -39,6 +40,7 @@
       <AdminButton
         :disabled="props.disabled || !props.canMoveDown"
         :aria-label="`Переместить товар ${props.product.name} вниз`"
+        :data-menu-product-order-action="`${props.product.id}:down`"
         class="menu-product-row__move"
         type="button"
         variant="ghost"

@@ -38,6 +38,7 @@
         <AdminButton
           :disabled="props.disabled || !props.canMoveUp"
           :aria-label="`Переместить категорию ${props.category.name} вверх`"
+          :data-menu-category-order-action="`${props.category.id}:up`"
           class="menu-category__move"
           type="button"
           variant="ghost"
@@ -49,6 +50,7 @@
         <AdminButton
           :disabled="props.disabled || !props.canMoveDown"
           :aria-label="`Переместить категорию ${props.category.name} вниз`"
+          :data-menu-category-order-action="`${props.category.id}:down`"
           class="menu-category__move"
           type="button"
           variant="ghost"

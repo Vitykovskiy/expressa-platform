@@ -831,8 +831,29 @@ async function moveCategory(category: Category, offset: -1 | 1): Promise<void> {
   const index = ids.indexOf(category.id);
   const targetIndex = index + offset;
   if (index < 0 || targetIndex < 0 || targetIndex >= ids.length) return;
+  const requestedAction = offset === -1 ? "up" : "down";
+  const fallbackAction = offset === -1 ? "down" : "up";
+  const managementWasOpen = managementOpen.value;
   [ids[index], ids[targetIndex]] = [ids[targetIndex]!, ids[index]!];
   await catalogStore.reorderCategories(authorizationValue, ids);
+  if (
+    !catalogStore.lastCommandSucceeded ||
+    catalogStore.status !== "ready" ||
+    !managementWasOpen ||
+    !managementOpen.value ||
+    activeForm.value ||
+    !orderedCategories.value.some((item) => item.id === category.id)
+  )
+    return;
+  await nextTick();
+  const target =
+    document.querySelector<HTMLButtonElement>(
+      `[data-menu-category-order-action="${category.id}:${requestedAction}"]:not(:disabled)`,
+    ) ??
+    document.querySelector<HTMLButtonElement>(
+      `[data-menu-category-order-action="${category.id}:${fallbackAction}"]:not(:disabled)`,
+    );
+  if (target?.isConnected && target.offsetParent !== null) target.focus();
 }
 
 async function moveProductUp(product: Product): Promise<void> {
@@ -850,12 +871,38 @@ async function moveProduct(product: Product, offset: -1 | 1): Promise<void> {
   const index = ids.indexOf(product.id);
   const targetIndex = index + offset;
   if (index < 0 || targetIndex < 0 || targetIndex >= ids.length) return;
+  const requestedAction = offset === -1 ? "up" : "down";
+  const fallbackAction = offset === -1 ? "down" : "up";
+  const managementWasOpen = managementOpen.value;
+  const categoryWasExpanded = expandedCategoryIds.value.has(product.categoryId);
   [ids[index], ids[targetIndex]] = [ids[targetIndex]!, ids[index]!];
   await catalogStore.reorderProducts(
     authorizationValue,
     product.categoryId,
     ids,
   );
+  if (
+    !catalogStore.lastCommandSucceeded ||
+    catalogStore.status !== "ready" ||
+    !managementWasOpen ||
+    !managementOpen.value ||
+    !categoryWasExpanded ||
+    !expandedCategoryIds.value.has(product.categoryId) ||
+    activeForm.value ||
+    !productsByCategory(product.categoryId).some(
+      (item) => item.id === product.id,
+    )
+  )
+    return;
+  await nextTick();
+  const target =
+    document.querySelector<HTMLButtonElement>(
+      `[data-menu-product-order-action="${product.id}:${requestedAction}"]:not(:disabled)`,
+    ) ??
+    document.querySelector<HTMLButtonElement>(
+      `[data-menu-product-order-action="${product.id}:${fallbackAction}"]:not(:disabled)`,
+    );
+  if (target?.isConnected && target.offsetParent !== null) target.focus();
 }
 
 async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {

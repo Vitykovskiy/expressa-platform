@@ -139,15 +139,26 @@ class PostgresV3ProductsTransactionRepository implements V3ProductsRepository {
     return requiredV3Product(await this.findV3ById(id));
   }
   async reorderV3(
-    _products: readonly V3AdminProduct[],
+    products: readonly V3AdminProduct[],
     productIds: readonly string[],
   ): Promise<V3AdminProduct[]> {
+    const activeIds = products
+      .filter((product) => product.isActive)
+      .map((product) => product.id);
+    await this.client.query(
+      "UPDATE products SET is_active = false WHERE id = ANY($1::uuid[]) AND archived_at IS NULL",
+      [activeIds],
+    );
     await this.client.query(
       `UPDATE products AS product
        SET sort_order = ordered.sort_order - 1
        FROM unnest($1::uuid[]) WITH ORDINALITY AS ordered(id, sort_order)
        WHERE product.id = ordered.id AND product.archived_at IS NULL`,
       [productIds],
+    );
+    await this.client.query(
+      "UPDATE products SET is_active = true WHERE id = ANY($1::uuid[]) AND archived_at IS NULL",
+      [activeIds],
     );
     return Promise.all(
       productIds.map((id) => this.findV3ById(id).then(requiredV3Product)),
