@@ -16,33 +16,38 @@
         </span>
       </span>
       <ChevronRight
+        v-if="!props.showManagementActions"
         aria-hidden="true"
         class="menu-product-row__chevron"
         :size="18"
       />
+      <span v-else class="menu-product-row__edit-label">Изменить</span>
     </AdminButton>
-    <AdminButton
-      v-if="props.showManagementActions"
-      :disabled="props.disabled || !props.canMoveUp"
-      :aria-label="`Переместить товар ${props.product.name} вверх`"
-      class="menu-product-row__move"
-      type="button"
-      variant="ghost"
-      @click="emit('moveUp', props.product)"
-    >
-      <ArrowUp :size="18" aria-hidden="true" />
-    </AdminButton>
-    <AdminButton
-      v-if="props.showManagementActions"
-      :disabled="props.disabled || !props.canMoveDown"
-      :aria-label="`Переместить товар ${props.product.name} вниз`"
-      class="menu-product-row__move"
-      type="button"
-      variant="ghost"
-      @click="emit('moveDown', props.product)"
-    >
-      <ArrowDown :size="18" aria-hidden="true" />
-    </AdminButton>
+    <div v-if="props.showManagementActions" class="menu-product-row__order">
+      <span class="menu-product-row__order-label">Порядок</span>
+      <AdminButton
+        :disabled="props.disabled || !props.canMoveUp"
+        :aria-label="`Переместить товар ${props.product.name} вверх`"
+        class="menu-product-row__move"
+        type="button"
+        variant="ghost"
+        @click="emit('moveUp', props.product)"
+      >
+        <ArrowUp :size="18" aria-hidden="true" />
+        <span>Выше</span>
+      </AdminButton>
+      <AdminButton
+        :disabled="props.disabled || !props.canMoveDown"
+        :aria-label="`Переместить товар ${props.product.name} вниз`"
+        class="menu-product-row__move"
+        type="button"
+        variant="ghost"
+        @click="emit('moveDown', props.product)"
+      >
+        <ArrowDown :size="18" aria-hidden="true" />
+        <span>Ниже</span>
+      </AdminButton>
+    </div>
   </div>
 </template>
 
@@ -87,6 +92,8 @@ function formatPrice(price: number): string {
   display: flex;
   width: 100%;
   min-height: 63px;
+  align-items: center;
+  flex-wrap: wrap;
   color: var(--expressa-color-text-primary);
   text-align: left;
   background: var(--expressa-color-surface);
@@ -109,12 +116,18 @@ function formatPrice(price: number): string {
 }
 
 .menu-product-row__move {
-  width: 44px;
-  min-width: 44px;
-  min-height: 63px;
-  padding: 0;
-  border-left: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  display: inline-flex;
+  min-height: var(--expressa-size-control-min-height);
+  align-items: center;
+  gap: var(--expressa-space-2xs);
+  padding-inline: var(--expressa-space-sm);
+}
+
+.menu-product-row__order {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--expressa-space-2xs);
 }
 
 .menu-product-row__content {
@@ -134,6 +147,25 @@ function formatPrice(price: number): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.menu-product-row__order-label {
+  color: var(--expressa-color-text-secondary);
+}
+
+.menu-product-row__edit-label {
+  align-self: center;
+  color: var(--expressa-color-accent);
+}
+
+@media (max-width: 767px) {
+  .menu-product-row__edit {
+    width: 100%;
+  }
+
+  .menu-product-row__order {
+    margin-inline-start: var(--expressa-space-md);
+  }
 }
 
 .menu-product-row__name {

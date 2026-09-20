@@ -8,7 +8,7 @@
     @update:model-value="updateOpen"
   >
     <v-card class="add-dialog">
-      <h2 :id="titleId" class="add-dialog__title">Новый товар</h2>
+      <v-card-title :id="titleId">Новый товар</v-card-title>
       <section
         v-if="hasSaveOutcome"
         class="add-dialog-outcome"
@@ -92,23 +92,24 @@
         />
         <section class="add-dialog__pricing" aria-label="Цены и порции">
           <div class="add-dialog__pricing-heading">
-            <strong>Цена и порция</strong
-            ><AdminButton
+            <h3>Цены и порции</h3>
+          </div>
+          <template v-if="!isMultiple">
+            <PriceFields
+              v-model:price="price"
+              v-model:portion-label="portionLabel"
+              :disabled="props.disabled"
+              :error="errorFor('price') ?? errorFor('portionLabel')"
+            />
+            <AdminButton
               v-if="!isMultiple"
               :disabled="props.disabled"
               type="button"
               variant="secondary"
               @click="enableMultiple"
-              >Несколько цен</AdminButton
+              >Добавить ещё цену</AdminButton
             >
-          </div>
-          <template v-if="!isMultiple"
-            ><PriceFields
-              v-model:price="price"
-              v-model:portion-label="portionLabel"
-              :disabled="props.disabled"
-              :error="errorFor('price') ?? errorFor('portionLabel')"
-          /></template>
+          </template>
           <template v-else
             ><section
               v-for="(choice, index) in priceChoices"
@@ -117,11 +118,12 @@
               class="add-dialog__choice"
               role="group"
             >
+              <h4>Цена {{ index + 1 }}</h4>
               <PriceFields
                 :price="choice.price"
                 :portion-label="choice.portionLabel"
                 :disabled="props.disabled"
-                :error="choiceError(index)"
+                :error="choicesTouched ? choiceError(index) : undefined"
                 required-label
                 @update:price="updateChoice(index, 'price', $event)"
                 @update:portion-label="
@@ -129,18 +131,21 @@
                 "
               />
               <div class="add-dialog__choice-actions">
+                <span>Доступен для заказа</span>
                 <AdminToggle
                   :model-value="choice.isAvailable"
-                  :aria-label="`Вариант ${index + 1} доступен`"
+                  :aria-label="`Вариант ${index + 1} доступен для заказа`"
                   :disabled="props.disabled"
                   @update:model-value="choice.isAvailable = Boolean($event)"
-                /><AdminButton
+                />
+                <span class="add-dialog__order-label">Порядок</span>
+                <AdminButton
                   :aria-label="`Поднять вариант ${index + 1}`"
                   :disabled="props.disabled || index === 0"
                   type="button"
                   variant="ghost"
                   @click="moveChoice(index, -1)"
-                  >↑</AdminButton
+                  >Выше</AdminButton
                 ><AdminButton
                   :aria-label="`Опустить вариант ${index + 1}`"
                   :disabled="
@@ -149,44 +154,52 @@
                   type="button"
                   variant="ghost"
                   @click="moveChoice(index, 1)"
-                  >↓</AdminButton
+                  >Ниже</AdminButton
                 ><AdminButton
                   :aria-label="`Удалить вариант ${index + 1}`"
                   :disabled="props.disabled"
                   type="button"
                   variant="ghost"
                   @click="removeChoice(index)"
-                  >Удалить</AdminButton
+                  >Удалить цену</AdminButton
                 >
               </div>
             </section>
+            <p class="add-dialog__pricing-help">
+              Изменения цен и их порядка применятся после сохранения товара.
+            </p>
             <AdminButton
               :disabled="props.disabled"
               type="button"
               variant="secondary"
               @click="addChoice"
-              >Добавить вариант</AdminButton
+              >Добавить ещё цену</AdminButton
             ></template
           >
         </section>
-        <div class="add-dialog__toggle">
-          <strong>Товар активен</strong
-          ><AdminToggle
-            :model-value="isActive"
-            aria-label="Товар активен"
-            :disabled="props.disabled"
-            @update:model-value="isActive = Boolean($event)"
-          />
-        </div>
-        <div class="add-dialog__toggle">
-          <strong>Товар доступен</strong
-          ><AdminToggle
-            :model-value="isAvailable"
-            aria-label="Товар доступен"
-            :disabled="props.disabled"
-            @update:model-value="isAvailable = Boolean($event)"
-          />
-        </div>
+        <section class="add-dialog__publication">
+          <h3>Публикация</h3>
+          <div class="add-dialog__toggle">
+            <strong>Показывать в меню</strong
+            ><AdminToggle
+              :model-value="isActive"
+              aria-label="Показывать в меню"
+              :disabled="props.disabled"
+              @update:model-value="isActive = Boolean($event)"
+            />
+          </div>
+          <p>Выключите, чтобы скрыть товар из меню покупателя.</p>
+          <div v-if="!isMultiple" class="add-dialog__toggle">
+            <strong>Доступен для заказа</strong
+            ><AdminToggle
+              :model-value="isAvailable"
+              aria-label="Доступен для заказа"
+              :disabled="props.disabled"
+              @update:model-value="isAvailable = Boolean($event)"
+            />
+          </div>
+          <p v-else>Доступность задаётся отдельно для каждой цены.</p>
+        </section>
       </v-card-text>
       <v-card-actions class="admin-dialog-actions"
         ><AdminButton
@@ -238,6 +251,7 @@ const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const isMultiple = shallowRef(false);
 const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
+const choicesTouched = shallowRef(false);
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const titleId = `add-product-title-${useId()}`;
 const categoryId = `add-product-category-${useId()}`;
@@ -292,15 +306,18 @@ function enableMultiple(): void {
     createPriceChoiceDraft(),
   ];
   isMultiple.value = true;
+  choicesTouched.value = false;
 }
 function addChoice(): void {
   priceChoices.value = [...priceChoices.value, createPriceChoiceDraft()];
+  choicesTouched.value = false;
 }
 function updateChoice(
   index: number,
   field: "portionLabel" | "price",
   value: string,
 ): void {
+  choicesTouched.value = true;
   priceChoices.value = priceChoices.value.map((choice, current) =>
     current === index ? { ...choice, [field]: value } : choice,
   );
@@ -356,6 +373,7 @@ function reset(): void {
   isAvailable.value = true;
   isMultiple.value = false;
   priceChoices.value = [];
+  choicesTouched.value = false;
 }
 function closeDialog(): void {
   if (isProtected.value) return;
@@ -391,7 +409,8 @@ watch(open, (isOpen, wasOpen) => {
 
 <style scoped lang="scss">
 .add-dialog__fields,
-.add-dialog__pricing {
+.add-dialog__pricing,
+.add-dialog__publication {
   display: grid;
   gap: var(--expressa-space-sm);
 }
@@ -406,6 +425,13 @@ watch(open, (isOpen, wasOpen) => {
   justify-content: space-between;
   gap: var(--expressa-space-sm);
 }
+.add-dialog__pricing-heading h3,
+.add-dialog__publication h3,
+.add-dialog__choice h4,
+.add-dialog__publication p,
+.add-dialog__pricing-help {
+  margin: 0;
+}
 .add-dialog__choice {
   display: grid;
   gap: var(--expressa-space-sm);
@@ -413,6 +439,15 @@ watch(open, (isOpen, wasOpen) => {
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
+}
+.add-dialog__choice-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.add-dialog__order-label,
+.add-dialog__pricing-help,
+.add-dialog__publication p {
+  color: var(--expressa-color-text-secondary);
 }
 .add-dialog__error {
   margin: 0;

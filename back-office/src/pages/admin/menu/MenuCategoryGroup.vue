@@ -33,28 +33,35 @@
           </span>
         </span>
       </AdminButton>
-      <AdminButton
-        v-if="props.showManagementActions"
-        :disabled="props.disabled || !props.canMoveUp"
-        :aria-label="`Переместить категорию ${props.category.name} вверх`"
-        class="menu-category__move"
-        type="button"
-        variant="ghost"
-        @click="emit('moveUp', props.category)"
-      >
-        <ArrowUp aria-hidden="true" class="menu-category__icon" :size="18" />
-      </AdminButton>
-      <AdminButton
-        v-if="props.showManagementActions"
-        :disabled="props.disabled || !props.canMoveDown"
-        :aria-label="`Переместить категорию ${props.category.name} вниз`"
-        class="menu-category__move"
-        type="button"
-        variant="ghost"
-        @click="emit('moveDown', props.category)"
-      >
-        <ArrowDown aria-hidden="true" class="menu-category__icon" :size="18" />
-      </AdminButton>
+      <div v-if="props.showManagementActions" class="menu-category__order">
+        <span class="menu-category__order-label">Порядок</span>
+        <AdminButton
+          :disabled="props.disabled || !props.canMoveUp"
+          :aria-label="`Переместить категорию ${props.category.name} вверх`"
+          class="menu-category__move"
+          type="button"
+          variant="ghost"
+          @click="emit('moveUp', props.category)"
+        >
+          <ArrowUp aria-hidden="true" class="menu-category__icon" :size="18" />
+          <span>Выше</span>
+        </AdminButton>
+        <AdminButton
+          :disabled="props.disabled || !props.canMoveDown"
+          :aria-label="`Переместить категорию ${props.category.name} вниз`"
+          class="menu-category__move"
+          type="button"
+          variant="ghost"
+          @click="emit('moveDown', props.category)"
+        >
+          <ArrowDown
+            aria-hidden="true"
+            class="menu-category__icon"
+            :size="18"
+          />
+          <span>Ниже</span>
+        </AdminButton>
+      </div>
       <AdminButton
         :disabled="props.disabled"
         class="menu-category__edit"
@@ -63,8 +70,13 @@
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
       >
-        <Pencil aria-hidden="true" class="menu-category__icon" :size="18" />
-        <span class="menu-category__edit-label">Редактировать</span>
+        <template v-if="props.showManagementActions">
+          Изменить группу
+        </template>
+        <template v-else>
+          <Pencil aria-hidden="true" class="menu-category__icon" :size="18" />
+          <span class="menu-category__edit-label">Редактировать</span>
+        </template>
       </AdminButton>
     </header>
 
@@ -140,7 +152,8 @@ const countLabel = computed(() => {
 .menu-category__header {
   display: flex;
   min-height: 70px;
-  align-items: stretch;
+  align-items: center;
+  flex-wrap: wrap;
   background: var(--expressa-color-surface-raised);
 }
 
@@ -153,17 +166,23 @@ const countLabel = computed(() => {
   cursor: pointer;
 }
 
+.menu-category__order {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--expressa-space-2xs);
+}
+
 .menu-category__move,
 .menu-category__edit {
-  width: 44px;
-  min-width: 44px;
-  min-height: 70px;
-  padding: 0;
+  min-height: var(--expressa-size-control-min-height);
 }
 
 .menu-category__move {
-  border-left: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--expressa-space-2xs);
+  padding-inline: var(--expressa-space-sm);
 }
 
 .menu-category__toggle {
@@ -203,9 +222,10 @@ const countLabel = computed(() => {
 }
 
 .menu-category__edit {
-  display: grid;
-  place-items: center;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--expressa-space-2xs);
+  padding-inline: var(--expressa-space-sm);
   color: var(--expressa-color-accent);
   font: inherit;
 }
@@ -239,12 +259,13 @@ const countLabel = computed(() => {
   }
 
   .menu-category__edit,
-  .menu-category__move {
-    width: 44px;
-    min-width: 44px;
-    min-height: 70px;
-    padding: 0;
+  .menu-category__order {
+    margin-inline-start: var(--expressa-space-md);
   }
+}
+
+.menu-category__order-label {
+  color: var(--expressa-color-text-secondary);
 }
 
 .menu-category__edit-label {

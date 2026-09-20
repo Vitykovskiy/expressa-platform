@@ -32,25 +32,6 @@
       >
     </section>
     <template v-if="hasConfirmedCatalog">
-      <p v-if="catalogSummary" class="menu-page__desktop-summary">
-        {{ catalogSummary }}
-      </p>
-      <AdminButton
-        :aria-expanded="managementOpen"
-        :disabled="isBusy"
-        aria-label="Управление меню"
-        class="menu-page__management-toggle"
-        title="Управление меню"
-        type="button"
-        variant="ghost"
-        @click="managementOpen = !managementOpen"
-      >
-        <Ellipsis
-          aria-hidden="true"
-          class="menu-page__management-icon"
-          :size="18"
-        />
-      </AdminButton>
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
         <div class="menu-page__toolbar">
           <div class="menu-page__actions">
@@ -68,6 +49,19 @@
               >Добавить товар</AdminButton
             >
           </div>
+          <p v-if="catalogSummary" class="menu-page__catalog-summary">
+            {{ catalogSummary }}
+          </p>
+          <AdminButton
+            :aria-expanded="managementOpen"
+            :disabled="isBusy"
+            class="menu-page__management-toggle"
+            type="button"
+            variant="secondary"
+            @click="managementOpen = !managementOpen"
+          >
+            {{ managementOpen ? "Скрыть управление" : "Управление меню" }}
+          </AdminButton>
         </div>
         <p v-if="orderedCategories.length === 0" class="menu-page__state">
           Категорий пока нет. Добавьте первую категорию.
@@ -210,6 +204,10 @@
               >Новая группа добавок</AdminButton
             >
           </div>
+          <p class="menu-page__management-explanation">
+            Меняйте порядок групп и товаров кнопками «Выше» и «Ниже». Изменения
+            сохраняются сразу.
+          </p>
           <div class="menu-page__catalog-tools">
             <section class="menu-page__editor-section">
               <h3>Назначения категорий</h3>
@@ -325,7 +323,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, shallowRef, watch } from "vue";
-import { ChevronDown, ChevronRight, Ellipsis, Pencil } from "lucide-vue-next";
+import { ChevronDown, ChevronRight, Pencil } from "lucide-vue-next";
 
 import { useSessionStore } from "../app/session.store";
 import AddCategoryDialog from "./admin/menu/AddCategoryDialog.vue";
@@ -960,26 +958,15 @@ function bySortOrder(
   display: none;
 }
 
-.menu-page__desktop-summary {
-  position: absolute;
-  top: 35px;
-  right: var(--expressa-space-lg);
+.menu-page__catalog-summary {
   margin: 0;
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-body);
 }
 
 .menu-page__management-toggle {
-  position: absolute;
-  z-index: 1;
-  display: grid;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
   min-height: 44px;
-  place-items: center;
-  padding: 0;
-  color: var(--expressa-color-text-secondary);
+  margin-inline-start: auto;
 }
 
 .menu-page__management-icon,
@@ -1014,6 +1001,17 @@ function bySortOrder(
 .menu-page__toolbar,
 .menu-page__management-heading {
   justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.menu-page__catalog-summary {
+  flex: 1 1 12rem;
+}
+
+.menu-page__management-explanation {
+  max-width: 60rem;
+  margin: 0;
+  color: var(--expressa-color-text-secondary);
 }
 
 .menu-page__section {
@@ -1233,15 +1231,6 @@ function bySortOrder(
       var(--expressa-space-tab-bar-clearance);
   }
 
-  .menu-page__desktop-summary {
-    display: none;
-  }
-
-  .menu-page__management-toggle {
-    top: var(--expressa-space-xs);
-    right: var(--expressa-space-md);
-  }
-
   .menu-page__actions {
     width: 100%;
   }
@@ -1274,11 +1263,6 @@ function bySortOrder(
 
   :deep(.page-shell-content) {
     margin-top: var(--expressa-space-md);
-  }
-
-  .menu-page__management-toggle {
-    top: 21px;
-    right: 184px;
   }
 }
 </style>

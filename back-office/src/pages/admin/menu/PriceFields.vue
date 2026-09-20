@@ -13,7 +13,7 @@
     />
 
     <label :for="portionSelectId" class="price-fields__label">
-      Порция{{ props.requiredLabel ? "" : " (необязательно)" }}
+      Порция или размер{{ props.requiredLabel ? "" : " (необязательно)" }}
     </label>
     <AdminSelect
       :id="portionSelectId"
@@ -22,7 +22,8 @@
       :aria-invalid="Boolean(error)"
       :disabled="props.disabled"
     >
-      <option value="">Без подписи</option>
+      <option v-if="!props.requiredLabel" value="">Без подписи</option>
+      <option v-else disabled value="">Выберите порцию или размер</option>
       <option
         v-for="suggestion in portionLabelSuggestions"
         :key="suggestion"

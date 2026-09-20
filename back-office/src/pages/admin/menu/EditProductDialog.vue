@@ -2,7 +2,7 @@
   <AdminDialog
     :model-value="open"
     :aria-labelledby="titleId"
-    max-width="448"
+    max-width="560"
     :persistent="props.disabled"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
@@ -47,9 +47,6 @@
           </p>
         </details>
       </section>
-      <v-card-text class="edit-dialog-category"
-        >Категория: «{{ categoryName }}»</v-card-text
-      >
       <v-card-text class="edit-dialog-fields">
         <label :for="nameId">Название товара</label>
         <AdminTextField
@@ -119,71 +116,31 @@
         >
           {{ descriptionError }}
         </p>
-        <div class="edit-dialog-toggle">
-          <strong :id="activeLabelId">Товар активен</strong
-          ><AdminToggle
-            :model-value="isActive"
-            :aria-describedby="activeError ? activeErrorId : undefined"
-            :aria-invalid="Boolean(activeError)"
-            :aria-labelledby="activeLabelId"
-            :disabled="props.disabled"
-            @update:model-value="updateIsActive"
-          />
-        </div>
-        <p
-          v-if="activeError"
-          :id="activeErrorId"
-          class="edit-dialog-error"
-          role="alert"
-        >
-          {{ activeError }}
-        </p>
-        <div class="edit-dialog-toggle">
-          <strong :id="availableLabelId">Товар доступен</strong
-          ><AdminToggle
-            :model-value="isAvailable"
-            :aria-describedby="availableError ? availableErrorId : undefined"
-            :aria-invalid="Boolean(availableError)"
-            :aria-labelledby="availableLabelId"
-            :disabled="props.disabled"
-            @update:model-value="updateIsAvailable"
-          />
-        </div>
-        <p
-          v-if="availableError"
-          :id="availableErrorId"
-          class="edit-dialog-error"
-          role="alert"
-        >
-          {{ availableError }}
-        </p>
         <section class="edit-dialog-pricing" aria-label="Цены и порции">
-          <div class="edit-dialog-pricing-heading">
-            <strong>Цена и порция</strong>
+          <h3>Цены и порции</h3>
+          <template v-if="!isMultiple">
+            <PriceFields
+              v-model:price="price"
+              v-model:portion-label="portionLabel"
+              :disabled="props.disabled"
+              :error="priceError"
+            />
             <AdminButton
-              v-if="!isMultiple"
               :disabled="props.disabled"
               type="button"
               variant="secondary"
               @click="enableMultiple"
-              >Несколько цен</AdminButton
+              >Добавить ещё цену</AdminButton
             >
-          </div>
-          <PriceFields
-            v-if="!isMultiple"
-            v-model:price="price"
-            v-model:portion-label="portionLabel"
-            :disabled="props.disabled"
-            :error="priceError"
-          />
+          </template>
           <template v-else>
             <section
               v-for="(choice, index) in priceChoices"
               :key="choice.id ?? index"
-              :aria-label="`Вариант ${index + 1}`"
               class="edit-dialog-choice"
               role="group"
             >
+              <h4>Цена {{ index + 1 }}</h4>
               <PriceFields
                 :price="choice.price"
                 :portion-label="choice.portionLabel"
@@ -196,21 +153,23 @@
                 "
               />
               <div class="edit-dialog-choice-actions">
+                <span>Доступен для заказа</span>
                 <AdminToggle
                   :model-value="choice.isAvailable"
-                  :aria-label="`Вариант ${index + 1} доступен`"
+                  :aria-label="`Вариант ${index + 1} доступен для заказа`"
                   :disabled="props.disabled"
                   @update:model-value="
                     updateChoice(index, 'isAvailable', Boolean($event))
                   "
                 />
+                <span class="edit-dialog-order-label">Порядок</span>
                 <AdminButton
                   :aria-label="`Поднять вариант ${index + 1}`"
                   :disabled="props.disabled || index === 0"
                   type="button"
                   variant="ghost"
                   @click="moveChoice(index, -1)"
-                  >↑</AdminButton
+                  >Выше</AdminButton
                 >
                 <AdminButton
                   :aria-label="`Опустить вариант ${index + 1}`"
@@ -220,7 +179,7 @@
                   type="button"
                   variant="ghost"
                   @click="moveChoice(index, 1)"
-                  >↓</AdminButton
+                  >Ниже</AdminButton
                 >
                 <AdminButton
                   :aria-label="`Удалить вариант ${index + 1}`"
@@ -228,19 +187,65 @@
                   type="button"
                   variant="ghost"
                   @click="removeChoice(index)"
-                  >Удалить</AdminButton
+                  >Удалить цену</AdminButton
                 >
               </div>
             </section>
+            <p class="edit-dialog-pricing-help">
+              Изменения цен и их порядка применятся после сохранения товара.
+            </p>
             <AdminButton
               :disabled="props.disabled"
               type="button"
               variant="secondary"
               @click="addChoice"
-              >Добавить вариант</AdminButton
+              >Добавить ещё цену</AdminButton
             >
           </template>
         </section>
+        <section class="edit-dialog-publication">
+          <h3>Публикация</h3>
+          <div class="edit-dialog-toggle">
+            <strong :id="activeLabelId">Показывать в меню</strong
+            ><AdminToggle
+              :model-value="isActive"
+              :aria-describedby="activeError ? activeErrorId : undefined"
+              :aria-invalid="Boolean(activeError)"
+              :aria-labelledby="activeLabelId"
+              :disabled="props.disabled"
+              @update:model-value="updateIsActive"
+            />
+          </div>
+          <p>Выключите, чтобы скрыть товар из меню покупателя.</p>
+          <p
+            v-if="activeError"
+            :id="activeErrorId"
+            class="edit-dialog-error"
+            role="alert"
+          >
+            {{ activeError }}
+          </p>
+          <div v-if="!isMultiple" class="edit-dialog-toggle">
+            <strong :id="availableLabelId">Доступен для заказа</strong
+            ><AdminToggle
+              :model-value="isAvailable"
+              :aria-describedby="availableError ? availableErrorId : undefined"
+              :aria-invalid="Boolean(availableError)"
+              :aria-labelledby="availableLabelId"
+              :disabled="props.disabled"
+              @update:model-value="updateIsAvailable"
+            />
+          </div>
+          <p v-else>Доступность задаётся отдельно для каждой цены.</p>
+        </section>
+        <p
+          v-if="availableError"
+          :id="availableErrorId"
+          class="edit-dialog-error"
+          role="alert"
+        >
+          {{ availableError }}
+        </p>
       </v-card-text>
       <v-card-actions
         class="edit-dialog-actions admin-dialog-actions admin-dialog-actions--with-destructive"
@@ -259,18 +264,18 @@
         <AdminButton
           :disabled="props.disabled"
           type="button"
-          variant="destructive"
-          @click="openDeleteConfirmation"
-          >Архивировать товар</AdminButton
-        >
-        <AdminButton
-          :disabled="props.disabled"
-          type="button"
           variant="ghost"
           @click="closeAsCancelled"
           >{{
             props.saveOutcome === "idle" ? "Отмена" : "Закрыть форму"
           }}</AdminButton
+        >
+        <AdminButton
+          :disabled="props.disabled"
+          type="button"
+          variant="destructive"
+          @click="openDeleteConfirmation"
+          >Архивировать товар</AdminButton
         >
       </v-card-actions>
     </v-card>
@@ -347,11 +352,6 @@ const activeErrorId = `edit-product-active-error-${useId()}`;
 const availableErrorId = `edit-product-available-error-${useId()}`;
 const nameInput =
   useTemplateRef<InstanceType<typeof AdminTextField>>("nameInput");
-const categoryName = computed(
-  () =>
-    props.categories.find((category) => category.id === categoryIdValue.value)
-      ?.name ?? "",
-);
 const categoryError = computed(() =>
   localError(
     "categoryId",
@@ -391,7 +391,7 @@ function validChoice(choice: PriceChoiceDraft): boolean {
 }
 function choiceError(index: number): string | undefined {
   const choice = priceChoices.value[index];
-  return choice && !validChoice(choice)
+  return choice && touched.value.priceChoices && !validChoice(choice)
     ? "Укажите подпись порции и цену в целых рублях"
     : fieldError(`priceChoices.${index}.price` as ProductFormField);
 }
@@ -473,6 +473,7 @@ function updateChoice(
   field: "isAvailable" | "portionLabel" | "price",
   value: boolean | string,
 ): void {
+  touch("priceChoices");
   priceChoices.value = priceChoices.value.map((choice, current) =>
     current === index ? { ...choice, [field]: value } : choice,
   );
@@ -572,33 +573,16 @@ watch(
 
 <style scoped lang="scss">
 .edit-dialog {
-  flex: none;
-  display: grid;
-  inline-size: min(100vw, 28rem);
+  inline-size: 100%;
   min-inline-size: 0;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  block-size: min(
-    44rem,
-    calc(100dvh - var(--expressa-space-xl) - var(--expressa-space-xl))
-  );
-  min-block-size: 0;
-  overflow: hidden;
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
-.edit-dialog-category {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
 .edit-dialog-fields {
   min-inline-size: 0;
-  min-block-size: 0;
   display: grid;
   gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 .edit-dialog-fields label {
   color: var(--expressa-color-text-secondary);
@@ -652,7 +636,7 @@ watch(
 .edit-dialog-technical-details p {
   margin: var(--expressa-space-sm) 0 0;
 }
-.size-row {
+.edit-dialog-choice {
   display: grid;
   gap: var(--expressa-space-sm);
   padding: var(--expressa-space-sm);
@@ -660,72 +644,32 @@ watch(
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
 }
-.size-row-heading,
-.size-row-fields {
+.edit-dialog-pricing,
+.edit-dialog-publication {
   display: grid;
-  grid-template-columns: var(--expressa-size-option) 1fr auto;
-  align-items: center;
   gap: var(--expressa-space-sm);
 }
-.size-row-heading span {
-  display: grid;
-  width: var(--expressa-size-option);
-  height: var(--expressa-size-option);
-  place-items: center;
-  border-radius: var(--expressa-radius-sm);
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-surface-raised);
-  font-weight: var(--expressa-font-weight-semibold);
+.edit-dialog-pricing h3,
+.edit-dialog-publication h3,
+.edit-dialog-choice h4,
+.edit-dialog-publication p,
+.edit-dialog-pricing-help {
+  margin: 0;
 }
-.size-row-heading strong,
-.size-row-fields strong {
-  font-size: var(--expressa-font-size-body-strong);
-}
-.size-row-fields {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-}
-.size-row-order {
+.edit-dialog-choice-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: var(--expressa-space-sm);
+}
+.edit-dialog-order-label,
+.edit-dialog-pricing-help,
+.edit-dialog-publication p {
   color: var(--expressa-color-text-secondary);
-}
-.size-order-button {
-  width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-width: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  min-height: calc(
-    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
-  );
-  padding: 0;
-}
-@media (max-width: 480px) {
-  .size-row-heading {
-    grid-template-columns: var(--expressa-size-option) minmax(0, 1fr);
-  }
-  .size-row-heading :deep(.admin-toggle) {
-    grid-column: 2;
-    justify-self: end;
-  }
-  .size-row-fields {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .size-row-fields label,
-  .size-row-fields .edit-dialog-input {
-    grid-column: 1 / -1;
-  }
-  .size-row-fields strong {
-    grid-column: 1;
-  }
-  .size-row-fields :deep(.admin-toggle) {
-    grid-column: 2;
-  }
 }
 .edit-dialog-actions {
   padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  flex-wrap: wrap;
 }
 </style>
