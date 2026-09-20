@@ -271,6 +271,7 @@ const priceChoiceTouched = shallowRef<
   Partial<Record<string, Partial<Record<PriceChoiceField, true>>>>
 >({});
 const dismissedChoiceFieldErrors = shallowRef<Record<string, true>>({});
+const programmaticChoiceFocus = shallowRef<string | null>(null);
 let nextPriceChoiceLocalId = 0;
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const titleId = `add-product-title-${useId()}`;
@@ -350,6 +351,10 @@ function choicePortionLabelError(
   );
 }
 function touchChoice(localId: string, field: PriceChoiceField): void {
+  if (programmaticChoiceFocus.value === `${localId}:${field}`) {
+    programmaticChoiceFocus.value = null;
+    return;
+  }
   priceChoiceTouched.value = {
     ...priceChoiceTouched.value,
     [localId]: { ...priceChoiceTouched.value[localId], [field]: true },
@@ -357,11 +362,13 @@ function touchChoice(localId: string, field: PriceChoiceField): void {
 }
 function focusChoice(localId: string): void {
   void nextTick(() => {
-    document
-      .querySelector<HTMLElement>(
-        `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
-      )
-      ?.focus();
+    const field = document.querySelector<HTMLElement>(
+      `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
+    );
+    if (field) {
+      programmaticChoiceFocus.value = `${localId}:price`;
+      field.focus();
+    }
   });
 }
 function enableMultiple(): void {
@@ -387,9 +394,13 @@ function updateChoice(
   field: "portionLabel" | "price",
   value: string,
 ): void {
+  const choice = priceChoices.value[index]!;
+  if (programmaticChoiceFocus.value === `${choice.localId}:${field}`) {
+    programmaticChoiceFocus.value = null;
+  }
   dismissedChoiceFieldErrors.value = {
     ...dismissedChoiceFieldErrors.value,
-    [`${priceChoices.value[index]!.localId}:${field}`]: true,
+    [`${choice.localId}:${field}`]: true,
   };
   priceChoices.value = priceChoices.value.map((choice, current) =>
     current === index ? { ...choice, [field]: value } : choice,
@@ -450,6 +461,7 @@ function reset(): void {
   priceChoices.value = [];
   priceChoiceTouched.value = {};
   dismissedChoiceFieldErrors.value = {};
+  programmaticChoiceFocus.value = null;
 }
 function closeDialog(): void {
   if (isProtected.value) return;

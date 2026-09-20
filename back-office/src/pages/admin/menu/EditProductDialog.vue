@@ -346,6 +346,7 @@ const priceChoiceTouched = shallowRef<
   Partial<Record<string, Partial<Record<PriceChoiceField, true>>>>
 >({});
 const dismissedChoiceFieldErrors = shallowRef<Record<string, true>>({});
+const programmaticChoiceFocus = shallowRef<string | null>(null);
 let nextPriceChoiceLocalId = 0;
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
@@ -449,6 +450,10 @@ function choicePortionLabelError(
   );
 }
 function touchChoice(localId: string, field: PriceChoiceField): void {
+  if (programmaticChoiceFocus.value === `${localId}:${field}`) {
+    programmaticChoiceFocus.value = null;
+    return;
+  }
   priceChoiceTouched.value = {
     ...priceChoiceTouched.value,
     [localId]: { ...priceChoiceTouched.value[localId], [field]: true },
@@ -456,11 +461,13 @@ function touchChoice(localId: string, field: PriceChoiceField): void {
 }
 function focusChoice(localId: string): void {
   void nextTick(() => {
-    document
-      .querySelector<HTMLElement>(
-        `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
-      )
-      ?.focus();
+    const field = document.querySelector<HTMLElement>(
+      `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
+    );
+    if (field) {
+      programmaticChoiceFocus.value = `${localId}:price`;
+      field.focus();
+    }
   });
 }
 function fieldError(field: ProductFormField): string | undefined {
@@ -508,6 +515,7 @@ function resetDraft(): void {
   dismissedFieldErrors.value = {};
   dismissedChoiceFieldErrors.value = {};
   priceChoiceTouched.value = {};
+  programmaticChoiceFocus.value = null;
   touched.value = {};
 }
 function closeDialog(): void {
@@ -549,10 +557,14 @@ function updateChoice(
   field: "isAvailable" | "portionLabel" | "price",
   value: boolean | string,
 ): void {
+  const choice = priceChoices.value[index]!;
+  if (programmaticChoiceFocus.value === `${choice.localId}:${field}`) {
+    programmaticChoiceFocus.value = null;
+  }
   if (field !== "isAvailable") {
     dismissedChoiceFieldErrors.value = {
       ...dismissedChoiceFieldErrors.value,
-      [`${priceChoices.value[index]!.localId}:${field}`]: true,
+      [`${choice.localId}:${field}`]: true,
     };
   }
   priceChoices.value = priceChoices.value.map((choice, current) =>
