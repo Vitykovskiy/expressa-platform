@@ -12,5 +12,5 @@ export const availabilityMessages = {
   searchPlaceholder: "Название товара или добавки",
   resetFilters: "Сбросить фильтры",
   retryLoad: "Загрузить снова",
-  verifyState: "Проверить состояние",
+  verifyState: "Проверить актуальное состояние",
 } as const;
