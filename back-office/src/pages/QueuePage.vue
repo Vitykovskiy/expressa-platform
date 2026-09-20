@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
   stopPolling();
 });
 
-async function loadQueue(): Promise<void> {
+async function loadQueue(isBackgroundRefresh = false): Promise<void> {
   if (authorizationEpisode) return;
 
   const request = ++queueRequest;
@@ -94,7 +94,12 @@ async function loadQueue(): Promise<void> {
     return;
   }
 
-  if (queueStatus.value !== "error" || queueError.value === null) {
+  const keepsConfirmedQueue =
+    isBackgroundRefresh && queueStatus.value === "ready";
+  if (
+    !keepsConfirmedQueue &&
+    (queueStatus.value !== "error" || queueError.value === null)
+  ) {
     queueStatus.value = "loading";
     queueError.value = null;
   }
@@ -107,7 +112,13 @@ async function loadQueue(): Promise<void> {
     orders.value = nextOrders;
     queueError.value = null;
     queueStatus.value = "ready";
-    if (selectedOrderId.value !== null) void loadDetails(selectedOrderId.value);
+    if (
+      selectedOrderId.value !== null &&
+      detailsError.value === null &&
+      !detailsLoading.value
+    ) {
+      void loadDetails(selectedOrderId.value);
+    }
   } catch (error) {
     const queueError = toOrderApiError(error);
     if (isUnauthorized(error)) {
@@ -291,7 +302,7 @@ function startAuthorizationEpisode(
 function startPolling(): void {
   if (pollingTimer !== null) return;
 
-  pollingTimer = setInterval(() => void loadQueue(), 5000);
+  pollingTimer = setInterval(() => void loadQueue(true), 5000);
 }
 
 function scheduleResumedPolling(): void {
@@ -301,7 +312,7 @@ function scheduleResumedPolling(): void {
     resumedPollingTimer = null;
     if (authorizationEpisode) return;
 
-    void loadQueue();
+    void loadQueue(true);
     startPolling();
   }, 5200);
 }
