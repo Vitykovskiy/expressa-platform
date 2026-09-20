@@ -1,6 +1,7 @@
 <template>
   <section class="orders-screen" aria-label="Очередь заказов">
     <TopBar
+      :action-disabled="queueControlsDisabled"
       action-label="Обновить очередь"
       title="Заказы"
       @action="emit('refresh')"
@@ -15,6 +16,7 @@
       <FilterTabs
         v-model="stageModel"
         class="orders-screen__filters"
+        :disabled="queueControlsDisabled"
         :items="queueFilters"
         layout="responsive"
       />
@@ -24,6 +26,7 @@
         </label>
         <AdminTextField
           id="orders-search"
+          :disabled="queueControlsDisabled"
           :model-value="props.search"
           placeholder="Поиск по номеру"
           type="search"
@@ -176,6 +179,7 @@ import type {
 
 const props = defineProps<OrdersScreenProps>();
 const emit = defineEmits<OrdersScreenEmits>();
+const queueControlsDisabled = computed(() => props.status === "loading");
 const stageModel = computed<QueueFilter>({
   get: () => props.stage,
   set: (stage) => emit("update:stage", stage),

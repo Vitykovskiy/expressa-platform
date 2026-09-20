@@ -5,6 +5,7 @@
       v-if="slots.action"
       :aria-label="actionLabel"
       class="top-bar-action"
+      :disabled="actionDisabled"
       type="button"
       variant="ghost"
       @click="emit('action')"

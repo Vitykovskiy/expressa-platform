@@ -13,6 +13,7 @@
         class="filter-tab"
         :class="{ 'filter-tab--selected': model === item.value }"
         :aria-pressed="model === item.value"
+        :disabled="props.disabled"
         type="button"
         @click="selectTab(item.value)"
       >
@@ -32,12 +33,15 @@ export type { FilterTab, FilterTabsLayout } from "./FilterTabs.types";
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<FilterTabsProps<T>>(), {
+  disabled: false,
   layout: "contained",
 });
 const model = defineModel<T>({ required: true });
 const attrs = useAttrs();
 
 function selectTab(value: T) {
+  if (props.disabled) return;
+
   model.value = value;
 }
 </script>
@@ -93,6 +97,16 @@ function selectTab(value: T) {
 .filter-tab--selected .filter-tab__visual {
   color: var(--expressa-color-text-on-accent);
   background: var(--expressa-color-accent);
+}
+
+.filter-tab:disabled {
+  cursor: not-allowed;
+}
+
+.filter-tab:disabled .filter-tab__visual {
+  color: var(--expressa-color-text-secondary);
+  background: var(--expressa-color-control-disabled-surface);
+  opacity: var(--expressa-state-disabled-opacity);
 }
 
 .filter-tab:focus-visible {
