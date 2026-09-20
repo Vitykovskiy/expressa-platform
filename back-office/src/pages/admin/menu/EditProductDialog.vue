@@ -123,7 +123,7 @@
               v-model:price="price"
               v-model:portion-label="portionLabel"
               :disabled="props.disabled"
-              :error="priceError"
+              :price-error="priceError"
             />
             <AdminButton
               :disabled="props.disabled"
@@ -136,7 +136,8 @@
           <template v-else>
             <section
               v-for="(choice, index) in priceChoices"
-              :key="choice.id ?? index"
+              :key="choice.localId"
+              :data-price-choice-id="choice.localId"
               class="edit-dialog-choice"
               role="group"
             >
@@ -145,8 +146,13 @@
                 :price="choice.price"
                 :portion-label="choice.portionLabel"
                 :disabled="props.disabled"
-                :error="choiceError(index)"
+                :price-error="choicePriceError(choice, index)"
+                :portion-label-error="choicePortionLabelError(choice, index)"
                 required-label
+                @blur:price="touchChoice(choice.localId, 'price')"
+                @blur:portion-label="
+                  touchChoice(choice.localId, 'portionLabel')
+                "
                 @update:price="updateChoice(index, 'price', $event)"
                 @update:portion-label="
                   updateChoice(index, 'portionLabel', $event)
@@ -291,7 +297,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
@@ -326,7 +339,14 @@ const description = shallowRef("");
 const price = shallowRef("");
 const portionLabel = shallowRef("");
 const isMultiple = shallowRef(false);
-const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
+type LocalPriceChoiceDraft = PriceChoiceDraft & { localId: string };
+type PriceChoiceField = "price" | "portionLabel";
+const priceChoices = shallowRef<LocalPriceChoiceDraft[]>([]);
+const priceChoiceTouched = shallowRef<
+  Partial<Record<string, Partial<Record<PriceChoiceField, true>>>>
+>({});
+const dismissedChoiceFieldErrors = shallowRef<Record<string, true>>({});
+let nextPriceChoiceLocalId = 0;
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const dismissedFieldErrors = shallowRef<
@@ -389,11 +409,59 @@ function validChoice(choice: PriceChoiceDraft): boolean {
     isNonNegativeInteger(choice.price) && Boolean(choice.portionLabel.trim())
   );
 }
-function choiceError(index: number): string | undefined {
-  const choice = priceChoices.value[index];
-  return choice && touched.value.priceChoices && !validChoice(choice)
-    ? "Укажите подпись порции и цену в целых рублях"
-    : fieldError(`priceChoices.${index}.price` as ProductFormField);
+function createLocalChoice(
+  choice: PriceChoiceDraft = createPriceChoiceDraft(),
+): LocalPriceChoiceDraft {
+  nextPriceChoiceLocalId += 1;
+  return { ...choice, localId: `edit-price-choice-${nextPriceChoiceLocalId}` };
+}
+function choiceFieldError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+  field: PriceChoiceField,
+): string | undefined {
+  return dismissedChoiceFieldErrors.value[`${choice.localId}:${field}`]
+    ? undefined
+    : fieldError(`priceChoices.${index}.${field}` as ProductFormField);
+}
+function choicePriceError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+): string | undefined {
+  return (
+    choiceFieldError(choice, index, "price") ??
+    (priceChoiceTouched.value[choice.localId]?.price &&
+    !isNonNegativeInteger(choice.price)
+      ? "Укажите цену в целых рублях"
+      : undefined)
+  );
+}
+function choicePortionLabelError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+): string | undefined {
+  return (
+    choiceFieldError(choice, index, "portionLabel") ??
+    (priceChoiceTouched.value[choice.localId]?.portionLabel &&
+    !choice.portionLabel.trim()
+      ? "Выберите порцию или размер"
+      : undefined)
+  );
+}
+function touchChoice(localId: string, field: PriceChoiceField): void {
+  priceChoiceTouched.value = {
+    ...priceChoiceTouched.value,
+    [localId]: { ...priceChoiceTouched.value[localId], [field]: true },
+  };
+}
+function focusChoice(localId: string): void {
+  void nextTick(() => {
+    document
+      .querySelector<HTMLElement>(
+        `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
+      )
+      ?.focus();
+  });
 }
 function fieldError(field: ProductFormField): string | undefined {
   return dismissedFieldErrors.value[field]
@@ -425,7 +493,9 @@ function resetDraft(): void {
   priceChoices.value = (product?.priceChoices ?? [])
     .slice()
     .sort((left, right) => left.sortOrder - right.sortOrder)
-    .map((choice) => ({ ...choice, price: choice.price.toString() }));
+    .map((choice) =>
+      createLocalChoice({ ...choice, price: choice.price.toString() }),
+    );
   isMultiple.value = priceChoices.value.length > 1;
   if (priceChoices.value.length === 1) {
     const [choice] = priceChoices.value;
@@ -436,6 +506,8 @@ function resetDraft(): void {
   isActive.value = product?.isActive ?? true;
   isAvailable.value = product?.isAvailable ?? true;
   dismissedFieldErrors.value = {};
+  dismissedChoiceFieldErrors.value = {};
+  priceChoiceTouched.value = {};
   touched.value = {};
 }
 function closeDialog(): void {
@@ -456,38 +528,48 @@ function updateOpen(value: boolean): void {
 }
 function enableMultiple(): void {
   priceChoices.value = [
-    {
+    createLocalChoice({
       portionLabel: portionLabel.value,
       price: price.value,
       isAvailable: isAvailable.value,
-    },
-    createPriceChoiceDraft(),
+    }),
+    createLocalChoice(),
   ];
   isMultiple.value = true;
+  priceChoiceTouched.value = {};
+  focusChoice(priceChoices.value[1]!.localId);
 }
 function addChoice(): void {
-  priceChoices.value = [...priceChoices.value, createPriceChoiceDraft()];
+  const choice = createLocalChoice();
+  priceChoices.value = [...priceChoices.value, choice];
+  focusChoice(choice.localId);
 }
 function updateChoice(
   index: number,
   field: "isAvailable" | "portionLabel" | "price",
   value: boolean | string,
 ): void {
-  touch("priceChoices");
+  if (field !== "isAvailable") {
+    dismissedChoiceFieldErrors.value = {
+      ...dismissedChoiceFieldErrors.value,
+      [`${priceChoices.value[index]!.localId}:${field}`]: true,
+    };
+  }
   priceChoices.value = priceChoices.value.map((choice, current) =>
     current === index ? { ...choice, [field]: value } : choice,
   );
 }
 function removeChoice(index: number): void {
-  priceChoices.value = priceChoices.value.filter(
-    (_, current) => current !== index,
-  );
-  if (priceChoices.value.length === 1) {
-    const [choice] = priceChoices.value;
+  const next = priceChoices.value.filter((_, current) => current !== index);
+  priceChoices.value = next;
+  if (next.length === 1) {
+    const [choice] = next;
     price.value = choice.price;
     portionLabel.value = choice.portionLabel;
     priceChoices.value = [];
     isMultiple.value = false;
+  } else {
+    focusChoice(next[Math.min(index, next.length - 1)]!.localId);
   }
 }
 function moveChoice(index: number, direction: -1 | 1): void {
@@ -496,6 +578,7 @@ function moveChoice(index: number, direction: -1 | 1): void {
   const next = [...priceChoices.value];
   [next[index], next[target]] = [next[target]!, next[index]!];
   priceChoices.value = next;
+  focusChoice(next[target]!.localId);
 }
 function updateIsActive(value: boolean | null): void {
   if (props.disabled) return;
@@ -513,7 +596,6 @@ function save(): void {
     categoryId: true,
     name: true,
     price: true,
-    priceChoices: true,
   };
   if (!isValid.value) return;
   const data: ProductFormData = {
@@ -567,6 +649,7 @@ watch(
   () => props.fieldErrors,
   () => {
     dismissedFieldErrors.value = {};
+    dismissedChoiceFieldErrors.value = {};
   },
 );
 </script>

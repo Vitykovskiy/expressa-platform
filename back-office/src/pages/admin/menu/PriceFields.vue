@@ -4,13 +4,22 @@
     <AdminTextField
       :id="priceId"
       v-model="price"
-      :aria-describedby="error ? errorId : undefined"
-      :aria-invalid="Boolean(error)"
+      :aria-describedby="priceMessage ? priceErrorId : undefined"
+      :aria-invalid="Boolean(priceMessage)"
       :disabled="props.disabled"
       inputmode="numeric"
       min="0"
       type="number"
+      @blur="emit('blur:price')"
     />
+    <p
+      v-if="priceMessage"
+      :id="priceErrorId"
+      class="price-fields__error"
+      role="alert"
+    >
+      {{ priceMessage }}
+    </p>
 
     <label :for="portionSelectId" class="price-fields__label">
       Порция или размер{{ props.requiredLabel ? "" : " (необязательно)" }}
@@ -18,9 +27,10 @@
     <AdminSelect
       :id="portionSelectId"
       v-model="selectedPortionLabel"
-      :aria-describedby="error ? errorId : undefined"
-      :aria-invalid="Boolean(error)"
+      :aria-describedby="portionLabelMessage ? portionLabelErrorId : undefined"
+      :aria-invalid="Boolean(portionLabelMessage)"
       :disabled="props.disabled"
+      @blur="emit('blur:portion-label')"
     >
       <option v-if="!props.requiredLabel" value="">Без подписи</option>
       <option v-else disabled value="">Выберите порцию или размер</option>
@@ -43,14 +53,22 @@
       <AdminTextField
         :id="customPortionLabelId"
         v-model="portionLabel"
-        :aria-describedby="error ? errorId : undefined"
-        :aria-invalid="Boolean(error)"
+        :aria-describedby="
+          portionLabelMessage ? portionLabelErrorId : undefined
+        "
+        :aria-invalid="Boolean(portionLabelMessage)"
         :disabled="props.disabled"
+        @blur="emit('blur:portion-label')"
       />
     </template>
 
-    <p v-if="error" :id="errorId" class="price-fields__error" role="alert">
-      {{ error }}
+    <p
+      v-if="portionLabelMessage"
+      :id="portionLabelErrorId"
+      class="price-fields__error"
+      role="alert"
+    >
+      {{ portionLabelMessage }}
     </p>
   </div>
 </template>
@@ -69,15 +87,24 @@ import type { PriceFieldsProps } from "./PriceFields.types";
 const props = withDefaults(defineProps<PriceFieldsProps>(), {
   disabled: false,
   error: undefined,
+  priceError: undefined,
+  portionLabelError: undefined,
   requiredLabel: false,
 });
+const emit = defineEmits<{
+  "blur:price": [];
+  "blur:portion-label": [];
+}>();
 const price = defineModel<string>("price", { required: true });
 const portionLabel = defineModel<string>("portionLabel", { required: true });
 const customRequested = shallowRef(false);
 const priceId = `price-field-${useId()}`;
 const portionSelectId = `portion-select-${useId()}`;
 const customPortionLabelId = `custom-portion-label-${useId()}`;
-const errorId = `price-fields-error-${useId()}`;
+const priceErrorId = `price-field-error-${useId()}`;
+const portionLabelErrorId = `portion-label-error-${useId()}`;
+const priceMessage = computed(() => props.priceError ?? props.error);
+const portionLabelMessage = computed(() => props.portionLabelError);
 const customPortionLabel = computed(
   () =>
     customRequested.value ||

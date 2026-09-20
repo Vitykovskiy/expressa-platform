@@ -63,6 +63,10 @@
             {{ managementOpen ? "Скрыть управление" : "Управление меню" }}
           </AdminButton>
         </div>
+        <p v-if="managementOpen" class="menu-page__management-explanation">
+          Меняйте порядок групп и товаров кнопками «Выше» и «Ниже». Изменения
+          сохраняются сразу.
+        </p>
         <p v-if="orderedCategories.length === 0" class="menu-page__state">
           Категорий пока нет. Добавьте первую категорию.
         </p>
@@ -204,10 +208,6 @@
               >Новая группа добавок</AdminButton
             >
           </div>
-          <p class="menu-page__management-explanation">
-            Меняйте порядок групп и товаров кнопками «Выше» и «Ниже». Изменения
-            сохраняются сразу.
-          </p>
           <div class="menu-page__catalog-tools">
             <section class="menu-page__editor-section">
               <h3>Назначения категорий</h3>

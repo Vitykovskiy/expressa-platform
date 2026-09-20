@@ -99,7 +99,8 @@
               v-model:price="price"
               v-model:portion-label="portionLabel"
               :disabled="props.disabled"
-              :error="errorFor('price') ?? errorFor('portionLabel')"
+              :price-error="errorFor('price')"
+              :portion-label-error="errorFor('portionLabel')"
             />
             <AdminButton
               v-if="!isMultiple"
@@ -113,7 +114,8 @@
           <template v-else
             ><section
               v-for="(choice, index) in priceChoices"
-              :key="choice.id ?? index"
+              :key="choice.localId"
+              :data-price-choice-id="choice.localId"
               :aria-label="`Вариант ${index + 1}`"
               class="add-dialog__choice"
               role="group"
@@ -123,8 +125,13 @@
                 :price="choice.price"
                 :portion-label="choice.portionLabel"
                 :disabled="props.disabled"
-                :error="choicesTouched ? choiceError(index) : undefined"
+                :price-error="choicePriceError(choice, index)"
+                :portion-label-error="choicePortionLabelError(choice, index)"
                 required-label
+                @blur:price="touchChoice(choice.localId, 'price')"
+                @blur:portion-label="
+                  touchChoice(choice.localId, 'portionLabel')
+                "
                 @update:price="updateChoice(index, 'price', $event)"
                 @update:portion-label="
                   updateChoice(index, 'portionLabel', $event)
@@ -220,7 +227,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
@@ -250,8 +264,14 @@ const portionLabel = shallowRef("");
 const isActive = shallowRef(true);
 const isAvailable = shallowRef(true);
 const isMultiple = shallowRef(false);
-const priceChoices = shallowRef<PriceChoiceDraft[]>([]);
-const choicesTouched = shallowRef(false);
+type LocalPriceChoiceDraft = PriceChoiceDraft & { localId: string };
+type PriceChoiceField = "price" | "portionLabel";
+const priceChoices = shallowRef<LocalPriceChoiceDraft[]>([]);
+const priceChoiceTouched = shallowRef<
+  Partial<Record<string, Partial<Record<PriceChoiceField, true>>>>
+>({});
+const dismissedChoiceFieldErrors = shallowRef<Record<string, true>>({});
+let nextPriceChoiceLocalId = 0;
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const titleId = `add-product-title-${useId()}`;
 const categoryId = `add-product-category-${useId()}`;
@@ -290,47 +310,101 @@ function validChoice(choice: PriceChoiceDraft): boolean {
 function errorFor(field: ProductFormField): string | undefined {
   return props.fieldErrors[field];
 }
-function choiceError(index: number): string | undefined {
-  const choice = priceChoices.value[index];
-  return choice && !validChoice(choice)
-    ? "Укажите подпись порции и цену в целых рублях"
-    : errorFor(`priceChoices.${index}.price` as ProductFormField);
+function createLocalChoice(
+  choice: PriceChoiceDraft = createPriceChoiceDraft(),
+): LocalPriceChoiceDraft {
+  nextPriceChoiceLocalId += 1;
+  return { ...choice, localId: `add-price-choice-${nextPriceChoiceLocalId}` };
+}
+function choiceFieldError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+  field: PriceChoiceField,
+): string | undefined {
+  return dismissedChoiceFieldErrors.value[`${choice.localId}:${field}`]
+    ? undefined
+    : errorFor(`priceChoices.${index}.${field}` as ProductFormField);
+}
+function choicePriceError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+): string | undefined {
+  return (
+    choiceFieldError(choice, index, "price") ??
+    (priceChoiceTouched.value[choice.localId]?.price &&
+    !validPrice(choice.price)
+      ? "Укажите цену в целых рублях"
+      : undefined)
+  );
+}
+function choicePortionLabelError(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+): string | undefined {
+  return (
+    choiceFieldError(choice, index, "portionLabel") ??
+    (priceChoiceTouched.value[choice.localId]?.portionLabel &&
+    !choice.portionLabel.trim()
+      ? "Выберите порцию или размер"
+      : undefined)
+  );
+}
+function touchChoice(localId: string, field: PriceChoiceField): void {
+  priceChoiceTouched.value = {
+    ...priceChoiceTouched.value,
+    [localId]: { ...priceChoiceTouched.value[localId], [field]: true },
+  };
+}
+function focusChoice(localId: string): void {
+  void nextTick(() => {
+    document
+      .querySelector<HTMLElement>(
+        `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
+      )
+      ?.focus();
+  });
 }
 function enableMultiple(): void {
   priceChoices.value = [
-    {
+    createLocalChoice({
       portionLabel: portionLabel.value,
       price: price.value,
       isAvailable: isAvailable.value,
-    },
-    createPriceChoiceDraft(),
+    }),
+    createLocalChoice(),
   ];
   isMultiple.value = true;
-  choicesTouched.value = false;
+  priceChoiceTouched.value = {};
+  focusChoice(priceChoices.value[1]!.localId);
 }
 function addChoice(): void {
-  priceChoices.value = [...priceChoices.value, createPriceChoiceDraft()];
-  choicesTouched.value = false;
+  const choice = createLocalChoice();
+  priceChoices.value = [...priceChoices.value, choice];
+  focusChoice(choice.localId);
 }
 function updateChoice(
   index: number,
   field: "portionLabel" | "price",
   value: string,
 ): void {
-  choicesTouched.value = true;
+  dismissedChoiceFieldErrors.value = {
+    ...dismissedChoiceFieldErrors.value,
+    [`${priceChoices.value[index]!.localId}:${field}`]: true,
+  };
   priceChoices.value = priceChoices.value.map((choice, current) =>
     current === index ? { ...choice, [field]: value } : choice,
   );
 }
 function removeChoice(index: number): void {
-  priceChoices.value = priceChoices.value.filter(
-    (_, current) => current !== index,
-  );
-  if (priceChoices.value.length === 1) {
-    const [choice] = priceChoices.value;
+  const next = priceChoices.value.filter((_, current) => current !== index);
+  priceChoices.value = next;
+  if (next.length === 1) {
+    const [choice] = next;
     price.value = choice.price;
     portionLabel.value = choice.portionLabel;
     isMultiple.value = false;
+  } else {
+    focusChoice(next[Math.min(index, next.length - 1)]!.localId);
   }
 }
 function moveChoice(index: number, direction: -1 | 1): void {
@@ -339,6 +413,7 @@ function moveChoice(index: number, direction: -1 | 1): void {
   const next = [...priceChoices.value];
   [next[index], next[target]] = [next[target]!, next[index]!];
   priceChoices.value = next;
+  focusChoice(next[target]!.localId);
 }
 function confirm(): void {
   if (isProtected.value || !isValid.value) return;
@@ -373,7 +448,8 @@ function reset(): void {
   isAvailable.value = true;
   isMultiple.value = false;
   priceChoices.value = [];
-  choicesTouched.value = false;
+  priceChoiceTouched.value = {};
+  dismissedChoiceFieldErrors.value = {};
 }
 function closeDialog(): void {
   if (isProtected.value) return;
@@ -405,6 +481,12 @@ watch(open, (isOpen, wasOpen) => {
     restoreFocus();
   }
 });
+watch(
+  () => props.fieldErrors,
+  () => {
+    dismissedChoiceFieldErrors.value = {};
+  },
+);
 </script>
 
 <style scoped lang="scss">
