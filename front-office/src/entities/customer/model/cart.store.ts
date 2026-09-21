@@ -5,6 +5,7 @@ import {
   cartStorageKey,
   cartStoreId,
   configuredCartProductTypes,
+  legacyCartStorageKey,
 } from "./cart.store.constants";
 import type {
   CartState,
@@ -14,11 +15,9 @@ import type {
 } from "./cart.store.types";
 import type {
   CartItem,
-  CartVariantSelection,
   ConfiguredCartItemDraft,
-  DrinkCartItem,
-  LegacyConfiguredDrinkCartItem,
   OtherCartItem,
+  PricedCartItem,
 } from "./customer.types";
 
 export const useCartStore = defineStore(cartStoreId, {
@@ -72,6 +71,7 @@ export const useCartStore = defineStore(cartStoreId, {
     },
     restore(storage: CartStorage = localStorage): void {
       this.clearRepeatWarnings();
+      storage.removeItem(legacyCartStorageKey);
       const value = storage.getItem(cartStorageKey);
 
       if (value === null) return;
@@ -132,30 +132,12 @@ function isCartItems(value: unknown): value is CartItem[] {
 }
 
 function isCartItem(value: unknown): value is CartItem {
-  return isLegacyCartItem(value) || isConfiguredCartItem(value);
-}
-
-function isLegacyCartItem(value: unknown): boolean {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.id === "string" &&
-    typeof value.productId === "string" &&
-    typeof value.productName === "string" &&
-    (value.type === "drink" ||
-      value.type === "food" ||
-      value.type === "extra") &&
-    isAddons(value.addons) &&
-    isPositiveInteger(value.quantity) &&
-    isInteger(value.lineTotalRub) &&
-    (value.size === undefined || typeof value.size === "string") &&
-    (value.sizePrice === undefined || isFiniteNumber(value.sizePrice))
-  );
+  return isConfiguredCartItem(value);
 }
 
 function isConfiguredCartItem(
   value: unknown,
-): value is DrinkCartItem | OtherCartItem | LegacyConfiguredDrinkCartItem {
+): value is PricedCartItem | OtherCartItem {
   if (!isConfiguredCartItemShape(value)) {
     return false;
   }
@@ -165,25 +147,13 @@ function isConfiguredCartItem(
 
 function isConfiguredCartItemShape(
   value: unknown,
-): value is DrinkCartItem | OtherCartItem {
+): value is PricedCartItem | OtherCartItem {
   if (!isRecord(value) || typeof value.id !== "string") {
     return false;
   }
 
   if (!isConfiguredCartItemBase(value)) {
     return false;
-  }
-
-  if (value.type === "DRINK") {
-    const selectedVariant = value.selectedVariant;
-    if (!isVariantSelection(selectedVariant)) return false;
-
-    return (
-      isProductSize(value.size) &&
-      value.size === selectedVariant.size &&
-      isNonNegativeInteger(value.sizePrice) &&
-      value.sizePrice === selectedVariant.price
-    );
   }
 
   if (value.type === "PRICED") {
@@ -200,9 +170,7 @@ function isConfiguredCartItemShape(
   }
   return (
     value.type === configuredCartProductTypes[1] &&
-    value.selectedVariant === undefined &&
-    value.size === undefined &&
-    value.sizePrice === undefined
+    value.selectedPriceChoice === undefined
   );
 }
 
@@ -218,19 +186,6 @@ function isConfiguredCartItemBase(value: Record<string, unknown>): boolean {
     value.lineTotalRub === value.lineTotal &&
     isSelectedModifierOptions(value.selectedModifierOptions)
   );
-}
-
-function isVariantSelection(value: unknown): value is CartVariantSelection {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    isProductSize(value.size) &&
-    isNonNegativeInteger(value.price)
-  );
-}
-
-function isProductSize(value: unknown): value is "S" | "M" | "L" {
-  return value === "S" || value === "M" || value === "L";
 }
 
 function isSelectedModifierOptions(value: unknown): boolean {
@@ -272,10 +227,6 @@ function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -308,17 +259,15 @@ function createConfiguredCartItem(
 function createCartItemId(item: ConfiguredCartItemDraft): string {
   return [
     item.productId,
-    item.type === "DRINK"
-      ? item.selectedVariant.id
-      : item.type === "PRICED"
-        ? (item.selectedPriceChoice?.id ?? "direct")
-        : item.type,
+    item.type === "PRICED"
+      ? (item.selectedPriceChoice?.id ?? "direct")
+      : item.type,
     ...item.selectedModifierOptions.map((option) => option.id).sort(),
   ].join(cartConfigurationSeparator);
 }
 
 function getLineTotal(item: CartItem): number {
-  return isConfiguredCartItem(item) ? item.lineTotal : item.lineTotalRub;
+  return item.lineTotal;
 }
 
 function createAvailableCartItemId(

@@ -4,14 +4,14 @@ import type {
 } from "@/shared/api/public-menu.api";
 import type {
   ConfiguredCartItemDraft,
-  DrinkCartItem,
   OtherCartItem,
+  PricedCartItem,
 } from "@/entities/customer/model/customer.types";
 
 export interface ProductDetailScreenProps {
   category: PublicMenuCategory;
   product: PublicMenuProduct;
-  cartItem?: DrinkCartItem | OtherCartItem;
+  cartItem?: PricedCartItem | OtherCartItem;
 }
 export type ProductDetailScreenEmits = {
   back: [];

@@ -1,5 +1,26 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { PublicMenuModifierGroupDto } from "./public-menu.dto";
+import { modifierSelectionTypes } from "../domain/catalog.constants";
+import type { CatalogModifierSelectionType } from "../domain/catalog.types";
+
+export class PublicMenuOptionDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
+  priceDelta!: number;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}
+
+export class PublicMenuModifierGroupDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ enum: modifierSelectionTypes })
+  selectionType!: CatalogModifierSelectionType;
+  @ApiProperty({ format: "int32", type: "integer" }) minSelect!: number;
+  @ApiProperty({ format: "int32", type: "integer" }) maxSelect!: number;
+  @ApiProperty({ isArray: true, type: () => PublicMenuOptionDto })
+  options!: PublicMenuOptionDto[];
+}
 
 export class PublicMenuV3PriceChoiceDto {
   @ApiProperty({ format: "uuid" }) id!: string;

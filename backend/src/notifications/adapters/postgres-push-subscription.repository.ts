@@ -13,23 +13,6 @@ export class PostgresPushSubscriptionRepository implements PushSubscriptionRepos
     private readonly dependencies: PostgresPushSubscriptionRepositoryDependencies,
   ) {}
 
-  async upsert(command: PushSubscriptionCommand): Promise<void> {
-    await this.dependencies.pool.query(
-      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (endpoint) DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth,
-         association_version = gen_random_uuid(), updated_at = CURRENT_TIMESTAMP
-       WHERE push_subscriptions.user_id = EXCLUDED.user_id`,
-      [command.userId, command.endpoint, command.p256dh, command.auth],
-    );
-  }
-
-  async delete(userId: string, endpoint: string): Promise<void> {
-    const subscription = await this.findByEndpoint(endpoint);
-    if (subscription?.userId === userId)
-      await this.deleteAssociation(subscription);
-  }
-
   async findByEndpoint(endpoint: string): Promise<PushSubscription | null> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
       `SELECT push_subscriptions.id, user_id, endpoint, p256dh, auth,

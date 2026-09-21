@@ -74,7 +74,7 @@ function toggle(): void {
 
 .admin-toggle:focus-visible {
   outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
+  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-toggle__thumb {

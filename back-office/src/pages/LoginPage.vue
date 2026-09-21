@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, shallowRef } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import AuthScreen from "./admin/auth/AuthScreen.vue";
 import type { AuthScreenState } from "./admin/auth/AuthScreen.types";
@@ -37,6 +37,7 @@ import type { LoginOtpMetadata } from "./LoginPage.types";
 
 const sessionStore = useSessionStore();
 const router = useRouter();
+const route = useRoute();
 const screenState = shallowRef<AuthScreenState>("phone");
 const phone = shallowRef("");
 const otp = shallowRef("");
@@ -134,7 +135,7 @@ async function showSessionResult(
 ): Promise<void> {
   if (sessionStore.status === "authenticated") {
     screenState.value = "success";
-    await router.replace(loginWorkspacePath);
+    await router.replace(returnTarget());
     return;
   }
 
@@ -144,6 +145,18 @@ async function showSessionResult(
   }
 
   screenState.value = fallbackState;
+}
+
+function returnTarget(): string {
+  const returnTo = route.query.returnTo;
+  if (typeof returnTo !== "string") return loginWorkspacePath;
+  if (!returnTo.startsWith("/") || returnTo.startsWith("//"))
+    return loginWorkspacePath;
+
+  const resolved = router.resolve(returnTo);
+  return resolved.matched.some((record) => record.meta.requiresStaff)
+    ? resolved.fullPath
+    : loginWorkspacePath;
 }
 
 function formatPhone(value: string): string {

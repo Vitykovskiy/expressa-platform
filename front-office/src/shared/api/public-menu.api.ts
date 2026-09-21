@@ -23,7 +23,6 @@ export type {
   PublicMenuPriceChoice,
   PublicMenuProduct,
   PublicMenuModifierGroup,
-  PublicMenuVariant,
 } from "./public-menu.api.types";
 
 export function createPublicMenuApi(
@@ -60,52 +59,14 @@ function isCategory(value: unknown): value is PublicMenuCategoryResponse {
   );
 }
 function isProduct(value: unknown): value is PublicMenuProductResponse {
-  if (isRecord(value) && (value.type === "DRINK" || value.type === "OTHER")) {
-    return (
-      uuid(value.id) &&
-      typeof value.name === "string" &&
-      typeof value.description === "string" &&
-      typeof value.isAvailable === "boolean" &&
-      (value.type === "DRINK"
-        ? value.price === null && validVariants(value.variants)
-        : nonNegative(value.price) &&
-          Array.isArray(value.variants) &&
-          value.variants.length === 0) &&
-      validModifierGroups(value.modifierGroups)
-    );
-  }
   return (
     isRecord(value) &&
     uuid(value.id) &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
-    nullablePrice(value.price) &&
-    nullableString(value.portionLabel) &&
     typeof value.isAvailable === "boolean" &&
-    arrayOf(value.priceChoices, isChoice) &&
     validModifierGroups(value.modifierGroups) &&
-    validPricing(value as PublicMenuProductResponse)
-  );
-}
-function validVariants(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.some(
-      (variant) => isRecord(variant) && variant.isAvailable === true,
-    ) &&
-    new Set(value.map((variant) => (isRecord(variant) ? variant.size : null)))
-      .size === value.length &&
-    value.every(
-      (variant) =>
-        isRecord(variant) &&
-        uuid(variant.id) &&
-        (variant.size === "S" ||
-          variant.size === "M" ||
-          variant.size === "L") &&
-        nonNegative(variant.price) &&
-        typeof variant.isAvailable === "boolean",
-    )
+    validPricing(value)
   );
 }
 function validModifierGroups(value: unknown): boolean {
@@ -183,8 +144,15 @@ function isChoice(value: unknown): value is PublicMenuPriceChoice {
     typeof value.isAvailable === "boolean"
   );
 }
-function validPricing(value: PublicMenuProductResponse): boolean {
-  const choices = value.priceChoices ?? [];
+function validPricing(value: Record<string, unknown>): boolean {
+  if (
+    !nullablePrice(value.price) ||
+    !nullableString(value.portionLabel) ||
+    !arrayOf(value.priceChoices, isChoice)
+  )
+    return false;
+
+  const choices = value.priceChoices;
   return choices.length === 0
     ? value.price !== null
     : value.price === null &&
@@ -195,10 +163,6 @@ function toCategory(category: PublicMenuCategoryResponse): PublicMenuCategory {
   return { ...category, products: category.products.map(toProduct) };
 }
 function toProduct(product: PublicMenuProductResponse): PublicMenuProduct {
-  const legacy = product as PublicMenuProduct;
-  if (legacy.type === "DRINK" || legacy.type === "OTHER") {
-    return legacy;
-  }
   return {
     ...product,
     priceChoices: (product.priceChoices ?? []).map((choice) => ({ ...choice })),

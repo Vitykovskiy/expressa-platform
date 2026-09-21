@@ -325,12 +325,12 @@ function createMenu(): PublicMenu {
             description: "",
             isAvailable: true,
             modifierGroups: [],
-            type: "DRINK",
             price: null,
-            variants: [
+            portionLabel: null,
+            priceChoices: [
               {
                 id: "espresso-s",
-                size: "S",
+                portionLabel: "250 мл",
                 price: 180,
                 isAvailable: true,
               },

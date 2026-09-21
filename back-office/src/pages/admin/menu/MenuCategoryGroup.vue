@@ -1,7 +1,12 @@
 <template>
-  <section class="menu-category">
+  <section
+    ref="root"
+    class="menu-category"
+    :class="{ 'menu-category--highlighted': props.highlighted }"
+  >
     <header class="menu-category__header">
       <AdminButton
+        :id="`category-toggle-${props.category.id}`"
         class="menu-category__toggle"
         type="button"
         variant="ghost"
@@ -9,273 +14,213 @@
         :aria-expanded="props.expanded"
         :aria-label="`Открыть категорию ${props.category.name}`"
         @click="emit('toggle', props.category)"
-      >
-        <span aria-hidden="true" class="menu-category__toggle-icon">
-          <ChevronDown
-            v-if="props.expanded"
-            aria-hidden="true"
-            class="menu-category__icon"
-            :size="18"
-          />
-          <ChevronRight
-            v-else
-            aria-hidden="true"
-            class="menu-category__icon"
-            :size="18"
-          />
-        </span>
-        <span class="menu-category__copy">
-          <span class="menu-category__name">
-            {{ props.category.name }}
-          </span>
-          <span class="menu-category__count">
-            {{ countLabel }}
-          </span>
-        </span>
-      </AdminButton>
-      <div v-if="props.showManagementActions" class="menu-category__order">
-        <span class="menu-category__order-label">Порядок</span>
-        <AdminButton
-          :disabled="props.disabled || !props.canMoveUp"
-          :aria-label="`Переместить категорию ${props.category.name} вверх`"
-          :data-menu-category-order-action="`${props.category.id}:up`"
-          class="menu-category__move"
-          type="button"
-          variant="ghost"
-          @click="emit('moveUp', props.category)"
-        >
-          <ArrowUp aria-hidden="true" class="menu-category__icon" :size="18" />
-          <span>Выше</span>
-        </AdminButton>
-        <AdminButton
-          :disabled="props.disabled || !props.canMoveDown"
-          :aria-label="`Переместить категорию ${props.category.name} вниз`"
-          :data-menu-category-order-action="`${props.category.id}:down`"
-          class="menu-category__move"
-          type="button"
-          variant="ghost"
-          @click="emit('moveDown', props.category)"
-        >
-          <ArrowDown
-            aria-hidden="true"
-            class="menu-category__icon"
-            :size="18"
-          />
-          <span>Ниже</span>
-        </AdminButton>
-      </div>
-      <AdminButton
-        :disabled="props.disabled"
-        class="menu-category__edit"
+        ><ChevronDown
+          v-if="props.expanded"
+          :size="18"
+          aria-hidden="true"
+        /><ChevronRight v-else :size="18" aria-hidden="true" /><span
+          class="menu-category__copy"
+          ><span class="menu-category__name">{{ props.category.name }}</span
+          ><span class="menu-category__count">{{ countLabel }}</span></span
+        ></AdminButton
+      ><AdminButton
+        class="menu-category__desktop-edit"
         type="button"
         variant="ghost"
+        :disabled="props.disabled"
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
+        >Редактировать</AdminButton
+      ><button
+        ref="moreTrigger"
+        class="menu-category__more"
+        type="button"
+        :disabled="props.disabled"
+        :aria-expanded="overflowOpen"
+        :aria-label="`Действия: ${props.category.name}`"
+        @click="openOverflow"
       >
-        <template v-if="props.showManagementActions">
-          Изменить группу
-        </template>
-        <template v-else>
-          <Pencil aria-hidden="true" class="menu-category__icon" :size="18" />
-          <span class="menu-category__edit-label">Редактировать</span>
-        </template>
-      </AdminButton>
+        Ещё
+      </button>
+      <div
+        v-if="overflowOpen"
+        class="menu-category__menu"
+        role="menu"
+        :aria-label="`Действия с категорией ${props.category.name}`"
+        @keydown.escape.stop="closeOverflow"
+      >
+        <button
+          ref="menuItem"
+          role="menuitem"
+          type="button"
+          :aria-label="`Редактировать категорию ${props.category.name}`"
+          @click="selectEdit"
+        >
+          Редактировать
+        </button>
+      </div>
     </header>
-
     <div v-if="props.expanded">
       <p v-if="props.products.length === 0" class="menu-category__empty">
         Товаров в этой категории пока нет
       </p>
       <MenuProductRow
-        v-for="(product, index) in props.products"
+        v-for="product in props.products"
         v-else
         :key="product.id"
         :product="product"
-        :can-move-up="index > 0"
-        :can-move-down="index < props.products.length - 1"
+        :can-move-up="false"
+        :can-move-down="false"
         :disabled="props.disabled"
-        :show-management-actions="props.showManagementActions"
         @edit="emit('edit', $event)"
-        @move-up="emit('moveProductUp', $event)"
-        @move-down="emit('moveProductDown', $event)"
       />
     </div>
   </section>
 </template>
-
 <script setup lang="ts">
-import { computed } from "vue";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  Pencil,
-} from "lucide-vue-next";
-
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import MenuProductRow from "./MenuProductRow.vue";
+import { productCountLabel } from "./catalog-formatters";
 import type {
   MenuCategoryGroupEmits,
   MenuCategoryGroupProps,
 } from "./MenuCategoryGroup.types";
-
 const props = defineProps<MenuCategoryGroupProps>();
 const emit = defineEmits<MenuCategoryGroupEmits>();
-
-const countLabel = computed(() => {
-  const count = props.products.length;
-  const finalTwoDigits = count % 100;
-  const finalDigit = count % 10;
-  const itemType =
-    finalTwoDigits >= 11 && finalTwoDigits <= 14
-      ? "товаров"
-      : finalDigit === 1
-        ? "товар"
-        : finalDigit >= 2 && finalDigit <= 4
-          ? "товара"
-          : "товаров";
-
-  return `${count} ${itemType}`;
-});
+const overflowOpen = ref(false),
+  root = ref<HTMLElement | null>(null),
+  moreTrigger = ref<HTMLButtonElement | null>(null),
+  menuItem = ref<HTMLButtonElement | null>(null);
+const countLabel = computed(() => productCountLabel(props.products.length));
+function closeOverflow() {
+  overflowOpen.value = false;
+  void nextTick(() => moreTrigger.value?.focus());
+}
+function openOverflow() {
+  overflowOpen.value = true;
+  void nextTick(() => menuItem.value?.focus());
+}
+function selectEdit() {
+  overflowOpen.value = false;
+  void nextTick(() => {
+    moreTrigger.value?.focus();
+    emit("edit-category", props.category);
+  });
+}
+function outside(event: PointerEvent) {
+  if (root.value && !root.value.contains(event.target as Node))
+    overflowOpen.value = false;
+}
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) overflowOpen.value = false;
+  },
+);
+document.addEventListener("pointerdown", outside);
+onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
 </script>
-
 <style scoped lang="scss">
 .menu-category {
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
   background: var(--expressa-color-surface);
 }
-
-.menu-category:not(:last-child) {
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+.menu-category--highlighted {
+  .menu-category__header {
+    animation: category-highlight 2s ease-out;
+  }
 }
-
+@keyframes category-highlight {
+  from {
+    background: var(--expressa-color-status-success-surface);
+  }
+  to {
+    background: var(--expressa-color-surface);
+  }
+}
 .menu-category__header {
-  display: flex;
-  min-height: 70px;
-  align-items: center;
-  flex-wrap: wrap;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  block-size: 64px;
   background: var(--expressa-color-surface-raised);
 }
-
-.menu-category__toggle,
-.menu-category__edit,
-.menu-category__move {
-  min-height: var(--expressa-size-control-min-height);
-  border: var(--expressa-border-width-none);
-  background: var(--expressa-color-transparent);
-  cursor: pointer;
-}
-
-.menu-category__order {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--expressa-space-2xs);
-}
-
-.menu-category__move,
-.menu-category__edit {
-  min-height: var(--expressa-size-control-min-height);
-}
-
-.menu-category__move {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--expressa-space-2xs);
-  padding-inline: var(--expressa-space-sm);
-}
-
 .menu-category__toggle {
   display: flex;
   min-width: 0;
-  flex: 1;
-  gap: var(--expressa-space-control-inline);
-  padding: 14px var(--expressa-space-md) 14px 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
   text-align: left;
 }
-
-.menu-category__toggle-icon {
-  display: grid;
-  flex: 0 0 18px;
-  place-items: center;
-}
-
 .menu-category__copy {
   display: grid;
   min-width: 0;
 }
-
-.menu-category__name {
+.menu-category__name,
+.menu-category__count {
   overflow: hidden;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-body-strong);
-  font-weight: var(--expressa-font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
+.menu-category__name {
+  font-weight: var(--expressa-font-weight-semibold);
+}
 .menu-category__count,
 .menu-category__empty {
-  margin: 0;
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
 }
-
-.menu-category__edit {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--expressa-space-2xs);
-  padding-inline: var(--expressa-space-sm);
+.menu-category__desktop-edit,
+.menu-category__more {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  margin-inline-end: 16px;
+  border: 0;
+  background: transparent;
   color: var(--expressa-color-accent);
   font: inherit;
 }
-
-.menu-category__icon {
-  display: block;
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
+.menu-category__more,
+.menu-category__menu {
+  display: none;
 }
-
-.menu-category__toggle:hover,
-.menu-category__edit:hover,
-.menu-category__move:hover:not(:disabled) {
-  background: var(--expressa-color-control-hover-surface);
-}
-
 .menu-category__empty {
-  padding: var(--expressa-space-xl) var(--expressa-space-md);
-  text-align: center;
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  margin: 0;
+  padding: 16px;
+  border-top: 1px solid var(--expressa-color-border);
 }
-
 @media (max-width: 767px) {
-  .menu-category__toggle {
+  .menu-category__desktop-edit {
+    display: none;
+  }
+  .menu-category__more {
+    display: block;
+    margin-inline-end: 10px;
+  }
+  .menu-category__menu {
+    position: absolute;
+    z-index: 3;
+    inset-block-start: 56px;
+    inset-inline-end: 8px;
+    display: block;
+    min-inline-size: 176px;
+    padding: 8px;
+    border: 1px solid var(--expressa-color-border);
+    border-radius: 12px;
+    background: var(--expressa-color-surface);
+    box-shadow: var(--expressa-shadow-menu);
+  }
+  .menu-category__menu button {
+    min-block-size: 44px;
     width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font: inherit;
   }
-
-  .menu-category__edit,
-  .menu-category__order {
-    margin-inline-start: var(--expressa-space-md);
-  }
-}
-
-.menu-category__order-label {
-  color: var(--expressa-color-text-secondary);
-}
-
-.menu-category__edit-label {
-  position: absolute;
-  width: var(--expressa-size-visually-hidden);
-  height: var(--expressa-size-visually-hidden);
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>

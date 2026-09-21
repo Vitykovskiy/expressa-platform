@@ -12,8 +12,19 @@
     @after-enter="emit('afterEnter')"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div class="admin-dialog__surface">
-      <slot />
+    <div
+      class="admin-dialog__surface"
+      :class="{ 'admin-dialog__surface--full-screen': isFullScreen }"
+    >
+      <header v-if="slots.header" class="admin-dialog__header">
+        <slot name="header" />
+      </header>
+      <div class="admin-dialog__body">
+        <slot />
+      </div>
+      <footer v-if="slots.footer" class="admin-dialog__footer">
+        <slot name="footer" />
+      </footer>
     </div>
   </v-dialog>
 </template>
@@ -41,13 +52,19 @@ const props = withDefaults(
 const emit = defineEmits<AdminDialogEmits>();
 const attrs = useAttrs();
 const isMobile = shallowRef(true);
+const isFullScreen = shallowRef(false);
 const mobileMedia =
   typeof globalThis.matchMedia === "function"
     ? globalThis.matchMedia(ADMIN_DIALOG_MOBILE_MEDIA_QUERY)
     : null;
+const fullScreenMedia =
+  typeof globalThis.matchMedia === "function"
+    ? globalThis.matchMedia("(max-width: 599px)")
+    : null;
 const dialogAttrs = computed(() => ({
   "aria-describedby": attrs["aria-describedby"],
   "aria-labelledby": attrs["aria-labelledby"],
+  role: attrs.role,
   class: attrs.class,
   "data-testid": attrs["data-testid"],
   style: attrs.style,
@@ -58,23 +75,35 @@ const dialogLocation = computed(() =>
 const dialogMaxWidth = computed(() =>
   isMobile.value ? "100%" : props.maxWidth,
 );
-const dialogMaxHeight = "90vh";
-const dialogWidth = computed(() => (isMobile.value ? "100%" : undefined));
-defineSlots<{ default(): unknown }>();
+const dialogMaxHeight = computed(() =>
+  isFullScreen.value ? "100dvh" : "90vh",
+);
+const dialogWidth = computed(() =>
+  isMobile.value || isFullScreen.value ? "100%" : undefined,
+);
+const slots = defineSlots<{
+  default(): unknown;
+  footer?(): unknown;
+  header?(): unknown;
+}>();
 
 function syncMobileLayout(): void {
   if (mobileMedia) {
     isMobile.value = mobileMedia.matches;
   }
+  isFullScreen.value =
+    props.fullScreenBelow600 === true && fullScreenMedia?.matches === true;
 }
 
 onMounted(() => {
   syncMobileLayout();
   mobileMedia?.addEventListener("change", syncMobileLayout);
+  fullScreenMedia?.addEventListener("change", syncMobileLayout);
 });
 
 onBeforeUnmount(() => {
   mobileMedia?.removeEventListener("change", syncMobileLayout);
+  fullScreenMedia?.removeEventListener("change", syncMobileLayout);
 });
 </script>
 
@@ -85,9 +114,31 @@ onBeforeUnmount(() => {
 }
 
 .admin-dialog__surface {
+  display: flex;
+  flex-direction: column;
   max-height: 90vh;
-  overflow-y: auto;
+  background: var(--expressa-color-surface);
   border-radius: var(--expressa-radius-lg) var(--expressa-radius-lg) 0 0;
+}
+.admin-dialog__surface--full-screen {
+  block-size: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+}
+
+.admin-dialog__header,
+.admin-dialog__footer {
+  flex: 0 0 auto;
+}
+
+.admin-dialog__footer {
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+
+.admin-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (min-width: 768px) {

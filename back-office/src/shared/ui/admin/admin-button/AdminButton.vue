@@ -1,5 +1,6 @@
 <template>
   <button
+    ref="button"
     v-bind="attrs"
     class="admin-button"
     :class="`admin-button--${props.variant}`"
@@ -12,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAttrs } from "vue";
+import { useAttrs, useTemplateRef } from "vue";
 import { ADMIN_BUTTON_DEFAULTS } from "./AdminButton.constants";
 import type { AdminButtonEmits, AdminButtonProps } from "./AdminButton.types";
 
@@ -24,7 +25,14 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminButtonEmits>();
 const attrs = useAttrs();
+const button = useTemplateRef<HTMLButtonElement>("button");
 defineSlots<{ default(): unknown }>();
+
+function focus(): void {
+  button.value?.focus();
+}
+
+defineExpose({ focus });
 </script>
 
 <style scoped lang="scss">
@@ -40,7 +48,11 @@ defineSlots<{ default(): unknown }>();
   font-weight: var(--expressa-font-weight-medium);
   line-height: var(--expressa-line-height-body);
   cursor: pointer;
-  transition: opacity var(--expressa-motion-duration-control) ease-in-out;
+  transition:
+    background-color var(--expressa-motion-duration-control) ease-out,
+    border-color var(--expressa-motion-duration-control) ease-out,
+    color var(--expressa-motion-duration-control) ease-out,
+    opacity var(--expressa-motion-duration-fast) ease-out;
 }
 
 .admin-button:disabled {
@@ -55,12 +67,20 @@ defineSlots<{ default(): unknown }>();
 
 .admin-button:focus-visible {
   outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
+  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-button--primary {
   color: var(--expressa-color-text-on-accent);
   background: var(--expressa-color-accent);
+}
+
+.admin-button--primary:hover:not(:disabled) {
+  background: var(--expressa-color-accent-hover);
+}
+
+.admin-button--primary:active:not(:disabled) {
+  background: var(--expressa-color-accent-active);
 }
 
 .admin-button--secondary {
@@ -73,6 +93,15 @@ defineSlots<{ default(): unknown }>();
 .admin-button--destructive {
   color: var(--expressa-color-status-error);
   background: var(--expressa-color-status-error-surface);
+}
+
+.admin-button--destructive:hover:not(:disabled) {
+  color: var(--expressa-color-text-on-accent);
+  background: var(--expressa-color-status-error);
+}
+
+.admin-button--destructive:active:not(:disabled) {
+  background: var(--expressa-color-status-error-hover);
 }
 
 .admin-button--ghost {

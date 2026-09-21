@@ -8,11 +8,17 @@ import type { CartStorage } from "./cart.store.types";
 const item = {
   addons: [],
   id: "item-1",
+  lineTotal: 300,
   lineTotalRub: 300,
+  price: 300,
   productId: "product-1",
   productName: "Кофе",
+  portionLabel: "250 мл",
   quantity: 1,
-  type: "drink" as const,
+  selectedModifierOptions: [],
+  selectedPriceChoice: { id: "choice", portionLabel: "250 мл", price: 300 },
+  type: "PRICED" as const,
+  unitTotal: 300,
 };
 
 describe("cart store", () => {
@@ -47,58 +53,6 @@ describe("cart store", () => {
     store.restore(storage);
     expect(store.items).toEqual([configured]);
     expect(store.total).toBe(305);
-  });
-
-  it("restores configured drinks with integer ruble prices", () => {
-    const item = {
-      addons: [],
-      id: "drink",
-      productId: "drink",
-      productName: "Напиток",
-      type: "DRINK" as const,
-      size: "M" as const,
-      sizePrice: 305,
-      selectedVariant: { id: "m", size: "M" as const, price: 305 },
-      selectedModifierOptions: [],
-      quantity: 1,
-      unitTotal: 305,
-      lineTotal: 305,
-      lineTotalRub: 305,
-    };
-    const storage = createStorage(JSON.stringify([item]));
-    const store = useCartStore();
-    store.restore(storage);
-    expect(store.items).toEqual([item]);
-    expect(store.total).toBe(305);
-  });
-
-  it("rejects corrupted configured totals and variant size", () => {
-    const valid = {
-      addons: [],
-      id: "drink",
-      productId: "drink",
-      productName: "Напиток",
-      type: "DRINK" as const,
-      size: "M" as const,
-      sizePrice: 305,
-      selectedVariant: { id: "m", size: "M" as const, price: 305 },
-      selectedModifierOptions: [],
-      quantity: 1,
-      unitTotal: 305,
-      lineTotal: 305,
-      lineTotalRub: 305,
-    };
-    for (const item of [
-      { ...valid, lineTotalRub: undefined },
-      { ...valid, lineTotalRub: Number.NaN },
-      { ...valid, lineTotalRub: 305.5 },
-      { ...valid, size: "L" as const },
-    ]) {
-      const storage = createStorage(JSON.stringify([item]));
-      useCartStore().restore(storage);
-      expect(storage.removeItem).toHaveBeenCalledWith(cartStorageKey);
-      setActivePinia(createPinia());
-    }
   });
 
   it("removes malformed persisted cart", () => {
@@ -291,7 +245,7 @@ describe("cart store", () => {
     expect(store.repeatWarnings).toEqual([]);
   });
 
-  it("merges a matching configured product, variant and sorted option ids", () => {
+  it("merges a matching configured product, price choice and sorted option ids", () => {
     const storage = createStorage(null);
     const store = useCartStore();
 
@@ -312,10 +266,10 @@ describe("cart store", () => {
             priceDelta: 0,
           },
         ],
-        selectedVariant: { id: "m", price: 300, size: "M" },
-        size: "M",
-        sizePrice: 300,
-        type: "DRINK",
+        portionLabel: "250 мл",
+        price: 300,
+        selectedPriceChoice: { id: "m", portionLabel: "250 мл", price: 300 },
+        type: "PRICED",
         unitTotal: 300,
       },
       storage,
@@ -337,10 +291,10 @@ describe("cart store", () => {
           },
           { groupId: "milk", id: "oat", name: "Овсяное", priceDelta: 0 },
         ],
-        selectedVariant: { id: "m", price: 300, size: "M" },
-        size: "M",
-        sizePrice: 300,
-        type: "DRINK",
+        portionLabel: "250 мл",
+        price: 300,
+        selectedPriceChoice: { id: "m", portionLabel: "250 мл", price: 300 },
+        type: "PRICED",
         unitTotal: 300,
       },
       storage,
@@ -366,10 +320,10 @@ describe("cart store", () => {
       productName: "Кофе",
       quantity: 2,
       selectedModifierOptions: [],
-      selectedVariant: { id: "m", price: 300, size: "M" as const },
-      size: "M" as const,
-      sizePrice: 300,
-      type: "DRINK" as const,
+      portionLabel: "250 мл",
+      price: 300,
+      selectedPriceChoice: { id: "m", portionLabel: "250 мл", price: 300 },
+      type: "PRICED" as const,
       unitTotal: 300,
     };
 
@@ -379,69 +333,6 @@ describe("cart store", () => {
       lineTotal: 600,
       lineTotalRub: 600,
     });
-  });
-
-  it("сохраняет legacy позицию при коллизии с configured идентичностью", () => {
-    const storage = createStorage(null);
-    const store = useCartStore();
-    const legacyItem = {
-      addons: [],
-      id: "product-1:m:oat:vanilla",
-      lineTotalRub: 300,
-      productId: "product-1",
-      productName: "Старый кофе",
-      quantity: 1,
-      type: "drink" as const,
-    };
-    const configuredItem = {
-      addons: [],
-      lineTotal: 300,
-      lineTotalRub: 300,
-      productId: "product-1",
-      productName: "Кофе",
-      quantity: 1,
-      selectedModifierOptions: [
-        {
-          groupId: "milk",
-          id: "oat",
-          name: "Овсяное",
-          priceDelta: 0,
-        },
-        {
-          groupId: "syrup",
-          id: "vanilla",
-          name: "Ваниль",
-          priceDelta: 0,
-        },
-      ],
-      selectedVariant: { id: "m", price: 300, size: "M" as const },
-      size: "M" as const,
-      sizePrice: 300,
-      type: "DRINK" as const,
-      unitTotal: 300,
-    };
-    store.replace([legacyItem], storage);
-
-    store.addConfigured(configuredItem, storage);
-    store.addConfigured(
-      {
-        ...configuredItem,
-        lineTotal: 600,
-        lineTotalRub: 600,
-        quantity: 2,
-      },
-      storage,
-    );
-
-    expect(store.items).toEqual(
-      expect.arrayContaining([
-        legacyItem,
-        expect.objectContaining({
-          id: "product-1:m:oat:vanilla:2",
-          quantity: 3,
-        }),
-      ]),
-    );
   });
 });
 

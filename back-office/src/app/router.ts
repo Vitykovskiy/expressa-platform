@@ -36,7 +36,12 @@ export function createBackOfficeRouter(
       return true;
     }
 
-    if (to.meta.requiresStaff) return routePaths.login;
+    if (to.meta.requiresStaff) {
+      return {
+        path: routePaths.login,
+        query: { returnTo: to.fullPath },
+      };
+    }
     return true;
   });
 

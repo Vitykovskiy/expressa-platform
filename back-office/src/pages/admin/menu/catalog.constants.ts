@@ -1,9 +1,5 @@
 import type { CatalogStoreState } from "./catalog.types";
 
-export const productTypes = ["DRINK", "OTHER"] as const;
-
-export const productSizes = ["S", "M", "L"] as const;
-
 export const modifierSelectionTypes = ["single", "multiple"] as const;
 
 export const catalogStoreId = "catalog";

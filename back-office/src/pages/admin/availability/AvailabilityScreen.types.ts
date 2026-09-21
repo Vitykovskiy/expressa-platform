@@ -8,6 +8,7 @@ export interface AvailabilityErrorDiagnostic {
   code: string;
   message: string;
   requestId: string | null;
+  status?: number | null;
 }
 
 export type AvailabilityScreenError =
@@ -20,10 +21,14 @@ export type AvailabilityScreenError =
     } & AvailabilityErrorDiagnostic);
 
 export interface AvailabilityScreenProps {
+  accessRecoveryPending?: boolean;
+  activeCategory?: string;
   error: AvailabilityScreenError | null;
+  errorFocus?: boolean;
   groups: readonly AvailabilityGroup[];
   intake: ServiceIntake | null;
   loading: boolean;
+  search?: string;
   saving: boolean;
 }
 
@@ -31,6 +36,10 @@ export interface AvailabilityScreenEmits {
   "availability-change": [item: AvailabilityItem, isAvailable: boolean];
   "intake-change": [acceptsNewOrders: boolean];
   retry: [];
+  "go-back": [];
+  "restore-access": [];
+  "update:activeCategory": [category: string];
+  "update:search": [search: string];
 }
 
 export interface AvailabilityItemGroup {

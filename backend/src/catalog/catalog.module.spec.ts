@@ -1,25 +1,26 @@
-import { Test } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
+import { Test } from "@nestjs/testing";
 import { DatabaseService } from "../platform/database/database.service";
 import { GetAdminCatalogUseCase } from "./application/get-admin-catalog.use-case";
 import { GetPublicMenuUseCase } from "./application/get-public-menu.use-case";
+import { ManageAvailabilityUseCase } from "./application/manage-availability.use-case";
 import { ManageCategoriesUseCase } from "./application/manage-categories.use-case";
 import { ManageCategoryModifiersUseCase } from "./application/manage-category-modifiers.use-case";
 import { ManageModifiersUseCase } from "./application/manage-modifiers.use-case";
-import { ManageProductsUseCase } from "./application/manage-products.use-case";
-import { ManageAvailabilityUseCase } from "./application/manage-availability.use-case";
+import { ManageV3ProductsUseCase } from "./application/manage-products.use-case";
 import { ManageServiceIntakeUseCase } from "./application/manage-service-intake.use-case";
 import { CatalogModule } from "./catalog.module";
-import { AdminCatalogController } from "./transport/admin-catalog.controller";
+import { AdminCatalogV3Controller } from "./transport/admin-catalog-v3.controller";
+import { BackofficeAvailabilityV3Controller } from "./transport/backoffice-availability-v3.controller";
+import { BackofficeAvailabilityController } from "./transport/backoffice-availability.controller";
 import { CatalogCategoriesController } from "./transport/catalog-categories.controller";
 import { CatalogCategoryModifiersController } from "./transport/catalog-category-modifiers.controller";
 import { CatalogModifiersController } from "./transport/catalog-modifiers.controller";
-import { CatalogProductsController } from "./transport/catalog-products.controller";
-import { PublicMenuController } from "./transport/public-menu.controller";
-import { BackofficeAvailabilityController } from "./transport/backoffice-availability.controller";
+import { CatalogProductsV3Controller } from "./transport/catalog-products-v3.controller";
+import { PublicMenuV3Controller } from "./transport/public-menu-v3.controller";
 
 describe("CatalogModule", () => {
-  it("связывает публичное чтение и административные сценарии каталога", async () => {
+  it("wires current v3 catalog controllers and use cases", async () => {
     const module = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -42,50 +43,28 @@ describe("CatalogModule", () => {
       .useValue({ connectionPool: {} })
       .compile();
 
-    expect(module.get(PublicMenuController)).toBeInstanceOf(
-      PublicMenuController,
-    );
-    expect(module.get(AdminCatalogController)).toBeInstanceOf(
-      AdminCatalogController,
-    );
-    expect(module.get(CatalogCategoriesController)).toBeInstanceOf(
+    for (const controller of [
+      PublicMenuV3Controller,
+      AdminCatalogV3Controller,
       CatalogCategoriesController,
-    );
-    expect(module.get(CatalogProductsController)).toBeInstanceOf(
-      CatalogProductsController,
-    );
-    expect(module.get(CatalogModifiersController)).toBeInstanceOf(
+      CatalogProductsV3Controller,
       CatalogModifiersController,
-    );
-    expect(module.get(CatalogCategoryModifiersController)).toBeInstanceOf(
       CatalogCategoryModifiersController,
-    );
-    expect(module.get(BackofficeAvailabilityController)).toBeInstanceOf(
       BackofficeAvailabilityController,
-    );
-    expect(module.get(GetPublicMenuUseCase)).toBeInstanceOf(
+      BackofficeAvailabilityV3Controller,
+    ])
+      expect(module.get(controller)).toBeInstanceOf(controller);
+
+    for (const useCase of [
       GetPublicMenuUseCase,
-    );
-    expect(module.get(GetAdminCatalogUseCase)).toBeInstanceOf(
       GetAdminCatalogUseCase,
-    );
-    expect(module.get(ManageCategoriesUseCase)).toBeInstanceOf(
       ManageCategoriesUseCase,
-    );
-    expect(module.get(ManageProductsUseCase)).toBeInstanceOf(
-      ManageProductsUseCase,
-    );
-    expect(module.get(ManageModifiersUseCase)).toBeInstanceOf(
+      ManageV3ProductsUseCase,
       ManageModifiersUseCase,
-    );
-    expect(module.get(ManageCategoryModifiersUseCase)).toBeInstanceOf(
       ManageCategoryModifiersUseCase,
-    );
-    expect(module.get(ManageAvailabilityUseCase)).toBeInstanceOf(
       ManageAvailabilityUseCase,
-    );
-    expect(module.get(ManageServiceIntakeUseCase)).toBeInstanceOf(
       ManageServiceIntakeUseCase,
-    );
+    ])
+      expect(module.get(useCase)).toBeInstanceOf(useCase);
   });
 });

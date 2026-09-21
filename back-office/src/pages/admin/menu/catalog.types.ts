@@ -1,8 +1,4 @@
-import type {
-  modifierSelectionTypes,
-  productSizes,
-  productTypes,
-} from "./catalog.constants";
+import type { modifierSelectionTypes } from "./catalog.constants";
 import type { CatalogApi } from "../../../shared/api/catalog.api";
 import type {
   Catalog,
@@ -14,10 +10,6 @@ import type {
   UpdateCatalogModifierOption,
   UpdateCatalogProduct,
 } from "../../../shared/api/catalog.api.types";
-
-export type ProductType = (typeof productTypes)[number];
-
-export type ProductSize = (typeof productSizes)[number];
 
 export type ModifierSelectionType = (typeof modifierSelectionTypes)[number];
 
@@ -32,7 +24,6 @@ export interface Category {
 export interface Product {
   id: string;
   categoryId: string;
-  type: ProductType;
   name: string;
   description: string;
   price: number | null;
@@ -41,21 +32,11 @@ export interface Product {
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
-  variants: readonly ProductVariant[];
 }
 
 export interface ProductPriceChoice {
   id: string;
   portionLabel: string;
-  price: number;
-  sortOrder: number;
-  isAvailable: boolean;
-}
-
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  size: ProductSize;
   price: number;
   sortOrder: number;
   isAvailable: boolean;

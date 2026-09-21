@@ -27,12 +27,11 @@ Refresh/logout защищены OriginGuard; `/me` и защищённые би�
 session guard. Front- и back-office используют одинаковые endpoint-пути, но
 локально владеют экранным состоянием. [Источники: controller](../../backend/src/auth/transport/auth.controller.ts), [front consumer](../../front-office/src/shared/api/auth.api.ts), [back consumer](../../back-office/src/shared/api/auth.api.ts).
 
-## Accepted target для customer logout
+## Current customer logout
 
-Текущий bodyless logout отзывает только сессию. Целевой совместимый контракт
-добавляет необязательное поле pushSubscription: PushSubscription | null.
-Body без поля продолжает прежнее поведение, поэтому back-office и старые
-клиенты не блокируются.
+Logout требует JSON body с обязательным полем `pushSubscription:
+PushSubscription | null`. Body или поле без значения отклоняются как
+`400 VALIDATION_ERROR`; других форм payload нет.
 
 Объект содержит только endpoint — непустой absolute HTTPS URL — и keys с
 непустыми string p256dh/auth. expirationTime не принимается. Неизвестные поля
@@ -61,12 +60,9 @@ backend association. Server-session revocation дополнительно гар
 утверждать отзыв неизвестной server session. Local PushSubscription и browser
 permission не меняются.
 
-null либо отсутствующее поле используют legacy session-only ветку:
-missing/malformed/expired/mismatched credential возвращает 204 и очищает cookie;
-storage failure возвращает 503 без очистки. Их 204 гарантирует только session
-logout и ничего не утверждает об association.
+`null` означает текущий session-only logout.
 
 Customer front-office обязан передать объект после надёжного чтения локальной
 подписки либо null после подтверждённого отсутствия/unsupported Push API.
 Если чтение невозможно, он не вызывает logout и не заявляет успех.
-[Решение](../20-architecture/ADR/ADR-005-customer-notification-association.md).
+[Решение](../20-architecture/ADR/ADR-009-explicit-logout-push-contract.md).

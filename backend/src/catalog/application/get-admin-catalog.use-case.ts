@@ -7,7 +7,7 @@ import type {
 export class GetAdminCatalogUseCase {
   constructor(private readonly repository: AdminCatalogRepository) {}
 
-  async execute(): Promise<AdminCatalogCandidates> {
+  async executeAvailability(): Promise<AdminCatalogCandidates> {
     return this.repository.findCandidates();
   }
   async executeV3(): Promise<AdminCatalogV3Candidates> {

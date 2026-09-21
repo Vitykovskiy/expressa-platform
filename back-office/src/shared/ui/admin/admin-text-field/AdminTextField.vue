@@ -57,6 +57,9 @@ defineExpose({ focus });
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+  transition:
+    border-color var(--expressa-motion-duration-control) ease-out,
+    background-color var(--expressa-motion-duration-control) ease-out;
 }
 
 .admin-text-field:disabled {
@@ -67,7 +70,7 @@ defineExpose({ focus });
 
 .admin-text-field:focus-visible {
   outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
+  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-text-field::placeholder {

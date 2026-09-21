@@ -310,11 +310,17 @@ function mountCartScreen(props: Partial<CartScreenProps> = {}) {
 const cartItem = {
   addons: [],
   id: "item",
+  lineTotal: 4,
   lineTotalRub: 4,
+  price: 4,
   productId: "product",
   productName: "Капучино",
+  portionLabel: "250 мл",
   quantity: 1,
-  type: "drink" as const,
+  selectedModifierOptions: [],
+  selectedPriceChoice: { id: "choice", portionLabel: "250 мл", price: 4 },
+  type: "PRICED" as const,
+  unitTotal: 4,
 };
 
 function createRepeatWarning(overrides = {}) {

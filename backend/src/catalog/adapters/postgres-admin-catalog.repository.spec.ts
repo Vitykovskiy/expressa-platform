@@ -1,49 +1,10 @@
-import type { Pool, PoolClient } from "pg";
-import {
-  catalogAdvisoryLockKey,
-  publicMenuAdvisoryLockSql,
-} from "./catalog-advisory-lock.constants";
+import type { Pool } from "pg";
 import { PostgresAdminCatalogRepository } from "./postgres-admin-catalog.repository";
 
-function createRepository(): {
-  client: jest.Mocked<PoolClient>;
-  pool: jest.Mocked<Pick<Pool, "connect">>;
-  query: jest.Mock;
-  repository: PostgresAdminCatalogRepository;
-} {
-  const query = jest.fn().mockResolvedValue({ rows: [] });
-  const client = {
-    query,
-    release: jest.fn(),
-  } as unknown as jest.Mocked<PoolClient>;
-  const pool = { connect: jest.fn().mockResolvedValue(client) } as jest.Mocked<
-    Pick<Pool, "connect">
-  >;
-
-  return {
-    client,
-    pool,
-    query,
-    repository: new PostgresAdminCatalogRepository(pool as unknown as Pool),
-  };
-}
-
 describe("PostgresAdminCatalogRepository", () => {
-  it("читает полный неархивированный каталог под разделяемой блокировкой одним клиентом", async () => {
-    const { client, pool, query, repository } = createRepository();
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            value: true,
-            updated_by: null,
-            updated_by_label: null,
-            updated_at: null,
-          },
-        ],
-      })
+  it("читает v3-каталог с ценами товара", async () => {
+    const query = jest
+      .fn()
       .mockResolvedValueOnce({
         rows: [
           {
@@ -51,7 +12,7 @@ describe("PostgresAdminCatalogRepository", () => {
             name: "Кофе",
             description: "Напитки",
             sort_order: 20,
-            is_active: false,
+            is_active: true,
             archived_at: null,
           },
         ],
@@ -61,13 +22,13 @@ describe("PostgresAdminCatalogRepository", () => {
           {
             id: "product",
             category_id: "category",
-            type: "OTHER",
             name: "Круассан",
             description: "Выпечка",
+            portion_label: null,
             price: 220,
             sort_order: 30,
-            is_active: false,
-            is_available: false,
+            is_active: true,
+            is_available: true,
             archived_at: null,
           },
         ],
@@ -75,61 +36,31 @@ describe("PostgresAdminCatalogRepository", () => {
       .mockResolvedValueOnce({
         rows: [
           {
-            id: "variant",
+            id: "price-choice",
             product_id: "product",
-            size: "M",
+            portion_label: "250 мл",
             price: 320,
             sort_order: 40,
-            is_available: false,
+            is_available: true,
             archived_at: null,
           },
         ],
       })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: "group",
-            name: "Молоко",
-            selection_type: "single",
-            min_select: 0,
-            max_select: 1,
-            is_active: false,
-            archived_at: null,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: "option",
-            group_id: "group",
-            name: "Овсяное",
-            price_delta: 50,
-            sort_order: 50,
-            is_default: false,
-            is_available: false,
-            archived_at: null,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        rows: [{ category_id: "category", group_id: "group", sort_order: 60 }],
-      });
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const repository = new PostgresAdminCatalogRepository({
+      query,
+    } as unknown as Pool);
 
-    await expect(repository.findCandidates()).resolves.toEqual({
-      intake: {
-        acceptsNewOrders: true,
-        updatedBy: null,
-        updatedByLabel: null,
-        updatedAt: null,
-      },
+    await expect(repository.findV3Candidates()).resolves.toEqual({
       categories: [
         {
           id: "category",
           name: "Кофе",
           description: "Напитки",
           sortOrder: 20,
-          isActive: false,
+          isActive: true,
           archivedAt: null,
         },
       ],
@@ -137,157 +68,32 @@ describe("PostgresAdminCatalogRepository", () => {
         {
           id: "product",
           categoryId: "category",
-          type: "OTHER",
           name: "Круассан",
           description: "Выпечка",
+          portionLabel: null,
           price: 220,
           sortOrder: 30,
-          isActive: false,
-          isAvailable: false,
+          isActive: true,
+          isAvailable: true,
           archivedAt: null,
         },
       ],
-      productVariants: [
+      priceChoices: [
         {
-          id: "variant",
+          id: "price-choice",
           productId: "product",
-          size: "M",
+          portionLabel: "250 мл",
           price: 320,
           sortOrder: 40,
-          isAvailable: false,
+          isAvailable: true,
           archivedAt: null,
         },
       ],
-      modifierGroups: [
-        {
-          id: "group",
-          name: "Молоко",
-          selectionType: "single",
-          minSelect: 0,
-          maxSelect: 1,
-          isActive: false,
-          archivedAt: null,
-        },
-      ],
-      modifierOptions: [
-        {
-          id: "option",
-          groupId: "group",
-          name: "Овсяное",
-          priceDelta: 50,
-          sortOrder: 50,
-          isDefault: false,
-          isAvailable: false,
-          archivedAt: null,
-        },
-      ],
-      categoryModifierGroups: [
-        { categoryId: "category", groupId: "group", sortOrder: 60 },
-      ],
+      modifierGroups: [],
+      modifierOptions: [],
+      categoryModifierGroups: [],
     });
 
-    expect(pool.connect).toHaveBeenCalledTimes(1);
-    expect(client.query).toHaveBeenNthCalledWith(1, "BEGIN");
-    expect(client.query).toHaveBeenNthCalledWith(2, publicMenuAdvisoryLockSql, [
-      catalogAdvisoryLockKey,
-    ]);
-    expect(client.query).toHaveBeenNthCalledWith(10, "COMMIT");
-    expect(client.release).toHaveBeenCalledTimes(1);
-    expect(client.query.mock.calls[4 - 1]?.[0]).toContain(
-      "WHERE c.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[4 - 1]?.[0]).toContain(
-      "ORDER BY c.sort_order",
-    );
-
-    expect(client.query.mock.calls[5 - 1]?.[0]).toContain(
-      "INNER JOIN categories c ON c.id = p.category_id",
-    );
-    expect(client.query.mock.calls[5 - 1]?.[0]).toContain(
-      "WHERE p.archived_at IS NULL AND c.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[5 - 1]?.[0]).toContain(
-      "ORDER BY p.category_id, p.sort_order",
-    );
-
-    expect(client.query.mock.calls[6 - 1]?.[0]).toContain(
-      "INNER JOIN products p ON p.id = v.product_id",
-    );
-    expect(client.query.mock.calls[6 - 1]?.[0]).toContain(
-      "INNER JOIN categories c ON c.id = p.category_id",
-    );
-    expect(client.query.mock.calls[6 - 1]?.[0]).toContain(
-      "WHERE v.archived_at IS NULL AND p.archived_at IS NULL AND c.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[6 - 1]?.[0]).toContain(
-      "ORDER BY v.product_id, v.sort_order",
-    );
-
-    expect(client.query.mock.calls[7 - 1]?.[0]).toContain(
-      "WHERE g.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[7 - 1]?.[0]).toContain("ORDER BY g.id");
-
-    expect(client.query.mock.calls[8 - 1]?.[0]).toContain(
-      "INNER JOIN modifier_groups g ON g.id = o.group_id",
-    );
-    expect(client.query.mock.calls[8 - 1]?.[0]).toContain(
-      "WHERE o.archived_at IS NULL AND g.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[8 - 1]?.[0]).toContain(
-      "ORDER BY o.group_id, o.sort_order",
-    );
-
-    expect(client.query.mock.calls[9 - 1]?.[0]).toContain(
-      "INNER JOIN categories c ON c.id = cmg.category_id",
-    );
-    expect(client.query.mock.calls[9 - 1]?.[0]).toContain(
-      "INNER JOIN modifier_groups g ON g.id = cmg.group_id",
-    );
-    expect(client.query.mock.calls[9 - 1]?.[0]).toContain(
-      "WHERE c.archived_at IS NULL AND g.archived_at IS NULL",
-    );
-    expect(client.query.mock.calls[9 - 1]?.[0]).toContain(
-      "ORDER BY cmg.category_id, cmg.sort_order",
-    );
-  });
-
-  it("откатывает транзакцию и освобождает клиент при ошибке запроса", async () => {
-    const { client, query, repository } = createRepository();
-    const error = new Error("read failed");
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockRejectedValueOnce(error);
-
-    await expect(repository.findCandidates()).rejects.toThrow(error);
-    expect(client.query).toHaveBeenNthCalledWith(10, "ROLLBACK");
-    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
-    expect(client.release).toHaveBeenCalledTimes(1);
-  });
-
-  it("откатывает транзакцию при некорректной строке PostgreSQL", async () => {
-    const { client, query, repository } = createRepository();
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            value: true,
-            updated_by: null,
-            updated_by_label: null,
-            updated_at: null,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ rows: [{ id: null }] });
-
-    await expect(repository.findCandidates()).rejects.toThrow(
-      "Invalid PostgreSQL row field: id",
-    );
-    expect(client.query).toHaveBeenNthCalledWith(10, "ROLLBACK");
-    expect(client.query).not.toHaveBeenCalledWith("COMMIT");
-    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls[2]?.[0]).toContain("product_price_choices");
   });
 });

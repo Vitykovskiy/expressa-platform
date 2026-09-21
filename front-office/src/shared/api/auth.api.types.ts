@@ -2,7 +2,7 @@ import type { ApiClient } from "./client";
 
 export type AuthApi = {
   getCurrentUser(accessToken: string): Promise<CurrentUser>;
-  logout(pushSubscription?: LogoutPushSubscription | null): Promise<void>;
+  logout(pushSubscription: LogoutPushSubscription | null): Promise<void>;
   refresh(): Promise<AccessSession>;
   requestOtp(phone: string): Promise<OtpRequestMetadata>;
   verifyOtp(phone: string, code: string): Promise<AccessSession>;

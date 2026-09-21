@@ -1,4 +1,5 @@
 export interface AdminDialogProps {
+  fullScreenBelow600?: boolean;
   modelValue?: boolean;
   maxWidth?: number | string;
   persistent?: boolean;

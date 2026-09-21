@@ -1,18 +1,27 @@
 <template>
   <AvailabilityScreen
+    :access-recovery-pending="accessRecoveryPending"
+    :active-category="activeCategory"
     :error="error"
+    :error-focus="errorFocus"
     :groups="availability?.groups ?? []"
     :intake="availability?.intake ?? null"
     :loading="loading"
+    :search="search"
     :saving="saving"
     @availability-change="updateAvailability"
+    @go-back="router.back()"
     @intake-change="updateIntake"
-    @retry="loadAvailability"
+    @retry="loadAvailability(true)"
+    @restore-access="openLogin"
+    @update:active-category="activeCategory = $event"
+    @update:search="search = $event"
   />
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, shallowRef } from "vue";
+import { inject, onMounted, shallowRef, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
 import { AvailabilityApi } from "../shared/api/availability.api";
@@ -25,6 +34,8 @@ import type {
 } from "../shared/api/availability.api.types";
 import AvailabilityScreen from "./admin/availability/AvailabilityScreen.vue";
 import type { AvailabilityScreenError } from "./admin/availability/AvailabilityScreen.types";
+import { AVAILABILITY_ALL_CATEGORY } from "./admin/availability/AvailabilityScreen.constants";
+import { routePaths } from "../app/router.constants";
 
 const apiClient = inject(apiClientKey);
 if (apiClient === undefined) {
@@ -32,19 +43,29 @@ if (apiClient === undefined) {
 }
 const availabilityApi = new AvailabilityApi(apiClient);
 const sessionStore = useSessionStore();
+const route = useRoute();
+const router = useRouter();
 const availability = shallowRef<Availability | null>(null);
 const error = shallowRef<AvailabilityScreenError | null>(null);
 const loading = shallowRef(true);
 const saving = shallowRef(false);
+const search = shallowRef(readQueryValue("q"));
+const activeCategory = shallowRef(
+  readQueryValue("category") || AVAILABILITY_ALL_CATEGORY,
+);
+const accessRecoveryPending = shallowRef(false);
+const errorFocus = shallowRef(false);
 let loadRequest = 0;
 
 onMounted(() => void loadAvailability());
+watch([search, activeCategory], () => void persistQuery());
 
-async function loadAvailability(): Promise<void> {
+async function loadAvailability(userInitiated = false): Promise<void> {
   if (saving.value) return;
   const request = ++loadRequest;
   loading.value = true;
   error.value = null;
+  errorFocus.value = false;
   try {
     const nextAvailability = await sessionStore.readWithRecovery(
       (accessToken) => availabilityApi.get(accessToken),
@@ -52,7 +73,7 @@ async function loadAvailability(): Promise<void> {
     if (request !== loadRequest) return;
     availability.value = nextAvailability;
   } catch (requestError) {
-    setLoadError(request, toAvailabilityApiError(requestError));
+    setLoadError(request, toAvailabilityApiError(requestError), userInitiated);
   } finally {
     if (request === loadRequest) loading.value = false;
   }
@@ -139,9 +160,50 @@ function replaceAvailability(
   };
 }
 
-function setLoadError(request: number, nextError: AvailabilityApiError): void {
+function setLoadError(
+  request: number,
+  nextError: AvailabilityApiError,
+  userInitiated: boolean,
+): void {
   if (request !== loadRequest) return;
   error.value = { kind: "read", ...diagnostic(nextError) };
+  errorFocus.value = userInitiated;
+}
+
+async function persistQuery(): Promise<void> {
+  const query = {
+    ...(search.value ? { q: search.value } : {}),
+    ...(activeCategory.value !== AVAILABILITY_ALL_CATEGORY
+      ? { category: activeCategory.value }
+      : {}),
+  };
+  await router.replace({ query });
+}
+
+async function openLogin(): Promise<void> {
+  if (accessRecoveryPending.value) return;
+  accessRecoveryPending.value = true;
+  try {
+    await router.push({
+      path: routePaths.login,
+      query: { returnTo: route.fullPath },
+    });
+  } catch {
+    error.value = {
+      code: "LOGIN_NAVIGATION_ERROR",
+      kind: "read",
+      message: "",
+      requestId: null,
+    };
+    errorFocus.value = true;
+  } finally {
+    accessRecoveryPending.value = false;
+  }
+}
+
+function readQueryValue(key: "category" | "q"): string {
+  const value = route.query[key];
+  return typeof value === "string" ? value : "";
 }
 
 function itemError(
@@ -165,6 +227,7 @@ function diagnostic(error: AvailabilityApiError) {
     code: error.code,
     message: error.message,
     requestId: error.requestId,
+    status: error.status,
   };
 }
 

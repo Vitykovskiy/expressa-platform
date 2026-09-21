@@ -1,51 +1,13 @@
 ---
-title: Управление каталогом back-office
-type: feature
-implementation_status: current
+title: Catalog management
+type: domain
 owner: back-office
-last_verified: 2026-09-19
+last_verified: 2026-09-20
 sources:
-  - ../../src/pages/MenuPage.vue
-  - ../../src/pages/admin/menu/catalog.store.ts
+  - ../../contracts/openapi.json
   - ../../src/shared/api/catalog.api.ts
 ---
 
-# Управление каталогом
+# Catalog management
 
-`/menu` — активный маршрут только administrator. `catalog.store` начинается в `idle` с пустыми массивами; после первого успешного `load` `MenuPage` считает каталог подтверждённым. Пустой подтверждённый каталог показывает «Категорий пока нет. Добавьте первую категорию», а не ошибку. Store хранит данные, `idle|loading|ready|error`, request error и field errors. Loading показывает `role=status`; ошибка — `role=alert` и «Повторить»; во время запроса контент получает `aria-busy` и `inert`, а повторные действия отключены. Источники этих состояний: [catalog.constants.ts](../../src/pages/admin/menu/catalog.constants.ts), [MenuPage.vue](../../src/pages/MenuPage.vue), [catalog.store.ts](../../src/pages/admin/menu/catalog.store.ts).
-
-Пользователь раскрывает категории и группы опций, открывает management mode, создаёт/редактирует/архивирует категории и товары, меняет порядок, создаёт/редактирует/архивирует группы добавок и варианты, переставляет варианты и сохраняет назначения групп категории. Страница хранит выбранную сущность и открытый диалог; store вызывает `CatalogApi` и обновляет подтверждённые сервером данные. Источники: [MenuPage.vue](../../src/pages/MenuPage.vue), [CatalogApi](../../src/shared/api/catalog.api.ts), [catalog store tests](../../src/pages/admin/menu/catalog.store.spec.ts).
-
-## Редактор цен: текущий принятый UX
-
-Текущий редактор использует v3 price-choice API. Он не спрашивает технический
-тип цены и не передаёт preset identity, amount, unit или inventory semantics.
-Принятый смысл подписей и упорядоченных вариантов определён в
-[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md).
-
-Редактор v3 не спрашивает технический тип цены. Он начинается с одной строки
-`Цена` и необязательного поля `Порция или размер`. Действие `Добавить ещё цену`
-создаёт две упорядоченные строки; с этого момента каждая подпись обязательна и
-различима. Удаление до одной строки возвращает компактную одну цену и сохраняет
-её подпись. UUID остаётся внутренним.
-
-Поле `Порция или размер` предлагает `200 мл`, `250 мл`, `300 мл`, `350 мл`,
-`400 мл`, `450 мл` и всегда `Свой вариант…`. Preset только подставляет обычный
-текст. API и хранилище не получают preset id, amount, unit, kind, conversion
-или inventory semantics. Своя строка проходит ту же обработку пробелов и
-валидацию различимости.
-
-Строки можно добавлять, удалять и перемещать доступными с клавиатуры действиями.
-Порядок определяет первый доступный выбор customer; поля default и числового
-`sortOrder` в форме нет. Каждая многовариантная строка имеет ручной toggle
-доступности. Одна цена использует доступность товара.
-
-Стабильный id варианта не меняется при правке цены, подписи, доступности или
-порядка; старые заказы всё равно используют собственный снимок. При удалении
-строка архивируется, а не переназначается. Редактор и runtime v3 validation
-реализованы; автоматизированные component-проверки не запускались в рамках
-текущего ограничения приёмки.
-
-Текущие формы не подтверждают пустые обязательные поля, отрицательные цены или напиток без выбранного размера; активному напитку нужен хотя бы один доступный размер. Ошибки полей от сервера остаются у соответствующей формы и снимаются после изменения поля. Архивирование подтверждает `ConfirmDialog`; cancel очищает черновик и возвращает фокус. Селекты, text fields и switches используют нативную или явно заданную ARIA-семантику, а dialog — bottom sheet до 767px и центрированный 90vh от 768px. Источники: [AddProductDialog.vue](../../src/pages/admin/menu/AddProductDialog.vue), [ModifierGroupEditor.vue](../../src/pages/admin/menu/ModifierGroupEditor.vue), [ConfirmDialog.vue](../../src/shared/ui/admin/confirm-dialog/ConfirmDialog.vue), [AdminDialog.vue](../../src/shared/ui/admin/admin-dialog/AdminDialog.vue).
-
-Данные и HTTP-пути принадлежат API/store; `MenuPage` не формирует HTTP. Подробный внешний контракт и runtime validation — в [API-интеграции](api-integration-and-errors.md).
+Catalog read and product commands use v3. Category and modifier-group management remain current v2 routes. A product uses price choices; no variant/S-M-L model or removed product endpoint exists. Exact inventory: [Back-office API](../../../docs/50-interfaces/Back-office-API.md).

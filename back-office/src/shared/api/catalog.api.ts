@@ -2,8 +2,6 @@ import { bearerTokenType } from "./auth.api.constants";
 import {
   catalogApiPaths,
   catalogModifierSelectionTypes,
-  catalogProductSizes,
-  catalogProductTypes,
   catalogUuidPattern,
 } from "./catalog.api.constants";
 import { ApiClient, ApiError } from "./client";
@@ -22,12 +20,6 @@ import type {
   CatalogModifierOption,
   CatalogModifierOptionDto,
   CatalogProduct,
-  CatalogProductDto,
-  CatalogProductResponseDto,
-  CatalogProductVariant,
-  CatalogProductVariantDto,
-  CatalogProductVariantResponseDto,
-  CatalogResponseDto,
   CatalogValidationField,
   CreateCatalogCategory,
   CreateCatalogModifierOption,
@@ -366,24 +358,6 @@ function isCatalogValidationField(
   return isRecord(value) && isString(value.path) && isString(value.reason);
 }
 
-export function toCatalog(response: CatalogResponseDto): Catalog {
-  return {
-    categories: response.categories.map(toCatalogCategory),
-    categoryModifierGroupAssignments: response.categoryModifierGroups.map(
-      toCatalogCategoryModifierGroupAssignment,
-    ),
-    modifierGroups: response.modifierGroups.map((group) =>
-      toCatalogModifierGroup(
-        group,
-        response.modifierOptions.filter(({ groupId }) => groupId === group.id),
-      ),
-    ),
-    products: response.products.map((product) =>
-      toCatalogProductFromCatalog(product, response.productVariants),
-    ),
-  };
-}
-
 function toCatalogV3(response: AdminV3CatalogResponseDto): Catalog {
   return {
     categories: response.categories.map(toCatalogCategory),
@@ -412,45 +386,6 @@ function toCatalogProductV3(product: AdminV3ProductDto): CatalogProduct {
     price: product.price,
     priceChoices: product.priceChoices.map((choice) => ({ ...choice })),
     sortOrder: product.sortOrder,
-    type: "OTHER",
-    variants: [],
-  };
-}
-
-export function toCatalogProduct(product: CatalogProductDto): CatalogProduct {
-  return {
-    categoryId: product.categoryId,
-    description: product.description,
-    id: product.id,
-    isActive: product.isActive,
-    isAvailable: product.isAvailable,
-    name: product.name,
-    price: product.price,
-    sortOrder: product.sortOrder,
-    type: product.type,
-    variants: product.variants.map((variant) =>
-      toCatalogProductVariant(variant, product.id),
-    ),
-  };
-}
-
-function toCatalogProductFromCatalog(
-  product: CatalogProductResponseDto,
-  variants: readonly CatalogProductVariantResponseDto[],
-): CatalogProduct {
-  return {
-    categoryId: product.categoryId,
-    description: product.description,
-    id: product.id,
-    isActive: product.isActive,
-    isAvailable: product.isAvailable,
-    name: product.name,
-    price: product.price,
-    sortOrder: product.sortOrder,
-    type: product.type,
-    variants: variants
-      .filter(({ productId }) => productId === product.id)
-      .map(toCatalogProductVariantFromCatalog),
   };
 }
 
@@ -461,33 +396,6 @@ function toCatalogCategory(category: CatalogCategoryDto): CatalogCategory {
     isActive: category.isActive,
     name: category.name,
     sortOrder: category.sortOrder,
-  };
-}
-
-function toCatalogProductVariantFromCatalog(
-  variant: CatalogProductVariantResponseDto,
-): CatalogProductVariant {
-  return {
-    id: variant.id,
-    isAvailable: variant.isAvailable,
-    price: variant.price,
-    productId: variant.productId,
-    size: variant.size,
-    sortOrder: variant.sortOrder,
-  };
-}
-
-function toCatalogProductVariant(
-  variant: CatalogProductVariantDto,
-  productId: string,
-): CatalogProductVariant {
-  return {
-    id: variant.id,
-    isAvailable: variant.isAvailable,
-    price: variant.price,
-    productId,
-    size: variant.size,
-    sortOrder: variant.sortOrder,
   };
 }
 
@@ -528,43 +436,6 @@ function toCatalogCategoryModifierGroupAssignment(
     modifierGroupId: assignment.groupId,
     sortOrder: assignment.sortOrder,
   };
-}
-
-export function isCatalogResponseDto(
-  value: unknown,
-): value is CatalogResponseDto {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const {
-    categories,
-    categoryModifierGroups,
-    modifierGroups,
-    modifierOptions,
-    productVariants,
-    products,
-  } = value;
-
-  if (
-    !isCatalogCategories(categories) ||
-    !isCatalogProductResponseDtos(products) ||
-    !isCatalogProductVariantResponseDtos(productVariants) ||
-    !isCatalogModifierGroupDtos(modifierGroups) ||
-    !isCatalogModifierOptions(modifierOptions) ||
-    !isCatalogCategoryModifierGroupAssignments(categoryModifierGroups)
-  ) {
-    return false;
-  }
-
-  return hasCatalogReferences({
-    categories,
-    categoryModifierGroups,
-    modifierGroups,
-    modifierOptions,
-    productVariants,
-    products,
-  });
 }
 
 function isAdminV3CatalogResponseDto(
@@ -635,86 +506,6 @@ function isCatalogCategories(
   return Array.isArray(value) && value.every(isCatalogCategoryDto);
 }
 
-function isCatalogProductDto(value: unknown): value is CatalogProductDto {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    isCatalogProductFields(value) && isCatalogProductVariants(value.variants)
-  );
-}
-
-export function isCatalogProductDtos(
-  value: unknown,
-): value is readonly CatalogProductDto[] {
-  return Array.isArray(value) && value.every(isCatalogProductDto);
-}
-
-function isCatalogProductResponseDtos(
-  value: unknown,
-): value is readonly CatalogProductResponseDto[] {
-  return Array.isArray(value) && value.every(isCatalogProductResponseDto);
-}
-
-function isCatalogProductResponseDto(
-  value: unknown,
-): value is CatalogProductResponseDto {
-  return isRecord(value) && isCatalogProductFields(value);
-}
-
-function isCatalogProductFields(value: Record<string, unknown>): boolean {
-  return (
-    isUuid(value.id) &&
-    isUuid(value.categoryId) &&
-    isCatalogProductType(value.type) &&
-    isString(value.name) &&
-    isString(value.description) &&
-    (value.price === null || isNonNegativeInteger(value.price)) &&
-    isInteger(value.sortOrder) &&
-    typeof value.isActive === "boolean" &&
-    typeof value.isAvailable === "boolean"
-  );
-}
-
-function isCatalogProductVariants(
-  value: unknown,
-): value is readonly CatalogProductVariantDto[] {
-  return Array.isArray(value) && value.every(isCatalogProductVariantDto);
-}
-
-function isCatalogProductVariantResponseDtos(
-  value: unknown,
-): value is readonly CatalogProductVariantResponseDto[] {
-  return (
-    Array.isArray(value) &&
-    value.every((variant) => isCatalogProductVariantResponseDto(variant))
-  );
-}
-
-function isCatalogProductVariantResponseDto(
-  value: unknown,
-): value is CatalogProductVariantResponseDto {
-  return (
-    isCatalogProductVariantDto(value) &&
-    isRecord(value) &&
-    isUuid(value.productId)
-  );
-}
-
-function isCatalogProductVariantDto(
-  value: unknown,
-): value is CatalogProductVariantDto {
-  return (
-    isRecord(value) &&
-    isUuid(value.id) &&
-    isCatalogProductSize(value.size) &&
-    isNonNegativeInteger(value.price) &&
-    isInteger(value.sortOrder) &&
-    typeof value.isAvailable === "boolean"
-  );
-}
-
 function isCatalogModifierGroupDto(
   value: unknown,
 ): value is CatalogModifierGroupDto {
@@ -781,34 +572,8 @@ function isCatalogCategoryModifierGroupAssignments(
   );
 }
 
-function isCatalogProductType(value: unknown): boolean {
-  return catalogProductTypes.some((type) => type === value);
-}
-
-function isCatalogProductSize(value: unknown): boolean {
-  return catalogProductSizes.some((size) => size === value);
-}
-
 function isCatalogModifierSelectionType(value: unknown): boolean {
   return catalogModifierSelectionTypes.some((type) => type === value);
-}
-
-function hasCatalogReferences(response: CatalogResponseDto): boolean {
-  const categoryIds = new Set(response.categories.map(({ id }) => id));
-  const productIds = new Set(response.products.map(({ id }) => id));
-  const groupIds = new Set(response.modifierGroups.map(({ id }) => id));
-
-  return (
-    response.products.every(({ categoryId }) => categoryIds.has(categoryId)) &&
-    response.productVariants.every(({ productId }) =>
-      productIds.has(productId),
-    ) &&
-    response.modifierOptions.every(({ groupId }) => groupIds.has(groupId)) &&
-    response.categoryModifierGroups.every(
-      ({ categoryId, groupId }) =>
-        categoryIds.has(categoryId) && groupIds.has(groupId),
-    )
-  );
 }
 
 function isUuid(value: unknown): value is string {

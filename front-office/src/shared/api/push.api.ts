@@ -42,14 +42,6 @@ export function createPushApi(client: PushApiClient): PushApi {
         method: "DELETE",
       });
     },
-    async deleteSubscription(accessToken, subscription): Promise<void> {
-      await client.request("/push/subscriptions", isEmptyResponse, {
-        body: subscription,
-        expectedStatus: 204,
-        headers: bearer(accessToken),
-        method: "DELETE",
-      });
-    },
     async getPublicKey(accessToken): Promise<string> {
       const response = await client.request(
         "/push/public-key",
@@ -84,14 +76,6 @@ export function createPushApi(client: PushApiClient): PushApi {
           method: "POST",
         },
       );
-    },
-    async saveSubscription(accessToken, subscription): Promise<void> {
-      await client.request("/push/subscriptions", isEmptyResponse, {
-        body: subscription,
-        expectedStatus: 204,
-        headers: bearer(accessToken),
-        method: "PUT",
-      });
     },
   };
 }

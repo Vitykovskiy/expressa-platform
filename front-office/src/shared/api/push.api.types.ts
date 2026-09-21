@@ -9,19 +9,11 @@ export type PushApi = {
     accessToken: string,
     request: PushAssociationDeleteRequest,
   ): Promise<void>;
-  deleteSubscription(
-    accessToken: string,
-    subscription: PushSubscriptionRequest,
-  ): Promise<void>;
   getPublicKey(accessToken: string): Promise<string>;
   inspectSubscription(
     accessToken: string,
     subscription: PushSubscriptionRequest,
   ): Promise<PushSubscriptionInspection>;
-  saveSubscription(
-    accessToken: string,
-    subscription: PushSubscriptionRequest,
-  ): Promise<void>;
 };
 
 export type PushApiClient = Pick<ApiClient, "request">;

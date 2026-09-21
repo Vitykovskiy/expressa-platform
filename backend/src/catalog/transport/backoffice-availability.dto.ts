@@ -1,5 +1,4 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { AdminCatalogDto } from "./admin-catalog.dto";
 import type {
   AvailabilityUpdateDto,
   ServiceIntakeDto,
@@ -43,7 +42,68 @@ export class AvailabilityProductModifierGroupResponseDto {
   @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
   sortOrder!: number;
 }
-export class AvailabilityResponseDto extends AdminCatalogDto {
+export class AvailabilityCategoryResponseDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() description!: string;
+  @ApiProperty({ format: "int32", minimum: 0, type: "integer" })
+  sortOrder!: number;
+  @ApiProperty() isActive!: boolean;
+}
+export class AvailabilityProductResponseDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty({ format: "uuid" }) categoryId!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() description!: string;
+  @ApiProperty({ nullable: true, minimum: 0, type: "integer" }) price!:
+    number | null;
+  @ApiProperty({ minimum: 0, type: "integer" }) sortOrder!: number;
+  @ApiProperty() isActive!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}
+export class AvailabilityModifierGroupResponseDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ enum: ["single", "multiple"] }) selectionType!:
+    "single" | "multiple";
+  @ApiProperty({ minimum: 0, type: "integer" }) minSelect!: number;
+  @ApiProperty({ minimum: 0, type: "integer" }) maxSelect!: number;
+  @ApiProperty() isActive!: boolean;
+}
+export class AvailabilityModifierOptionResponseDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty({ format: "uuid" }) groupId!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ type: "integer" }) priceDelta!: number;
+  @ApiProperty({ minimum: 0, type: "integer" }) sortOrder!: number;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() isAvailable!: boolean;
+}
+export class AvailabilityCategoryModifierGroupResponseDto {
+  @ApiProperty({ format: "uuid" }) categoryId!: string;
+  @ApiProperty({ format: "uuid" }) groupId!: string;
+  @ApiProperty({ minimum: 0, type: "integer" }) sortOrder!: number;
+}
+export class AvailabilityResponseDto {
+  @ApiProperty({ isArray: true, type: () => AvailabilityCategoryResponseDto })
+  categories!: AvailabilityCategoryResponseDto[];
+  @ApiProperty({ isArray: true, type: () => AvailabilityProductResponseDto })
+  products!: AvailabilityProductResponseDto[];
+  @ApiProperty({
+    isArray: true,
+    type: () => AvailabilityModifierGroupResponseDto,
+  })
+  modifierGroups!: AvailabilityModifierGroupResponseDto[];
+  @ApiProperty({
+    isArray: true,
+    type: () => AvailabilityModifierOptionResponseDto,
+  })
+  modifierOptions!: AvailabilityModifierOptionResponseDto[];
+  @ApiProperty({
+    isArray: true,
+    type: () => AvailabilityCategoryModifierGroupResponseDto,
+  })
+  categoryModifierGroups!: AvailabilityCategoryModifierGroupResponseDto[];
   @ApiProperty({
     isArray: true,
     type: () => AvailabilityPriceChoiceResponseDto,
@@ -58,8 +118,7 @@ export class AvailabilityResponseDto extends AdminCatalogDto {
   intake!: ServiceIntakeResponseDto;
 }
 export class AvailabilityUpdateResponseDto implements AvailabilityUpdateDto {
-  @ApiProperty({ enum: ["product", "variant", "modifier"] }) type!:
-    "product" | "variant" | "modifier";
+  @ApiProperty({ enum: ["product", "modifier"] }) type!: "product" | "modifier";
   @ApiProperty({ format: "uuid" }) id!: string;
   @ApiProperty() isAvailable!: boolean;
 }

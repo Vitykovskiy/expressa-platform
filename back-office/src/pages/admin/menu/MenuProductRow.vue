@@ -1,6 +1,7 @@
 <template>
   <div class="menu-product-row">
     <AdminButton
+      :id="`menu-product-${props.product.id}`"
       :aria-label="`Редактировать товар ${props.product.name}`"
       class="menu-product-row__edit"
       type="button"
@@ -74,13 +75,6 @@ function priceLabel(product: Product): string {
       .map((choice) => `${choice.portionLabel}: ${formatPrice(choice.price)}`)
       .join(" · ");
   }
-
-  if (product.type === "DRINK") {
-    return product.variants
-      .map((variant) => `${variant.size}: ${formatPrice(variant.price)}`)
-      .join(" · ");
-  }
-
   return product.price === null ? "Нет цены" : formatPrice(product.price);
 }
 

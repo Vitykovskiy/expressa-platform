@@ -1,59 +1,14 @@
-export type ProductType = "drink" | "food" | "extra";
-
 export interface Addon {
   id: string;
   name: string;
   priceRub: number;
 }
 
-export interface ProductSize {
-  sizeCode: string;
-  price: number;
-}
+export type ConfiguredCartItemDraft = PricedCartItemDraft | OtherCartItemDraft;
 
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  type: ProductType;
-  image: string;
-  basePrice: number;
-  sizes?: ProductSize[];
-  addons?: Addon[];
-}
+export type CartItem = PricedCartItem | OtherCartItem;
 
-export interface Category {
-  id: string;
-  name: string;
-  image: string;
-  products: Product[];
-}
-
-export interface LegacyCartItemDraft {
-  productId: string;
-  productName: string;
-  type: ProductType;
-  addons: Addon[];
-  quantity: number;
-  lineTotalRub: number;
-  size?: string;
-  sizePrice?: number;
-}
-
-export type LegacyCartItem = LegacyCartItemDraft & { id: string };
-
-export type CartItemDraft = LegacyCartItemDraft;
-
-export type ConfiguredCartItemDraft =
-  DrinkCartItemDraft | OtherCartItemDraft | LegacyConfiguredDrinkCartItemDraft;
-
-export type CartItem =
-  | DrinkCartItem
-  | OtherCartItem
-  | LegacyConfiguredDrinkCartItem
-  | LegacyCartItem;
-
-export type DrinkCartItemDraft = ConfiguredCartItemDraftBase & {
+export type PricedCartItemDraft = ConfiguredCartItemDraftBase & {
   type: "PRICED";
   selectedPriceChoice: CartPriceChoiceSelection | null;
   portionLabel: string | null;
@@ -67,9 +22,7 @@ export type OtherCartItemDraft = ConfiguredCartItemDraftBase & {
   price?: number;
 };
 
-export type DrinkCartItem = DrinkCartItemDraft & { id: string };
-export type LegacyConfiguredDrinkCartItem =
-  LegacyConfiguredDrinkCartItemDraft & { id: string };
+export type PricedCartItem = PricedCartItemDraft & { id: string };
 
 export type OtherCartItem = OtherCartItemDraft & { id: string };
 
@@ -89,18 +42,6 @@ export type CartPriceChoiceSelection = {
   portionLabel: string;
   price: number;
 };
-export type CartVariantSelection = {
-  id: string;
-  size: "S" | "M" | "L";
-  price: number;
-};
-export type LegacyConfiguredDrinkCartItemDraft = ConfiguredCartItemDraftBase & {
-  type: "DRINK";
-  selectedVariant: CartVariantSelection;
-  size: "S" | "M" | "L";
-  sizePrice: number;
-};
-
 export type CartSelectedModifierOption = {
   groupId: string;
   id: string;
@@ -130,7 +71,6 @@ export interface OrderItem {
   quantity: number;
   lineTotalRub: number;
   addons: OrderItemAddon[];
-  size?: string;
 }
 
 export interface Order {

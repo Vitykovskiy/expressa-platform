@@ -4,38 +4,18 @@ import type {
   CatalogModifierGroupCandidate,
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
-  CatalogProductVariantCandidate,
-  PublicMenu,
   PublicMenuModifierGroup,
   PublicMenuModifierOption,
-  PublicMenuProduct,
-  PublicMenuProductVariant,
   PublicMenuV3,
   PublicMenuV3Product,
 } from "../domain/catalog.types";
 import type {
-  PublicMenuCandidates,
   PublicMenuRepository,
   PublicMenuV3Candidates,
 } from "./public-menu.repository.types";
 
 export class GetPublicMenuUseCase {
   constructor(private readonly repository: PublicMenuRepository) {}
-
-  async execute(): Promise<PublicMenu> {
-    const candidates = await this.repository.findCandidates();
-    const publishableGroups = createPublishableModifierGroups(candidates);
-
-    return {
-      acceptsNewOrders: candidates.acceptsNewOrders,
-      categories: candidates.categories
-        .filter(isPublishedCatalogEntity)
-        .map((category) =>
-          createCategory(category, candidates, publishableGroups),
-        )
-        .filter((category) => category.products.length > 0),
-    };
-  }
 
   async executeV3(): Promise<PublicMenuV3> {
     const candidates = await this.repository.findV3Candidates();
@@ -94,7 +74,7 @@ function createV3Category(
 }
 
 function createV3Product(
-  product: CatalogProductCandidate,
+  product: CatalogProductCandidate & { portionLabel: string | null },
   candidates: PublicMenuV3Candidates,
   modifierGroups: PublicMenuModifierGroup[],
 ): PublicMenuV3Product[] {
@@ -111,7 +91,7 @@ function createV3Product(
   if (
     priceChoices.length >= 2 &&
     product.price === null &&
-    product.displayLabel === null
+    product.portionLabel === null
   ) {
     return [
       {
@@ -133,53 +113,12 @@ function createV3Product(
       name: product.name,
       description: product.description,
       price: product.price,
-      portionLabel: product.displayLabel ?? null,
+      portionLabel: product.portionLabel,
       isAvailable: product.isAvailable,
       priceChoices: [],
       modifierGroups,
     },
   ];
-}
-
-function createCategory(
-  category: CatalogCategoryCandidate,
-  candidates: PublicMenuCandidates,
-  publishableGroups: Map<string, PublicMenuModifierGroup>,
-) {
-  const { modifierGroups, hasInvalidGroup } = getCategoryModifierGroups(
-    category.id,
-    candidates.categoryModifierGroups,
-    candidates.modifierGroups,
-    publishableGroups,
-  );
-  const hasInvalidRequiredGroup = modifierGroups.some(
-    (group) => !isValidRequiredGroup(group),
-  );
-
-  return {
-    id: category.id,
-    name: category.name,
-    description: category.description,
-    products:
-      hasInvalidGroup || hasInvalidRequiredGroup
-        ? []
-        : candidates.products
-            .filter((product) => product.categoryId === category.id)
-            .filter(isPublishedCatalogEntity)
-            .flatMap((product) =>
-              createProduct(
-                product,
-                candidates.productVariants,
-                mergeModifierGroups(
-                  product.id,
-                  modifierGroups,
-                  candidates.categoryModifierGroups,
-                  candidates.modifierGroups,
-                  publishableGroups,
-                ),
-              ),
-            ),
-  };
 }
 
 function mergeModifierGroups(
@@ -207,43 +146,11 @@ function mergeModifierGroups(
   return result;
 }
 
-function createProduct(
-  product: CatalogProductCandidate,
-  variants: CatalogProductVariantCandidate[],
-  modifierGroups: PublicMenuModifierGroup[],
-): PublicMenuProduct[] {
-  const productVariants = variants
-    .filter((variant) => variant.productId === product.id)
-    .filter(isCurrentCatalogEntity)
-    .map(toPublicVariant);
-
-  if (product.type === "DRINK") {
-    if (
-      product.price !== null ||
-      !productVariants.some((variant) => variant.isAvailable)
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        ...toPublicProduct(product),
-        price: null,
-        variants: productVariants,
-        modifierGroups,
-      },
-    ];
-  }
-
-  if (product.price === null || productVariants.length > 0) {
-    return [];
-  }
-
-  return [{ ...toPublicProduct(product), variants: [], modifierGroups }];
-}
-
 function createPublishableModifierGroups(
-  candidates: Pick<PublicMenuCandidates, "modifierGroups" | "modifierOptions">,
+  candidates: Pick<
+    PublicMenuV3Candidates,
+    "modifierGroups" | "modifierOptions"
+  >,
 ) {
   return new Map(
     candidates.modifierGroups
@@ -350,36 +257,6 @@ function isValidRequiredGroup(group: PublicMenuModifierGroup): boolean {
     defaultOptions.length <= group.maxSelect &&
     defaultOptions.every((option) => option.priceDelta === 0)
   );
-}
-
-function toPublicProduct(
-  product: CatalogProductCandidate,
-): Omit<PublicMenuProduct, "variants" | "modifierGroups"> {
-  return {
-    id: product.id,
-    type: product.type,
-    name: product.name,
-    description: product.description,
-    ...(product.displayLabel === null || product.displayLabel === undefined
-      ? {}
-      : { displayLabel: product.displayLabel }),
-    price: product.price,
-    isAvailable: product.isAvailable,
-  };
-}
-
-function toPublicVariant(
-  variant: CatalogProductVariantCandidate,
-): PublicMenuProductVariant {
-  return {
-    id: variant.id,
-    size: variant.size,
-    ...(variant.displayLabel === null || variant.displayLabel === undefined
-      ? {}
-      : { displayLabel: variant.displayLabel }),
-    price: variant.price,
-    isAvailable: variant.isAvailable,
-  };
 }
 
 function toPublicModifierOption(

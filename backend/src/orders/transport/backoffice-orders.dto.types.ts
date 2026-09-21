@@ -1,5 +1,5 @@
 import type { OrderStage } from "../domain/order-lifecycle.types";
-import type { OrderItemDto } from "./order.dto.types";
+import type { OrderV3ItemDto } from "./order-v3.dto.types";
 
 export type BackofficeOrderEventDto = {
   actorId: string;
@@ -17,6 +17,6 @@ export type BackofficeOrderListItemDto = {
 };
 export type BackofficeOrderDetailsDto = BackofficeOrderListItemDto & {
   customer: { id: string; phoneE164: string };
-  snapshot: readonly OrderItemDto[];
+  snapshot: readonly OrderV3ItemDto[];
   events: readonly BackofficeOrderEventDto[];
 };

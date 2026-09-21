@@ -679,9 +679,9 @@ const productInput = {
   isAvailable: true,
   name: "Латте",
   price: 250,
+  portionLabel: null,
+  priceChoices: [],
   sortOrder: 0,
-  type: "OTHER" as const,
-  variants: [],
 };
 
 const modifierGroupInput = {

@@ -1,31 +1,9 @@
 import { GetAdminCatalogUseCase } from "./get-admin-catalog.use-case";
-import type {
-  AdminCatalogCandidates,
-  AdminCatalogRepository,
-} from "./admin-catalog.repository.types";
+import type { AdminCatalogRepository } from "./admin-catalog.repository.types";
 
 describe("GetAdminCatalogUseCase", () => {
-  it("возвращает полный неархивированный каталог без фильтрации активности", async () => {
-    const catalog: AdminCatalogCandidates = {
-      categories: [],
-      products: [],
-      productVariants: [],
-      modifierGroups: [],
-      modifierOptions: [],
-      categoryModifierGroups: [],
-    };
-    const repository: AdminCatalogRepository = {
-      findCandidates: jest.fn().mockResolvedValue(catalog),
-      findV3Candidates: jest.fn(),
-    };
-
-    await expect(
-      new GetAdminCatalogUseCase(repository).execute(),
-    ).resolves.toBe(catalog);
-    expect(repository.findCandidates).toHaveBeenCalledTimes(1);
-  });
-  it("returns the typed v3 catalog projection without legacy variants", async () => {
-    const catalog = {
+  it("returns the v3 catalog projection", async () => {
+    const v3 = {
       categories: [],
       products: [],
       priceChoices: [],
@@ -35,11 +13,11 @@ describe("GetAdminCatalogUseCase", () => {
     };
     const repository: AdminCatalogRepository = {
       findCandidates: jest.fn(),
-      findV3Candidates: jest.fn().mockResolvedValue(catalog),
+      findV3Candidates: jest.fn().mockResolvedValue(v3),
     };
     await expect(
       new GetAdminCatalogUseCase(repository).executeV3(),
-    ).resolves.toBe(catalog);
+    ).resolves.toBe(v3);
     expect(repository.findV3Candidates).toHaveBeenCalledTimes(1);
   });
 });

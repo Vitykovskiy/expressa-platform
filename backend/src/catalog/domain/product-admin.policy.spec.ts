@@ -1,98 +1,60 @@
 import {
-  assertFullProductReorder,
-  assertProductDetails,
+  assertV3ProductDetails,
   ProductAdminError,
 } from "./product-admin.policy";
+import type { V3ProductDetails } from "./product-admin.policy.types";
 
-const variant = {
-  size: "M" as const,
-  price: 320,
-  sortOrder: 0,
-  isAvailable: true,
-};
-const drink = {
+const product: V3ProductDetails = {
   categoryId: "category",
-  type: "DRINK" as const,
   name: "Капучино",
   description: "",
-  price: null,
+  price: 320,
+  portionLabel: "250 мл",
+  priceChoices: [],
   sortOrder: 0,
   isActive: true,
   isAvailable: true,
-  variants: [variant],
 };
+
 describe("product admin policy", () => {
-  it("требует доступный размер для публикуемого напитка", () =>
+  it("accepts one direct v3 price", () =>
+    expect(() => assertV3ProductDetails(product)).not.toThrow());
+  it("requires at least two distinct choices without a direct price", () => {
     expect(() =>
-      assertProductDetails({
-        ...drink,
-        variants: [{ ...variant, isAvailable: false }],
-      }),
-    ).toThrow(ProductAdminError));
-  it("не допускает цену или размеры вне типа товара", () => {
-    expect(() =>
-      assertProductDetails({ ...drink, type: "OTHER", price: null }),
-    ).toThrow("PRODUCT_INVALID");
-    expect(() =>
-      assertProductDetails({ ...drink, type: "OTHER", price: 0, variants: [] }),
-    ).not.toThrow();
-  });
-  it("не допускает повторяющиеся размеры", () =>
-    expect(() =>
-      assertProductDetails({
-        ...drink,
-        variants: [variant, { ...variant, sortOrder: 1 }],
-      }),
-    ).toThrow("PRODUCT_INVALID"));
-  it("не допускает повторяющиеся позиции размеров и активный напиток без доступного размера", () => {
-    expect(() =>
-      assertProductDetails({
-        ...drink,
-        variants: [
-          { ...variant, size: "S" },
-          { ...variant, size: "M" },
+      assertV3ProductDetails({
+        ...product,
+        price: null,
+        portionLabel: null,
+        priceChoices: [
+          {
+            portionLabel: "250 мл",
+            price: 320,
+            sortOrder: 0,
+            isAvailable: true,
+          },
         ],
       }),
-    ).toThrow("PRODUCT_INVALID");
+    ).toThrow(ProductAdminError);
     expect(() =>
-      assertProductDetails({
-        ...drink,
-        isAvailable: false,
-        variants: [{ ...variant, isAvailable: false }],
+      assertV3ProductDetails({
+        ...product,
+        price: null,
+        portionLabel: null,
+        priceChoices: [
+          {
+            portionLabel: "250 мл",
+            price: 320,
+            sortOrder: 0,
+            isAvailable: true,
+          },
+          {
+            portionLabel: "350 мл",
+            price: 370,
+            sortOrder: 1,
+            isAvailable: true,
+          },
+        ],
       }),
-    ).toThrow("PRODUCT_INVALID");
-  });
-  it("требует полный уникальный набор товаров одной категории для reorder", () => {
-    const products = [
-      { id: "coffee", ...drink, archivedAt: null, variants: [] },
-      {
-        id: "tea",
-        ...drink,
-        name: "Чай",
-        sortOrder: 1,
-        archivedAt: null,
-        variants: [],
-      },
-      {
-        id: "other-category",
-        ...drink,
-        categoryId: "other",
-        sortOrder: 0,
-        archivedAt: null,
-        variants: [],
-      },
-    ];
-    expect(() =>
-      assertFullProductReorder(products, "category", ["coffee"]),
-    ).toThrow("PRODUCT_REORDER_INVALID");
-    expect(() =>
-      assertFullProductReorder(products, "category", ["coffee", "coffee"]),
-    ).toThrow("PRODUCT_REORDER_INVALID");
-    expect(() =>
-      assertFullProductReorder(products, "category", ["coffee", "foreign"]),
-    ).toThrow("PRODUCT_REORDER_INVALID");
-    expect(() =>
-      assertFullProductReorder(products, "category", ["tea", "coffee"]),
     ).not.toThrow();
   });
 });

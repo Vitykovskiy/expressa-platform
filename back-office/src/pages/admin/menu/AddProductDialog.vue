@@ -247,7 +247,7 @@ import type {
   AddProductDialogEmits,
   AddProductDialogProps,
   PriceChoiceDraft,
-  PriceOptionProductFormData,
+  CreateProductFormData,
   ProductFormField,
 } from "./AddProductDialog.types";
 
@@ -430,7 +430,6 @@ function confirm(): void {
   if (isProtected.value || !isValid.value) return;
   emit("confirm", {
     categoryId: categoryIdValue.value,
-    type: "OTHER",
     name: name.value.trim(),
     description: description.value,
     isActive: isActive.value,
@@ -446,8 +445,7 @@ function confirm(): void {
           isAvailable: choice.isAvailable,
         }))
       : [],
-    variants: [],
-  } satisfies PriceOptionProductFormData);
+  } satisfies CreateProductFormData);
 }
 function reset(): void {
   categoryIdValue.value = "";

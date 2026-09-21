@@ -6,15 +6,13 @@ import type {
 
 export type ProductFormField =
   | "categoryId"
-  | "type"
   | "name"
   | "description"
   | "price"
   | "portionLabel"
   | "priceChoices"
   | "isActive"
-  | "isAvailable"
-  | "variants";
+  | "isAvailable";
 
 export interface PriceChoiceDraft {
   id?: string;
@@ -25,18 +23,6 @@ export interface PriceChoiceDraft {
 
 export type PriceChoiceMoveDirection = -1 | 1;
 
-// Compatibility aliases remain internal until the V3 catalog reader replaces the
-// legacy projection. They are not exposed as editor controls.
-export type ProductVariantMoveDirection = PriceChoiceMoveDirection;
-
-export interface ProductVariantDraft {
-  id?: string;
-  size: "S" | "M" | "L";
-  price: string;
-  isConfigured: boolean;
-  isAvailable: boolean;
-}
-
 export interface PriceChoiceFormData {
   id?: string;
   portionLabel: string;
@@ -45,9 +31,8 @@ export interface PriceChoiceFormData {
   isAvailable: boolean;
 }
 
-export interface PriceOptionProductFormData {
+export interface CreateProductFormData {
   categoryId: string;
-  type: "OTHER";
   name: string;
   description: string;
   isActive: boolean;
@@ -55,30 +40,7 @@ export interface PriceOptionProductFormData {
   price: number | null;
   portionLabel: string | null;
   priceChoices: readonly PriceChoiceFormData[];
-  variants: readonly [];
 }
-
-export interface LegacyProductVariantFormData {
-  id?: string;
-  size: "S" | "M" | "L";
-  price: number;
-  sortOrder: number;
-  isAvailable: boolean;
-}
-
-export interface LegacyProductFormData {
-  categoryId: string;
-  type: "DRINK" | "OTHER";
-  name: string;
-  description: string;
-  isActive: boolean;
-  isAvailable: boolean;
-  price: number | null;
-  variants: readonly LegacyProductVariantFormData[];
-}
-
-export type ProductFormData =
-  PriceOptionProductFormData | LegacyProductFormData;
 
 export interface AddProductDialogProps {
   disabled: boolean;
@@ -89,7 +51,7 @@ export interface AddProductDialogProps {
 }
 
 export interface AddProductDialogEmits {
-  confirm: [data: ProductFormData];
+  confirm: [data: CreateProductFormData];
   cancel: [];
   refresh: [];
 }

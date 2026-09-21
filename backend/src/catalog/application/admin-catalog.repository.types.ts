@@ -5,19 +5,17 @@ import type {
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
   CatalogProductModifierGroupCandidate,
-  CatalogProductVariantCandidate,
 } from "../domain/catalog.types";
 
 export type AdminCatalogCandidates = {
   categories: CatalogCategoryCandidate[];
   products: CatalogProductCandidate[];
-  productVariants: CatalogProductVariantCandidate[];
   modifierGroups: CatalogModifierGroupCandidate[];
   modifierOptions: CatalogModifierOptionCandidate[];
   categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
-  productModifierGroups?: CatalogProductModifierGroupCandidate[];
-  priceChoices?: AvailabilityPriceChoiceCandidate[];
-  intake?: ServiceIntake;
+  productModifierGroups: CatalogProductModifierGroupCandidate[];
+  priceChoices: AvailabilityPriceChoiceCandidate[];
+  intake: ServiceIntake;
 };
 
 export type AvailabilityPriceChoiceCandidate = {
@@ -35,8 +33,7 @@ export type ServiceIntake = {
   updatedByLabel: string | null;
   updatedAt: Date | null;
 };
-export type AvailabilityEntityType =
-  "product" | "variant" | "modifier" | "price_choice";
+export type AvailabilityEntityType = "product" | "modifier" | "price_choice";
 export type AvailabilityTarget = {
   type: AvailabilityEntityType;
   id: string;

@@ -98,11 +98,7 @@ const props = defineProps<CartItemProps>();
 const emit = defineEmits<CartItemEmits>();
 const unavailableMessageId = `cart-item-unavailable-${props.item.id}`;
 const portionLabel = computed(() =>
-  "portionLabel" in props.item
-    ? props.item.portionLabel
-    : "size" in props.item
-      ? props.item.size
-      : undefined,
+  "portionLabel" in props.item ? props.item.portionLabel : undefined,
 );
 
 function formatRubAmount(value: number): string {

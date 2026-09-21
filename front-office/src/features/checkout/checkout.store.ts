@@ -217,9 +217,7 @@ function getAddressableIds(
     item.productId,
     ...(item.type === "PRICED" && item.selectedPriceChoice !== null
       ? [item.selectedPriceChoice.id]
-      : item.type === "DRINK"
-        ? [item.selectedVariant.id]
-        : []),
+      : []),
     ...item.selectedModifierOptions.map((option) => option.id),
   ];
 }
@@ -237,9 +235,7 @@ function toCheckoutRequestItem(
     quantity: cartItem.quantity,
     ...(cartItem.type === "PRICED" && cartItem.selectedPriceChoice !== null
       ? { priceChoiceId: cartItem.selectedPriceChoice.id }
-      : cartItem.type === "DRINK"
-        ? { priceChoiceId: cartItem.selectedVariant.id }
-        : {}),
+      : {}),
   };
 }
 
@@ -247,14 +243,9 @@ function isPersistedCartItem(
   value: CheckoutSubmission["cartItems"][number],
 ): value is Extract<
   CheckoutSubmission["cartItems"][number],
-  { type: "DRINK" | "PRICED" | "OTHER" }
+  { type: "PRICED" | "OTHER" }
 > {
-  if (
-    value.type !== "DRINK" &&
-    value.type !== "PRICED" &&
-    value.type !== "OTHER"
-  )
-    return false;
+  if (value.type !== "PRICED" && value.type !== "OTHER") return false;
   if (
     !isNonEmptyString(value.productId) ||
     !isPositiveInteger(value.quantity) ||
@@ -272,12 +263,10 @@ function isPersistedCartItem(
     return false;
   }
 
-  return value.type === "DRINK"
-    ? isNonEmptyString(value.selectedVariant.id)
-    : value.type === "PRICED"
-      ? value.selectedPriceChoice !== null &&
+  return value.type === "PRICED"
+    ? value.selectedPriceChoice !== null &&
         isNonEmptyString(value.selectedPriceChoice.id)
-      : true;
+    : true;
 }
 
 function getCartTotal(

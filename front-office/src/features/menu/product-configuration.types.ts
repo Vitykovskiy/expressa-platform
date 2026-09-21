@@ -9,7 +9,6 @@ export type ProductConfiguration = {
   quantity: number;
   selectedModifierGroups: ProductConfigurationModifierGroup[];
   selectedPriceChoiceId: string | null;
-  selectedVariantId?: string | null;
 };
 
 export type ProductConfigurationModifierGroup = {

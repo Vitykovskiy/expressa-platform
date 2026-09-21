@@ -2,32 +2,12 @@
 title: Каталог и меню
 type: domain
 owner: root
-last_verified: 2026-09-14
+last_verified: 2026-09-20
 sources:
-  - ../../backend/docs/30-domains/Catalog.md
-  - ../../backend/schema.sql
-  - ../../backend/scripts/seed.ts
-  - ../20-architecture/ADR/ADR-006-product-variant-portions.md
+  - ../../backend/openapi/openapi.json
+  - ../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md
 ---
 
 # Каталог и меню
 
-Каталог содержит категории, товары, варианты цен, модификаторы и их
-назначения. Публичное меню — проекция доступных товаров; административный
-каталог используется для управления. Контракт цен задаёт
-[ADR-006](../20-architecture/ADR/ADR-006-product-variant-portions.md).
-
-У товара одна цена с необязательной `portionLabel` либо минимум два
-упорядоченных price choices. Подпись порции — простой текст: она может быть
-`250 мл`, `100 г`, `2 шт.` или отсутствовать. Это не типизированная единица,
-не технический размер и не складской остаток.
-
-При нескольких ценах публичное меню показывает подпись и цену каждого choice;
-первый доступный choice выбирается по порядку, недоступный остаётся видимым.
-Заказ сохраняет выбранные подпись и цену. Модификаторы являются отдельной
-конфигурацией и не меняют смысл price choice.
-
-Seed воспроизводит меню из 33 товаров: 23 с одной ценой и 10 с двумя choices.
-Local, test и development базы одноразовые: развёртывание создаёт их по
-`backend/schema.sql` и выполняет детерминированный seed. Миграций, backfill и
-сохранения данных в этих средах нет.
+Публичное меню, чтение admin catalog и product commands работают только через v3 API. Categories и modifier groups — текущие v2 API. Product содержит одну цену с optional display label либо price choices; variant/S-M-L model удалена. [ADR-008](../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md) задаёт полную contract boundary.

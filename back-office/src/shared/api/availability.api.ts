@@ -14,7 +14,6 @@ import type {
   AvailabilityProductModifierGroupDto,
   AvailabilityResponseWithAvailabilityMembershipDto,
   AvailabilityUpdate,
-  AvailabilityVariantDto,
   ServiceIntake,
   ServiceIntakeDto,
 } from "./availability.api.types";
@@ -255,7 +254,6 @@ function isAvailabilityResponseDto(
     modifierOptions,
     priceChoices,
     productModifierGroups,
-    productVariants,
     products,
   } = value;
   if (
@@ -266,7 +264,6 @@ function isAvailabilityResponseDto(
     !isAvailabilityModifiers(modifierOptions) ||
     !isAvailabilityPriceChoices(priceChoices) ||
     !isAvailabilityProductModifierGroups(productModifierGroups) ||
-    !isAvailabilityVariants(productVariants) ||
     !isAvailabilityProducts(products)
   ) {
     return false;
@@ -279,7 +276,6 @@ function isAvailabilityResponseDto(
     modifierOptions,
     priceChoices,
     productModifierGroups,
-    productVariants,
     products,
   });
 }
@@ -377,25 +373,6 @@ function isAvailabilityProduct(
   );
 }
 
-function isAvailabilityVariants(
-  value: unknown,
-): value is readonly AvailabilityVariantDto[] {
-  return Array.isArray(value) && value.every(isAvailabilityVariant);
-}
-
-function isAvailabilityVariant(
-  value: unknown,
-): value is AvailabilityVariantDto {
-  return (
-    isRecord(value) &&
-    isUuid(value.id) &&
-    typeof value.isAvailable === "boolean" &&
-    isUuid(value.productId) &&
-    (value.size === "S" || value.size === "M" || value.size === "L") &&
-    isInteger(value.sortOrder)
-  );
-}
-
 function isAvailabilityModifierGroups(
   value: unknown,
 ): value is readonly AvailabilityModifierGroupDto[] {
@@ -460,7 +437,6 @@ function hasValidReferences(
     | "modifierOptions"
     | "priceChoices"
     | "productModifierGroups"
-    | "productVariants"
     | "products"
   >,
 ): boolean {
@@ -470,9 +446,6 @@ function hasValidReferences(
 
   return (
     response.products.every(({ categoryId }) => categoryIds.has(categoryId)) &&
-    response.productVariants.every(({ productId }) =>
-      productIds.has(productId),
-    ) &&
     response.priceChoices.every(({ productId }) => productIds.has(productId)) &&
     response.productModifierGroups.every(
       ({ groupId, productId }) =>
@@ -495,12 +468,7 @@ function bySortOrder<T extends { sortOrder: number }>(left: T, right: T) {
 function isAvailabilityEntityType(
   value: unknown,
 ): value is AvailabilityEntityType {
-  return (
-    value === "modifier" ||
-    value === "product" ||
-    value === "priceChoice" ||
-    value === "variant"
-  );
+  return value === "modifier" || value === "product" || value === "priceChoice";
 }
 
 function isUuid(value: unknown): value is string {

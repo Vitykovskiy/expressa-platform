@@ -15,7 +15,7 @@ Administrator открывает `/menu`, получает администра�
 категориями, товарами, размерами, группами/вариантами модификаторов и связями
 категории. Диалоги и редакторы владеют локальными черновиками; store владеет
 запросами, ошибками и каноническим каталогом, который перечитывает после
-успешной команды. [Assignments editor](../../back-office/src/pages/admin/menu/CategoryModifierAssignments.vue),
+успешной команды. [Category fields](../../back-office/src/pages/admin/menu/CategoryFormFields.vue),
 [modifier editor](../../back-office/src/pages/admin/menu/ModifierGroupEditor.vue),
 [catalog store](../../back-office/src/pages/admin/menu/catalog.store.ts),
 [Back-office scenario](../../back-office/docs/30-domains/Catalog-management.md).

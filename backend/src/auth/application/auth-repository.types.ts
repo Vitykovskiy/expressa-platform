@@ -84,7 +84,7 @@ export interface AuthRepository {
     expectedRefreshTokenHash: string,
     now: Date,
   ): Promise<SessionLogout>;
-  logoutSessionWithPushSubscription?(
+  logoutSessionWithPushSubscription(
     sessionId: string | null,
     expectedRefreshHash: string | null,
     subscription: LogoutPushSubscription,

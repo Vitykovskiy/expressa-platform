@@ -16,11 +16,11 @@ describe("RequestObservabilityMiddleware", () => {
 
     middleware.use(
       {
-        baseUrl: "/api/v2/orders",
+        baseUrl: "/api/v3/orders",
         headers: {},
         method: "GET",
         route: { path: "/:orderId" },
-        url: "/api/v2/orders/6f7ef502-6ee5-4b27-84db-a118d9c710de?token=secret",
+        url: "/api/v3/orders/6f7ef502-6ee5-4b27-84db-a118d9c710de?token=secret",
       } as never,
       response as never,
       jest.fn(),
@@ -29,7 +29,7 @@ describe("RequestObservabilityMiddleware", () => {
 
     expect(metrics.recordHttpResponse).toHaveBeenCalledWith(
       200,
-      "/api/v2/orders/:orderId",
+      "/api/v3/orders/:orderId",
     );
     expect(metrics.recordHttpResponse).not.toHaveBeenCalledWith(
       200,

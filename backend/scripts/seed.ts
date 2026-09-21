@@ -11,7 +11,6 @@ import {
   productUpsertSql,
   productModifierGroupUpsertSql,
   productPriceChoiceUpsertSql,
-  productVariantUpsertSql,
 } from "./seed.constants";
 
 async function seedCatalog(
@@ -43,26 +42,13 @@ async function seedCatalog(
     await pool.query(productUpsertSql, [
       product.id,
       product.categoryId,
-      product.type,
       product.name,
       product.description,
-      product.displayLabel ?? null,
+      product.portionLabel ?? null,
       product.price,
       product.sortOrder,
       product.isActive,
       product.isAvailable,
-    ]);
-  }
-
-  for (const productVariant of seed.productVariants) {
-    await pool.query(productVariantUpsertSql, [
-      productVariant.id,
-      productVariant.productId,
-      productVariant.size,
-      productVariant.displayLabel ?? null,
-      productVariant.price,
-      productVariant.sortOrder,
-      productVariant.isAvailable,
     ]);
   }
 
@@ -120,10 +106,6 @@ async function seedDevelopmentCustomerMenu(pool: Pool): Promise<void> {
         developmentCatalogOwnedIds.categories,
         developmentCatalogOwnedIds.groups,
       ],
-    );
-    await client.query(
-      "UPDATE product_variants SET archived_at = CURRENT_TIMESTAMP WHERE id = ANY($1::uuid[])",
-      [developmentCatalogOwnedIds.variants],
     );
     await client.query(
       "UPDATE product_price_choices SET archived_at = CURRENT_TIMESTAMP WHERE id = ANY($1::uuid[])",

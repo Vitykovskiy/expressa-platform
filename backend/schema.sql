@@ -1,6 +1,4 @@
 CREATE TYPE user_role AS ENUM ('customer', 'barista', 'administrator');
-CREATE TYPE product_type AS ENUM ('DRINK', 'OTHER');
-CREATE TYPE product_size AS ENUM ('S', 'M', 'L');
 CREATE TYPE modifier_selection_type AS ENUM ('single', 'multiple');
 CREATE TYPE order_stage AS ENUM ('CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED');
 
@@ -54,35 +52,16 @@ CREATE UNIQUE INDEX categories_active_sort_order_unique ON categories (sort_orde
 CREATE TABLE products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id uuid NOT NULL REFERENCES categories (id) ON DELETE RESTRICT,
-  type product_type NOT NULL,
   name text NOT NULL CHECK (btrim(name) <> ''),
   description text NOT NULL DEFAULT '',
-  display_label text CHECK (display_label IS NULL OR btrim(display_label) <> ''),
   price integer CHECK (price IS NULL OR price >= 0),
   portion_label text CHECK (portion_label IS NULL OR btrim(portion_label) <> ''),
   sort_order integer NOT NULL CHECK (sort_order >= 0),
   is_active boolean NOT NULL DEFAULT true,
   is_available boolean NOT NULL DEFAULT true,
-  archived_at timestamptz,
-  UNIQUE (id, type)
+  archived_at timestamptz
 );
 CREATE UNIQUE INDEX products_active_category_sort_order_unique ON products (category_id, sort_order) WHERE is_active AND archived_at IS NULL;
-
-CREATE TABLE product_variants (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid NOT NULL,
-  product_type product_type NOT NULL DEFAULT 'DRINK' CHECK (product_type = 'DRINK'),
-  size product_size NOT NULL,
-  display_label text CHECK (display_label IS NULL OR btrim(display_label) <> ''),
-  price integer NOT NULL CHECK (price >= 0),
-  sort_order integer NOT NULL CHECK (sort_order >= 0),
-  is_available boolean NOT NULL DEFAULT true,
-  archived_at timestamptz,
-  UNIQUE (id, product_id, size),
-  FOREIGN KEY (product_id, product_type) REFERENCES products (id, type) ON DELETE RESTRICT
-);
-CREATE UNIQUE INDEX product_variants_current_product_size_unique ON product_variants (product_id, size) WHERE archived_at IS NULL;
-CREATE UNIQUE INDEX product_variants_current_sort_order_unique ON product_variants (product_id, sort_order) WHERE archived_at IS NULL;
 
 CREATE TABLE product_price_choices (
   id uuid PRIMARY KEY,
@@ -188,17 +167,13 @@ CREATE TABLE order_items (
   order_id uuid NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
   sort_order integer NOT NULL CHECK (sort_order >= 0),
   product_id uuid NOT NULL REFERENCES products (id) ON DELETE RESTRICT,
-  variant_id uuid,
   price_choice_id uuid,
   product_name text NOT NULL CHECK (btrim(product_name) <> ''),
-  size product_size,
   portion_label text CHECK (portion_label IS NULL OR btrim(portion_label) <> ''),
   quantity smallint NOT NULL CHECK (quantity >= 1),
   unit_total integer NOT NULL CHECK (unit_total >= 0),
   line_total integer NOT NULL CHECK (line_total >= 0),
   CHECK (line_total = unit_total * quantity),
-  CHECK ((variant_id IS NULL AND size IS NULL) OR (variant_id IS NOT NULL AND size IS NOT NULL)),
-  FOREIGN KEY (variant_id, product_id, size) REFERENCES product_variants (id, product_id, size) ON DELETE RESTRICT,
   FOREIGN KEY (price_choice_id, product_id) REFERENCES product_price_choices (id, product_id) ON DELETE RESTRICT,
   UNIQUE (order_id, sort_order)
 );

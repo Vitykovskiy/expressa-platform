@@ -1,23 +1,22 @@
-import { ConfigModule } from "@nestjs/config";
 import { MODULE_METADATA } from "@nestjs/common/constants";
+import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import { AuthModule } from "../auth/auth.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { DatabaseModule } from "../platform/database/database.module";
 import { DatabaseService } from "../platform/database/database.service";
-import { NotificationsModule } from "../notifications/notifications.module";
+import { SendOrderPushUseCase } from "../notifications/application/send-order-push.use-case";
 import { PostgresOrderUnitOfWork } from "./adapters/postgres-order-unit-of-work";
 import { CreateOrderUseCase } from "./application/create-order.use-case";
 import { orderNotificationPort } from "./application/order-notification-port.types";
 import { orderUnitOfWorkPort } from "./orders.module.constants";
 import { OrdersModule } from "./orders.module";
-import { SendOrderPushUseCase } from "../notifications/application/send-order-push.use-case";
-import { OrdersController } from "./transport/orders.controller";
 import { BackofficeOrdersController } from "./transport/backoffice-orders.controller";
 import { BackofficeOrdersV3Controller } from "./transport/backoffice-orders-v3.controller";
 import { OrdersV3Controller } from "./transport/orders-v3.controller";
 
 describe("OrdersModule", () => {
-  it("связывает создание заказа с PostgreSQL и зависимостями аутентификации", async () => {
+  it("wires current order creation dependencies", async () => {
     const module = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -44,7 +43,6 @@ describe("OrdersModule", () => {
       .useValue({ connectionPool: {} })
       .compile();
 
-    expect(module.get(OrdersController)).toBeInstanceOf(OrdersController);
     expect(module.get(CreateOrderUseCase)).toBeInstanceOf(CreateOrderUseCase);
     expect(module.get(orderUnitOfWorkPort)).toBeInstanceOf(
       PostgresOrderUnitOfWork,
@@ -54,11 +52,10 @@ describe("OrdersModule", () => {
     );
   });
 
-  it("регистрирует только контроллер заказов и необходимые модули", () => {
+  it("registers only current order controllers and required modules", () => {
     expect(
       Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, OrdersModule),
     ).toEqual([
-      OrdersController,
       BackofficeOrdersController,
       OrdersV3Controller,
       BackofficeOrdersV3Controller,

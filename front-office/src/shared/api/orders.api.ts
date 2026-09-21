@@ -130,17 +130,9 @@ function isOrderItemResponse(value: unknown): value is OrderItemResponse {
   return (
     isRecord(value) &&
     isUuid(value.productId) &&
-    (value.priceChoiceId === null ||
-      isUuid(value.priceChoiceId) ||
-      value.variantId === null ||
-      isUuid(value.variantId)) &&
+    (value.priceChoiceId === null || isUuid(value.priceChoiceId)) &&
     typeof value.productName === "string" &&
-    (value.portionLabel === null ||
-      typeof value.portionLabel === "string" ||
-      value.size === null ||
-      value.size === "S" ||
-      value.size === "M" ||
-      value.size === "L") &&
+    (value.portionLabel === null || typeof value.portionLabel === "string") &&
     isInteger(value.quantity) &&
     isNonNegativeInt32(value.unitTotal) &&
     isNonNegativeInt32(value.lineTotal) &&
@@ -183,9 +175,9 @@ function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
 function toOrderItem(response: OrderItemResponse): OrderItem {
   return {
     productId: response.productId,
-    priceChoiceId: response.priceChoiceId ?? response.variantId ?? null,
+    priceChoiceId: response.priceChoiceId,
     productName: response.productName,
-    portionLabel: response.portionLabel ?? response.size ?? null,
+    portionLabel: response.portionLabel,
     quantity: response.quantity,
     unitTotal: response.unitTotal,
     lineTotal: response.lineTotal,

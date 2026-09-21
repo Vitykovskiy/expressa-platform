@@ -1,5 +1,5 @@
 <template>
-  <PageShell class="menu-page__shell" title="Меню" description="">
+  <PageShell class="menu-page__shell" title="Меню">
     <p
       v-if="
         catalogStore.status === 'loading' && modifierPendingMessage === null
@@ -33,221 +33,43 @@
     </section>
     <template v-if="hasConfirmedCatalog">
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
-        <div class="menu-page__toolbar">
-          <div class="menu-page__actions">
-            <AdminButton
-              :disabled="isBusy"
-              type="button"
-              @click="openNewCategoryForm"
-              >Добавить группу</AdminButton
-            >
-            <AdminButton
-              :disabled="isBusy"
-              type="button"
-              variant="secondary"
-              @click="openNewProductForm"
-              >Добавить товар</AdminButton
-            >
-          </div>
-          <p v-if="catalogSummary" class="menu-page__catalog-summary">
-            {{ catalogSummary }}
-          </p>
-          <AdminButton
-            :aria-expanded="managementOpen"
-            :disabled="isBusy"
-            class="menu-page__management-toggle"
-            type="button"
-            variant="secondary"
-            @click="managementOpen = !managementOpen"
-          >
-            {{ managementOpen ? "Скрыть управление" : "Управление меню" }}
-          </AdminButton>
-        </div>
-        <p v-if="managementOpen" class="menu-page__management-explanation">
-          Меняйте порядок групп и товаров кнопками «Выше» и «Ниже». Изменения
-          сохраняются сразу.
-        </p>
-        <p v-if="orderedCategories.length === 0" class="menu-page__state">
-          Категорий пока нет. Добавьте первую категорию.
-        </p>
-        <section
-          v-else
-          class="menu-page__section"
-          aria-labelledby="menu-main-heading"
-        >
-          <h2 id="menu-main-heading" class="menu-page__section-title">
-            Основное меню
-          </h2>
-          <div class="menu-page__table">
-            <MenuCategoryGroup
-              v-for="(category, index) in orderedCategories"
-              :key="category.id"
-              :category="category"
-              :can-move-up="index > 0"
-              :can-move-down="index < orderedCategories.length - 1"
-              :disabled="isBusy"
-              :expanded="expandedCategoryIds.has(category.id)"
-              :products="productsByCategory(category.id)"
-              :show-management-actions="managementOpen"
-              @edit="openProductEditor"
-              @edit-category="openCategoryEditor"
-              @move-up="moveCategoryUp"
-              @move-down="moveCategoryDown"
-              @move-product-up="moveProductUp"
-              @move-product-down="moveProductDown"
-              @toggle="toggleCategory"
-            />
-          </div>
-        </section>
-        <section
-          v-if="modifierGroups.length > 0"
-          class="menu-page__section"
-          aria-labelledby="menu-options-heading"
-        >
-          <h2 id="menu-options-heading" class="menu-page__section-title">
-            Группы добавок
-          </h2>
-          <div class="menu-page__table">
-            <section
-              v-for="group in modifierGroups"
-              :key="group.id"
-              class="menu-page__option-group"
-            >
-              <header class="menu-page__option-header">
-                <AdminButton
-                  :aria-expanded="expandedModifierGroupIds.has(group.id)"
-                  :disabled="isBusy"
-                  class="menu-page__option-toggle"
-                  type="button"
-                  variant="ghost"
-                  @click="toggleModifierGroup(group)"
-                >
-                  <ChevronDown
-                    v-if="expandedModifierGroupIds.has(group.id)"
-                    aria-hidden="true"
-                    class="menu-page__option-chevron"
-                    :size="18"
-                  />
-                  <ChevronRight
-                    v-else
-                    aria-hidden="true"
-                    class="menu-page__option-chevron"
-                    :size="18"
-                  />
-                  <span class="menu-page__option-copy">
-                    <span class="menu-page__option-name">{{ group.name }}</span>
-                    <span class="menu-page__option-count">
-                      {{ modifierOptionCountLabel(group.options.length) }}
-                    </span>
-                  </span>
-                </AdminButton>
-                <AdminButton
-                  :aria-label="`Редактировать группу добавок ${group.name}`"
-                  :disabled="isBusy"
-                  class="menu-page__option-edit"
-                  type="button"
-                  variant="ghost"
-                  @click="openModifierGroupEditor(group)"
-                >
-                  <Pencil
-                    aria-hidden="true"
-                    class="menu-page__option-edit-icon"
-                    :size="18"
-                  />
-                  <span class="menu-page__visually-hidden">Редактировать</span>
-                </AdminButton>
-              </header>
-              <div
-                v-if="expandedModifierGroupIds.has(group.id)"
-                class="menu-page__option-list"
-              >
-                <p
-                  v-if="group.options.length === 0"
-                  class="menu-page__option-empty"
-                >
-                  В этой группе пока нет добавок
-                </p>
-                <AdminButton
-                  v-for="option in group.options"
-                  v-else
-                  :key="option.id"
-                  :aria-label="`Редактировать группу добавок ${group.name}`"
-                  class="menu-page__option-row"
-                  type="button"
-                  variant="ghost"
-                  @click="openModifierGroupEditor(group)"
-                >
-                  <span class="menu-page__option-row-copy">
-                    <span>{{ option.name }}</span>
-                    <span class="menu-page__option-price">
-                      {{ modifierOptionPrice(option.priceDelta) }}
-                    </span>
-                  </span>
-                  <ChevronRight
-                    aria-hidden="true"
-                    class="menu-page__option-chevron"
-                    :size="18"
-                  />
-                </AdminButton>
-              </div>
-            </section>
-          </div>
-        </section>
-        <section
+        <MenuOverview
+          v-if="!managementOpen"
+          ref="menuOverview"
+          :categories="orderedCategories"
+          :expanded-category-ids="expandedCategoryIds"
+          :highlighted-category-id="highlightedCategoryId"
+          :modifier-groups="modifierGroups"
+          :products="catalogStore.products"
+          :reorder-saved="reorderSaved"
+          :disabled="isBusy"
+          @add-category="openNewCategoryForm"
+          @add-modifier-group="openModifierGroupEditor(null)"
+          @add-product="openNewProductForm"
+          @edit-category="openCategoryEditor"
+          @edit-product="openProductEditor"
+          @edit-modifier-group="openModifierGroupEditor"
+          @reorder="toggleReorder"
+          @toggle-category="toggleCategory"
+        />
+        <MenuReorderPanel
           v-if="managementOpen"
-          class="menu-page__management"
-          aria-label="Управление меню"
-        >
-          <div class="menu-page__management-heading">
-            <h2>Управление меню</h2>
-            <AdminButton
-              :disabled="isBusy"
-              type="button"
-              variant="secondary"
-              @click="openModifierGroupEditor(null)"
-              >Новая группа добавок</AdminButton
-            >
-          </div>
-          <div class="menu-page__catalog-tools">
-            <section class="menu-page__editor-section">
-              <h3>Назначения категорий</h3>
-              <AdminButton
-                v-for="category in orderedCategories"
-                :key="category.id"
-                class="menu-page__group-button"
-                :disabled="isBusy"
-                type="button"
-                variant="ghost"
-                @click="openCategoryAssignments(category, $event)"
-                >{{ category.name }}</AdminButton
-              >
-            </section>
-            <section
-              v-if="selectedCategory === null"
-              class="menu-page__assignments"
-            >
-              <h3>Группы добавок категории</h3>
-              <p class="menu-page__state">
-                Выберите категорию, чтобы настроить её группы добавок.
-              </p>
-            </section>
-            <CategoryModifierAssignments
-              v-else
-              class="menu-page__assignments"
-              :assignments="catalogStore.categoryModifierGroupAssignments"
-              :categories="orderedCategories"
-              :category="selectedCategory"
-              :disabled="catalogStore.status === 'loading'"
-              :groups="modifierGroups"
-              @cancel="cancelCategoryAssignments"
-              @save="saveAssignments"
-            />
-          </div>
-        </section>
+          ref="reorderPanel"
+          :categories="orderedCategories"
+          :products="catalogStore.products"
+          :expanded-category-ids="expandedCategoryIds"
+          :pending="reorderPending"
+          :error="reorderError"
+          @cancel="closeReorder"
+          @request-close="closeReorder"
+          @save="saveReorder"
+          @update:expanded-category-ids="expandedCategoryIds = $event"
+        />
       </div>
     </template>
     <AddCategoryDialog
       v-model:open="addCategoryOpen"
+      :categories="orderedCategories"
       :disabled="isBusy"
       :field-errors="categoryFieldErrors"
       :save-error="catalogStore.formSaveError"
@@ -258,6 +80,9 @@
     />
     <EditCategoryDialog
       v-model:open="editCategoryOpen"
+      :archive-error="categoryArchiveError"
+      :archive-pending="categoryArchivePending"
+      :categories="orderedCategories"
       :disabled="isBusy"
       :category="selectedCategory"
       :field-errors="categoryFieldErrors"
@@ -277,19 +102,6 @@
       :save-outcome="productFormSaveOutcome"
       @cancel="closeNewProductForm"
       @confirm="createProduct"
-      @refresh="refreshProductCatalog"
-    />
-    <EditProductDialog
-      v-model:open="editProductOpen"
-      :disabled="isBusy"
-      :categories="orderedCategories"
-      :field-errors="productFieldErrors"
-      :product="selectedProduct"
-      :save-error="catalogStore.formSaveError"
-      :save-outcome="productFormSaveOutcome"
-      @cancel="closeProductEditor"
-      @delete="archiveProduct"
-      @save="updateProduct"
       @refresh="refreshProductCatalog"
     />
     <AdminDialog
@@ -323,17 +135,17 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, shallowRef, watch } from "vue";
-import { ChevronDown, ChevronRight, Pencil } from "lucide-vue-next";
+import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
 import AddCategoryDialog from "./admin/menu/AddCategoryDialog.vue";
 import type { CategoryFormData } from "./admin/menu/AddCategoryDialog.types";
 import AddProductDialog from "./admin/menu/AddProductDialog.vue";
-import type { ProductFormData } from "./admin/menu/AddProductDialog.types";
-import CategoryModifierAssignments from "./admin/menu/CategoryModifierAssignments.vue";
+import type { CreateProductFormData } from "./admin/menu/AddProductDialog.types";
 import EditCategoryDialog from "./admin/menu/EditCategoryDialog.vue";
-import EditProductDialog from "./admin/menu/EditProductDialog.vue";
-import MenuCategoryGroup from "./admin/menu/MenuCategoryGroup.vue";
+import MenuReorderPanel from "./admin/menu/MenuReorderPanel.vue";
+import MenuOverview from "./admin/menu/MenuOverview.vue";
+import type { MenuReorderScope } from "./admin/menu/composables/useMenuReorderDraft.types";
 import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
 import { useDialogFocusLifecycle } from "./admin/menu/composables/useDialogFocusLifecycle";
@@ -348,26 +160,38 @@ import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import PageShell from "./PageShell.vue";
 
 const sessionStore = useSessionStore();
+const route = useRoute();
+const router = useRouter();
 const catalogStore = useCatalogStore();
 const addCategoryOpen = shallowRef(false);
 const addProductOpen = shallowRef(false);
 const editCategoryOpen = shallowRef(false);
-const editProductOpen = shallowRef(false);
 const modifierGroupEditorOpen = shallowRef(false);
 const modifierEditorSession = shallowRef(0);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
-const expandedModifierGroupIds = shallowRef<ReadonlySet<string>>(new Set());
-const managementOpen = shallowRef(false);
+const managementOpen = computed(() => route.query.mode === "reorder");
+const reorderPending = shallowRef(false);
+const reorderError = shallowRef<string | null>(null);
+const reorderSaved = shallowRef(false);
+const reorderPanel = shallowRef<{
+  focusTitle: () => void;
+  requestClose: () => void;
+} | null>(null);
+const menuOverview = shallowRef<{
+  focusAddCategoryAction: () => void;
+  focusReorderAction: () => void;
+} | null>(null);
 const selectedCategory = shallowRef<Category | null>(null);
-const assignmentReturnFocusTarget = shallowRef<HTMLButtonElement | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
-const selectedProduct = shallowRef<Product | null>(null);
 const productRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
 const categoryRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
+const categoryArchivePending = shallowRef(false);
+const categoryArchiveError = shallowRef<string | null>(null);
+const highlightedCategoryId = shallowRef<string | null>(null);
 const modifierRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
@@ -383,7 +207,6 @@ const activeForm = computed(
     addCategoryOpen.value ||
     editCategoryOpen.value ||
     addProductOpen.value ||
-    editProductOpen.value ||
     modifierGroupEditorOpen.value,
 );
 const categoryFormSaveOutcome = computed(() =>
@@ -450,24 +273,28 @@ const orderedCategories = computed(() =>
   [...catalogStore.categories].sort(bySortOrder),
 );
 const modifierGroups = computed(() => catalogStore.modifierGroups);
-const catalogSummary = computed(() => {
-  const categoryCount = orderedCategories.value.length;
-  const modifierGroupCount = modifierGroups.value.length;
-
-  if (categoryCount === 0 && modifierGroupCount === 0) return "";
-
-  return `${countLabel(categoryCount, "группа", "группы", "групп")} · ${countLabel(
-    modifierGroupCount,
-    "группа добавок",
-    "группы добавок",
-    "групп добавок",
-  )}`;
-});
 const categoryFieldErrors = computed(() => catalogStore.fieldErrors);
 const productFieldErrors = computed(() => catalogStore.fieldErrors);
 const modifierFieldErrors = computed(() => catalogStore.fieldErrors);
 
-onMounted(loadCatalog);
+onMounted(async () => {
+  await loadCatalog();
+  await nextTick();
+  const productId =
+    typeof route.query.focusProduct === "string"
+      ? route.query.focusProduct
+      : null;
+  const categoryId =
+    typeof route.query.focusCategory === "string"
+      ? route.query.focusCategory
+      : null;
+  const target = productId
+    ? document.getElementById(`menu-product-${productId}`)
+    : null;
+  if (target instanceof HTMLElement) target.focus();
+  else if (categoryId)
+    document.getElementById(`category-toggle-${categoryId}`)?.focus();
+});
 
 watch(
   () => catalogStore.status,
@@ -505,12 +332,6 @@ async function loadCatalog(): Promise<void> {
   if (authorizationValue !== null) await catalogStore.load(authorizationValue);
 }
 
-function productsByCategory(categoryId: string): readonly Product[] {
-  return catalogStore.products
-    .filter((product) => product.categoryId === categoryId)
-    .sort(bySortOrder);
-}
-
 function nextProductSortOrder(categoryId: string): number {
   return (
     catalogStore.products.reduce(
@@ -539,72 +360,96 @@ function toggleCategory(category: Category): void {
   expandedCategoryIds.value = next;
 }
 
-function toggleModifierGroup(group: ModifierGroup): void {
-  const next = new Set(expandedModifierGroupIds.value);
-  if (next.has(group.id)) next.delete(group.id);
-  else next.add(group.id);
-  expandedModifierGroupIds.value = next;
+async function toggleReorder(): Promise<void> {
+  if (reorderPending.value) return;
+  if (managementOpen.value) {
+    reorderPanel.value?.requestClose();
+    return;
+  }
+  reorderSaved.value = false;
+  await setReorderMode(true);
+  await nextTick();
+  reorderPanel.value?.focusTitle();
+  reorderError.value = null;
 }
 
-function modifierOptionPrice(priceDelta: number): string {
-  if (priceDelta === 0) return "Бесплатно";
-  return `${priceDelta} ₽`;
+async function closeReorder(): Promise<void> {
+  if (reorderPending.value) return;
+  await setReorderMode(false);
+  await nextTick();
+  menuOverview.value?.focusReorderAction();
+  reorderError.value = null;
 }
 
-function modifierOptionCountLabel(count: number): string {
-  return countLabel(count, "опция", "опции", "опций");
+async function setReorderMode(open: boolean): Promise<void> {
+  const query = { ...route.query };
+  if (open) query.mode = "reorder";
+  else delete query.mode;
+  await router.push({ query });
 }
 
-function countLabel(
-  count: number,
-  singular: string,
-  paucal: string,
-  plural: string,
-): string {
-  const finalTwoDigits = count % 100;
-  const finalDigit = count % 10;
-  const word =
-    finalTwoDigits >= 11 && finalTwoDigits <= 14
-      ? plural
-      : finalDigit === 1
-        ? singular
-        : finalDigit >= 2 && finalDigit <= 4
-          ? paucal
-          : plural;
-
-  return `${count} ${word}`;
+async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
+  const authorizationValue = accessToken();
+  if (
+    authorizationValue === null ||
+    reorderPending.value ||
+    scopes.length === 0
+  )
+    return;
+  reorderPending.value = true;
+  reorderError.value = null;
+  const confirmed: MenuReorderScope[] = [];
+  try {
+    for (const scope of scopes) {
+      if (scope.categoryId === null)
+        await catalogStore.reorderCategories(authorizationValue, scope.ids);
+      else
+        await catalogStore.reorderProducts(
+          authorizationValue,
+          scope.categoryId,
+          scope.ids,
+        );
+      if (!catalogStore.lastCommandSucceeded || catalogStore.status !== "ready")
+        throw new Error("reorder failed");
+      confirmed.push(scope);
+    }
+    await setReorderMode(false);
+    reorderSaved.value = true;
+    await nextTick();
+    menuOverview.value?.focusReorderAction();
+  } catch {
+    // Best-effort compensation keeps confirmed server scopes aligned with the original draft.
+    for (const scope of confirmed.reverse()) {
+      if (scope.categoryId === null)
+        await catalogStore.reorderCategories(
+          authorizationValue,
+          scope.originalIds,
+        );
+      else
+        await catalogStore.reorderProducts(
+          authorizationValue,
+          scope.categoryId,
+          scope.originalIds,
+        );
+    }
+    await catalogStore.refresh(authorizationValue);
+    reorderError.value = "Не удалось сохранить порядок. Изменения не потеряны.";
+  } finally {
+    reorderPending.value = false;
+  }
 }
 
 function openCategoryEditor(category: Category): void {
   catalogStore.resetFormSaveOutcome();
   acknowledgedForm.value = null;
   categoryRecoveryState.value = "idle";
+  categoryArchiveError.value = null;
   selectedCategory.value = category;
   editCategoryOpen.value = true;
 }
 
-function openCategoryAssignments(category: Category, event: MouseEvent): void {
-  const opener = event.currentTarget;
-  assignmentReturnFocusTarget.value =
-    opener instanceof HTMLButtonElement ? opener : null;
-  selectedCategory.value = category;
-}
-
-async function cancelCategoryAssignments(): Promise<void> {
-  if (catalogStore.status === "loading") return;
-  const focusTarget = assignmentReturnFocusTarget.value;
-  selectedCategory.value = null;
-  assignmentReturnFocusTarget.value = null;
-  await nextTick();
-  if (focusTarget?.isConnected && !focusTarget.disabled) focusTarget.focus();
-}
-
 function openProductEditor(product: Product): void {
-  catalogStore.resetFormSaveOutcome();
-  acknowledgedForm.value = null;
-  productRecoveryState.value = "idle";
-  selectedProduct.value = product;
-  editProductOpen.value = true;
+  void router.push(`/menu/products/${product.id}/edit`);
 }
 
 function openNewProductForm(): void {
@@ -621,16 +466,6 @@ function closeNewProductForm(preserveOutcome = false): void {
   }
   productRecoveryState.value = "idle";
   addProductOpen.value = false;
-}
-
-function closeProductEditor(preserveOutcome = false): void {
-  if (!preserveOutcome) {
-    catalogStore.resetFormSaveOutcome();
-    acknowledgedForm.value = null;
-  }
-  productRecoveryState.value = "idle";
-  editProductOpen.value = false;
-  selectedProduct.value = null;
 }
 
 function openModifierGroupEditor(group: ModifierGroup | null): void {
@@ -674,7 +509,25 @@ async function createCategory(data: CategoryFormData): Promise<void> {
   });
   if (catalogStore.lastCommandSucceeded) {
     acknowledgedForm.value = "category";
+    const created = catalogStore.categories.find(
+      (category) => category.name === data.name,
+    );
+    if (created) {
+      expandedCategoryIds.value = new Set([
+        ...expandedCategoryIds.value,
+        created.id,
+      ]);
+      highlightedCategoryId.value = created.id;
+      window.setTimeout(() => {
+        if (highlightedCategoryId.value === created.id)
+          highlightedCategoryId.value = null;
+      }, 2000);
+    }
     closeNewCategoryForm(true);
+    if (created) {
+      await nextTick();
+      document.getElementById(`category-toggle-${created.id}`)?.focus();
+    }
   }
 }
 
@@ -742,12 +595,39 @@ async function refreshCategoryCatalog(): Promise<void> {
 
 async function archiveCategory(categoryId: string): Promise<void> {
   const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
+  if (
+    authorizationValue === null ||
+    categoryArchivePending.value ||
+    catalogStore.status === "loading"
+  )
+    return;
+  const categoryIndex = orderedCategories.value.findIndex(
+    (category) => category.id === categoryId,
+  );
+  const adjacentCategoryId =
+    orderedCategories.value[categoryIndex + 1]?.id ??
+    orderedCategories.value[categoryIndex - 1]?.id ??
+    null;
+  categoryArchivePending.value = true;
+  categoryArchiveError.value = null;
   await catalogStore.archiveCategory(authorizationValue, categoryId);
-  if (catalogStore.lastCommandSucceeded) selectedCategory.value = null;
+  categoryArchivePending.value = false;
+  if (catalogStore.lastCommandSucceeded) {
+    selectedCategory.value = null;
+    closeCategoryEditor(true);
+    await nextTick();
+    if (adjacentCategoryId) {
+      document.getElementById(`category-toggle-${adjacentCategoryId}`)?.focus();
+    } else {
+      menuOverview.value?.focusAddCategoryAction();
+    }
+  } else {
+    categoryArchiveError.value =
+      "Не удалось архивировать категорию. Повторите попытку.";
+  }
 }
 
-async function createProduct(data: ProductFormData): Promise<void> {
+async function createProduct(data: CreateProductFormData): Promise<void> {
   const authorizationValue = accessToken();
   if (
     authorizationValue === null ||
@@ -778,131 +658,6 @@ async function refreshProductCatalog(): Promise<void> {
   await catalogStore.refresh(authorizationValue);
   productRecoveryState.value =
     catalogStore.status === "ready" ? "checked" : "retry";
-}
-
-async function updateProduct(data: ProductFormData): Promise<void> {
-  const authorizationValue = accessToken();
-  const product = selectedProduct.value;
-  if (
-    authorizationValue === null ||
-    product === null ||
-    catalogStore.status === "loading" ||
-    productRecoveryState.value === "checked"
-  )
-    return;
-  await catalogStore.updateProduct(authorizationValue, product.id, {
-    ...data,
-    sortOrder:
-      data.categoryId === product.categoryId
-        ? product.sortOrder
-        : nextProductSortOrder(data.categoryId),
-  });
-  if (catalogStore.lastCommandSucceeded) {
-    acknowledgedForm.value = "product";
-    closeProductEditor(true);
-  }
-}
-
-async function archiveProduct(): Promise<void> {
-  const authorizationValue = accessToken();
-  const product = selectedProduct.value;
-  if (
-    authorizationValue === null ||
-    product === null ||
-    catalogStore.status === "loading"
-  )
-    return;
-  await catalogStore.archiveProduct(authorizationValue, product.id);
-  if (catalogStore.lastCommandSucceeded) selectedProduct.value = null;
-}
-
-async function moveCategoryUp(category: Category): Promise<void> {
-  await moveCategory(category, -1);
-}
-
-async function moveCategoryDown(category: Category): Promise<void> {
-  await moveCategory(category, 1);
-}
-
-async function moveCategory(category: Category, offset: -1 | 1): Promise<void> {
-  const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
-  const ids = orderedCategories.value.map((item) => item.id);
-  const index = ids.indexOf(category.id);
-  const targetIndex = index + offset;
-  if (index < 0 || targetIndex < 0 || targetIndex >= ids.length) return;
-  const requestedAction = offset === -1 ? "up" : "down";
-  const fallbackAction = offset === -1 ? "down" : "up";
-  const managementWasOpen = managementOpen.value;
-  [ids[index], ids[targetIndex]] = [ids[targetIndex]!, ids[index]!];
-  await catalogStore.reorderCategories(authorizationValue, ids);
-  if (
-    !catalogStore.lastCommandSucceeded ||
-    catalogStore.status !== "ready" ||
-    !managementWasOpen ||
-    !managementOpen.value ||
-    activeForm.value ||
-    !orderedCategories.value.some((item) => item.id === category.id)
-  )
-    return;
-  await nextTick();
-  const target =
-    document.querySelector<HTMLButtonElement>(
-      `[data-menu-category-order-action="${category.id}:${requestedAction}"]:not(:disabled)`,
-    ) ??
-    document.querySelector<HTMLButtonElement>(
-      `[data-menu-category-order-action="${category.id}:${fallbackAction}"]:not(:disabled)`,
-    );
-  if (target?.isConnected && target.offsetParent !== null) target.focus();
-}
-
-async function moveProductUp(product: Product): Promise<void> {
-  await moveProduct(product, -1);
-}
-
-async function moveProductDown(product: Product): Promise<void> {
-  await moveProduct(product, 1);
-}
-
-async function moveProduct(product: Product, offset: -1 | 1): Promise<void> {
-  const authorizationValue = accessToken();
-  if (authorizationValue === null || catalogStore.status === "loading") return;
-  const ids = productsByCategory(product.categoryId).map((item) => item.id);
-  const index = ids.indexOf(product.id);
-  const targetIndex = index + offset;
-  if (index < 0 || targetIndex < 0 || targetIndex >= ids.length) return;
-  const requestedAction = offset === -1 ? "up" : "down";
-  const fallbackAction = offset === -1 ? "down" : "up";
-  const managementWasOpen = managementOpen.value;
-  const categoryWasExpanded = expandedCategoryIds.value.has(product.categoryId);
-  [ids[index], ids[targetIndex]] = [ids[targetIndex]!, ids[index]!];
-  await catalogStore.reorderProducts(
-    authorizationValue,
-    product.categoryId,
-    ids,
-  );
-  if (
-    !catalogStore.lastCommandSucceeded ||
-    catalogStore.status !== "ready" ||
-    !managementWasOpen ||
-    !managementOpen.value ||
-    !categoryWasExpanded ||
-    !expandedCategoryIds.value.has(product.categoryId) ||
-    activeForm.value ||
-    !productsByCategory(product.categoryId).some(
-      (item) => item.id === product.id,
-    )
-  )
-    return;
-  await nextTick();
-  const target =
-    document.querySelector<HTMLButtonElement>(
-      `[data-menu-product-order-action="${product.id}:${requestedAction}"]:not(:disabled)`,
-    ) ??
-    document.querySelector<HTMLButtonElement>(
-      `[data-menu-product-order-action="${product.id}:${fallbackAction}"]:not(:disabled)`,
-    );
-  if (target?.isConnected && target.offsetParent !== null) target.focus();
 }
 
 async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {
@@ -941,28 +696,6 @@ async function refreshModifierGroupCatalog(): Promise<void> {
   await catalogStore.refresh(authorizationValue);
   modifierRecoveryState.value =
     catalogStore.status === "ready" ? "checked" : "retry";
-}
-
-async function saveAssignments(
-  assignments: readonly {
-    categoryId: string;
-    modifierGroupId: string;
-    sortOrder: number;
-  }[],
-): Promise<void> {
-  const authorizationValue = accessToken();
-  const category = selectedCategory.value;
-  if (
-    authorizationValue === null ||
-    category === null ||
-    catalogStore.status === "loading"
-  )
-    return;
-  await catalogStore.replaceCategoryModifierGroups(
-    authorizationValue,
-    category.id,
-    assignments,
-  );
 }
 
 async function archiveModifierGroup(groupId: string): Promise<void> {

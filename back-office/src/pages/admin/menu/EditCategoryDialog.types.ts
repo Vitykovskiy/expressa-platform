@@ -9,11 +9,14 @@ import type {
 } from "./AddCategoryDialog.types";
 
 export interface EditCategoryDialogProps {
+  archiveError?: string | null;
+  archivePending?: boolean;
   disabled: boolean;
   category: Category | null;
   fieldErrors?: Partial<Record<CategoryFormField, string>>;
   saveError?: CatalogStoreError | null;
   saveOutcome?: CatalogFormSaveOutcome;
+  categories?: readonly Category[];
 }
 
 export interface EditCategoryDialogEmits {

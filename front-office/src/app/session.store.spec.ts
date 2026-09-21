@@ -467,11 +467,17 @@ const customer = {
 const cartItem = {
   addons: [],
   id: "item-1",
+  lineTotal: 300,
   lineTotalRub: 300,
+  price: 300,
   productId: "product-1",
   productName: "Кофе",
+  portionLabel: "250 мл",
   quantity: 1,
-  type: "drink" as const,
+  selectedModifierOptions: [],
+  selectedPriceChoice: { id: "choice", portionLabel: "250 мл", price: 300 },
+  type: "PRICED" as const,
+  unitTotal: 300,
 };
 
 function createDependencies(

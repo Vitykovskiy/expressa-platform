@@ -5,10 +5,6 @@ export const catalogApiPaths = {
   products: "/../v3/backoffice/catalog/products",
 } as const;
 
-export const catalogProductTypes = ["DRINK", "OTHER"] as const;
-
-export const catalogProductSizes = ["S", "M", "L"] as const;
-
 export const catalogModifierSelectionTypes = ["single", "multiple"] as const;
 
 export const catalogUuidPattern =

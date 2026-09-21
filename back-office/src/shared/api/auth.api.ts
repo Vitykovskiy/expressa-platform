@@ -65,6 +65,7 @@ export class AuthApi {
   logout(): Promise<void> {
     return this.client.request(authApiPaths.logout, isUndefined, {
       ...authRequestOptions,
+      body: { pushSubscription: null },
       expectedStatus: 204,
       method: "POST",
     });

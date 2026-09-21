@@ -21,25 +21,14 @@ export type PublicMenuProduct = {
   price: number | null;
   portionLabel?: string | null;
   isAvailable: boolean;
-  priceChoices?: PublicMenuPriceChoice[];
+  priceChoices: PublicMenuPriceChoice[];
   modifierGroups: PublicMenuModifierGroup[];
-  /** Legacy v2 compatibility for stored responses. */
-  type?: "DRINK" | "OTHER";
-  variants?: PublicMenuVariant[];
-  displayLabel?: string | null;
 };
 export type PublicMenuPriceChoice = {
   id: string;
   portionLabel: string;
   price: number;
   isAvailable: boolean;
-};
-export type PublicMenuVariant = {
-  id: string;
-  size: "S" | "M" | "L";
-  price: number;
-  isAvailable: boolean;
-  displayLabel?: string | null;
 };
 export type PublicMenuModifierGroup = {
   id: string;
@@ -67,10 +56,7 @@ export type PublicMenuCategoryResponse = {
   description: string;
   products: PublicMenuProductResponse[];
 };
-export type PublicMenuProductResponse = Omit<
-  PublicMenuProduct,
-  "type" | "variants" | "displayLabel"
->;
+export type PublicMenuProductResponse = PublicMenuProduct;
 export type PublicMenuPriceChoiceResponse = PublicMenuPriceChoice;
 export type PublicMenuModifierGroupResponse = PublicMenuModifierGroup;
 export type PublicMenuModifierOptionResponse = PublicMenuModifierOption;

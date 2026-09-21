@@ -1,20 +1,17 @@
 import {
   Controller,
-  Get,
   HttpCode,
   HttpException,
   HttpStatus,
   Inject,
   Param,
   Post,
-  Query,
   UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -26,12 +23,9 @@ import { Roles } from "../../auth/transport/roles.decorator";
 import { RolesGuard } from "../../auth/transport/roles.guard";
 import { SessionGuard } from "../../auth/transport/session.guard";
 import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
-import { GetOrdersUseCase } from "../application/get-orders.use-case";
 import { TransitionOrderUseCase } from "../application/transition-order.use-case";
 import type {
   OrderDetails,
-  OrderQueueItem,
-  OrderStage,
   OrderTransitionAction,
 } from "../domain/order-lifecycle.types";
 import {
@@ -39,14 +33,8 @@ import {
   OrderNotFoundError,
   OrderStageConflictError,
 } from "../domain/order-lifecycle.errors";
-import {
-  BackofficeOrderDetailsResponseDto,
-  BackofficeOrderListItemResponseDto,
-} from "./backoffice-orders.dto";
-import type {
-  BackofficeOrderDetailsDto,
-  BackofficeOrderListItemDto,
-} from "./backoffice-orders.dto.types";
+import { BackofficeOrderDetailsResponseDto } from "./backoffice-orders.dto";
+import type { BackofficeOrderDetailsDto } from "./backoffice-orders.dto.types";
 import {
   backofficeOrderErrorResponses,
   backofficeOrderErrorStatus,
@@ -67,48 +55,9 @@ import {
 })
 export class BackofficeOrdersController {
   constructor(
-    private readonly getOrders: GetOrdersUseCase,
     private readonly transitionOrder: TransitionOrderUseCase,
     @Inject(clockPort) private readonly clock: Clock,
   ) {}
-
-  @Get()
-  @ApiOperation({ summary: "Получить очередь заказов" })
-  @ApiQuery({
-    name: "stage",
-    required: false,
-    enum: ["CREATED", "ACCEPTED", "PREPARING", "READY", "ISSUED"],
-  })
-  @ApiQuery({ name: "number", required: false })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: BackofficeOrderListItemResponseDto,
-    isArray: true,
-  })
-  async list(
-    @Query("stage") stage?: string,
-    @Query("number") number?: string,
-  ): Promise<BackofficeOrderListItemDto[]> {
-    assertOptionalStage(stage);
-    assertOptionalNumber(number);
-    return (await this.getOrders.list({ stage, number })).map(toListDto);
-  }
-
-  @Get(":orderId")
-  @ApiParam({ name: "orderId", format: "uuid" })
-  @ApiOperation({ summary: "Получить детали заказа" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: BackofficeOrderDetailsResponseDto,
-  })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ApiHttpErrorDto })
-  async details(
-    @Param("orderId") orderId: string,
-  ): Promise<BackofficeOrderDetailsDto> {
-    assertUuid(orderId);
-    return execute(() => this.getOrders.details(orderId)).then(toDetailsDto);
-  }
 
   @Post(":orderId/accept")
   @HttpCode(HttpStatus.OK)
@@ -199,23 +148,6 @@ export class BackofficeOrdersController {
   }
 }
 
-function assertOptionalStage(
-  value: string | undefined,
-): asserts value is OrderStage | undefined {
-  if (
-    value !== undefined &&
-    value !== "CREATED" &&
-    value !== "ACCEPTED" &&
-    value !== "PREPARING" &&
-    value !== "READY" &&
-    value !== "ISSUED"
-  )
-    throwValidationError();
-}
-function assertOptionalNumber(value: string | undefined): void {
-  if (value !== undefined && (value.trim() === "" || value.length > 64))
-    throwValidationError();
-}
 function assertUuid(value: string): void {
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -252,21 +184,22 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
     throw error;
   }
 }
-function toListDto(order: OrderQueueItem): BackofficeOrderListItemDto {
+function toDetailsDto(order: OrderDetails): BackofficeOrderDetailsDto {
   return {
     id: order.id,
     number: order.number,
     createdAt: order.createdAt.toISOString(),
     total: order.total,
     stage: order.stage,
-  };
-}
-function toDetailsDto(order: OrderDetails): BackofficeOrderDetailsDto {
-  return {
-    ...toListDto(order),
     customer: order.customer,
     snapshot: order.snapshot.map((item) => ({
-      ...item,
+      productId: item.productId,
+      priceChoiceId: item.priceChoiceId,
+      productName: item.productName,
+      portionLabel: item.portionLabel,
+      quantity: item.quantity,
+      unitTotal: item.unitTotal,
+      lineTotal: item.lineTotal,
       modifiers: [...item.modifiers],
     })),
     events: order.events.map((event) => ({

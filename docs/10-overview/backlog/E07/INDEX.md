@@ -11,7 +11,7 @@
 
 ## [backend](backend/INDEX.md)
 
-- [BL-0098.md](backend/BL-0098.md)
+- [BL-0098.md](backend/BL-0098.md) — superseded by ADR-008
 - [BL-0099.md](backend/BL-0099.md)
 - [BL-0100.md](backend/BL-0100.md)
 - [BL-0101.md](backend/BL-0101.md)
@@ -33,7 +33,7 @@
 
 ## Доказательства
 
-- [Интеграция транзакции](../../../../backend/test/integration/order-unit-of-work.integration.spec.ts).
+- [Интеграция жизненного цикла](../../../../backend/test/integration/order-lifecycle.integration.spec.ts).
 - [Ручная приёмка пользовательских потоков](../../../95-testing/Mandatory-scenarios.md)
   и [front-office CI](../../../../.github/workflows/front-office-ci.yml).
 - [OpenAPI](../../../../backend/openapi/openapi.json) содержит только реализованный

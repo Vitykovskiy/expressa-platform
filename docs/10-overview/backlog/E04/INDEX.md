@@ -13,15 +13,15 @@ E04 реализует основу аутентификации, сессии �
 
 ## [backend](backend/INDEX.md)
 
-| Карточка                         | Статус   | Доказательство                                                                                      |
-| -------------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| [BL-0060.md](backend/BL-0060.md) | complete | [Миграция auth-схемы](../../../../backend/schema.sql)                                               |
-| [BL-0061.md](backend/BL-0061.md) | complete | [Политика OTP и тесты](../../../../backend/src/auth/domain/otp-policy.spec.ts)                      |
-| [BL-0062.md](backend/BL-0062.md) | complete | [OpenAPI auth-маршрутов](../../../../backend/openapi/openapi.json)                                  |
-| [BL-0063.md](backend/BL-0063.md) | complete | [SMS.RU-адаптер](../../../../backend/src/auth/adapters/sms-ru-sms.sender.ts)                        |
-| [BL-0064.md](backend/BL-0064.md) | complete | [Проверка OTP и тесты](../../../../backend/src/auth/application/verify-otp.use-case.spec.ts)        |
-| [BL-0065.md](backend/BL-0065.md) | complete | [Refresh-сессия и тесты](../../../../backend/src/auth/application/refresh-session.use-case.spec.ts) |
-| [BL-0066.md](backend/BL-0066.md) | complete | [Guards ролей и тесты](../../../../backend/src/auth/transport/roles.guard.spec.ts)                  |
+| Карточка                         | Статус   | Доказательство                                                                                        |
+| -------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| [BL-0060.md](backend/BL-0060.md) | complete | [Миграция auth-схемы](../../../../backend/schema.sql)                                                 |
+| [BL-0061.md](backend/BL-0061.md) | complete | [Политика OTP и тесты](../../../../backend/src/auth/domain/otp-policy.spec.ts)                        |
+| [BL-0062.md](backend/BL-0062.md) | complete | [OpenAPI auth-маршрутов](../../../../backend/openapi/openapi.json)                                    |
+| [BL-0063.md](backend/BL-0063.md) | complete | [SMS.RU-адаптер](../../../../backend/src/auth/adapters/sms-ru-sms.sender.ts)                          |
+| [BL-0064.md](backend/BL-0064.md) | complete | [Проверка текущей сессии](../../../../backend/src/auth/application/get-current-user.use-case.spec.ts) |
+| [BL-0065.md](backend/BL-0065.md) | complete | [Refresh-сессия и тесты](../../../../backend/src/auth/application/refresh-session.use-case.spec.ts)   |
+| [BL-0066.md](backend/BL-0066.md) | complete | [Guards ролей и тесты](../../../../backend/src/auth/transport/roles.guard.spec.ts)                    |
 
 ## [front-office](front-office/INDEX.md)
 

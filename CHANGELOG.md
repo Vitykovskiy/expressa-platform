@@ -2,6 +2,16 @@
 
 Записи ниже фиксируют начальные выпуски E01 и их поставку на стенды.
 
+## Breaking release (2026-09-20)
+
+- Backend `0.3.0`, front-office `0.2.0`, back-office `0.2.0`.
+- Каталог и чтение заказов переведены на v3; старые v2 read/catalog routes и
+  variant/S-M-L модель удалены без compatibility aliases.
+- Старый browser cart и прикладные строки старой схемы удаляются; конвертация,
+  migration и backfill не поддерживаются.
+- `POST /api/v2/auth/logout` требует JSON body с обязательным
+  `pushSubscription: object | null`; сохранён только association push protocol.
+
 ## front-office v0.1.5 (2026-09-15)
 
 - Обновлено оформление модалки «Аккаунт»: номер, уведомления и выход собраны

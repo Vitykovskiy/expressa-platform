@@ -73,12 +73,12 @@ export class BackofficeAvailabilityController {
   @ApiOperation({ summary: "Получить доступность каталога и приём заказов" })
   @ApiResponse({ status: 200, type: AvailabilityResponseDto })
   async getAvailability(): Promise<AvailabilityResponseDto> {
-    const catalog = await this.getAdminCatalog.execute();
+    const catalog = await this.getAdminCatalog.executeAvailability();
     return toAvailabilityDto(catalog);
   }
 
   @Patch("availability/:type/:id")
-  @ApiParam({ name: "type", enum: ["product", "variant", "modifier"] })
+  @ApiParam({ name: "type", enum: ["product", "modifier"] })
   @ApiParam({ name: "id", format: "uuid" })
   @ApiOperation({ summary: "Изменить доступность позиции каталога" })
   @ApiResponse({ status: 200, type: AvailabilityUpdateResponseDto })
@@ -128,13 +128,6 @@ export class BackofficeAvailabilityController {
 function toAvailabilityDto(
   catalog: AdminCatalogCandidates,
 ): AvailabilityResponseDto {
-  if (catalog.intake === undefined)
-    throw new Error("Availability intake is missing");
-  if (catalog.priceChoices === undefined)
-    throw new Error("Availability price choices are missing");
-  if (catalog.productModifierGroups === undefined)
-    throw new Error("Availability product modifier groups are missing");
-
   return {
     categories: catalog.categories.map((category) => ({
       id: category.id,
@@ -146,21 +139,12 @@ function toAvailabilityDto(
     products: catalog.products.map((product) => ({
       id: product.id,
       categoryId: product.categoryId,
-      type: product.type,
       name: product.name,
       description: product.description,
       price: product.price,
       sortOrder: product.sortOrder,
       isActive: product.isActive,
       isAvailable: product.isAvailable,
-    })),
-    productVariants: catalog.productVariants.map((variant) => ({
-      id: variant.id,
-      productId: variant.productId,
-      size: variant.size,
-      price: variant.price,
-      sortOrder: variant.sortOrder,
-      isAvailable: variant.isAvailable,
     })),
     priceChoices: catalog.priceChoices.map((choice) => ({
       id: choice.id,
@@ -211,9 +195,9 @@ function toAvailabilityDto(
 function assertAvailabilityType(
   value: string,
 ): asserts value is AvailabilityEntityType {
-  if (value !== "product" && value !== "variant" && value !== "modifier")
+  if (value !== "product" && value !== "modifier")
     throw validationError([
-      { path: "type", reason: "Must be product, variant, or modifier" },
+      { path: "type", reason: "Must be product or modifier" },
     ]);
 }
 function assertBoolean(value: unknown, path: string): asserts value is boolean {

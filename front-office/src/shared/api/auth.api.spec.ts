@@ -61,9 +61,9 @@ describe("AuthApi", () => {
       ),
     ).refresh();
     await expect(
-      createAuthApi(
-        client(new Response(null, { status: 204 }), calls),
-      ).logout(),
+      createAuthApi(client(new Response(null, { status: 204 }), calls)).logout(
+        null,
+      ),
     ).resolves.toBeUndefined();
     await expect(
       createAuthApi(

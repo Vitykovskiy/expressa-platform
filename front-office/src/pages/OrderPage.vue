@@ -435,8 +435,6 @@ function createRepeatItems(
           .map((modifier) => modifier.modifierOptionId),
       })),
       selectedPriceChoiceId: item.priceChoiceId,
-      selectedVariantId:
-        product.type === "DRINK" ? item.priceChoiceId : undefined,
     });
     if (draft === null || !doesDraftPreserveModifiers(draft, item)) {
       warnings.push({

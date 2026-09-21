@@ -182,7 +182,7 @@ export class AuthController {
   @ApiCookieAuth("expressa_refresh")
   @ApiOperation({ summary: "Завершить сессию" })
   @ApiBody({
-    required: false,
+    required: true,
     schema: {
       additionalProperties: false,
       properties: {
@@ -210,6 +210,7 @@ export class AuthController {
           type: "object",
         },
       },
+      required: ["pushSubscription"],
       type: "object",
     },
   })
@@ -222,7 +223,7 @@ export class AuthController {
   async logoutSession(
     @Headers("cookie") cookie: string | undefined,
     @Res({ passthrough: true }) response: AuthCookieResponse,
-    @Body() body: unknown = undefined,
+    @Body() body: unknown,
     @Req() request?: AuthRequest,
   ): Promise<AuthErrorResponse | void> {
     const refreshToken = readRefreshCookie(cookie);
@@ -230,13 +231,7 @@ export class AuthController {
 
     if (refreshToken !== null) {
       try {
-        if (pushSubscription === undefined) {
-          await this.logout.execute(refreshToken);
-        } else if (pushSubscription === null) {
-          await this.logout.execute(refreshToken);
-        } else {
-          await this.logout.execute(refreshToken, pushSubscription);
-        }
+        await this.logout.execute(refreshToken, pushSubscription);
       } catch (error) {
         if (error instanceof LogoutUnavailableError) {
           return this.returnLogoutUnavailable(response, request);
@@ -244,7 +239,7 @@ export class AuthController {
 
         if (!(error instanceof AccessDeniedError)) throw error;
       }
-    } else if (pushSubscription !== undefined && pushSubscription !== null) {
+    } else if (pushSubscription !== null) {
       try {
         await this.logout.execute("", pushSubscription);
       } catch (error) {
@@ -308,12 +303,8 @@ function assertVerifyOtpBody(body: VerifyOtpDto): void {
   }
 }
 
-function parseLogoutRequest(
-  body: unknown,
-): LogoutPushSubscription | null | undefined {
-  if (body === undefined) return undefined;
+function parseLogoutRequest(body: unknown): LogoutPushSubscription | null {
   if (!isExactObject(body, ["pushSubscription"])) validationError();
-  if (!("pushSubscription" in body)) return undefined;
 
   const subscription = body.pushSubscription;
   if (subscription === null) return null;
@@ -353,8 +344,7 @@ function isExactObject(
 
   const keys = Object.keys(value);
   return (
-    (keys.length === expectedKeys.length ||
-      (expectedKeys.length === 1 && keys.length === 0)) &&
+    keys.length === expectedKeys.length &&
     keys.every((key) => expectedKeys.includes(key))
   );
 }

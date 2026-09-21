@@ -3,7 +3,7 @@
     v-bind="attrs"
     class="filter-tabs"
     :class="`filter-tabs--${props.layout}`"
-    role="group"
+    role="radiogroup"
     aria-label="Фильтр"
   >
     <div class="filter-tabs__items">
@@ -12,19 +12,32 @@
         :key="item.value"
         class="filter-tab"
         :class="{ 'filter-tab--selected': model === item.value }"
-        :aria-pressed="model === item.value"
+        :aria-checked="model === item.value"
+        :data-filter-value="item.value"
         :disabled="props.disabled"
+        role="radio"
+        :tabindex="focusedValue === item.value ? 0 : -1"
         type="button"
         @click="selectTab(item.value)"
+        @focus="focusedValue = item.value"
+        @keydown="handleKeydown($event, item.value)"
       >
-        <span class="filter-tab__visual">{{ item.label }}</span>
+        <span class="filter-tab__visual">
+          <span
+            v-if="model === item.value"
+            class="filter-tab__check"
+            aria-hidden="true"
+            >✓</span
+          >
+          {{ item.label }}
+        </span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts" generic="T extends string">
-import { useAttrs } from "vue";
+import { shallowRef, useAttrs, watch } from "vue";
 import type { FilterTabsProps } from "./FilterTabs.types";
 
 export type { FilterTab, FilterTabsLayout } from "./FilterTabs.types";
@@ -38,11 +51,48 @@ const props = withDefaults(defineProps<FilterTabsProps<T>>(), {
 });
 const model = defineModel<T>({ required: true });
 const attrs = useAttrs();
+const focusedValue = shallowRef<string>(model.value);
+
+watch(model, (value) => {
+  focusedValue.value = value;
+});
 
 function selectTab(value: T) {
   if (props.disabled) return;
 
   model.value = value;
+}
+
+function handleKeydown(event: KeyboardEvent, value: T): void {
+  const currentIndex = props.items.findIndex((item) => item.value === value);
+  if (currentIndex < 0) return;
+
+  let nextIndex: number;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    nextIndex = (currentIndex + 1) % props.items.length;
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    nextIndex = (currentIndex - 1 + props.items.length) % props.items.length;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = props.items.length - 1;
+  } else if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    selectTab(value);
+    return;
+  } else {
+    return;
+  }
+
+  event.preventDefault();
+  const nextValue = props.items[nextIndex]?.value;
+  if (!nextValue) return;
+  selectTab(nextValue);
+  focusedValue.value = nextValue;
+  (event.currentTarget as HTMLButtonElement)
+    .closest(".filter-tabs__items")
+    ?.querySelector<HTMLButtonElement>(`[data-filter-value="${nextValue}"]`)
+    ?.focus();
 }
 </script>
 
@@ -94,6 +144,11 @@ function selectTab(value: T) {
   background: var(--expressa-color-surface-raised);
 }
 
+.filter-tab__check {
+  margin-inline-end: var(--expressa-space-4);
+  font-weight: var(--expressa-font-weight-bold);
+}
+
 .filter-tab--selected .filter-tab__visual {
   color: var(--expressa-color-text-on-accent);
   background: var(--expressa-color-accent);
@@ -111,7 +166,7 @@ function selectTab(value: T) {
 
 .filter-tab:focus-visible {
   outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
+  outline-offset: var(--expressa-focus-offset);
 }
 
 @media (min-width: 768px) {

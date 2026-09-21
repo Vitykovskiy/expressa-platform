@@ -1,12 +1,4 @@
-import type {
-  catalogModifierSelectionTypes,
-  catalogProductSizes,
-  catalogProductTypes,
-} from "./catalog.api.constants";
-
-export type CatalogProductType = (typeof catalogProductTypes)[number];
-
-export type CatalogProductSize = (typeof catalogProductSizes)[number];
+import type { catalogModifierSelectionTypes } from "./catalog.api.constants";
 
 export type CatalogModifierSelectionType =
   (typeof catalogModifierSelectionTypes)[number];
@@ -19,19 +11,9 @@ export interface CatalogCategory {
   isActive: boolean;
 }
 
-export interface CatalogProductVariant {
-  id: string;
-  productId: string;
-  size: CatalogProductSize;
-  price: number;
-  sortOrder: number;
-  isAvailable: boolean;
-}
-
 export interface CatalogProduct {
   id: string;
   categoryId: string;
-  type: CatalogProductType;
   name: string;
   description: string;
   price: number | null;
@@ -40,7 +22,6 @@ export interface CatalogProduct {
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
-  variants: readonly CatalogProductVariant[];
 }
 
 export interface CatalogPriceChoice {
@@ -93,16 +74,8 @@ export interface CreateCatalogCategory {
 
 export type UpdateCatalogCategory = CreateCatalogCategory;
 
-export interface CreateCatalogProductVariant {
-  size: CatalogProductSize;
-  price: number;
-  sortOrder: number;
-  isAvailable: boolean;
-}
-
 export interface CreateCatalogProduct {
   categoryId: string;
-  type: CatalogProductType;
   name: string;
   description: string;
   price: number | null;
@@ -111,7 +84,6 @@ export interface CreateCatalogProduct {
   sortOrder: number;
   isActive: boolean;
   isAvailable: boolean;
-  variants: readonly CreateCatalogProductVariant[];
 }
 
 export type UpdateCatalogProduct = CreateCatalogProduct;
@@ -164,27 +136,6 @@ export interface CatalogCategoryDto {
   isActive: boolean;
 }
 
-export interface CatalogProductVariantDto {
-  id: string;
-  size: CatalogProductSize;
-  price: number;
-  sortOrder: number;
-  isAvailable: boolean;
-}
-
-export interface CatalogProductDto {
-  id: string;
-  categoryId: string;
-  type: CatalogProductType;
-  name: string;
-  description: string;
-  price: number | null;
-  sortOrder: number;
-  isActive: boolean;
-  isAvailable: boolean;
-  variants: readonly CatalogProductVariantDto[];
-}
-
 export interface CatalogModifierOptionDto {
   id: string;
   groupId: string;
@@ -214,15 +165,6 @@ export interface CatalogCategoryModifierGroupAssignmentDto {
   sortOrder: number;
 }
 
-export interface CatalogResponseDto {
-  categories: readonly CatalogCategoryDto[];
-  products: readonly CatalogProductResponseDto[];
-  productVariants: readonly CatalogProductVariantResponseDto[];
-  modifierGroups: readonly CatalogModifierGroupDto[];
-  modifierOptions: readonly CatalogModifierOptionDto[];
-  categoryModifierGroups: readonly CatalogCategoryModifierGroupAssignmentDto[];
-}
-
 export interface AdminV3CatalogResponseDto {
   categories: readonly CatalogCategoryDto[];
   products: readonly AdminV3ProductDto[];
@@ -249,26 +191,5 @@ export interface AdminV3ProductDto {
   priceChoices: readonly AdminV3PriceChoiceDto[];
   sortOrder: number;
   isActive: boolean;
-  isAvailable: boolean;
-}
-
-export interface CatalogProductResponseDto {
-  id: string;
-  categoryId: string;
-  type: CatalogProductType;
-  name: string;
-  description: string;
-  price: number | null;
-  sortOrder: number;
-  isActive: boolean;
-  isAvailable: boolean;
-}
-
-export interface CatalogProductVariantResponseDto {
-  id: string;
-  productId: string;
-  size: CatalogProductSize;
-  price: number;
-  sortOrder: number;
   isAvailable: boolean;
 }

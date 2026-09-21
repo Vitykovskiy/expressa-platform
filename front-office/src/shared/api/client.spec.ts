@@ -134,7 +134,7 @@ describe("ApiClient", () => {
 
     await client.request("/orders", isString);
 
-    expect(requestedUrl).toBe("https://api.example.test/api/v2/orders");
+    expect(requestedUrl).toBe("https://api.example.test/api/v3/orders");
   });
 
   it("создаёт same-origin URL с /api/v2 без двойных слешей", async () => {
@@ -150,7 +150,7 @@ describe("ApiClient", () => {
 
     await client.request("/orders", isString);
 
-    expect(requestedUrl).toBe("/api/v2/orders");
+    expect(requestedUrl).toBe("/api/v3/orders");
   });
 
   it("сохраняет кодирование и query/hash в same-origin URL", async () => {

@@ -22,25 +22,15 @@ export class LogoutUseCase {
 
   async execute(
     refreshToken: string,
-    subscription?: LogoutPushSubscription,
+    subscription: LogoutPushSubscription | null,
   ): Promise<void> {
-    if (subscription === undefined) {
-      await this.executeLegacy(refreshToken);
-      return;
-    }
+    if (subscription === null) return this.logoutSession(refreshToken);
 
     const parsedCredential = tryParseRefreshToken(refreshToken);
     const refreshHash = this.crypto.hashRefreshToken(refreshToken);
-    const logoutWithPushSubscription =
-      this.repository.logoutSessionWithPushSubscription;
-
-    if (logoutWithPushSubscription === undefined) {
-      throw new LogoutUnavailableError();
-    }
 
     try {
-      await logoutWithPushSubscription.call(
-        this.repository,
+      await this.repository.logoutSessionWithPushSubscription(
         parsedCredential?.sessionId ?? null,
         refreshHash,
         subscription,
@@ -51,7 +41,7 @@ export class LogoutUseCase {
     }
   }
 
-  private async executeLegacy(refreshToken: string): Promise<void> {
+  private async logoutSession(refreshToken: string): Promise<void> {
     const parsedCredential = parseRefreshToken(refreshToken);
     const refreshHash = this.crypto.hashRefreshToken(refreshToken);
 

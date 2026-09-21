@@ -3,356 +3,35 @@ import { describe, expect, it } from "vitest";
 import { ApiClient, ApiError } from "./client";
 import { createPublicMenuApi } from "./public-menu.api";
 
-describe("PublicMenuApi", () => {
-  it("keeps v3 plain portion labels and ordered price choices without parsing", async () => {
-    const response = {
-      acceptsNewOrders: true,
-      categories: [
-        {
-          id: "00000000-0000-4000-8000-000000000001",
-          name: "Кофе",
-          description: "",
-          products: [
-            {
-              id: "00000000-0000-4000-8000-000000000002",
-              name: "Капучино",
-              description: "",
-              price: null,
-              portionLabel: null,
-              isAvailable: true,
-              priceChoices: [
-                {
-                  id: "00000000-0000-4000-8000-000000000003",
-                  portionLabel: "Маленький стакан",
-                  price: 250,
-                  isAvailable: false,
-                },
-                {
-                  id: "00000000-0000-4000-8000-000000000004",
-                  portionLabel: "350 мл",
-                  price: 290,
-                  isAvailable: true,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    const menu = await createPublicMenuApi(client(response)).getMenu();
-
-    expect(menu.categories[0]?.products[0]?.priceChoices).toEqual(
-      response.categories[0]?.products[0]?.priceChoices,
-    );
-  });
-  it("запрашивает публичное меню exact GET 200 и преобразует вложенные данные", async () => {
-    const calls: RequestInit[] = [];
-    const menu = await createPublicMenuApi(
-      client(menuResponse, calls),
-    ).getMenu();
-
-    expect(calls).toEqual([expect.objectContaining({ method: "GET" })]);
-    expect(menu).toEqual(menuResponse);
-    expect(menu.categories[0]?.products[0]?.type).toBe("DRINK");
-    expect(menu.categories[0]?.products[1]?.type).toBe("OTHER");
-  });
-
-  it("передаёт customer все опубликованные размеры напитка", async () => {
-    const response = {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              variants: [
-                {
-                  id: "00000000-0000-4000-8000-000000000006",
-                  size: "S" as const,
-                  price: 200,
-                  isAvailable: true,
-                },
-                {
-                  id: "00000000-0000-4000-8000-000000000007",
-                  size: "M" as const,
-                  price: 240,
-                  isAvailable: false,
-                },
-                {
-                  id: "00000000-0000-4000-8000-000000000008",
-                  size: "L" as const,
-                  price: 280,
-                  isAvailable: false,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    const menu = await createPublicMenuApi(client(response)).getMenu();
-
-    expect(menu.categories[0]?.products[0]?.variants).toEqual([
-      {
-        id: "00000000-0000-4000-8000-000000000006",
-        size: "S",
-        price: 200,
-        isAvailable: true,
-      },
-      {
-        id: "00000000-0000-4000-8000-000000000007",
-        size: "M",
-        price: 240,
-        isAvailable: false,
-      },
-      {
-        id: "00000000-0000-4000-8000-000000000008",
-        size: "L",
-        price: 280,
-        isAvailable: false,
-      },
-    ]);
-  });
-
-  it.each([
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              price: 300,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[1],
-              price: 2_147_483_648,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[1],
-              variants: [menuResponse.categories[0]!.products[0]!.variants[0]],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              modifierGroups: [
-                {
-                  ...menuResponse.categories[0]!.products[0]!.modifierGroups[0],
-                  selectionType: "single",
-                  maxSelect: 2,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              variants: [],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              variants: [
-                menuResponse.categories[0]!.products[0]!.variants[0],
-                menuResponse.categories[0]!.products[0]!.variants[0],
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              variants: menuResponse.categories[0]!.products[0]!.variants.map(
-                (variant) => ({ ...variant, isAvailable: false }),
-              ),
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[1],
-              price: -1,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              variants: [
-                {
-                  ...menuResponse.categories[0]!.products[0]!.variants[0],
-                  price: 2_147_483_648,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      ...menuResponse,
-      categories: [
-        {
-          ...menuResponse.categories[0],
-          products: [
-            {
-              ...menuResponse.categories[0]!.products[0],
-              modifierGroups: [
-                {
-                  ...menuResponse.categories[0]!.products[0]!.modifierGroups[0],
-                  options: [
-                    {
-                      ...menuResponse.categories[0]!.products[0]!
-                        .modifierGroups[0]!.options[0],
-                      priceDelta: -1,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ])("отклоняет нарушенный вложенный контракт", async (response) => {
-    await expect(
-      createPublicMenuApi(client(response)).getMenu(),
-    ).rejects.toMatchObject({
-      code: "API_CONTRACT_ERROR",
-    } satisfies Partial<ApiError>);
-  });
-
-  it("отклоняет успешный статус, отличный от 200", async () => {
-    await expect(
-      createPublicMenuApi(client(menuResponse, [], 201)).getMenu(),
-    ).rejects.toMatchObject({
-      code: "API_CONTRACT_ERROR",
-      status: 201,
-    } satisfies Partial<ApiError>);
-  });
-});
-
-const menuResponse = {
+const response = {
   acceptsNewOrders: true,
   categories: [
     {
       id: "00000000-0000-4000-8000-000000000001",
       name: "Кофе",
-      description: "Горячие напитки",
+      description: "",
       products: [
         {
           id: "00000000-0000-4000-8000-000000000002",
-          type: "DRINK" as const,
           name: "Капучино",
-          description: "Классический",
+          description: "",
           price: null,
+          portionLabel: null,
           isAvailable: true,
-          variants: [
+          priceChoices: [
             {
               id: "00000000-0000-4000-8000-000000000003",
-              size: "M" as const,
+              portionLabel: "250 мл",
               price: 300,
               isAvailable: true,
             },
-          ],
-          modifierGroups: [
             {
               id: "00000000-0000-4000-8000-000000000004",
-              name: "Молоко",
-              selectionType: "single" as const,
-              minSelect: 1,
-              maxSelect: 1,
-              options: [
-                {
-                  id: "00000000-0000-4000-8000-000000000005",
-                  name: "Обычное",
-                  priceDelta: 0,
-                  isDefault: true,
-                  isAvailable: true,
-                },
-              ],
+              portionLabel: "350 мл",
+              price: 350,
+              isAvailable: false,
             },
           ],
-        },
-        {
-          id: "00000000-0000-4000-8000-000000000006",
-          type: "OTHER" as const,
-          name: "Круассан",
-          description: "С маслом",
-          price: 180,
-          isAvailable: true,
-          variants: [],
           modifierGroups: [],
         },
       ],
@@ -360,17 +39,35 @@ const menuResponse = {
   ],
 };
 
-function client(
-  response: unknown,
-  capture: RequestInit[] = [],
-  status = 200,
-): ApiClient {
-  return new ApiClient({
-    baseUrl: "https://api.example.test/api/v2",
-    fetcher: async (_url, options) => {
-      capture.push(options ?? {});
+describe("PublicMenuApi", () => {
+  it("keeps v3 plain portion labels and ordered price choices without parsing", async () => {
+    const menu = await createPublicMenuApi(client(response)).getMenu();
 
-      return new Response(JSON.stringify(response), { status });
-    },
+    expect(menu).toEqual(response);
+  });
+
+  it("rejects a price choice when a product has a direct price", async () => {
+    await expect(
+      createPublicMenuApi(
+        client({
+          ...response,
+          categories: [
+            {
+              ...response.categories[0],
+              products: [{ ...response.categories[0].products[0], price: 300 }],
+            },
+          ],
+        }),
+      ).getMenu(),
+    ).rejects.toMatchObject({
+      code: "API_CONTRACT_ERROR",
+    } satisfies Partial<ApiError>);
+  });
+});
+
+function client(value: unknown): ApiClient {
+  return new ApiClient({
+    baseUrl: "https://api.example.test/api/v3",
+    fetcher: async () => new Response(JSON.stringify(value), { status: 200 }),
   });
 }

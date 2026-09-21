@@ -6,13 +6,16 @@ import type {
 } from "../../../shared/api/orders.api.types";
 
 export type QueueFilter = "ALL" | OrderStage;
+export type QueueScreenError = OrderApiError & { status?: number | null };
 
 export type OrdersScreenProps = {
   orders: readonly OrderListItem[];
   search: string;
   stage: QueueFilter;
   status: "error" | "loading" | "ready";
-  error: OrderApiError | null;
+  error: QueueScreenError | null;
+  refreshError?: QueueScreenError | null;
+  errorFocus?: boolean;
   accessRecoveryPending: boolean;
   requiresAccessRecovery: boolean;
   selectedOrderId: string | null;
@@ -33,4 +36,5 @@ export type OrdersScreenEmits = {
   open: [orderId: string];
   transition: [];
   "recover-transition": [];
+  "go-back": [];
 };

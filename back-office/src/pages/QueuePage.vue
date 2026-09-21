@@ -7,6 +7,8 @@
     :details-error="detailsError"
     :details-loading="detailsLoading"
     :error="queueError"
+    :refresh-error="backgroundRefreshError"
+    :error-focus="errorFocus"
     :orders="orders"
     :search="search"
     :selected-order-id="selectedOrderId"
@@ -16,7 +18,8 @@
     :requires-transition-recovery="requiresTransitionRecovery"
     :transition-loading="transitionLoading"
     @open="toggleDetails"
-    @refresh="loadQueue"
+    @go-back="router.back()"
+    @refresh="loadQueue(false, true)"
     @recover-transition="recoverTransitionState"
     @restore-access="restoreAccess"
     @transition="transitionSelectedOrder"
@@ -27,7 +30,7 @@
 
 <script setup lang="ts">
 import { inject, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import { routePaths } from "../app/router.constants";
 import { useSessionStore } from "../app/session.store";
@@ -40,7 +43,10 @@ import type {
   OrderDetails,
   OrderListItem,
 } from "../shared/api/orders.api.types";
-import type { QueueFilter } from "./admin/orders/OrdersScreen.types";
+import type {
+  QueueFilter,
+  QueueScreenError,
+} from "./admin/orders/OrdersScreen.types";
 
 const apiClient = inject(apiClientKey);
 if (apiClient === undefined) {
@@ -49,11 +55,13 @@ if (apiClient === undefined) {
 const ordersApi = new OrdersApi(apiClient);
 const sessionStore = useSessionStore();
 const router = useRouter();
+const route = useRoute();
 const orders = shallowRef<readonly OrderListItem[]>([]);
-const search = shallowRef("");
-const stage = shallowRef<QueueFilter>("ALL");
+const search = shallowRef(readQueryValue("q"));
+const stage = shallowRef<QueueFilter>(readStageQuery());
 const queueStatus = shallowRef<"error" | "loading" | "ready">("loading");
-const queueError = shallowRef<OrderApiError | null>(null);
+const queueError = shallowRef<QueueScreenError | null>(null);
+const backgroundRefreshError = shallowRef<QueueScreenError | null>(null);
 const accessRecoveryPending = shallowRef(false);
 const selectedOrderId = shallowRef<string | null>(null);
 const details = shallowRef<OrderDetails | null>(null);
@@ -63,14 +71,16 @@ const transitionLoading = shallowRef(false);
 const actionError = shallowRef<OrderApiError | null>(null);
 const transitionRecoveryPending = shallowRef(false);
 const requiresTransitionRecovery = shallowRef(false);
+const errorFocus = shallowRef(false);
 let queueRequest = 0;
 let detailsRequest = 0;
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
-let resumedPollingTimer: ReturnType<typeof setTimeout> | null = null;
-let authorizationEpisode = false;
-let pageIsActive = true;
+const authorizationEpisode = shallowRef(false);
 
-watch([search, stage], () => void loadQueue());
+watch([search, stage], () => {
+  void persistQuery();
+  void loadQueue();
+});
 
 onMounted(() => {
   void loadQueue();
@@ -78,30 +88,31 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  pageIsActive = false;
   queueRequest++;
   detailsRequest++;
   stopPolling();
 });
 
-async function loadQueue(isBackgroundRefresh = false): Promise<void> {
-  if (authorizationEpisode) return;
+async function loadQueue(
+  isBackgroundRefresh = false,
+  userInitiated = false,
+): Promise<void> {
+  if (authorizationEpisode.value) return;
 
   const request = ++queueRequest;
   const accessToken = sessionStore.accessToken;
   if (accessToken === null) {
-    setQueueError(request, unauthorizedError());
+    startAuthorizationEpisode(request, unauthorizedError(), userInitiated);
     return;
   }
 
   const keepsConfirmedQueue =
     isBackgroundRefresh && queueStatus.value === "ready";
-  if (
-    !keepsConfirmedQueue &&
-    (queueStatus.value !== "error" || queueError.value === null)
-  ) {
+  if (!keepsConfirmedQueue) {
     queueStatus.value = "loading";
     queueError.value = null;
+    backgroundRefreshError.value = null;
+    errorFocus.value = false;
   }
   try {
     const nextOrders = await ordersApi.list(accessToken, {
@@ -122,43 +133,40 @@ async function loadQueue(isBackgroundRefresh = false): Promise<void> {
   } catch (error) {
     const queueError = toOrderApiError(error);
     if (isUnauthorized(error)) {
-      startAuthorizationEpisode(request, queueError);
+      startAuthorizationEpisode(request, queueError, userInitiated);
       return;
     }
 
-    setQueueError(request, queueError);
+    if (keepsConfirmedQueue) {
+      if (request === queueRequest) backgroundRefreshError.value = queueError;
+      return;
+    }
+    setQueueError(request, queueError, userInitiated);
   }
 }
 
 async function restoreAccess(): Promise<void> {
-  if (!authorizationEpisode || accessRecoveryPending.value) return;
+  if (!authorizationEpisode.value || accessRecoveryPending.value) return;
 
   accessRecoveryPending.value = true;
   try {
-    await sessionStore.restore();
+    await router.push({
+      path: routePaths.login,
+      query: { returnTo: route.fullPath },
+    });
   } catch {
-    return;
+    setQueueError(
+      queueRequest,
+      {
+        code: "LOGIN_NAVIGATION_ERROR",
+        details: null,
+        message: "",
+        requestId: null,
+      },
+      true,
+    );
   } finally {
     accessRecoveryPending.value = false;
-  }
-
-  if (sessionStore.status === "anonymous" || sessionStore.status === "denied") {
-    await router.replace(routePaths.login);
-    return;
-  }
-
-  if (!pageIsActive) return;
-
-  if (sessionStore.status !== "authenticated" || sessionStore.error !== null) {
-    return;
-  }
-
-  authorizationEpisode = false;
-  await loadQueue();
-  if (!pageIsActive) return;
-
-  if (!authorizationEpisode && queueStatus.value === "ready") {
-    scheduleResumedPolling();
   }
 }
 
@@ -190,6 +198,7 @@ async function loadDetails(orderId: string): Promise<void> {
   if (accessToken === null) {
     detailsLoading.value = false;
     detailsError.value = unauthorizedError();
+    startAuthorizationEpisode(queueRequest, unauthorizedError(), true);
     return;
   }
 
@@ -198,6 +207,10 @@ async function loadDetails(orderId: string): Promise<void> {
     if (request !== detailsRequest || selectedOrderId.value !== orderId) return;
     details.value = nextDetails;
   } catch (error) {
+    if (isUnauthorized(error)) {
+      startAuthorizationEpisode(queueRequest, toOrderApiError(error), true);
+      return;
+    }
     if (request === detailsRequest && selectedOrderId.value === orderId) {
       detailsError.value = toOrderApiError(error);
     }
@@ -211,12 +224,11 @@ async function loadDetails(orderId: string): Promise<void> {
 async function transitionSelectedOrder(): Promise<void> {
   const accessToken = sessionStore.accessToken;
   const currentDetails = details.value;
-  if (
-    accessToken === null ||
-    currentDetails === null ||
-    transitionLoading.value
-  )
+  if (accessToken === null) {
+    startAuthorizationEpisode(queueRequest, unauthorizedError(), true);
     return;
+  }
+  if (currentDetails === null || transitionLoading.value) return;
 
   transitionLoading.value = true;
   actionError.value = null;
@@ -231,6 +243,10 @@ async function transitionSelectedOrder(): Promise<void> {
         : order,
     );
   } catch (error) {
+    if (isUnauthorized(error)) {
+      startAuthorizationEpisode(queueRequest, toOrderApiError(error), true);
+      return;
+    }
     if (
       selectedOrderId.value === currentDetails.id &&
       details.value?.id === currentDetails.id
@@ -247,12 +263,11 @@ async function transitionSelectedOrder(): Promise<void> {
 async function recoverTransitionState(): Promise<void> {
   const orderId = selectedOrderId.value;
   const accessToken = sessionStore.accessToken;
-  if (
-    orderId === null ||
-    accessToken === null ||
-    transitionRecoveryPending.value
-  )
+  if (orderId === null || transitionRecoveryPending.value) return;
+  if (accessToken === null) {
+    startAuthorizationEpisode(queueRequest, unauthorizedError(), true);
     return;
+  }
 
   const request = ++detailsRequest;
   transitionRecoveryPending.value = true;
@@ -270,6 +285,10 @@ async function recoverTransitionState(): Promise<void> {
     actionError.value = null;
     requiresTransitionRecovery.value = false;
   } catch (error) {
+    if (isUnauthorized(error)) {
+      startAuthorizationEpisode(queueRequest, toOrderApiError(error), true);
+      return;
+    }
     if (request === detailsRequest && selectedOrderId.value === orderId) {
       actionError.value = toOrderApiError(error);
       requiresTransitionRecovery.value = true;
@@ -281,22 +300,54 @@ async function recoverTransitionState(): Promise<void> {
   }
 }
 
-function setQueueError(request: number, error: OrderApiError): void {
+function setQueueError(
+  request: number,
+  error: OrderApiError,
+  userInitiated = false,
+): void {
   if (request !== queueRequest) return;
+  backgroundRefreshError.value = null;
   orders.value = [];
   queueError.value = error;
   queueStatus.value = "error";
+  errorFocus.value = userInitiated;
 }
 
 function startAuthorizationEpisode(
   request: number,
-  error: OrderApiError,
+  error: QueueScreenError,
+  userInitiated: boolean,
 ): void {
   if (request !== queueRequest) return;
 
-  authorizationEpisode = true;
+  authorizationEpisode.value = true;
   stopPolling();
-  setQueueError(request, error);
+  setQueueError(request, error, userInitiated);
+}
+
+async function persistQuery(): Promise<void> {
+  await router.replace({
+    query: {
+      ...(search.value ? { q: search.value } : {}),
+      ...(stage.value !== "ALL" ? { stage: stage.value } : {}),
+    },
+  });
+}
+
+function readQueryValue(key: "q"): string {
+  const value = route.query[key];
+  return typeof value === "string" ? value : "";
+}
+
+function readStageQuery(): QueueFilter {
+  const value = route.query.stage;
+  return value === "CREATED" ||
+    value === "ACCEPTED" ||
+    value === "PREPARING" ||
+    value === "READY" ||
+    value === "ISSUED"
+    ? value
+    : "ALL";
 }
 
 function startPolling(): void {
@@ -305,31 +356,14 @@ function startPolling(): void {
   pollingTimer = setInterval(() => void loadQueue(true), 5000);
 }
 
-function scheduleResumedPolling(): void {
-  if (resumedPollingTimer !== null) return;
-
-  resumedPollingTimer = setTimeout(() => {
-    resumedPollingTimer = null;
-    if (authorizationEpisode) return;
-
-    void loadQueue(true);
-    startPolling();
-  }, 5200);
-}
-
 function stopPolling(): void {
   if (pollingTimer !== null) {
     clearInterval(pollingTimer);
     pollingTimer = null;
   }
-
-  if (resumedPollingTimer !== null) {
-    clearTimeout(resumedPollingTimer);
-    resumedPollingTimer = null;
-  }
 }
 
-function toOrderApiError(error: unknown): OrderApiError {
+function toOrderApiError(error: unknown): QueueScreenError {
   if (
     typeof error === "object" &&
     error !== null &&
@@ -345,6 +379,11 @@ function toOrderApiError(error: unknown): OrderApiError {
       details: "details" in error ? error.details : null,
       message: error.message,
       requestId: error.requestId,
+      status:
+        "status" in error &&
+        (typeof error.status === "number" || error.status === null)
+          ? error.status
+          : null,
     };
   }
 
@@ -353,15 +392,17 @@ function toOrderApiError(error: unknown): OrderApiError {
     details: null,
     message: "Сервис заказов вернул некорректный ответ.",
     requestId: null,
+    status: null,
   };
 }
 
-function unauthorizedError(): OrderApiError {
+function unauthorizedError(): QueueScreenError {
   return {
     code: "UNAUTHORIZED",
     details: null,
     message: "Сессия сотрудника недоступна.",
     requestId: null,
+    status: 401,
   };
 }
 

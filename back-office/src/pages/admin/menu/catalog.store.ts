@@ -20,7 +20,6 @@ import type {
   ModifierOption,
   Product,
   ProductPriceChoice,
-  ProductVariant,
 } from "./catalog.types";
 
 export const useCatalogStore = defineStore(catalogStoreId, {
@@ -346,18 +345,11 @@ function toProduct(product: CatalogApiResult["products"][number]): Product {
     ...product,
     portionLabel: product.portionLabel ?? null,
     priceChoices: (product.priceChoices ?? []).map(toProductPriceChoice),
-    variants: product.variants.map(toProductVariant),
   };
 }
 
 function toProductPriceChoice(choice: ProductPriceChoice): ProductPriceChoice {
   return { ...choice };
-}
-
-function toProductVariant(
-  variant: CatalogApiResult["products"][number]["variants"][number],
-): ProductVariant {
-  return { ...variant };
 }
 
 function toModifierGroup(

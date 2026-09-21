@@ -4,16 +4,26 @@ import { ApiClient, ApiError } from "./client";
 import { createPushApi } from "./push.api";
 
 describe("PushApi", () => {
-  it("получает публичный ключ и сохраняет подписку текущего пользователя", async () => {
+  it("получает публичный ключ и связывает подписку текущего пользователя", async () => {
     const calls: RequestInit[] = [];
     const api = createPushApi(
-      client([{ publicKey: validVapidPublicKey }, undefined], calls),
+      client(
+        [
+          { publicKey: validVapidPublicKey },
+          { association: "current", version: "1" },
+        ],
+        calls,
+      ),
     );
 
     await expect(api.getPublicKey("access")).resolves.toBe(validVapidPublicKey);
     await expect(
-      api.saveSubscription("access", subscription),
-    ).resolves.toBeUndefined();
+      api.associateSubscription("access", {
+        action: "enable",
+        expectedVersion: null,
+        subscription,
+      }),
+    ).resolves.toEqual({ association: "current", version: "1" });
 
     expect(calls).toEqual([
       expect.objectContaining({
@@ -21,7 +31,11 @@ describe("PushApi", () => {
         method: "GET",
       }),
       expect.objectContaining({
-        body: JSON.stringify(subscription),
+        body: JSON.stringify({
+          action: "enable",
+          expectedVersion: null,
+          subscription,
+        }),
         headers: {
           "content-type": "application/json",
           authorization: "Bearer access",
@@ -31,16 +45,16 @@ describe("PushApi", () => {
     ]);
   });
 
-  it("удаляет подписку текущего пользователя", async () => {
+  it("удаляет связь подписки текущего пользователя", async () => {
     const calls: RequestInit[] = [];
     const api = createPushApi(client([undefined], calls));
 
     await expect(
-      api.deleteSubscription("access", subscription),
+      api.deleteAssociation("access", { expectedVersion: "1", subscription }),
     ).resolves.toBeUndefined();
 
     expect(calls[0]).toMatchObject({
-      body: JSON.stringify(subscription),
+      body: JSON.stringify({ expectedVersion: "1", subscription }),
       headers: {
         "content-type": "application/json",
         authorization: "Bearer access",

@@ -1,23 +1,15 @@
 ---
 type: interface
 owner: root
-last_verified: 2026-08-16
+last_verified: 2026-09-20
 sources:
   - ../../backend/openapi/openapi.json
-  - ../../backend/src/orders/transport/orders.controller.ts
+  - ../../backend/src/orders/transport/orders-v3.controller.ts
+  - ../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md
 ---
 
 # API заказов
 
-Customer использует `POST /api/v2/orders`, `GET /api/v2/orders` и
-`GET /api/v2/orders/{orderId}`. Создание требует Bearer и UUID
-`Idempotency-Key`; список использует opaque cursor и возвращает только заказы
-текущего customer, а деталь скрывает staff events. Тело создания содержит expected
-total и непустые item с товаром, nullable variant, modifier ids и quantity;
-`201` возвращает `CREATED` snapshot.
-[Источники: OpenAPI](../../backend/openapi/openapi.json), [controller](../../backend/src/orders/transport/orders.controller.ts).
+Customer order API существует только под v3: `GET /api/v3/orders`, `GET /api/v3/orders/{orderId}`, `POST /api/v3/orders` и `POST /api/v3/orders/{orderId}/repeat`. Создание требует Bearer и `Idempotency-Key`; точные request/response schemas принадлежат [OpenAPI](../../backend/openapi/openapi.json). Позиция использует `productId`, nullable `priceChoiceId`, nullable `portionLabel`, modifier ids и quantity; variant/S-M-L модели нет.
 
-Fingerprint канонизирует порядок item и modifier ids: эквивалентное тело в ином
-порядке повторяет заказ; только другой canonical fingerprint даёт
-`IDEMPOTENCY_KEY_REUSED`. total/item/intake errors не создают заказ.
-[Источники: fingerprint](../../backend/src/orders/domain/order-fingerprint.ts), [spec](../../backend/src/orders/domain/order-fingerprint.spec.ts), [unit of work](../../backend/src/orders/adapters/postgres-order-unit-of-work.ts).
+Staff list/detail существуют только как `GET /api/v3/backoffice/orders` и `GET /api/v3/backoffice/orders/{orderId}`. Lifecycle commands остаются текущими v2 routes. Удалённых v2 customer/staff read и customer command routes нет.

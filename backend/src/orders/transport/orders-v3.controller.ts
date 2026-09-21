@@ -160,11 +160,9 @@ export class OrdersV3Controller {
             idempotencyKey,
             now: this.clock.now(),
             request: {
-              pricingMode: "v3",
               total: body.expectedTotal,
               items: body.items.map((item) => ({
                 productId: item.productId,
-                variantId: null,
                 priceChoiceId: item.priceChoiceId ?? null,
                 modifierOptionIds: item.modifierOptionIds,
                 quantity: item.quantity,

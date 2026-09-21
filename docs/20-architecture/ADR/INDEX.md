@@ -9,3 +9,5 @@
 - [ADR-005: связь customer-уведомлений с установкой](ADR-005-customer-notification-association.md)
 - [ADR-006: одна цена и варианты цены товара](ADR-006-product-variant-portions.md)
 - [ADR-007: одноразовые базы и текущая схема](ADR-007-disposable-database-bootstrap.md)
+- [ADR-008: v3 cutover каталога и заказов](ADR-008-v3-catalog-orders-cutover.md)
+- [ADR-009: явный logout и push-контракт](ADR-009-explicit-logout-push-contract.md)

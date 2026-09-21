@@ -23,8 +23,14 @@ back-office/
 
 ```sh
 npm ci
+cp .env.example .env.local
 npm run dev
 ```
+
+`.env.local` задаёт обязательные `VITE_APP_ENV=local` и
+`VITE_API_BASE_URL=/`. Vite проксирует same-origin `/api/v2` и `/api/v3` на
+`http://localhost:3000`; для другого backend origin задайте
+`VITE_API_PROXY_TARGET` при запуске Vite.
 
 ## Работа с контуром
 

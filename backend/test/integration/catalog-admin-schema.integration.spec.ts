@@ -99,7 +99,7 @@ describe("схема управления каталогом", () => {
   );
 
   it(
-    "освобождает размер архивированного варианта для нового варианта",
+    "освобождает подпись архивированной цены для новой цены",
     async () => {
       const categoryId = randomUUID();
       const productId = randomUUID();
@@ -110,29 +110,29 @@ describe("схема управления каталогом", () => {
         [categoryId, `Категория ${categoryId}`, sortOrder],
       );
       await pool.query(
-        `INSERT INTO products (id, category_id, type, name, sort_order)
-         VALUES ($1, $2, 'DRINK', $3, $4)`,
+        `INSERT INTO products (id, category_id, name, sort_order)
+         VALUES ($1, $2, $3, $4)`,
         [productId, categoryId, `Напиток ${productId}`, sortOrder],
       );
       await pool.query(
-        `INSERT INTO product_variants (product_id, size, price, sort_order)
-         VALUES ($1, 'M', 100, $2)`,
-        [productId, sortOrder],
+        `INSERT INTO product_price_choices (id, product_id, portion_label, price, sort_order)
+         VALUES ($1, $2, '250 мл', 100, $3)`,
+        [randomUUID(), productId, sortOrder],
       );
       await pool.query(
-        `UPDATE product_variants SET archived_at = CURRENT_TIMESTAMP WHERE product_id = $1`,
+        `UPDATE product_price_choices SET archived_at = CURRENT_TIMESTAMP WHERE product_id = $1`,
         [productId],
       );
       await pool.query(
-        `INSERT INTO product_variants (product_id, size, price, sort_order)
-         VALUES ($1, 'M', 110, $2)`,
-        [productId, sortOrder],
+        `INSERT INTO product_price_choices (id, product_id, portion_label, price, sort_order)
+         VALUES ($1, $2, '250 мл', 110, $3)`,
+        [randomUUID(), productId, sortOrder],
       );
       await expect(
         pool.query(
-          `INSERT INTO product_variants (product_id, size, price, sort_order)
-           VALUES ($1, 'M', 120, $2)`,
-          [productId, sortOrder + 1],
+          `INSERT INTO product_price_choices (id, product_id, portion_label, price, sort_order)
+           VALUES ($1, $2, '250 мл', 120, $3)`,
+          [randomUUID(), productId, sortOrder + 1],
         ),
       ).rejects.toMatchObject({ code: "23505" });
     },

@@ -66,39 +66,6 @@ export class PushSubscriptionsController {
     };
   }
 
-  @Delete("subscriptions")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Удалить свою push-подписку" })
-  @ApiBody({ type: PushSubscriptionDto })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
-  async delete(
-    @Body() body: unknown,
-    @CurrentAuth() auth: CurrentAuthData,
-  ): Promise<void> {
-    const endpoint = parseEndpoint(body);
-    await this.subscriptions.delete(auth.userId, endpoint);
-  }
-
-  @ApiOperation({ summary: "Сохранить свою push-подписку" })
-  @ApiBody({ type: PushSubscriptionDto })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Put("subscriptions")
-  async upsert(
-    @Body() body: unknown,
-    @CurrentAuth() auth: CurrentAuthData,
-  ): Promise<void> {
-    const subscription = parseSubscription(body);
-    await this.subscriptions.upsert({
-      userId: auth.userId,
-      endpoint: subscription.endpoint,
-      p256dh: subscription.keys.p256dh,
-      auth: subscription.keys.auth,
-    });
-  }
-
   @Post("subscriptions/inspect")
   @Roles("Customer")
   @Header("Cache-Control", "no-store")
@@ -168,9 +135,6 @@ export class PushSubscriptionsController {
   }
 }
 
-function parseEndpoint(value: unknown): string {
-  return parseSubscription(value).endpoint;
-}
 function parseSubscription(value: unknown): PushSubscriptionRequest {
   if (
     typeof value !== "object" ||

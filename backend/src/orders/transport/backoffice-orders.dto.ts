@@ -4,7 +4,7 @@ import type {
   BackofficeOrderEventDto,
   BackofficeOrderListItemDto,
 } from "./backoffice-orders.dto.types";
-import { OrderItemResponseDto } from "./order.dto";
+import { OrderV3ItemResponseDto } from "./order-v3.dto";
 
 export class BackofficeOrderEventResponseDto implements BackofficeOrderEventDto {
   @ApiProperty({ format: "uuid" }) actorId!: string;
@@ -43,8 +43,8 @@ export class BackofficeOrderDetailsResponseDto
 {
   @ApiProperty({ type: () => BackofficeOrderCustomerResponseDto })
   customer!: BackofficeOrderCustomerResponseDto;
-  @ApiProperty({ isArray: true, type: () => OrderItemResponseDto })
-  snapshot!: OrderItemResponseDto[];
+  @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })
+  snapshot!: OrderV3ItemResponseDto[];
   @ApiProperty({ isArray: true, type: () => BackofficeOrderEventResponseDto })
   events!: BackofficeOrderEventResponseDto[];
 }

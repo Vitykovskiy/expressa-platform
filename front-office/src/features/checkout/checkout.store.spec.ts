@@ -51,7 +51,7 @@ describe("CheckoutStore", () => {
             modifierOptionIds: [modifierId],
             productId,
             quantity: 1,
-            priceChoiceId: variantId,
+            priceChoiceId,
           },
         ],
       },
@@ -68,29 +68,6 @@ describe("CheckoutStore", () => {
     expect(getCheckoutStoreDependencies().createIdempotencyKey()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
-  });
-
-  it("не отправляет legacy-корзину", async () => {
-    const store = useCheckoutStore();
-
-    await store.confirm({
-      ...submission,
-      cartItems: [
-        {
-          addons: [],
-          id: "legacy-cart-item",
-          lineTotalRub: 410,
-          productId,
-          productName: "Кофе",
-          quantity: 1,
-          type: "drink",
-        },
-      ],
-    });
-
-    expect(ordersApi.createOrder).not.toHaveBeenCalled();
-    expect(store.errorCode).toBe(checkoutErrorCodes.invalidCart);
-    expect(store.status).toBe(checkoutStatuses.error);
   });
 
   it("блокирует дублирующую отправку", async () => {
@@ -196,7 +173,7 @@ describe("CheckoutStore", () => {
   });
 
   it.each([
-    ["variant ID", variantId],
+    ["price choice ID", priceChoiceId],
     ["modifier option ID", modifierId],
   ])("помечает позицию по адресуемому %s", async (_name, itemId) => {
     vi.mocked(ordersApi.createOrder).mockRejectedValue(
@@ -240,7 +217,7 @@ describe("CheckoutStore", () => {
 });
 
 const productId = "00000000-0000-4000-8000-000000000001";
-const variantId = "00000000-0000-4000-8000-000000000002";
+const priceChoiceId = "00000000-0000-4000-8000-000000000002";
 const modifierId = "00000000-0000-4000-8000-000000000003";
 
 const submission: CheckoutSubmission = {
@@ -262,10 +239,14 @@ const submission: CheckoutSubmission = {
           priceDelta: 10,
         },
       ],
-      selectedVariant: { id: variantId, price: 400, size: "M" },
-      size: "M",
-      sizePrice: 400,
-      type: "DRINK",
+      portionLabel: "250 мл",
+      price: 400,
+      selectedPriceChoice: {
+        id: priceChoiceId,
+        portionLabel: "250 мл",
+        price: 400,
+      },
+      type: "PRICED",
       unitTotal: 410,
     },
   ],

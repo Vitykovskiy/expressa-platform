@@ -8,7 +8,9 @@ import ProductCard from "./ProductCard.vue";
 
 describe("ProductCard", () => {
   it("приглушает недоступный напиток, заменяет описание и не выбирает его", async () => {
-    const wrapper = mountProductCard(createDrink({ isAvailable: false }));
+    const wrapper = mountProductCard(
+      createPricedProduct({ isAvailable: false }),
+    );
     const button = wrapper.get("button");
     const description = wrapper.get(".product-card__description");
 
@@ -41,7 +43,7 @@ describe("ProductCard", () => {
 
     expect(wrapper.emitted("select")).toBeUndefined();
 
-    await wrapper.setProps({ product: createDrink() });
+    await wrapper.setProps({ product: createPricedProduct() });
 
     expect(button.attributes("disabled")).toBeUndefined();
     expect(wrapper.find(".product-card__description").exists()).toBe(false);
@@ -50,8 +52,10 @@ describe("ProductCard", () => {
     );
   });
 
-  it("скрывает цену и заменяет описание недоступной карточки OTHER", () => {
-    const wrapper = mountProductCard(createOther({ isAvailable: false }));
+  it("скрывает цену и заменяет описание недоступной карточки с одной ценой", () => {
+    const wrapper = mountProductCard(
+      createSinglePriceProduct({ isAvailable: false }),
+    );
 
     expect(wrapper.get("button").attributes("disabled")).toBeDefined();
     expect(wrapper.get(".product-card__description").text()).toBe(
@@ -62,7 +66,7 @@ describe("ProductCard", () => {
   });
 
   it("выбирает доступный товар один раз без статуса доступности", () => {
-    const product = createOther();
+    const product = createSinglePriceProduct();
     const wrapper = mountProductCard(product);
     const button = wrapper.get("button");
 
@@ -88,7 +92,7 @@ function mountProductCard(product: PublicMenuProduct) {
   });
 }
 
-function createDrink(
+function createPricedProduct(
   overrides: Partial<PublicMenuProduct> = {},
 ): PublicMenuProduct {
   return {
@@ -97,17 +101,17 @@ function createDrink(
     description: "",
     isAvailable: true,
     modifierGroups: [],
-    type: "DRINK",
     price: null,
-    variants: [
-      { id: "drink-s", isAvailable: true, price: 180, size: "S" },
-      { id: "drink-m", isAvailable: false, price: 220, size: "M" },
+    portionLabel: null,
+    priceChoices: [
+      { id: "drink-s", isAvailable: true, price: 180, portionLabel: "250 мл" },
+      { id: "drink-m", isAvailable: false, price: 220, portionLabel: "350 мл" },
     ],
     ...overrides,
   } as PublicMenuProduct;
 }
 
-function createOther(
+function createSinglePriceProduct(
   overrides: Partial<PublicMenuProduct> = {},
 ): PublicMenuProduct {
   return {
@@ -116,9 +120,9 @@ function createOther(
     description: "",
     isAvailable: true,
     modifierGroups: [],
-    type: "OTHER",
     price: 120,
-    variants: [],
+    portionLabel: null,
+    priceChoices: [],
     ...overrides,
   } as PublicMenuProduct;
 }

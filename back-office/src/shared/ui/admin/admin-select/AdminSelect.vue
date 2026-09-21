@@ -33,10 +33,7 @@ defineSlots<{ default(): unknown }>();
 <style scoped lang="scss">
 .admin-select {
   width: 100%;
-  min-height: calc(
-    var(--expressa-space-lg) + var(--expressa-space-md) +
-      var(--expressa-space-xs)
-  );
+  min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -44,6 +41,9 @@ defineSlots<{ default(): unknown }>();
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+  transition:
+    border-color var(--expressa-motion-duration-control) ease-out,
+    background-color var(--expressa-motion-duration-control) ease-out;
 }
 
 .admin-select:disabled {
@@ -54,6 +54,6 @@ defineSlots<{ default(): unknown }>();
 
 .admin-select:focus-visible {
   outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
+  outline-offset: var(--expressa-focus-offset);
 }
 </style>

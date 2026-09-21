@@ -1,7 +1,3 @@
-export type ProductType = "DRINK" | "OTHER";
-
-export type ProductSize = "S" | "M" | "L";
-
 export type ModifierSelectionType = "single" | "multiple";
 
 export interface CategorySeed {
@@ -15,23 +11,12 @@ export interface CategorySeed {
 export interface ProductSeed {
   id: string;
   categoryId: string;
-  type: ProductType;
   name: string;
   description: string;
-  displayLabel?: string | null;
+  portionLabel?: string | null;
   price: number | null;
   sortOrder: number;
   isActive: boolean;
-  isAvailable: boolean;
-}
-
-export interface ProductVariantSeed {
-  id: string;
-  productId: string;
-  size: ProductSize;
-  displayLabel?: string | null;
-  price: number;
-  sortOrder: number;
   isAvailable: boolean;
 }
 
@@ -78,7 +63,6 @@ export interface ProductModifierGroupSeed {
 export interface CatalogSeed {
   categories: readonly CategorySeed[];
   products: readonly ProductSeed[];
-  productVariants: readonly ProductVariantSeed[];
   productPriceChoices: readonly ProductPriceChoiceSeed[];
   modifierGroups: readonly ModifierGroupSeed[];
   modifierOptions: readonly ModifierOptionSeed[];

@@ -1,8 +1,6 @@
 :root {
   /* Values derive from the canonical Vuetify theme in src/styles/theme.ts. */
-  --expressa-font-family-sans:
-    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
+  --expressa-font-family-sans: Inter, ui-sans-serif, system-ui, sans-serif;
   --v-font-body: var(--expressa-font-family-sans);
   --v-font-heading: var(--expressa-font-family-sans);
 
@@ -10,11 +8,14 @@
   --expressa-color-background: rgb(var(--v-theme-background));
   --expressa-color-surface: rgb(var(--v-theme-surface));
   --expressa-color-surface-raised: rgb(var(--v-theme-surface-raised));
+  --expressa-color-surface-subtle: rgb(var(--v-theme-surface-subtle));
   --expressa-color-text-primary: rgb(var(--v-theme-text-primary));
   --expressa-color-text-secondary: rgb(var(--v-theme-text-secondary));
   --expressa-color-text-muted: rgb(var(--v-theme-text-muted));
   --expressa-color-text-on-accent: rgb(var(--v-theme-on-primary));
   --expressa-color-accent: rgb(var(--v-theme-primary));
+  --expressa-color-accent-hover: rgb(var(--v-theme-primary-hover));
+  --expressa-color-accent-active: rgb(var(--v-theme-primary-active));
   --expressa-color-border: rgb(var(--v-theme-border-default));
   --expressa-color-border-strong: rgb(var(--v-theme-border-strong));
   --expressa-color-status-success: rgb(var(--v-theme-status-success));
@@ -26,6 +27,7 @@
     var(--v-theme-status-warning-surface)
   );
   --expressa-color-status-error: rgb(var(--v-theme-status-error));
+  --expressa-color-status-error-hover: #a91f1f;
   --expressa-color-status-error-surface: rgb(
     var(--v-theme-status-error-surface)
   );
@@ -34,33 +36,41 @@
     var(--v-theme-status-neutral-surface)
   );
   --expressa-color-status-info-surface: rgb(var(--v-theme-status-info-surface));
-  --expressa-color-control-hover-surface: var(--expressa-color-surface-raised);
+  --expressa-color-control-hover-surface: var(--expressa-color-surface-subtle);
   --expressa-color-control-selected-surface: var(
     --expressa-color-status-info-surface
   );
   --expressa-color-control-disabled-surface: var(
-    --expressa-color-surface-raised
+    --expressa-color-surface-subtle
   );
   --expressa-color-transparent: transparent;
 
+  --expressa-space-4: 4px;
+  --expressa-space-8: 8px;
+  --expressa-space-12: 12px;
+  --expressa-space-16: 16px;
+  --expressa-space-24: 24px;
+  --expressa-space-32: 32px;
+  --expressa-space-48: 48px;
   --expressa-space-2xs: 2px;
   --expressa-space-badge-block: 3px;
-  --expressa-space-xs: 4px;
+  --expressa-space-xs: var(--expressa-space-4);
   --expressa-space-field-label: 6px;
-  --expressa-space-sm: 8px;
+  --expressa-space-sm: var(--expressa-space-8);
   --expressa-space-control-block: 10px;
-  --expressa-space-control-inline: 12px;
-  --expressa-space-md: 16px;
+  --expressa-space-control-inline: var(--expressa-space-12);
+  --expressa-space-md: var(--expressa-space-16);
   --expressa-space-button-inline: 20px;
-  --expressa-space-lg: 24px;
-  --expressa-space-xl: 32px;
+  --expressa-space-lg: var(--expressa-space-24);
+  --expressa-space-xl: var(--expressa-space-32);
   --expressa-space-row-block: 14px;
   --expressa-space-tab-bar-clearance: 80px;
-  --expressa-space-empty-state-block: 48px;
-  --expressa-space-product-indent: 48px;
+  --expressa-space-empty-state-block: var(--expressa-space-48);
+  --expressa-space-product-indent: var(--expressa-space-48);
 
-  --expressa-radius-sm: 6px;
+  --expressa-radius-sm: 10px;
   --expressa-radius-md: 10px;
+  --expressa-radius-panel: 12px;
   --expressa-radius-lg: 16px;
   --expressa-radius-pill: 999px;
 
@@ -68,15 +78,16 @@
   --expressa-border-width-strong: 2px;
   --expressa-border-width-none: 0;
 
-  --expressa-font-size-status: 11px;
+  --expressa-font-size-status: 12px;
   --expressa-font-size-caption: 12px;
-  --expressa-font-size-action: 13px;
-  --expressa-font-size-body: 14px;
-  --expressa-font-size-body-strong: 15px;
-  --expressa-font-size-title: 18px;
+  --expressa-font-size-action: 14px;
+  --expressa-font-size-body: 16px;
+  --expressa-font-size-body-strong: 16px;
+  --expressa-font-size-metadata: 14px;
+  --expressa-font-size-title: 24px;
   --expressa-font-size-brand: 20px;
-  --expressa-font-size-heading: 22px;
-  --expressa-font-size-screen-title: 24px;
+  --expressa-font-size-heading: 32px;
+  --expressa-font-size-screen-title: 32px;
   --expressa-font-weight-medium: 500;
   --expressa-font-weight-semibold: 600;
   --expressa-font-weight-regular: 400;
@@ -100,6 +111,7 @@
   --expressa-size-status-min-height: 24px;
   --expressa-size-option: 40px;
   --expressa-size-control-min-height: 44px;
+  --expressa-size-control-coarse-min-height: 48px;
   --expressa-size-top-bar-min-height: 52px;
   --expressa-size-tab-bar-min-height: 60px;
   --expressa-size-role-option-min-height: 64px;
@@ -112,15 +124,18 @@
   --expressa-size-settings-content-max-width: 560px;
   --expressa-size-users-content-max-width: 720px;
 
-  --expressa-shadow-card: 0 1px 4px rgb(0 0 0 / 8%);
-  --expressa-shadow-menu: 0 8px 20px rgb(17 17 17 / 12%);
+  --expressa-shadow-card: 0 1px 4px rgb(23 24 26 / 8%);
+  --expressa-shadow-menu: 0 8px 20px rgb(23 24 26 / 12%);
 
   --expressa-state-disabled-opacity: 0.4;
   --expressa-state-pressed-opacity: 0.85;
   --expressa-motion-duration-control: 120ms;
+  --expressa-motion-duration-fast: 80ms;
+  --expressa-motion-duration-disclosure: 160ms;
   --expressa-focus-color: var(--expressa-color-accent);
   --expressa-focus-ring: var(--expressa-border-width-strong) solid
     var(--expressa-focus-color);
+  --expressa-focus-offset: 2px;
   --expressa-safe-area-top: env(safe-area-inset-top, 0px);
   --expressa-safe-area-right: env(safe-area-inset-right, 0px);
   --expressa-safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -128,14 +143,24 @@
 
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface-raised);
-  text-rendering: auto;
-  -webkit-font-smoothing: auto;
-  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  :root {
+    --expressa-size-control-min-height: var(
+      --expressa-size-control-coarse-min-height
+    );
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --expressa-motion-duration-control: 0ms;
+    --expressa-motion-duration-fast: 0ms;
+    --expressa-motion-duration-disclosure: 0ms;
   }
 }
 

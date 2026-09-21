@@ -14,6 +14,32 @@ const croissantId = "00000000-0000-4000-8000-000000000030";
 const unavailableDessertId = "00000000-0000-4000-8000-000000000040";
 const unpublishedDrinkId = "00000000-0000-4000-8000-000000000050";
 const milkGroupId = "00000000-0000-4000-8000-000000000100";
+const cappuccinoPriceChoices: readonly ProductPriceChoiceSeed[] = [
+  {
+    id: "00000000-0000-4000-8000-000000000011",
+    productId: cappuccinoId,
+    portionLabel: "Маленький",
+    price: 280,
+    sortOrder: 10,
+    isAvailable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000012",
+    productId: cappuccinoId,
+    portionLabel: "Средний",
+    price: 320,
+    sortOrder: 20,
+    isAvailable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000013",
+    productId: cappuccinoId,
+    portionLabel: "Большой",
+    price: 360,
+    sortOrder: 30,
+    isAvailable: true,
+  },
+];
 
 export const catalogSeed: CatalogSeed = {
   categories: [
@@ -36,7 +62,6 @@ export const catalogSeed: CatalogSeed = {
     {
       id: cappuccinoId,
       categoryId: coffeeCategoryId,
-      type: "DRINK",
       name: "Капучино",
       description: "Эспрессо с молочной пеной.",
       price: null,
@@ -47,10 +72,9 @@ export const catalogSeed: CatalogSeed = {
     {
       id: espressoId,
       categoryId: coffeeCategoryId,
-      type: "DRINK",
       name: "Эспрессо",
       description: "Классический двойной эспрессо.",
-      price: null,
+      price: 200,
       sortOrder: 20,
       isActive: true,
       isAvailable: true,
@@ -58,7 +82,6 @@ export const catalogSeed: CatalogSeed = {
     {
       id: croissantId,
       categoryId: bakeryCategoryId,
-      type: "OTHER",
       name: "Круассан",
       description: "Слоёный круассан из масляного теста.",
       price: 220,
@@ -69,7 +92,6 @@ export const catalogSeed: CatalogSeed = {
     {
       id: unavailableDessertId,
       categoryId: bakeryCategoryId,
-      type: "OTHER",
       name: "Чизкейк",
       description: "Десерт временно недоступен.",
       price: 280,
@@ -80,7 +102,6 @@ export const catalogSeed: CatalogSeed = {
     {
       id: unpublishedDrinkId,
       categoryId: coffeeCategoryId,
-      type: "DRINK",
       name: "Тестовый напиток",
       description: "Непубликуемый кандидат без размеров.",
       price: null,
@@ -89,41 +110,7 @@ export const catalogSeed: CatalogSeed = {
       isAvailable: true,
     },
   ],
-  productVariants: [
-    {
-      id: "00000000-0000-4000-8000-000000000011",
-      productId: cappuccinoId,
-      size: "S",
-      price: 280,
-      sortOrder: 10,
-      isAvailable: true,
-    },
-    {
-      id: "00000000-0000-4000-8000-000000000012",
-      productId: cappuccinoId,
-      size: "M",
-      price: 320,
-      sortOrder: 20,
-      isAvailable: true,
-    },
-    {
-      id: "00000000-0000-4000-8000-000000000013",
-      productId: cappuccinoId,
-      size: "L",
-      price: 360,
-      sortOrder: 30,
-      isAvailable: true,
-    },
-    {
-      id: "00000000-0000-4000-8000-000000000021",
-      productId: espressoId,
-      size: "S",
-      price: 200,
-      sortOrder: 10,
-      isAvailable: true,
-    },
-  ],
-  productPriceChoices: [],
+  productPriceChoices: cappuccinoPriceChoices,
   modifierGroups: [
     {
       id: milkGroupId,
@@ -177,31 +164,17 @@ export const categoryUpsertSql = `
 
 export const productUpsertSql = `
   INSERT INTO products (
-    id, category_id, type, name, description, display_label, price, sort_order, is_active, is_available, archived_at
+    id, category_id, name, description, portion_label, price, sort_order, is_active, is_available, archived_at
   )
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
   ON CONFLICT (id) DO UPDATE SET
     category_id = EXCLUDED.category_id,
-    type = EXCLUDED.type,
     name = EXCLUDED.name,
     description = EXCLUDED.description,
-    display_label = EXCLUDED.display_label,
+    portion_label = EXCLUDED.portion_label,
     price = EXCLUDED.price,
     sort_order = EXCLUDED.sort_order,
     is_active = EXCLUDED.is_active,
-    is_available = EXCLUDED.is_available,
-    archived_at = NULL
-`;
-
-export const productVariantUpsertSql = `
-  INSERT INTO product_variants (id, product_id, size, display_label, price, sort_order, is_available, archived_at)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, NULL)
-  ON CONFLICT (id) DO UPDATE SET
-    product_id = EXCLUDED.product_id,
-    size = EXCLUDED.size,
-    display_label = EXCLUDED.display_label,
-    price = EXCLUDED.price,
-    sort_order = EXCLUDED.sort_order,
     is_available = EXCLUDED.is_available,
     archived_at = NULL
 `;
@@ -275,7 +248,6 @@ const customerProductRows = [
   [
     "101",
     0,
-    "DRINK",
     "Какао",
     "",
     [
@@ -286,7 +258,6 @@ const customerProductRows = [
   [
     "102",
     0,
-    "DRINK",
     "Горячий шоколад",
     "",
     [
@@ -297,7 +268,6 @@ const customerProductRows = [
   [
     "103",
     0,
-    "DRINK",
     "Оранжет",
     "Апельсиновый какао без молока",
     [
@@ -308,7 +278,6 @@ const customerProductRows = [
   [
     "104",
     0,
-    "DRINK",
     "Сырный шок",
     "Сырный какао",
     [
@@ -319,7 +288,6 @@ const customerProductRows = [
   [
     "105",
     0,
-    "DRINK",
     "Фундучный какао",
     "Какао на пасте из фундучных ядер",
     [
@@ -327,18 +295,10 @@ const customerProductRows = [
       ["350 мл", 320],
     ],
   ],
-  [
-    "106",
-    1,
-    "DRINK",
-    "Чай китайский",
-    "Крутой китайский чай!",
-    [["350 мл", 250]],
-  ],
+  ["106", 1, "Чай китайский", "Крутой китайский чай!", [["350 мл", 250]]],
   [
     "107",
     1,
-    "DRINK",
     "Чай летний",
     "Китайский чай + цедра лимона + перечная мята",
     [["350 мл", 300]],
@@ -346,27 +306,24 @@ const customerProductRows = [
   [
     "108",
     2,
-    "DRINK",
     "Сироп а лё",
     "От фр. sirop à l'eau: тоник + сироп",
     [["450 мл", 250]],
   ],
-  ["109", 2, "DRINK", "Лимонад «Проспект МИРинда»", "", [["450 мл", 280]]],
+  ["109", 2, "Лимонад «Проспект МИРинда»", "", [["450 мл", 280]]],
   [
     "110",
     2,
-    "DRINK",
     "Коктейль «Нежность»",
     "Персиковый сок + мороженое",
     [["450 мл", 330]],
   ],
-  ["111", 2, "DRINK", "Молочный коктейль", "", [["450 мл", 330]]],
-  ["112", 3, "OTHER", "Антуччи", "Наши кофейные сухарики", 100, "100 г"],
-  ["113", 3, "OTHER", "Круассан", "", 170, null],
+  ["111", 2, "Молочный коктейль", "", [["450 мл", 330]]],
+  ["112", 3, "Антуччи", "Наши кофейные сухарики", 100, "100 г"],
+  ["113", 3, "Круассан", "", 170, null],
   [
     "114",
     3,
-    "DRINK",
     "Мороженое",
     "Саровское; рекомендован кофейный сироп",
     [
@@ -374,23 +331,14 @@ const customerProductRows = [
       ["100 г", 190],
     ],
   ],
-  ["115", 3, "OTHER", "Маффин", "", 200, null],
-  ["116", 3, "OTHER", "Сырники", "Можно добавить джем за 30 ₽", 220, "2 шт."],
-  [
-    "117",
-    3,
-    "OTHER",
-    "Штрудель",
-    "Постный: вишнёвый, яблочный или маковый",
-    240,
-    null,
-  ],
-  ["118", 3, "OTHER", "Горячий бутерброд", "Да, тот самый!", 300, null],
-  ["119", 4, "DRINK", "Эспрессо", "Двойной эспрессо", [["65 мл", 180]]],
+  ["115", 3, "Маффин", "", 200, null],
+  ["116", 3, "Сырники", "Можно добавить джем за 30 ₽", 220, "2 шт."],
+  ["117", 3, "Штрудель", "Постный: вишнёвый, яблочный или маковый", 240, null],
+  ["118", 3, "Горячий бутерброд", "Да, тот самый!", 300, null],
+  ["119", 4, "Эспрессо", "Двойной эспрессо", [["65 мл", 180]]],
   [
     "120",
     4,
-    "DRINK",
     "Американо",
     "",
     [
@@ -398,18 +346,10 @@ const customerProductRows = [
       ["350 мл", 260],
     ],
   ],
-  [
-    "121",
-    4,
-    "DRINK",
-    "Флэт уайт",
-    "Как капучино, только покрепче",
-    [["180 мл", 240]],
-  ],
+  ["121", 4, "Флэт уайт", "Как капучино, только покрепче", [["180 мл", 240]]],
   [
     "122",
     4,
-    "DRINK",
     "Капучино",
     "",
     [
@@ -417,18 +357,10 @@ const customerProductRows = [
       ["350 мл", 290],
     ],
   ],
-  [
-    "123",
-    4,
-    "DRINK",
-    "Латте",
-    "Как капучино, только помягче",
-    [["350 мл", 270]],
-  ],
+  ["123", 4, "Латте", "Как капучино, только помягче", [["350 мл", 270]]],
   [
     "124",
     5,
-    "DRINK",
     "Раф",
     "",
     [
@@ -436,12 +368,11 @@ const customerProductRows = [
       ["350 мл", 310],
     ],
   ],
-  ["125", 5, "DRINK", "Сырный раф", "", [["350 мл", 330]]],
-  ["126", 5, "DRINK", "Раффундук", "Раф с фундучной пастой", [["350 мл", 330]]],
+  ["125", 5, "Сырный раф", "", [["350 мл", 330]]],
+  ["126", 5, "Раффундук", "Раф с фундучной пастой", [["350 мл", 330]]],
   [
     "127",
     5,
-    "DRINK",
     "Моккачино",
     "Шоколадный капучино",
     [
@@ -449,40 +380,12 @@ const customerProductRows = [
       ["350 мл", 340],
     ],
   ],
-  ["128", 6, "DRINK", "Айс-латте", "Холодный латте", [["350 мл", 290]]],
-  ["129", 6, "DRINK", "Гляссе", "Американо + мороженое", [["350 мл", 290]]],
-  [
-    "130",
-    6,
-    "DRINK",
-    "Бамбл",
-    "Эспрессо + апельсиновый сок + сироп",
-    [["350 мл", 330]],
-  ],
-  [
-    "131",
-    6,
-    "DRINK",
-    "Эспрессо-тоник",
-    "Эспрессо + тоник + сироп",
-    [["350 мл", 330]],
-  ],
-  [
-    "132",
-    6,
-    "DRINK",
-    "Кофе-шейк",
-    "Молочный коктейль + эспрессо",
-    [["450 мл", 350]],
-  ],
-  [
-    "133",
-    6,
-    "DRINK",
-    "Аффогато",
-    "Десерт: мороженое + эспрессо",
-    [["110 г", 300]],
-  ],
+  ["128", 6, "Айс-латте", "Холодный латте", [["350 мл", 290]]],
+  ["129", 6, "Гляссе", "Американо + мороженое", [["350 мл", 290]]],
+  ["130", 6, "Бамбл", "Эспрессо + апельсиновый сок + сироп", [["350 мл", 330]]],
+  ["131", 6, "Эспрессо-тоник", "Эспрессо + тоник + сироп", [["350 мл", 330]]],
+  ["132", 6, "Кофе-шейк", "Молочный коктейль + эспрессо", [["450 мл", 350]]],
+  ["133", 6, "Аффогато", "Десерт: мороженое + эспрессо", [["110 г", 300]]],
 ] as const;
 
 const customerProductId = (suffix: string) =>
@@ -493,16 +396,8 @@ const retiredCustomerPriceChoiceId = "10000000-0000-4000-8200-000000000000";
 
 const customerProducts: ProductSeed[] = customerProductRows.map(
   (row, sortOrder) => {
-    const [
-      suffix,
-      categoryIndex,
-      type,
-      name,
-      description,
-      pricing,
-      displayLabel,
-    ] = row;
-    const isDrink = type === "DRINK";
+    const [suffix, categoryIndex, name, description, pricing, portionLabel] =
+      row;
     const priceChoices = Array.isArray(pricing)
       ? (pricing as readonly (readonly [string, number])[])
       : null;
@@ -511,12 +406,12 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
     return {
       id: customerProductId(suffix),
       categoryId: customerCategoryIds[categoryIndex as number]!,
-      type,
       name,
       description,
-      displayLabel:
-        singlePriceChoice?.[0] ?? (isDrink ? null : (displayLabel ?? null)),
-      price: singlePriceChoice?.[1] ?? (isDrink ? null : (pricing as number)),
+      portionLabel: singlePriceChoice?.[0] ?? portionLabel ?? null,
+      price:
+        singlePriceChoice?.[1] ??
+        (typeof pricing === "number" ? pricing : null),
       sortOrder,
       isActive: true,
       isAvailable: true,
@@ -526,9 +421,8 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
 
 const customerProductPriceChoices: ProductPriceChoiceSeed[] =
   customerProductRows.flatMap((row) => {
-    const [suffix, , type, , , pricing] = row;
-    if (type !== "DRINK" || !Array.isArray(pricing) || pricing.length < 2)
-      return [];
+    const [suffix, , , , pricing] = row;
+    if (!Array.isArray(pricing) || pricing.length < 2) return [];
     return (pricing as readonly (readonly [string, number])[]).map(
       ([portionLabel, price], sortOrder) => ({
         id: customerPriceChoiceId(suffix, sortOrder + 1),
@@ -688,7 +582,6 @@ export const customerMenuCatalogSeed: CatalogSeed = {
     isActive: true,
   })),
   products: customerProducts,
-  productVariants: [],
   productPriceChoices: customerProductPriceChoices,
   modifierGroups: customerModifierGroups,
   modifierOptions: customerModifierOptions,
@@ -706,13 +599,8 @@ export const developmentCatalogOwnedIds = {
     unavailableDessertId,
     unpublishedDrinkId,
   ],
-  variants: [
-    "00000000-0000-4000-8000-000000000011",
-    "00000000-0000-4000-8000-000000000012",
-    "00000000-0000-4000-8000-000000000013",
-    "00000000-0000-4000-8000-000000000021",
-  ],
   priceChoices: [
+    ...cappuccinoPriceChoices.map((choice) => choice.id),
     ...customerProductPriceChoices.map((choice) => choice.id),
     retiredCustomerPriceChoiceId,
   ],

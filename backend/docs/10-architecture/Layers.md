@@ -31,10 +31,9 @@ domain/application не знают HTTP, декораторы или драйв�
 | -------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `AuthController`, `MeController` | OTP, verify, refresh, logout, current user; `AuthRepository`, crypto, clock, sender          | PostgreSQL, Node crypto, development OTP/SMS.ru; HTTP token/cookie. [auth](../../src/auth/auth.module.ts) |
 | catalog controllers              | чтение меню и управление категориями, товарами, модификаторами; репозитории и command runner | PostgreSQL, аудит в той же транзакции. [catalog](../../src/catalog/catalog.module.ts)                     |
-| `OrdersController`               | создание заказа; `OrderUnitOfWork`                                                           | PostgreSQL-транзакция, снимок заказа. [orders](../../src/orders/orders.module.ts)                         |
+| `OrdersV3Controller`             | создание, чтение и повтор заказа; `OrderUnitOfWork`                                          | PostgreSQL-транзакция, снимок заказа. [orders](../../src/orders/orders.module.ts)                         |
 | health controller                | liveness/readiness                                                                           | процесс и PostgreSQL. [health](../../src/platform/health/health.controller.ts)                            |
 
 Границы проверяют unit-спеки use case и адаптеров; HTTP-цепочку покрывают
-интеграционные проверки.
-[Тесты auth](../../src/auth/application/verify-otp.use-case.spec.ts),
-[команды integration-проверок](../../package.json).
+интеграционные проверки. Набор проверок определяется
+[командами проекта](../../package.json).

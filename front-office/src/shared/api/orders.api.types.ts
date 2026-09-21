@@ -100,9 +100,6 @@ export type OrderItemResponse = {
   unitTotal: number;
   lineTotal: number;
   modifiers: OrderModifierResponse[];
-  /** Legacy v2 response compatibility for existing persisted/history fixtures. */
-  variantId?: string | null;
-  size?: "S" | "M" | "L" | null;
 };
 
 export type OrderModifierResponse = {

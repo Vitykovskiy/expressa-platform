@@ -42,12 +42,6 @@ export function createProductConfiguration(
     selectedPriceChoiceId:
       (product.priceChoices ?? []).find((choice) => choice.isAvailable)?.id ??
       null,
-    selectedVariantId:
-      product.variants?.find(
-        (variant) => variant.size === "M" && variant.isAvailable,
-      )?.id ??
-      product.variants?.find((variant) => variant.isAvailable)?.id ??
-      null,
   };
 }
 export function selectProductConfigurationPriceChoice(
@@ -61,18 +55,6 @@ export function selectProductConfigurationPriceChoice(
     ? { ...configuration, selectedPriceChoiceId: choice.id }
     : configuration;
 }
-/** @deprecated V2 compatibility; V3 uses price-choice IDs. */
-export const selectProductConfigurationVariant = (
-  configuration: ProductConfiguration,
-  variantId: string,
-) => {
-  const variant = configuration.product.variants?.find(
-    (candidate) => candidate.id === variantId,
-  );
-  return variant?.isAvailable
-    ? { ...configuration, selectedVariantId: variant.id }
-    : configuration;
-};
 export function toggleProductConfigurationOption(
   configuration: ProductConfiguration,
   groupId: string,
@@ -195,32 +177,6 @@ export function toCartItemDraft(
     return null;
   const choice = getSelectedChoice(configuration);
   const selectedOptions = getSelectedModifierOptions(configuration).options;
-  const legacyVariant = configuration.product.variants?.find(
-    (variant) => variant.id === configuration.selectedVariantId,
-  );
-  if (legacyVariant && configuration.product.type === "DRINK")
-    return {
-      productId: configuration.product.id,
-      productName: configuration.product.name,
-      addons: selectedOptions.map((option) => ({
-        id: option.id,
-        name: option.name,
-        priceRub: option.priceDelta,
-      })),
-      quantity: configuration.quantity,
-      lineTotalRub: totals.lineTotal,
-      unitTotal: totals.unitTotal,
-      lineTotal: totals.lineTotal,
-      selectedModifierOptions: selectedOptions,
-      type: "DRINK",
-      selectedVariant: {
-        id: legacyVariant.id,
-        size: legacyVariant.size,
-        price: legacyVariant.price,
-      },
-      size: legacyVariant.size,
-      sizePrice: legacyVariant.price,
-    };
   return {
     productId: configuration.product.id,
     productName: configuration.product.name,
@@ -262,10 +218,6 @@ function getSelectedChoice(
 }
 function getSelectedPrice(configuration: ProductConfiguration): number | null {
   if ((configuration.product.priceChoices ?? []).length === 0)
-    return (
-      configuration.product.variants?.find(
-        (variant) => variant.id === configuration.selectedVariantId,
-      )?.price ?? configuration.product.price
-    );
+    return configuration.product.price;
   return getSelectedChoice(configuration)?.price ?? null;
 }

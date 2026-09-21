@@ -9,8 +9,11 @@ export interface ConfirmDialogProps {
   description: string;
   confirmLabel: string;
   confirmVariant?: ConfirmVariant;
+  cancelLabel?: string;
   requireInput?: boolean;
   inputPlaceholder?: string;
+  pending?: boolean;
+  error?: string;
 }
 
 export interface ConfirmDialogEmits {

@@ -62,9 +62,14 @@ function mountProductDetail() {
         modifierGroups: [],
         name: "Эспрессо",
         price: null,
-        type: "DRINK",
-        variants: [
-          { id: "espresso-s", isAvailable: true, price: 180, size: "S" },
+        portionLabel: null,
+        priceChoices: [
+          {
+            id: "espresso-s",
+            isAvailable: true,
+            price: 180,
+            portionLabel: "250 мл",
+          },
         ],
       } satisfies PublicMenuProduct,
     },

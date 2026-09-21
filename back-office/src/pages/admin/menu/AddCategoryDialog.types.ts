@@ -2,6 +2,7 @@ import type {
   CatalogFormSaveOutcome,
   CatalogStoreError,
 } from "./catalog.types";
+import type { Category } from "./catalog.types";
 
 export type CategoryFormField = "name" | "description" | "isActive";
 
@@ -16,6 +17,7 @@ export interface AddCategoryDialogProps {
   fieldErrors?: Partial<Record<CategoryFormField, string>>;
   saveError?: CatalogStoreError | null;
   saveOutcome?: CatalogFormSaveOutcome;
+  categories?: readonly Category[];
 }
 
 export interface AddCategoryDialogEmits {

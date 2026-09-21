@@ -174,7 +174,7 @@
         "operationId": "AuthController_logoutSession",
         "parameters": [],
         "requestBody": {
-          "required": false,
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -216,6 +216,9 @@
                     "type": "object"
                   }
                 },
+                "required": [
+                  "pushSubscription"
+                ],
                 "type": "object"
               }
             }
@@ -284,28 +287,6 @@
         ]
       }
     },
-    "/api/v2/public/menu": {
-      "get": {
-        "operationId": "PublicMenuController_getMenu",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicMenuDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Получить публичное меню",
-        "tags": [
-          "menu"
-        ]
-      }
-    },
     "/api/v3/public/menu": {
       "get": {
         "operationId": "PublicMenuV3Controller_getMenu",
@@ -325,63 +306,6 @@
         "summary": "Получить публичное меню с ценами и подписями порций",
         "tags": [
           "menu-v3"
-        ]
-      }
-    },
-    "/api/v2/backoffice/catalog": {
-      "get": {
-        "operationId": "AdminCatalogController_getCatalog",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCatalogDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Получить каталог для управления меню",
-        "tags": [
-          "backoffice"
         ]
       }
     },
@@ -778,398 +702,6 @@
           }
         ],
         "summary": "Переупорядочить все категории",
-        "tags": [
-          "backoffice"
-        ]
-      }
-    },
-    "/api/v2/backoffice/catalog/products": {
-      "post": {
-        "operationId": "CatalogProductsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateProductDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProductResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiValidationErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Создать товар",
-        "tags": [
-          "backoffice"
-        ]
-      }
-    },
-    "/api/v2/backoffice/catalog/products/{productId}": {
-      "patch": {
-        "operationId": "CatalogProductsController_update",
-        "parameters": [
-          {
-            "name": "productId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProductDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProductResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiValidationErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Изменить товар",
-        "tags": [
-          "backoffice"
-        ]
-      },
-      "delete": {
-        "operationId": "CatalogProductsController_archive",
-        "parameters": [
-          {
-            "name": "productId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiValidationErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Архивировать товар",
-        "tags": [
-          "backoffice"
-        ]
-      }
-    },
-    "/api/v2/backoffice/catalog/products/reorder": {
-      "post": {
-        "operationId": "CatalogProductsController_reorder",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReorderProductsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProductResponseDto"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiValidationErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Переупорядочить товары категории",
         "tags": [
           "backoffice"
         ]
@@ -2179,7 +1711,6 @@
             "schema": {
               "enum": [
                 "product",
-                "variant",
                 "modifier"
               ],
               "type": "string"
@@ -2390,426 +1921,6 @@
         ],
         "tags": [
           "availability-v3"
-        ]
-      }
-    },
-    "/api/v2/orders": {
-      "get": {
-        "operationId": "OrdersController_list",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomerOrdersPageResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Получить историю своих заказов",
-        "tags": [
-          "orders"
-        ]
-      },
-      "post": {
-        "operationId": "OrdersController_create",
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "description": "UUID-ключ идемпотентности запроса.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOrderDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Создать заказ",
-        "tags": [
-          "orders"
-        ]
-      }
-    },
-    "/api/v2/orders/{orderId}": {
-      "get": {
-        "operationId": "OrdersController_details",
-        "parameters": [
-          {
-            "name": "orderId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomerOrderResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Получить свой заказ",
-        "tags": [
-          "orders"
-        ]
-      }
-    },
-    "/api/v2/backoffice/orders": {
-      "get": {
-        "operationId": "BackofficeOrdersController_list",
-        "parameters": [
-          {
-            "name": "stage",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "enum": [
-                "CREATED",
-                "ACCEPTED",
-                "PREPARING",
-                "READY",
-                "ISSUED"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "number",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BackofficeOrderListItemResponseDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Получить очередь заказов",
-        "tags": [
-          "backoffice"
-        ]
-      }
-    },
-    "/api/v2/backoffice/orders/{orderId}": {
-      "get": {
-        "operationId": "BackofficeOrdersController_details",
-        "parameters": [
-          {
-            "name": "orderId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BackofficeOrderDetailsResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Получить детали заказа",
-        "tags": [
-          "backoffice"
         ]
       }
     },
@@ -3485,124 +2596,6 @@
         ]
       }
     },
-    "/api/v2/push/subscriptions": {
-      "delete": {
-        "operationId": "PushSubscriptionsController_delete",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushSubscriptionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Удалить свою push-подписку",
-        "tags": [
-          "Push"
-        ]
-      },
-      "put": {
-        "operationId": "PushSubscriptionsController_upsert",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushSubscriptionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiHttpErrorDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Сохранить свою push-подписку",
-        "tags": [
-          "Push"
-        ]
-      }
-    },
     "/api/v2/push/subscriptions/inspect": {
       "post": {
         "operationId": "PushSubscriptionsController_inspect",
@@ -3998,24 +2991,15 @@
           "role"
         ]
       },
-      "PublicMenuVariantDto": {
+      "PublicMenuV3PriceChoiceDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "size": {
-            "type": "string",
-            "enum": [
-              "S",
-              "M",
-              "L"
-            ]
-          },
-          "displayLabel": {
-            "type": "object",
-            "nullable": true
+          "portionLabel": {
+            "type": "string"
           },
           "price": {
             "type": "integer",
@@ -4028,7 +3012,7 @@
         },
         "required": [
           "id",
-          "size",
+          "portionLabel",
           "price",
           "isAvailable"
         ]
@@ -4102,134 +3086,6 @@
           "minSelect",
           "maxSelect",
           "options"
-        ]
-      },
-      "PublicMenuProductDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DRINK",
-              "OTHER"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "displayLabel": {
-            "type": "object",
-            "nullable": true
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "nullable": true
-          },
-          "isAvailable": {
-            "type": "boolean"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicMenuVariantDto"
-            }
-          },
-          "modifierGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicMenuModifierGroupDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "name",
-          "description",
-          "price",
-          "isAvailable",
-          "variants",
-          "modifierGroups"
-        ]
-      },
-      "PublicMenuCategoryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "products": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicMenuProductDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "description",
-          "products"
-        ]
-      },
-      "PublicMenuDto": {
-        "type": "object",
-        "properties": {
-          "acceptsNewOrders": {
-            "type": "boolean"
-          },
-          "categories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicMenuCategoryDto"
-            }
-          }
-        },
-        "required": [
-          "acceptsNewOrders",
-          "categories"
-        ]
-      },
-      "PublicMenuV3PriceChoiceDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "portionLabel": {
-            "type": "string"
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "portionLabel",
-          "price",
-          "isAvailable"
         ]
       },
       "PublicMenuV3ProductDto": {
@@ -4325,278 +3181,6 @@
         "required": [
           "acceptsNewOrders",
           "categories"
-        ]
-      },
-      "AdminCatalogCategoryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "description",
-          "sortOrder",
-          "isActive"
-        ]
-      },
-      "AdminCatalogProductDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DRINK",
-              "OTHER"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "nullable": true
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "categoryId",
-          "type",
-          "name",
-          "description",
-          "price",
-          "sortOrder",
-          "isActive",
-          "isAvailable"
-        ]
-      },
-      "AdminCatalogProductVariantDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "size": {
-            "type": "string",
-            "enum": [
-              "S",
-              "M",
-              "L"
-            ]
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "productId",
-          "size",
-          "price",
-          "sortOrder",
-          "isAvailable"
-        ]
-      },
-      "AdminCatalogModifierGroupDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "selectionType": {
-            "type": "string",
-            "enum": [
-              "single",
-              "multiple"
-            ]
-          },
-          "minSelect": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxSelect": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "selectionType",
-          "minSelect",
-          "maxSelect",
-          "isActive"
-        ]
-      },
-      "AdminCatalogModifierOptionDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "groupId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "priceDelta": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isDefault": {
-            "type": "boolean"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "groupId",
-          "name",
-          "priceDelta",
-          "sortOrder",
-          "isDefault",
-          "isAvailable"
-        ]
-      },
-      "AdminCatalogCategoryModifierGroupDto": {
-        "type": "object",
-        "properties": {
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "groupId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "required": [
-          "categoryId",
-          "groupId",
-          "sortOrder"
-        ]
-      },
-      "AdminCatalogDto": {
-        "type": "object",
-        "properties": {
-          "categories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogCategoryDto"
-            }
-          },
-          "products": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogProductDto"
-            }
-          },
-          "productVariants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogProductVariantDto"
-            }
-          },
-          "modifierGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogModifierGroupDto"
-            }
-          },
-          "modifierOptions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogModifierOptionDto"
-            }
-          },
-          "categoryModifierGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogCategoryModifierGroupDto"
-            }
-          }
-        },
-        "required": [
-          "categories",
-          "products",
-          "productVariants",
-          "modifierGroups",
-          "modifierOptions",
-          "categoryModifierGroups"
         ]
       },
       "AdminV3CategoryDto": {
@@ -4996,268 +3580,6 @@
         },
         "required": [
           "categoryIds"
-        ]
-      },
-      "ProductVariantRequestDto": {
-        "type": "object",
-        "properties": {
-          "size": {
-            "type": "string",
-            "enum": [
-              "S",
-              "M",
-              "L"
-            ]
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "size",
-          "price",
-          "sortOrder",
-          "isAvailable"
-        ]
-      },
-      "CreateProductDto": {
-        "type": "object",
-        "properties": {
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DRINK",
-              "OTHER"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "nullable": true
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductVariantRequestDto"
-            }
-          }
-        },
-        "required": [
-          "categoryId",
-          "type",
-          "name",
-          "description",
-          "price",
-          "sortOrder",
-          "isActive",
-          "isAvailable",
-          "variants"
-        ]
-      },
-      "ProductVariantResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "size": {
-            "type": "string",
-            "enum": [
-              "S",
-              "M",
-              "L"
-            ]
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "size",
-          "price",
-          "sortOrder",
-          "isAvailable"
-        ]
-      },
-      "ProductResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DRINK",
-              "OTHER"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "nullable": true
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductVariantResponseDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "categoryId",
-          "type",
-          "name",
-          "description",
-          "price",
-          "sortOrder",
-          "isActive",
-          "isAvailable",
-          "variants"
-        ]
-      },
-      "UpdateProductDto": {
-        "type": "object",
-        "properties": {
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DRINK",
-              "OTHER"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "price": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "nullable": true
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isAvailable": {
-            "type": "boolean"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductVariantRequestDto"
-            }
-          }
-        },
-        "required": [
-          "categoryId",
-          "type",
-          "name",
-          "description",
-          "price",
-          "sortOrder",
-          "isActive",
-          "isAvailable",
-          "variants"
-        ]
-      },
-      "ReorderProductsDto": {
-        "type": "object",
-        "properties": {
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "productIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        },
-        "required": [
-          "categoryId",
-          "productIds"
         ]
       },
       "V3PriceChoiceDto": {
@@ -5742,6 +4064,178 @@
           "sortOrder"
         ]
       },
+      "AvailabilityCategoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "sortOrder",
+          "isActive"
+        ]
+      },
+      "AvailabilityProductResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "categoryId",
+          "name",
+          "description",
+          "price",
+          "sortOrder",
+          "isActive",
+          "isAvailable"
+        ]
+      },
+      "AvailabilityModifierGroupResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multiple"
+            ]
+          },
+          "minSelect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxSelect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "selectionType",
+          "minSelect",
+          "maxSelect",
+          "isActive"
+        ]
+      },
+      "AvailabilityModifierOptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "integer"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "name",
+          "priceDelta",
+          "sortOrder",
+          "isDefault",
+          "isAvailable"
+        ]
+      },
+      "AvailabilityCategoryModifierGroupResponseDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "categoryId",
+          "groupId",
+          "sortOrder"
+        ]
+      },
       "AvailabilityPriceChoiceResponseDto": {
         "type": "object",
         "properties": {
@@ -5838,37 +4332,31 @@
           "categories": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminCatalogCategoryDto"
+              "$ref": "#/components/schemas/AvailabilityCategoryResponseDto"
             }
           },
           "products": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminCatalogProductDto"
-            }
-          },
-          "productVariants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminCatalogProductVariantDto"
+              "$ref": "#/components/schemas/AvailabilityProductResponseDto"
             }
           },
           "modifierGroups": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminCatalogModifierGroupDto"
+              "$ref": "#/components/schemas/AvailabilityModifierGroupResponseDto"
             }
           },
           "modifierOptions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminCatalogModifierOptionDto"
+              "$ref": "#/components/schemas/AvailabilityModifierOptionResponseDto"
             }
           },
           "categoryModifierGroups": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminCatalogCategoryModifierGroupDto"
+              "$ref": "#/components/schemas/AvailabilityCategoryModifierGroupResponseDto"
             }
           },
           "priceChoices": {
@@ -5890,7 +4378,6 @@
         "required": [
           "categories",
           "products",
-          "productVariants",
           "modifierGroups",
           "modifierOptions",
           "categoryModifierGroups",
@@ -5917,7 +4404,6 @@
             "type": "string",
             "enum": [
               "product",
-              "variant",
               "modifier"
             ]
           },
@@ -5957,281 +4443,6 @@
           "isAvailable"
         ]
       },
-      "OrderModifierResponseDto": {
-        "type": "object",
-        "properties": {
-          "modifierOptionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "modifierName": {
-            "type": "string"
-          },
-          "priceDelta": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "modifierOptionId",
-          "modifierName",
-          "priceDelta"
-        ]
-      },
-      "OrderItemResponseDto": {
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "variantId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "productName": {
-            "type": "string"
-          },
-          "size": {
-            "type": "string",
-            "enum": [
-              "S",
-              "M",
-              "L"
-            ],
-            "nullable": true
-          },
-          "quantity": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unitTotal": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "lineTotal": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "modifiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderModifierResponseDto"
-            }
-          }
-        },
-        "required": [
-          "productId",
-          "variantId",
-          "productName",
-          "size",
-          "quantity",
-          "unitTotal",
-          "lineTotal",
-          "modifiers"
-        ]
-      },
-      "CustomerOrderResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "number": {
-            "type": "string",
-            "example": "20300102-001"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "stage": {
-            "type": "string",
-            "enum": [
-              "CREATED",
-              "ACCEPTED",
-              "PREPARING",
-              "READY",
-              "ISSUED"
-            ]
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "snapshot": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItemResponseDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "number",
-          "createdAt",
-          "stage",
-          "total",
-          "snapshot"
-        ]
-      },
-      "CustomerOrdersPageResponseDto": {
-        "type": "object",
-        "properties": {
-          "orders": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CustomerOrderResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "orders",
-          "nextCursor"
-        ]
-      },
-      "CreateOrderItemDto": {
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "variantId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "modifierOptionIds": {
-            "uniqueItems": true,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "quantity": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "maximum": 20
-          }
-        },
-        "required": [
-          "productId",
-          "variantId",
-          "modifierOptionIds",
-          "quantity"
-        ]
-      },
-      "CreateOrderDto": {
-        "type": "object",
-        "properties": {
-          "expectedTotal": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "maximum": 2147483647
-          },
-          "items": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CreateOrderItemDto"
-            }
-          }
-        },
-        "required": [
-          "expectedTotal",
-          "items"
-        ]
-      },
-      "OrderDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "number": {
-            "type": "string",
-            "example": "20300102-001"
-          },
-          "stage": {
-            "type": "string",
-            "enum": [
-              "CREATED"
-            ]
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItemResponseDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "number",
-          "stage",
-          "total",
-          "items"
-        ]
-      },
-      "BackofficeOrderListItemResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "number": {
-            "type": "string",
-            "example": "20300102-001"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "stage": {
-            "type": "string",
-            "enum": [
-              "CREATED",
-              "ACCEPTED",
-              "PREPARING",
-              "READY",
-              "ISSUED"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "number",
-          "createdAt",
-          "total",
-          "stage"
-        ]
-      },
       "BackofficeOrderCustomerResponseDto": {
         "type": "object",
         "properties": {
@@ -6247,6 +4458,69 @@
         "required": [
           "id",
           "phoneE164"
+        ]
+      },
+      "OrderV3ModifierResponseDto": {
+        "type": "object",
+        "properties": {
+          "modifierOptionId": {
+            "type": "string"
+          },
+          "modifierName": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "modifierOptionId",
+          "modifierName",
+          "priceDelta"
+        ]
+      },
+      "OrderV3ItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "priceChoiceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string"
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitTotal": {
+            "type": "number"
+          },
+          "lineTotal": {
+            "type": "number"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderV3ModifierResponseDto"
+            }
+          }
+        },
+        "required": [
+          "productId",
+          "priceChoiceId",
+          "productName",
+          "portionLabel",
+          "quantity",
+          "unitTotal",
+          "lineTotal",
+          "modifiers"
         ]
       },
       "BackofficeOrderEventResponseDto": {
@@ -6330,7 +4604,7 @@
           "snapshot": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OrderItemResponseDto"
+              "$ref": "#/components/schemas/OrderV3ItemResponseDto"
             }
           },
           "events": {
@@ -6349,69 +4623,6 @@
           "customer",
           "snapshot",
           "events"
-        ]
-      },
-      "OrderV3ModifierResponseDto": {
-        "type": "object",
-        "properties": {
-          "modifierOptionId": {
-            "type": "string"
-          },
-          "modifierName": {
-            "type": "string"
-          },
-          "priceDelta": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "modifierOptionId",
-          "modifierName",
-          "priceDelta"
-        ]
-      },
-      "OrderV3ItemResponseDto": {
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "string"
-          },
-          "priceChoiceId": {
-            "type": "string",
-            "nullable": true
-          },
-          "productName": {
-            "type": "string"
-          },
-          "portionLabel": {
-            "type": "string",
-            "nullable": true
-          },
-          "quantity": {
-            "type": "number"
-          },
-          "unitTotal": {
-            "type": "number"
-          },
-          "lineTotal": {
-            "type": "number"
-          },
-          "modifiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderV3ModifierResponseDto"
-            }
-          }
-        },
-        "required": [
-          "productId",
-          "priceChoiceId",
-          "productName",
-          "portionLabel",
-          "quantity",
-          "unitTotal",
-          "lineTotal",
-          "modifiers"
         ]
       },
       "CustomerOrderV3ResponseDto": {

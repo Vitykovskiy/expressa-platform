@@ -33,7 +33,7 @@ refresh token — host-only HttpOnly strict cookie, ротируется при 
 отзывается при logout. Независимость customer/staff recoverable sessions
 достигается только разными same-origin app hosts; при общем API host они
 разделяют cookie и не должны развёртываться как независимые сессии. Каждый UI
-проксирует свой `/api/v2`; локальная конфигурация также использует relative API
+проксирует свои `/api/v2` и `/api/v3`; локальная конфигурация также использует relative API
 path через Vite proxy, а не общий абсолютный API origin. Session
 guard проверяет сессию и актуальную роль; back-office доступен
 barista/administrator, которых заранее provisioned оператор. Front-office принимает только внутренний `returnTo` и

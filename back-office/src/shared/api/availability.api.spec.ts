@@ -6,7 +6,7 @@ import { ApiClient } from "./client";
 
 const categoryId = "11111111-1111-4111-8111-111111111111";
 const productId = "22222222-2222-4222-8222-222222222222";
-const variantId = "33333333-3333-4333-8333-333333333333";
+const priceChoiceId = "33333333-3333-4333-8333-333333333333";
 const modifierGroupId = "44444444-4444-4444-8444-444444444444";
 const modifierId = "55555555-5555-4555-8555-555555555555";
 const staffId = "66666666-6666-4666-8666-666666666666";
@@ -25,7 +25,7 @@ function availabilityCatalogV3Response() {
         sortOrder: 0,
         priceChoices: [
           {
-            id: variantId,
+            id: priceChoiceId,
             isAvailable: false,
             portionLabel: "250 мл",
             price: 250,
@@ -76,15 +76,6 @@ function availabilityResponse(): AvailabilityResponseDto {
         sortOrder: 0,
       },
     ],
-    productVariants: [
-      {
-        id: variantId,
-        isAvailable: false,
-        productId,
-        size: "M",
-        sortOrder: 0,
-      },
-    ],
     products: [
       {
         categoryId,
@@ -128,7 +119,7 @@ describe("AvailabilityApi", () => {
               type: "product",
             },
             {
-              id: variantId,
+              id: priceChoiceId,
               isAvailable: false,
               label: "Капучино · 250 мл",
               sublabel: "Порция",

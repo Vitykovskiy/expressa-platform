@@ -13,11 +13,9 @@ import type {
   OrderCatalogModifierGroup,
   OrderCatalogModifierOption,
   OrderCatalogProduct,
-  OrderCatalogVariant,
   OrderRequest,
   OrderRequestItem,
   OrderRevalidationResult,
-  OrderSnapshotItem,
   OrderSnapshotModifier,
 } from "./order.types";
 
@@ -25,66 +23,21 @@ export function revalidateOrder(
   request: OrderRequest,
   catalog: OrderCatalog,
 ): OrderRevalidationResult {
-  if (!catalog.acceptsNewOrders) {
-    throw new OrderIntakeClosedError();
-  }
-
-  if (request.pricingMode === "v3") return revalidateV3Order(request, catalog);
+  if (!catalog.acceptsNewOrders) throw new OrderIntakeClosedError();
   assertValidRequest(request);
-  assertValidCatalog(catalog);
-  const validatedItems = request.items.map((item) =>
-    validateItem(item, catalog.products),
-  );
-  validatedItems.forEach(({ product, variant, modifiers }) =>
-    assertAvailable(product, variant?.id, modifiers),
-  );
-  const items = validatedItems.map(({ item, product, variant, modifiers }) =>
-    createSnapshot(item, product, variant, modifiers),
-  );
-  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
-
-  if (!isNonNegativeAmount(total)) {
-    throw new OrderValidationError();
-  }
-  if (request.total !== total) {
-    throw new OrderTotalChangedError(total);
-  }
-
-  return Object.freeze({ total, items: Object.freeze(items) });
-}
-
-function revalidateV3Order(
-  request: OrderRequest,
-  catalog: OrderCatalog,
-): OrderRevalidationResult {
-  if (!isNonNegativeAmount(request.total) || request.items.length === 0)
-    throw new OrderValidationError();
   const items = request.items.map((item) => {
-    if (!isValidItemShape(item) || item.variantId !== null)
-      throw new OrderValidationError();
     const product = catalog.products.find(
       (candidate) => candidate.id === item.productId,
     );
     if (product === undefined || !product.isAvailable)
       throw new MenuItemUnavailableError(item.productId);
-    const choices = product.priceChoices ?? [];
-    const choice =
-      item.priceChoiceId === null
-        ? null
-        : choices.find((candidate) => candidate.id === item.priceChoiceId);
-    if (
-      (choices.length === 0 && item.priceChoiceId !== null) ||
-      (choices.length >= 2 && choice === null) ||
-      choices.length === 1 ||
-      (choices.length >= 2 && !choice?.isAvailable) ||
-      (choices.length === 0 && product.price === null)
-    )
-      throw new OrderValidationError();
+
+    const choice = getPriceChoice(product, item.priceChoiceId);
     const modifiers = getValidModifiers(
       product.modifierGroups,
       item.modifierOptionIds,
     );
-    assertAvailable(product, undefined, modifiers);
+    assertAvailable(product, modifiers);
     const basePrice = choice?.price ?? product.price;
     if (basePrice === null) throw new OrderValidationError();
     const unitTotal =
@@ -95,11 +48,9 @@ function revalidateV3Order(
       throw new OrderValidationError();
     return Object.freeze({
       productId: product.id,
-      variantId: null,
       priceChoiceId: choice?.id ?? null,
       productName: product.name,
-      size: null,
-      portionLabel: choice?.portionLabel ?? product.portionLabel ?? null,
+      portionLabel: choice?.portionLabel ?? product.portionLabel,
       quantity: item.quantity,
       unitTotal,
       lineTotal,
@@ -113,16 +64,13 @@ function revalidateV3Order(
 }
 
 function assertValidRequest(request: OrderRequest): void {
-  if (!isNonNegativeAmount(request.total) || request.items.length === 0) {
+  if (!isNonNegativeAmount(request.total) || request.items.length === 0)
     throw new OrderValidationError();
-  }
-
   const configurations = new Set<string>();
   for (const item of request.items) {
     const configurationKey = createConfigurationKey(item);
-    if (!isValidItemShape(item) || configurations.has(configurationKey)) {
+    if (!isValidItemShape(item) || configurations.has(configurationKey))
       throw new OrderValidationError();
-    }
     configurations.add(configurationKey);
   }
 }
@@ -130,7 +78,7 @@ function assertValidRequest(request: OrderRequest): void {
 function isValidItemShape(item: OrderRequestItem): boolean {
   return (
     isNonBlankString(item.productId) &&
-    (item.variantId === null || isNonBlankString(item.variantId)) &&
+    (item.priceChoiceId === null || isNonBlankString(item.priceChoiceId)) &&
     item.quantity >= minimumOrderItemQuantity &&
     item.quantity <= maximumOrderItemQuantity &&
     Number.isInteger(item.quantity) &&
@@ -139,137 +87,24 @@ function isValidItemShape(item: OrderRequestItem): boolean {
   );
 }
 
-function validateItem(
-  item: OrderRequestItem,
-  products: readonly OrderCatalogProduct[],
-) {
-  const product = products.find((candidate) => candidate.id === item.productId);
-  if (product === undefined) {
-    throw new OrderValidationError();
-  }
-
-  const variant = getValidVariant(product, item.variantId);
-  const modifiers = getValidModifiers(
-    product.modifierGroups,
-    item.modifierOptionIds,
-  );
-
-  return { item, product, variant, modifiers };
-}
-
-function createSnapshot(
-  item: OrderRequestItem,
+function getPriceChoice(
   product: OrderCatalogProduct,
-  variant: OrderCatalogVariant | null,
-  modifiers: readonly OrderCatalogModifierOption[],
-): OrderSnapshotItem {
-  const basePrice = variant === null ? product.price : variant.price;
-  if (basePrice === null) {
-    throw new OrderValidationError();
-  }
-  const unitTotal =
-    basePrice +
-    modifiers.reduce((sum, modifier) => sum + modifier.priceDelta, 0);
-  const lineTotal = unitTotal * item.quantity;
-  if (!isNonNegativeAmount(unitTotal) || !isNonNegativeAmount(lineTotal)) {
-    throw new OrderValidationError();
-  }
-
-  return Object.freeze({
-    productId: product.id,
-    variantId: variant?.id ?? null,
-    priceChoiceId: null,
-    productName: product.name,
-    size: variant?.size ?? null,
-    portionLabel: null,
-    quantity: item.quantity,
-    unitTotal,
-    lineTotal,
-    modifiers: Object.freeze(modifiers.map(toSnapshotModifier)),
-  });
-}
-
-function isValidProduct(product: OrderCatalogProduct): boolean {
-  if (!isNonBlankString(product.id) || !isNonBlankString(product.name)) {
-    return false;
-  }
-  if (product.type === "DRINK") {
-    return (
-      product.price === null &&
-      product.variants.every(isValidVariant) &&
-      hasUniqueValues(product.variants.map((variant) => variant.id)) &&
-      hasUniqueValues(product.variants.map((variant) => variant.size))
-    );
-  }
-  return (
-    product.type === "OTHER" &&
-    product.price !== null &&
-    isNonNegativeAmount(product.price) &&
-    product.variants.length === 0
-  );
-}
-
-function getValidVariant(
-  product: OrderCatalogProduct,
-  variantId: string | null,
+  priceChoiceId: string | null,
 ) {
-  if (product.type === "OTHER") {
-    if (variantId !== null) {
-      throw new OrderValidationError();
-    }
-    return null;
-  }
-  if (variantId === null) {
-    throw new OrderValidationError();
-  }
-
-  const variant = product.variants.find(
-    (candidate) => candidate.id === variantId,
-  );
-  if (variant === undefined) {
-    throw new OrderValidationError();
-  }
-  return variant;
-}
-
-function isValidVariant(variant: { id: string; price: number }): boolean {
-  return isNonBlankString(variant.id) && isNonNegativeAmount(variant.price);
-}
-
-function assertValidCatalog(catalog: OrderCatalog): void {
+  const choices = product.priceChoices;
+  const choice =
+    priceChoiceId === null
+      ? null
+      : choices.find((candidate) => candidate.id === priceChoiceId);
   if (
-    !hasUniqueValues(catalog.products.map((product) => product.id)) ||
-    catalog.products.some(
-      (product) =>
-        !isValidProduct(product) ||
-        !hasValidModifierGroups(product.modifierGroups),
-    )
-  ) {
+    (choices.length === 0 && priceChoiceId !== null) ||
+    (choices.length >= 2 && choice === undefined) ||
+    choices.length === 1 ||
+    (choices.length >= 2 && !choice?.isAvailable) ||
+    (choices.length === 0 && product.price === null)
+  )
     throw new OrderValidationError();
-  }
-}
-
-function hasValidModifierGroups(
-  groups: readonly OrderCatalogModifierGroup[],
-): boolean {
-  if (!hasUniqueValues(groups.map((group) => group.id))) {
-    return false;
-  }
-
-  const optionIds: string[] = [];
-  for (const group of groups) {
-    if (!isValidGroup(group)) {
-      return false;
-    }
-    for (const option of group.options) {
-      if (!isValidOption(option)) {
-        return false;
-      }
-      optionIds.push(option.id);
-    }
-  }
-
-  return hasUniqueValues(optionIds);
+  return choice ?? null;
 }
 
 function getValidModifiers(
@@ -278,35 +113,26 @@ function getValidModifiers(
 ): readonly OrderCatalogModifierOption[] {
   const optionsById = new Map<string, OrderCatalogModifierOption>();
   for (const group of groups) {
-    if (!isValidGroup(group)) {
-      throw new OrderValidationError();
-    }
+    if (!isValidGroup(group)) throw new OrderValidationError();
     for (const option of group.options) {
-      if (!isValidOption(option) || optionsById.has(option.id)) {
+      if (!isValidOption(option) || optionsById.has(option.id))
         throw new OrderValidationError();
-      }
       optionsById.set(option.id, option);
     }
   }
-
   const selectedOptions: OrderCatalogModifierOption[] = [];
   for (const id of optionIds) {
     const option = optionsById.get(id);
-    if (option === undefined) {
-      throw new OrderValidationError();
-    }
+    if (option === undefined) throw new OrderValidationError();
     selectedOptions.push(option);
   }
-
   for (const group of groups) {
     const count = selectedOptions.filter((option) =>
       group.options.some((candidate) => candidate.id === option.id),
     ).length;
-    if (count < group.minSelect || count > group.maxSelect) {
+    if (count < group.minSelect || count > group.maxSelect)
       throw new OrderValidationError();
-    }
   }
-
   return selectedOptions;
 }
 
@@ -318,10 +144,8 @@ function isValidGroup(group: OrderCatalogModifierGroup): boolean {
     group.minSelect < 0 ||
     group.maxSelect < group.minSelect ||
     (group.selectionType === "single" && group.maxSelect !== 1)
-  ) {
+  )
     return false;
-  }
-
   const defaults = group.options.filter(
     (option) => option.isAvailable && option.isDefault,
   );
@@ -343,26 +167,14 @@ function isValidOption(option: OrderCatalogModifierOption): boolean {
 
 function assertAvailable(
   product: OrderCatalogProduct,
-  variantId: string | undefined,
   modifiers: readonly OrderCatalogModifierOption[],
 ): void {
-  if (!product.isAvailable) {
-    throw new MenuItemUnavailableError(product.id);
-  }
-  if (variantId !== undefined) {
-    const variant = product.variants.find(
-      (candidate) => candidate.id === variantId,
-    );
-    if (variant !== undefined && !variant.isAvailable) {
-      throw new MenuItemUnavailableError(variant.id);
-    }
-  }
+  if (!product.isAvailable) throw new MenuItemUnavailableError(product.id);
   const unavailableModifier = modifiers.find(
     (modifier) => !modifier.isAvailable,
   );
-  if (unavailableModifier !== undefined) {
+  if (unavailableModifier !== undefined)
     throw new MenuItemUnavailableError(unavailableModifier.id);
-  }
 }
 
 function toSnapshotModifier(
@@ -378,8 +190,7 @@ function toSnapshotModifier(
 function createConfigurationKey(item: OrderRequestItem): string {
   return JSON.stringify({
     productId: item.productId,
-    variantId: item.variantId,
-    priceChoiceId: item.priceChoiceId ?? null,
+    priceChoiceId: item.priceChoiceId,
     modifierOptionIds: item.modifierOptionIds.toSorted(),
   });
 }
@@ -390,8 +201,4 @@ function isNonNegativeAmount(value: number): boolean {
 
 function isNonBlankString(value: string): boolean {
   return value.trim() !== "";
-}
-
-function hasUniqueValues(values: readonly string[]): boolean {
-  return new Set(values).size === values.length;
 }

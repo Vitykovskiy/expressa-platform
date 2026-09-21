@@ -42,7 +42,7 @@ describe("LogoutUseCase", () => {
     });
 
     await expect(
-      useCase.execute(`${sessionId}.${refreshSecret}`),
+      useCase.execute(`${sessionId}.${refreshSecret}`, null),
     ).resolves.toBeUndefined();
     expect(repository.logoutSession).toHaveBeenCalledWith(
       sessionId,
@@ -55,10 +55,10 @@ describe("LogoutUseCase", () => {
     const { useCase, repository } = createUseCase({ status: "unavailable" });
 
     await expect(
-      useCase.execute(`${sessionId}.${refreshSecret}`),
+      useCase.execute(`${sessionId}.${refreshSecret}`, null),
     ).resolves.toBeUndefined();
     await expect(
-      useCase.execute(`${sessionId}.${refreshSecret}`),
+      useCase.execute(`${sessionId}.${refreshSecret}`, null),
     ).resolves.toBeUndefined();
     expect(repository.logoutSession).toHaveBeenCalledTimes(2);
   });
@@ -67,7 +67,7 @@ describe("LogoutUseCase", () => {
     const { useCase, repository } = createUseCase({ status: "unavailable" });
 
     await expect(
-      useCase.execute(`${sessionId}.${foreignRefreshSecret}`),
+      useCase.execute(`${sessionId}.${foreignRefreshSecret}`, null),
     ).resolves.toBeUndefined();
     expect(repository.logoutSession).toHaveBeenCalledWith(
       sessionId,
@@ -79,7 +79,9 @@ describe("LogoutUseCase", () => {
   it("отклоняет refresh token вне контракта без обращения к repository", async () => {
     const { useCase, repository } = createUseCase({ status: "unavailable" });
 
-    await expect(useCase.execute("invalid")).rejects.toThrow(AccessDeniedError);
+    await expect(useCase.execute("invalid", null)).rejects.toThrow(
+      AccessDeniedError,
+    );
     expect(repository.logoutSession).not.toHaveBeenCalled();
   });
 });

@@ -1,169 +1,98 @@
 <template>
   <AdminDialog
-    :model-value="open"
     :aria-labelledby="titleId"
-    max-width="448"
-    :persistent="isProtected"
+    full-screen-below-600
+    :model-value="open"
+    max-width="560"
+    :persistent="props.disabled"
     @after-enter="focusFirstField"
-    @update:model-value="updateOpen"
+    @update:model-value="requestClose"
   >
-    <v-card class="add-dialog">
-      <h2 :id="titleId" class="add-dialog__title">Новая категория</h2>
-      <p class="add-dialog__description">
-        Создайте новую категорию для товаров меню
-      </p>
-      <section
-        v-if="props.disabled || hasSaveOutcome"
-        class="add-dialog-outcome"
-        aria-live="polite"
-      >
-        <p v-if="props.disabled" role="status">Сохраняем категорию…</p>
-        <p
-          v-else-if="props.saveOutcome === 'rejected'"
-          class="add-dialog-error"
-          role="alert"
+    <v-card class="category-dialog">
+      <header class="category-dialog__header">
+        <h2 :id="titleId" class="category-dialog__title">Новая категория</h2>
+        <button
+          aria-label="Закрыть диалог"
+          :disabled="props.disabled"
+          class="category-dialog__close"
+          type="button"
+          @click="requestClose(false)"
         >
-          Не удалось сохранить категорию. Исправьте отмеченные поля и сохраните
-          ещё раз.
-        </p>
-        <template v-else-if="props.saveOutcome === 'unconfirmed'">
-          <p class="add-dialog-error" role="alert">
-            Не удалось подтвердить сохранение категории. Обновите меню и
-            проверьте категорию перед повторным сохранением.
-          </p>
-          <AdminButton
-            :disabled="props.disabled"
-            type="button"
-            @click="emit('refresh')"
-            >Обновить меню</AdminButton
-          >
-        </template>
-        <p v-else-if="props.saveOutcome === 'saved'" role="status">
-          Меню обновлено. Закройте форму и проверьте категорию в меню перед
-          повторным сохранением.
-        </p>
-        <details v-if="props.saveError" class="add-dialog-technical-details">
-          <summary>Технические сведения</summary>
-          <p>{{ props.saveError.message }}</p>
-          <p v-if="props.saveError.requestId">
-            Идентификатор запроса: {{ props.saveError.requestId }}
-          </p>
-        </details>
+          ×
+        </button>
+      </header>
+      <section
+        v-if="props.saveOutcome === 'rejected'"
+        ref="saveError"
+        class="category-dialog__outcome"
+        role="alert"
+        tabindex="-1"
+      >
+        Не удалось создать категорию. Проверьте данные и повторите попытку.
+      </section>
+      <v-card-text class="category-dialog__fields">
+        <CategoryFormFields
+          ref="fields"
+          :description="draft.description.value"
+          :disabled="props.disabled"
+          :errors="errors"
+          :is-active="draft.isActive.value"
+          :name="draft.name.value"
+          name-autofocus
+          @blur-name="nameTouched = true"
+          @submit="confirm"
+          @update:description="draft.description.value = $event"
+          @update:is-active="draft.isActive.value = $event"
+          @update:name="draft.name.value = $event"
+        />
+      </v-card-text>
+      <v-card-actions class="category-dialog__actions">
         <AdminButton
-          v-if="canDiscardDraft"
+          :disabled="props.disabled"
           type="button"
           variant="ghost"
-          @click="discardDraft"
-          >Закрыть форму</AdminButton
+          @click="requestClose(false)"
+          >Отмена</AdminButton
         >
-      </section>
-      <v-card-text class="add-dialog-fields">
-        <div class="add-dialog-field">
-          <label :for="nameId">Название категории</label>
-          <AdminTextField
-            :id="nameId"
-            ref="nameInput"
-            v-model="name"
-            :aria-describedby="nameError ? nameErrorId : undefined"
-            :aria-invalid="Boolean(nameError)"
-            :disabled="isProtected"
-            autofocus
-            class="add-dialog-input"
-            placeholder="Например: Кофе, Чай, Десерты"
-            type="text"
-            @blur="touchName"
-            @keydown="submitOnEnter"
-            @update:model-value="dismissFieldError('name')"
-          />
-          <p
-            v-if="nameError"
-            :id="nameErrorId"
-            class="add-dialog-error"
-            role="alert"
-          >
-            {{ nameError }}
-          </p>
-        </div>
-        <div class="add-dialog-field">
-          <label :for="descriptionId">Описание</label>
-          <AdminTextField
-            :id="descriptionId"
-            v-model="description"
-            :aria-describedby="
-              descriptionError ? descriptionErrorId : undefined
-            "
-            :aria-invalid="Boolean(descriptionError)"
-            :disabled="isProtected"
-            class="add-dialog-input"
-            placeholder="Например: Горячие напитки"
-            type="text"
-            @update:model-value="dismissFieldError('description')"
-          />
-          <p
-            v-if="descriptionError"
-            :id="descriptionErrorId"
-            class="add-dialog-error"
-            role="alert"
-          >
-            {{ descriptionError }}
-          </p>
-        </div>
-        <div class="add-dialog-field">
-          <div class="add-dialog-toggle">
-            <strong :id="activeLabelId">Категория активна</strong>
-            <AdminToggle
-              v-model="isActive"
-              :aria-labelledby="activeLabelId"
-              :aria-describedby="activeError ? activeErrorId : undefined"
-              :aria-invalid="Boolean(activeError)"
-              :disabled="isProtected"
-              @update:model-value="dismissFieldError('isActive')"
-            />
-          </div>
-          <p
-            v-if="activeError"
-            :id="activeErrorId"
-            class="add-dialog-error"
-            role="alert"
-          >
-            {{ activeError }}
-          </p>
-        </div>
-      </v-card-text>
-      <v-card-actions class="add-dialog-actions admin-dialog-actions">
         <AdminButton
-          :disabled="isProtected || !isRawFormValid"
+          :disabled="props.disabled || !canSave"
           type="button"
           @click="confirm"
+          >{{ props.disabled ? "Создаём…" : "Создать категорию" }}</AdminButton
         >
-          Добавить категорию
-        </AdminButton>
-        <AdminButton
-          :disabled="isProtected"
-          type="button"
-          variant="ghost"
-          @click="cancel"
-        >
-          Отмена
-        </AdminButton>
       </v-card-actions>
     </v-card>
   </AdminDialog>
+  <ConfirmDialog
+    v-model:open="discardOpen"
+    confirm-label="Закрыть без сохранения"
+    cancel-label="Продолжить редактирование"
+    confirm-variant="destructive"
+    description="Введённые данные будут потеряны."
+    title="Закрыть без сохранения?"
+    @confirm="closeDiscarded"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
-
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
-import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
-import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
+import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
+import CategoryFormFields from "./CategoryFormFields.vue";
 import { ADD_CATEGORY_DIALOG_DEFAULTS } from "./AddCategoryDialog.constants";
+import { useCategoryDraft } from "./composables/useCategoryDraft";
 import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   AddCategoryDialogEmits,
   AddCategoryDialogProps,
-  CategoryFormField,
 } from "./AddCategoryDialog.types";
 
 const props = withDefaults(
@@ -172,235 +101,121 @@ const props = withDefaults(
 );
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<AddCategoryDialogEmits>();
-const name = shallowRef("");
-const description = shallowRef("");
-const isActive = shallowRef(true);
-const nameTouched = shallowRef(false);
-const dismissedFieldErrors = shallowRef<ReadonlySet<CategoryFormField>>(
-  new Set(),
-);
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const titleId = `add-category-title-${useId()}`;
-const nameId = `add-category-name-${useId()}`;
-const descriptionId = `add-category-description-${useId()}`;
-const activeLabelId = `add-category-active-${useId()}`;
-const nameErrorId = `add-category-name-error-${useId()}`;
-const descriptionErrorId = `add-category-description-error-${useId()}`;
-const activeErrorId = `add-category-active-error-${useId()}`;
-const nameInput =
-  useTemplateRef<InstanceType<typeof AdminTextField>>("nameInput");
-const rawNameError = computed(() =>
-  name.value.trim() ? undefined : "Введите название категории",
-);
-const nameError = computed(
-  () =>
-    serverFieldError("name") ??
-    (nameTouched.value ? rawNameError.value : undefined),
-);
-const descriptionError = computed(() => serverFieldError("description"));
-const activeError = computed(() => serverFieldError("isActive"));
-const isRawFormValid = computed(
-  () =>
-    !rawNameError.value &&
-    !serverFieldError("name") &&
-    !serverFieldError("description") &&
-    !serverFieldError("isActive"),
-);
-const hasSaveOutcome = computed(() => props.saveOutcome !== "idle");
-const isProtected = computed(
-  () =>
-    props.disabled ||
-    props.saveOutcome === "unconfirmed" ||
-    props.saveOutcome === "saved",
-);
-const canDiscardDraft = computed(
-  () =>
-    !props.disabled &&
-    (props.saveOutcome === "unconfirmed" || props.saveOutcome === "saved"),
-);
+const fields =
+  useTemplateRef<InstanceType<typeof CategoryFormFields>>("fields");
+const nameTouched = shallowRef(false);
+const discardOpen = shallowRef(false);
+const saveError = useTemplateRef<HTMLElement>("saveError");
+const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
+const draft = useCategoryDraft({
+  categories: () => props.categories ?? [],
+  initial: () => ({ name: "", description: "", isActive: true }),
+});
+const errors = computed(() => ({
+  name: nameTouched.value ? draft.validation.value.name : undefined,
+  description: draft.validation.value.description,
+  ...props.fieldErrors,
+}));
+const canSave = computed(() => draft.isDirty.value && draft.isValid.value);
 
-function resetDraft() {
-  name.value = "";
-  description.value = "";
-  isActive.value = true;
-  nameTouched.value = false;
-  dismissedFieldErrors.value = new Set();
+function focusFirstField(): void {
+  fields.value?.focusName();
 }
-
-function serverFieldError(field: CategoryFormField) {
-  return dismissedFieldErrors.value.has(field)
-    ? undefined
-    : props.fieldErrors[field];
+function confirm(): void {
+  nameTouched.value = true;
+  if (props.disabled || !canSave.value) return;
+  emit("confirm", draft.data.value);
 }
-
-function dismissFieldError(field: CategoryFormField) {
-  if (!props.fieldErrors[field] || dismissedFieldErrors.value.has(field))
+function requestClose(value: boolean): void {
+  if (value || props.disabled) {
+    if (value) open.value = true;
     return;
-
-  dismissedFieldErrors.value = new Set(dismissedFieldErrors.value).add(field);
-}
-
-function touchName(): void {
-  if (!open.value) return;
-  nameTouched.value = true;
-}
-
-function cancel() {
-  if (isProtected.value) return;
-  resetDraft();
-  open.value = false;
-  emit("cancel");
-}
-
-function discardDraft() {
-  if (!canDiscardDraft.value) return;
-  resetDraft();
-  open.value = false;
-  emit("cancel");
-}
-
-function updateOpen(value: boolean) {
-  if (value) open.value = true;
-  else if (!isProtected.value) cancel();
-}
-
-function confirm() {
-  nameTouched.value = true;
-  if (isProtected.value || !isRawFormValid.value) return;
-
-  dismissedFieldErrors.value = new Set();
-
-  emit("confirm", {
-    name: name.value.trim(),
-    description: description.value.trim(),
-    isActive: isActive.value,
-  });
-}
-
-function submitOnEnter(event: { key: string; preventDefault: () => void }) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    confirm();
   }
+  if (draft.isDirty.value) discardOpen.value = true;
+  else closeDiscarded();
 }
-
-function focusFirstField() {
-  nameInput.value?.$el.focus();
+function closeDiscarded(): void {
+  discardOpen.value = false;
+  open.value = false;
+  emit("cancel");
 }
-
-watch(open, (value, previous) => {
-  if (value && !previous) {
+watch(open, (isOpen, wasOpen) => {
+  if (isOpen && !wasOpen) {
+    draft.reset();
     nameTouched.value = false;
     captureReturnFocus();
   }
-
-  if (!value && previous) {
-    resetDraft();
-    restoreFocus();
-  }
+  if (!isOpen && wasOpen) restoreFocus();
 });
-
 watch(
-  () => props.fieldErrors,
-  () => {
-    dismissedFieldErrors.value = new Set();
+  () => props.saveOutcome,
+  (outcome) => {
+    if (outcome === "rejected") void nextTick(() => saveError.value?.focus());
   },
 );
 </script>
 
 <style scoped lang="scss">
-.add-dialog {
+.category-dialog {
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
-.add-dialog__title {
+.category-dialog__title {
   margin: 0;
-  padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-sm);
+  padding: 24px 24px 16px;
   font-size: var(--expressa-font-size-title);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: 28px;
 }
-.add-dialog__description {
-  margin: 0;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: 20px;
-}
-.add-dialog-fields {
-  display: grid;
-  gap: calc(var(--expressa-space-md) + var(--expressa-space-xs));
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-.add-dialog-field {
-  display: grid;
-  gap: var(--expressa-space-field-label);
-}
-.add-dialog-fields label {
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-body);
-}
-.add-dialog-input {
-  width: 100%;
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-control-block)
-    var(--expressa-space-control-inline);
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-  font: inherit;
-}
-.add-dialog-input:disabled {
-  opacity: var(--expressa-state-disabled-opacity);
-  background: var(--expressa-color-control-disabled-surface);
-}
-.add-dialog-toggle {
+.category-dialog__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-border-width-none);
-  padding: var(--expressa-space-control-inline) 0;
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  padding: 16px 24px;
 }
-.add-dialog-toggle strong,
-.add-dialog-toggle span {
-  display: block;
+.category-dialog__header .category-dialog__title {
+  padding: 0;
 }
-.add-dialog-toggle strong {
-  font-size: var(--expressa-font-size-body-strong);
-  line-height: var(--expressa-line-height-body);
+.category-dialog__close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 28px;
 }
-.add-dialog-toggle span,
-.add-dialog-hint {
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
+.category-dialog__fields {
+  padding: 0 24px 24px;
 }
-.add-dialog-error {
-  margin: 0;
+.category-dialog__outcome {
+  margin: 0 24px 16px;
   color: var(--expressa-color-status-error);
-  font-size: var(--expressa-font-size-caption);
 }
-.add-dialog-outcome {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+.category-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px 24px;
 }
-.add-dialog-technical-details {
-  overflow-wrap: anywhere;
+@media (max-width: 599px) {
+  .category-dialog__title {
+    padding: 16px 16px;
+  }
+  .category-dialog__fields {
+    padding: 0 16px 16px;
+  }
+  .category-dialog__actions {
+    position: sticky;
+    bottom: 0;
+    padding: 16px;
+    background: var(--expressa-color-surface);
+  }
 }
-.add-dialog-input[aria-invalid="true"] {
-  border-color: var(--expressa-color-status-error);
-}
-.add-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-.add-dialog-actions .admin-button {
-  width: 100%;
+@media (max-width: 399px) {
+  .category-dialog__actions {
+    display: grid;
+  }
+  .category-dialog__actions .admin-button {
+    width: 100%;
+  }
 }
 </style>

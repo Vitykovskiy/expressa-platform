@@ -25,7 +25,8 @@ describe("BackofficeAvailabilityController", () => {
     const catalog = {
       categories: [],
       products: [],
-      productVariants: [],
+      priceChoices: [],
+      productModifierGroups: [],
       modifierGroups: [],
       modifierOptions: [],
       categoryModifierGroups: [],
@@ -36,10 +37,10 @@ describe("BackofficeAvailabilityController", () => {
         updatedAt: null,
       },
     };
-    const get = { execute: jest.fn().mockResolvedValue(catalog) };
+    const get = { executeAvailability: jest.fn().mockResolvedValue(catalog) };
     const availability = {
       execute: jest.fn().mockResolvedValue({
-        type: "variant",
+        type: "product",
         id: "c9d39eaa-2d6d-4ae1-b69c-5205778ea4bd",
         isAvailable: false,
       }),
@@ -61,7 +62,7 @@ describe("BackofficeAvailabilityController", () => {
     await expect(controller.getAvailability()).resolves.toEqual(catalog);
     await expect(
       controller.updateAvailability(
-        "variant",
+        "product",
         "c9d39eaa-2d6d-4ae1-b69c-5205778ea4bd",
         { isAvailable: false },
         auth,
@@ -72,7 +73,7 @@ describe("BackofficeAvailabilityController", () => {
       controller.updateIntake({ acceptsNewOrders: false }, auth, request),
     ).resolves.toMatchObject({ acceptsNewOrders: false });
     expect(availability.execute).toHaveBeenCalledWith({
-      type: "variant",
+      type: "product",
       id: "c9d39eaa-2d6d-4ae1-b69c-5205778ea4bd",
       isAvailable: false,
       actorId: "staff",
@@ -87,7 +88,7 @@ describe("BackofficeAvailabilityController", () => {
 
   it("валидирует команду до use case", async () => {
     const controller = new BackofficeAvailabilityController(
-      { execute: jest.fn() } as unknown as GetAdminCatalogUseCase,
+      { executeAvailability: jest.fn() } as unknown as GetAdminCatalogUseCase,
       { execute: jest.fn() } as unknown as ManageAvailabilityUseCase,
       { execute: jest.fn() } as unknown as ManageServiceIntakeUseCase,
     );

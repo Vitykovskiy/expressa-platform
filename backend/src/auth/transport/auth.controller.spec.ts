@@ -329,7 +329,7 @@ describe("AuthController", () => {
     const response = { cookie: jest.fn() };
 
     await expect(
-      controller.logoutSession(undefined, response),
+      controller.logoutSession(undefined, response, { pushSubscription: null }),
     ).resolves.toBeUndefined();
     expect(logout.execute).not.toHaveBeenCalled();
     expect(response.cookie).toHaveBeenCalledWith(
@@ -346,6 +346,7 @@ describe("AuthController", () => {
       logoutCase.controller.logoutSession(
         `${refreshCookieName}=${refreshToken}`,
         { cookie: jest.fn() },
+        { pushSubscription: null },
       ),
     ).resolves.toBeUndefined();
   });

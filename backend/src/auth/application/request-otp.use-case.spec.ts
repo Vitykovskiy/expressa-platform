@@ -38,6 +38,7 @@ function createRepository(): jest.Mocked<AuthRepository> {
     findSessionWithUser: jest.fn(),
     invalidateOtpChallenge: jest.fn(),
     logoutSession: jest.fn(),
+    logoutSessionWithPushSubscription: jest.fn(),
     revokeSession: jest.fn(),
     reserveOtpChallenge: jest.fn(),
     rotateSession: jest.fn(),

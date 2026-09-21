@@ -1,7 +1,4 @@
-import type {
-  PriceChoiceDraft,
-  ProductVariantDraft,
-} from "./AddProductDialog.types";
+import type { PriceChoiceDraft } from "./AddProductDialog.types";
 
 export const portionLabelSuggestions = [
   "200 мл",
@@ -20,18 +17,4 @@ export function createPriceChoiceDraft(): PriceChoiceDraft {
     price: "",
     isAvailable: true,
   };
-}
-
-export const PRODUCT_TYPE_OPTIONS = [
-  { value: "DRINK", label: "Напиток" },
-  { value: "OTHER", label: "Товар без размеров" },
-] as const;
-
-export function createInitialProductVariantDrafts(): ProductVariantDraft[] {
-  return ["S", "M", "L"].map((size) => ({
-    size: size as ProductVariantDraft["size"],
-    price: "",
-    isConfigured: true,
-    isAvailable: true,
-  }));
 }

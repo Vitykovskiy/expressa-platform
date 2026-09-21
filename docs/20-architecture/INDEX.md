@@ -7,7 +7,6 @@
 - [Архитектура backend](Backend-architecture.md) и
   [архитектура клиентов](Client-architecture.md)
 - [Архитектурные решения](ADR/INDEX.md)
-- [Одна цена и варианты цены товара](ADR/ADR-006-product-variant-portions.md) —
-  принятое, но ещё не полностью реализованное решение вместо технических
-  `S/M/L`
+- [v3 cutover каталога и заказов](ADR/ADR-008-v3-catalog-orders-cutover.md) —
+  текущая граница меню, товаров и заказов
 - [Тематический маршрут](_MOC-architecture.md)

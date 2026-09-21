@@ -25,8 +25,6 @@ export type OrderPush = {
 };
 
 export interface PushSubscriptionRepository {
-  upsert(command: PushSubscriptionCommand): Promise<void>;
-  delete(userId: string, endpoint: string): Promise<void>;
   findByEndpoint(endpoint: string): Promise<PushSubscription | null>;
   createAssociation(command: PushSubscriptionCommand): Promise<string | null>;
   transferAssociation(

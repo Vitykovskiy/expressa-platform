@@ -1,76 +1,14 @@
 ---
 type: feature
 owner: root
-implementation_status: target-partial
-last_verified: 2026-09-14
+implementation_status: current
+last_verified: 2026-09-20
 sources:
-  - ../../front-office/src/features/orders/OrdersHistoryScreen.vue
-  - ../../front-office/src/features/account/AccountSettingsDialog.vue
-  - ../20-architecture/ADR/ADR-005-customer-notification-association.md
+  - ../../backend/openapi/openapi.json
+  - ../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md
+  - ../20-architecture/ADR/ADR-009-explicit-logout-push-contract.md
 ---
 
 # Текущий заказ, история и повтор
 
-Авторизованный customer открывает /orders и видит только собственные заказы:
-список от новых к старым, refresh и следующую страницу. Детали показывают
-снимок состава, стадию и сумму. Выданный заказ можно повторить: текущие
-доступность и цены перепроверяются, частичный результат объясняется, а
-существующая корзина заменяется только после подтверждения.
-
-## Пустая история
-
-Пустая History использует существующий визуальный паттерн пустой Cart:
-центрированный в доступной content area блок, круглая subtle-surface иконка,
-«История заказов пуста» и крупная surface-кнопка «Перейти в меню». Refresh
-остаётся вторичным действием header. Это уже реализовано в
-OrdersHistoryScreen.vue и независимо принято; изменение должно оставаться
-стабильным на 479/480, 1023/1024 и 1440 px без horizontal overflow.
-
-## Уведомления о заказах — accepted target
-
-Push нужен, чтобы customer получил сообщения о принятии, готовности и выдаче
-после ухода или закрытия PWA. Permission запрашивается только после явного
-«Включить уведомления». Закрытие/background ничего не отключают.
-
-«Аккаунт» — постоянная точка управления. Гость видит ровно заголовок
-«Аккаунт», текст «Вы не вошли в аккаунт» и действие «Войти»; дополнительного
-объяснения и notification inspection нет. Вошедший customer видит телефон и
-один из состояний:
-
-| Состояние   | Текст                                                                           | Единственное действие   |
-| ----------- | ------------------------------------------------------------------------------- | ----------------------- |
-| Проверка    | «Проверяем уведомления…»                                                        | нет                     |
-| Выключены   | «Уведомления выключены.» и «Сообщим, когда заказ примут, приготовят и выдадут.» | «Включить уведомления»  |
-| Включены    | «Уведомления включены.»                                                         | «Отключить уведомления» |
-| Unsupported | «Уведомления недоступны в этом браузере.»                                       | нет                     |
-| Denied      | «Уведомления запрещены в настройках устройства или браузера.»                   | «Проверить снова»       |
-| Ошибка      | понятное описание фактической операции                                          | одна «Повторить»        |
-
-Внутренние other/owner/association/version, endpoint и keys не показываются.
-При other UI выглядит как «Выключены»; явное включение может безопасно
-перенести capability внутри backend. Logout визуально отделён от notification
-action.
-
-Явный logout отвязывает только текущую browser capability от текущего customer
-атомарно с отзывом сессии. Permission, локальная PushSubscription и другие
-браузеры сохраняются. При ошибке клиент не заявляет успех, остаётся вошедшим и
-даёт одну повторную попытку. Если refresh credential уже недействителен, backend
-использует переданную точную capability как proof, удаляет только её association
-и возвращает тот же 204 без раскрытия owner. Ни одна logout-ветка не вызывает
-local unsubscribe: permission, локальная PushSubscription и другие браузеры
-сохраняются. После следующего входа связь не создаётся
-автоматически; требуется явное включение. Уже показанное или принятое
-push-provider до commit уведомление отозвать нельзя.
-
-Диалог имеет видимую close-control, один open-state owner, закрывается X,
-Escape и backdrop и после каждого способа повторно открывается. Фокус
-возвращается к фактическому trigger. Быстрые клики не создают второй dialog,
-reduced motion не вызывает выезд к trigger. Используются доступный contrast,
-44px targets, внутренний scroll и компактная иерархия без технического текста.
-
-Notification/logout target ещё не полностью реализован. Точная transaction и
-совместимость API определены в [ADR-005](../20-architecture/ADR/ADR-005-customer-notification-association.md),
-[Authentication API](../50-interfaces/Authentication-API.md) и
-[Push interface](../50-interfaces/Push-notifications.md). Реальная системная
-доставка установленной PWA на Android/iOS остаётся unverified до отдельной
-ручной приёмки.
+Customer history, detail and repeat use only v3 order routes. Order snapshot uses current product/price-choice contract; it has no variant/S-M-L fields. Notification association and current-browser logout use the required-body contract in [ADR-009](../20-architecture/ADR/ADR-009-explicit-logout-push-contract.md). Browser permission and local subscription are unchanged by logout.

@@ -1,64 +1,15 @@
 ---
-title: Создание заказов
-type: feature
+title: Orders
+type: domain
 owner: backend
-implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-09-20
 sources:
-  - ../../src/orders/application/create-order.use-case.ts
-  - ../../src/orders/domain/order-revalidation.ts
-  - ../../schema.sql
+  - ../../openapi/openapi.json
+  - ../../src/orders/transport/orders-v3.controller.ts
+  - ../../src/orders/transport/backoffice-orders-v3.controller.ts
+  - ../../src/orders/transport/backoffice-orders.controller.ts
 ---
 
-# Заказы
+# Orders
 
-Только customer создаёт заказ через `POST /orders`; заголовок `Idempotency-Key`
-обязателен. Сценарий заново читает актуальное меню, проверяет доступность,
-размеры и модификаторы, пересчитывает сумму и сохраняет снимок. [Controller](../../src/orders/transport/orders.controller.ts),
-[revalidation](../../src/orders/domain/order-revalidation.ts).
-
-Единица работы блокирует обработку ключа, сравнивает fingerprint и либо отдаёт
-первый результат, либо сохраняет заказ, позиции, модификаторы и дневной номер
-одной транзакцией. Одинаковый ключ того же customer не создаёт дубль; другой
-запрос с ключом получает конфликт. [Unit of work](../../src/orders/adapters/postgres-order-unit-of-work.ts),
-[use case](../../src/orders/application/create-order.use-case.ts).
-
-Схема закрепляет idempotency на customer, уникальный номер дня, неотрицательные
-суммы и снимки позиций. Приём заказов контролирует `service_settings`.
-[Схема](../../schema.sql).
-
-Проверки покрывают пересчёт и fingerprint unit-спеками, а интеграционные — авторизацию,
-конкурентность, неизменность снимка и повторную проверку после admin-правки.
-[unit](../../src/orders/application/create-order.use-case.spec.ts),
-[команды integration-проверок](../../package.json).
-
-## Выбор цены в заказе: принятый целевой контракт
-
-Текущий `POST /api/v2/orders` получает у позиции `variantId`, но не размер;
-backend разрешает вариант, валидирует его технический `S/M/L`, сохраняет этот
-legacy-снимок и возвращает его в заказе. Целевое поведение из
-[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md)
-ещё не реализовано.
-
-`POST /api/v3/orders` принимает для одной цены только `productId`, а для
-нескольких цен требует `priceChoiceId`. Backend разрешает текущую форму товара,
-цену и ручную доступность, повторно проверяет модификаторы и атомарно сохраняет
-`productId`, nullable `priceChoiceId`, название, nullable `portionLabel`, цену
-единицы, количество, модификаторы и суммы.
-
-История и staff-очередь читают сохранённые подпись и цену, а не текущий
-каталог. Старые `S/M/L` остаются дословным legacy-текстом без вида, amount или
-unit. Повтор многовариантной позиции сопоставляет только сохранённый
-`priceChoiceId`; архивный или недоступный choice требует нового выбора и не
-заменяется по совпавшей подписи. Для одной цены повтор разрешает товар по
-`productId` и его текущей цене и доступности.
-
-`GET /api/v3/backoffice/orders/{orderId}` возвращает сотруднику customer,
-сохранённый v3-снимок и упорядоченные события lifecycle; список использует ту
-же форму элемента. [v3 controller](../../src/orders/transport/backoffice-orders-v3.controller.ts),
-[OpenAPI](../../openapi/openapi.json).
-
-Существующая идемпотентность и серверный пересчёт сохраняются. Момент и ошибки
-отключения `/api/v2` задаются планом совместимого выпуска, а не этой предметной
-нотой; прежнее 30-дневное окно не является принятым требованием. Это целевой
-контракт, для которого runtime и проверки ещё не завершены.
+Customer create/read/repeat и staff read существуют только в v3. Four staff lifecycle transitions остаются current v2 API. Deleted v2 reads/customer commands, variant and S/M/L fields отсутствуют. Exact HTTP schemas принадлежат [OpenAPI](../../openapi/openapi.json).

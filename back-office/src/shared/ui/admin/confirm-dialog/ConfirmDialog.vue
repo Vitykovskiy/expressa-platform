@@ -3,7 +3,9 @@
     :aria-describedby="descriptionId"
     :aria-labelledby="titleId"
     :model-value="open"
-    max-width="448"
+    role="alertdialog"
+    max-width="480"
+    @after-enter="focusSafeAction"
     @update:model-value="handleDialogUpdate"
   >
     <v-card class="confirm-dialog">
@@ -40,20 +42,33 @@
         </p>
       </v-card-text>
 
+      <p
+        v-if="props.error"
+        ref="errorSummary"
+        class="confirm-dialog-error"
+        role="alert"
+        tabindex="-1"
+      >
+        {{ props.error }}
+      </p>
+
       <v-card-actions class="confirm-dialog-actions">
         <AdminButton
+          :id="cancelButtonId"
           class="confirm-dialog-action"
-          :variant="props.confirmVariant"
-          @click="handleConfirm"
-        >
-          {{ props.confirmLabel }}
-        </AdminButton>
-        <AdminButton
-          class="confirm-dialog-action"
+          :disabled="props.pending"
           variant="ghost"
           @click="closeAsCancelled"
         >
-          Отмена
+          {{ props.cancelLabel }}
+        </AdminButton>
+        <AdminButton
+          class="confirm-dialog-action"
+          :disabled="props.pending"
+          :variant="props.confirmVariant"
+          @click="handleConfirm"
+        >
+          {{ props.pending ? "Выполняем…" : props.confirmLabel }}
         </AdminButton>
       </v-card-actions>
     </v-card>
@@ -61,7 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useId, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import { CONFIRM_DIALOG_DEFAULTS } from "./ConfirmDialog.constants";
 import type {
@@ -87,6 +109,8 @@ const titleId = `confirm-dialog-title-${useId()}`;
 const descriptionId = `confirm-dialog-description-${useId()}`;
 const reasonInputId = `confirm-dialog-reason-${useId()}`;
 const reasonErrorId = `confirm-dialog-reason-error-${useId()}`;
+const cancelButtonId = `confirm-dialog-cancel-${useId()}`;
+const errorSummary = useTemplateRef<HTMLElement>("errorSummary");
 const reasonDescribedBy = computed(() =>
   reasonError.value ? reasonErrorId : undefined,
 );
@@ -97,6 +121,8 @@ function resetDraft() {
 }
 
 function closeAsCancelled() {
+  if (props.pending) return;
+
   resetDraft();
   open.value = false;
   emit("cancel");
@@ -119,15 +145,25 @@ function handleReasonUpdate(value: string) {
   }
 }
 
-function handleConfirm() {
+async function handleConfirm() {
+  if (props.pending) return;
   if (props.requireInput && !reason.value.trim()) {
     reasonError.value = "Укажите причину";
     return;
   }
 
   emit("confirm", props.requireInput ? reason.value : undefined);
-  resetDraft();
-  open.value = false;
+
+  await nextTick();
+
+  if (!props.pending) {
+    resetDraft();
+    open.value = false;
+  }
+}
+
+function focusSafeAction(): void {
+  globalThis.document?.getElementById(cancelButtonId)?.focus();
 }
 
 function isFocusableElement(value: unknown): value is FocusableElement {
@@ -159,11 +195,20 @@ watch(open, (isOpen, wasOpen) => {
     }
   }
 });
+
+watch(
+  () => props.error,
+  async (value, previous) => {
+    if (!value || value === previous || !open.value) return;
+    await nextTick();
+    errorSummary.value?.focus();
+  },
+);
 </script>
 
 <style scoped lang="scss">
 .confirm-dialog {
-  border-radius: var(--expressa-radius-lg);
+  border-radius: var(--expressa-radius-panel);
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
 }
@@ -203,14 +248,19 @@ watch(open, (isOpen, wasOpen) => {
 
 .confirm-dialog-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--expressa-space-sm);
-  padding: 0 var(--expressa-space-lg);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--expressa-space-12);
+  padding: var(--expressa-space-16) var(--expressa-space-lg);
 }
 
 .confirm-dialog-action {
   width: 100%;
-  height: 40px;
-  min-height: 40px;
+  min-height: var(--expressa-size-control-min-height);
+}
+
+@media (max-width: 399px) {
+  .confirm-dialog-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

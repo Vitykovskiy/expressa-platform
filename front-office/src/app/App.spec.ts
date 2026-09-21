@@ -531,10 +531,15 @@ describe("App", () => {
                   description: "",
                   isAvailable: true,
                   modifierGroups: [],
-                  type: "DRINK",
                   price: null,
-                  variants: [
-                    { id: "s", size: "S", price: 180, isAvailable: true },
+                  portionLabel: null,
+                  priceChoices: [
+                    {
+                      id: "s",
+                      portionLabel: "250 мл",
+                      price: 180,
+                      isAvailable: true,
+                    },
                   ],
                 },
               ],
@@ -654,11 +659,17 @@ function createCartItem() {
   return {
     addons: [],
     id: "item",
+    lineTotal: 1,
     lineTotalRub: 1,
+    price: 1,
     productId: "product",
     productName: "Напиток",
+    portionLabel: "250 мл",
     quantity: 1,
-    type: "drink" as const,
+    selectedModifierOptions: [],
+    selectedPriceChoice: { id: "choice", portionLabel: "250 мл", price: 1 },
+    type: "PRICED" as const,
+    unitTotal: 1,
   };
 }
 

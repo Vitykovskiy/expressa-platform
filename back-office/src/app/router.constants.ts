@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from "vue-router";
 import AvailabilityPage from "../pages/AvailabilityPage.vue";
 import LoginPage from "../pages/LoginPage.vue";
 import MenuPage from "../pages/MenuPage.vue";
+import ProductEditPage from "../pages/ProductEditPage.vue";
 import QueuePage from "../pages/QueuePage.vue";
 import { navigationDefinitions } from "./navigation.constants";
 
@@ -10,6 +11,7 @@ export const routePaths = {
   availability: navigationDefinitions.availability.path,
   login: "/login",
   menu: navigationDefinitions.menu.path,
+  productEdit: "/menu/products/:productId/edit",
   queue: navigationDefinitions.queue.path,
 } as const;
 
@@ -57,6 +59,16 @@ export const backOfficeRoutes = [
       requiresStaff: true,
       section: navigationDefinitions.menu.section,
       title: navigationDefinitions.menu.label,
+    },
+  },
+  {
+    path: routePaths.productEdit,
+    component: ProductEditPage,
+    meta: {
+      allowedRoles: navigationDefinitions.menu.roles,
+      requiresStaff: true,
+      section: navigationDefinitions.menu.section,
+      title: "Редактировать товар",
     },
   },
 ] satisfies readonly RouteRecordRaw[];

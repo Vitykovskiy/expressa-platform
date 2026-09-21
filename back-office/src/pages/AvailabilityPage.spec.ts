@@ -22,7 +22,7 @@ function response(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200 });
 }
 
-function legacyAvailability() {
+function availabilityResponse() {
   return {
     categories: [
       { id: categoryId, isActive: true, name: "Кофе", sortOrder: 0 },
@@ -46,7 +46,6 @@ function legacyAvailability() {
         sortOrder: 0,
       },
     ],
-    productVariants: [],
     products: [
       {
         categoryId,
@@ -62,7 +61,7 @@ function legacyAvailability() {
 
 function catalogV3(choiceAvailable = true) {
   return {
-    categories: legacyAvailability().categories,
+    categories: availabilityResponse().categories,
     products: [
       {
         id: productId,
@@ -104,7 +103,7 @@ describe("AvailabilityPage", () => {
       response(
         url.toString().includes("/api/v3/backoffice/catalog")
           ? catalogV3()
-          : legacyAvailability(),
+          : availabilityResponse(),
       ),
     );
     const wrapper = mountPage(fetcher);
@@ -134,7 +133,7 @@ describe("AvailabilityPage", () => {
       return response(
         url.toString().includes("/api/v3/backoffice/catalog")
           ? catalogV3()
-          : legacyAvailability(),
+          : availabilityResponse(),
       );
     });
     const wrapper = mountPage(fetcher);

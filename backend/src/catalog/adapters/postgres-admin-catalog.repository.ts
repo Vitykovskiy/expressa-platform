@@ -11,11 +11,7 @@ import type {
   ServiceIntake,
   ServiceIntakeCommand,
 } from "../application/admin-catalog.repository.types";
-import {
-  modifierSelectionTypes,
-  productSizes,
-  productTypes,
-} from "../domain/catalog.constants";
+import { modifierSelectionTypes } from "../domain/catalog.constants";
 import type {
   CatalogCategoryCandidate,
   CatalogCategoryModifierGroupCandidate,
@@ -24,9 +20,6 @@ import type {
   CatalogModifierSelectionType,
   CatalogProductCandidate,
   CatalogProductModifierGroupCandidate,
-  CatalogProductSize,
-  CatalogProductType,
-  CatalogProductVariantCandidate,
 } from "../domain/catalog.types";
 import {
   catalogAdvisoryLockKey,
@@ -50,7 +43,6 @@ export class PostgresAdminCatalogRepository
         settings,
         categories,
         products,
-        productVariants,
         priceChoices,
         modifierGroups,
         modifierOptions,
@@ -70,19 +62,11 @@ export class PostgresAdminCatalogRepository
              ORDER BY c.sort_order`,
         ),
         client.query<DatabaseRow>(
-          `SELECT p.id, p.category_id, p.type, p.name, p.description, p.price, p.sort_order, p.is_active, p.is_available, p.archived_at
+          `SELECT p.id, p.category_id, p.name, p.description, p.price, p.sort_order, p.is_active, p.is_available, p.archived_at
              FROM products p
              INNER JOIN categories c ON c.id = p.category_id
              WHERE p.archived_at IS NULL AND c.archived_at IS NULL
              ORDER BY p.category_id, p.sort_order`,
-        ),
-        client.query<DatabaseRow>(
-          `SELECT v.id, v.product_id, v.size, v.price, v.sort_order, v.is_available, v.archived_at
-             FROM product_variants v
-             INNER JOIN products p ON p.id = v.product_id
-             INNER JOIN categories c ON c.id = p.category_id
-             WHERE v.archived_at IS NULL AND p.archived_at IS NULL AND c.archived_at IS NULL
-             ORDER BY v.product_id, v.sort_order`,
         ),
         client.query<DatabaseRow>(
           `SELECT ppc.id, ppc.product_id, ppc.portion_label, ppc.price, ppc.sort_order, ppc.is_available
@@ -128,7 +112,6 @@ export class PostgresAdminCatalogRepository
         intake: parseServiceIntake(settings.rows),
         categories: categories.rows.map(parseCategory),
         products: products.rows.map(parseProduct),
-        productVariants: productVariants.rows.map(parseProductVariant),
         priceChoices: priceChoices.rows.map(parseAvailabilityPriceChoice),
         modifierGroups: modifierGroups.rows.map(parseModifierGroup),
         modifierOptions: modifierOptions.rows.map(parseModifierOption),
@@ -162,7 +145,7 @@ export class PostgresAdminCatalogRepository
         "SELECT id,name,description,sort_order,is_active,archived_at FROM categories WHERE archived_at IS NULL ORDER BY sort_order, id",
       ),
       this.pool.query<DatabaseRow>(
-        "SELECT p.id,p.category_id,p.type,p.name,p.description,p.portion_label,p.price,p.sort_order,p.is_active,p.is_available,p.archived_at FROM products p INNER JOIN categories c ON c.id=p.category_id WHERE p.archived_at IS NULL AND c.archived_at IS NULL ORDER BY p.category_id,p.sort_order,p.id",
+        "SELECT p.id,p.category_id,p.name,p.description,p.portion_label,p.price,p.sort_order,p.is_active,p.is_available,p.archived_at FROM products p INNER JOIN categories c ON c.id=p.category_id WHERE p.archived_at IS NULL AND c.archived_at IS NULL ORDER BY p.category_id,p.sort_order,p.id",
       ),
       this.pool.query<DatabaseRow>(
         "SELECT ppc.id,ppc.product_id,ppc.portion_label,ppc.price,ppc.sort_order,ppc.is_available,ppc.archived_at FROM product_price_choices ppc INNER JOIN products p ON p.id=ppc.product_id INNER JOIN categories c ON c.id=p.category_id WHERE ppc.archived_at IS NULL AND p.archived_at IS NULL AND c.archived_at IS NULL ORDER BY ppc.product_id,ppc.sort_order,ppc.id",
@@ -207,11 +190,9 @@ export class PostgresAdminCatalogRepository
     const table =
       command.type === "product"
         ? "products"
-        : command.type === "variant"
-          ? "product_variants"
-          : command.type === "price_choice"
-            ? "product_price_choices"
-            : "modifier_options";
+        : command.type === "price_choice"
+          ? "product_price_choices"
+          : "modifier_options";
     const entityType =
       command.type === "modifier" ? "modifier_option" : command.type;
 
@@ -346,24 +327,11 @@ function parseProduct(row: DatabaseRow): CatalogProductCandidate {
   return {
     id: readString(row, "id"),
     categoryId: readString(row, "category_id"),
-    type: readProductType(row),
     name: readString(row, "name"),
     description: readString(row, "description"),
     price: readNullableInteger(row, "price"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
     isActive: readBoolean(row, "is_active"),
-    isAvailable: readBoolean(row, "is_available"),
-    archivedAt: readNullableDate(row, "archived_at"),
-  };
-}
-
-function parseProductVariant(row: DatabaseRow): CatalogProductVariantCandidate {
-  return {
-    id: readString(row, "id"),
-    productId: readString(row, "product_id"),
-    size: readProductSize(row),
-    price: readNonNegativeInteger(row, "price"),
-    sortOrder: readNonNegativeInteger(row, "sort_order"),
     isAvailable: readBoolean(row, "is_available"),
     archivedAt: readNullableDate(row, "archived_at"),
   };
@@ -425,20 +393,6 @@ function parseProductModifierGroup(
     groupId: readString(row, "group_id"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
   };
-}
-
-function readProductType(row: DatabaseRow): CatalogProductType {
-  const value = readString(row, "type");
-  if (!productTypes.some((type) => type === value))
-    throw new Error("Invalid PostgreSQL row field: type");
-  return value as CatalogProductType;
-}
-
-function readProductSize(row: DatabaseRow): CatalogProductSize {
-  const value = readString(row, "size");
-  if (!productSizes.some((size) => size === value))
-    throw new Error("Invalid PostgreSQL row field: size");
-  return value as CatalogProductSize;
 }
 
 function readModifierSelectionType(

@@ -28,7 +28,7 @@
           id="orders-search"
           :disabled="queueControlsDisabled"
           :model-value="props.search"
-          placeholder="Поиск по номеру"
+          placeholder="Введите номер"
           type="search"
           @update:model-value="emit('update:search', $event)"
         />
@@ -36,6 +36,13 @@
     </div>
 
     <div class="orders-screen__content">
+      <p
+        v-if="props.refreshError"
+        class="orders-screen__refresh-error"
+        role="status"
+      >
+        Не удалось обновить очередь. Показаны последние полученные данные.
+      </p>
       <div
         v-if="props.status === 'loading'"
         class="orders-screen__loading-state"
@@ -49,46 +56,26 @@
           aria-label="Загрузка очереди"
         >
           <div
-            v-for="index in 4"
+            v-for="index in 5"
             :key="index"
             class="orders-screen__skeleton"
             aria-hidden="true"
           />
         </div>
       </div>
-      <div
+      <AdminRequestStatePanel
         v-else-if="props.status === 'error' && props.error !== null"
-        class="orders-screen__state orders-screen__state--error"
-        role="alert"
-      >
-        <h2>Не удалось загрузить очередь заказов</h2>
-        <p>{{ errorGuidance }}</p>
-        <AdminButton
-          class="orders-screen__retry"
-          :disabled="props.accessRecoveryPending"
-          variant="secondary"
-          @click="recoverQueue"
-        >
-          {{ recoveryLabel }}
-        </AdminButton>
-        <details class="orders-screen__diagnostics">
-          <summary>Технические подробности</summary>
-          <dl>
-            <div>
-              <dt>Код</dt>
-              <dd>{{ props.error.code }}</dd>
-            </div>
-            <div>
-              <dt>Сообщение</dt>
-              <dd>{{ props.error.message }}</dd>
-            </div>
-            <div v-if="props.error.requestId">
-              <dt>Номер запроса</dt>
-              <dd>{{ props.error.requestId }}</dd>
-            </div>
-          </dl>
-        </details>
-      </div>
+        :action-label="recoveryLabel"
+        :announcement-mode="props.errorFocus ? 'alert' : 'none'"
+        :body="errorGuidance"
+        :code="props.error.code"
+        :focus-on-appear="props.errorFocus"
+        :pending="props.accessRecoveryPending"
+        :pending-label="isAuthorizationError ? 'Переходим…' : 'Повторяем…'"
+        :request-id="props.error.requestId ?? ''"
+        :title="errorTitle"
+        @action="recoverQueue"
+      />
       <EmptyState
         v-else-if="props.orders.length === 0"
         :description="emptyContent.description"
@@ -140,18 +127,14 @@
         }}
       </AdminButton>
       <details class="orders-screen__diagnostics">
-        <summary>Технические подробности</summary>
+        <summary>Для поддержки</summary>
         <dl>
           <div>
-            <dt>Код</dt>
+            <dt>Код ошибки</dt>
             <dd>{{ props.actionError.code }}</dd>
           </div>
-          <div>
-            <dt>Сообщение</dt>
-            <dd>{{ props.actionError.message }}</dd>
-          </div>
           <div v-if="props.actionError.requestId">
-            <dt>Номер запроса</dt>
+            <dt>Код запроса</dt>
             <dd>{{ props.actionError.requestId }}</dd>
           </div>
         </dl>
@@ -165,6 +148,7 @@ import { computed } from "vue";
 import { ClipboardCheck, RefreshCw } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminRequestStatePanel from "../../../shared/ui/admin/request-state-panel/AdminRequestStatePanel.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
 import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
@@ -179,7 +163,7 @@ import type {
 
 const props = defineProps<OrdersScreenProps>();
 const emit = defineEmits<OrdersScreenEmits>();
-const queueControlsDisabled = computed(() => props.status === "loading");
+const queueControlsDisabled = computed(() => props.accessRecoveryPending);
 const stageModel = computed<QueueFilter>({
   get: () => props.stage,
   set: (stage) => emit("update:stage", stage),
@@ -195,6 +179,16 @@ const emptyContent = computed(() => {
   return queueEmptyContent.global;
 });
 const isAuthorizationError = computed(() => props.requiresAccessRecovery);
+const isPermissionError = computed(() => props.error?.status === 403);
+const errorTitle = computed(() =>
+  props.error?.code === "LOGIN_NAVIGATION_ERROR"
+    ? "Не удалось загрузить данные"
+    : isPermissionError.value
+      ? "Нет доступа к разделу"
+      : isAuthorizationError.value
+        ? "Сессия завершена"
+        : "Не удалось загрузить данные",
+);
 const actionErrorGuidance = computed(() =>
   props.requiresTransitionRecovery
     ? "Не удалось подтвердить изменение заказа. Проверьте его текущее состояние, прежде чем повторять действие."
@@ -203,17 +197,27 @@ const actionErrorGuidance = computed(() =>
 const recoveryLabel = computed(() =>
   props.accessRecoveryPending
     ? "Восстанавливаем доступ…"
-    : isAuthorizationError.value
-      ? "Восстановить доступ"
-      : "Повторить",
+    : isPermissionError.value
+      ? "Вернуться назад"
+      : isAuthorizationError.value
+        ? "Войти снова"
+        : "Повторить",
 );
 const errorGuidance = computed(() =>
-  isAuthorizationError.value
-    ? "Восстановите доступ, чтобы снова загрузить очередь."
-    : "Попробуйте ещё раз.",
+  props.error?.code === "LOGIN_NAVIGATION_ERROR"
+    ? "Не удалось открыть страницу входа. Повторите попытку."
+    : isAuthorizationError.value
+      ? "Войдите снова, чтобы загрузить очередь заказов."
+      : isPermissionError.value
+        ? "Обратитесь к администратору, чтобы получить доступ."
+        : "Проверьте подключение к интернету и повторите попытку.",
 );
 
 function recoverQueue(): void {
+  if (isPermissionError.value) {
+    emit("go-back");
+    return;
+  }
   if (isAuthorizationError.value) {
     emit("restore-access");
     return;
@@ -249,6 +253,7 @@ function recoverQueue(): void {
 }
 .orders-screen__search {
   display: grid;
+  order: 0;
   gap: var(--expressa-space-field-label);
   padding: 0 var(--expressa-space-md) var(--expressa-space-md);
 }
@@ -262,6 +267,9 @@ function recoverQueue(): void {
   min-height: 0;
   padding: var(--expressa-space-md) var(--expressa-space-md)
     var(--expressa-space-tab-bar-clearance);
+}
+.orders-screen__content > :deep(.request-state-panel) {
+  margin-top: var(--expressa-space-24);
 }
 .orders-screen__grid {
   display: grid;
@@ -386,7 +394,7 @@ function recoverQueue(): void {
     margin: 0 var(--expressa-space-lg) var(--expressa-space-lg);
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .orders-screen__toolbar {
     grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
   }
@@ -398,6 +406,11 @@ function recoverQueue(): void {
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: end;
+  }
+}
+@media (min-width: 1200px) {
+  .orders-screen__toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 320px);
   }
 }
 </style>

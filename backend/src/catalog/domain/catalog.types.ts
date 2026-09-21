@@ -1,12 +1,4 @@
-import type {
-  modifierSelectionTypes,
-  productSizes,
-  productTypes,
-} from "./catalog.constants";
-
-export type CatalogProductType = (typeof productTypes)[number];
-
-export type CatalogProductSize = (typeof productSizes)[number];
+import type { modifierSelectionTypes } from "./catalog.constants";
 
 export type CatalogModifierSelectionType =
   (typeof modifierSelectionTypes)[number];
@@ -23,24 +15,11 @@ export type CatalogCategoryCandidate = {
 export type CatalogProductCandidate = {
   id: string;
   categoryId: string;
-  type: CatalogProductType;
   name: string;
   description: string;
-  displayLabel?: string | null;
   price: number | null;
   sortOrder: number;
   isActive: boolean;
-  isAvailable: boolean;
-  archivedAt: Date | null;
-};
-
-export type CatalogProductVariantCandidate = {
-  id: string;
-  productId: string;
-  size: CatalogProductSize;
-  displayLabel?: string | null;
-  price: number;
-  sortOrder: number;
   isAvailable: boolean;
   archivedAt: Date | null;
 };
@@ -76,38 +55,6 @@ export type CatalogProductModifierGroupCandidate = {
   productId: string;
   groupId: string;
   sortOrder: number;
-};
-
-export type PublicMenu = {
-  acceptsNewOrders: boolean;
-  categories: PublicMenuCategory[];
-};
-
-export type PublicMenuCategory = {
-  id: string;
-  name: string;
-  description: string;
-  products: PublicMenuProduct[];
-};
-
-export type PublicMenuProduct = {
-  id: string;
-  type: CatalogProductType;
-  name: string;
-  description: string;
-  displayLabel?: string | null;
-  price: number | null;
-  isAvailable: boolean;
-  variants: PublicMenuProductVariant[];
-  modifierGroups: PublicMenuModifierGroup[];
-};
-
-export type PublicMenuProductVariant = {
-  id: string;
-  size: CatalogProductSize;
-  displayLabel?: string | null;
-  price: number;
-  isAvailable: boolean;
 };
 
 export type PublicMenuModifierGroup = {

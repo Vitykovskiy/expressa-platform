@@ -1,65 +1,14 @@
 ---
+title: Cart and checkout
 type: feature
 owner: front-office
-implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-09-20
 sources:
-  - ../../src/pages/CartPage.vue
+  - ../../contracts/openapi.json
+  - ../../src/entities/customer/model/cart.store.ts
   - ../../src/features/checkout/checkout.store.ts
 ---
 
-# Корзина и оформление
+# Cart and checkout
 
-`/cart` показывает сохранённые позиции, меняет количество и отправляет заказ
-после customer-аутентификации. [Источники: page](../../src/pages/CartPage.vue), [screen](../../src/features/checkout/CartScreen.vue).
-
-| Область  | Действия, состояния и результат                                                                                                                                                                             | Источник                                                                                                              |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Корзина  | пустая корзина ведёт к меню; удаление или количество сбрасывают checkout-ошибку и временный feedback повтора, затем сохраняют новое содержимое                                                              | [CartPage](../../src/pages/CartPage.vue)                                                                              |
-| Позиция  | удалить, плюс/минус, unavailable и прежняя цена видимы; количество объявляется live                                                                                                                         | [CartItem](../../src/features/checkout/CartItem.vue)                                                                  |
-| Отправка | anonymous видит объяснение подтверждения телефона и идёт на `/auth/phone?returnTo=/cart`; submitting блокирует кнопку; success очищает корзину и открывает `/orders/:id`                                    | [CartPage](../../src/pages/CartPage.vue), [screen](../../src/features/checkout/CartScreen.vue)                        |
-| Ошибка   | network повторяется; totalChanged показывает старый и новый итоги с явным подтверждением; itemUnavailable выделяет позиции; подтверждённый intakeClosed запрещает отправку и даёт одну проверку доступности | [checkout store](../../src/features/checkout/checkout.store.ts), [screen](../../src/features/checkout/CartScreen.vue) |
-
-Экран имеет мобильную фиксированную кнопку и desktop summary на 1024px; списки,
-итог и сообщения имеют именованные регионы и status. При изменении итога
-предыдущая и новая суммы в обоих layout — отдельные доступные группы с точными
-названиями и суммами. В мобильной навигации перед переходом к заказам доступна
-кнопка «Меню» с доступным именем. Переполнение имени позиции обрабатывает
-layout `CartItem`.
-[Источники: CartScreen](../../src/features/checkout/CartScreen.vue), [CartItem](../../src/features/checkout/CartItem.vue).
-
-`SlotPickerScreen` и `SlotOption` существуют как UI-контракт слотов (loading,
-error, выбранный/disabled), но `/cart` их не подключает и slot не входит в заказ.
-[Источники: slot picker](../../src/features/checkout/SlotPickerScreen.vue), [CartPage](../../src/pages/CartPage.vue).
-
-Частичный или нулевой повтор рядом с подробными предупреждениями сообщает
-`Добавлено X из Y позиций`. Это временный результат фактической оценки позиций
-исходного заказа: `cart` store не сохраняет его в `localStorage` и очищает его
-на тех же границах, что и предупреждения повтора.
-
-Проверки: [CartScreen spec](../../src/features/checkout/CartScreen.spec.ts), [checkout store spec](../../src/features/checkout/checkout.store.spec.ts).
-
-Карта раздела: [сценарии](INDEX.md).
-
-## Выбор цены в корзине и checkout
-
-Сейчас menu selector может показать `displayLabel`, но корзина отбрасывает его:
-она хранит UUID варианта и технический `S/M/L` и так же отображает строку.
-Позиция `POST /api/v2/orders` содержит `productId`, `variantId`,
-`modifierOptionIds` и `quantity`, но не размер; backend по `variantId` разрешает
-вариант, сохраняет legacy-снимок `S/M/L` и возвращает его в заказе.
-Целевой контракт принят в
-[ADR-006](../../../docs/20-architecture/ADR/ADR-006-product-variant-portions.md),
-но ещё не реализован.
-
-В v3 корзина сохраняет nullable `priceChoiceId`, точную показанную
-`portionLabel` и цену. Одна цена имеет null id и не создаёт выбор. Несколько цен
-требуют id; объединение строк учитывает его, а не визуальное равенство подписей.
-Подпись показывается при наличии, поэтому штучный товар без неё не получает
-пустой badge или выдуманный размер.
-
-Перед checkout сервер заново проверяет форму товара, текущую доступность и
-цену. Заказ отправляется через `/api/v3/orders`; недоступный или архивный
-choice требует явного исправления корзины и не заменяется автоматически.
-Модификаторы остаются отдельной частью ключа конфигурации. Это target state;
-проверки reload, объединения, revalidation и отправки ещё не реализованы.
+Checkout creates order through `POST /api/v3/orders`. A cart item has product, optional price-choice id and modifier selections; it has no variant or S/M/L state. Server remains authority for total, availability and intake.

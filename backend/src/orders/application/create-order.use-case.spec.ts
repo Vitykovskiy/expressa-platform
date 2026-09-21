@@ -13,7 +13,7 @@ const command: CreateOrderCommand = {
     items: [
       {
         productId: "3a185da4-39e6-427c-ae84-8e1d7e039c96",
-        variantId: null,
+        priceChoiceId: null,
         modifierOptionIds: [],
         quantity: 1,
       },

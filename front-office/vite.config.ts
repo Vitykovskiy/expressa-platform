@@ -9,6 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/v2": process.env.VITE_API_PROXY_TARGET ?? "http://localhost:3000",
+      "/api/v3": process.env.VITE_API_PROXY_TARGET ?? "http://localhost:3000",
     },
   },
   plugins: [

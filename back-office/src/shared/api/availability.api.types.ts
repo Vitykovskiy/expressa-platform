@@ -1,5 +1,4 @@
-export type AvailabilityEntityType =
-  "modifier" | "product" | "priceChoice" | "variant";
+export type AvailabilityEntityType = "modifier" | "product" | "priceChoice";
 
 export type AvailabilityItem = {
   id: string;
@@ -64,14 +63,6 @@ export type AvailabilityProductDto = {
   sortOrder: number;
 };
 
-export type AvailabilityVariantDto = {
-  id: string;
-  isAvailable: boolean;
-  productId: string;
-  size: "L" | "M" | "S";
-  sortOrder: number;
-};
-
 export type AvailabilityModifierGroupDto = {
   id: string;
   isActive: boolean;
@@ -106,7 +97,6 @@ export type AvailabilityResponseDto = {
   modifierOptions: readonly AvailabilityModifierDto[];
   priceChoices?: readonly AvailabilityPriceChoiceDto[];
   productModifierGroups?: readonly AvailabilityProductModifierGroupDto[];
-  productVariants: readonly AvailabilityVariantDto[];
   products: readonly AvailabilityProductDto[];
 };
 

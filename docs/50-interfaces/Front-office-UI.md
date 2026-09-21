@@ -55,7 +55,7 @@ sources:
 intake — в error state.
 [front-office/src/features/checkout/checkout.store.ts:handleError](../../front-office/src/features/checkout/checkout.store.ts).
 
-`createOrdersApi` отправляет `POST /api/v2/orders` с Bearer token и
+`createOrdersApi` отправляет `POST /api/v3/orders` с Bearer token и
 idempotency key; API остаётся источником созданного заказа.
 [front-office/src/shared/api/orders.api.ts:createOrdersApi](../../front-office/src/shared/api/orders.api.ts).
 
@@ -76,13 +76,12 @@ House. Его доступное имя — «Перейти в меню»: с �
 
 От 1024px сохраняется существующая боковая навигация: clickable brand, Menu,
 History, Cart, categories и нижняя строка Account. Account остаётся постоянным
-местом управления уведомлениями. Текущее утверждение, что выход не отключает
-доставку, является legacy-поведением; принятый target отвязывает только текущий
-браузер при явном logout. Точный
+местом управления уведомлениями. Явный logout отвязывает только текущую
+browser association и не меняет browser permission или local subscription. Точный
 сценарий уведомлений — в [системной feature-ноте](../40-features/Track-history-and-repeat-order.md),
 а контракт shell — в [UI-контрактах front-office](../../front-office/docs/30-conventions/UI-contracts.md).
 
-## Accepted target: Account и пустая History
+## Account и пустая History
 
 Гость открывает компактный Account ровно с заголовком «Аккаунт», текстом «Вы
 не вошли в аккаунт» и действием «Войти»; дополнительного объяснения и

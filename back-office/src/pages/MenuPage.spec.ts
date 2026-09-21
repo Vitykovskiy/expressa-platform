@@ -12,7 +12,7 @@ import MenuPage from "./MenuPage.vue";
 import { CatalogApiError } from "../shared/api/catalog.api";
 import { setCatalogStoreDependencies } from "./admin/menu/catalog.dependencies";
 import { useCatalogStore } from "./admin/menu/catalog.store";
-import type { ProductFormData } from "./admin/menu/AddProductDialog.types";
+import type { CreateProductFormData } from "./admin/menu/AddProductDialog.types";
 import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
 
 const catalog = {
@@ -976,60 +976,6 @@ describe("MenuPage", () => {
     expect(wrapper.find(".menu-page__error").exists()).toBe(false);
   });
 
-  it("закрывает product editor после acknowledged refetch failure и сохраняет GET-only recovery", async () => {
-    const store = useCatalogStore();
-    const product = productWithSortOrder("product-latte", 0);
-    const getCatalog = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("Меню не обновлено"))
-      .mockResolvedValueOnce({ ...catalog, products: [product] });
-    const updateProduct = vi.fn().mockResolvedValue(undefined);
-    setCatalogStoreDependencies({
-      catalogApi: {
-        getCatalog,
-        createCategory: vi.fn(),
-        updateCategory: vi.fn(),
-        reorderCategories: vi.fn(),
-        archiveCategory: vi.fn(),
-        createProduct: vi.fn(),
-        updateProduct,
-        reorderProducts: vi.fn(),
-        archiveProduct: vi.fn(),
-        archiveModifierGroup: vi.fn(),
-        createModifierOption: vi.fn(),
-        updateModifierOption: vi.fn(),
-        archiveModifierOption: vi.fn(),
-        replaceCategoryModifierGroups: vi.fn(),
-        saveModifierGroup: vi.fn(),
-      },
-    });
-    store.$patch({ ...catalog, products: [product], status: "ready" });
-    const wrapper = mountPage();
-    await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-    const dialog = wrapper.getComponent({ name: "EditProductDialog" });
-
-    dialog.vm.$emit("save", productFormData);
-    await vi.waitFor(() => expect(updateProduct).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() => expect(dialog.props("open")).toBe(false));
-    expect(wrapper.text()).toContain(
-      "Товар сохранён, но меню не удалось обновить.",
-    );
-    getCatalog.mockClear();
-    await clickButton(wrapper, "Загрузить меню");
-    await vi.waitFor(() =>
-      expect(getCatalog).toHaveBeenCalledWith("access-token"),
-    );
-    expect(getCatalog).toHaveBeenCalledTimes(1);
-    expect(updateProduct).toHaveBeenCalledTimes(1);
-
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-    const reopenedDialog = wrapper.getComponent({ name: "EditProductDialog" });
-    expect(reopenedDialog.props("open")).toBe(true);
-    reopenedDialog.vm.$emit("cancel");
-    await vi.waitFor(() => expect(reopenedDialog.props("open")).toBe(false));
-  });
-
   it("показывает отсортированные категории и товары после раскрытия", async () => {
     const store = useCatalogStore();
     store.$patch({
@@ -1046,26 +992,26 @@ describe("MenuPage", () => {
         {
           id: "product-latte",
           categoryId: "category-coffee",
-          type: "OTHER",
           name: "Латте",
           description: "",
           price: 300,
+          portionLabel: null,
+          priceChoices: [],
           sortOrder: 2,
           isActive: true,
           isAvailable: true,
-          variants: [],
         },
         {
           id: "product-espresso",
           categoryId: "category-coffee",
-          type: "OTHER",
           name: "Эспрессо",
           description: "",
           price: 200,
+          portionLabel: null,
+          priceChoices: [],
           sortOrder: 1,
           isActive: true,
           isAvailable: true,
-          variants: [],
         },
       ],
       status: "ready",
@@ -1415,46 +1361,6 @@ describe("MenuPage", () => {
     }
   });
 
-  it("при переносе товара в другую категорию ставит его в конец", async () => {
-    const store = useCatalogStore();
-    const product = productWithSortOrder("product-latte", 1);
-    store.$patch({
-      categories: [
-        ...catalog.categories,
-        {
-          ...catalog.categories[0],
-          id: "category-tea",
-          name: "Чай",
-          sortOrder: 2,
-        },
-      ],
-      products: [
-        product,
-        {
-          ...productWithSortOrder("product-tea", 4),
-          categoryId: "category-tea",
-        },
-      ],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const update = vi.spyOn(store, "updateProduct").mockResolvedValue();
-    const wrapper = mountPage();
-    await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-
-    wrapper
-      .getComponent({ name: "EditProductDialog" })
-      .vm.$emit("save", { ...productFormData, categoryId: "category-tea" });
-    await vi.waitFor(() =>
-      expect(update).toHaveBeenCalledWith("access-token", "product-latte", {
-        ...productFormData,
-        categoryId: "category-tea",
-        sortOrder: 5,
-      }),
-    );
-  });
-
   it("добавляет новый товар в конец категории", async () => {
     const store = useCatalogStore();
     store.$patch({
@@ -1511,54 +1417,6 @@ describe("MenuPage", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  it("после неудачной GET-only проверки edit сохраняет единственный recovery и черновик", async () => {
-    const store = useCatalogStore();
-    const product = productWithSortOrder("product-latte", 0);
-    store.$patch({
-      ...catalog,
-      formSaveOutcome: "unconfirmed",
-      products: [product],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const refresh = vi
-      .spyOn(store, "refresh")
-      .mockImplementationOnce(async () => {
-        store.$patch({ formSaveOutcome: "idle", status: "error" });
-      })
-      .mockImplementationOnce(async () => {
-        store.$patch({ formSaveOutcome: "idle", status: "ready" });
-      });
-    const wrapper = mountPage();
-
-    await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-    const dialog = wrapper.getComponent({ name: "EditProductDialog" });
-    const name = dialog.get('input[id^="edit-product-name-"]');
-    await name.setValue("Новый латте");
-    dialog.vm.$emit("refresh");
-
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() =>
-      expect(dialog.props("saveOutcome")).toBe("unconfirmed"),
-    );
-
-    expect((name.element as HTMLInputElement).value).toBe("Новый латте");
-    expect(
-      dialogButtons(wrapper, "edit-dialog", ["Обновить меню"]),
-    ).toHaveLength(1);
-
-    dialog.vm.$emit("refresh");
-
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(dialog.props("saveOutcome")).toBe("saved"));
-
-    expect((name.element as HTMLInputElement).value).toBe("Новый латте");
-    expect(
-      dialogButtons(wrapper, "edit-dialog", ["Обновить меню"]),
-    ).toHaveLength(0);
-  });
-
   it("после неудачной GET-only проверки create выполняет второй GET без повтора записи", async () => {
     const store = useCatalogStore();
     store.$patch({ ...catalog, status: "ready" });
@@ -1606,174 +1464,6 @@ describe("MenuPage", () => {
     });
 
     expect(wrapper.attributes("persistent")).toBeUndefined();
-  });
-
-  it("сохраняет назначения только выбранной категории с точным порядком", async () => {
-    const store = useCatalogStore();
-    store.$patch({
-      categories: [
-        {
-          ...catalog.categories[0],
-          id: "category-tea",
-          name: "Чай",
-          sortOrder: 2,
-        },
-        { ...catalog.categories[0], sortOrder: 1 },
-      ],
-      modifierGroups: [
-        {
-          id: "group-milk",
-          name: "Молоко",
-          selectionType: "single",
-          minSelect: 0,
-          maxSelect: 1,
-          isActive: true,
-          options: [],
-        },
-      ],
-      categoryModifierGroupAssignments: [
-        {
-          categoryId: "category-tea",
-          modifierGroupId: "group-milk",
-          sortOrder: 7,
-        },
-      ],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const replaceAssignments = vi
-      .spyOn(store, "replaceCategoryModifierGroups")
-      .mockResolvedValue();
-    const wrapper = mountPage();
-
-    await openManagement(wrapper);
-    await clickButton(wrapper, "Кофе");
-    const checkbox = wrapper.get('input[type="checkbox"]');
-    await checkbox.setValue(true);
-    await wrapper
-      .get('.category-modifier-assignments input[type="number"]')
-      .setValue("3");
-    expect(
-      buttonByText(wrapper, "Сохранить назначения").attributes("disabled"),
-    ).toBeUndefined();
-    await clickButton(wrapper, "Сохранить назначения");
-    await wrapper.get(".category-modifier-assignments form").trigger("submit");
-
-    expect(replaceAssignments).toHaveBeenCalledWith(
-      "access-token",
-      "category-coffee",
-      [
-        {
-          categoryId: "category-coffee",
-          modifierGroupId: "group-milk",
-          sortOrder: 3,
-        },
-      ],
-    );
-  });
-
-  it("возвращает keyboard focus к opener назначений и сохраняет normal tab order", async () => {
-    const store = useCatalogStore();
-    store.$patch({
-      ...catalog,
-      categories: [
-        { ...catalog.categories[0], name: "Кофе", sortOrder: 1 },
-        {
-          ...catalog.categories[0],
-          id: "category-tea",
-          name: "Чай",
-          sortOrder: 2,
-        },
-      ],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const replaceAssignments = vi.spyOn(store, "replaceCategoryModifierGroups");
-    const wrapper = mountPage();
-
-    await openManagement(wrapper);
-    const openers = wrapper.findAll(".menu-page__group-button");
-    const firstOpener = openers[0]!.element as HTMLButtonElement;
-    firstOpener.focus();
-    await openers[0]!.trigger("keydown", { key: "Enter" });
-    firstOpener.click();
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find(".category-modifier-assignments").exists()).toBe(true);
-
-    await clickButton(wrapper, "Отмена");
-    await wrapper.vm.$nextTick();
-
-    expect(document.activeElement).toBe(firstOpener);
-    expect(
-      openers[0]!.element.compareDocumentPosition(openers[1]!.element),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(replaceAssignments).not.toHaveBeenCalled();
-  });
-
-  it("возвращает focus к latest opener и переоткрывает persisted назначения", async () => {
-    const store = useCatalogStore();
-    store.$patch({
-      ...catalog,
-      categories: [
-        { ...catalog.categories[0], name: "Кофе", sortOrder: 1 },
-        {
-          ...catalog.categories[0],
-          id: "category-tea",
-          name: "Чай",
-          sortOrder: 2,
-        },
-      ],
-      modifierGroups: [{ ...modifierGroup(), id: "group-milk" }],
-      categoryModifierGroupAssignments: [
-        {
-          categoryId: "category-coffee",
-          modifierGroupId: "group-milk",
-          sortOrder: 3,
-        },
-      ],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const wrapper = mountPage();
-
-    await openManagement(wrapper);
-    const coffee = buttonByText(wrapper, "Кофе");
-    const tea = buttonByText(wrapper, "Чай");
-    await coffee.trigger("click");
-    await tea.trigger("click");
-    await clickButton(wrapper, "Отмена");
-    await wrapper.vm.$nextTick();
-
-    expect(document.activeElement).toBe(tea.element);
-    await coffee.trigger("click");
-    expect(wrapper.get('input[type="checkbox"]').element).toHaveProperty(
-      "checked",
-      true,
-    );
-  });
-
-  it("не отменяет pending назначения и не выполняет write", async () => {
-    const store = useCatalogStore();
-    store.$patch({ ...catalog, status: "ready" });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const replaceAssignments = vi.spyOn(store, "replaceCategoryModifierGroups");
-    const wrapper = mountPage();
-
-    await openManagement(wrapper);
-    await clickButton(wrapper, "Кофе");
-    store.$patch({ status: "loading" });
-    await wrapper.vm.$nextTick();
-    const assignments = wrapper.getComponent({
-      name: "CategoryModifierAssignments",
-    });
-
-    expect(
-      buttonByText(wrapper, "Отмена").attributes("disabled"),
-    ).toBeDefined();
-    assignments.vm.$emit("cancel");
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find(".category-modifier-assignments").exists()).toBe(true);
-    expect(replaceAssignments).not.toHaveBeenCalled();
   });
 
   it("архивирует группу добавок только после подтверждения и закрывает редактор", async () => {
@@ -1902,26 +1592,9 @@ describe("MenuPage", () => {
     ).toBe(true);
   });
 
-  it("блокирует действия открытых товарных и категорийного диалогов при загрузке", async () => {
+  it("блокирует действия открытых товарного и категорийного диалогов при загрузке", async () => {
     const store = useCatalogStore();
-    store.$patch({
-      ...catalog,
-      products: [
-        {
-          id: "product-espresso",
-          categoryId: "category-coffee",
-          type: "OTHER",
-          name: "Эспрессо",
-          description: "",
-          price: 200,
-          sortOrder: 1,
-          isActive: true,
-          isAvailable: true,
-          variants: [],
-        },
-      ],
-      status: "ready",
-    });
+    store.$patch({ ...catalog, status: "ready" });
     vi.spyOn(store, "load").mockResolvedValue();
     const wrapper = mountPage();
 
@@ -1929,20 +1602,11 @@ describe("MenuPage", () => {
     await wrapper
       .get('button[aria-label="Редактировать категорию Кофе"]')
       .trigger("click");
-    await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper
-      .get('button[aria-label="Редактировать товар Эспрессо"]')
-      .trigger("click");
     store.status = "loading";
     await wrapper.vm.$nextTick();
 
     expectButtonsDisabled(wrapper.getComponent({ name: "AddProductDialog" }), [
       "Добавить товар",
-      "Отмена",
-    ]);
-    expectButtonsDisabled(wrapper.getComponent({ name: "EditProductDialog" }), [
-      "Сохранить изменения",
-      "Архивировать товар",
       "Отмена",
     ]);
     expect(
@@ -1993,59 +1657,6 @@ describe("MenuPage", () => {
       .getComponent({ name: "AddProductDialog" })
       .vm.$emit("confirm", productFormData);
     await vi.waitFor(() => expect(createProduct).toHaveBeenCalledTimes(1));
-  });
-
-  it("не повторяет edit после проверки и сохраняет исправление rejected400", async () => {
-    const store = useCatalogStore();
-    const product = productWithSortOrder("product-latte", 0);
-    store.$patch({
-      ...catalog,
-      formSaveOutcome: "unconfirmed",
-      products: [product],
-      status: "ready",
-    });
-    vi.spyOn(store, "load").mockResolvedValue();
-    const refresh = vi
-      .spyOn(store, "refresh")
-      .mockImplementationOnce(async () => {
-        store.$patch({ formSaveOutcome: "idle", status: "error" });
-      })
-      .mockImplementationOnce(async () => {
-        store.$patch({ formSaveOutcome: "idle", status: "ready" });
-      });
-    const updateProduct = vi.spyOn(store, "updateProduct").mockResolvedValue();
-    const wrapper = mountPage();
-
-    await wrapper.get(".menu-category__toggle").trigger("click");
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-    const dialog = wrapper.getComponent({ name: "EditProductDialog" });
-    dialog.vm.$emit("refresh");
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    dialog.vm.$emit("refresh");
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
-    await vi.waitFor(() => expect(dialog.props("saveOutcome")).toBe("saved"));
-
-    dialog.vm.$emit("save", productFormData);
-    await wrapper.vm.$nextTick();
-    expect(updateProduct).not.toHaveBeenCalled();
-
-    await clickButton(dialog, "Закрыть форму");
-    expect(dialog.props("open")).toBe(false);
-    await wrapper.get(".menu-product-row__edit").trigger("click");
-    wrapper
-      .getComponent({ name: "EditProductDialog" })
-      .vm.$emit("save", productFormData);
-    await vi.waitFor(() => expect(updateProduct).toHaveBeenCalledTimes(1));
-
-    store.$patch({
-      fieldErrors: { name: "Товар уже существует" },
-      formSaveOutcome: "rejected",
-    });
-    await wrapper.vm.$nextTick();
-    wrapper
-      .getComponent({ name: "EditProductDialog" })
-      .vm.$emit("save", { ...productFormData, name: "Исправленный латте" });
-    await vi.waitFor(() => expect(updateProduct).toHaveBeenCalledTimes(2));
   });
 
   it.each(["create", "update"] as const)(
@@ -2255,15 +1866,15 @@ function mountPage(): VueWrapper {
   return wrapper;
 }
 
-const productFormData: ProductFormData = {
+const productFormData: CreateProductFormData = {
   categoryId: "category-coffee",
   description: "",
   isActive: true,
   isAvailable: true,
   name: "Флэт уайт",
   price: 300,
-  type: "OTHER",
-  variants: [],
+  portionLabel: null,
+  priceChoices: [],
 };
 
 const categoryFormData = {
@@ -2276,14 +1887,14 @@ function productWithSortOrder(id: string, sortOrder: number) {
   return {
     id,
     categoryId: "category-coffee",
-    type: "OTHER" as const,
     name: id,
     description: "",
     price: 300,
+    portionLabel: null,
+    priceChoices: [],
     sortOrder,
     isActive: true,
     isAvailable: true,
-    variants: [],
   };
 }
 

@@ -197,27 +197,6 @@ export class PostgresAuthRepository implements AuthRepository {
     );
   }
 
-  // Kept only for repository-level legacy fixtures; application code uses the
-  // challenge-bound port above and cannot call this method through AuthRepository.
-  async verifyOtpAndCreateSession(
-    phoneE164: string,
-    codeHash: string,
-    now: Date,
-    sessionId: string,
-    refreshTokenHash: string,
-    sessionExpiresAt: Date,
-  ): Promise<OtpAuthentication> {
-    return this.verifyOtpAndCreateSessionInternal(
-      phoneE164,
-      null,
-      codeHash,
-      now,
-      sessionId,
-      refreshTokenHash,
-      sessionExpiresAt,
-    );
-  }
-
   private async verifyOtpAndCreateSessionInternal(
     phoneE164: string,
     expectedChallengeId: string | null,

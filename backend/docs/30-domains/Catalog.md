@@ -1,65 +1,14 @@
 ---
-title: Каталог и управление меню
-type: feature
+title: Catalog
+type: domain
 owner: backend
-implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-09-20
 sources:
-  - ../../src/catalog/catalog.module.ts
-  - ../../src/catalog/application/manage-products.use-case.ts
-  - ../../schema.sql
+  - ../../openapi/openapi.json
+  - ../../src/catalog/transport/public-menu-v3.controller.ts
+  - ../../src/catalog/transport/catalog-products-v3.controller.ts
 ---
 
-# Каталог
+# Catalog
 
-Публичное `GET /public/menu` выдаёт только опубликованное вложенное меню.
-Администратор читает полную проекцию и создаёт, меняет, переупорядочивает или
-архивирует категории, товары, группы/варианты модификаторов и связи категории.
-[Публичный controller](../../src/catalog/transport/public-menu.controller.ts),
-[админ-controller](../../src/catalog/transport/admin-catalog.controller.ts).
-
-`schema.sql` задаёт актуальные таблицы и ограничения. Local, test и development
-базы создаются из неё заново и заполняются seed; миграций и backfill нет.
-
-Use case проверяет допустимость до записи: имя и порядок, тип и цены товара,
-варианты напитка, состав и выбор модификаторов; архивные сущности не меняются.
-Полная перестановка принимает ровно текущий набор идентификаторов. [Категории](../../src/catalog/domain/category-admin.policy.ts),
-[товары](../../src/catalog/domain/product-admin.policy.ts),
-[модификаторы](../../src/catalog/domain/modifier-admin.policy.ts).
-
-Каждая команда выполняется в `BEGIN`/advisory lock/`COMMIT` и записывает audit
-до фиксации; ошибка откатывает транзакцию. PostgreSQL поддерживает уникальные
-активные позиции, ссылки и ограничения типов/цен. [Command runner](../../src/catalog/adapters/postgres-catalog-command.runner.ts),
-[схема](../../schema.sql).
-
-HTTP-валидация возвращает структурированные поля, предметные конфликты не
-маскируются. Контракт маршрутов — [карта API](../50-api/_MOC-api.md); unit,
-repository и интеграционные проверки покрывают правила, SQL и публикацию. [validation](../../src/catalog/transport/catalog-validation-http.spec.ts),
-[команды integration-проверок](../../package.json).
-
-## Цены товара
-
-Поддерживаемый v3-контракт не зависит от `DRINK`/`OTHER`. У товара ровно одна
-из двух форм цены:
-
-- одна цена хранит `price` и nullable `portionLabel` на товаре без строки
-  варианта;
-- несколько цен хранят минимум два упорядоченных price choice со стабильными
-  UUID, обязательным `portionLabel`, ценой и ручной доступностью.
-
-`portionLabel` — непрозрачный текст: backend удаляет внешние и сворачивает
-повторные пробелы, а активные подписи одного товара сравнивает без учёта
-регистра. Backend не выделяет amount/unit/kind, не знает UI-пресеты и не
-назначает подписи физическим единицам. Отдельного default нет: порядок списка
-задаёт первый доступный выбор. Произвольный предел количества вариантов или
-длины подписи не вводится без отдельного технического основания.
-
-Для одной цены действует ручная доступность товара. Для нескольких цен
-доступность принадлежит каждому choice; ноль доступных choice даёт sold out.
-Публикация и ручная доступность не являются складским остатком. Модификаторы
-остаются отдельным набором правил.
-
-В v3 запись заказа сохраняет выбранные choice, подпись и цену. Соседние
-v2-варианты остаются только для совместимости v2-маршрутов и не определяют
-модель порций. Seed создаёт 23 товара с одной ценой и 10 товаров с двумя
-choices из исходного меню.
+Публичное меню, admin catalog read и product commands существуют только в v3. Категории и modifier management сохраняются в v2. Товар использует одну цену с nullable `portionLabel` либо `priceChoices`; variants/S-M-L model удалена. [ADR-008](../../../docs/20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md) задаёт exact cutover inventory.

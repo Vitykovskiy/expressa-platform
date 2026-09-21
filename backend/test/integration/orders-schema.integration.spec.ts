@@ -18,13 +18,13 @@ function createOrderDay(day: string): string {
 
 async function createCatalogItem(pool: Pool): Promise<{
   productId: string;
-  variantId: string;
+  priceChoiceId: string;
   modifierGroupId: string;
   modifierOptionId: string;
 }> {
   const categoryId = randomUUID();
   const productId = randomUUID();
-  const variantId = randomUUID();
+  const priceChoiceId = randomUUID();
   const modifierGroupId = randomUUID();
   const modifierOptionId = randomUUID();
   const sortOrder = randomInt(1_000_000, 2_000_000_000);
@@ -34,14 +34,14 @@ async function createCatalogItem(pool: Pool): Promise<{
     [categoryId, `Категория ${categoryId}`, sortOrder],
   );
   await pool.query(
-    `INSERT INTO products (id, category_id, type, name, sort_order)
-     VALUES ($1, $2, 'DRINK', $3, $4)`,
+    `INSERT INTO products (id, category_id, name, sort_order)
+     VALUES ($1, $2, $3, $4)`,
     [productId, categoryId, `Напиток ${productId}`, sortOrder],
   );
   await pool.query(
-    `INSERT INTO product_variants (id, product_id, size, price, sort_order)
-     VALUES ($1, $2, 'M', 199, $3)`,
-    [variantId, productId, sortOrder],
+    `INSERT INTO product_price_choices (id, product_id, portion_label, price, sort_order)
+     VALUES ($1, $2, '250 мл', 199, $3)`,
+    [priceChoiceId, productId, sortOrder],
   );
   await pool.query(
     `INSERT INTO modifier_groups (id, name, selection_type, min_select, max_select)
@@ -59,7 +59,7 @@ async function createCatalogItem(pool: Pool): Promise<{
     ],
   );
 
-  return { productId, variantId, modifierGroupId, modifierOptionId };
+  return { productId, priceChoiceId, modifierGroupId, modifierOptionId };
 }
 
 async function createCustomer(pool: Pool): Promise<string> {
@@ -143,20 +143,20 @@ describe("схема заказов", () => {
   );
 
   it(
-    "сохраняет владельца push endpoint при повторной регистрации и разрешает обновление владельцу",
+    "сохраняет владельца push endpoint и переносит связь только по версии",
     async () => {
       const ownerA = await createCustomer(pool);
       const ownerB = await createCustomer(pool);
       const endpoint = `https://push.example/${randomUUID()}`;
       const repository = new PostgresPushSubscriptionRepository({ pool });
 
-      await repository.upsert({
+      await repository.createAssociation({
         userId: ownerA,
         endpoint,
         p256dh: "owner-a-key",
         auth: "owner-a-auth",
       });
-      await repository.upsert({
+      await repository.createAssociation({
         userId: ownerB,
         endpoint,
         p256dh: "owner-b-key",
@@ -174,12 +174,14 @@ describe("схема заказов", () => {
         ],
       });
 
-      await repository.upsert({
-        userId: ownerA,
-        endpoint,
-        p256dh: "owner-a-refreshed-key",
-        auth: "owner-a-refreshed-auth",
-      });
+      const existing = await repository.findByEndpoint(endpoint);
+      if (existing === null)
+        throw new Error("Push association was not created");
+      await repository.transferAssociation(
+        existing,
+        ownerB,
+        existing.associationVersion,
+      );
 
       await expect(
         pool.query<{ user_id: string; p256dh: string; auth: string }>(
@@ -189,9 +191,9 @@ describe("схема заказов", () => {
       ).resolves.toMatchObject({
         rows: [
           {
-            user_id: ownerA,
-            p256dh: "owner-a-refreshed-key",
-            auth: "owner-a-refreshed-auth",
+            user_id: ownerB,
+            p256dh: "owner-a-key",
+            auth: "owner-a-auth",
           },
         ],
       });
@@ -226,9 +228,9 @@ describe("схема заказов", () => {
       );
       await pool.query(
         `INSERT INTO order_items (
-          id, order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-        ) VALUES ($1, $2, 0, $3, $4, 'Капучино', 'M', 1, 249, 249)`,
-        [itemId, orderId, catalogItem.productId, catalogItem.variantId],
+          id, order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+        ) VALUES ($1, $2, 0, $3, $4, 'Капучино', '250 мл', 1, 249, 249)`,
+        [itemId, orderId, catalogItem.productId, catalogItem.priceChoiceId],
       );
       await pool.query(
         `INSERT INTO order_item_modifiers (
@@ -246,7 +248,7 @@ describe("схема заказов", () => {
 
       await expect(
         pool.query(
-          `SELECT item.product_name, item.size, item.sort_order, item.unit_total, item.line_total,
+          `SELECT item.product_name, item.portion_label, item.sort_order, item.unit_total, item.line_total,
                   modifier.modifier_name, modifier.price_delta, modifier.sort_order AS modifier_sort_order
            FROM order_items item
            JOIN order_item_modifiers modifier ON modifier.order_item_id = item.id
@@ -257,7 +259,7 @@ describe("схема заказов", () => {
         rows: [
           {
             product_name: "Капучино",
-            size: "M",
+            portion_label: "250 мл",
             sort_order: 0,
             unit_total: 249,
             line_total: 249,
@@ -278,17 +280,17 @@ describe("схема заказов", () => {
       await expect(
         pool.query(
           `INSERT INTO order_items (
-            order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-          ) VALUES ($1, 1, $2, $3, 'Чужой размер', 'M', 1, 100, 100)`,
-          [orderId, catalogItem.productId, otherCatalogItem.variantId],
+            order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+          ) VALUES ($1, 1, $2, $3, 'Чужая цена', '250 мл', 1, 100, 100)`,
+          [orderId, catalogItem.productId, otherCatalogItem.priceChoiceId],
         ),
       ).rejects.toMatchObject({ code: "23503" });
       await expect(
         pool.query(
           `INSERT INTO order_items (
-            order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-          ) VALUES ($1, 1, $2, $3, 'Неверный размер', 'S', 1, 100, 100)`,
-          [orderId, catalogItem.productId, catalogItem.variantId],
+            order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+          ) VALUES ($1, 1, $2, $3, 'Неверная цена', '350 мл', 1, 100, 100)`,
+          [orderId, catalogItem.productId, catalogItem.priceChoiceId],
         ),
       ).rejects.toMatchObject({ code: "23503" });
       await expect(
@@ -310,17 +312,17 @@ describe("схема заказов", () => {
       await expect(
         pool.query(
           `INSERT INTO order_items (
-            order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-          ) VALUES ($1, -1, $2, $3, 'Отрицательный порядок', 'M', 1, 100, 100)`,
-          [orderId, catalogItem.productId, catalogItem.variantId],
+            order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+          ) VALUES ($1, -1, $2, $3, 'Отрицательный порядок', '250 мл', 1, 100, 100)`,
+          [orderId, catalogItem.productId, catalogItem.priceChoiceId],
         ),
       ).rejects.toMatchObject({ code: "23514" });
       await expect(
         pool.query(
           `INSERT INTO order_items (
-            order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-          ) VALUES ($1, 0, $2, $3, 'Повторный порядок', 'M', 1, 100, 100)`,
-          [orderId, catalogItem.productId, catalogItem.variantId],
+            order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+          ) VALUES ($1, 0, $2, $3, 'Повторный порядок', '250 мл', 1, 100, 100)`,
+          [orderId, catalogItem.productId, catalogItem.priceChoiceId],
         ),
       ).rejects.toMatchObject({ code: "23505" });
       const anotherModifierOptionId = randomUUID();
@@ -539,9 +541,9 @@ describe("схема заказов", () => {
         );
         await pool.query(
           `INSERT INTO order_items (
-            id, order_id, sort_order, product_id, variant_id, product_name, size, quantity, unit_total, line_total
-          ) VALUES ($1, $2, 0, $3, $4, 'Снимок', 'M', 1, 249, 249)`,
-          [itemId, orderId, catalogItem.productId, catalogItem.variantId],
+            id, order_id, sort_order, product_id, price_choice_id, product_name, portion_label, quantity, unit_total, line_total
+          ) VALUES ($1, $2, 0, $3, $4, 'Снимок', '250 мл', 1, 249, 249)`,
+          [itemId, orderId, catalogItem.productId, catalogItem.priceChoiceId],
         );
         await pool.query(
           `INSERT INTO order_item_modifiers (
