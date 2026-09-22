@@ -1,7 +1,6 @@
 import type { ModifierOption } from "./catalog.types";
 
-export type ModifierOptionFormField =
-  "name" | "priceDelta" | "isDefault" | "isAvailable";
+export type ModifierOptionFormField = "name" | "priceDelta" | "isDefault";
 
 export interface ModifierOptionDraft {
   id?: string;

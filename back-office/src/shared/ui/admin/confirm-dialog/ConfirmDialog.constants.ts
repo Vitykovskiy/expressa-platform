@@ -3,12 +3,11 @@ import type { ConfirmDialogProps } from "./ConfirmDialog.types";
 export const CONFIRM_DIALOG_DEFAULTS: Required<
   Pick<
     ConfirmDialogProps,
-    "cancelLabel" | "confirmVariant" | "error" | "pending" | "requireInput"
+    "cancelLabel" | "confirmVariant" | "pending" | "requireInput"
   >
 > = {
   confirmVariant: "primary",
   cancelLabel: "Отмена",
   requireInput: false,
   pending: false,
-  error: "",
 };

@@ -129,8 +129,8 @@
     />
     <ConfirmDialog
       v-model:open="discardOpen"
-      cancel-label="Продолжить редактирование"
-      confirm-label="Выйти без сохранения"
+      cancel-label="Вернуться"
+      confirm-label="Выйти"
       confirm-variant="destructive"
       :description="'Несохранённые изменения будут потеряны.'"
       title="Выйти без сохранения?"

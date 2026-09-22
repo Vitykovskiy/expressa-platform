@@ -19,13 +19,7 @@ function render(args: Story["args"]) {
 }
 export const Default: Story = { render };
 export const DisabledPending: Story = { args: { disabled: true }, render };
-export const Rejected: Story = { args: { saveOutcome: "rejected" }, render };
 export const Invalid: Story = {
   args: { fieldErrors: { name: "Введите название товара" } },
   render,
 };
-export const Unconfirmed: Story = {
-  args: { saveOutcome: "unconfirmed" },
-  render,
-};
-export const Saved: Story = { args: { saveOutcome: "saved" }, render };

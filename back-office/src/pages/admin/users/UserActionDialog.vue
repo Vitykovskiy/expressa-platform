@@ -164,7 +164,7 @@ watch(open, (isOpen, wasOpen) => {
 <style scoped lang="scss">
 .user-action-dialog-description {
   margin: 0;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  padding: 0 0 var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-body);
@@ -173,7 +173,7 @@ watch(open, (isOpen, wasOpen) => {
 
 .user-action-dialog-user {
   margin: 0;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  padding: 0 0 var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-body);
@@ -181,7 +181,7 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .user-action-dialog-description--destructive {
-  margin: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  margin: 0 0 var(--expressa-space-lg);
   padding: var(--expressa-space-sm) var(--expressa-space-control-inline);
   border-radius: var(--expressa-radius-sm);
   color: var(--expressa-color-status-error);
@@ -189,6 +189,6 @@ watch(open, (isOpen, wasOpen) => {
 }
 
 .user-action-dialog-roles {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
+  padding: 0 0 var(--expressa-space-lg);
 }
 </style>

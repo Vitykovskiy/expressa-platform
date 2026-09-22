@@ -67,7 +67,6 @@
       <AdminFieldWrapper
         :id="availableControlId"
         v-slot="field"
-        :error="props.fieldErrors?.isAvailable"
         label="Вариант доступен"
         layout="row"
       >
@@ -96,7 +95,6 @@ import type {
   ModifierOptionDraft,
   ModifierOptionEditorEmits,
   ModifierOptionEditorProps,
-  ModifierOptionFormField,
 } from "./ModifierOptionEditor.types";
 
 const props = defineProps<ModifierOptionEditorProps>();
@@ -107,11 +105,11 @@ const defaultControlId = `modifier-option-default-${useId()}`;
 const availableControlId = `modifier-option-available-${useId()}`;
 
 function updateField(
-  field: ModifierOptionFormField,
-  value: ModifierOptionDraft[ModifierOptionFormField],
+  field: keyof ModifierOptionDraft,
+  value: ModifierOptionDraft[keyof ModifierOptionDraft],
 ) {
   if (props.disabled) return;
-  emit("touch", field);
+  if (field === "name" || field === "priceDelta") emit("touch", field);
   emit("update:modelValue", { ...props.modelValue, [field]: value });
 }
 </script>

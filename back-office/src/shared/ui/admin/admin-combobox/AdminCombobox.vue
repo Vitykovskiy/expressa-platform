@@ -1,26 +1,34 @@
 <template>
   <div class="admin-combobox">
-    <input
-      v-bind="attrs"
-      :id="inputId"
-      ref="input"
-      v-model="query"
-      :aria-activedescendant="activeId"
-      :aria-controls="listboxId"
-      :aria-expanded="open"
-      :disabled="props.disabled || props.loading"
-      aria-autocomplete="list"
-      :aria-label="accessibleLabel"
-      class="admin-combobox__input"
-      role="combobox"
-      @focus="openList"
-      @keydown="onKeydown"
-    />
-    <p v-if="props.loading" class="admin-combobox__state" role="status">
-      Загружаем…
-    </p>
+    <div class="admin-combobox__control">
+      <input
+        v-bind="attrs"
+        :id="inputId"
+        ref="input"
+        v-model="query"
+        :aria-activedescendant="activeId"
+        :aria-controls="listboxId"
+        :aria-expanded="open"
+        :disabled="props.disabled || props.loading"
+        aria-autocomplete="list"
+        :aria-label="accessibleLabel"
+        class="admin-combobox__input"
+        :class="{ 'admin-combobox__input--loading': props.loading }"
+        role="combobox"
+        @focus="openList"
+        @keydown="onKeydown"
+      />
+      <span v-if="props.loading" class="admin-combobox__loader" role="status">
+        <v-progress-circular
+          aria-label="Загружаем варианты"
+          indeterminate
+          size="18"
+          width="2"
+        />
+      </span>
+    </div>
     <div
-      v-else-if="open"
+      v-if="!props.loading && open"
       :id="listboxId"
       :aria-label="accessibleLabel"
       class="admin-combobox__menu"
@@ -169,6 +177,9 @@ watch(
 .admin-combobox {
   position: relative;
 }
+.admin-combobox__control {
+  position: relative;
+}
 .admin-combobox__input {
   box-sizing: border-box;
   width: 100%;
@@ -181,6 +192,20 @@ watch(
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+}
+.admin-combobox__input--loading {
+  padding-inline-end: calc(
+    var(--expressa-space-control-inline) +
+      var(--expressa-size-control-min-height)
+  );
+}
+.admin-combobox__loader {
+  position: absolute;
+  inset-inline-end: var(--expressa-space-control-inline);
+  inset-block-start: 50%;
+  display: grid;
+  color: var(--expressa-color-primary);
+  transform: translateY(-50%);
 }
 .admin-combobox__input:disabled {
   cursor: not-allowed;

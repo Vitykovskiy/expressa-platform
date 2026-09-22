@@ -6,7 +6,7 @@
     max-width="448"
     submit-form="add-user-dialog-form"
     :submit-disabled="!isValid"
-    submit-label="Добавить пользователя"
+    submit-label="Сохранить"
     title="Новый пользователь"
     @after-enter="focusNameField"
     @update:model-value="handleDialogUpdate"
@@ -46,17 +46,15 @@
       </AdminFieldWrapper>
 
       <AdminFieldWrapper :id="roleId" v-slot="field" label="Роль">
-        <AdminSelect
+        <AdminRadioGroup
           :id="field.controlId"
           v-model="role"
           :aria-describedby="field.describedBy"
           :aria-invalid="field.invalid"
           :aria-required="field.required"
-          :required="field.required"
-        >
-          <option value="barista">Бариста</option>
-          <option value="administrator">Администратор</option>
-        </AdminSelect>
+          aria-label="Роль"
+          :items="roleOptions"
+        />
       </AdminFieldWrapper>
     </form>
   </AdminDialog>
@@ -79,7 +77,7 @@ import type {
 } from "./AddUserDialog.types";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
-import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
+import AdminRadioGroup from "../../../shared/ui/admin/admin-radio-group/AdminRadioGroup.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 
 const open = defineModel<boolean>("open", { required: true });
@@ -87,6 +85,10 @@ const emit = defineEmits<AddUserDialogEmits>();
 const name = shallowRef("");
 const phone = shallowRef("");
 const role = shallowRef(DEFAULT_NEW_USER_ROLE);
+const roleOptions = [
+  { label: "Бариста", value: "barista" },
+  { label: "Администратор", value: "administrator" },
+] as const;
 const returnFocusTarget = shallowRef<FocusableElement | null>(null);
 const nameField =
   useTemplateRef<InstanceType<typeof AdminTextField>>("nameField");
@@ -204,6 +206,5 @@ watch(open, (isOpen, wasOpen) => {
 .add-user-dialog-form {
   display: grid;
   gap: var(--expressa-space-md);
-  padding: 0 var(--expressa-space-lg);
 }
 </style>

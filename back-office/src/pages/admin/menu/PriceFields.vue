@@ -36,22 +36,13 @@
         :aria-invalid="field.invalid"
         :aria-required="field.required"
         :disabled="props.disabled"
+        :items="portionOptions"
+        :placeholder="
+          props.requiredLabel ? 'Выберите порцию или размер' : 'Без подписи'
+        "
         :required="field.required"
         @blur="emit('blur:portion-label')"
-      >
-        <option v-if="!props.requiredLabel" value="">Без подписи</option>
-        <option v-else disabled value="">Выберите порцию или размер</option>
-        <option
-          v-for="suggestion in portionLabelSuggestions"
-          :key="suggestion"
-          :value="suggestion"
-        >
-          {{ suggestion }}
-        </option>
-        <option :value="customPortionLabelOption">
-          {{ customPortionLabelOption }}
-        </option>
-      </AdminSelect>
+      />
     </AdminFieldWrapper>
 
     <template v-if="customPortionLabel">
@@ -124,6 +115,11 @@ const selectedPortionLabel = computed({
     portionLabel.value = customRequested.value ? "" : value;
   },
 });
+const portionOptions = computed(() => [
+  ...(!props.requiredLabel ? [{ title: "Без подписи", value: "" }] : []),
+  ...portionLabelSuggestions.map((value) => ({ title: value, value })),
+  { title: customPortionLabelOption, value: customPortionLabelOption },
+]);
 </script>
 
 <style scoped lang="scss">

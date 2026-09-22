@@ -93,16 +93,10 @@
             :aria-invalid="field.invalid"
             :aria-required="field.required"
             :model-value="selectionType"
+            :items="modifierSelectionTypeItems"
             :required="field.required"
             @update:model-value="updateGroupField('selectionType', $event)"
-            ><option
-              v-for="option in MODIFIER_SELECTION_TYPE_OPTIONS"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option></AdminSelect
-          >
+          />
         </AdminFieldWrapper>
         <AdminFieldWrapper
           :id="requiredControlId"
@@ -372,6 +366,9 @@ const props = withDefaults(
   MODIFIER_GROUP_EDITOR_DEFAULTS,
 );
 const emit = defineEmits<ModifierGroupEditorEmits>();
+const modifierSelectionTypeItems = MODIFIER_SELECTION_TYPE_OPTIONS.map(
+  ({ label: title, value }) => ({ title, value }),
+);
 const hasPendingMessage = computed(
   () => props.pendingMessage !== null && props.pendingMessage !== undefined,
 );
@@ -517,12 +514,7 @@ const optionFieldErrors = computed(() =>
       !isNonNegativeInteger(option.priceDelta)
     )
       errors.priceDelta = "Укажите изменение цены в целых рублях";
-    for (const field of [
-      "name",
-      "priceDelta",
-      "isDefault",
-      "isAvailable",
-    ] as const) {
+    for (const field of ["name", "priceDelta", "isDefault"] as const) {
       const error = serverError(
         `options.${index}.${field}` as ModifierGroupFormField,
       );

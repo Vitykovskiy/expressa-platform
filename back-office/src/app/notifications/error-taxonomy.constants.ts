@@ -30,6 +30,7 @@ export const operationMessages = {
 } as const;
 
 export const outcomeMessages = {
+  "catalog.saved": { level: "success", message: "Изменения сохранены" },
   "notifications.enabled": {
     level: "success",
     message: "Уведомления включены",

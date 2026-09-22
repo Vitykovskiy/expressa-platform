@@ -20,7 +20,6 @@ function render(args: Story["args"]) {
 export const Default: Story = { render };
 export const DisabledPendingSave: Story = { args: { disabled: true }, render };
 export const ArchivePending: Story = { args: { archivePending: true }, render };
-export const Rejected: Story = { args: { saveOutcome: "rejected" }, render };
 export const Invalid: Story = {
   args: { fieldErrors: { name: "Введите название категории" } },
   render,

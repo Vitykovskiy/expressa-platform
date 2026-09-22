@@ -14,8 +14,7 @@ export type ModifierGroupFormField =
   | "options"
   | `options.${number}.name`
   | `options.${number}.priceDelta`
-  | `options.${number}.isDefault`
-  | `options.${number}.isAvailable`;
+  | `options.${number}.isDefault`;
 
 export interface ModifierGroupFormData {
   id?: string;

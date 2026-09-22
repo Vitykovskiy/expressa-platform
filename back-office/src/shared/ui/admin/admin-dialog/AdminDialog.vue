@@ -54,7 +54,7 @@
           type="submit"
           :variant="props.submitVariant"
         >
-          {{ props.pending ? props.submitPendingLabel : props.submitLabel }}
+          {{ props.submitLabel }}
         </AdminButton>
       </footer>
     </div>
@@ -203,7 +203,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-md) var(--expressa-space-lg);
+  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
 }
 .admin-dialog__title {
   margin: 0;
@@ -222,13 +222,12 @@ watch(
   flex: 0 0 auto;
   justify-content: flex-end;
   gap: var(--expressa-space-control-inline);
-  padding: var(--expressa-space-md) var(--expressa-space-lg);
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
+  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
 }
 
 .admin-dialog__body {
   min-height: 0;
+  padding: 0 var(--expressa-space-dialog-inset) var(--expressa-space-lg);
   overflow-y: auto;
 }
 

@@ -1,8 +1,4 @@
-import type {
-  CatalogStoreError,
-  Category,
-  CatalogFormSaveOutcome,
-} from "./catalog.types";
+import type { Category } from "./catalog.types";
 
 export type ProductFormField =
   | "categoryId"
@@ -46,12 +42,9 @@ export interface AddProductDialogProps {
   disabled: boolean;
   categories: readonly Category[];
   fieldErrors?: Partial<Record<ProductFormField, string>>;
-  saveError?: CatalogStoreError | null;
-  saveOutcome?: CatalogFormSaveOutcome;
 }
 
 export interface AddProductDialogEmits {
   confirm: [data: CreateProductFormData];
   cancel: [];
-  refresh: [];
 }

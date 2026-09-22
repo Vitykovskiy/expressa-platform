@@ -12,7 +12,6 @@ export interface AdminDialogProps {
   submitDisabled?: boolean;
   submitForm?: string;
   submitLabel?: string;
-  submitPendingLabel?: string;
   submitVariant?: AdminButtonVariant;
   title?: string;
 }

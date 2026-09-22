@@ -49,10 +49,8 @@
       :categories="orderedCategories"
       :disabled="isBusy"
       :field-errors="categoryFieldErrors"
-      :save-outcome="categoryFormSaveOutcome"
       @cancel="closeNewCategoryForm"
       @confirm="createCategory"
-      @refresh="refreshCategoryCatalog"
     />
     <EditCategoryDialog
       v-model:open="editCategoryOpen"
@@ -61,21 +59,17 @@
       :disabled="isBusy"
       :category="selectedCategory"
       :field-errors="categoryFieldErrors"
-      :save-outcome="categoryFormSaveOutcome"
       @archive="archiveCategory"
       @cancel="closeCategoryEditor"
       @save="updateCategory"
-      @refresh="refreshCategoryCatalog"
     />
     <AddProductDialog
       v-model:open="addProductOpen"
       :disabled="isBusy"
       :categories="orderedCategories"
       :field-errors="productFieldErrors"
-      :save-outcome="productFormSaveOutcome"
       @cancel="closeNewProductForm"
       @confirm="createProduct"
-      @refresh="refreshProductCatalog"
     />
     <AdminDialog
       cancel-label="Отмена"
@@ -86,7 +80,6 @@
       :pending="modifierDialogPending"
       submit-form="modifier-group-editor-form"
       submit-label="Сохранить"
-      submit-pending-label="Сохраняем…"
       title="Группа добавок"
       @update:model-value="updateModifierGroupEditorOpen"
     >
@@ -175,22 +168,6 @@ const acknowledgedForm = shallowRef<
 >(null);
 const hasConfirmedCatalog = shallowRef(catalogStore.status === "ready");
 const isBusy = computed(() => catalogStore.status === "loading");
-const categoryFormSaveOutcome = computed(() =>
-  categoryRecoveryState.value === "checked"
-    ? "saved"
-    : categoryRecoveryState.value === "checking" ||
-        categoryRecoveryState.value === "retry"
-      ? "unconfirmed"
-      : catalogStore.formSaveOutcome,
-);
-const productFormSaveOutcome = computed(() =>
-  productRecoveryState.value === "checked"
-    ? "saved"
-    : productRecoveryState.value === "checking" ||
-        productRecoveryState.value === "retry"
-      ? "unconfirmed"
-      : catalogStore.formSaveOutcome,
-);
 const modifierDialogPending = computed(
   () =>
     catalogStore.status === "loading" ||
@@ -428,8 +405,7 @@ async function createCategory(data: CategoryFormData): Promise<void> {
   if (
     authorizationValue === null ||
     catalogStore.status === "loading" ||
-    categoryRecoveryState.value !== "idle" ||
-    catalogStore.formSaveOutcome !== "idle"
+    categoryRecoveryState.value !== "idle"
   )
     return;
   await catalogStore.createCategory(authorizationValue, {
@@ -467,8 +443,7 @@ async function updateCategory(data: CategoryFormData): Promise<void> {
     authorizationValue === null ||
     category === null ||
     catalogStore.status === "loading" ||
-    categoryRecoveryState.value !== "idle" ||
-    catalogStore.formSaveOutcome !== "idle"
+    categoryRecoveryState.value !== "idle"
   )
     return;
   await catalogStore.updateCategory(authorizationValue, category.id, {
@@ -505,21 +480,6 @@ function closeCategoryEditor(preserveOutcome = false): void {
   categoryRecoveryState.value = "idle";
   editCategoryOpen.value = false;
   selectedCategory.value = null;
-}
-
-async function refreshCategoryCatalog(): Promise<void> {
-  const authorizationValue = accessToken();
-  if (
-    authorizationValue === null ||
-    catalogStore.status === "loading" ||
-    categoryRecoveryState.value === "checking" ||
-    categoryRecoveryState.value === "checked"
-  )
-    return;
-  categoryRecoveryState.value = "checking";
-  await catalogStore.refresh(authorizationValue);
-  categoryRecoveryState.value =
-    catalogStore.status === "ready" ? "checked" : "retry";
 }
 
 async function archiveCategory(categoryId: string): Promise<void> {
@@ -568,21 +528,6 @@ async function createProduct(data: CreateProductFormData): Promise<void> {
     acknowledgedForm.value = "product";
     closeNewProductForm(true);
   }
-}
-
-async function refreshProductCatalog(): Promise<void> {
-  const authorizationValue = accessToken();
-  if (
-    authorizationValue === null ||
-    catalogStore.status === "loading" ||
-    productRecoveryState.value === "checking" ||
-    productRecoveryState.value === "checked"
-  )
-    return;
-  productRecoveryState.value = "checking";
-  await catalogStore.refresh(authorizationValue);
-  productRecoveryState.value =
-    catalogStore.status === "ready" ? "checked" : "retry";
 }
 
 async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {

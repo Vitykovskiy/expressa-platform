@@ -5,7 +5,13 @@
   >
     <label :id="labelId" :for="props.id" class="admin-field-wrapper__label">
       {{ props.label }}
-      <span v-if="props.required" aria-hidden="true"> *</span>
+      <span
+        v-if="props.required"
+        aria-hidden="true"
+        class="admin-field-wrapper__required"
+      >
+        *</span
+      >
     </label>
     <slot
       :control-id="props.id"
@@ -52,6 +58,9 @@ const describedBy = computed(() => (props.error ? errorId : undefined));
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
   line-height: var(--expressa-line-height-control);
+}
+.admin-field-wrapper__required {
+  color: var(--expressa-color-status-error);
 }
 .admin-field-wrapper__support {
   display: grid;

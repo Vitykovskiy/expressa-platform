@@ -268,6 +268,10 @@ export const useCatalogStore = defineStore(catalogStoreId, {
           }
           this.formSaveOutcome = "saved";
           this.lastCommandSucceeded = true;
+          operationPort.publishOutcome(
+            "catalog.saved",
+            catalogContext("catalog.form.save", "catalog", "mutation"),
+          );
           const catalogResult = await operationPort.run(
             catalogContext("catalog.reconcile", "catalog", "read"),
             () =>
@@ -278,8 +282,6 @@ export const useCatalogStore = defineStore(catalogStoreId, {
             replaceCatalogState(this, catalog);
             this.status = catalogStatuses.ready;
           } else {
-            this.lastCommandSucceeded = false;
-            this.formSaveOutcome = "unconfirmed";
             this.status = catalogStatuses.ready;
           }
         })

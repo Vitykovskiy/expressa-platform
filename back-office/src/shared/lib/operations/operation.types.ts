@@ -1,6 +1,7 @@
 export type OperationKind = "read" | "mutation";
 export type OperationOrigin = "user" | "automatic" | "recovery";
 export type OperationOutcomeKey =
+  | "catalog.saved"
   | "notifications.enabled"
   | "notifications.permissionDenied"
   | "orders.new"

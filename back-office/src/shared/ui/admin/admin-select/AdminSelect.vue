@@ -1,24 +1,23 @@
 <template>
-  <select
+  <v-select
+    ref="select"
     v-bind="attrs"
     class="admin-select"
-    :value="props.modelValue"
-    @change="
-      emit('update:modelValue', ($event.target as HTMLSelectElement).value);
-      emit('change', $event);
-    "
-    @input="emit('input', $event)"
-  >
-    <slot />
-  </select>
+    density="comfortable"
+    hide-details
+    :items="props.items"
+    :model-value="props.modelValue"
+    :placeholder="props.placeholder"
+    variant="outlined"
+    @update:model-value="handleUpdate"
+  />
 </template>
 
 <script setup lang="ts">
-import { useAttrs } from "vue";
+import { useAttrs, useTemplateRef } from "vue";
 import { ADMIN_SELECT_DEFAULTS } from "./AdminSelect.constants";
 import type { AdminSelectEmits, AdminSelectProps } from "./AdminSelect.types";
 
-// VSelect's public `hide-details` combobox is 56px; this is a 44px option/input/change API.
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
@@ -27,40 +26,21 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminSelectEmits>();
 const attrs = useAttrs();
-defineSlots<{ default(): unknown }>();
+const select = useTemplateRef<{ focus: () => void }>("select");
+
+function focus(): void {
+  select.value?.focus();
+}
+
+function handleUpdate(value: string | number | null): void {
+  emit("update:modelValue", value === null ? "" : String(value));
+}
+
+defineExpose({ focus });
 </script>
 
 <style scoped lang="scss">
 .admin-select {
-  color-scheme: light;
-  width: 100%;
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-  font: inherit;
-  transition:
-    border-color var(--expressa-motion-duration-control) ease-out,
-    background-color var(--expressa-motion-duration-control) ease-out;
-}
-
-.admin-select option {
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-}
-
-.admin-select:disabled {
-  cursor: not-allowed;
-  opacity: 1;
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-control-disabled-surface);
-}
-
-.admin-select:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
+  inline-size: 100%;
 }
 </style>

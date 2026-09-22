@@ -46,29 +46,12 @@
           {{ reasonError }}
         </p>
       </div>
-
-      <p
-        v-if="props.error"
-        ref="errorSummary"
-        class="confirm-dialog-error"
-        role="alert"
-        tabindex="-1"
-      >
-        {{ props.error }}
-      </p>
     </form>
   </AdminDialog>
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, nextTick, shallowRef, useId, watch } from "vue";
 
 import { CONFIRM_DIALOG_DEFAULTS } from "./ConfirmDialog.constants";
 import type {
@@ -93,7 +76,6 @@ const titleId = `confirm-dialog-title-${useId()}`;
 const descriptionId = `confirm-dialog-description-${useId()}`;
 const reasonInputId = `confirm-dialog-reason-${useId()}`;
 const reasonErrorId = `confirm-dialog-reason-error-${useId()}`;
-const errorSummary = useTemplateRef<HTMLElement>("errorSummary");
 const reasonDescribedBy = computed(() =>
   reasonError.value ? reasonErrorId : undefined,
 );
@@ -174,21 +156,12 @@ watch(open, (isOpen, wasOpen) => {
     }
   }
 });
-
-watch(
-  () => props.error,
-  async (value, previous) => {
-    if (!value || value === previous || !open.value) return;
-    await nextTick();
-    errorSummary.value?.focus();
-  },
-);
 </script>
 
 <style scoped lang="scss">
 .confirm-dialog-description {
   margin: 0;
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  padding: 0 0 var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
   line-height: var(--expressa-line-height-body);
@@ -196,7 +169,7 @@ watch(
 }
 
 .confirm-dialog-reason {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
+  padding: 0 0 var(--expressa-space-md);
 }
 
 .confirm-dialog-reason:focus-within {

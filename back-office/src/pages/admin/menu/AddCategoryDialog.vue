@@ -8,8 +8,7 @@
     :pending="props.disabled"
     submit-form="add-category-dialog-form"
     :submit-disabled="props.disabled || !canSave"
-    submit-label="Создать категорию"
-    submit-pending-label="Создаём…"
+    submit-label="Сохранить"
     title="Новая категория"
     @after-enter="focusFirstField"
     @update:model-value="requestClose"
@@ -19,15 +18,6 @@
       class="category-dialog"
       @submit.prevent="confirm"
     >
-      <section
-        v-if="props.saveOutcome === 'rejected'"
-        ref="saveError"
-        class="category-dialog__outcome"
-        role="alert"
-        tabindex="-1"
-      >
-        Не удалось создать категорию.
-      </section>
       <div class="category-dialog__fields">
         <CategoryFormFields
           ref="fields"
@@ -48,8 +38,8 @@
   </AdminDialog>
   <ConfirmDialog
     v-model:open="discardOpen"
-    confirm-label="Закрыть без сохранения"
-    cancel-label="Продолжить редактирование"
+    confirm-label="Закрыть"
+    cancel-label="Вернуться"
     confirm-variant="destructive"
     description="Введённые данные будут потеряны."
     title="Закрыть без сохранения?"
@@ -58,14 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import CategoryFormFields from "./CategoryFormFields.vue";
@@ -88,7 +71,6 @@ const fields =
   useTemplateRef<InstanceType<typeof CategoryFormFields>>("fields");
 const nameTouched = shallowRef(false);
 const discardOpen = shallowRef(false);
-const saveError = useTemplateRef<HTMLElement>("saveError");
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const draft = useCategoryDraft({
   categories: () => props.categories ?? [],
@@ -130,25 +112,11 @@ watch(open, (isOpen, wasOpen) => {
   }
   if (!isOpen && wasOpen) restoreFocus();
 });
-watch(
-  () => props.saveOutcome,
-  (outcome) => {
-    if (outcome === "rejected") void nextTick(() => saveError.value?.focus());
-  },
-);
 </script>
 
 <style scoped lang="scss">
 .category-dialog__fields {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-.category-dialog__outcome {
-  margin: 0 var(--expressa-space-lg) var(--expressa-space-md);
-  color: var(--expressa-color-status-error);
-}
-@media (max-width: 599px) {
-  .category-dialog__fields {
-    padding: 0 var(--expressa-space-md) var(--expressa-space-md);
-  }
+  display: grid;
+  gap: var(--expressa-space-md);
 }
 </style>

@@ -36,8 +36,8 @@
     </p>
     <ConfirmDialog
       v-model:open="discardOpen"
-      cancel-label="Продолжить"
-      confirm-label="Отменить изменения"
+      cancel-label="Вернуться"
+      confirm-label="Отменить"
       confirm-variant="destructive"
       description="Несохранённый порядок будет потерян."
       title="Отменить изменения порядка?"

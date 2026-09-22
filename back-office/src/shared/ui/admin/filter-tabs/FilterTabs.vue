@@ -99,8 +99,6 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   overflow-x: auto;
   overflow-y: hidden;
   padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
   scroll-padding-inline: var(--expressa-space-md);
 }
 
@@ -117,7 +115,7 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   flex: 0 0 auto;
   align-items: center;
   justify-items: center;
-  padding: var(--expressa-space-xs) var(--expressa-border-width-none);
+  padding: var(--expressa-border-width-none);
   border: var(--expressa-border-width-none);
   background: var(--expressa-color-transparent);
   cursor: pointer;
@@ -132,16 +130,19 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
 .filter-tab__visual {
   display: flex;
   align-items: center;
+  min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border-bottom: var(--expressa-border-width-strong) solid transparent;
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-pill);
   color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
 }
 
 .filter-tab--selected .filter-tab__visual {
-  border-bottom-color: var(--expressa-color-text-primary);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-control-selected-surface);
+  border-color: var(--expressa-color-accent);
+  color: var(--expressa-color-text-on-accent);
+  background-color: var(--expressa-color-accent);
   font-weight: var(--expressa-font-weight-medium);
 }
 

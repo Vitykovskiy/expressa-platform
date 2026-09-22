@@ -8,8 +8,7 @@
     :pending="props.disabled || props.archivePending"
     submit-form="edit-category-dialog-form"
     :submit-disabled="props.disabled || props.archivePending || !canSave"
-    submit-label="Сохранить изменения"
-    submit-pending-label="Сохраняем…"
+    submit-label="Сохранить"
     title="Редактировать категорию"
     @after-enter="focusFirstField"
     @update:model-value="requestClose"
@@ -19,15 +18,6 @@
       class="category-dialog"
       @submit.prevent="save"
     >
-      <section
-        v-if="props.saveOutcome === 'rejected'"
-        ref="saveError"
-        class="category-dialog__outcome"
-        role="alert"
-        tabindex="-1"
-      >
-        Не удалось сохранить изменения. Повторите попытку.
-      </section>
       <div class="category-dialog__fields">
         <CategoryFormFields
           ref="fields"
@@ -44,18 +34,13 @@
           @update:name="draft.name.value = $event"
         />
       </div>
-      <section class="category-dialog__danger">
-        <h3>Архив</h3>
-        <p>
-          Категория и товары внутри будут скрыты из меню. История заказов
-          сохранится.
-        </p>
+      <section class="category-dialog__danger" aria-label="Опасные действия">
         <AdminButton
           :disabled="props.disabled || props.archivePending"
           type="button"
           variant="destructive"
           @click="archiveOpen = true"
-          >Архивировать категорию</AdminButton
+          >Архивировать</AdminButton
         >
       </section>
     </form>
@@ -65,15 +50,14 @@
     confirm-label="Архивировать категорию"
     confirm-variant="destructive"
     :description="`Категория «${props.category?.name ?? ''}» и товары внутри будут скрыты из меню. История заказов сохранится.`"
-    :error="props.archiveError ?? undefined"
     :pending="props.archivePending"
     :title="`Архивировать категорию «${props.category?.name ?? ''}»?`"
     @confirm="confirmArchive"
   />
   <ConfirmDialog
     v-model:open="discardOpen"
-    confirm-label="Выйти без сохранения"
-    cancel-label="Продолжить редактирование"
+    confirm-label="Закрыть"
+    cancel-label="Вернуться"
     confirm-variant="destructive"
     description="Несохранённые изменения будут потеряны."
     title="Выйти без сохранения?"
@@ -82,14 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
@@ -111,7 +88,6 @@ const emit = defineEmits<EditCategoryDialogEmits>();
 const titleId = `edit-category-title-${useId()}`;
 const fields =
   useTemplateRef<InstanceType<typeof CategoryFormFields>>("fields");
-const saveError = useTemplateRef<HTMLElement>("saveError");
 const nameTouched = shallowRef(false);
 const archiveOpen = shallowRef(false);
 const discardOpen = shallowRef(false);
@@ -168,39 +144,16 @@ watch(
     if (!isOpen) archiveOpen.value = false;
   },
 );
-watch(
-  () => props.saveOutcome,
-  (outcome) => {
-    if (outcome === "rejected") void nextTick(() => saveError.value?.focus());
-  },
-);
 </script>
 
 <style scoped lang="scss">
 .category-dialog__fields {
-  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-}
-.category-dialog__outcome {
-  margin: 0 var(--expressa-space-lg) var(--expressa-space-md);
-  color: var(--expressa-color-status-error);
+  display: grid;
+  gap: var(--expressa-space-md);
 }
 .category-dialog__danger {
-  margin: var(--expressa-space-sm) var(--expressa-space-lg) 0;
-  padding: var(--expressa-space-lg) 0 0;
-}
-.category-dialog__danger h3,
-.category-dialog__danger p {
-  margin: 0 0 var(--expressa-space-sm);
-}
-.category-dialog__danger p {
-  color: var(--expressa-color-text-secondary);
-}
-@media (max-width: 599px) {
-  .category-dialog__fields {
-    padding: 0 var(--expressa-space-md) var(--expressa-space-md);
-  }
-  .category-dialog__danger {
-    margin-inline: var(--expressa-space-md);
-  }
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--expressa-space-lg);
 }
 </style>

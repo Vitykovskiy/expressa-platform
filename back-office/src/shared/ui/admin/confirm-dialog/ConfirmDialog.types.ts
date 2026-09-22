@@ -12,7 +12,6 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   requireInput?: boolean;
   pending?: boolean;
-  error?: string;
 }
 
 export interface ConfirmDialogEmits {

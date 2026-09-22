@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { shallowRef } from "vue";
 import AdminFieldWrapper from "../../../src/shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminSelect from "../../../src/shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../src/shared/ui/admin/admin-text-field/AdminTextField.vue";
@@ -66,13 +67,17 @@ export const Select: Story = {
   render(args: Story["args"]) {
     return {
       components: { AdminFieldWrapper, AdminSelect },
-      setup: () => ({ args }),
+      setup: () => ({ args, value: shallowRef("barista") }),
       template: `
         <AdminFieldWrapper v-bind="args" v-slot="field">
-            <AdminSelect :id="field.controlId" model-value="barista">
-              <option value="barista">Бариста</option>
-              <option value="administrator">Администратор</option>
-            </AdminSelect>
+            <AdminSelect
+              :id="field.controlId"
+              v-model="value"
+              :items="[
+                { title: 'Бариста', value: 'barista' },
+                { title: 'Администратор', value: 'administrator' },
+              ]"
+            />
         </AdminFieldWrapper>
       `,
     };

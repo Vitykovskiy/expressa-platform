@@ -9,7 +9,6 @@ export const ADMIN_DIALOG_DEFAULTS = {
   modelValue: false,
   pending: false,
   submitDisabled: false,
-  submitPendingLabel: "Сохраняем…",
   submitVariant: "primary" as const,
 } satisfies Required<
   Pick<
@@ -20,7 +19,6 @@ export const ADMIN_DIALOG_DEFAULTS = {
     | "modelValue"
     | "pending"
     | "submitDisabled"
-    | "submitPendingLabel"
     | "submitVariant"
   >
 >;

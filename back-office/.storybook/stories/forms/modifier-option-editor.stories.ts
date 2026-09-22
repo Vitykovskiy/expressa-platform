@@ -37,7 +37,6 @@ export const Validation: Story = {
     fieldErrors: {
       name: "Введите название",
       priceDelta: "Укажите изменение цены",
-      isAvailable: "Укажите доступность варианта",
     },
   },
   render,

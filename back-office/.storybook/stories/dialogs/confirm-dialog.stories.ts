@@ -27,10 +27,6 @@ export const WithReason: Story = {
   args: { requireInput: true },
   render,
 };
-export const Error: Story = {
-  args: { error: "Не удалось удалить категорию" },
-  render,
-};
 export const Long: Story = {
   args: {
     description:
