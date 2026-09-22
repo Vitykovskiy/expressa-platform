@@ -54,12 +54,11 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
 .availability-group__title {
   margin: 0;
   color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: 0.025em;
-  line-height: var(--expressa-line-height-body);
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-semibold);
+  letter-spacing: var(--expressa-letter-spacing-section-title);
+  line-height: var(--expressa-line-height-heading);
   overflow-wrap: anywhere;
-  text-transform: uppercase;
 }
 
 .availability-group__items {

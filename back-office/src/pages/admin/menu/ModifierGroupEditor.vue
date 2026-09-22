@@ -1,37 +1,99 @@
 <template>
   <section
     class="modifier-group-editor"
-    aria-labelledby="modifier-group-editor-title"
+    :aria-labelledby="
+      props.embedded ? undefined : 'modifier-group-editor-title'
+    "
   >
-    <h2 id="modifier-group-editor-title" class="modifier-group-editor__title">
-      Группа добавок
-    </h2>
-    <p v-if="props.loading" class="modifier-group-editor__state" role="status">
-      Загрузка группы добавок…
-    </p>
-    <form class="modifier-group-editor__form" @submit.prevent="save">
+    <form
+      :id="props.formId"
+      class="modifier-group-editor__form"
+      @submit.prevent="save"
+    >
+      <header v-if="!props.embedded" class="modifier-group-editor__header">
+        <h2
+          id="modifier-group-editor-title"
+          class="modifier-group-editor__title"
+        >
+          Группа добавок
+        </h2>
+        <AdminActionGroup
+          align="end"
+          class="modifier-group-editor__header-actions"
+        >
+          <AdminButton
+            :disabled="isDraftActionLocked || !isValid"
+            type="submit"
+          >
+            Сохранить
+          </AdminButton>
+          <AdminButton
+            v-if="props.group !== null"
+            aria-label="Архивировать группу"
+            :disabled="isDraftActionLocked"
+            class="modifier-group-editor__icon-action"
+            type="button"
+            variant="destructive"
+            @click="openArchive"
+          >
+            <AdminIcon :icon="Archive" />
+          </AdminButton>
+          <AdminButton
+            aria-label="Закрыть"
+            :disabled="isDismissalLocked"
+            class="modifier-group-editor__icon-action"
+            type="button"
+            variant="ghost"
+            @click="cancel"
+          >
+            <AdminIcon :icon="X" />
+          </AdminButton>
+        </AdminActionGroup>
+      </header>
+      <p
+        v-if="props.loading"
+        class="modifier-group-editor__state"
+        role="status"
+      >
+        Загрузка группы добавок…
+      </p>
       <fieldset
         :disabled="isDraftActionLocked"
         class="modifier-group-editor__fields"
       >
-        <label class="modifier-group-editor__label"
-          >Название<AdminTextField
+        <AdminFieldWrapper
+          :id="nameInputId"
+          v-slot="field"
+          :error="shownNameError"
+          label="Название"
+          required
+        >
+          <AdminTextField
+            :id="field.controlId"
+            :aria-describedby="field.describedBy"
             :model-value="name"
-            :aria-invalid="Boolean(shownNameError)"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
             autocomplete="off"
+            :required="field.required"
             type="text"
             @update:model-value="updateGroupField('name', $event)"
-        /></label>
-        <p
-          v-if="shownNameError"
-          class="modifier-group-editor__error"
-          role="alert"
+          />
+        </AdminFieldWrapper>
+        <AdminFieldWrapper
+          :id="selectionTypeId"
+          v-slot="field"
+          :error="shownSelectionTypeError"
+          label="Тип выбора"
+          required
         >
-          {{ shownNameError }}
-        </p>
-        <label class="modifier-group-editor__label"
-          >Тип выбора<AdminSelect
+          <AdminSelect
+            :id="field.controlId"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
             :model-value="selectionType"
+            :required="field.required"
             @update:model-value="updateGroupField('selectionType', $event)"
             ><option
               v-for="option in MODIFIER_SELECTION_TYPE_OPTIONS"
@@ -40,96 +102,136 @@
             >
               {{ option.label }}
             </option></AdminSelect
-          ></label
+          >
+        </AdminFieldWrapper>
+        <AdminFieldWrapper
+          :id="requiredControlId"
+          v-slot="field"
+          label="Выбор обязателен"
+          layout="row"
         >
-        <div class="modifier-group-editor__toggle-row">
-          <span :id="requiredLabelId">Выбор обязателен</span
-          ><AdminToggle
+          <AdminToggle
+            :id="field.controlId"
             v-model="isRequired"
-            :aria-labelledby="requiredLabelId"
+            :aria-labelledby="field.labelId"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
           />
-        </div>
+        </AdminFieldWrapper>
         <div class="modifier-group-editor__limits">
-          <label class="modifier-group-editor__label"
-            >Минимум<AdminTextField
+          <AdminFieldWrapper
+            :id="minSelectId"
+            v-slot="field"
+            :error="shownMinSelectError"
+            label="Минимум"
+            required
+          >
+            <AdminTextField
+              :id="field.controlId"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               :model-value="minSelect"
               inputmode="numeric"
               min="0"
+              :required="field.required"
               type="number"
-              @update:model-value="
-                updateGroupField('minSelect', $event)
-              " /></label
-          ><label class="modifier-group-editor__label"
-            >Максимум<AdminTextField
+              @update:model-value="updateGroupField('minSelect', $event)"
+            />
+          </AdminFieldWrapper>
+          <AdminFieldWrapper
+            :id="maxSelectId"
+            v-slot="field"
+            :error="shownMaxSelectError"
+            label="Максимум"
+            required
+          >
+            <AdminTextField
+              :id="field.controlId"
               :model-value="maxSelect"
-              :aria-describedby="
-                shownMaxSelectError ? maxSelectErrorId : undefined
-              "
-              :aria-invalid="Boolean(shownMaxSelectError)"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               inputmode="numeric"
               min="0"
+              :required="field.required"
               type="number"
               @update:model-value="updateGroupField('maxSelect', $event)"
-          /></label>
+            />
+          </AdminFieldWrapper>
         </div>
-        <p
-          v-if="shownSelectionTypeError"
-          class="modifier-group-editor__error"
-          role="alert"
+        <AdminFieldWrapper
+          :id="activeControlId"
+          v-slot="field"
+          label="Группа активна"
+          layout="row"
         >
-          {{ shownSelectionTypeError }}
-        </p>
-        <p
-          v-if="shownMinSelectError"
-          class="modifier-group-editor__error"
-          role="alert"
-        >
-          {{ shownMinSelectError }}
-        </p>
-        <p
-          v-if="shownMaxSelectError"
-          :id="maxSelectErrorId"
-          class="modifier-group-editor__error"
-          role="alert"
-        >
-          {{ shownMaxSelectError }}
-        </p>
-        <div class="modifier-group-editor__toggle-row">
-          <span :id="activeLabelId">Группа активна</span
-          ><AdminToggle v-model="active" :aria-labelledby="activeLabelId" />
-        </div>
+          <AdminToggle
+            :id="field.controlId"
+            v-model="active"
+            :aria-labelledby="field.labelId"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
+          />
+        </AdminFieldWrapper>
         <section
+          :aria-describedby="shownDefaultError ? optionsErrorId : undefined"
           aria-labelledby="modifier-options-title"
           class="modifier-group-editor__options"
         >
           <h3 id="modifier-options-title">Варианты добавок</h3>
-          <template
+          <section
             v-for="(option, index) in options"
             :key="option.id ?? index"
+            ref="optionRows"
+            class="modifier-group-editor__option"
           >
+            <header class="modifier-group-editor__option-header">
+              <h3>Вариант {{ index + 1 }} из {{ options.length }}</h3>
+              <AdminActionGroup class="modifier-group-editor__option-actions">
+                <AdminButton
+                  :aria-label="`Переместить вариант ${index + 1} вверх`"
+                  :disabled="isDraftActionLocked || index === 0"
+                  class="modifier-group-editor__icon-action"
+                  type="button"
+                  variant="ghost"
+                  @click="moveOption(index, -1)"
+                  ><AdminIcon :icon="ChevronUp"
+                /></AdminButton>
+                <AdminButton
+                  :aria-label="`Переместить вариант ${index + 1} вниз`"
+                  :disabled="
+                    isDraftActionLocked || index === options.length - 1
+                  "
+                  class="modifier-group-editor__icon-action"
+                  type="button"
+                  variant="ghost"
+                  @click="moveOption(index, 1)"
+                  ><AdminIcon :icon="ChevronDown"
+                /></AdminButton>
+                <AdminButton
+                  aria-label="Удалить вариант"
+                  :disabled="isDraftActionLocked"
+                  class="modifier-group-editor__icon-action"
+                  type="button"
+                  variant="destructive"
+                  @click="openOptionRemoval(index)"
+                  ><AdminIcon :icon="Trash2"
+                /></AdminButton>
+              </AdminActionGroup>
+            </header>
             <ModifierOptionEditor
               :disabled="isDraftActionLocked"
               :field-errors="optionFieldErrors[index]"
               :model-value="option"
-              :can-move-up="index > 0"
-              :can-move-down="index < options.length - 1"
-              :position-label="option.name.trim() || `вариант ${index + 1}`"
-              @move-up="moveOption(index, -1)"
-              @move-down="moveOption(index, 1)"
-              @remove="removeOption(index)"
               @update:model-value="updateOption(index, $event)"
               @touch="touchOption(index, $event)"
             />
-            <p
-              v-for="error in optionToggleErrors[index]"
-              :key="error"
-              class="modifier-group-editor__error"
-              role="alert"
-            >
-              {{ error }}
-            </p>
-          </template>
+          </section>
           <AdminButton
+            ref="addOptionButton"
             :disabled="isDraftActionLocked"
             type="button"
             variant="secondary"
@@ -143,12 +245,26 @@
         </section>
         <p
           v-if="shownDefaultError"
+          :id="optionsErrorId"
           class="modifier-group-editor__error"
           role="alert"
         >
           {{ shownDefaultError }}
         </p>
       </fieldset>
+      <section
+        v-if="props.embedded && props.group !== null"
+        class="modifier-group-editor__archive"
+      >
+        <AdminButton
+          :disabled="isDraftActionLocked"
+          type="button"
+          variant="destructive"
+          @click="openArchive"
+        >
+          Архивировать группу
+        </AdminButton>
+      </section>
       <section
         v-if="hasPendingMessage || (props.saveOutcome ?? 'idle') !== 'idle'"
         class="modifier-group-editor__feedback"
@@ -177,22 +293,8 @@
         <template v-else-if="props.saveOutcome === 'saved'"
           >Группа сохранена.</template
         >
-        <details
-          v-if="
-            !hasPendingMessage &&
-            props.operationKind === 'archive' &&
-            props.saveError
-          "
-          class="modifier-group-editor__diagnostics"
-        >
-          <summary>Технические сведения</summary>
-          <p>{{ props.saveError.message }}</p>
-          <p v-if="props.saveError.requestId">
-            Идентификатор запроса: {{ props.saveError.requestId }}
-          </p>
-        </details>
         <p v-else-if="!hasPendingMessage && props.saveError">
-          {{ props.saveError.message }}
+          Не удалось сохранить изменения. Повторите попытку.
         </p>
         <AdminButton
           v-if="
@@ -208,24 +310,6 @@
           >Обновить меню</AdminButton
         >
       </section>
-      <div class="modifier-group-editor__actions">
-        <AdminButton :disabled="isDraftActionLocked || !isValid" type="submit"
-          >Сохранить группу</AdminButton
-        ><AdminButton
-          v-if="props.group !== null"
-          :disabled="isDraftActionLocked"
-          type="button"
-          variant="destructive"
-          @click="openArchive"
-          >Архивировать группу</AdminButton
-        ><AdminButton
-          :disabled="isDismissalLocked"
-          type="button"
-          variant="ghost"
-          @click="cancel"
-          >Отмена</AdminButton
-        >
-      </div>
     </form>
     <ConfirmDialog
       v-model:open="archiveOpen"
@@ -235,13 +319,32 @@
       title="Архивировать группу добавок?"
       @confirm="archive"
     />
+    <ConfirmDialog
+      v-model:open="optionRemovalOpen"
+      confirm-label="Удалить"
+      confirm-variant="destructive"
+      description="Вариант будет исключён из группы добавок."
+      title="Удалить вариант добавки?"
+      @confirm="confirmOptionRemoval"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, watch } from "vue";
+import { Archive, ChevronDown, ChevronUp, Trash2, X } from "lucide-vue-next";
+import {
+  computed,
+  nextTick,
+  shallowRef,
+  useId,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
@@ -287,9 +390,20 @@ const optionTouched = shallowRef<
   readonly ReadonlySet<ModifierOptionFormField>[]
 >([]);
 const dismissedServerFields = shallowRef<ReadonlySet<string>>(new Set());
-const requiredLabelId = `modifier-group-required-${useId()}`;
-const activeLabelId = `modifier-group-active-${useId()}`;
-const maxSelectErrorId = `modifier-group-max-select-error-${useId()}`;
+const optionRemovalIndex = shallowRef<number | null>(null);
+const optionRemovalOpen = shallowRef(false);
+const restoreOptionFocus = shallowRef(false);
+const optionFocusIndex = shallowRef<number | null>(null);
+const optionRows = useTemplateRef<HTMLElement[]>("optionRows");
+const addOptionButton =
+  useTemplateRef<InstanceType<typeof AdminButton>>("addOptionButton");
+const requiredControlId = `modifier-group-required-${useId()}`;
+const activeControlId = `modifier-group-active-${useId()}`;
+const nameInputId = `modifier-group-name-${useId()}`;
+const selectionTypeId = `modifier-group-selection-type-${useId()}`;
+const minSelectId = `modifier-group-min-select-${useId()}`;
+const maxSelectId = `modifier-group-max-select-${useId()}`;
+const optionsErrorId = `modifier-group-options-error-${useId()}`;
 const isRequired = computed({
   get: () => Number(minSelect.value) > 0,
   set: (value: boolean) => {
@@ -418,15 +532,6 @@ const optionFieldErrors = computed(() =>
     return errors;
   }),
 );
-const optionToggleErrors = computed(() =>
-  options.value.map((_, index) =>
-    (["isDefault", "isAvailable"] as const)
-      .map((field) =>
-        serverError(`options.${index}.${field}` as ModifierGroupFormField),
-      )
-      .filter((error): error is string => error !== undefined),
-  ),
-);
 const hasOptionErrors = computed(() =>
   options.value.some(
     (option, index) =>
@@ -469,6 +574,20 @@ function save() {
     isActive: isActive.value,
     options: options.value.map(toModifierOptionFormData),
   });
+}
+function openOptionRemoval(index: number): void {
+  optionRemovalIndex.value = index;
+  optionRemovalOpen.value = true;
+}
+function confirmOptionRemoval(): void {
+  const index = optionRemovalIndex.value;
+  if (index !== null) {
+    optionFocusIndex.value =
+      index < options.value.length - 1 ? index : index - 1;
+    removeOption(index);
+  }
+  optionRemovalIndex.value = null;
+  restoreOptionFocus.value = true;
 }
 function archive() {
   if (isDraftActionLocked.value || props.group === null) return;
@@ -616,6 +735,24 @@ watch(
     dismissedServerFields.value = new Set();
   },
 );
+watch(optionRemovalOpen, (isOpen, wasOpen) => {
+  if (isOpen || !wasOpen || !restoreOptionFocus.value) return;
+  restoreOptionFocus.value = false;
+  void nextTick(() => {
+    globalThis.requestAnimationFrame(() => {
+      const target = optionFocusIndex.value;
+      optionFocusIndex.value = null;
+      const input =
+        target === null
+          ? null
+          : optionRows.value?.[target]?.querySelector<HTMLInputElement>(
+              "input",
+            );
+      if (input) input.focus();
+      else addOptionButton.value?.focus();
+    });
+  });
+});
 </script>
 
 <style scoped lang="scss">
@@ -629,6 +766,54 @@ watch(
 .modifier-group-editor__options h3 {
   margin: 0;
   font-size: var(--expressa-font-size-title);
+}
+.modifier-group-editor__header {
+  display: flex;
+  align-items: center;
+  gap: var(--expressa-space-sm);
+}
+@media (max-width: 767px) {
+  .modifier-group-editor__header {
+    flex-wrap: wrap;
+  }
+  .modifier-group-editor__header-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+}
+.modifier-group-editor__option,
+.modifier-group-editor__option-header {
+  display: grid;
+  gap: var(--expressa-space-sm);
+}
+.modifier-group-editor__option {
+  padding: var(--expressa-space-md) 0;
+}
+.modifier-group-editor__option + .modifier-group-editor__option {
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+.modifier-group-editor__option-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.modifier-group-editor__option-header h3 {
+  margin: 0;
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-action);
+}
+.modifier-group-editor__header {
+  justify-content: space-between;
+}
+.modifier-group-editor__header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.modifier-group-editor__icon-action {
+  width: var(--expressa-size-control-min-height);
+  min-width: var(--expressa-size-control-min-height);
+  min-height: var(--expressa-size-control-min-height);
+  padding: 0;
 }
 .modifier-group-editor__form,
 .modifier-group-editor__fields,
@@ -649,8 +834,7 @@ watch(
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
 }
-.modifier-group-editor__limits,
-.modifier-group-editor__actions {
+.modifier-group-editor__limits {
   display: flex;
   flex-wrap: wrap;
   gap: var(--expressa-space-md);
@@ -668,9 +852,6 @@ watch(
   margin: 0;
   color: var(--expressa-color-status-error);
   font-size: var(--expressa-font-size-caption);
-}
-.modifier-group-editor__diagnostics p {
-  overflow-wrap: anywhere;
 }
 .modifier-group-editor__state {
   margin: 0;

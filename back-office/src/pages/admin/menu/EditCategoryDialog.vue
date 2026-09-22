@@ -1,28 +1,24 @@
 <template>
   <AdminDialog
     :aria-labelledby="titleId"
+    cancel-label="Отмена"
     full-screen-below-600
     :model-value="open"
     max-width="560"
-    :persistent="props.disabled || props.archivePending"
+    :pending="props.disabled || props.archivePending"
+    submit-form="edit-category-dialog-form"
+    :submit-disabled="props.disabled || props.archivePending || !canSave"
+    submit-label="Сохранить изменения"
+    submit-pending-label="Сохраняем…"
+    title="Редактировать категорию"
     @after-enter="focusFirstField"
     @update:model-value="requestClose"
   >
-    <v-card class="category-dialog">
-      <header class="category-dialog__header">
-        <h2 :id="titleId" class="category-dialog__title">
-          Редактировать категорию
-        </h2>
-        <button
-          aria-label="Закрыть диалог"
-          :disabled="props.disabled || props.archivePending"
-          class="category-dialog__close"
-          type="button"
-          @click="requestClose(false)"
-        >
-          <X :size="20" aria-hidden="true" />
-        </button>
-      </header>
+    <form
+      id="edit-category-dialog-form"
+      class="category-dialog"
+      @submit.prevent="save"
+    >
       <section
         v-if="props.saveOutcome === 'rejected'"
         ref="saveError"
@@ -32,8 +28,8 @@
       >
         Не удалось сохранить изменения. Повторите попытку.
       </section>
-      <v-card-text class="category-dialog__fields"
-        ><CategoryFormFields
+      <div class="category-dialog__fields">
+        <CategoryFormFields
           ref="fields"
           :description="draft.description.value"
           :disabled="props.disabled || props.archivePending"
@@ -46,7 +42,8 @@
           @update:description="draft.description.value = $event"
           @update:is-active="draft.isActive.value = $event"
           @update:name="draft.name.value = $event"
-      /></v-card-text>
+        />
+      </div>
       <section class="category-dialog__danger">
         <h3>Архив</h3>
         <p>
@@ -61,23 +58,7 @@
           >Архивировать категорию</AdminButton
         >
       </section>
-      <v-card-actions class="category-dialog__actions"
-        ><AdminButton
-          :disabled="props.disabled || props.archivePending"
-          type="button"
-          variant="ghost"
-          @click="requestClose(false)"
-          >Отмена</AdminButton
-        ><AdminButton
-          :disabled="props.disabled || props.archivePending || !canSave"
-          type="button"
-          @click="save"
-          >{{
-            props.disabled ? "Сохраняем…" : "Сохранить изменения"
-          }}</AdminButton
-        ></v-card-actions
-      >
-    </v-card>
+    </form>
   </AdminDialog>
   <ConfirmDialog
     v-model:open="archiveOpen"
@@ -109,7 +90,6 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
-import { X } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
@@ -197,74 +177,30 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.category-dialog {
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-}
-.category-dialog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-}
-.category-dialog__title {
-  margin: 0;
-  font-size: var(--expressa-font-size-title);
-}
-.category-dialog__close {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  background: transparent;
-}
 .category-dialog__fields {
-  padding: 0 24px 24px;
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
 }
 .category-dialog__outcome {
-  margin: 0 24px 16px;
+  margin: 0 var(--expressa-space-lg) var(--expressa-space-md);
   color: var(--expressa-color-status-error);
 }
 .category-dialog__danger {
-  margin: 8px 24px 0;
-  padding: 24px 0 0;
-  border-top: 1px solid var(--expressa-color-border);
+  margin: var(--expressa-space-sm) var(--expressa-space-lg) 0;
+  padding: var(--expressa-space-lg) 0 0;
 }
 .category-dialog__danger h3,
 .category-dialog__danger p {
-  margin: 0 0 8px;
+  margin: 0 0 var(--expressa-space-sm);
 }
 .category-dialog__danger p {
   color: var(--expressa-color-text-secondary);
 }
-.category-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 24px;
-}
 @media (max-width: 599px) {
-  .category-dialog__header {
-    padding: 16px;
-  }
   .category-dialog__fields {
-    padding: 0 16px 16px;
+    padding: 0 var(--expressa-space-md) var(--expressa-space-md);
   }
   .category-dialog__danger {
-    margin-inline: 16px;
-  }
-  .category-dialog__actions {
-    position: sticky;
-    bottom: 0;
-    padding: 16px;
-    background: var(--expressa-color-surface);
-  }
-}
-@media (max-width: 399px) {
-  .category-dialog__actions {
-    display: grid;
-  }
-  .category-dialog__actions .admin-button {
-    width: 100%;
+    margin-inline: var(--expressa-space-md);
   }
 }
 </style>

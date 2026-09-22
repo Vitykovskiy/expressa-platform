@@ -9,28 +9,6 @@
     >
       Загружаем меню…
     </p>
-    <section
-      v-if="catalogStore.status === 'error' && !activeForm"
-      class="menu-page__error"
-      role="alert"
-    >
-      <p>{{ catalogReadErrorMessage }}</p>
-      <p>Загрузите актуальное меню, чтобы проверить текущее состояние.</p>
-      <details v-if="catalogStore.error" class="menu-page__error-details">
-        <summary>Технические сведения</summary>
-        <p>{{ catalogStore.error.message }}</p>
-        <p v-if="catalogStore.error.requestId">
-          Идентификатор запроса: {{ catalogStore.error.requestId }}
-        </p>
-      </details>
-      <AdminButton
-        class="menu-page__error-recovery"
-        type="button"
-        variant="secondary"
-        @click="loadCatalog"
-        >Загрузить меню</AdminButton
-      >
-    </section>
     <template v-if="hasConfirmedCatalog">
       <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
         <MenuOverview
@@ -59,7 +37,6 @@
           :products="catalogStore.products"
           :expanded-category-ids="expandedCategoryIds"
           :pending="reorderPending"
-          :error="reorderError"
           @cancel="closeReorder"
           @request-close="closeReorder"
           @save="saveReorder"
@@ -72,7 +49,6 @@
       :categories="orderedCategories"
       :disabled="isBusy"
       :field-errors="categoryFieldErrors"
-      :save-error="catalogStore.formSaveError"
       :save-outcome="categoryFormSaveOutcome"
       @cancel="closeNewCategoryForm"
       @confirm="createCategory"
@@ -80,13 +56,11 @@
     />
     <EditCategoryDialog
       v-model:open="editCategoryOpen"
-      :archive-error="categoryArchiveError"
       :archive-pending="categoryArchivePending"
       :categories="orderedCategories"
       :disabled="isBusy"
       :category="selectedCategory"
       :field-errors="categoryFieldErrors"
-      :save-error="catalogStore.formSaveError"
       :save-outcome="categoryFormSaveOutcome"
       @archive="archiveCategory"
       @cancel="closeCategoryEditor"
@@ -98,37 +72,39 @@
       :disabled="isBusy"
       :categories="orderedCategories"
       :field-errors="productFieldErrors"
-      :save-error="catalogStore.formSaveError"
       :save-outcome="productFormSaveOutcome"
       @cancel="closeNewProductForm"
       @confirm="createProduct"
       @refresh="refreshProductCatalog"
     />
     <AdminDialog
+      cancel-label="Отмена"
+      :dismiss-disabled="modifierDialogPending"
       :model-value="modifierGroupEditorOpen"
       aria-labelledby="modifier-group-editor-title"
       max-width="800"
-      :persistent="modifierDialogPending"
+      :pending="modifierDialogPending"
+      submit-form="modifier-group-editor-form"
+      submit-label="Сохранить"
+      submit-pending-label="Сохраняем…"
+      title="Группа добавок"
       @update:model-value="updateModifierGroupEditorOpen"
     >
-      <v-card class="menu-page__modifier-dialog">
-        <v-card-text class="menu-page__modifier-dialog-content">
-          <ModifierGroupEditor
-            :key="modifierEditorSession"
-            :disabled="modifierDialogPending"
-            :field-errors="modifierFieldErrors"
-            :group="selectedModifierGroup"
-            :pending-message="modifierPendingMessage"
-            :operation-kind="modifierOperationKind"
-            :save-error="catalogStore.formSaveError"
-            :save-outcome="modifierFormSaveOutcome"
-            @archive="archiveModifierGroup"
-            @cancel="closeModifierGroupEditor"
-            @save="saveModifierGroup"
-            @refresh="refreshModifierGroupCatalog"
-          />
-        </v-card-text>
-      </v-card>
+      <ModifierGroupEditor
+        :key="modifierEditorSession"
+        embedded
+        form-id="modifier-group-editor-form"
+        :disabled="modifierDialogPending"
+        :field-errors="modifierFieldErrors"
+        :group="selectedModifierGroup"
+        :pending-message="modifierPendingMessage"
+        :operation-kind="modifierOperationKind"
+        :save-outcome="modifierFormSaveOutcome"
+        @archive="archiveModifierGroup"
+        @cancel="closeModifierGroupEditor"
+        @save="saveModifierGroup"
+        @refresh="refreshModifierGroupCatalog"
+      />
     </AdminDialog>
   </PageShell>
 </template>
@@ -155,7 +131,6 @@ import type {
   ModifierGroup,
   Product,
 } from "./admin/menu/catalog.types";
-import AdminButton from "../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import PageShell from "./PageShell.vue";
 
@@ -171,7 +146,6 @@ const modifierEditorSession = shallowRef(0);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const managementOpen = computed(() => route.query.mode === "reorder");
 const reorderPending = shallowRef(false);
-const reorderError = shallowRef<string | null>(null);
 const reorderSaved = shallowRef(false);
 const reorderPanel = shallowRef<{
   focusTitle: () => void;
@@ -190,7 +164,6 @@ const categoryRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
 const categoryArchivePending = shallowRef(false);
-const categoryArchiveError = shallowRef<string | null>(null);
 const highlightedCategoryId = shallowRef<string | null>(null);
 const modifierRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
@@ -202,13 +175,6 @@ const acknowledgedForm = shallowRef<
 >(null);
 const hasConfirmedCatalog = shallowRef(catalogStore.status === "ready");
 const isBusy = computed(() => catalogStore.status === "loading");
-const activeForm = computed(
-  () =>
-    addCategoryOpen.value ||
-    editCategoryOpen.value ||
-    addProductOpen.value ||
-    modifierGroupEditorOpen.value,
-);
 const categoryFormSaveOutcome = computed(() =>
   categoryRecoveryState.value === "checked"
     ? "saved"
@@ -250,23 +216,6 @@ const modifierPendingMessage = computed<string | null>(() => {
     ? "Архивируем группу…"
     : "Сохраняем группу…";
 });
-const catalogReadErrorMessage = computed(() =>
-  catalogStore.formSaveOutcome === "saved" &&
-  acknowledgedForm.value === "category"
-    ? "Категория сохранена, но меню не удалось обновить."
-    : catalogStore.formSaveOutcome === "saved" &&
-        acknowledgedForm.value === "modifier-archive"
-      ? "Группа добавок архивирована, но меню не удалось обновить."
-      : catalogStore.formSaveOutcome === "saved" &&
-          acknowledgedForm.value === "modifier"
-        ? "Группа добавок сохранена, но меню не удалось обновить."
-        : catalogStore.formSaveOutcome === "saved"
-          ? "Товар сохранён, но меню не удалось обновить."
-          : hasConfirmedCatalog.value
-            ? "Не удалось завершить операцию с меню."
-            : "Не удалось загрузить меню.",
-);
-let recoveringCatalogRead = false;
 const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 
 const orderedCategories = computed(() =>
@@ -300,21 +249,6 @@ watch(
   () => catalogStore.status,
   async (status) => {
     if (status === "ready") hasConfirmedCatalog.value = true;
-    if (
-      status !== "error" ||
-      recoveringCatalogRead ||
-      catalogStore.error?.status !== 401
-    )
-      return;
-
-    recoveringCatalogRead = true;
-    try {
-      await sessionStore.restore();
-      const refreshedAccess = accessToken();
-      if (refreshedAccess !== null) await catalogStore.refresh(refreshedAccess);
-    } finally {
-      recoveringCatalogRead = false;
-    }
   },
 );
 
@@ -370,7 +304,6 @@ async function toggleReorder(): Promise<void> {
   await setReorderMode(true);
   await nextTick();
   reorderPanel.value?.focusTitle();
-  reorderError.value = null;
 }
 
 async function closeReorder(): Promise<void> {
@@ -378,7 +311,6 @@ async function closeReorder(): Promise<void> {
   await setReorderMode(false);
   await nextTick();
   menuOverview.value?.focusReorderAction();
-  reorderError.value = null;
 }
 
 async function setReorderMode(open: boolean): Promise<void> {
@@ -397,7 +329,6 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
   )
     return;
   reorderPending.value = true;
-  reorderError.value = null;
   const confirmed: MenuReorderScope[] = [];
   try {
     for (const scope of scopes) {
@@ -433,7 +364,6 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
         );
     }
     await catalogStore.refresh(authorizationValue);
-    reorderError.value = "Не удалось сохранить порядок. Изменения не потеряны.";
   } finally {
     reorderPending.value = false;
   }
@@ -443,7 +373,6 @@ function openCategoryEditor(category: Category): void {
   catalogStore.resetFormSaveOutcome();
   acknowledgedForm.value = null;
   categoryRecoveryState.value = "idle";
-  categoryArchiveError.value = null;
   selectedCategory.value = category;
   editCategoryOpen.value = true;
 }
@@ -609,7 +538,6 @@ async function archiveCategory(categoryId: string): Promise<void> {
     orderedCategories.value[categoryIndex - 1]?.id ??
     null;
   categoryArchivePending.value = true;
-  categoryArchiveError.value = null;
   await catalogStore.archiveCategory(authorizationValue, categoryId);
   categoryArchivePending.value = false;
   if (catalogStore.lastCommandSucceeded) {
@@ -621,9 +549,6 @@ async function archiveCategory(categoryId: string): Promise<void> {
     } else {
       menuOverview.value?.focusAddCategoryAction();
     }
-  } else {
-    categoryArchiveError.value =
-      "Не удалось архивировать категорию. Повторите попытку.";
   }
 }
 
@@ -734,26 +659,16 @@ function bySortOrder(
   background: var(--expressa-color-surface-raised);
 }
 
-:deep(.page-shell-description) {
-  display: none;
-}
-
-.menu-page__catalog-summary {
-  margin: 0;
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-body);
-}
-
 .menu-page__management-toggle {
-  min-height: 44px;
+  min-height: var(--expressa-size-control-min-height);
   margin-inline-start: auto;
 }
 
 .menu-page__management-icon,
 .menu-page__option-chevron,
 .menu-page__option-edit-icon {
-  width: 18px;
-  height: 18px;
+  width: var(--expressa-size-icon-action);
+  height: var(--expressa-size-icon-action);
 }
 
 .menu-page__content,
@@ -784,29 +699,8 @@ function bySortOrder(
   flex-wrap: wrap;
 }
 
-.menu-page__catalog-summary {
-  flex: 1 1 12rem;
-}
-
-.menu-page__management-explanation {
-  max-width: 60rem;
-  margin: 0;
-  color: var(--expressa-color-text-secondary);
-}
-
 .menu-page__section {
   gap: var(--expressa-space-control-inline);
-}
-
-.menu-page__section-title {
-  margin: 0;
-  padding-inline: var(--expressa-space-xs);
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-body);
-  font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: var(--expressa-letter-spacing-section-title);
-  line-height: var(--expressa-line-height-caption);
-  text-transform: uppercase;
 }
 
 .menu-page__table {
@@ -825,7 +719,7 @@ function bySortOrder(
 .menu-page__option-header,
 .menu-page__option-row {
   display: flex;
-  min-height: 70px;
+  min-height: var(--expressa-size-row-min);
   background: var(--expressa-color-surface-raised);
 }
 
@@ -841,7 +735,7 @@ function bySortOrder(
   min-width: 0;
   flex: 1;
   gap: var(--expressa-space-control-inline);
-  padding: 14px var(--expressa-space-md) 14px 20px;
+  padding: var(--expressa-space-control-block) var(--expressa-space-md);
   text-align: left;
 }
 
@@ -853,7 +747,7 @@ function bySortOrder(
 }
 
 .menu-page__option-chevron {
-  flex: 0 0 18px;
+  flex: 0 0 var(--expressa-size-icon-action);
 }
 
 .menu-page__option-name {
@@ -873,8 +767,8 @@ function bySortOrder(
 
 .menu-page__option-edit {
   display: grid;
-  width: 48px;
-  min-width: 48px;
+  width: var(--expressa-size-control-min-height);
+  min-width: var(--expressa-size-control-min-height);
   place-items: center;
   padding: 0;
   color: var(--expressa-color-accent);
@@ -882,10 +776,10 @@ function bySortOrder(
 
 .menu-page__option-row {
   width: 100%;
-  min-height: 63px;
+  min-height: var(--expressa-size-row-min);
   justify-content: space-between;
   gap: var(--expressa-space-sm);
-  padding: 14px var(--expressa-space-md) 14px
+  padding: var(--expressa-space-control-block) var(--expressa-space-md)
     var(--expressa-space-product-indent);
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-body);
@@ -963,25 +857,11 @@ function bySortOrder(
   margin: 0;
 }
 
-.menu-page__error-details {
-  overflow-wrap: anywhere;
-}
-
 @media (min-width: 768px) {
   .menu-page__error-recovery {
     justify-self: start;
     width: fit-content;
   }
-}
-
-.menu-page__modifier-dialog {
-  max-block-size: calc(100dvh - var(--expressa-space-xl));
-  min-width: 0;
-  overflow-y: auto;
-}
-
-.menu-page__modifier-dialog-content {
-  min-width: 0;
 }
 
 .menu-page__visually-hidden {
@@ -994,23 +874,6 @@ function bySortOrder(
 }
 
 @media (max-width: 767px) {
-  :deep(.page-shell-title) {
-    display: flex;
-    min-height: var(--expressa-size-top-bar-min-height);
-    align-items: center;
-    margin: 0;
-    padding: 0 var(--expressa-space-md);
-    font-size: var(--expressa-font-size-title);
-    border-bottom: var(--expressa-border-width-default) solid
-      var(--expressa-color-border);
-  }
-
-  :deep(.page-shell-content) {
-    margin-top: 0;
-    padding: var(--expressa-space-md) var(--expressa-space-md)
-      var(--expressa-space-tab-bar-clearance);
-  }
-
   .menu-page__actions {
     width: 100%;
   }
@@ -1032,17 +895,8 @@ function bySortOrder(
 
 @media (min-width: 768px) {
   .menu-page__shell {
-    padding: 21px var(--expressa-space-lg) var(--expressa-space-lg);
+    padding: var(--expressa-space-lg);
     background: var(--expressa-color-surface);
-  }
-
-  :deep(.page-shell-title) {
-    margin: 0;
-    font-size: var(--expressa-font-size-screen-title);
-  }
-
-  :deep(.page-shell-content) {
-    margin-top: var(--expressa-space-md);
   }
 }
 </style>

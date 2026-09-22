@@ -7,25 +7,24 @@ import type {
 
 export type QueueFilter = "ALL" | OrderStage;
 export type QueueScreenError = OrderApiError & { status?: number | null };
-
 export type OrdersScreenProps = {
   orders: readonly OrderListItem[];
   search: string;
   stage: QueueFilter;
-  status: "error" | "loading" | "ready";
-  error: QueueScreenError | null;
+  status: "error" | "loading" | "ready" | "unresolved";
+  error?: QueueScreenError | null;
   refreshError?: QueueScreenError | null;
   errorFocus?: boolean;
-  accessRecoveryPending: boolean;
-  requiresAccessRecovery: boolean;
+  accessRecoveryPending?: boolean;
+  requiresAccessRecovery?: boolean;
   selectedOrderId: string | null;
   details: OrderDetails | null;
-  detailsError: OrderApiError | null;
+  detailsError?: OrderApiError | null;
   detailsLoading: boolean;
   transitionLoading: boolean;
-  transitionRecoveryPending: boolean;
+  transitionRecoveryPending?: boolean;
   requiresTransitionRecovery: boolean;
-  actionError: OrderApiError | null;
+  actionError?: OrderApiError | null;
 };
 
 export type OrdersScreenEmits = {

@@ -1,17 +1,19 @@
 import { defineStore } from "pinia";
 
-import { CatalogApiError } from "../../../shared/api/catalog.api";
+import {
+  getOperationPort,
+  type OperationContext,
+  type OperationResult,
+} from "../../../shared/lib/operations/operation-port";
 import {
   catalogStatuses,
   catalogStoreId,
-  catalogStoreMessages,
   initialCatalogStoreState,
 } from "./catalog.constants";
 import { getCatalogStoreDependencies } from "./catalog.dependencies";
 import type {
   CatalogApiResult,
   CatalogFieldErrors,
-  CatalogStoreError,
   CatalogStoreActions,
   CatalogStoreState,
   Category,
@@ -251,29 +253,35 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.lastCommandSucceeded = false;
       this.formSaveError = null;
       this.formSaveOutcome = "idle";
-      const activeOperation = mutation()
-        .then(async () => {
+      const activeOperation = operationPort
+        .run(
+          catalogContext("catalog.form.save", "catalog", "mutation"),
+          mutation,
+        )
+        .then(async (result) => {
+          if (result.status !== "success") {
+            this.fieldErrors = fieldErrors(result);
+            this.formSaveOutcome =
+              result.status === "fieldValidation" ? "rejected" : "unconfirmed";
+            this.status = catalogStatuses.ready;
+            return;
+          }
           this.formSaveOutcome = "saved";
           this.lastCommandSucceeded = true;
-          try {
-            const catalog =
-              await getCatalogStoreDependencies().catalogApi.getCatalog(
-                accessToken,
-              );
+          const catalogResult = await operationPort.run(
+            catalogContext("catalog.reconcile", "catalog", "read"),
+            () =>
+              getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
+          );
+          if (catalogResult.status === "success") {
+            const catalog = catalogResult.value;
             replaceCatalogState(this, catalog);
             this.status = catalogStatuses.ready;
-          } catch (error) {
-            this.error = toCatalogStoreError(error);
-            this.status = catalogStatuses.error;
+          } else {
+            this.lastCommandSucceeded = false;
+            this.formSaveOutcome = "unconfirmed";
+            this.status = catalogStatuses.ready;
           }
-        })
-        .catch((error: unknown) => {
-          this.formSaveError = toCatalogStoreError(error);
-          this.fieldErrors = toFieldErrors(error);
-          this.formSaveOutcome = isValidationError(error)
-            ? "rejected"
-            : "unconfirmed";
-          this.status = catalogStatuses.ready;
         })
         .finally(() => {
           this.activeOperation = null;
@@ -292,16 +300,20 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.lastCommandSucceeded = false;
       this.resetFormSaveOutcome();
 
-      const activeOperation = operation()
-        .then((catalog) => {
+      const activeOperation = operationPort
+        .run(catalogContext("catalog.read", "catalog", "read"), operation)
+        .then((result) => {
+          if (result.status !== "success") {
+            this.fieldErrors = fieldErrors(result);
+            this.status = hasCatalog(this)
+              ? catalogStatuses.ready
+              : catalogStatuses.idle;
+            return;
+          }
+          const catalog = result.value;
           replaceCatalogState(this, catalog);
           this.status = catalogStatuses.ready;
           this.lastCommandSucceeded = true;
-        })
-        .catch((error: unknown) => {
-          this.error = toCatalogStoreError(error);
-          this.fieldErrors = toFieldErrors(error);
-          this.status = catalogStatuses.error;
         })
         .finally(() => {
           this.activeOperation = null;
@@ -314,10 +326,48 @@ export const useCatalogStore = defineStore(catalogStoreId, {
   },
 });
 
-function isValidationError(error: unknown): boolean {
+const operationPort = getOperationPort();
+const catalogEpoch = crypto.randomUUID();
+const catalogFieldTargets: NonNullable<OperationContext["fieldTargets"]> = {
+  categoryId: { path: "categoryId" },
+  description: { path: "description" },
+  isActive: { path: "isActive" },
+  maxSelect: { path: "maxSelect" },
+  minSelect: { path: "minSelect" },
+  name: { path: "name" },
+  price: { path: "price" },
+  selectionType: { path: "selectionType" },
+};
+
+function catalogContext(
+  operationKey: string,
+  resourceKey: string,
+  kind: OperationContext["kind"],
+): OperationContext {
+  return {
+    attemptId: crypto.randomUUID(),
+    epoch: catalogEpoch,
+    fieldTargets: kind === "mutation" ? catalogFieldTargets : undefined,
+    kind,
+    operationKey,
+    origin: "user",
+    resourceKey,
+  };
+}
+
+function fieldErrors(result: OperationResult<unknown>): CatalogFieldErrors {
+  return result.status === "fieldValidation"
+    ? Object.fromEntries(
+        result.fields.map((field) => [field.path, field.message]),
+      )
+    : {};
+}
+
+function hasCatalog(store: CatalogStoreState): boolean {
   return (
-    error instanceof CatalogApiError &&
-    (error.code === "VALIDATION_ERROR" || error.status === 400)
+    store.categories.length > 0 ||
+    store.products.length > 0 ||
+    store.modifierGroups.length > 0
   );
 }
 
@@ -368,30 +418,4 @@ function toCategoryModifierGroupAssignment(
   assignment: CatalogApiResult["categoryModifierGroupAssignments"][number],
 ): CategoryModifierGroupAssignment {
   return { ...assignment };
-}
-
-function toCatalogStoreError(error: unknown): CatalogStoreError {
-  if (error instanceof CatalogApiError) {
-    return {
-      message: error.message,
-      requestId: error.requestId,
-      status: error.status,
-    };
-  }
-
-  return {
-    message: catalogStoreMessages.requestFailed,
-    requestId: null,
-    status: null,
-  };
-}
-
-function toFieldErrors(error: unknown): CatalogFieldErrors {
-  if (!(error instanceof CatalogApiError)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    error.fields.map((field) => [field.path, field.reason]),
-  );
 }

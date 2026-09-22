@@ -5,7 +5,6 @@
         <h2 id="menu-reorder-title" ref="title" tabindex="-1">
           Настройка порядка
         </h2>
-        <p>Перетащите категории или используйте кнопки перемещения.</p>
         <p v-if="props.pending" class="menu-reorder__status" role="status">
           Сохраняем…
         </p>
@@ -17,7 +16,7 @@
           Есть несохранённые изменения
         </p>
       </div>
-      <div class="menu-reorder__actions">
+      <AdminActionGroup align="end" class="menu-reorder__actions">
         <AdminButton
           type="button"
           variant="secondary"
@@ -30,17 +29,11 @@
           @click="emit('save', dirtyScopes)"
           >{{ props.pending ? "Сохраняем…" : "Сохранить порядок" }}</AdminButton
         >
-      </div>
+      </AdminActionGroup>
     </div>
-    <p
-      v-if="props.error"
-      class="menu-reorder__error"
-      role="alert"
-      tabindex="-1"
-    >
-      {{ props.error }}
+    <p v-if="announcement" class="menu-reorder__hint" aria-live="polite">
+      {{ announcement }}
     </p>
-    <p class="menu-reorder__hint" aria-live="polite">{{ announcement }}</p>
     <ConfirmDialog
       v-model:open="discardOpen"
       cancel-label="Продолжить"
@@ -171,6 +164,7 @@ import {
 } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import { useMenuReorderDraft } from "./composables/useMenuReorderDraft";
 import type {
@@ -183,7 +177,6 @@ import { useVirtualSiblingRows } from "./composables/useVirtualSiblingRows";
 import { menuReorderGeometry } from "./MenuReorderPanel.constants";
 const props = withDefaults(defineProps<MenuReorderPanelProps>(), {
   pending: false,
-  error: null,
 });
 const emit = defineEmits<MenuReorderPanelEmits>();
 const router = useRouter();
@@ -479,9 +472,10 @@ onBeforeUnmount(() =>
 </script>
 <style scoped lang="scss">
 .menu-reorder {
-  margin-top: 24px;
-  border: 1px solid var(--expressa-color-border);
-  border-radius: 12px;
+  margin-top: var(--expressa-space-lg);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-panel);
   overflow: hidden;
 }
 .menu-reorder__bar {
@@ -489,38 +483,35 @@ onBeforeUnmount(() =>
   top: 0;
   z-index: 1;
   display: flex;
-  min-height: 72px;
+  min-height: var(--expressa-size-row-min);
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
+  gap: var(--expressa-space-md);
+  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
   background: var(--expressa-color-surface);
-  border-bottom: 1px solid var(--expressa-color-border);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 .menu-reorder__bar h2,
 .menu-reorder__bar p {
   margin: 0;
 }
-.menu-reorder__status {
-  margin-top: 4px !important;
-}
 .menu-reorder__bar p {
   color: var(--expressa-color-text-secondary);
 }
-.menu-reorder__actions {
-  display: flex;
-  gap: 8px;
+.menu-reorder__status {
+  margin-top: var(--expressa-space-xs);
 }
 .menu-reorder__products {
   overflow: auto;
-  padding-left: 32px;
+  padding-left: var(--expressa-space-xl);
   background: var(--expressa-color-surface-raised);
 }
 .menu-reorder__empty-products {
   box-sizing: border-box;
-  block-size: 56px;
+  block-size: var(--expressa-size-row-min);
   margin: 0;
-  padding: 16px;
+  padding: var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
 }
 .menu-reorder__list {
@@ -528,12 +519,8 @@ onBeforeUnmount(() =>
   overflow: auto;
 }
 .menu-reorder__disclosure {
-  min-height: 44px;
-  margin: 0 16px;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-accent);
-  font: inherit;
+  min-height: var(--expressa-size-control-min-height);
+  margin: 0 var(--expressa-space-md);
 }
 .menu-reorder__hint {
   position: absolute;
@@ -543,7 +530,7 @@ onBeforeUnmount(() =>
   clip: rect(0 0 0 0);
 }
 .menu-reorder__error {
-  margin: 12px 16px;
+  margin: var(--expressa-space-control-inline) var(--expressa-space-md);
   color: var(--expressa-color-status-error);
 }
 @media (max-width: 767px) {

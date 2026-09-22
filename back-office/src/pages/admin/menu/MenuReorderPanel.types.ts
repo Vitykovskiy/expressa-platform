@@ -6,7 +6,6 @@ export interface MenuReorderPanelProps {
   products: readonly Product[];
   expandedCategoryIds: ReadonlySet<string>;
   pending?: boolean;
-  error?: string | null;
 }
 export interface MenuReorderPanelEmits {
   cancel: [];

@@ -5,6 +5,7 @@ export type AdminButtonType = "button" | "submit" | "reset";
 export interface AdminButtonProps {
   variant?: AdminButtonVariant;
   disabled?: boolean;
+  pending?: boolean;
   type?: AdminButtonType;
 }
 

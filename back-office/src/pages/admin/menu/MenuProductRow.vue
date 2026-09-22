@@ -16,12 +16,7 @@
           {{ priceLabel(props.product) }}
         </span>
       </span>
-      <ChevronRight
-        v-if="!props.showManagementActions"
-        aria-hidden="true"
-        class="menu-product-row__chevron"
-        :size="18"
-      />
+      <AdminIcon v-if="!props.showManagementActions" :icon="ChevronRight" />
       <span v-else class="menu-product-row__edit-label">Изменить</span>
     </AdminButton>
     <div v-if="props.showManagementActions" class="menu-product-row__order">
@@ -35,7 +30,7 @@
         variant="ghost"
         @click="emit('moveUp', props.product)"
       >
-        <ArrowUp :size="18" aria-hidden="true" />
+        <AdminIcon :icon="ArrowUp" />
         <span>Выше</span>
       </AdminButton>
       <AdminButton
@@ -47,7 +42,7 @@
         variant="ghost"
         @click="emit('moveDown', props.product)"
       >
-        <ArrowDown :size="18" aria-hidden="true" />
+        <AdminIcon :icon="ArrowDown" />
         <span>Ниже</span>
       </AdminButton>
     </div>
@@ -58,6 +53,7 @@
 import { ArrowDown, ArrowUp, ChevronRight } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import type { Product } from "./catalog.types";
 import type {
   MenuProductRowEmits,
@@ -87,7 +83,7 @@ function formatPrice(price: number): string {
 .menu-product-row {
   display: flex;
   width: 100%;
-  min-height: 63px;
+  min-height: var(--expressa-size-row-min);
   align-items: center;
   flex-wrap: wrap;
   color: var(--expressa-color-text-primary);
@@ -106,7 +102,7 @@ function formatPrice(price: number): string {
   min-width: 0;
   flex: 1;
   gap: var(--expressa-space-sm);
-  padding: 14px var(--expressa-space-md) 14px
+  padding: var(--expressa-space-control-block) var(--expressa-space-md)
     var(--expressa-space-product-indent);
   text-align: left;
 }
@@ -131,11 +127,6 @@ function formatPrice(price: number): string {
   min-width: 0;
   flex: 1;
   gap: var(--expressa-space-2xs);
-}
-
-.menu-product-row__chevron {
-  flex: 0 0 18px;
-  align-self: center;
 }
 
 .menu-product-row__name,

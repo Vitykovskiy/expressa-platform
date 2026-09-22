@@ -3,7 +3,7 @@
     class="menu-reorder-row"
     :class="{ 'menu-reorder-row--grabbed': grabbed }"
   >
-    <button
+    <AdminButton
       class="menu-reorder-row__handle"
       type="button"
       :disabled="props.disabled"
@@ -15,18 +15,18 @@
       @pointerup="dropPointer"
       @pointercancel="cancelDrag"
     >
-      ⠿
-    </button>
-    <button
+      <AdminIcon :icon="GripVertical" />
+    </AdminButton>
+    <AdminButton
       v-if="props.disclosable"
       class="menu-reorder-row__disclosure"
       type="button"
       :aria-expanded="props.expanded"
       @click="emit('toggle')"
     >
-      {{ props.expanded ? "Скрыть товары" : "Показать товары" }}</button
+      {{ props.expanded ? "Скрыть товары" : "Показать товары" }}</AdminButton
     ><span class="menu-reorder-row__label">{{ props.label }}</span>
-    <button
+    <AdminButton
       type="button"
       :disabled="props.disabled || !props.canMoveUp"
       :aria-describedby="!props.canMoveUp ? upReasonId : undefined"
@@ -34,9 +34,9 @@
       :data-reorder-control="`${props.id}:up`"
       @click="emit('move', { offset: -1, control: 'up' })"
     >
-      Выше
-    </button>
-    <button
+      <AdminIcon :icon="ChevronUp" />
+    </AdminButton>
+    <AdminButton
       type="button"
       :disabled="props.disabled || !props.canMoveDown"
       :aria-describedby="!props.canMoveDown ? downReasonId : undefined"
@@ -44,8 +44,8 @@
       :data-reorder-control="`${props.id}:down`"
       @click="emit('move', { offset: 1, control: 'down' })"
     >
-      Ниже
-    </button>
+      <AdminIcon :icon="ChevronDown" />
+    </AdminButton>
     <span :id="upReasonId" class="menu-reorder-row__sr">{{
       !props.canMoveUp ? "Уже первая позиция" : ""
     }}</span
@@ -55,7 +55,10 @@
   </div>
 </template>
 <script setup lang="ts">
+import { ChevronDown, ChevronUp, GripVertical } from "lucide-vue-next";
 import { computed, ref } from "vue";
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import type {
   MenuReorderRowEmits,
   MenuReorderRowProps,
@@ -128,29 +131,25 @@ function onKeydown(event: KeyboardEvent): void {
 .menu-reorder-row {
   display: flex;
   box-sizing: border-box;
-  block-size: 56px;
-  min-block-size: 56px;
-  flex-basis: 56px;
+  block-size: var(--expressa-size-row-min);
+  min-block-size: var(--expressa-size-row-min);
+  flex-basis: var(--expressa-size-row-min);
   align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--expressa-color-border);
-  padding: 0 8px;
+  gap: var(--expressa-space-sm);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  padding: 0 var(--expressa-space-sm);
 }
 .menu-reorder-row--grabbed {
   background: var(--expressa-color-control-hover-surface);
 }
 .menu-reorder-row__handle,
-.menu-reorder-row button {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-text-secondary);
-  font: inherit;
+.menu-reorder-row .admin-button {
+  min-width: var(--expressa-size-control-min-height);
+  min-height: var(--expressa-size-control-min-height);
 }
 .menu-reorder-row__handle {
   cursor: grab;
-  font-size: 22px;
 }
 .menu-reorder-row--grabbed .menu-reorder-row__handle {
   cursor: grabbing;
@@ -164,12 +163,8 @@ function onKeydown(event: KeyboardEvent): void {
   font-weight: var(--expressa-font-weight-semibold);
 }
 .menu-reorder-row__disclosure {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-accent);
-  font: inherit;
+  min-width: var(--expressa-size-control-min-height);
+  min-height: var(--expressa-size-control-min-height);
 }
 .menu-reorder-row__sr {
   position: absolute;

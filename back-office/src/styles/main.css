@@ -27,7 +27,8 @@
     var(--v-theme-status-warning-surface)
   );
   --expressa-color-status-error: rgb(var(--v-theme-status-error));
-  --expressa-color-status-error-hover: #a91f1f;
+  --expressa-color-status-error-hover: rgb(var(--v-theme-status-error-hover));
+  --expressa-color-status-error-active: rgb(var(--v-theme-status-error-active));
   --expressa-color-status-error-surface: rgb(
     var(--v-theme-status-error-surface)
   );
@@ -45,71 +46,77 @@
   );
   --expressa-color-transparent: transparent;
 
-  --expressa-space-4: 4px;
-  --expressa-space-8: 8px;
-  --expressa-space-12: 12px;
-  --expressa-space-16: 16px;
-  --expressa-space-24: 24px;
-  --expressa-space-32: 32px;
-  --expressa-space-48: 48px;
+  --expressa-space-4: 0.25rem;
+  --expressa-space-8: 0.5rem;
+  --expressa-space-12: 0.75rem;
+  --expressa-space-16: 1rem;
+  --expressa-space-24: 1.5rem;
+  --expressa-space-32: 2rem;
+  --expressa-space-48: 3rem;
   --expressa-space-2xs: 2px;
-  --expressa-space-badge-block: 3px;
+  --expressa-space-badge-block: var(--expressa-space-2xs);
   --expressa-space-xs: var(--expressa-space-4);
-  --expressa-space-field-label: 6px;
+  --expressa-space-field-label: var(--expressa-space-4);
   --expressa-space-sm: var(--expressa-space-8);
-  --expressa-space-control-block: 10px;
+  --expressa-space-control-block: var(--expressa-space-8);
   --expressa-space-control-inline: var(--expressa-space-12);
   --expressa-space-md: var(--expressa-space-16);
-  --expressa-space-button-inline: 20px;
+  --expressa-space-button-inline: var(--expressa-space-12);
   --expressa-space-lg: var(--expressa-space-24);
   --expressa-space-xl: var(--expressa-space-32);
-  --expressa-space-row-block: 14px;
-  --expressa-space-tab-bar-clearance: 80px;
+  --expressa-space-row-block: var(--expressa-space-12);
+  --expressa-space-tab-bar-clearance: calc(
+    var(--expressa-size-tab-bar-min-height) + var(--expressa-safe-area-bottom)
+  );
   --expressa-space-empty-state-block: var(--expressa-space-48);
   --expressa-space-product-indent: var(--expressa-space-48);
+  --expressa-space-dialog-inset: var(--expressa-space-md);
 
-  --expressa-radius-sm: 10px;
-  --expressa-radius-md: 10px;
+  --expressa-radius-sm: 4px;
+  --expressa-radius-md: 8px;
   --expressa-radius-panel: 12px;
-  --expressa-radius-lg: 16px;
+  --expressa-radius-lg: 12px;
   --expressa-radius-pill: 999px;
 
   --expressa-border-width-default: 1px;
   --expressa-border-width-strong: 2px;
   --expressa-border-width-none: 0;
 
-  --expressa-font-size-status: 12px;
-  --expressa-font-size-caption: 12px;
-  --expressa-font-size-action: 14px;
-  --expressa-font-size-body: 16px;
-  --expressa-font-size-body-strong: 16px;
-  --expressa-font-size-metadata: 14px;
-  --expressa-font-size-title: 24px;
-  --expressa-font-size-brand: 20px;
-  --expressa-font-size-heading: 32px;
-  --expressa-font-size-screen-title: 32px;
+  --expressa-font-size-status: 0.875rem;
+  --expressa-font-size-caption: 0.75rem;
+  --expressa-font-size-action: 0.875rem;
+  --expressa-font-size-body: 1rem;
+  --expressa-font-size-body-strong: 1rem;
+  --expressa-font-size-metadata: 0.75rem;
+  --expressa-font-size-title: 1.25rem;
+  --expressa-font-size-brand: 1.25rem;
+  --expressa-font-size-heading: 1.5rem;
+  --expressa-font-size-screen-title: 1.5rem;
   --expressa-font-weight-medium: 500;
   --expressa-font-weight-semibold: 600;
   --expressa-font-weight-regular: 400;
   --expressa-font-weight-bold: 700;
-  --expressa-line-height-control: 1;
+  --expressa-line-height-control: 1.4285714286;
   --expressa-line-height-tight: 1.2;
-  --expressa-line-height-heading: 1.25;
-  --expressa-line-height-title: 1.3;
+  --expressa-line-height-heading: 1.333;
+  --expressa-line-height-title: 1.4;
   --expressa-line-height-emphasis: 1.35;
-  --expressa-line-height-caption: 1.4;
+  --expressa-line-height-caption: 1.333;
   --expressa-line-height-caption-compact: 16px;
   --expressa-line-height-body: 1.5;
-  --expressa-letter-spacing-label: 0.04em;
-  --expressa-letter-spacing-section-title: 0.05em;
-  --expressa-letter-spacing-otp: 0.4em;
+  --expressa-letter-spacing-label: 0;
+  --expressa-letter-spacing-section-title: 0;
+  --expressa-letter-spacing-otp: 0;
 
   --expressa-size-visually-hidden: 1px;
   --expressa-size-icon-clock: 14px;
   --expressa-stroke-width-icon: 2;
   --expressa-size-checkbox: 18px;
   --expressa-size-status-min-height: 24px;
-  --expressa-size-option: 40px;
+  --expressa-size-switch-track-inline: 2.5rem;
+  --expressa-size-switch-track-block: 1.5rem;
+  --expressa-size-switch-thumb: 1.25rem;
+  --expressa-size-option: 44px;
   --expressa-size-control-min-height: 44px;
   --expressa-size-control-coarse-min-height: 48px;
   --expressa-size-top-bar-min-height: 52px;
@@ -123,16 +130,31 @@
   --expressa-size-menu-min-width: 192px;
   --expressa-size-settings-content-max-width: 560px;
   --expressa-size-users-content-max-width: 720px;
+  --expressa-size-editor-context-max-width: var(
+    --expressa-size-users-content-max-width
+  );
+  --expressa-size-confirm-dialog-max-width: 25rem;
+  --expressa-size-dialog-max-block: calc(100dvh - var(--expressa-space-32));
+  --expressa-size-icon-action: 1.25rem;
+  --expressa-size-textarea-min-height: 6rem;
+  --expressa-size-combobox-menu-max-block: min(
+    20rem,
+    calc(100dvh - var(--expressa-space-xl))
+  );
 
-  --expressa-shadow-card: 0 1px 4px rgb(23 24 26 / 8%);
-  --expressa-shadow-menu: 0 8px 20px rgb(23 24 26 / 12%);
+  --expressa-shadow-card: none;
+  --expressa-shadow-menu: 0 4px 12px rgb(15 23 42 / 12%);
+  --expressa-z-popover-layer: 30;
+  --expressa-z-modal-layer: 40;
+  --expressa-z-notification-layer: 50;
 
   --expressa-state-disabled-opacity: 0.4;
   --expressa-state-pressed-opacity: 0.85;
-  --expressa-motion-duration-control: 120ms;
-  --expressa-motion-duration-fast: 80ms;
-  --expressa-motion-duration-disclosure: 160ms;
-  --expressa-focus-color: var(--expressa-color-accent);
+  --expressa-motion-duration-control: 100ms;
+  --expressa-motion-duration-fast: 100ms;
+  --expressa-motion-duration-disclosure: 140ms;
+  --expressa-motion-ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --expressa-focus-color: var(--expressa-color-text-primary);
   --expressa-focus-ring: var(--expressa-border-width-strong) solid
     var(--expressa-focus-color);
   --expressa-focus-offset: 2px;
@@ -156,11 +178,37 @@
   }
 }
 
+@media (min-width: 768px) {
+  :root {
+    --expressa-space-dialog-inset: var(--expressa-space-lg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --expressa-motion-duration-control: 0ms;
     --expressa-motion-duration-fast: 0ms;
     --expressa-motion-duration-disclosure: 0ms;
+  }
+
+  :where(
+    .v-btn,
+    .v-btn__content,
+    .v-btn__overlay,
+    .v-overlay,
+    .v-overlay__content
+  ) {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+
+  :where(
+    .v-progress-circular > svg,
+    .v-progress-circular__underlay,
+    .v-progress-circular__overlay
+  ) {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
   }
 }
 

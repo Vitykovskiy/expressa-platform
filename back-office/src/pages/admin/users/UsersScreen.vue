@@ -9,7 +9,7 @@
           class="users-screen__add-button"
           @click="isAddDialogOpen = true"
         >
-          <span aria-hidden="true">+</span>
+          <AdminIcon :icon="Plus" />
           Добавить
         </AdminButton>
       </header>
@@ -18,19 +18,25 @@
         class="users-screen__filters"
         aria-label="Поиск и фильтры пользователей"
       >
-        <label class="users-screen__search-label" for="users-search">
-          Фильтр по имени или телефону
-        </label>
-        <div class="users-screen__search-wrapper">
-          <span aria-hidden="true" class="users-screen__search-icon">⌕</span>
-          <AdminTextField
-            id="users-search"
-            v-model="searchQuery"
-            class="users-screen__search"
-            placeholder="Фильтр по имени или телефону"
-            type="search"
-          />
-        </div>
+        <AdminFieldWrapper
+          id="users-search"
+          v-slot="field"
+          label="Фильтр по имени или телефону"
+        >
+          <div class="users-screen__search-wrapper">
+            <AdminIcon class="users-screen__search-icon" :icon="Search" />
+            <AdminTextField
+              :id="field.controlId"
+              v-model="searchQuery"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
+              class="users-screen__search"
+              :required="field.required"
+              type="search"
+            />
+          </div>
+        </AdminFieldWrapper>
         <FilterTabs v-model="activeFilter" :items="USER_FILTER_ITEMS" />
       </section>
     </div>
@@ -39,7 +45,6 @@
       <section class="users-screen__list" aria-label="Пользователи">
         <EmptyState
           v-if="filteredUsers.length === 0"
-          description="Они появятся после добавления"
           title="Пользователей нет"
         />
         <div v-else class="users-screen__rows">
@@ -59,7 +64,7 @@
       type="button"
       @click="isAddDialogOpen = true"
     >
-      <span aria-hidden="true">+</span>
+      <AdminIcon :icon="Plus" />
     </AdminButton>
 
     <AddUserDialog v-model:open="isAddDialogOpen" @add="addUser" />
@@ -79,6 +84,7 @@
 
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
+import { Plus, Search } from "lucide-vue-next";
 
 import type {
   AddUserData,
@@ -87,6 +93,8 @@ import type {
   UserRole,
 } from "../../../shared/ui/admin/Admin.types";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
 import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
@@ -216,7 +224,7 @@ function confirmAction(role: UserRole | undefined): void {
   margin: 0;
   font-size: var(--expressa-font-size-screen-title);
   font-weight: var(--expressa-font-weight-bold);
-  line-height: 32px;
+  line-height: var(--expressa-line-height-heading);
 }
 
 .users-screen__add-button {
@@ -226,7 +234,7 @@ function confirmAction(role: UserRole | undefined): void {
 }
 
 .users-screen__filters {
-  padding: 14px 0 0;
+  padding: var(--expressa-space-control-block) 0 0;
 }
 
 .users-screen__search-wrapper {
@@ -239,26 +247,23 @@ function confirmAction(role: UserRole | undefined): void {
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block)
     var(--expressa-space-control-inline);
-  padding-left: 36px;
+  padding-left: calc(
+    var(--expressa-space-control-inline) + var(--expressa-size-icon-action) +
+      var(--expressa-space-sm)
+  );
   background: var(--expressa-color-surface-raised);
   font-size: var(--expressa-font-size-action);
-  line-height: 19.5px;
+  line-height: var(--expressa-line-height-body);
 }
 
 .users-screen__search-icon {
   position: absolute;
   z-index: 1;
-  top: 9px;
+  top: 50%;
   left: var(--expressa-space-control-inline);
   color: var(--expressa-color-text-muted);
-  font-size: 24px;
-  line-height: 1;
+  transform: translateY(-50%);
   pointer-events: none;
-}
-
-.users-screen__search:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgb(26 26 255 / 20%);
 }
 
 .users-screen__content {
@@ -296,20 +301,20 @@ function confirmAction(role: UserRole | undefined): void {
   position: fixed;
   z-index: 30;
   right: var(--expressa-space-md);
-  bottom: 76px;
+  bottom: calc(
+    var(--expressa-size-tab-bar-min-height) + var(--expressa-space-md)
+  );
   display: inline-grid;
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  min-height: 48px;
+  width: var(--expressa-size-control-coarse-min-height);
+  min-width: var(--expressa-size-control-coarse-min-height);
+  height: var(--expressa-size-control-coarse-min-height);
+  min-height: var(--expressa-size-control-coarse-min-height);
   place-items: center;
   padding: 0;
   border-radius: var(--expressa-radius-pill);
   color: var(--expressa-color-text-on-accent);
   background: var(--expressa-color-accent);
   box-shadow: var(--expressa-shadow-menu);
-  font-size: 28px;
-  line-height: 1;
 }
 
 @media (min-width: 768px) {
@@ -319,7 +324,7 @@ function confirmAction(role: UserRole | undefined): void {
 
   .users-screen__controls {
     width: min(100%, var(--expressa-size-users-content-max-width));
-    padding: 20px var(--expressa-space-lg) 0;
+    padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
   }
 
   .users-screen__desktop-header {
@@ -327,17 +332,11 @@ function confirmAction(role: UserRole | undefined): void {
     align-items: center;
     justify-content: space-between;
     gap: var(--expressa-space-md);
-    margin-bottom: 19px;
+    margin-bottom: var(--expressa-space-control-inline);
   }
 
   .users-screen__desktop-header .users-screen__add-button {
-    min-height: 36px;
-    height: 36px;
-    padding: 8px var(--expressa-space-md);
-    border: var(--expressa-border-width-none);
-    border-radius: var(--expressa-radius-md);
-    font-size: var(--expressa-font-size-action);
-    line-height: 19.5px;
+    min-height: var(--expressa-size-control-min-height);
   }
 
   .users-screen__filters {

@@ -46,7 +46,7 @@ defineExpose({ focus });
 <style scoped lang="scss">
 .admin-textarea {
   width: 100%;
-  min-height: 88px;
+  min-height: var(--expressa-size-textarea-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -63,7 +63,7 @@ defineExpose({ focus });
 
 .admin-textarea:disabled {
   cursor: not-allowed;
-  opacity: var(--expressa-state-disabled-opacity);
+  color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-control-disabled-surface);
 }
 

@@ -1,26 +1,24 @@
 <template>
   <AdminDialog
     :aria-labelledby="titleId"
+    cancel-label="Отмена"
     full-screen-below-600
     :model-value="open"
     max-width="560"
-    :persistent="props.disabled"
+    :pending="props.disabled"
+    submit-form="add-category-dialog-form"
+    :submit-disabled="props.disabled || !canSave"
+    submit-label="Создать категорию"
+    submit-pending-label="Создаём…"
+    title="Новая категория"
     @after-enter="focusFirstField"
     @update:model-value="requestClose"
   >
-    <v-card class="category-dialog">
-      <header class="category-dialog__header">
-        <h2 :id="titleId" class="category-dialog__title">Новая категория</h2>
-        <button
-          aria-label="Закрыть диалог"
-          :disabled="props.disabled"
-          class="category-dialog__close"
-          type="button"
-          @click="requestClose(false)"
-        >
-          ×
-        </button>
-      </header>
+    <form
+      id="add-category-dialog-form"
+      class="category-dialog"
+      @submit.prevent="confirm"
+    >
       <section
         v-if="props.saveOutcome === 'rejected'"
         ref="saveError"
@@ -28,9 +26,9 @@
         role="alert"
         tabindex="-1"
       >
-        Не удалось создать категорию. Проверьте данные и повторите попытку.
+        Не удалось создать категорию.
       </section>
-      <v-card-text class="category-dialog__fields">
+      <div class="category-dialog__fields">
         <CategoryFormFields
           ref="fields"
           :description="draft.description.value"
@@ -45,23 +43,8 @@
           @update:is-active="draft.isActive.value = $event"
           @update:name="draft.name.value = $event"
         />
-      </v-card-text>
-      <v-card-actions class="category-dialog__actions">
-        <AdminButton
-          :disabled="props.disabled"
-          type="button"
-          variant="ghost"
-          @click="requestClose(false)"
-          >Отмена</AdminButton
-        >
-        <AdminButton
-          :disabled="props.disabled || !canSave"
-          type="button"
-          @click="confirm"
-          >{{ props.disabled ? "Создаём…" : "Создать категорию" }}</AdminButton
-        >
-      </v-card-actions>
-    </v-card>
+      </div>
+    </form>
   </AdminDialog>
   <ConfirmDialog
     v-model:open="discardOpen"
@@ -83,7 +66,6 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
-import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import CategoryFormFields from "./CategoryFormFields.vue";
@@ -157,65 +139,16 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.category-dialog {
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-}
-.category-dialog__title {
-  margin: 0;
-  padding: 24px 24px 16px;
-  font-size: var(--expressa-font-size-title);
-}
-.category-dialog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-}
-.category-dialog__header .category-dialog__title {
-  padding: 0;
-}
-.category-dialog__close {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 28px;
-}
 .category-dialog__fields {
-  padding: 0 24px 24px;
+  padding: 0 var(--expressa-space-lg) var(--expressa-space-lg);
 }
 .category-dialog__outcome {
-  margin: 0 24px 16px;
+  margin: 0 var(--expressa-space-lg) var(--expressa-space-md);
   color: var(--expressa-color-status-error);
 }
-.category-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 0 24px 24px;
-}
 @media (max-width: 599px) {
-  .category-dialog__title {
-    padding: 16px 16px;
-  }
   .category-dialog__fields {
-    padding: 0 16px 16px;
-  }
-  .category-dialog__actions {
-    position: sticky;
-    bottom: 0;
-    padding: 16px;
-    background: var(--expressa-color-surface);
-  }
-}
-@media (max-width: 399px) {
-  .category-dialog__actions {
-    display: grid;
-  }
-  .category-dialog__actions .admin-button {
-    width: 100%;
+    padding: 0 var(--expressa-space-md) var(--expressa-space-md);
   }
 }
 </style>

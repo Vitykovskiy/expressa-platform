@@ -20,7 +20,12 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, shallowRef } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import {
+  isNavigationFailure,
+  NavigationFailureType,
+  useRoute,
+  useRouter,
+} from "vue-router";
 
 import AuthScreen from "./admin/auth/AuthScreen.vue";
 import type { AuthScreenState } from "./admin/auth/AuthScreen.types";
@@ -34,6 +39,10 @@ import {
   loginWorkspacePath,
 } from "./LoginPage.constants";
 import type { LoginOtpMetadata } from "./LoginPage.types";
+import {
+  getOperationPort,
+  type OperationContext,
+} from "../shared/lib/operations/operation-port";
 
 const sessionStore = useSessionStore();
 const router = useRouter();
@@ -46,6 +55,8 @@ const formError = shallowRef("");
 const resendAvailableAt = shallowRef<number | null>(null);
 const now = shallowRef(Date.now());
 let resendTimer: ReturnType<typeof setInterval> | null = null;
+const navigationEpoch = crypto.randomUUID();
+const operationPort = getOperationPort();
 
 const phoneValid = computed(
   () => phone.value.replace(/\D/g, "").length === loginPhoneDigitsLength,
@@ -135,7 +146,7 @@ async function showSessionResult(
 ): Promise<void> {
   if (sessionStore.status === "authenticated") {
     screenState.value = "success";
-    await router.replace(returnTarget());
+    await replaceAfterAuthentication(returnTarget());
     return;
   }
 
@@ -145,6 +156,40 @@ async function showSessionResult(
   }
 
   screenState.value = fallbackState;
+}
+
+async function replaceAfterAuthentication(target: string): Promise<void> {
+  try {
+    await router.replace(target);
+  } catch (error) {
+    if (
+      isNavigationFailure(
+        error,
+        NavigationFailureType.aborted |
+          NavigationFailureType.cancelled |
+          NavigationFailureType.duplicated,
+      )
+    )
+      return;
+    await operationPort.run(
+      navigationContext("auth.return-navigation", target),
+      () => Promise.reject(error),
+    );
+  }
+}
+
+function navigationContext(
+  operationKey: string,
+  resourceKey: string,
+): OperationContext {
+  return {
+    attemptId: crypto.randomUUID(),
+    epoch: navigationEpoch,
+    kind: "read",
+    operationKey,
+    origin: "user",
+    resourceKey,
+  };
 }
 
 function returnTarget(): string {

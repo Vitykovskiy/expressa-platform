@@ -1,35 +1,27 @@
 <template>
-  <ClipboardList
+  <AdminIcon
     v-if="section === 'orders'"
     aria-hidden="true"
-    class="admin-section-icon"
-    :size="size"
+    :icon="ClipboardList"
   />
-  <ToggleRight
+  <AdminIcon
     v-else-if="section === 'availability'"
     aria-hidden="true"
-    class="admin-section-icon"
-    :size="size"
+    :icon="ToggleRight"
   />
-  <BookOpen
+  <AdminIcon
     v-else-if="section === 'menu'"
     aria-hidden="true"
-    class="admin-section-icon"
-    :size="size"
+    :icon="BookOpen"
   />
 </template>
 
 <script setup lang="ts">
 import { BookOpen, ClipboardList, ToggleRight } from "lucide-vue-next";
 
+import AdminIcon from "../../shared/ui/admin/admin-icon/AdminIcon.vue";
+
 import type { AdminSectionIconProps } from "./AdminSectionIcon.types";
 
-withDefaults(defineProps<AdminSectionIconProps>(), { size: 20 });
+defineProps<AdminSectionIconProps>();
 </script>
-
-<style scoped lang="scss">
-.admin-section-icon {
-  display: block;
-  flex: none;
-}
-</style>

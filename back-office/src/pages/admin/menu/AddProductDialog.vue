@@ -1,32 +1,39 @@
 <template>
   <AdminDialog
-    :model-value="open"
     :aria-labelledby="titleId"
+    cancel-label="Отмена"
+    :dismiss-disabled="isProtected"
+    :model-value="open"
     max-width="560"
-    :persistent="props.disabled"
+    :pending="props.disabled"
+    submit-form="add-product-dialog-form"
+    :submit-disabled="isProtected || !isValid"
+    submit-label="Добавить товар"
+    submit-pending-label="Сохраняем товар…"
+    title="Новый товар"
     @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
-    <v-card class="add-dialog">
-      <v-card-title :id="titleId">Новый товар</v-card-title>
+    <form
+      id="add-product-dialog-form"
+      class="add-dialog"
+      @submit.prevent="confirm"
+    >
       <section
         v-if="hasSaveOutcome"
         class="add-dialog-outcome"
         aria-live="polite"
       >
-        <p v-if="props.disabled" role="status">Сохраняем товар…</p>
         <p
-          v-else-if="props.saveOutcome === 'rejected'"
+          v-if="props.saveOutcome === 'rejected'"
           class="add-dialog__error"
           role="alert"
         >
-          Не удалось сохранить товар. Исправьте отмеченные поля и сохраните ещё
-          раз.
+          Не удалось сохранить товар.
         </p>
         <template v-else-if="props.saveOutcome === 'unconfirmed'">
           <p class="add-dialog__error" role="alert">
-            Не удалось подтвердить сохранение товара. Обновите меню и проверьте
-            товар перед повторным сохранением.
+            Не удалось подтвердить сохранение товара.
           </p>
           <AdminButton
             :disabled="props.disabled"
@@ -36,16 +43,8 @@
           >
         </template>
         <p v-else-if="props.saveOutcome === 'saved'" role="status">
-          Меню обновлено. Закройте форму и проверьте товар в меню перед
-          повторным сохранением.
+          Меню обновлено.
         </p>
-        <details v-if="props.saveError" class="add-dialog-technical-details">
-          <summary>Технические сведения</summary>
-          <p>{{ props.saveError.message }}</p>
-          <p v-if="props.saveError.requestId">
-            Идентификатор запроса: {{ props.saveError.requestId }}
-          </p>
-        </details>
         <AdminButton
           v-if="canDiscardDraft"
           type="button"
@@ -54,42 +53,61 @@
           >Закрыть форму</AdminButton
         >
       </section>
-      <v-card-text class="add-dialog__fields">
-        <label :for="categoryId">Категория</label>
-        <AdminSelect
+      <div class="add-dialog__fields">
+        <AdminFieldWrapper
           :id="categoryId"
-          ref="categoryInput"
-          v-model="categoryIdValue"
-          :disabled="props.disabled"
-          ><option value="">Выберите категорию</option>
-          <option
-            v-for="category in props.categories"
-            :key="category.id"
-            :value="category.id"
-          >
-            {{ category.name }}
-          </option></AdminSelect
+          v-slot="field"
+          :error="errorFor('categoryId')"
+          label="Категория"
+          required
         >
-        <p v-if="errorFor('categoryId')" class="add-dialog__error" role="alert">
-          {{ errorFor("categoryId") }}
-        </p>
-        <label :for="nameId">Название товара</label
-        ><AdminTextField
+          <AdminSelect
+            :id="field.controlId"
+            ref="categoryInput"
+            v-model="categoryIdValue"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
+            :disabled="props.disabled"
+            :required="field.required"
+            ><option value="">Выберите категорию</option>
+            <option
+              v-for="category in props.categories"
+              :key="category.id"
+              :value="category.id"
+            >
+              {{ category.name }}
+            </option></AdminSelect
+          >
+        </AdminFieldWrapper>
+        <AdminFieldWrapper
           :id="nameId"
-          v-model="name"
-          :aria-invalid="Boolean(errorFor('name'))"
-          :disabled="props.disabled"
-          placeholder="Например: Капучино"
-        />
-        <p v-if="errorFor('name')" class="add-dialog__error" role="alert">
-          {{ errorFor("name") }}
-        </p>
-        <label :for="descriptionId">Описание</label
-        ><AdminTextField
-          :id="descriptionId"
-          v-model="description"
-          :disabled="props.disabled"
-        />
+          v-slot="field"
+          :error="errorFor('name')"
+          label="Название товара"
+          required
+        >
+          <AdminTextField
+            :id="field.controlId"
+            v-model="name"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
+            :disabled="props.disabled"
+            :required="field.required"
+          />
+        </AdminFieldWrapper>
+        <AdminFieldWrapper :id="descriptionId" v-slot="field" label="Описание">
+          <AdminTextField
+            :id="field.controlId"
+            v-model="description"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
+            :disabled="props.disabled"
+            :required="field.required"
+          />
+        </AdminFieldWrapper>
         <section class="add-dialog__pricing" aria-label="Цены и порции">
           <div class="add-dialog__pricing-heading">
             <h3>Цены и порции</h3>
@@ -138,13 +156,23 @@
                 "
               />
               <div class="add-dialog__choice-actions">
-                <span>Доступен для заказа</span>
-                <AdminToggle
-                  :model-value="choice.isAvailable"
-                  :aria-label="`Вариант ${index + 1} доступен для заказа`"
-                  :disabled="props.disabled"
-                  @update:model-value="choice.isAvailable = Boolean($event)"
-                />
+                <AdminFieldWrapper
+                  :id="priceAvailabilityControlId(choice.localId)"
+                  v-slot="field"
+                  label="Доступен для заказа"
+                  layout="row"
+                >
+                  <AdminToggle
+                    :id="field.controlId"
+                    :aria-labelledby="field.labelId"
+                    :aria-describedby="field.describedBy"
+                    :aria-invalid="field.invalid"
+                    :aria-required="field.required"
+                    :model-value="choice.isAvailable"
+                    :disabled="props.disabled"
+                    @update:model-value="choice.isAvailable = Boolean($event)"
+                  />
+                </AdminFieldWrapper>
                 <span class="add-dialog__order-label">Порядок</span>
                 <AdminButton
                   :aria-label="`Поднять вариант ${index + 1}`"
@@ -172,9 +200,6 @@
                 >
               </div>
             </section>
-            <p class="add-dialog__pricing-help">
-              Изменения цен и их порядка применятся после сохранения товара.
-            </p>
             <AdminButton
               :disabled="props.disabled"
               type="button"
@@ -186,43 +211,44 @@
         </section>
         <section class="add-dialog__publication">
           <h3>Публикация</h3>
-          <div class="add-dialog__toggle">
-            <strong>Показывать в меню</strong
-            ><AdminToggle
+          <AdminFieldWrapper
+            :id="isActiveControlId"
+            v-slot="field"
+            label="Показывать в меню"
+            layout="row"
+          >
+            <AdminToggle
+              :id="field.controlId"
+              :aria-labelledby="field.labelId"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               :model-value="isActive"
-              aria-label="Показывать в меню"
               :disabled="props.disabled"
               @update:model-value="isActive = Boolean($event)"
             />
-          </div>
-          <p>Выключите, чтобы скрыть товар из меню покупателя.</p>
-          <div v-if="!isMultiple" class="add-dialog__toggle">
-            <strong>Доступен для заказа</strong
-            ><AdminToggle
+          </AdminFieldWrapper>
+          <AdminFieldWrapper
+            v-if="!isMultiple"
+            :id="isAvailableControlId"
+            v-slot="field"
+            label="Доступен для заказа"
+            layout="row"
+          >
+            <AdminToggle
+              :id="field.controlId"
+              :aria-labelledby="field.labelId"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               :model-value="isAvailable"
-              aria-label="Доступен для заказа"
               :disabled="props.disabled"
               @update:model-value="isAvailable = Boolean($event)"
             />
-          </div>
-          <p v-else>Доступность задаётся отдельно для каждой цены.</p>
+          </AdminFieldWrapper>
         </section>
-      </v-card-text>
-      <v-card-actions class="admin-dialog-actions"
-        ><AdminButton
-          :disabled="isProtected || !isValid"
-          type="button"
-          @click="confirm"
-          >Добавить товар</AdminButton
-        ><AdminButton
-          :disabled="isProtected"
-          type="button"
-          variant="ghost"
-          @click="cancel"
-          >Отмена</AdminButton
-        ></v-card-actions
-      >
-    </v-card>
+      </div>
+    </form>
   </AdminDialog>
 </template>
 
@@ -239,6 +265,7 @@ import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import { createPriceChoiceDraft } from "./AddProductDialog.constants";
 import PriceFields from "./PriceFields.vue";
@@ -278,6 +305,8 @@ const titleId = `add-product-title-${useId()}`;
 const categoryId = `add-product-category-${useId()}`;
 const nameId = `add-product-name-${useId()}`;
 const descriptionId = `add-product-description-${useId()}`;
+const isActiveControlId = `add-product-active-${useId()}`;
+const isAvailableControlId = `add-product-available-${useId()}`;
 const categoryInput =
   useTemplateRef<InstanceType<typeof AdminSelect>>("categoryInput");
 const isValid = computed(
@@ -478,11 +507,18 @@ function discardDraft(): void {
   emit("cancel");
 }
 function updateOpen(value: boolean): void {
-  if (!value && !isProtected.value) cancel();
-  else open.value = value;
+  if (value) {
+    open.value = true;
+    return;
+  }
+  if (isProtected.value) return;
+  cancel();
 }
 function focusFirstField(): void {
   categoryInput.value?.$el.focus();
+}
+function priceAvailabilityControlId(localId: string): string {
+  return `add-product-price-availability-${localId}`;
 }
 watch(open, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) captureReturnFocus();
@@ -520,8 +556,7 @@ watch(
 .add-dialog__pricing-heading h3,
 .add-dialog__publication h3,
 .add-dialog__choice h4,
-.add-dialog__publication p,
-.add-dialog__pricing-help {
+.add-dialog__publication p {
   margin: 0;
 }
 .add-dialog__choice {
@@ -537,7 +572,6 @@ watch(
   justify-content: flex-start;
 }
 .add-dialog__order-label,
-.add-dialog__pricing-help,
 .add-dialog__publication p {
   color: var(--expressa-color-text-secondary);
 }
@@ -549,8 +583,5 @@ watch(
   display: grid;
   gap: var(--expressa-space-sm);
   padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
-}
-.add-dialog-technical-details {
-  overflow-wrap: anywhere;
 }
 </style>

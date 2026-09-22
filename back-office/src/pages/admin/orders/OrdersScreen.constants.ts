@@ -11,19 +11,15 @@ export const queueFilters: readonly { label: string; value: QueueFilter }[] = [
 
 export const queueEmptyContent = {
   global: {
-    description: "Новые заказы появятся здесь.",
     title: "Заказов нет",
   },
   search: {
-    description: "Измените номер заказа или фильтр.",
     title: "Заказы не найдены",
   },
   stage: {
-    description: "Измените номер заказа или фильтр.",
     title: "Заказы не найдены",
   },
   searchAndStage: {
-    description: "Измените номер заказа или выберите другую стадию.",
     title: "Заказы не найдены",
   },
 } as const;

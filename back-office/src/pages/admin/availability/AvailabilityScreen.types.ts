@@ -23,7 +23,7 @@ export type AvailabilityScreenError =
 export interface AvailabilityScreenProps {
   accessRecoveryPending?: boolean;
   activeCategory?: string;
-  error: AvailabilityScreenError | null;
+  error?: AvailabilityScreenError | null;
   errorFocus?: boolean;
   groups: readonly AvailabilityGroup[];
   intake: ServiceIntake | null;

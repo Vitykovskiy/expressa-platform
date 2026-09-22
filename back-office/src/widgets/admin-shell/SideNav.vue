@@ -26,7 +26,7 @@
       @click="emit('logout')"
     >
       <span class="side-nav-logout__content">
-        <LogOut aria-hidden="true" :size="18" />
+        <AdminIcon :icon="LogOut" />
         <span>Выйти</span>
       </span>
     </AdminButton>
@@ -37,6 +37,7 @@
 import { LogOut } from "lucide-vue-next";
 
 import AdminButton from "../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { SideNavEmits, SideNavProps } from "./SideNav.types";
 
@@ -64,12 +65,12 @@ const emit = defineEmits<SideNavEmits>();
   font-size: var(--expressa-font-size-brand);
 }
 .side-nav-brand strong {
-  line-height: 28px;
+  line-height: var(--expressa-line-height-title);
 }
 .side-nav-brand span {
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
-  line-height: 16px;
+  line-height: var(--expressa-line-height-caption-compact);
 }
 .side-nav-links {
   display: grid;
@@ -111,8 +112,6 @@ const emit = defineEmits<SideNavEmits>();
 }
 .side-nav-logout__content {
   display: flex;
-  position: relative;
-  top: 0.25px;
   align-items: center;
   gap: var(--expressa-space-control-inline);
 }

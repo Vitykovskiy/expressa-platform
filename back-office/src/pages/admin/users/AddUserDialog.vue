@@ -1,73 +1,64 @@
 <template>
   <AdminDialog
-    :aria-describedby="descriptionId"
     :aria-labelledby="titleId"
+    cancel-label="Отмена"
     :model-value="open"
     max-width="448"
+    submit-form="add-user-dialog-form"
+    :submit-disabled="!isValid"
+    submit-label="Добавить пользователя"
+    title="Новый пользователь"
     @after-enter="focusNameField"
     @update:model-value="handleDialogUpdate"
   >
-    <v-card class="add-user-dialog">
-      <v-card-title :id="titleId" class="add-user-dialog-title">
-        Новый пользователь
-      </v-card-title>
-      <v-card-text :id="descriptionId" class="add-user-dialog-description">
-        Добавьте нового сотрудника
-      </v-card-text>
+    <form
+      id="add-user-dialog-form"
+      class="add-user-dialog-form"
+      @submit.prevent="addUser"
+    >
+      <AdminFieldWrapper :id="nameId" v-slot="field" label="Имя" required>
+        <AdminTextField
+          :id="field.controlId"
+          ref="nameField"
+          v-model="name"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
+          autocomplete="name"
+          :required="field.required"
+          type="text"
+        />
+      </AdminFieldWrapper>
 
-      <form class="add-user-dialog-form" @submit.prevent="addUser">
-        <label class="add-user-dialog-field" :for="nameId">
-          <span>Имя</span>
-          <AdminTextField
-            :id="nameId"
-            ref="nameField"
-            v-model="name"
-            autocomplete="name"
-            placeholder="Например: Иван Петров"
-            required
-            type="text"
-          />
-        </label>
+      <AdminFieldWrapper :id="phoneId" v-slot="field" label="Телефон" required>
+        <AdminTextField
+          :id="field.controlId"
+          :model-value="phone"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
+          autocomplete="tel"
+          inputmode="tel"
+          :required="field.required"
+          type="tel"
+          @update:model-value="updatePhone"
+        />
+      </AdminFieldWrapper>
 
-        <label class="add-user-dialog-field" :for="phoneId">
-          <span>Телефон</span>
-          <AdminTextField
-            :id="phoneId"
-            :model-value="phone"
-            autocomplete="tel"
-            inputmode="tel"
-            placeholder="+7 900 000-00-00"
-            required
-            type="tel"
-            @update:model-value="updatePhone"
-          />
-        </label>
-
-        <div class="add-user-dialog-field">
-          <label :for="roleId">Роль</label>
-          <AdminSelect
-            :id="roleId"
-            v-model="role"
-            :aria-describedby="roleHelpId"
-          >
-            <option value="barista">Бариста</option>
-            <option value="administrator">Администратор</option>
-          </AdminSelect>
-          <small :id="roleHelpId"
-            >Администраторы имеют полный доступ ко всем функциям</small
-          >
-        </div>
-
-        <div class="add-user-dialog-actions">
-          <AdminButton :disabled="!isValid" type="submit">
-            Добавить пользователя
-          </AdminButton>
-          <AdminButton variant="ghost" @click="closeAsCancelled">
-            Отмена
-          </AdminButton>
-        </div>
-      </form>
-    </v-card>
+      <AdminFieldWrapper :id="roleId" v-slot="field" label="Роль">
+        <AdminSelect
+          :id="field.controlId"
+          v-model="role"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
+          :required="field.required"
+        >
+          <option value="barista">Бариста</option>
+          <option value="administrator">Администратор</option>
+        </AdminSelect>
+      </AdminFieldWrapper>
+    </form>
   </AdminDialog>
 </template>
 
@@ -86,8 +77,8 @@ import type {
   AddUserDialogEmits,
   FocusableElement,
 } from "./AddUserDialog.types";
-import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 
@@ -100,11 +91,9 @@ const returnFocusTarget = shallowRef<FocusableElement | null>(null);
 const nameField =
   useTemplateRef<InstanceType<typeof AdminTextField>>("nameField");
 const titleId = `add-user-dialog-title-${useId()}`;
-const descriptionId = `add-user-dialog-description-${useId()}`;
 const nameId = `add-user-dialog-name-${useId()}`;
 const phoneId = `add-user-dialog-phone-${useId()}`;
 const roleId = `add-user-dialog-role-${useId()}`;
-const roleHelpId = `add-user-dialog-role-help-${useId()}`;
 const isValid = computed(
   () =>
     Boolean(name.value.trim()) && phone.value.replace(/\D/g, "").length >= 11,
@@ -212,56 +201,9 @@ watch(open, (isOpen, wasOpen) => {
 </script>
 
 <style scoped lang="scss">
-.add-user-dialog {
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-}
-
-.add-user-dialog-title {
-  padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-xs);
-  font-size: var(--expressa-font-size-title);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: 28px;
-  white-space: normal;
-}
-
-.add-user-dialog-description {
-  padding: 0 var(--expressa-space-lg) 20px;
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: 20px;
-  white-space: normal;
-}
-
 .add-user-dialog-form {
   display: grid;
   gap: var(--expressa-space-md);
   padding: 0 var(--expressa-space-lg);
-}
-
-.add-user-dialog-field {
-  display: grid;
-  gap: var(--expressa-space-field-label);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-}
-
-.add-user-dialog-field small {
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
-  font-weight: var(--expressa-font-weight-regular);
-  line-height: var(--expressa-line-height-caption-compact);
-}
-
-.add-user-dialog-actions {
-  display: grid;
-  gap: var(--expressa-space-sm);
-  margin-top: var(--expressa-space-sm);
-}
-
-.add-user-dialog-actions > .admin-button {
-  width: 100%;
 }
 </style>

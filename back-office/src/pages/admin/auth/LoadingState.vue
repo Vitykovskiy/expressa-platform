@@ -1,15 +1,12 @@
 <template>
   <section aria-label="Загрузка" class="auth-state" role="status">
-    <VProgressCircular
-      aria-hidden="true"
-      color="primary"
-      indeterminate
-      :size="28"
-      :width="2"
-    />
-    <span>Подождите…</span>
+    <AdminProgress label="Подождите…" />
   </section>
 </template>
+
+<script setup lang="ts">
+import AdminProgress from "../../../shared/ui/admin/admin-progress/AdminProgress.vue";
+</script>
 
 <style scoped lang="scss">
 .auth-state {

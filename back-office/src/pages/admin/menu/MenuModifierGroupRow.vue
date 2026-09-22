@@ -4,17 +4,19 @@
       ><strong>{{ props.group.name }}</strong
       ><small>{{ count }}</small></span
     >
-    <button
+    <AdminButton
       type="button"
+      variant="ghost"
       :aria-label="`Редактировать группу добавок ${props.group.name}`"
       @click="emit('edit', props.group)"
     >
       Редактировать
-    </button>
+    </AdminButton>
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from "vue";
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import { modifierOptionCountLabel } from "./catalog-formatters";
 import type {
   MenuModifierGroupRowEmits,
@@ -29,25 +31,18 @@ const count = computed(() =>
 <style scoped lang="scss">
 .menu-modifier-row {
   display: flex;
-  min-height: 64px;
+  min-height: var(--expressa-size-row-min);
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--expressa-color-border);
+  padding: 0 var(--expressa-space-md);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 .menu-modifier-row span:first-child {
   display: grid;
-  gap: 2px;
+  gap: var(--expressa-space-2xs);
 }
 .menu-modifier-row small {
   color: var(--expressa-color-text-muted);
-}
-.menu-modifier-row button {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-accent);
-  font: inherit;
 }
 </style>

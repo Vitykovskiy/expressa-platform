@@ -9,12 +9,11 @@
       class="auth-screen__success"
       role="status"
     >
-      <CircleCheckBig aria-hidden="true" class="auth-screen__success-icon" />
+      <AdminIcon :icon="CircleCheckBig" />
       <span>Вход выполнен</span>
     </p>
     <section v-else class="auth-screen__card">
       <header class="auth-screen__header">
-        <p>Expressa Admin</p>
         <h1>{{ presentation.title }}</h1>
       </header>
       <PhoneStep
@@ -48,6 +47,7 @@ import { computed } from "vue";
 import { AUTH_SCREEN_PRESENTATION } from "./AuthScreen.constants";
 import type { AuthScreenEmits, AuthScreenProps } from "./AuthScreen.types";
 import DeniedState from "./DeniedState.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import LoadingState from "./LoadingState.vue";
 import OtpStep from "./OtpStep.vue";
 import PhoneStep from "./PhoneStep.vue";
@@ -70,7 +70,7 @@ const emit = defineEmits<AuthScreenEmits>();
 
 .auth-screen__card {
   width: min(100%, var(--expressa-size-auth-card-max-width));
-  min-height: 334px;
+  min-height: var(--expressa-size-loading-state-min-height);
   padding: var(--expressa-space-xl);
   background: var(--expressa-color-surface);
   border: var(--expressa-border-width-default) solid
@@ -83,19 +83,9 @@ const emit = defineEmits<AuthScreenEmits>();
   margin-bottom: var(--expressa-space-lg);
 }
 
-.auth-screen__header p,
 .auth-screen__header h1,
 .auth-screen__success {
   margin: 0;
-}
-
-.auth-screen__header p {
-  margin-bottom: var(--expressa-space-xs);
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
-  font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: var(--expressa-letter-spacing-section-title);
-  text-transform: uppercase;
 }
 
 .auth-screen__header h1 {
@@ -112,11 +102,6 @@ const emit = defineEmits<AuthScreenEmits>();
   color: var(--expressa-color-status-success);
   font-size: var(--expressa-font-size-action);
   text-align: center;
-}
-
-.auth-screen__success-icon {
-  width: 32px;
-  height: 32px;
 }
 
 .auth-screen__success span {

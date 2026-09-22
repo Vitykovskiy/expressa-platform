@@ -2,22 +2,29 @@
   <AdminDialog
     :aria-describedby="descriptionId"
     :aria-labelledby="titleId"
+    aria-modal="true"
+    :cancel-label="props.cancelLabel"
+    :pending="props.pending"
     :model-value="open"
+    max-width="var(--expressa-size-confirm-dialog-max-width)"
     role="alertdialog"
-    max-width="480"
-    @after-enter="focusSafeAction"
+    :submit-disabled="props.pending"
+    submit-form="confirm-dialog-form"
+    :submit-label="props.confirmLabel"
+    :submit-variant="props.confirmVariant"
+    :title="props.title"
     @update:model-value="handleDialogUpdate"
   >
-    <v-card class="confirm-dialog">
-      <v-card-title :id="titleId" class="confirm-dialog-title">
-        {{ props.title }}
-      </v-card-title>
-
-      <v-card-text :id="descriptionId" class="confirm-dialog-description">
+    <form
+      id="confirm-dialog-form"
+      class="confirm-dialog"
+      @submit.prevent="handleConfirm"
+    >
+      <p :id="descriptionId" class="confirm-dialog-description">
         {{ props.description }}
-      </v-card-text>
+      </p>
 
-      <v-card-text v-if="props.requireInput" class="confirm-dialog-reason">
+      <div v-if="props.requireInput" class="confirm-dialog-reason">
         <v-text-field
           :id="reasonInputId"
           class="confirm-dialog-reason-input"
@@ -25,11 +32,9 @@
           :error="Boolean(reasonError)"
           label="Причина"
           :model-value="reason"
-          :placeholder="props.inputPlaceholder"
           density="comfortable"
           hide-details
           variant="outlined"
-          @keydown.enter="handleConfirm"
           @update:model-value="handleReasonUpdate"
         />
         <p
@@ -40,7 +45,7 @@
         >
           {{ reasonError }}
         </p>
-      </v-card-text>
+      </div>
 
       <p
         v-if="props.error"
@@ -51,27 +56,7 @@
       >
         {{ props.error }}
       </p>
-
-      <v-card-actions class="confirm-dialog-actions">
-        <AdminButton
-          :id="cancelButtonId"
-          class="confirm-dialog-action"
-          :disabled="props.pending"
-          variant="ghost"
-          @click="closeAsCancelled"
-        >
-          {{ props.cancelLabel }}
-        </AdminButton>
-        <AdminButton
-          class="confirm-dialog-action"
-          :disabled="props.pending"
-          :variant="props.confirmVariant"
-          @click="handleConfirm"
-        >
-          {{ props.pending ? "Выполняем…" : props.confirmLabel }}
-        </AdminButton>
-      </v-card-actions>
-    </v-card>
+    </form>
   </AdminDialog>
 </template>
 
@@ -91,7 +76,6 @@ import type {
   ConfirmDialogProps,
   FocusableElement,
 } from "./ConfirmDialog.types";
-import AdminButton from "../admin-button/AdminButton.vue";
 import AdminDialog from "../admin-dialog/AdminDialog.vue";
 
 const props = withDefaults(
@@ -109,7 +93,6 @@ const titleId = `confirm-dialog-title-${useId()}`;
 const descriptionId = `confirm-dialog-description-${useId()}`;
 const reasonInputId = `confirm-dialog-reason-${useId()}`;
 const reasonErrorId = `confirm-dialog-reason-error-${useId()}`;
-const cancelButtonId = `confirm-dialog-cancel-${useId()}`;
 const errorSummary = useTemplateRef<HTMLElement>("errorSummary");
 const reasonDescribedBy = computed(() =>
   reasonError.value ? reasonErrorId : undefined,
@@ -162,10 +145,6 @@ async function handleConfirm() {
   }
 }
 
-function focusSafeAction(): void {
-  globalThis.document?.getElementById(cancelButtonId)?.focus();
-}
-
 function isFocusableElement(value: unknown): value is FocusableElement {
   return (
     typeof value === "object" &&
@@ -207,26 +186,12 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.confirm-dialog {
-  border-radius: var(--expressa-radius-panel);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface);
-}
-
-.confirm-dialog-title {
-  padding: var(--expressa-space-lg) var(--expressa-space-lg)
-    var(--expressa-space-sm);
-  font-size: var(--expressa-font-size-title);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: 28px;
-  white-space: normal;
-}
-
 .confirm-dialog-description {
+  margin: 0;
   padding: 0 var(--expressa-space-lg) var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
-  line-height: 20px;
+  line-height: var(--expressa-line-height-body);
   white-space: normal;
 }
 
@@ -244,23 +209,5 @@ watch(
   color: var(--expressa-color-status-error);
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-caption);
-}
-
-.confirm-dialog-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--expressa-space-12);
-  padding: var(--expressa-space-16) var(--expressa-space-lg);
-}
-
-.confirm-dialog-action {
-  width: 100%;
-  min-height: var(--expressa-size-control-min-height);
-}
-
-@media (max-width: 399px) {
-  .confirm-dialog-actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 </style>

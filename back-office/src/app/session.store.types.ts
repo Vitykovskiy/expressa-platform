@@ -10,7 +10,6 @@ export type StaffSessionUser = Omit<AuthCurrentUser, "role"> & {
 
 export type SessionStoreError = {
   message: string;
-  requestId: string | null;
 };
 
 export type SessionStoreState = {

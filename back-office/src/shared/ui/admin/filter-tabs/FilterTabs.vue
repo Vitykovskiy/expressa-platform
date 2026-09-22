@@ -23,12 +23,6 @@
         @keydown="handleKeydown($event, item.value)"
       >
         <span class="filter-tab__visual">
-          <span
-            v-if="model === item.value"
-            class="filter-tab__check"
-            aria-hidden="true"
-            >✓</span
-          >
           {{ item.label }}
         </span>
       </button>
@@ -104,7 +98,7 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   max-inline-size: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: var(--expressa-space-sm) var(--expressa-space-md) 7.5px;
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   scroll-padding-inline: var(--expressa-space-md);
@@ -121,7 +115,7 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   display: grid;
   min-height: var(--expressa-size-control-min-height);
   flex: 0 0 auto;
-  align-items: start;
+  align-items: center;
   justify-items: center;
   padding: var(--expressa-space-xs) var(--expressa-border-width-none);
   border: var(--expressa-border-width-none);
@@ -129,7 +123,7 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   cursor: pointer;
   font: inherit;
   font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
+  font-weight: var(--expressa-font-weight-regular);
   letter-spacing: normal;
   text-transform: none;
   white-space: nowrap;
@@ -139,19 +133,16 @@ function handleKeydown(event: KeyboardEvent, value: T): void {
   display: flex;
   align-items: center;
   padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border-radius: var(--expressa-radius-pill);
+  border-bottom: var(--expressa-border-width-strong) solid transparent;
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-surface-raised);
 }
 
-.filter-tab__check {
-  margin-inline-end: var(--expressa-space-4);
-  font-weight: var(--expressa-font-weight-bold);
-}
-
 .filter-tab--selected .filter-tab__visual {
-  color: var(--expressa-color-text-on-accent);
-  background: var(--expressa-color-accent);
+  border-bottom-color: var(--expressa-color-text-primary);
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-control-selected-surface);
+  font-weight: var(--expressa-font-weight-medium);
 }
 
 .filter-tab:disabled {

@@ -10,7 +10,7 @@
       variant="ghost"
       @click="emit('select', section.id)"
     >
-      <AdminSectionIcon :section="section.id" :size="22" />
+      <AdminSectionIcon :section="section.id" />
       <span class="tab-bar-link__label">{{ section.label }}</span>
     </AdminButton>
     <AdminButton
@@ -19,7 +19,7 @@
       variant="ghost"
       @click="emit('logout')"
     >
-      <LogOut aria-hidden="true" :size="22" />
+      <AdminIcon :icon="LogOut" />
       <span class="tab-bar-link__label">Выйти</span>
     </AdminButton>
   </nav>
@@ -29,6 +29,7 @@
 import { LogOut } from "lucide-vue-next";
 
 import AdminButton from "../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminSectionIcon from "./AdminSectionIcon.vue";
 import type { TabBarEmits, TabBarProps } from "./TabBar.types";
 
@@ -83,8 +84,8 @@ const emit = defineEmits<TabBarEmits>();
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
-  font-size: var(--expressa-font-size-caption);
-  line-height: var(--expressa-line-height-caption-compact);
+  font-size: var(--expressa-font-size-action);
+  line-height: var(--expressa-line-height-control);
   text-overflow: ellipsis;
 }
 @media (min-width: 768px) {

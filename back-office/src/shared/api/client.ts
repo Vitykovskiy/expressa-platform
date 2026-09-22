@@ -14,7 +14,9 @@ import {
 import type {
   ApiClientOptions,
   ApiErrorData,
+  ApiErrorPayload,
   ApiRequestOptions,
+  ApiTransportKind,
   ResponseValidator,
 } from "./client.types";
 export { apiClientKey } from "./client.constants";
@@ -22,32 +24,40 @@ export { apiClientKey } from "./client.constants";
 export type {
   ApiClientOptions,
   ApiErrorData,
+  ApiErrorPayload,
   ApiRequestOptions,
+  ApiTransportKind,
   ResponseValidator,
 } from "./client.types";
 
 export class ApiError extends Error implements ApiErrorData {
   readonly code: string;
   readonly details: unknown;
+  readonly occurrenceId: string;
   readonly requestId: string | null;
   readonly retryAfterSeconds: number | null;
   readonly status: number | null;
+  readonly transportKind: ApiTransportKind;
 
   constructor({
     code,
     details,
     message,
+    occurrenceId = createOccurrenceId(),
     requestId,
     retryAfterSeconds = null,
     status = null,
+    transportKind = "response",
   }: ApiErrorData) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.details = details;
+    this.occurrenceId = occurrenceId;
     this.requestId = requestId;
     this.retryAfterSeconds = retryAfterSeconds;
     this.status = status;
+    this.transportKind = transportKind;
   }
 }
 
@@ -70,7 +80,7 @@ export class ApiClient {
     const payload =
       response.status === noContentStatus
         ? undefined
-        : await this.readPayload(response);
+        : await this.readPayload(response, requestOptions);
 
     if (!response.ok) {
       throw this.createApiError(payload, response, response.status);
@@ -83,6 +93,7 @@ export class ApiClient {
         message: apiStatusContractErrorMessage,
         requestId: response.headers.get("x-request-id"),
         status: response.status,
+        transportKind: "contract",
       });
     }
 
@@ -93,6 +104,7 @@ export class ApiClient {
         message: apiResponseContractErrorMessage,
         requestId: response.headers.get("x-request-id"),
         status: response.status,
+        transportKind: "contract",
       });
     }
 
@@ -103,11 +115,25 @@ export class ApiClient {
     path: string,
     options: ApiRequestOptions,
   ): Promise<Response> {
+    let request: RequestInit;
+    let url: string;
+
     try {
-      return await this.fetcher(
-        this.createUrl(path),
-        this.createRequest(options),
-      );
+      url = this.createUrl(path);
+      request = this.createRequest(options);
+    } catch (error) {
+      throw new ApiError({
+        code: apiContractErrorCode,
+        details: error,
+        message: apiResponseContractErrorMessage,
+        requestId: null,
+        status: null,
+        transportKind: "client",
+      });
+    }
+
+    try {
+      return await this.fetcher(url, request);
     } catch (error) {
       throw new ApiError({
         code: networkErrorCode,
@@ -115,6 +141,7 @@ export class ApiClient {
         message: networkErrorMessage,
         requestId: null,
         status: null,
+        transportKind: transportKindFor(error, options.abortKind),
       });
     }
   }
@@ -124,6 +151,8 @@ export class ApiClient {
     headers,
     ...options
   }: ApiRequestOptions): RequestInit {
+    delete options.abortKind;
+
     if (body === undefined) {
       return { ...options, headers };
     }
@@ -150,10 +179,25 @@ export class ApiClient {
     return new URL(normalizedPath, `${this.baseUrl}/`).toString();
   }
 
-  private async readPayload(response: Response): Promise<unknown> {
+  private async readPayload(
+    response: Response,
+    options: ApiRequestOptions,
+  ): Promise<unknown> {
     try {
       return await response.json();
-    } catch {
+    } catch (error) {
+      const transportKind = transportKindFor(error, options.abortKind);
+      if (transportKind === "cancelled" || transportKind === "timeout") {
+        throw new ApiError({
+          code: networkErrorCode,
+          details: error,
+          message: networkErrorMessage,
+          requestId: response.headers.get("x-request-id"),
+          status: response.status,
+          transportKind,
+        });
+      }
+
       return null;
     }
   }
@@ -167,8 +211,16 @@ export class ApiClient {
       response.headers.get("retry-after"),
     );
     const requestId = response.headers.get("x-request-id");
-    if (isApiErrorData(payload)) {
-      return new ApiError({ ...payload, retryAfterSeconds, status });
+    if (isApiErrorPayload(payload)) {
+      return new ApiError({
+        code: payload.code,
+        details: payload.details,
+        message: payload.message,
+        requestId: requestId ?? payload.requestId,
+        retryAfterSeconds,
+        status,
+        transportKind: "response",
+      });
     }
 
     return new ApiError({
@@ -179,6 +231,10 @@ export class ApiClient {
       status,
     });
   }
+}
+
+function createOccurrenceId(): string {
+  return crypto.randomUUID();
 }
 
 function parseRetryAfter(value: string | null): number | null {
@@ -200,21 +256,45 @@ function matchesExpectedStatus(
     : expectedStatus.includes(status);
 }
 
-function isApiErrorData(value: unknown): value is ApiErrorData {
+function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
+    hasOwn(value, "code") &&
     typeof value.code === "string" &&
+    hasOwn(value, "message") &&
     typeof value.message === "string" &&
-    "details" in value &&
+    hasOwn(value, "details") &&
+    hasOwn(value, "requestId") &&
     (typeof value.requestId === "string" || value.requestId === null)
   );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOwn(value: object, key: PropertyKey): boolean {
+  return Object.hasOwn(value, key);
+}
+
+function transportKindFor(
+  error: unknown,
+  abortKind: ApiRequestOptions["abortKind"],
+): ApiTransportKind {
+  if (isTimeoutError(error)) return "timeout";
+  if (isAbortError(error) && abortKind !== undefined) return "cancelled";
+  return "network";
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "TimeoutError";
 }
 
 export function createApiClient(

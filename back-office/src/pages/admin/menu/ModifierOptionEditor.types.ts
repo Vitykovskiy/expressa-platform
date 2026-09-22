@@ -24,17 +24,11 @@ export interface ModifierOptionEditorProps {
   modelValue: ModifierOptionDraft;
   disabled?: boolean;
   fieldErrors?: Partial<Record<ModifierOptionFormField, string>>;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  positionLabel: string;
 }
 
 export interface ModifierOptionEditorEmits {
   "update:modelValue": [value: ModifierOptionDraft];
   touch: [field: ModifierOptionFormField];
-  remove: [];
-  moveUp: [];
-  moveDown: [];
 }
 
 export function createModifierOptionDraft(

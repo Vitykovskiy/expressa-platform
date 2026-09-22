@@ -4,9 +4,7 @@ export type AdminRequestStatePanelAnnouncementMode =
 export interface AdminRequestStatePanelProps {
   actionLabel: string;
   announcementMode?: AdminRequestStatePanelAnnouncementMode;
-  body: string;
   code?: string;
-  disclosureLabel?: string;
   focusOnAppear?: boolean;
   pending?: boolean;
   pendingLabel?: string;
@@ -16,5 +14,4 @@ export interface AdminRequestStatePanelProps {
 
 export interface AdminRequestStatePanelEmits {
   action: [];
-  copied: [];
 }

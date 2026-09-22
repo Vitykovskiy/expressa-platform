@@ -27,6 +27,17 @@ cp .env.example .env.local
 npm run dev
 ```
 
+## Каталог интерфейса
+
+Storybook показывает изолированные компоненты, диалоги, screen-композиции и состояния back-office
+на статических fixture-данных. API, авторизация и пользовательские сценарии для
+него не нужны; route pages и пользовательские journey намеренно не переносятся.
+
+```sh
+npm run storybook
+npm run storybook:build
+```
+
 `.env.local` задаёт обязательные `VITE_APP_ENV=local` и
 `VITE_API_BASE_URL=/`. Vite проксирует same-origin `/api/v2` и `/api/v3` на
 `http://localhost:3000`; для другого backend origin задайте
@@ -52,6 +63,7 @@ npm run typecheck
 npm test -- --run
 npm run build
 npm run contract:check
+npm run storybook:build
 ```
 
 Отдельный browser/E2E-набор не ведётся. Пользовательские потоки принимают

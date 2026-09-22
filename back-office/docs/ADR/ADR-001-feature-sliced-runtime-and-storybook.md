@@ -2,14 +2,15 @@
 title: ADR-001 runtime-слои и изоляция Storybook
 type: adr
 owner: back-office
-last_verified: 2026-08-11
+last_verified: 2026-09-22
 sources:
   - ../../AGENTS.md
+  - ../../.storybook/main.ts
+  - ../../.storybook/preview.ts
+  - ../../.storybook/stories/
 ---
 
 # ADR-001: runtime-слои и изоляция Storybook
-
-> Runtime-слои остаются действующим решением. Storybook-часть ниже сохранена как история и заменена [ADR-004](../../../docs/20-architecture/ADR/ADR-004-remove-storybook.md).
 
 ## Контекст
 
@@ -19,10 +20,17 @@ sources:
 
 Runtime следует направлению `app -> pages -> widgets -> features -> entities -> shared`. Административные экраны находятся в `src/pages/admin`, оболочка — в `src/widgets/admin-shell`, общие административные примитивы — в `src/shared/ui/admin`.
 
-## Историческая часть: Storybook
+## Storybook
 
-До [ADR-004](../../../docs/20-architecture/ADR/ADR-004-remove-storybook.md) каталог UI находился в `.storybook`; его истории импортировали runtime-код.
+Storybook и его истории находятся в `.storybook` вне `src`,
+чтобы runtime оставался свободен от каталоговых артефактов. Истории используют
+только статические fixture-данные и прямые props/emits: API, авторизация и
+пользовательские маршруты для просмотра состояний не требуются. В каталог входят
+изолируемые компоненты, элементы, диалоги, prop-driven screen-композиции и части
+оболочки; route pages и контейнеры, которым нужны API или пользовательские flows,
+исключены.
 
 ## Последствия
 
-Пути импортов сохраняют направление между runtime-слоями. Историческая граница Storybook не участвует в текущих проверках.
+Пути импортов сохраняют направление между runtime-слоями. Storybook не добавляет
+API-зависимостей в компоненты и запускается командами из [README](../../README.md#каталог-интерфейса).

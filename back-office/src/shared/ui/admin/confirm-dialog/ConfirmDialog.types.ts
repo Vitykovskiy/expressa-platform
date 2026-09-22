@@ -11,7 +11,6 @@ export interface ConfirmDialogProps {
   confirmVariant?: ConfirmVariant;
   cancelLabel?: string;
   requireInput?: boolean;
-  inputPlaceholder?: string;
   pending?: boolean;
   error?: string;
 }

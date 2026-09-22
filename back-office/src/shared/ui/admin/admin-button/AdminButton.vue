@@ -4,7 +4,8 @@
     v-bind="attrs"
     class="admin-button"
     :class="`admin-button--${props.variant}`"
-    :disabled="props.disabled"
+    :aria-busy="props.pending || undefined"
+    :disabled="props.disabled || props.pending"
     :type="props.type"
     @click="emit('click', $event)"
   >
@@ -58,7 +59,9 @@ defineExpose({ focus });
 .admin-button:disabled {
   pointer-events: none;
   cursor: not-allowed;
-  opacity: var(--expressa-state-disabled-opacity);
+  color: var(--expressa-color-text-muted);
+  background: var(--expressa-color-control-disabled-surface);
+  border-color: var(--expressa-color-border);
 }
 
 .admin-button:active:not(:disabled) {

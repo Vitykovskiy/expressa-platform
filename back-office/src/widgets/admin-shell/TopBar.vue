@@ -29,7 +29,7 @@ const slots = defineSlots<{ action?(): unknown }>();
 
 <style scoped lang="scss">
 .top-bar {
-  --top-bar-action-icon-size: 22px;
+  --top-bar-action-icon-size: var(--expressa-size-icon-action);
 
   position: relative;
   display: flex;
@@ -56,7 +56,7 @@ const slots = defineSlots<{ action?(): unknown }>();
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
-  line-height: 28px;
+  line-height: var(--expressa-line-height-title);
 }
 .top-bar-action {
   display: flex;

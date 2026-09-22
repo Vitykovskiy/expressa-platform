@@ -1,7 +1,7 @@
 <template>
   <div class="menu-overview">
     <div class="menu-overview__toolbar">
-      <div class="menu-overview__actions">
+      <AdminActionGroup class="menu-overview__actions">
         <AdminButton
           ref="addCategoryAction"
           type="button"
@@ -15,7 +15,7 @@
           @click="emit('addProduct')"
           >Добавить товар</AdminButton
         >
-      </div>
+      </AdminActionGroup>
       <AdminButton
         ref="reorderAction"
         type="button"
@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import MenuCategoryGroup from "./MenuCategoryGroup.vue";
 import MenuModifierGroupRow from "./MenuModifierGroupRow.vue";
 import {
@@ -123,21 +124,15 @@ function productsFor(categoryId: string) {
 .menu-overview__toolbar {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.menu-overview__actions {
-  display: flex;
-  gap: 8px;
+  gap: var(--expressa-space-md);
+  margin-bottom: var(--expressa-space-lg);
 }
 .menu-overview h2 {
-  font-size: 16px;
+  font-size: var(--expressa-font-size-body);
   text-transform: none;
   color: var(--expressa-color-text-secondary);
 }
 .menu-overview__list {
-  border: 1px solid var(--expressa-color-border);
-  border-radius: 12px;
   overflow: visible;
 }
 .menu-overview__summary,
@@ -149,10 +144,8 @@ function productsFor(categoryId: string) {
 }
 .menu-overview__empty {
   display: grid;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--expressa-color-border);
-  border-radius: 12px;
+  gap: var(--expressa-space-control-inline);
+  padding: var(--expressa-space-md);
 }
 @media (max-width: 767px) {
   .menu-overview__toolbar {

@@ -11,27 +11,40 @@
           </h2>
         </header>
         <div class="settings-form__section-content">
-          <label class="settings-form__field" for="settings-working-hours-open">
-            <span>Открытие</span>
-            <AdminTextField
-              id="settings-working-hours-open"
-              v-model="draft.workingHoursOpen"
-              class="settings-form__input"
-              type="time"
-            />
-          </label>
-          <label
-            class="settings-form__field"
-            for="settings-working-hours-close"
+          <AdminFieldWrapper
+            id="settings-working-hours-open"
+            v-slot="field"
+            label="Открытие"
+            required
           >
-            <span>Закрытие</span>
             <AdminTextField
-              id="settings-working-hours-close"
-              v-model="draft.workingHoursClose"
+              :id="field.controlId"
+              v-model="draft.workingHoursOpen"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               class="settings-form__input"
+              :required="field.required"
               type="time"
             />
-          </label>
+          </AdminFieldWrapper>
+          <AdminFieldWrapper
+            id="settings-working-hours-close"
+            v-slot="field"
+            label="Закрытие"
+            required
+          >
+            <AdminTextField
+              :id="field.controlId"
+              v-model="draft.workingHoursClose"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
+              class="settings-form__input"
+              :required="field.required"
+              type="time"
+            />
+          </AdminFieldWrapper>
         </div>
       </section>
 
@@ -45,20 +58,25 @@
           </h2>
         </header>
         <div class="settings-form__section-content">
-          <label class="settings-form__field" for="settings-slot-capacity">
-            <span>Вместимость слота (заказов)</span>
+          <AdminFieldWrapper
+            id="settings-slot-capacity"
+            v-slot="field"
+            label="Вместимость слота (заказов)"
+            required
+          >
             <AdminTextField
-              id="settings-slot-capacity"
+              :id="field.controlId"
               v-model.number="draft.slotCapacity"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               class="settings-form__input"
               max="50"
               min="1"
+              :required="field.required"
               type="number"
             />
-          </label>
-          <p class="settings-form__hint">
-            Сколько активных заказов помещается в один 10-минутный слот
-          </p>
+          </AdminFieldWrapper>
         </div>
       </section>
     </div>
@@ -76,6 +94,7 @@ import { reactive, watch } from "vue";
 
 import type { Settings } from "../../../shared/ui/admin/Admin.types";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import type {
   SettingsFormEmits,
@@ -134,26 +153,16 @@ function save() {
 .settings-form__section-title {
   margin: 0;
   color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  letter-spacing: 0.025em;
-  line-height: var(--expressa-line-height-body);
-  text-transform: uppercase;
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-semibold);
+  letter-spacing: var(--expressa-letter-spacing-section-title);
+  line-height: var(--expressa-line-height-heading);
 }
 
 .settings-form__section-content {
   display: grid;
   gap: var(--expressa-space-md);
   padding: var(--expressa-space-md);
-}
-
-.settings-form__field {
-  display: grid;
-  gap: var(--expressa-space-field-label);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-body);
 }
 
 .settings-form__input {
@@ -177,19 +186,6 @@ function save() {
   outline: var(--expressa-border-width-strong) solid
     color-mix(in srgb, var(--expressa-color-accent) 20%, transparent);
   outline-offset: 0;
-}
-
-.settings-form__hint {
-  margin: var(--expressa-space-field-label) 0 0;
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
-  line-height: calc(
-    var(--expressa-font-size-caption) + var(--expressa-space-xs)
-  );
-}
-
-.settings-form__section--slots .settings-form__section-content {
-  gap: 0;
 }
 
 .settings-form__actions {

@@ -14,7 +14,7 @@
         type="button"
         variant="ghost"
       >
-        <span aria-hidden="true">⋮</span>
+        <AdminIcon :icon="MoreVertical" />
       </AdminButton>
     </template>
 
@@ -32,11 +32,15 @@
           variant="ghost"
           @click="selectAction(action)"
         >
-          <span class="action-menu-item__icon" aria-hidden="true">
-            {{
-              action === "change_role" ? "✓" : action === "unblock" ? "↗" : "×"
-            }}
-          </span>
+          <AdminIcon
+            :icon="
+              action === 'change_role'
+                ? Check
+                : action === 'unblock'
+                  ? ArrowUpRight
+                  : X
+            "
+          />
           {{ USER_ACTION_LABELS[action] }}
         </AdminButton>
         <div
@@ -50,9 +54,11 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowUpRight, Check, MoreVertical, X } from "lucide-vue-next";
 import { nextTick, shallowRef, useTemplateRef } from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import { USER_ACTION_LABELS } from "./UserActionMenu.constants";
 import type {
   UserActionMenuAction,
@@ -108,17 +114,15 @@ function selectAction(action: UserActionMenuAction): void {
   padding: var(--expressa-space-xs) 0;
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  border-radius: var(--expressa-radius-md);
+  border-radius: var(--expressa-radius-panel);
   background: var(--expressa-color-surface);
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 10%),
-    0 4px 6px -4px rgb(0 0 0 / 10%);
+  box-shadow: var(--expressa-shadow-menu);
 }
 .action-menu-item {
   display: flex;
-  min-height: 39.5px;
+  min-height: var(--expressa-size-control-min-height);
   align-items: center;
-  gap: 10px;
+  gap: var(--expressa-space-sm);
   padding: var(--expressa-space-control-block)
     var(--expressa-space-control-inline);
   border: var(--expressa-border-width-none);
@@ -131,16 +135,12 @@ function selectAction(action: UserActionMenuAction): void {
   text-align: left;
 }
 .action-menu-item__icon {
-  display: inline-grid;
-  width: 14px;
-  height: 14px;
-  place-items: center;
-  font-size: 14px;
-  line-height: 1;
+  width: var(--expressa-size-icon-action);
+  height: var(--expressa-size-icon-action);
 }
 .action-menu-divider {
   height: var(--expressa-border-width-default);
-  margin: 2px 0;
+  margin: var(--expressa-space-2xs) 0;
   background: var(--expressa-color-surface-raised);
 }
 .action-menu-item:hover,

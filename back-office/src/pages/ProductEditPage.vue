@@ -9,9 +9,6 @@
         ><span aria-hidden="true"> / </span><span>Редактировать товар</span>
       </nav>
       <h1 ref="title" tabindex="-1">Редактировать товар</h1>
-      <p v-if="saveError" ref="error" role="alert" tabindex="-1">
-        {{ saveError }}
-      </p>
       <section
         v-if="errorMessages.length"
         ref="validationSummary"
@@ -34,30 +31,56 @@
         @cancel="cancel"
         @save="save"
       >
-        <label class="product-edit-page__field"
-          >Название товара <AdminTextField v-model="name" :disabled="pending"
-        /></label>
-        <label class="product-edit-page__field"
-          >Категория
-          <CategoryCombobox
-            v-model="categoryId"
-            :categories="catalogStore.categories"
+        <AdminFieldWrapper
+          :id="nameFieldId"
+          v-slot="field"
+          label="Название товара"
+          required
+        >
+          <AdminTextField
+            :id="field.controlId"
+            v-model="name"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
             :disabled="pending"
-        /></label>
-        <label class="product-edit-page__field"
-          >Описание — необязательно <span>Короткое описание для гостей</span
-          ><AdminTextarea
+            :required="field.required"
+          />
+        </AdminFieldWrapper>
+        <AdminFieldWrapper
+          :id="categoryFieldId"
+          v-slot="field"
+          label="Категория"
+          required
+        >
+          <AdminCombobox
+            :id="field.controlId"
+            v-model="categoryId"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
+            :options="categoryOptions"
+            :disabled="pending"
+            :required="field.required"
+          />
+        </AdminFieldWrapper>
+        <AdminFieldWrapper
+          :id="descriptionFieldId"
+          v-slot="field"
+          :error="descriptionError"
+          label="Описание"
+        >
+          <AdminTextarea
+            :id="field.controlId"
             v-model="description"
             class="product-edit-page__description"
-            :aria-invalid="Boolean(descriptionError)"
+            :aria-describedby="field.describedBy"
+            :aria-invalid="field.invalid"
+            :aria-required="field.required"
             :disabled="pending"
-          /><span>{{ description.length }} из 240</span
-          ><span
-            v-if="descriptionError"
-            class="product-edit-page__field-error"
-            >{{ descriptionError }}</span
-          ></label
-        >
+            :required="field.required"
+          />
+        </AdminFieldWrapper>
         <section class="product-edit-page__section">
           <h2>Цены и порции</h2>
           <PriceChoicesEditor
@@ -76,22 +99,14 @@
               :disabled="pending"
             />
           </div>
-          <p>
-            Товар виден покупателям, если публикация включена и доступен хотя бы
-            один вариант.
-          </p>
         </section>
         <section class="product-edit-page__archive">
           <h2>Архив</h2>
-          <p>Товар будет скрыт из меню. История заказов сохранится.</p>
           <AdminButton
             :disabled="pending"
             type="button"
             variant="destructive"
-            @click="
-              archiveError = null;
-              archiveOpen = true;
-            "
+            @click="archiveOpen = true"
             >Архивировать товар</AdminButton
           >
         </section>
@@ -108,7 +123,6 @@
       confirm-label="Архивировать товар"
       confirm-variant="destructive"
       :description="`Товар «${product?.name ?? ''}» будет скрыт из меню. История заказов сохранится.`"
-      :error="archiveError ?? undefined"
       :pending="pending"
       :title="`Архивировать товар «${product?.name ?? ''}»?`"
       @confirm="archive"
@@ -139,11 +153,12 @@ import {
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "../app/session.store";
 import AdminButton from "../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminCombobox from "../shared/ui/admin/admin-combobox/AdminCombobox.vue";
+import AdminFieldWrapper from "../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminTextarea from "../shared/ui/admin/admin-textarea/AdminTextarea.vue";
 import AdminTextField from "../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import ConfirmDialog from "../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
-import CategoryCombobox from "./admin/menu/product-edit/CategoryCombobox.vue";
 import PriceChoicesEditor from "./admin/menu/product-edit/PriceChoicesEditor.vue";
 import ProductEditForm from "./admin/menu/product-edit/ProductEditForm.vue";
 import { priceChoiceDrafts } from "./admin/menu/product-edit/useProductDraft";
@@ -156,20 +171,26 @@ const router = useRouter();
 const session = useSessionStore();
 const catalogStore = useCatalogStore();
 const title = useTemplateRef<HTMLElement>("title");
-const error = useTemplateRef<HTMLElement>("error");
 const validationSummary = useTemplateRef<HTMLElement>("validationSummary");
 const savedStatus = useTemplateRef<HTMLElement>("savedStatus");
 const publicationLabelId = `product-publication-${useId()}`;
+const nameFieldId = `product-name-${useId()}`;
+const categoryFieldId = `product-category-${useId()}`;
+const descriptionFieldId = `product-description-${useId()}`;
 const pending = shallowRef(false);
 const loaded = shallowRef(false);
 const archiveOpen = shallowRef(false);
-const archiveError = shallowRef<string | null>(null);
 const discardOpen = shallowRef(false);
 const discardTarget = shallowRef<string | null>(null);
 const saved = shallowRef(false);
-const saveError = shallowRef<string | null>(null);
 const product = computed(() =>
   catalogStore.products.find((item) => item.id === route.params.productId),
+);
+const categoryOptions = computed(() =>
+  catalogStore.categories.map((category) => ({
+    id: category.id,
+    label: category.name,
+  })),
 );
 const name = shallowRef("");
 const categoryId = shallowRef("");
@@ -251,7 +272,6 @@ async function save(): Promise<void> {
   const item = product.value;
   if (!item || !session.accessToken || pending.value || !valid.value) return;
   pending.value = true;
-  saveError.value = null;
   await catalogStore.updateProduct(session.accessToken, item.id, {
     categoryId: categoryId.value,
     name: name.value.trim(),
@@ -281,17 +301,12 @@ async function save(): Promise<void> {
     saved.value = true;
     await nextTick();
     savedStatus.value?.focus();
-  } else {
-    saveError.value = "Не удалось сохранить изменения. Повторите попытку.";
-    await nextTick();
-    error.value?.focus();
   }
 }
 async function archive(): Promise<void> {
   const item = product.value;
   if (!item || !session.accessToken || pending.value) return;
   pending.value = true;
-  archiveError.value = null;
   await catalogStore.archiveProduct(session.accessToken, item.id);
   pending.value = false;
   if (catalogStore.lastCommandSucceeded)
@@ -299,7 +314,6 @@ async function archive(): Promise<void> {
       path: "/menu",
       query: { focusProduct: item.id, focusCategory: item.categoryId },
     });
-  else archiveError.value = "Не удалось архивировать товар. Повторите попытку.";
 }
 async function cancel(): Promise<void> {
   const item = product.value;
@@ -349,43 +363,44 @@ onBeforeUnmount(() =>
 <style scoped lang="scss">
 .product-edit-page__main {
   width: 100%;
-  max-width: 960px;
+  max-width: var(--expressa-size-users-content-max-width);
   margin: auto;
-  padding: 32px;
+  padding: var(--expressa-space-xl);
 }
 .product-edit-page__field,
 .product-edit-page__section {
   display: grid;
-  gap: 8px;
+  gap: var(--expressa-space-sm);
 }
 .product-edit-page__field span {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-caption);
 }
 .product-edit-page__description {
-  min-height: 96px;
+  min-height: var(--expressa-size-textarea-min-height);
 }
 .product-edit-page__toggle {
   display: flex;
   justify-content: space-between;
-  min-height: 44px;
+  min-height: var(--expressa-size-control-min-height);
   align-items: center;
 }
 .product-edit-page__archive {
-  border-top: 1px solid var(--expressa-color-border);
-  padding-top: 24px;
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  padding-top: var(--expressa-space-lg);
 }
 .product-edit-page__missing {
-  max-width: 800px;
+  max-width: var(--expressa-size-users-content-max-width);
   margin: auto;
-  padding: 32px;
+  padding: var(--expressa-space-xl);
   display: grid;
-  gap: 16px;
+  gap: var(--expressa-space-md);
 }
 @media (max-width: 599px) {
   .product-edit-page__main,
   .product-edit-page__missing {
-    padding: 16px;
+    padding: var(--expressa-space-16);
   }
 }
 </style>

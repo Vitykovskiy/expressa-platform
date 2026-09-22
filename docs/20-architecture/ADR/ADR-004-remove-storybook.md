@@ -1,32 +1,40 @@
 ---
-title: Удаление Storybook
-description: Завершение использования Storybook в клиентах Expressa.
+title: Изолированный каталог интерфейса в Storybook
+description: Возврат Storybook как независимого каталога UI клиентов Expressa.
 type: adr
 area: architecture
 status: accepted
-supersedes:
-  - ADR-003-local-application-documentation-and-storybook.md
-  - front-office ADR-001-runtime-and-storybook-boundaries (часть Storybook)
-  - back-office ADR-001-feature-sliced-runtime-and-storybook (часть Storybook)
 owner: root
-last_verified: 2026-08-15
+last_verified: 2026-09-22
 sources:
   - ../../../front-office/package.json
+  - ../../../front-office/.storybook/main.ts
   - ../../../back-office/package.json
+  - ../../../back-office/.storybook/main.ts
 ---
 
-# ADR-004. Удаление Storybook
+# ADR-004. Изолированный каталог интерфейса в Storybook
 
 ## Контекст
 
-Storybook выполнил задачу каталога UI. Дальнейшая поддержка отдельных
-конфигураций, историй и команд не даёт текущей ценности и мешает сопровождению.
+Проверка UI только через runtime требует API, авторизации и воспроизведения
+сценариев. Это не позволяет ревьюеру быстро увидеть полный набор визуальных
+состояний компонентов и диалогов.
 
 ## Решение
 
-Storybook удаляется из `front-office` и `back-office`. UI проверяется в runtime
+Каждый клиент поддерживает свой Storybook в `.storybook`. Каталог импортирует
+runtime-компоненты из `src`, но runtime не импортирует Storybook. Истории
+используют статические fixtures и decorators: сеть, API, авторизация и
+прохождение пользовательских сценариев не нужны.
+
+В каталог входят атомарные компоненты, feature-компоненты, диалоги и shell с
+явными состояниями. Route pages, полные страницы и journey stories не входят:
+они требуют навигации вместо прямого выбора состояния.
 
 ## Последствия
 
-Команды и зависимости Storybook больше не поддерживаются. ADR-003 и части
-локальных ADR-001 о Storybook сохранены только как история.
+Storybook — часть каждого клиентского контура и его зависимостей. Наличие
+конфигурации и историй не утверждает полноту инвентаризации: её отдельно
+подтверждает независимая живая проверка. Историческое решение ADR-004 об
+удалении заменено этим текстом.

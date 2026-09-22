@@ -6,9 +6,6 @@
     <h2 class="empty-state__title">
       {{ title }}
     </h2>
-    <p class="empty-state__description">
-      {{ description }}
-    </p>
   </section>
 </template>
 
@@ -56,16 +53,6 @@ defineSlots<{
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
   line-height: var(--expressa-line-height-title);
-  overflow-wrap: anywhere;
-}
-
-.empty-state__description {
-  width: 100%;
-  min-width: 0;
-  max-width: min(100%, 48ch);
-  margin: 0;
-  font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
   overflow-wrap: anywhere;
 }
 </style>

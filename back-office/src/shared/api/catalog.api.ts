@@ -5,6 +5,7 @@ import {
   catalogUuidPattern,
 } from "./catalog.api.constants";
 import { ApiClient, ApiError } from "./client";
+import type { ApiTransportKind } from "./client.types";
 import type {
   Catalog,
   AdminV3CatalogResponseDto,
@@ -32,23 +33,32 @@ import type {
 
 export class CatalogApiError extends Error implements CatalogApiErrorData {
   readonly code: string;
+  readonly details: unknown;
   readonly fields: readonly CatalogValidationField[];
+  readonly occurrenceId: string;
   readonly requestId: string | null;
   readonly status: number | null;
+  readonly transportKind: ApiTransportKind;
 
   constructor({
     code,
     fields,
+    details = fields,
     message,
+    occurrenceId = crypto.randomUUID(),
     requestId,
     status,
+    transportKind = "response",
   }: CatalogApiErrorData) {
     super(message);
     this.name = "CatalogApiError";
     this.code = code;
+    this.details = details;
     this.fields = fields;
+    this.occurrenceId = occurrenceId;
     this.requestId = requestId;
     this.status = status;
+    this.transportKind = transportKind;
   }
 }
 
@@ -321,10 +331,13 @@ function toCatalogApiError(error: unknown): CatalogApiError {
   if (!(error instanceof ApiError)) {
     return new CatalogApiError({
       code: "API_CONTRACT_ERROR",
+      details: null,
       fields: [],
       message: "Catalog API returned an invalid error.",
+      occurrenceId: crypto.randomUUID(),
       requestId: null,
       status: null,
+      transportKind: "contract",
     });
   }
 
@@ -335,17 +348,25 @@ function toCatalogApiError(error: unknown): CatalogApiError {
 
   return new CatalogApiError({
     code: fields === null ? "API_CONTRACT_ERROR" : error.code,
+    details: error.details,
     fields: fields ?? [],
     message: error.message,
+    occurrenceId: error.occurrenceId,
     requestId: error.requestId,
     status: error.status,
+    transportKind: error.transportKind,
   });
 }
 
 function toCatalogValidationFields(
   value: unknown,
 ): readonly CatalogValidationField[] | null {
-  if (!isRecord(value) || !Array.isArray(value.fields)) {
+  if (
+    !isRecord(value) ||
+    !Object.hasOwn(value, "fields") ||
+    Object.keys(value).length !== 1 ||
+    !Array.isArray(value.fields)
+  ) {
     return null;
   }
 

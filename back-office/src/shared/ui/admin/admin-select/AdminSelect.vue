@@ -32,6 +32,7 @@ defineSlots<{ default(): unknown }>();
 
 <style scoped lang="scss">
 .admin-select {
+  color-scheme: light;
   width: 100%;
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
@@ -46,9 +47,15 @@ defineSlots<{ default(): unknown }>();
     background-color var(--expressa-motion-duration-control) ease-out;
 }
 
+.admin-select option {
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-surface);
+}
+
 .admin-select:disabled {
   cursor: not-allowed;
-  opacity: var(--expressa-state-disabled-opacity);
+  opacity: 1;
+  color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-control-disabled-surface);
 }
 

@@ -1,19 +1,15 @@
 import { defineStore } from "pinia";
 
 import { ApiError } from "../shared/api/client";
-import { getSessionStoreDependencies } from "./session.store.dependencies";
 import {
-  otpRateLimitedMessage,
-  otpInvalidMessage,
-  otpExpiredMessage,
-  otpRequestFailedMessage,
-  otpVerifyFailedMessage,
-  sessionErrorMessage,
-  staffRoles,
-} from "./session.store.constants";
+  getOperationPort,
+  type OperationContext,
+  type OperationResult,
+} from "../shared/lib/operations/operation-port";
+import { getSessionStoreDependencies } from "./session.store.dependencies";
+import { sessionErrorMessage, staffRoles } from "./session.store.constants";
 import type {
   SessionStoreDependencies,
-  SessionStoreError,
   SessionStoreState,
   StaffSessionUser,
 } from "./session.store.types";
@@ -21,6 +17,22 @@ import type { AuthCurrentUser } from "../shared/api/auth.api.types";
 
 export function createSessionStore(dependencies: SessionStoreDependencies) {
   let restorePromise: Promise<void> | null = null;
+  let sessionEpoch = crypto.randomUUID();
+  const operationPort = getOperationPort();
+  const operationContext = (
+    operationKey: string,
+    resourceKey: string,
+    kind: OperationContext["kind"],
+    fieldTargets?: OperationContext["fieldTargets"],
+  ): OperationContext => ({
+    attemptId: crypto.randomUUID(),
+    epoch: sessionEpoch,
+    fieldTargets,
+    kind,
+    operationKey,
+    origin: kind === "read" ? "automatic" : "user",
+    resourceKey,
+  });
 
   return defineStore("session", {
     state: (): SessionStoreState => ({
@@ -32,33 +44,49 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
     }),
     actions: {
       async requestOtp(phone: string) {
-        try {
-          const metadata = await dependencies.authApi.requestOtp(phone);
-
+        const result = await operationPort.run(
+          operationContext("auth.otp.request", "otp", "mutation", {
+            phone: { path: "phone" },
+          }),
+          () => dependencies.authApi.requestOtp(phone),
+        );
+        if (result.status === "success") {
           this.error = null;
           this.otpRetryAfterSeconds = null;
-          return metadata;
-        } catch (error) {
+          return result.value;
+        }
+        if (result.status !== "cancelled") {
+          const error = "error" in result ? result.error : null;
           this.otpRetryAfterSeconds =
             error instanceof ApiError && error.code === "AUTH_RATE_LIMITED"
               ? error.retryAfterSeconds
               : null;
-          this.handleApiFailure(error, otpRequestFailedMessage);
-          return null;
+          this.applyFieldFailure(result);
         }
+        return null;
       },
 
       async verifyOtp(phone: string, code: string): Promise<void> {
-        try {
-          const access = await dependencies.authApi.verifyOtp(phone, code);
-          const user = await dependencies.authApi.getCurrentUser(
-            access.accessToken,
+        const result = await operationPort.run(
+          operationContext("auth.otp.verify", "otp", "mutation", {
+            code: { path: "code" },
+          }),
+          () => dependencies.authApi.verifyOtp(phone, code),
+        );
+        if (result.status === "success") {
+          const access = result.value;
+          const userResult = await operationPort.run(
+            operationContext("auth.current-user", "session", "read"),
+            () => dependencies.authApi.getCurrentUser(access.accessToken),
           );
-
-          await this.completeAuthentication(access.accessToken, user);
-        } catch (error) {
-          this.handleApiFailure(error, otpVerifyFailedMessage);
+          if (userResult.status !== "success") return;
+          await this.completeAuthentication(
+            access.accessToken,
+            userResult.value,
+          );
+          return;
         }
+        if (result.status !== "cancelled") this.applyFieldFailure(result);
       },
 
       restore(): Promise<void> {
@@ -72,10 +100,17 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
             const user = await dependencies.authApi.getCurrentUser(
               access.accessToken,
             );
-
             await this.completeAuthentication(access.accessToken, user);
           } catch (error) {
-            this.handleApiFailure(error);
+            if (error instanceof ApiError && error.status === 401) {
+              this.setAnonymous();
+              return;
+            }
+            await operationPort.run(
+              operationContext("session.restore", "session", "read"),
+              () => Promise.reject(error),
+            );
+            this.setAnonymous();
           }
         })().finally(() => {
           restorePromise = null;
@@ -108,11 +143,12 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       async logout(): Promise<void> {
-        try {
-          await dependencies.authApi.logout();
+        const result = await operationPort.run(
+          operationContext("session.logout", "session", "mutation"),
+          () => dependencies.authApi.logout(),
+        );
+        if (result.status === "success") {
           this.setAnonymous();
-        } catch (error) {
-          this.handleApiFailure(error);
         }
       },
 
@@ -128,32 +164,26 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           return;
         }
 
-        try {
-          await dependencies.authApi.logout();
-        } catch (error) {
-          this.error = toSessionStoreError(error);
-        }
+        await operationPort.run(
+          operationContext("session.denied.logout", "session", "mutation"),
+          () => dependencies.authApi.logout(),
+        );
 
         this.accessToken = null;
         this.currentUser = null;
         this.status = "denied";
       },
 
-      handleApiFailure(error: unknown, message = sessionErrorMessage): void {
-        if (
-          error instanceof ApiError &&
-          error.status === 401 &&
-          error.code !== "AUTH_CODE_INVALID" &&
-          error.code !== "AUTH_CODE_EXPIRED"
-        ) {
-          this.setAnonymous();
-          return;
-        }
-
-        this.error = toSessionStoreError(error, message);
+      applyFieldFailure(result: OperationResult<unknown>): void {
+        this.error =
+          result.status === "fieldValidation" && result.fields[0] !== undefined
+            ? { message: result.fields[0].message }
+            : null;
       },
 
       setAnonymous(): void {
+        operationPort.clearSession(sessionEpoch);
+        sessionEpoch = crypto.randomUUID();
         this.accessToken = null;
         this.currentUser = null;
         this.error = null;
@@ -170,31 +200,4 @@ export const useSessionStore = createSessionStore(
 
 function isStaffUser(value: AuthCurrentUser): value is StaffSessionUser {
   return staffRoles.some((role) => role === value.role);
-}
-
-function toSessionStoreError(
-  error: unknown,
-  fallbackMessage = sessionErrorMessage,
-): SessionStoreError {
-  if (error instanceof ApiError) {
-    if (error.code === "AUTH_RATE_LIMITED") {
-      return {
-        message:
-          error.retryAfterSeconds === null ||
-          error.retryAfterSeconds === undefined
-            ? otpRateLimitedMessage
-            : `Повторно запросить код можно через ${error.retryAfterSeconds} с.`,
-        requestId: error.requestId,
-      };
-    }
-
-    if (error.code === "AUTH_CODE_INVALID")
-      return { message: otpInvalidMessage, requestId: error.requestId };
-    if (error.code === "AUTH_CODE_EXPIRED")
-      return { message: otpExpiredMessage, requestId: error.requestId };
-
-    return { message: fallbackMessage, requestId: error.requestId };
-  }
-
-  return { message: fallbackMessage, requestId: null };
 }

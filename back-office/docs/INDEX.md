@@ -1,7 +1,7 @@
 ---
 type: index
 owner: back-office
-last_verified: 2026-08-11
+last_verified: 2026-09-22
 sources:
   - ../src/app/router.ts
   - ../src/pages/MenuPage.vue
@@ -14,6 +14,10 @@ Back-office — отдельное Vue-приложение сотруднико
 ## Запуск и проверка
 
 - [README приложения](../README.md) задаёт Node.js, установку и основные команды.
+- [Каталог интерфейса](../README.md#каталог-интерфейса) запускает Storybook с
+  прямыми состояниями компонентов, диалогов и prop-driven screen-композиций без
+  API, авторизации и сценариев; route pages и контейнеры, которым нужны API или
+  пользовательские flows, не входят в каталог.
 - [Правила области](../AGENTS.md) задают границы автономного контура и Definition of Done.
 - [Проверки](../../back-office/package.json) перечислены в `package.json`.
 - [Покрытие](COVERAGE.md) связывает маршруты, runtime, API и тесты с нормативными нотами.

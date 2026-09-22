@@ -14,11 +14,7 @@
         :aria-expanded="props.expanded"
         :aria-label="`Открыть категорию ${props.category.name}`"
         @click="emit('toggle', props.category)"
-        ><ChevronDown
-          v-if="props.expanded"
-          :size="18"
-          aria-hidden="true"
-        /><ChevronRight v-else :size="18" aria-hidden="true" /><span
+        ><AdminIcon :icon="props.expanded ? ChevronDown : ChevronRight" /><span
           class="menu-category__copy"
           ><span class="menu-category__name">{{ props.category.name }}</span
           ><span class="menu-category__count">{{ countLabel }}</span></span
@@ -31,7 +27,7 @@
         :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
         >Редактировать</AdminButton
-      ><button
+      ><AdminButton
         ref="moreTrigger"
         class="menu-category__more"
         type="button"
@@ -41,7 +37,7 @@
         @click="openOverflow"
       >
         Ещё
-      </button>
+      </AdminButton>
       <div
         v-if="overflowOpen"
         class="menu-category__menu"
@@ -49,7 +45,7 @@
         :aria-label="`Действия с категорией ${props.category.name}`"
         @keydown.escape.stop="closeOverflow"
       >
-        <button
+        <AdminButton
           ref="menuItem"
           role="menuitem"
           type="button"
@@ -57,7 +53,7 @@
           @click="selectEdit"
         >
           Редактировать
-        </button>
+        </AdminButton>
       </div>
     </header>
     <div v-if="props.expanded">
@@ -78,9 +74,17 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch,
+} from "vue";
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import MenuProductRow from "./MenuProductRow.vue";
 import { productCountLabel } from "./catalog-formatters";
 import type {
@@ -91,8 +95,8 @@ const props = defineProps<MenuCategoryGroupProps>();
 const emit = defineEmits<MenuCategoryGroupEmits>();
 const overflowOpen = ref(false),
   root = ref<HTMLElement | null>(null),
-  moreTrigger = ref<HTMLButtonElement | null>(null),
-  menuItem = ref<HTMLButtonElement | null>(null);
+  moreTrigger = useTemplateRef<InstanceType<typeof AdminButton>>("moreTrigger"),
+  menuItem = useTemplateRef<InstanceType<typeof AdminButton>>("menuItem");
 const countLabel = computed(() => productCountLabel(props.products.length));
 function closeOverflow() {
   overflowOpen.value = false;
@@ -130,30 +134,22 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
 }
 .menu-category--highlighted {
   .menu-category__header {
-    animation: category-highlight 2s ease-out;
-  }
-}
-@keyframes category-highlight {
-  from {
     background: var(--expressa-color-status-success-surface);
-  }
-  to {
-    background: var(--expressa-color-surface);
   }
 }
 .menu-category__header {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  block-size: 64px;
+  min-block-size: var(--expressa-size-row-min);
   background: var(--expressa-color-surface-raised);
 }
 .menu-category__toggle {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  gap: var(--expressa-space-sm);
+  padding: 0 var(--expressa-space-md);
   text-align: left;
 }
 .menu-category__copy {
@@ -176,13 +172,9 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
 }
 .menu-category__desktop-edit,
 .menu-category__more {
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  margin-inline-end: 16px;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-accent);
-  font: inherit;
+  min-inline-size: var(--expressa-size-control-min-height);
+  min-block-size: var(--expressa-size-control-min-height);
+  margin-inline-end: var(--expressa-space-md);
 }
 .menu-category__more,
 .menu-category__menu {
@@ -190,8 +182,9 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
 }
 .menu-category__empty {
   margin: 0;
-  padding: 16px;
-  border-top: 1px solid var(--expressa-color-border);
+  padding: var(--expressa-space-md);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 @media (max-width: 767px) {
   .menu-category__desktop-edit {
@@ -199,28 +192,26 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
   }
   .menu-category__more {
     display: block;
-    margin-inline-end: 10px;
+    margin-inline-end: var(--expressa-space-sm);
   }
   .menu-category__menu {
     position: absolute;
-    z-index: 3;
-    inset-block-start: 56px;
-    inset-inline-end: 8px;
+    z-index: 20;
+    inset-block-start: var(--expressa-size-row-min);
+    inset-inline-end: var(--expressa-space-sm);
     display: block;
-    min-inline-size: 176px;
-    padding: 8px;
-    border: 1px solid var(--expressa-color-border);
-    border-radius: 12px;
+    min-inline-size: var(--expressa-size-menu-min-width);
+    padding: var(--expressa-space-sm);
+    border: var(--expressa-border-width-default) solid
+      var(--expressa-color-border);
+    border-radius: var(--expressa-radius-panel);
     background: var(--expressa-color-surface);
     box-shadow: var(--expressa-shadow-menu);
   }
-  .menu-category__menu button {
-    min-block-size: 44px;
+  .menu-category__menu .admin-button {
+    min-block-size: var(--expressa-size-control-min-height);
     width: 100%;
-    border: 0;
-    background: transparent;
     text-align: left;
-    font: inherit;
   }
 }
 </style>

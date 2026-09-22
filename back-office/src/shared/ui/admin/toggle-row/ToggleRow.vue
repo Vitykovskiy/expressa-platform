@@ -55,16 +55,17 @@ function updateModel(value: boolean | null) {
 
 .toggle-row-label {
   color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-body-strong);
-  font-weight: var(--expressa-font-weight-semibold);
+  font-size: var(--expressa-font-size-action);
+  font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-control);
   overflow-wrap: anywhere;
 }
 
 .toggle-row-sublabel {
-  margin-top: var(--expressa-space-2xs);
+  margin-top: var(--expressa-space-field-label);
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
-  line-height: calc(var(--expressa-font-size-caption) * 4 / 3);
+  line-height: var(--expressa-line-height-caption);
   overflow-wrap: anywhere;
 }
 

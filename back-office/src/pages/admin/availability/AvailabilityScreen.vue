@@ -8,39 +8,38 @@
         Доступность
       </h1>
       <div class="availability-screen__toolbar">
-        <label class="availability-screen__search" for="availability-search">
-          <span class="availability-screen__search-label">{{
-            availabilityMessages.searchLabel
-          }}</span>
+        <AdminFieldWrapper
+          id="availability-search"
+          v-slot="field"
+          class="availability-screen__search"
+          :label="availabilityMessages.searchLabel"
+        >
           <span class="availability-screen__search-control">
             <AdminTextField
-              id="availability-search"
-              :aria-describedby="searchHintId"
-              :disabled="isAuthorizationError"
+              :id="field.controlId"
+              :aria-describedby="field.describedBy"
+              :aria-invalid="field.invalid"
+              :aria-required="field.required"
               :model-value="props.search"
-              :placeholder="availabilityMessages.searchPlaceholder"
+              :required="field.required"
               type="search"
               @keydown="handleSearchKeydown"
               @update:model-value="emit('update:search', $event)"
             />
             <AdminButton
-              v-if="props.search && !isAuthorizationError"
+              v-if="props.search"
               aria-label="Очистить поиск"
               class="availability-screen__clear-search"
               variant="ghost"
               @click="emit('update:search', '')"
-              >×</AdminButton
-            >
+              ><AdminIcon :icon="X"
+            /></AdminButton>
           </span>
-          <span :id="searchHintId" class="availability-screen__hint">{{
-            isAuthorizationError ? "Недоступно, пока не выполнен вход" : ""
-          }}</span>
-        </label>
+        </AdminFieldWrapper>
         <FilterTabs
           v-if="categoryTabs.length > 1"
           :model-value="props.activeCategory ?? AVAILABILITY_ALL_CATEGORY"
           class="availability-screen__tabs"
-          :disabled="isAuthorizationError"
           :items="categoryTabs"
           layout="responsive"
           @update:model-value="emit('update:activeCategory', $event)"
@@ -57,24 +56,11 @@
           class="availability-screen__loading-row"
         />
       </section>
-      <AdminRequestStatePanel
-        v-else-if="props.error !== null"
-        :action-label="errorAction"
-        :announcement-mode="props.errorFocus ? 'alert' : 'none'"
-        :body="errorBody"
-        :code="props.error.code"
-        :focus-on-appear="props.errorFocus"
-        :pending="props.accessRecoveryPending"
-        :pending-label="isAuthorizationError ? 'Переходим…' : 'Повторяем…'"
-        :request-id="props.error.requestId ?? ''"
-        :title="errorTitle"
-        @action="recover"
-      />
       <section v-if="props.intake !== null" class="availability-screen__ready">
         <section class="availability-screen__intake">
           <h2 class="availability-screen__intake-title">Приём заказов</h2>
           <ToggleRow
-            :disabled="props.saving || isAuthorizationError"
+            :disabled="props.saving"
             :label="availabilityMessages.intakeLabel"
             :model-value="props.intake.acceptsNewOrders"
             :sublabel="intakeSublabel"
@@ -83,18 +69,12 @@
         </section>
         <EmptyState
           v-if="groupedItems.length === 0"
-          :description="
-            hasItems
-              ? 'Измените запрос.'
-              : availabilityMessages.emptyDescription
-          "
           :title="
             hasItems
               ? availabilityMessages.emptyFilteredTitle
               : availabilityMessages.emptyTitle
           "
-          ><template #icon
-            ><ToggleRight :size="48" :stroke-width="1.5" /></template
+          ><template #icon><AdminIcon :icon="ToggleRight" /></template
         ></EmptyState>
         <AdminButton
           v-if="hasItems && groupedItems.length === 0"
@@ -108,7 +88,7 @@
             v-for="group in groupedItems"
             :key="group.id"
             :category="group.name"
-            :disabled="props.saving || isAuthorizationError"
+            :disabled="props.saving"
             :items="group.items"
             @availability-change="
               (item, value) => emit('availability-change', item, value)
@@ -121,10 +101,11 @@
 </template>
 
 <script setup lang="ts">
-import { ToggleRight } from "lucide-vue-next";
-import { computed, useId } from "vue";
+import { ToggleRight, X } from "lucide-vue-next";
+import { computed } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
-import AdminRequestStatePanel from "../../../shared/ui/admin/request-state-panel/AdminRequestStatePanel.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import EmptyState from "../../../shared/ui/admin/empty-state/EmptyState.vue";
 import FilterTabs from "../../../shared/ui/admin/filter-tabs/FilterTabs.vue";
@@ -143,11 +124,6 @@ import type {
 
 const props = defineProps<AvailabilityScreenProps>();
 const emit = defineEmits<AvailabilityScreenEmits>();
-const searchHintId = `availability-search-hint-${useId()}`;
-const isAuthorizationError = computed(
-  () => props.error?.code === "UNAUTHORIZED",
-);
-const isPermissionError = computed(() => props.error?.status === 403);
 const categories = computed(() => [
   AVAILABILITY_ALL_CATEGORY,
   ...props.groups.map((group) => group.id),
@@ -187,29 +163,6 @@ const groupedItems = computed(() => {
 const hasItems = computed(() =>
   props.groups.some((group) => group.items.length > 0),
 );
-const errorTitle = computed(() =>
-  isPermissionError.value
-    ? "Нет доступа к разделу"
-    : isAuthorizationError.value
-      ? "Сессия завершена"
-      : "Не удалось загрузить данные",
-);
-const errorBody = computed(() =>
-  props.error?.code === "LOGIN_NAVIGATION_ERROR"
-    ? "Не удалось открыть страницу входа. Повторите попытку."
-    : isPermissionError.value
-      ? "Обратитесь к администратору, чтобы получить доступ."
-      : isAuthorizationError.value
-        ? "Войдите снова, чтобы продолжить работу."
-        : "Проверьте подключение к интернету и повторите попытку.",
-);
-const errorAction = computed(() =>
-  isPermissionError.value
-    ? "Вернуться назад"
-    : isAuthorizationError.value
-      ? "Войти снова"
-      : "Повторить",
-);
 const intakeSublabel = computed(() => {
   if (props.intake === null) return "";
   if (props.intake.updatedAt === null)
@@ -218,17 +171,6 @@ const intakeSublabel = computed(() => {
       : availabilityMessages.intakeOff;
   return `Изменил ${props.intake.updatedByLabel ?? "Неизвестный сотрудник"} ${new Date(props.intake.updatedAt).toLocaleString("ru-RU")}`;
 });
-function recover(): void {
-  if (isPermissionError.value) {
-    emit("go-back");
-    return;
-  }
-  if (isAuthorizationError.value) {
-    emit("restore-access");
-    return;
-  }
-  emit("retry");
-}
 function updateIntake(value: boolean): void {
   emit("intake-change", value);
 }
@@ -247,7 +189,7 @@ function handleSearchKeydown(event: KeyboardEvent): void {
   background: var(--expressa-color-surface-raised);
 }
 .availability-screen__page {
-  width: min(100%, 1200px);
+  width: min(100%, var(--expressa-size-editor-context-max-width));
   margin: 0 auto;
   padding: var(--expressa-space-16) var(--expressa-space-16)
     var(--expressa-space-48);
@@ -255,9 +197,9 @@ function handleSearchKeydown(event: KeyboardEvent): void {
 .availability-screen__title {
   margin: 0 0 var(--expressa-space-24);
   color: var(--expressa-color-text-primary);
-  font-size: 28px;
-  font-weight: var(--expressa-font-weight-bold);
-  line-height: 36px;
+  font-size: var(--expressa-font-size-screen-title);
+  font-weight: var(--expressa-font-weight-semibold);
+  line-height: var(--expressa-line-height-heading);
 }
 .availability-screen__toolbar {
   display: flex;
@@ -267,10 +209,9 @@ function handleSearchKeydown(event: KeyboardEvent): void {
 }
 .availability-screen__search {
   display: grid;
-  width: min(100%, 640px);
+  width: 100%;
   gap: var(--expressa-space-4);
 }
-.availability-screen__search-label,
 .availability-screen__intake-title {
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-semibold);
@@ -282,23 +223,17 @@ function handleSearchKeydown(event: KeyboardEvent): void {
   position: absolute;
   top: 0;
   right: 0;
-  width: var(--expressa-size-control-min-height);
+  inline-size: var(--expressa-size-control-min-height);
   padding: 0;
-  font-size: 24px;
-}
-.availability-screen__hint {
-  min-height: 18px;
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-caption);
 }
 .availability-screen__loading,
 .availability-screen__ready,
-.availability-screen__page > :deep(.request-state-panel) {
+.availability-screen__recovery {
   margin-top: var(--expressa-space-24);
 }
 .availability-screen__loading {
   display: grid;
-  width: min(100%, 720px);
+  width: 100%;
   gap: var(--expressa-space-8);
 }
 .availability-screen__loading-row {
@@ -335,11 +270,6 @@ function handleSearchKeydown(event: KeyboardEvent): void {
   .availability-screen__title {
     font-size: var(--expressa-font-size-screen-title);
     line-height: var(--expressa-line-height-heading);
-  }
-}
-@media (max-width: 479px) {
-  .availability-screen__page > :deep(.request-state-panel) {
-    width: 100%;
   }
 }
 @media (max-width: 767px) {

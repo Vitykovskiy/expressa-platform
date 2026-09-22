@@ -13,38 +13,61 @@
       <span>{{ choice.isAvailable ? "Доступен" : "Недоступен" }}</span>
     </button>
     <div v-if="expanded" class="price-choice-row__editor">
-      <label
-        >Цена, ₽<input
-          :value="choice.price"
+      <AdminFieldWrapper
+        :id="priceId"
+        v-slot="field"
+        :error="errors?.price"
+        label="Цена, ₽"
+        required
+      >
+        <AdminTextField
+          :id="field.controlId"
+          :model-value="choice.price"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
+          :disabled="disabled"
           inputmode="numeric"
+          :required="field.required"
+          type="number"
+          @update:model-value="emit('update:price', $event)"
+        />
+      </AdminFieldWrapper>
+      <AdminFieldWrapper
+        :id="portionLabelId"
+        v-slot="field"
+        :error="errors?.portionLabel"
+        label="Порция или размер"
+      >
+        <AdminTextField
+          :id="field.controlId"
+          :model-value="choice.portionLabel"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
           :disabled="disabled"
-          :aria-invalid="Boolean(errors?.price)"
-          @input="
-            emit('update:price', ($event.target as HTMLInputElement).value)
-          "
-      /></label>
-      <label
-        >Порция или размер<input
-          :value="choice.portionLabel"
-          :disabled="disabled"
-          :aria-invalid="Boolean(errors?.portionLabel)"
-          @input="
-            emit(
-              'update:portionLabel',
-              ($event.target as HTMLInputElement).value,
-            )
-          "
-      /></label>
-      <label
-        >Доступен для заказа
+          :required="field.required"
+          @update:model-value="emit('update:portionLabel', $event)"
+        />
+      </AdminFieldWrapper>
+      <AdminFieldWrapper
+        :id="availabilityId"
+        v-slot="field"
+        label="Доступен для заказа"
+        layout="row"
+      >
         <AdminToggle
+          :id="field.controlId"
+          :aria-labelledby="field.labelId"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
           :model-value="choice.isAvailable"
           :disabled="disabled"
           @update:model-value="emit('update:isAvailable', $event === true)"
-      /></label>
-      <p v-if="errors?.price" role="alert">{{ errors.price }}</p>
-      <p v-if="errors?.portionLabel" role="alert">{{ errors.portionLabel }}</p>
-      <div>
+        />
+      </AdminFieldWrapper>
+      <AdminActionGroup>
         <AdminButton
           type="button"
           variant="ghost"
@@ -64,12 +87,16 @@
           @click="emit('remove')"
           >Удалить цену</AdminButton
         >
-      </div>
+      </AdminActionGroup>
     </div>
   </article>
 </template>
 <script setup lang="ts">
+import { useId } from "vue";
 import AdminButton from "../../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminActionGroup from "../../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
+import AdminFieldWrapper from "../../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
+import AdminTextField from "../../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
 import AdminToggle from "../../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import type { ProductPriceChoiceDraft } from "./useProductDraft.types";
 defineProps<{
@@ -80,6 +107,9 @@ defineProps<{
   errors?: { price?: string; portionLabel?: string };
   last: boolean;
 }>();
+const priceId = `price-choice-price-${useId()}`;
+const portionLabelId = `price-choice-portion-${useId()}`;
+const availabilityId = `price-choice-availability-${useId()}`;
 const emit = defineEmits<{
   move: [offset: -1 | 1];
   remove: [];

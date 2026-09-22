@@ -161,6 +161,7 @@ const availableActions = computed<readonly UserAction[]>(() => [
   border-radius: var(--expressa-radius-pill);
   font-size: var(--expressa-font-size-status);
   font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-control);
   white-space: nowrap;
 }
 
@@ -181,8 +182,8 @@ const availableActions = computed<readonly UserAction[]>(() => [
 }
 
 .user-status--no-role {
-  color: #f57f17;
-  background: #fff8e1;
+  color: var(--expressa-color-status-warning);
+  background: var(--expressa-color-status-warning-surface);
 }
 
 .user-phone {
@@ -191,6 +192,7 @@ const availableActions = computed<readonly UserAction[]>(() => [
   overflow: hidden;
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
+  line-height: var(--expressa-line-height-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

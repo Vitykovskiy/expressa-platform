@@ -9,6 +9,7 @@ export const MODIFIER_SELECTION_TYPE_OPTIONS: readonly ModifierSelectionTypeOpti
 
 export const MODIFIER_GROUP_EDITOR_DEFAULTS = {
   disabled: false,
+  embedded: false,
   loading: false,
   errorMessage: "",
   fieldErrors: () => ({}),

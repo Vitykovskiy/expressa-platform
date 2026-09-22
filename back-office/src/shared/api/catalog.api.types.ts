@@ -1,4 +1,5 @@
 import type { catalogModifierSelectionTypes } from "./catalog.api.constants";
+import type { ApiTransportKind } from "./client.types";
 
 export type CatalogModifierSelectionType =
   (typeof catalogModifierSelectionTypes)[number];
@@ -122,10 +123,13 @@ export interface CatalogValidationField {
 
 export interface CatalogApiErrorData {
   code: string;
+  details?: unknown;
   fields: readonly CatalogValidationField[];
   message: string;
+  occurrenceId?: string;
   requestId: string | null;
   status: number | null;
+  transportKind?: ApiTransportKind;
 }
 
 export interface CatalogCategoryDto {

@@ -12,18 +12,14 @@
     </div>
 
     <div class="order-card__time">
-      <Clock :size="14" aria-hidden="true" />
+      <AdminIcon :icon="Clock" size="status" />
       <span class="order-card__time-value">{{
         formatDate(props.order.createdAt)
       }}</span>
     </div>
 
-    <p class="order-card__summary">
-      {{
-        props.details === null
-          ? "Откройте детали, чтобы увидеть состав заказа"
-          : itemsSummary
-      }}
+    <p v-if="props.details !== null" class="order-card__summary">
+      {{ itemsSummary }}
     </p>
     <p class="order-card__total">{{ formatMoney(props.order.total) }}</p>
 
@@ -36,11 +32,9 @@
       {{
         props.detailsLoading
           ? "Загрузка деталей…"
-          : props.detailsError !== null
-            ? "Повторить загрузку деталей"
-            : props.details === null
-              ? "Открыть детали"
-              : "Скрыть детали"
+          : props.details === null
+            ? "Открыть детали"
+            : "Скрыть детали"
       }}
     </AdminButton>
 
@@ -49,33 +43,8 @@
       class="order-card__loading"
       aria-live="polite"
     >
-      Загрузка деталей…
+      <AdminProgress label="Загрузка деталей…" />
     </div>
-    <section
-      v-else-if="props.detailsError !== null"
-      class="order-card__details order-card__details-error"
-      :aria-label="`Ошибка загрузки деталей заказа ${props.order.number}`"
-    >
-      <h2>Не удалось загрузить детали заказа</h2>
-      <p>Повторите загрузку деталей.</p>
-      <details class="order-card__diagnostics">
-        <summary>Технические подробности</summary>
-        <dl>
-          <div>
-            <dt>Код</dt>
-            <dd>{{ props.detailsError.code }}</dd>
-          </div>
-          <div>
-            <dt>Сообщение</dt>
-            <dd>{{ props.detailsError.message }}</dd>
-          </div>
-          <div v-if="props.detailsError.requestId">
-            <dt>Номер запроса</dt>
-            <dd>{{ props.detailsError.requestId }}</dd>
-          </div>
-        </dl>
-      </details>
-    </section>
     <section
       v-else-if="props.details !== null"
       class="order-card__details"
@@ -131,6 +100,8 @@ import { computed } from "vue";
 import { Clock } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
+import AdminProgress from "../../../shared/ui/admin/admin-progress/AdminProgress.vue";
 import { orderActions, orderStages } from "./OrderCard.constants";
 import type { OrderCardEmits, OrderCardProps } from "./OrderCard.types";
 
@@ -206,8 +177,8 @@ function formatMoney(value: number): string {
   flex: 0 0 auto;
   padding: var(--expressa-space-badge-block) var(--expressa-space-control-block);
   border-radius: var(--expressa-radius-pill);
-  font-size: var(--expressa-font-size-caption);
-  line-height: var(--expressa-line-height-caption-compact);
+  font-size: var(--expressa-font-size-status);
+  line-height: var(--expressa-line-height-control);
   white-space: nowrap;
 }
 .order-card__stage[data-tone="success"] {
@@ -269,13 +240,8 @@ function formatMoney(value: number): string {
     var(--expressa-color-border);
 }
 .order-card__details-error h2,
-.order-card__details-error p,
-.order-card__diagnostics dl {
+.order-card__details-error p {
   margin: 0;
-}
-.order-card__diagnostics dd {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 .order-card__customer {
   color: var(--expressa-color-text-primary);

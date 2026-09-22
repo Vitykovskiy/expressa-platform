@@ -33,6 +33,8 @@ export interface ModifierSelectionTypeOption {
 }
 
 export interface ModifierGroupEditorProps {
+  embedded?: boolean;
+  formId?: string;
   group: ModifierGroup | null;
   disabled?: boolean;
   loading?: boolean;

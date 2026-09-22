@@ -53,13 +53,14 @@ function toggle(): void {
 .admin-toggle__track {
   display: inline-flex;
   box-sizing: border-box;
-  width: var(--expressa-size-control-min-height);
-  height: var(--expressa-size-status-min-height);
+  width: var(--expressa-size-switch-track-inline);
+  height: var(--expressa-size-switch-track-block);
   align-items: center;
   padding: var(--expressa-space-2xs);
   border-radius: var(--expressa-radius-pill);
   background: var(--expressa-color-border-strong);
-  transition: background var(--expressa-motion-duration-control) ease-in-out;
+  transition: background var(--expressa-motion-duration-control)
+    var(--expressa-motion-ease-state);
 }
 
 .admin-toggle[aria-checked="true"] .admin-toggle__track {
@@ -69,7 +70,13 @@ function toggle(): void {
 
 .admin-toggle:disabled {
   cursor: not-allowed;
-  opacity: var(--expressa-state-disabled-opacity);
+  color: var(--expressa-color-text-muted);
+}
+
+.admin-toggle:disabled .admin-toggle__track {
+  background: var(--expressa-color-control-disabled-surface);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 
 .admin-toggle:focus-visible {
@@ -78,12 +85,8 @@ function toggle(): void {
 }
 
 .admin-toggle__thumb {
-  width: calc(
-    var(--expressa-size-status-min-height) - var(--expressa-space-xs)
-  );
-  height: calc(
-    var(--expressa-size-status-min-height) - var(--expressa-space-xs)
-  );
+  width: var(--expressa-size-switch-thumb);
+  height: var(--expressa-size-switch-thumb);
   border-radius: var(--expressa-radius-pill);
   background: var(--expressa-color-surface);
 }

@@ -1,75 +1,79 @@
 <template>
   <div class="price-fields">
-    <label :for="priceId" class="price-fields__label">Цена, ₽</label>
-    <AdminTextField
+    <AdminFieldWrapper
       :id="priceId"
-      v-model="price"
-      :aria-describedby="priceMessage ? priceErrorId : undefined"
-      :aria-invalid="Boolean(priceMessage)"
-      :disabled="props.disabled"
-      inputmode="numeric"
-      min="0"
-      type="number"
-      @blur="emit('blur:price')"
-    />
-    <p
-      v-if="priceMessage"
-      :id="priceErrorId"
-      class="price-fields__error"
-      role="alert"
+      v-slot="field"
+      :error="priceMessage"
+      label="Цена, ₽"
+      required
     >
-      {{ priceMessage }}
-    </p>
+      <AdminTextField
+        :id="field.controlId"
+        v-model="price"
+        :aria-describedby="field.describedBy"
+        :aria-invalid="field.invalid"
+        :aria-required="field.required"
+        :disabled="props.disabled"
+        :required="field.required"
+        inputmode="numeric"
+        min="0"
+        type="number"
+        @blur="emit('blur:price')"
+      />
+    </AdminFieldWrapper>
 
-    <label :for="portionSelectId" class="price-fields__label">
-      Порция или размер{{ props.requiredLabel ? "" : " (необязательно)" }}
-    </label>
-    <AdminSelect
+    <AdminFieldWrapper
       :id="portionSelectId"
-      v-model="selectedPortionLabel"
-      :aria-describedby="portionLabelMessage ? portionLabelErrorId : undefined"
-      :aria-invalid="Boolean(portionLabelMessage)"
-      :disabled="props.disabled"
-      @blur="emit('blur:portion-label')"
+      v-slot="field"
+      :error="customPortionLabel ? undefined : portionLabelMessage"
+      label="Порция или размер"
+      :required="props.requiredLabel"
     >
-      <option v-if="!props.requiredLabel" value="">Без подписи</option>
-      <option v-else disabled value="">Выберите порцию или размер</option>
-      <option
-        v-for="suggestion in portionLabelSuggestions"
-        :key="suggestion"
-        :value="suggestion"
+      <AdminSelect
+        :id="field.controlId"
+        v-model="selectedPortionLabel"
+        :aria-describedby="field.describedBy"
+        :aria-invalid="field.invalid"
+        :aria-required="field.required"
+        :disabled="props.disabled"
+        :required="field.required"
+        @blur="emit('blur:portion-label')"
       >
-        {{ suggestion }}
-      </option>
-      <option :value="customPortionLabelOption">
-        {{ customPortionLabelOption }}
-      </option>
-    </AdminSelect>
+        <option v-if="!props.requiredLabel" value="">Без подписи</option>
+        <option v-else disabled value="">Выберите порцию или размер</option>
+        <option
+          v-for="suggestion in portionLabelSuggestions"
+          :key="suggestion"
+          :value="suggestion"
+        >
+          {{ suggestion }}
+        </option>
+        <option :value="customPortionLabelOption">
+          {{ customPortionLabelOption }}
+        </option>
+      </AdminSelect>
+    </AdminFieldWrapper>
 
     <template v-if="customPortionLabel">
-      <label :for="customPortionLabelId" class="price-fields__label">
-        Свой вариант
-      </label>
-      <AdminTextField
+      <AdminFieldWrapper
         :id="customPortionLabelId"
-        v-model="portionLabel"
-        :aria-describedby="
-          portionLabelMessage ? portionLabelErrorId : undefined
-        "
-        :aria-invalid="Boolean(portionLabelMessage)"
-        :disabled="props.disabled"
-        @blur="emit('blur:portion-label')"
-      />
+        v-slot="field"
+        :error="portionLabelMessage"
+        label="Свой вариант"
+        :required="props.requiredLabel"
+      >
+        <AdminTextField
+          :id="field.controlId"
+          v-model="portionLabel"
+          :aria-describedby="field.describedBy"
+          :aria-invalid="field.invalid"
+          :aria-required="field.required"
+          :disabled="props.disabled"
+          :required="field.required"
+          @blur="emit('blur:portion-label')"
+        />
+      </AdminFieldWrapper>
     </template>
-
-    <p
-      v-if="portionLabelMessage"
-      :id="portionLabelErrorId"
-      class="price-fields__error"
-      role="alert"
-    >
-      {{ portionLabelMessage }}
-    </p>
   </div>
 </template>
 
@@ -78,6 +82,7 @@ import { computed, shallowRef, useId } from "vue";
 
 import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
+import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import {
   customPortionLabelOption,
   portionLabelSuggestions,
@@ -101,8 +106,6 @@ const customRequested = shallowRef(false);
 const priceId = `price-field-${useId()}`;
 const portionSelectId = `portion-select-${useId()}`;
 const customPortionLabelId = `custom-portion-label-${useId()}`;
-const priceErrorId = `price-field-error-${useId()}`;
-const portionLabelErrorId = `portion-label-error-${useId()}`;
 const priceMessage = computed(() => props.priceError ?? props.error);
 const portionLabelMessage = computed(() => props.portionLabelError);
 const customPortionLabel = computed(
@@ -127,14 +130,5 @@ const selectedPortionLabel = computed({
 .price-fields {
   display: grid;
   gap: var(--expressa-space-2xs);
-}
-
-.price-fields__label {
-  font-weight: var(--expressa-font-weight-semibold);
-}
-
-.price-fields__error {
-  margin: 0;
-  color: var(--expressa-color-status-error);
 }
 </style>

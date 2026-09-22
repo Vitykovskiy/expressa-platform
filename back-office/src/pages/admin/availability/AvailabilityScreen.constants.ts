@@ -1,9 +1,7 @@
 export const AVAILABILITY_ALL_CATEGORY = "all";
 
 export const availabilityMessages = {
-  emptyFilteredDescription: "Измените поиск или выберите другую категорию",
   emptyFilteredTitle: "Ничего не найдено",
-  emptyDescription: "Позиции появятся после добавления в меню",
   emptyTitle: "Меню пусто",
   intakeLabel: "Приём новых заказов",
   intakeOff: "Приём новых заказов остановлен",
