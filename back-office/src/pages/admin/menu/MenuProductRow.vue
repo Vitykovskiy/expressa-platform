@@ -2,7 +2,6 @@
   <div class="menu-product-row">
     <AdminButton
       :id="`menu-product-${props.product.id}`"
-      :aria-label="`Редактировать товар ${props.product.name}`"
       class="menu-product-row__edit"
       type="button"
       variant="ghost"
@@ -23,7 +22,6 @@
       <span class="menu-product-row__order-label">Порядок</span>
       <AdminButton
         :disabled="props.disabled || !props.canMoveUp"
-        :aria-label="`Переместить товар ${props.product.name} вверх`"
         :data-menu-product-order-action="`${props.product.id}:up`"
         class="menu-product-row__move"
         type="button"
@@ -35,7 +33,6 @@
       </AdminButton>
       <AdminButton
         :disabled="props.disabled || !props.canMoveDown"
-        :aria-label="`Переместить товар ${props.product.name} вниз`"
         :data-menu-product-order-action="`${props.product.id}:down`"
         class="menu-product-row__move"
         type="button"
@@ -83,7 +80,7 @@ function formatPrice(price: number): string {
 .menu-product-row {
   display: flex;
   width: 100%;
-  min-height: var(--expressa-size-row-min);
+  min-height: var(--expressa-size-control-min-height);
   align-items: center;
   flex-wrap: wrap;
   color: var(--expressa-color-text-primary);
@@ -100,10 +97,10 @@ function formatPrice(price: number): string {
 .menu-product-row__edit {
   display: flex;
   min-width: 0;
+  align-items: center;
   flex: 1;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-control-block) var(--expressa-space-md)
-    var(--expressa-space-product-indent);
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
   text-align: left;
 }
 

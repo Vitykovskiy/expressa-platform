@@ -3,7 +3,6 @@
     <h1 class="top-bar-title">{{ title }}</h1>
     <AdminButton
       v-if="slots.action"
-      :aria-label="actionLabel"
       class="top-bar-action"
       :disabled="actionDisabled"
       type="button"

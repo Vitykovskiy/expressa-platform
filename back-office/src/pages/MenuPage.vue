@@ -5,15 +5,13 @@
         catalogStore.status === 'loading' && modifierPendingMessage === null
       "
       class="menu-page__state"
-      role="status"
     >
       Загружаем меню…
     </p>
     <template v-if="hasConfirmedCatalog">
-      <div :aria-busy="isBusy" :inert="isBusy" class="menu-page__content">
+      <div :inert="isBusy" class="menu-page__content">
         <MenuOverview
           v-if="!managementOpen"
-          ref="menuOverview"
           :categories="orderedCategories"
           :expanded-category-ids="expandedCategoryIds"
           :highlighted-category-id="highlightedCategoryId"
@@ -75,7 +73,6 @@
       cancel-label="Отмена"
       :dismiss-disabled="modifierDialogPending"
       :model-value="modifierGroupEditorOpen"
-      aria-labelledby="modifier-group-editor-title"
       max-width="800"
       :pending="modifierDialogPending"
       submit-form="modifier-group-editor-form"
@@ -103,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, shallowRef, watch } from "vue";
+import { computed, onMounted, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
@@ -117,7 +114,6 @@ import MenuOverview from "./admin/menu/MenuOverview.vue";
 import type { MenuReorderScope } from "./admin/menu/composables/useMenuReorderDraft.types";
 import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
-import { useDialogFocusLifecycle } from "./admin/menu/composables/useDialogFocusLifecycle";
 import { useCatalogStore } from "./admin/menu/catalog.store";
 import type {
   Category,
@@ -141,12 +137,7 @@ const managementOpen = computed(() => route.query.mode === "reorder");
 const reorderPending = shallowRef(false);
 const reorderSaved = shallowRef(false);
 const reorderPanel = shallowRef<{
-  focusTitle: () => void;
   requestClose: () => void;
-} | null>(null);
-const menuOverview = shallowRef<{
-  focusAddCategoryAction: () => void;
-  focusReorderAction: () => void;
 } | null>(null);
 const selectedCategory = shallowRef<Category | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
@@ -193,7 +184,6 @@ const modifierPendingMessage = computed<string | null>(() => {
     ? "Архивируем группу…"
     : "Сохраняем группу…";
 });
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 
 const orderedCategories = computed(() =>
   [...catalogStore.categories].sort(bySortOrder),
@@ -203,24 +193,7 @@ const categoryFieldErrors = computed(() => catalogStore.fieldErrors);
 const productFieldErrors = computed(() => catalogStore.fieldErrors);
 const modifierFieldErrors = computed(() => catalogStore.fieldErrors);
 
-onMounted(async () => {
-  await loadCatalog();
-  await nextTick();
-  const productId =
-    typeof route.query.focusProduct === "string"
-      ? route.query.focusProduct
-      : null;
-  const categoryId =
-    typeof route.query.focusCategory === "string"
-      ? route.query.focusCategory
-      : null;
-  const target = productId
-    ? document.getElementById(`menu-product-${productId}`)
-    : null;
-  if (target instanceof HTMLElement) target.focus();
-  else if (categoryId)
-    document.getElementById(`category-toggle-${categoryId}`)?.focus();
-});
+onMounted(loadCatalog);
 
 watch(
   () => catalogStore.status,
@@ -228,11 +201,6 @@ watch(
     if (status === "ready") hasConfirmedCatalog.value = true;
   },
 );
-
-watch(modifierGroupEditorOpen, (isOpen, wasOpen) => {
-  if (isOpen && !wasOpen) captureReturnFocus();
-  if (!isOpen && wasOpen) restoreFocus();
-});
 
 function accessToken(): string | null {
   return sessionStore.accessToken;
@@ -279,15 +247,11 @@ async function toggleReorder(): Promise<void> {
   }
   reorderSaved.value = false;
   await setReorderMode(true);
-  await nextTick();
-  reorderPanel.value?.focusTitle();
 }
 
 async function closeReorder(): Promise<void> {
   if (reorderPending.value) return;
   await setReorderMode(false);
-  await nextTick();
-  menuOverview.value?.focusReorderAction();
 }
 
 async function setReorderMode(open: boolean): Promise<void> {
@@ -323,8 +287,6 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
     }
     await setReorderMode(false);
     reorderSaved.value = true;
-    await nextTick();
-    menuOverview.value?.focusReorderAction();
   } catch {
     // Best-effort compensation keeps confirmed server scopes aligned with the original draft.
     for (const scope of confirmed.reverse()) {
@@ -429,10 +391,6 @@ async function createCategory(data: CategoryFormData): Promise<void> {
       }, 2000);
     }
     closeNewCategoryForm(true);
-    if (created) {
-      await nextTick();
-      document.getElementById(`category-toggle-${created.id}`)?.focus();
-    }
   }
 }
 
@@ -490,25 +448,12 @@ async function archiveCategory(categoryId: string): Promise<void> {
     catalogStore.status === "loading"
   )
     return;
-  const categoryIndex = orderedCategories.value.findIndex(
-    (category) => category.id === categoryId,
-  );
-  const adjacentCategoryId =
-    orderedCategories.value[categoryIndex + 1]?.id ??
-    orderedCategories.value[categoryIndex - 1]?.id ??
-    null;
   categoryArchivePending.value = true;
   await catalogStore.archiveCategory(authorizationValue, categoryId);
   categoryArchivePending.value = false;
   if (catalogStore.lastCommandSucceeded) {
     selectedCategory.value = null;
     closeCategoryEditor(true);
-    await nextTick();
-    if (adjacentCategoryId) {
-      document.getElementById(`category-toggle-${adjacentCategoryId}`)?.focus();
-    } else {
-      menuOverview.value?.focusAddCategoryAction();
-    }
   }
 }
 
@@ -807,15 +752,6 @@ function bySortOrder(
     justify-self: start;
     width: fit-content;
   }
-}
-
-.menu-page__visually-hidden {
-  position: absolute;
-  width: var(--expressa-size-visually-hidden);
-  height: var(--expressa-size-visually-hidden);
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 
 @media (max-width: 767px) {

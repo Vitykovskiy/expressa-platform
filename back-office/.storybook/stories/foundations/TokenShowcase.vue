@@ -7,11 +7,7 @@
       </div>
 
       <div class="token-showcase__preview" :style="tokenStyle(item.token)">
-        <div
-          v-if="item.kind === 'color'"
-          class="token-showcase__color"
-          aria-hidden="true"
-        />
+        <div v-if="item.kind === 'color'" class="token-showcase__color" />
         <div
           v-else-if="item.kind === 'typography'"
           class="token-showcase__typography"
@@ -21,39 +17,23 @@
         <div
           v-else-if="item.kind === 'spacing'"
           class="token-showcase__spacing"
-          aria-hidden="true"
         >
           <span />
           <span />
         </div>
-        <div
-          v-else-if="item.kind === 'size'"
-          class="token-showcase__size"
-          aria-hidden="true"
-        />
+        <div v-else-if="item.kind === 'size'" class="token-showcase__size" />
         <div
           v-else-if="item.kind === 'border'"
           class="token-showcase__border"
-          aria-hidden="true"
         />
         <div
           v-else-if="item.kind === 'radius'"
           class="token-showcase__radius"
-          aria-hidden="true"
         />
-        <div
-          v-else-if="item.kind === 'shadow'"
-          class="token-showcase__shadow"
-          aria-hidden="true"
-        >
+        <div v-else-if="item.kind === 'shadow'" class="token-showcase__shadow">
           Card
         </div>
-        <div
-          v-else
-          class="token-showcase__motion"
-          aria-label="Демонстрация длительности при наведении или фокусе"
-          tabindex="0"
-        >
+        <div v-else class="token-showcase__motion">
           <span />
         </div>
       </div>
@@ -218,13 +198,8 @@ function tokenStyle(token: string): CSSProperties {
   transition: transform var(--token-value) var(--expressa-motion-ease-state);
 }
 
-.token-showcase__motion:is(:hover, :focus-visible) span {
+.token-showcase__motion:hover span {
   transform: translateX(calc(100% * 6));
-}
-
-.token-showcase__motion:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 
 .token-showcase__meta {

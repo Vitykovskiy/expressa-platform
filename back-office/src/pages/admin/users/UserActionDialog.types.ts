@@ -5,10 +5,6 @@ import type {
   UserRole,
 } from "../../../shared/ui/admin/Admin.types";
 
-export interface FocusableElement {
-  focus: () => void;
-}
-
 export interface UserActionDialogProps {
   user: User;
   action: UserAction;

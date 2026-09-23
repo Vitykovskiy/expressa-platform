@@ -22,9 +22,6 @@ function render(args: Story["args"]) {
         <AdminTextarea
           :id="field.controlId"
           v-bind="args"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :model-value="modelValue"
           @update:model-value="modelValue = $event"
         />

@@ -12,18 +12,12 @@
     >
       <AdminTextField
         :id="field.controlId"
-        ref="otpInput"
         :model-value="props.otp"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
         autocomplete="one-time-code"
-        autofocus
         inputmode="numeric"
         name="otp"
         :required="field.required"
         @input="normalizeOtpInput"
-        @keydown.enter.prevent="emit('submit')"
       />
     </AdminFieldWrapper>
     <AdminButton class="auth-step__button" :disabled="!valid" type="submit">
@@ -52,7 +46,6 @@
 
 <script setup lang="ts">
 import { ArrowLeft } from "lucide-vue-next";
-import { onMounted, useTemplateRef } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
@@ -61,10 +54,6 @@ import type { OtpStepEmits, OtpStepProps } from "./OtpStep.types";
 
 const props = defineProps<OtpStepProps>();
 
-const otpInput =
-  useTemplateRef<InstanceType<typeof AdminTextField>>("otpInput");
-
-onMounted(() => otpInput.value?.focus());
 const emit = defineEmits<OtpStepEmits>();
 
 function normalizeOtpInput(event: Event): void {

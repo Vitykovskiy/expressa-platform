@@ -4,6 +4,7 @@ export const ADMIN_DIALOG_MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 
 export const ADMIN_DIALOG_DEFAULTS = {
   cancelLabel: "",
+  actionSize: "default" as const,
   closeLabel: "Закрыть диалог",
   dismissDisabled: false,
   modelValue: false,
@@ -14,6 +15,7 @@ export const ADMIN_DIALOG_DEFAULTS = {
   Pick<
     AdminDialogProps,
     | "cancelLabel"
+    | "actionSize"
     | "closeLabel"
     | "dismissDisabled"
     | "modelValue"

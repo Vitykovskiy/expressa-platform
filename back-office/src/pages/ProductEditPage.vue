@@ -1,29 +1,24 @@
 <template>
   <PageShell class="product-edit-page">
-    <section v-if="!loaded" class="product-edit-page__missing" role="status">
+    <section v-if="!loaded" class="product-edit-page__missing">
       Загружаем товар…
     </section>
     <main v-else-if="product" class="product-edit-page__main">
-      <nav aria-label="Хлебные крошки">
-        <RouterLink to="/menu">Меню</RouterLink
-        ><span aria-hidden="true"> / </span><span>Редактировать товар</span>
+      <nav>
+        <RouterLink to="/menu">Меню</RouterLink><span> / </span
+        ><span>Редактировать товар</span>
       </nav>
-      <h1 ref="title" tabindex="-1">Редактировать товар</h1>
+      <h1>Редактировать товар</h1>
       <section
         v-if="errorMessages.length"
-        ref="validationSummary"
         class="product-edit-page__validation"
-        role="alert"
-        tabindex="-1"
       >
         <h2>Проверьте данные</h2>
         <ul>
           <li v-for="message in errorMessages" :key="message">{{ message }}</li>
         </ul>
       </section>
-      <p v-if="saved" ref="savedStatus" role="status" tabindex="-1">
-        Товар сохранён
-      </p>
+      <p v-if="saved">Товар сохранён</p>
       <ProductEditForm
         :dirty="dirty"
         :pending="pending"
@@ -40,9 +35,6 @@
           <AdminTextField
             :id="field.controlId"
             v-model="name"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :disabled="pending"
             :required="field.required"
           />
@@ -56,9 +48,6 @@
           <AdminCombobox
             :id="field.controlId"
             v-model="categoryId"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :options="categoryOptions"
             :disabled="pending"
             :required="field.required"
@@ -74,9 +63,6 @@
             :id="field.controlId"
             v-model="description"
             class="product-edit-page__description"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :disabled="pending"
             :required="field.required"
           />
@@ -93,11 +79,7 @@
           <h2>Публикация</h2>
           <div class="product-edit-page__toggle">
             <strong :id="publicationLabelId">Показывать в меню</strong
-            ><AdminToggle
-              v-model="isActive"
-              :aria-labelledby="publicationLabelId"
-              :disabled="pending"
-            />
+            ><AdminToggle v-model="isActive" :disabled="pending" />
           </div>
         </section>
         <section class="product-edit-page__archive">
@@ -112,7 +94,7 @@
         </section>
       </ProductEditForm>
     </main>
-    <section v-else class="product-edit-page__missing" role="alert">
+    <section v-else class="product-edit-page__missing">
       <h1>Товар не найден</h1>
       <p>Товар мог быть удалён или перемещён.</p>
       <AdminButton type="button" @click="reload">Загрузить меню</AdminButton
@@ -142,11 +124,9 @@
 <script setup lang="ts">
 import {
   computed,
-  nextTick,
   onBeforeUnmount,
   onMounted,
   shallowRef,
-  useTemplateRef,
   watch,
   useId,
 } from "vue";
@@ -170,9 +150,6 @@ const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
 const catalogStore = useCatalogStore();
-const title = useTemplateRef<HTMLElement>("title");
-const validationSummary = useTemplateRef<HTMLElement>("validationSummary");
-const savedStatus = useTemplateRef<HTMLElement>("savedStatus");
 const publicationLabelId = `product-publication-${useId()}`;
 const nameFieldId = `product-name-${useId()}`;
 const categoryFieldId = `product-category-${useId()}`;
@@ -299,8 +276,6 @@ async function save(): Promise<void> {
   if (catalogStore.lastCommandSucceeded) {
     baseline.value = snapshot.value;
     saved.value = true;
-    await nextTick();
-    savedStatus.value?.focus();
   }
 }
 async function archive(): Promise<void> {
@@ -309,17 +284,10 @@ async function archive(): Promise<void> {
   pending.value = true;
   await catalogStore.archiveProduct(session.accessToken, item.id);
   pending.value = false;
-  if (catalogStore.lastCommandSucceeded)
-    await router.push({
-      path: "/menu",
-      query: { focusProduct: item.id, focusCategory: item.categoryId },
-    });
+  if (catalogStore.lastCommandSucceeded) await router.push("/menu");
 }
 async function cancel(): Promise<void> {
-  const item = product.value;
-  const target = item
-    ? `/menu?focusProduct=${encodeURIComponent(item.id)}&focusCategory=${encodeURIComponent(item.categoryId)}`
-    : "/menu";
+  const target = "/menu";
   if (dirty.value) {
     discardTarget.value = target;
     discardOpen.value = true;
@@ -343,8 +311,6 @@ onMounted(async () => {
   await reload();
   fill();
   loaded.value = true;
-  await nextTick();
-  title.value?.focus();
 });
 watch(product, fill);
 watch(snapshot, () => {

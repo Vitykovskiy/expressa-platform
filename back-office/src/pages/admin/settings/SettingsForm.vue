@@ -1,10 +1,7 @@
 <template>
   <form class="settings-form" @submit.prevent="save">
     <div class="settings-form__content">
-      <section
-        class="settings-form__section"
-        aria-labelledby="working-hours-title"
-      >
+      <section class="settings-form__section">
         <header class="settings-form__section-header">
           <h2 id="working-hours-title" class="settings-form__section-title">
             Рабочие часы
@@ -20,9 +17,6 @@
             <AdminTextField
               :id="field.controlId"
               v-model="draft.workingHoursOpen"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               class="settings-form__input"
               :required="field.required"
               type="time"
@@ -37,9 +31,6 @@
             <AdminTextField
               :id="field.controlId"
               v-model="draft.workingHoursClose"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               class="settings-form__input"
               :required="field.required"
               type="time"
@@ -48,10 +39,7 @@
         </div>
       </section>
 
-      <section
-        class="settings-form__section settings-form__section--slots"
-        aria-labelledby="slot-capacity-title"
-      >
+      <section class="settings-form__section settings-form__section--slots">
         <header class="settings-form__section-header">
           <h2 id="slot-capacity-title" class="settings-form__section-title">
             Слоты
@@ -67,9 +55,6 @@
             <AdminTextField
               :id="field.controlId"
               v-model.number="draft.slotCapacity"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               class="settings-form__input"
               max="50"
               min="1"
@@ -180,12 +165,6 @@ function save() {
   line-height: calc(
     var(--expressa-font-size-body) + var(--expressa-space-field-label)
   );
-}
-
-.settings-form__input:focus {
-  outline: var(--expressa-border-width-strong) solid
-    color-mix(in srgb, var(--expressa-color-accent) 20%, transparent);
-  outline-offset: 0;
 }
 
 .settings-form__actions {

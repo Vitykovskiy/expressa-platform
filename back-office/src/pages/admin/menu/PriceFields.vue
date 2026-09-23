@@ -10,9 +10,6 @@
       <AdminTextField
         :id="field.controlId"
         v-model="price"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
         :disabled="props.disabled"
         :required="field.required"
         inputmode="numeric"
@@ -32,13 +29,10 @@
       <AdminSelect
         :id="field.controlId"
         v-model="selectedPortionLabel"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
         :disabled="props.disabled"
         :items="portionOptions"
         :placeholder="
-          props.requiredLabel ? 'Выберите порцию или размер' : 'Без подписи'
+          props.requiredLabel ? 'Выберите порцию или размер' : undefined
         "
         :required="field.required"
         @blur="emit('blur:portion-label')"
@@ -56,9 +50,6 @@
         <AdminTextField
           :id="field.controlId"
           v-model="portionLabel"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="props.disabled"
           :required="field.required"
           @blur="emit('blur:portion-label')"
@@ -125,6 +116,6 @@ const portionOptions = computed(() => [
 <style scoped lang="scss">
 .price-fields {
   display: grid;
-  gap: var(--expressa-space-2xs);
+  gap: var(--expressa-space-md);
 }
 </style>

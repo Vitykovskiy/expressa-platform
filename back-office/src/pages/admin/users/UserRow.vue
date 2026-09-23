@@ -1,6 +1,6 @@
 <template>
   <article class="user-row">
-    <div class="user-avatar" :class="avatarClass" aria-hidden="true">
+    <div class="user-avatar" :class="avatarClass">
       {{ initials }}
     </div>
 

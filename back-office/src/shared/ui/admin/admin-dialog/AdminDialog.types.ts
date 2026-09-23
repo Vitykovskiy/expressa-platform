@@ -1,7 +1,11 @@
-import type { AdminButtonVariant } from "../admin-button/AdminButton.types";
+import type {
+  AdminButtonSize,
+  AdminButtonVariant,
+} from "../admin-button/AdminButton.types";
 
 export interface AdminDialogProps {
   cancelLabel?: string;
+  actionSize?: AdminButtonSize;
   closeLabel?: string;
   dismissDisabled?: boolean;
   fullScreenBelow600?: boolean;

@@ -3,7 +3,6 @@
     <button
       class="price-choice-row__summary"
       type="button"
-      :aria-expanded="expanded"
       @click="emit('toggle')"
     >
       <span
@@ -23,9 +22,6 @@
         <AdminTextField
           :id="field.controlId"
           :model-value="choice.price"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="disabled"
           inputmode="numeric"
           :required="field.required"
@@ -42,9 +38,6 @@
         <AdminTextField
           :id="field.controlId"
           :model-value="choice.portionLabel"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="disabled"
           :required="field.required"
           @update:model-value="emit('update:portionLabel', $event)"
@@ -58,10 +51,6 @@
       >
         <AdminToggle
           :id="field.controlId"
-          :aria-labelledby="field.labelId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :model-value="choice.isAvailable"
           :disabled="disabled"
           @update:model-value="emit('update:isAvailable', $event === true)"

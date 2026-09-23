@@ -6,7 +6,6 @@ export const narrowNotificationViewport = 768;
 
 export const defaultNotificationVisibility: OperationVisibility = {
   availableHeight: Number.POSITIVE_INFINITY,
-  focusedId: null,
   hidden: false,
   hoveredId: null,
   stackFits: true,

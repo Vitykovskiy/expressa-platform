@@ -14,10 +14,7 @@
         </AdminButton>
       </header>
 
-      <section
-        class="users-screen__filters"
-        aria-label="Поиск и фильтры пользователей"
-      >
+      <section class="users-screen__filters">
         <AdminFieldWrapper
           id="users-search"
           v-slot="field"
@@ -28,9 +25,6 @@
             <AdminTextField
               :id="field.controlId"
               v-model="searchQuery"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               class="users-screen__search"
               :required="field.required"
               type="search"
@@ -42,7 +36,7 @@
     </div>
 
     <main class="users-screen__content">
-      <section class="users-screen__list" aria-label="Пользователи">
+      <section class="users-screen__list">
         <EmptyState
           v-if="filteredUsers.length === 0"
           title="Пользователей нет"
@@ -59,7 +53,6 @@
     </main>
 
     <AdminButton
-      aria-label="Добавить"
       class="users-screen__mobile-add"
       type="button"
       @click="isAddDialogOpen = true"
@@ -76,14 +69,14 @@
       @cancel="closeActionDialog"
       @confirm="confirmAction"
     />
-    <v-snackbar v-model="isSnackbarOpen" :timeout="USERS_SNACKBAR_TIMEOUT">
+    <div v-if="isSnackbarOpen" class="users-screen__snackbar">
       {{ snackbarMessage }}
-    </v-snackbar>
+    </div>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { Plus, Search } from "lucide-vue-next";
 
 import type {
@@ -125,6 +118,7 @@ const isActionDialogOpen = shallowRef(false);
 const actionSelection = shallowRef<ActionSelection | null>(null);
 const snackbarMessage = shallowRef("");
 const isSnackbarOpen = shallowRef(false);
+let snackbarTimer: ReturnType<typeof setTimeout> | undefined;
 
 const filteredUsers = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase("ru-RU");
@@ -158,7 +152,13 @@ const filteredUsers = computed(() => {
 function showSnackbar(message: string): void {
   snackbarMessage.value = message;
   isSnackbarOpen.value = true;
+  clearTimeout(snackbarTimer);
+  snackbarTimer = setTimeout(() => {
+    isSnackbarOpen.value = false;
+  }, USERS_SNACKBAR_TIMEOUT);
 }
+
+onBeforeUnmount(() => clearTimeout(snackbarTimer));
 
 function openActionDialog(action: UserAction, user: User): void {
   actionSelection.value = { action, user };
@@ -280,13 +280,15 @@ function confirmAction(role: UserRole | undefined): void {
   min-height: 100%;
 }
 
-.users-screen__search-label {
-  position: absolute;
-  width: var(--expressa-size-visually-hidden);
-  height: var(--expressa-size-visually-hidden);
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+.users-screen__snackbar {
+  position: fixed;
+  z-index: var(--expressa-z-modal-layer);
+  bottom: var(--expressa-space-md);
+  left: var(--expressa-space-md);
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  border-radius: var(--expressa-radius-md);
+  color: var(--expressa-color-surface);
+  background: var(--expressa-color-text-primary);
 }
 
 .users-screen__rows {

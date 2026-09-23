@@ -1,6 +1,5 @@
 <template>
   <textarea
-    ref="textarea"
     v-bind="attrs"
     class="admin-textarea"
     :value="props.modelValue"
@@ -10,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAttrs, useTemplateRef } from "vue";
+import { useAttrs } from "vue";
 import { ADMIN_TEXTAREA_DEFAULTS } from "./AdminTextarea.constants";
 import type {
   AdminTextareaEmits,
@@ -25,7 +24,6 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminTextareaEmits>();
 const attrs = useAttrs();
-const textarea = useTemplateRef<HTMLTextAreaElement>("textarea");
 
 function handleInput(event: InputEvent): void {
   const target = event.target;
@@ -35,19 +33,14 @@ function handleInput(event: InputEvent): void {
   emit("update:modelValue", target.value);
   emit("input", event);
 }
-
-function focus(): void {
-  textarea.value?.focus();
-}
-
-defineExpose({ focus });
 </script>
 
 <style scoped lang="scss">
 .admin-textarea {
   width: 100%;
   min-height: var(--expressa-size-textarea-min-height);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  padding: var(--expressa-space-control-block)
+    var(--expressa-space-control-inline);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
@@ -65,11 +58,6 @@ defineExpose({ focus });
   cursor: not-allowed;
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-control-disabled-surface);
-}
-
-.admin-textarea:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-textarea::placeholder {

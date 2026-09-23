@@ -5,11 +5,7 @@
   >
     <label :id="labelId" :for="props.id" class="admin-field-wrapper__label">
       {{ props.label }}
-      <span
-        v-if="props.required"
-        aria-hidden="true"
-        class="admin-field-wrapper__required"
-      >
+      <span v-if="props.required" class="admin-field-wrapper__required">
         *</span
       >
     </label>
@@ -21,12 +17,7 @@
       :required="props.required"
     />
     <div v-if="props.error" class="admin-field-wrapper__support">
-      <p
-        v-if="props.error"
-        :id="errorId"
-        class="admin-field-wrapper__error"
-        role="alert"
-      >
+      <p v-if="props.error" :id="errorId" class="admin-field-wrapper__error">
         {{ props.error }}
       </p>
     </div>
@@ -67,11 +58,25 @@ const describedBy = computed(() => (props.error ? errorId : undefined));
   gap: var(--expressa-space-field-label);
 }
 .admin-field-wrapper--row {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0;
   align-items: center;
 }
 .admin-field-wrapper--row > .admin-field-wrapper__support {
   grid-column: 1 / -1;
+}
+.admin-field-wrapper--table {
+  gap: var(--expressa-space-2xs);
+}
+.admin-field-wrapper--table > .admin-field-wrapper__label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.admin-field-wrapper--table .admin-field-wrapper__error {
+  font-size: var(--expressa-font-size-caption);
 }
 .admin-field-wrapper__error {
   margin: 0;

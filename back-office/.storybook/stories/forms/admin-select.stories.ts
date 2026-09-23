@@ -36,9 +36,6 @@ function render(args: Story["args"]) {
           <AdminSelect
             :id="field.controlId"
             v-bind="args"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :model-value="value"
             @update:model-value="value = $event"
           />

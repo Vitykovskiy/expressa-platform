@@ -253,7 +253,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.lastCommandSucceeded = false;
       this.formSaveError = null;
       this.formSaveOutcome = "idle";
-      const activeOperation = operationPort
+      const activeOperation = getOperationPort()
         .run(
           catalogContext("catalog.form.save", "catalog", "mutation"),
           mutation,
@@ -268,11 +268,11 @@ export const useCatalogStore = defineStore(catalogStoreId, {
           }
           this.formSaveOutcome = "saved";
           this.lastCommandSucceeded = true;
-          operationPort.publishOutcome(
+          getOperationPort().publishOutcome(
             "catalog.saved",
             catalogContext("catalog.form.save", "catalog", "mutation"),
           );
-          const catalogResult = await operationPort.run(
+          const catalogResult = await getOperationPort().run(
             catalogContext("catalog.reconcile", "catalog", "read"),
             () =>
               getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
@@ -302,7 +302,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.lastCommandSucceeded = false;
       this.resetFormSaveOutcome();
 
-      const activeOperation = operationPort
+      const activeOperation = getOperationPort()
         .run(catalogContext("catalog.read", "catalog", "read"), operation)
         .then((result) => {
           if (result.status !== "success") {
@@ -328,7 +328,6 @@ export const useCatalogStore = defineStore(catalogStoreId, {
   },
 });
 
-const operationPort = getOperationPort();
 const catalogEpoch = crypto.randomUUID();
 const catalogFieldTargets: NonNullable<OperationContext["fieldTargets"]> = {
   categoryId: { path: "categoryId" },

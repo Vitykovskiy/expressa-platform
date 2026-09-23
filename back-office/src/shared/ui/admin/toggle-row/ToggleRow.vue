@@ -11,7 +11,6 @@
 
     <AdminToggle
       class="toggle-row-switch"
-      :aria-labelledby="labelId"
       :disabled="props.disabled"
       :model-value="model"
       @update:model-value="updateModel"
@@ -55,14 +54,14 @@ function updateModel(value: boolean | null) {
 
 .toggle-row-label {
   color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-control);
+  font-size: var(--expressa-font-size-body-strong);
+  font-weight: var(--expressa-font-weight-semibold);
+  line-height: var(--expressa-line-height-emphasis);
   overflow-wrap: anywhere;
 }
 
 .toggle-row-sublabel {
-  margin-top: var(--expressa-space-field-label);
+  margin-top: var(--expressa-space-2xs);
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-caption);

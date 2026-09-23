@@ -38,25 +38,17 @@
       }}
     </AdminButton>
 
-    <div
-      v-if="props.detailsLoading"
-      class="order-card__loading"
-      aria-live="polite"
-    >
+    <div v-if="props.detailsLoading" class="order-card__loading">
       <AdminProgress label="Загрузка деталей…" />
     </div>
-    <section
-      v-else-if="props.details !== null"
-      class="order-card__details"
-      :aria-label="`Детали заказа ${props.order.number}`"
-    >
+    <section v-else-if="props.details !== null" class="order-card__details">
       <p class="order-card__customer">
         Клиент:
         <span class="order-card__customer-phone">{{
           props.details.customer.phoneE164
         }}</span>
       </p>
-      <ul class="order-card__items" aria-label="Состав заказа">
+      <ul class="order-card__items">
         <li
           v-for="item in props.details.snapshot"
           :key="item.productId"

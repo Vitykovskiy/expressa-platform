@@ -1,9 +1,5 @@
 export type ConfirmVariant = "primary" | "destructive";
 
-export interface FocusableElement {
-  focus: () => void;
-}
-
 export interface ConfirmDialogProps {
   title: string;
   description: string;

@@ -1,6 +1,6 @@
 <template>
   <AdminDialog
-    :aria-labelledby="titleId"
+    action-size="compact"
     cancel-label="Отмена"
     :dismiss-disabled="props.disabled"
     :model-value="open"
@@ -10,7 +10,6 @@
     :submit-disabled="props.disabled || !isValid"
     submit-label="Сохранить"
     title="Новый товар"
-    @after-enter="focusFirstField"
     @update:model-value="updateOpen"
   >
     <form
@@ -18,274 +17,217 @@
       class="add-dialog"
       @submit.prevent="confirm"
     >
-      <div class="add-dialog__fields">
-        <AdminFieldWrapper
-          :id="categoryId"
-          v-slot="field"
-          :error="errorFor('categoryId')"
-          label="Категория"
-          required
-        >
-          <AdminSelect
-            :id="field.controlId"
-            ref="categoryInput"
-            v-model="categoryIdValue"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
-            :disabled="props.disabled"
-            :items="categoryOptions"
-            placeholder="Выберите категорию"
-            :required="field.required"
-          />
-        </AdminFieldWrapper>
-        <AdminFieldWrapper
-          :id="nameId"
-          v-slot="field"
-          :error="errorFor('name')"
-          label="Название товара"
-          required
-        >
-          <AdminTextField
-            :id="field.controlId"
-            v-model="name"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
-            :disabled="props.disabled"
-            :required="field.required"
-          />
-        </AdminFieldWrapper>
-        <AdminFieldWrapper :id="descriptionId" v-slot="field" label="Описание">
-          <AdminTextField
-            :id="field.controlId"
-            v-model="description"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
-            :disabled="props.disabled"
-            :required="field.required"
-          />
-        </AdminFieldWrapper>
-        <section class="add-dialog__pricing" aria-label="Цены и порции">
-          <div v-if="isMultiple" class="add-dialog__price-columns">
-            <span class="add-dialog__visually-hidden">Порядок</span
-            ><span>Порция</span><span>Цена</span><span>Доступен</span
-            ><span class="add-dialog__visually-hidden">Удалить</span>
+      <div class="add-dialog__content">
+        <section class="add-dialog__section">
+          <div class="add-dialog__fields">
+            <AdminFieldWrapper
+              :id="categoryId"
+              v-slot="field"
+              :error="errorFor('categoryId')"
+              label="Категория"
+              required
+              ><AdminCombobox
+                :id="field.controlId"
+                v-model="categoryIdValue"
+                :disabled="props.disabled"
+                :options="categoryOptions"
+                placeholder="Выберите категорию"
+                :required="field.required"
+            /></AdminFieldWrapper>
+            <AdminFieldWrapper
+              :id="nameId"
+              v-slot="field"
+              :error="errorFor('name')"
+              label="Название товара"
+              required
+              ><AdminTextField
+                :id="field.controlId"
+                v-model="name"
+                :disabled="props.disabled"
+                :required="field.required"
+            /></AdminFieldWrapper>
+            <AdminFieldWrapper
+              :id="isActiveControlId"
+              v-slot="field"
+              class="add-dialog__toggle-field"
+              label="Показывать в меню"
+              layout="row"
+              ><AdminToggle
+                :id="field.controlId"
+                :model-value="isActive"
+                :disabled="props.disabled"
+                @update:model-value="isActive = Boolean($event)"
+            /></AdminFieldWrapper>
+            <AdminFieldWrapper
+              :id="descriptionId"
+              v-slot="field"
+              label="Описание"
+              ><AdminTextarea
+                :id="field.controlId"
+                v-model="description"
+                :disabled="props.disabled"
+                :required="field.required"
+                rows="2"
+                class="add-dialog__description"
+            /></AdminFieldWrapper>
           </div>
-          <template v-if="!isMultiple">
-            <PriceFields
-              v-model:price="price"
-              v-model:portion-label="portionLabel"
-              :disabled="props.disabled"
-              :price-error="errorFor('price')"
-              :portion-label-error="errorFor('portionLabel')"
-            />
-            <AdminButton
-              v-if="!isMultiple"
-              :disabled="props.disabled"
-              type="button"
-              variant="secondary"
-              @click="enableMultiple"
-              >Добавить ещё цену</AdminButton
-            >
-          </template>
-          <template v-else
-            ><section
-              v-for="(choice, index) in priceChoices"
-              :key="choice.localId"
-              :data-price-choice-id="choice.localId"
-              :aria-label="`Вариант ${index + 1}`"
-              class="add-dialog__choice"
-              :class="{
-                'add-dialog__choice--dragging':
-                  draggedChoiceId === choice.localId,
-              }"
-              role="group"
-              @dragover.prevent
-              @drop="dropChoice(index)"
-            >
-              <div class="add-dialog__choice-order">
-                <button
-                  :aria-label="`Переместить вариант ${index + 1}; позиция ${index + 1} из ${priceChoices.length}`"
-                  class="add-dialog__drag-handle"
-                  :disabled="props.disabled"
-                  draggable="true"
-                  type="button"
-                  @dragend="draggedChoiceId = null"
-                  @dragstart="draggedChoiceId = choice.localId"
-                  @keydown.up.prevent="moveChoice(index, -1)"
-                  @keydown.down.prevent="moveChoice(index, 1)"
-                >
-                  ↕
-                </button>
-                <span>{{ index + 1 }}</span>
-              </div>
-              <div class="add-dialog__price-cell">
-                <AdminTextField
-                  :aria-label="`Порция варианта ${index + 1}`"
-                  :aria-invalid="
-                    Boolean(choicePortionLabelError(choice, index))
-                  "
-                  :aria-describedby="
-                    choicePortionLabelError(choice, index)
-                      ? `price-choice-${choice.localId}-portion-error`
-                      : undefined
-                  "
-                  :disabled="props.disabled"
-                  :model-value="choice.portionLabel"
-                  placeholder="Порция"
-                  required
-                  @blur="touchChoice(choice.localId, 'portionLabel')"
-                  @update:model-value="
-                    updateChoice(index, 'portionLabel', $event)
-                  "
-                />
-                <p
-                  v-if="choicePortionLabelError(choice, index)"
-                  :id="`price-choice-${choice.localId}-portion-error`"
-                  class="add-dialog__field-error"
-                >
-                  {{ choicePortionLabelError(choice, index) }}
-                </p>
-              </div>
-              <div class="add-dialog__price-cell">
-                <AdminTextField
-                  :aria-label="`Цена варианта ${index + 1}`"
-                  :aria-invalid="Boolean(choicePriceError(choice, index))"
-                  :aria-describedby="
-                    choicePriceError(choice, index)
-                      ? `price-choice-${choice.localId}-price-error`
-                      : undefined
-                  "
-                  :disabled="props.disabled"
-                  inputmode="numeric"
-                  :model-value="choice.price"
-                  placeholder="Цена, ₽"
-                  required
-                  type="number"
-                  @blur="touchChoice(choice.localId, 'price')"
-                  @update:model-value="updateChoice(index, 'price', $event)"
-                />
-                <p
-                  v-if="choicePriceError(choice, index)"
-                  :id="`price-choice-${choice.localId}-price-error`"
-                  class="add-dialog__field-error"
-                >
-                  {{ choicePriceError(choice, index) }}
-                </p>
-              </div>
-              <div class="add-dialog__choice-actions">
-                <AdminFieldWrapper
-                  :id="priceAvailabilityControlId(choice.localId)"
-                  v-slot="field"
-                  label="Доступен для заказа"
-                  layout="row"
-                >
-                  <AdminToggle
-                    :id="field.controlId"
-                    :aria-labelledby="field.labelId"
-                    :aria-describedby="field.describedBy"
-                    :aria-invalid="field.invalid"
-                    :aria-required="field.required"
-                    :model-value="choice.isAvailable"
-                    :disabled="props.disabled"
-                    @update:model-value="
-                      updateChoiceAvailability(index, $event)
-                    "
-                  />
-                </AdminFieldWrapper>
-                <AdminButton
-                  :aria-label="`Удалить вариант ${index + 1}`"
-                  :disabled="props.disabled"
-                  type="button"
-                  variant="ghost"
-                  @click="removeChoice(index)"
-                  >Удалить цену</AdminButton
-                >
-              </div>
-            </section>
-            <AdminButton
-              :disabled="props.disabled"
-              type="button"
-              variant="secondary"
-              @click="addChoice"
-              >Добавить ещё цену</AdminButton
-            ></template
-          >
-          <p class="add-dialog__reorder-status" role="status">
-            {{ reorderStatus }}
-          </p>
         </section>
-        <section class="add-dialog__publication">
-          <h3>Публикация</h3>
-          <AdminFieldWrapper
-            :id="isActiveControlId"
-            v-slot="field"
-            label="Показывать в меню"
-            layout="row"
-          >
-            <AdminToggle
-              :id="field.controlId"
-              :aria-labelledby="field.labelId"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
-              :model-value="isActive"
+        <section class="add-dialog__section">
+          <div class="add-dialog__section-heading">
+            <h3
+              id="add-product-pricing-title"
+              class="add-dialog__section-title"
+            >
+              Цены
+            </h3>
+            <AdminButton
               :disabled="props.disabled"
-              @update:model-value="isActive = Boolean($event)"
-            />
-          </AdminFieldWrapper>
-          <AdminFieldWrapper
-            v-if="!isMultiple"
-            :id="isAvailableControlId"
-            v-slot="field"
-            label="Доступен для заказа"
-            layout="row"
-          >
-            <AdminToggle
-              :id="field.controlId"
-              :aria-labelledby="field.labelId"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
-              :model-value="isAvailable"
-              :disabled="props.disabled"
-              @update:model-value="isAvailable = Boolean($event)"
-            />
-          </AdminFieldWrapper>
+              size="compact"
+              type="button"
+              variant="secondary"
+              @click="openChoiceDialog()"
+              >Добавить размер</AdminButton
+            >
+          </div>
+          <div class="add-dialog__pricing-table">
+            <table>
+              <colgroup>
+                <col class="add-dialog__choice-order-column" />
+                <col class="add-dialog__choice-size-column" />
+                <col class="add-dialog__choice-price-column" />
+                <col class="add-dialog__choice-availability-column" />
+                <col class="add-dialog__choice-actions-column" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col">Порция / размер</th>
+                  <th scope="col">Цена, ₽</th>
+                  <th scope="col">В продаже</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="priceChoices.length === 0">
+                  <td class="add-dialog__empty-prices" colspan="5">
+                    Размеры пока не добавлены
+                  </td>
+                </tr>
+                <tr
+                  v-for="(choice, index) in priceChoices"
+                  :key="choice.localId"
+                  :class="{
+                    'add-dialog__choice--dragging':
+                      draggedChoiceId === choice.localId,
+                  }"
+                  :style="choiceDragStyle(choice, index)"
+                  :data-price-choice-id="choice.localId"
+                >
+                  <td>
+                    <button
+                      class="add-dialog__drag-handle"
+                      :disabled="props.disabled"
+                      type="button"
+                      @lostpointercapture="cancelChoiceDrag"
+                      @pointercancel="cancelChoiceDrag"
+                      @pointerdown="startChoiceDrag($event, choice.localId)"
+                      @pointermove="moveChoiceDrag"
+                      @pointerup="completeChoiceDrag"
+                    >
+                      <AdminIcon :icon="GripVertical" />
+                    </button>
+                  </td>
+                  <td class="add-dialog__choice-value">
+                    <span
+                      class="add-dialog__choice-size"
+                      :title="choice.portionLabel || undefined"
+                      >{{ choice.portionLabel || "—" }}</span
+                    >
+                  </td>
+                  <td class="add-dialog__choice-value add-dialog__choice-price">
+                    {{ choice.price || "—"
+                    }}<template v-if="choice.price"> ₽</template>
+                  </td>
+                  <td class="add-dialog__choice-availability">
+                    <AdminToggle
+                      :model-value="choice.isAvailable"
+                      :disabled="props.disabled"
+                      @update:model-value="
+                        updateChoiceAvailability(index, $event)
+                      "
+                    />
+                  </td>
+                  <td>
+                    <div class="add-dialog__choice-actions">
+                      <AdminButton
+                        :disabled="props.disabled"
+                        size="compact"
+                        :title="`Редактировать вариант ${index + 1}`"
+                        class="add-dialog__choice-action"
+                        type="button"
+                        variant="ghost"
+                        @click="openChoiceDialog(choice)"
+                        ><AdminIcon :icon="Pencil" /></AdminButton
+                      ><AdminButton
+                        :disabled="props.disabled"
+                        size="compact"
+                        :title="`Удалить вариант ${index + 1}`"
+                        class="add-dialog__choice-action add-dialog__choice-action--delete"
+                        type="button"
+                        variant="ghost"
+                        @click="removeChoice(index)"
+                        ><AdminIcon :icon="Trash2"
+                      /></AdminButton>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </form>
   </AdminDialog>
+  <PriceChoiceDialog
+    v-model:open="choiceDialogOpen"
+    :choice="choiceDraft"
+    :disabled="props.disabled"
+    :editing="editingChoiceId !== null"
+    :required-label="
+      requiringFirstLabel ||
+      priceChoices.length > 1 ||
+      (editingChoiceId === null && priceChoices.length > 0)
+    "
+    :used-labels="otherChoiceLabels"
+    :price-error="
+      choiceDraft.price === rejectedPrice ? errorFor('price') : undefined
+    "
+    @save="saveChoiceDialog"
+  />
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, watch } from "vue";
+import { GripVertical, Pencil, Trash2 } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
-import AdminSelect from "../../../shared/ui/admin/admin-select/AdminSelect.vue";
+import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
+import AdminCombobox from "../../../shared/ui/admin/admin-combobox/AdminCombobox.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
+import AdminTextarea from "../../../shared/ui/admin/admin-textarea/AdminTextarea.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminToggle from "../../../shared/ui/admin/admin-toggle/AdminToggle.vue";
 import { createPriceChoiceDraft } from "./AddProductDialog.constants";
-import PriceFields from "./PriceFields.vue";
-import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
+import PriceChoiceDialog from "./PriceChoiceDialog.vue";
 import type {
   AddProductDialogEmits,
   AddProductDialogProps,
-  PriceChoiceDraft,
   CreateProductFormData,
+  PriceChoiceDraft,
   ProductFormField,
 } from "./AddProductDialog.types";
 
+type LocalPriceChoiceDraft = PriceChoiceDraft & { localId: string };
 const props = withDefaults(defineProps<AddProductDialogProps>(), {
   fieldErrors: () => ({}),
 });
@@ -294,49 +236,56 @@ const open = defineModel<boolean>("open", { required: true });
 const categoryIdValue = shallowRef("");
 const name = shallowRef("");
 const description = shallowRef("");
-const price = shallowRef("");
-const portionLabel = shallowRef("");
 const isActive = shallowRef(true);
-const isAvailable = shallowRef(true);
-const isMultiple = shallowRef(false);
-type LocalPriceChoiceDraft = PriceChoiceDraft & { localId: string };
-type PriceChoiceField = "price" | "portionLabel";
 const priceChoices = shallowRef<LocalPriceChoiceDraft[]>([]);
-const priceChoiceTouched = shallowRef<
-  Partial<Record<string, Partial<Record<PriceChoiceField, true>>>>
->({});
-const dismissedChoiceFieldErrors = shallowRef<Record<string, true>>({});
-const programmaticChoiceFocus = shallowRef<string | null>(null);
 const draggedChoiceId = shallowRef<string | null>(null);
-const reorderStatus = shallowRef("");
+const dragPointerId = shallowRef<number | null>(null);
+const dragStartY = shallowRef(0);
+const dragOffsetY = shallowRef(0);
+const dragTargetIndex = shallowRef<number | null>(null);
+const choiceDialogOpen = shallowRef(false);
+const requiringFirstLabel = shallowRef(false);
+const editingChoiceId = shallowRef<string | null>(null);
+const choiceDraft = shallowRef<PriceChoiceDraft>(createPriceChoiceDraft());
+const rejectedPrice = shallowRef<string | null>(null);
+const otherChoiceLabels = computed(() =>
+  priceChoices.value
+    .filter((choice) => choice.localId !== editingChoiceId.value)
+    .map((choice) => choice.portionLabel),
+);
 let nextPriceChoiceLocalId = 0;
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
-const titleId = `add-product-title-${useId()}`;
 const categoryId = `add-product-category-${useId()}`;
 const nameId = `add-product-name-${useId()}`;
 const descriptionId = `add-product-description-${useId()}`;
 const isActiveControlId = `add-product-active-${useId()}`;
-const isAvailableControlId = `add-product-available-${useId()}`;
-const categoryInput =
-  useTemplateRef<InstanceType<typeof AdminSelect>>("categoryInput");
 const isValid = computed(
   () =>
     Boolean(categoryIdValue.value && name.value.trim()) &&
-    (isMultiple.value
-      ? priceChoices.value.every(validChoice)
-      : validPrice(price.value)),
+    priceChoices.value.length > 0 &&
+    priceChoices.value.every((choice) =>
+      validChoice(choice, priceChoices.value.length),
+    ) &&
+    new Set(
+      priceChoices.value.map((choice) => normalizeLabel(choice.portionLabel)),
+    ).size === priceChoices.value.length,
 );
 const categoryOptions = computed(() =>
   props.categories.map((category) => ({
-    title: category.name,
-    value: category.id,
+    label: category.name,
+    id: category.id,
   })),
 );
 function validPrice(value: string): boolean {
   return /^\d+$/.test(value);
 }
-function validChoice(choice: PriceChoiceDraft): boolean {
-  return validPrice(choice.price) && Boolean(choice.portionLabel.trim());
+function validChoice(choice: PriceChoiceDraft, choiceCount: number): boolean {
+  return (
+    validPrice(choice.price) &&
+    (choiceCount === 1 || Boolean(choice.portionLabel.trim()))
+  );
+}
+function normalizeLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru-RU");
 }
 function errorFor(field: ProductFormField): string | undefined {
   return props.fieldErrors[field];
@@ -347,94 +296,29 @@ function createLocalChoice(
   nextPriceChoiceLocalId += 1;
   return { ...choice, localId: `add-price-choice-${nextPriceChoiceLocalId}` };
 }
-function choiceFieldError(
-  choice: LocalPriceChoiceDraft,
-  index: number,
-  field: PriceChoiceField,
-): string | undefined {
-  return dismissedChoiceFieldErrors.value[`${choice.localId}:${field}`]
-    ? undefined
-    : errorFor(`priceChoices.${index}.${field}` as ProductFormField);
+function openChoiceDialog(choice?: LocalPriceChoiceDraft): void {
+  const firstChoice = priceChoices.value[0];
+  requiringFirstLabel.value =
+    !choice &&
+    priceChoices.value.length === 1 &&
+    !firstChoice?.portionLabel.trim();
+  const targetChoice = requiringFirstLabel.value ? firstChoice : choice;
+  editingChoiceId.value = targetChoice?.localId ?? null;
+  choiceDraft.value = targetChoice
+    ? { ...targetChoice }
+    : createPriceChoiceDraft();
+  choiceDialogOpen.value = true;
 }
-function choicePriceError(
-  choice: LocalPriceChoiceDraft,
-  index: number,
-): string | undefined {
-  return (
-    choiceFieldError(choice, index, "price") ??
-    (priceChoiceTouched.value[choice.localId]?.price &&
-    !validPrice(choice.price)
-      ? "Укажите цену в целых рублях"
-      : undefined)
-  );
-}
-function choicePortionLabelError(
-  choice: LocalPriceChoiceDraft,
-  index: number,
-): string | undefined {
-  return (
-    choiceFieldError(choice, index, "portionLabel") ??
-    (priceChoiceTouched.value[choice.localId]?.portionLabel &&
-    !choice.portionLabel.trim()
-      ? "Выберите порцию или размер"
-      : undefined)
-  );
-}
-function touchChoice(localId: string, field: PriceChoiceField): void {
-  if (programmaticChoiceFocus.value === `${localId}:${field}`) {
-    programmaticChoiceFocus.value = null;
-    return;
-  }
-  priceChoiceTouched.value = {
-    ...priceChoiceTouched.value,
-    [localId]: { ...priceChoiceTouched.value[localId], [field]: true },
-  };
-}
-function focusChoice(localId: string): void {
-  void nextTick(() => {
-    const field = document.querySelector<HTMLElement>(
-      `[data-price-choice-id="${localId}"] input, [data-price-choice-id="${localId}"] select`,
+function saveChoiceDialog(choice: PriceChoiceDraft): void {
+  if (editingChoiceId.value)
+    priceChoices.value = priceChoices.value.map((current) =>
+      current.localId === editingChoiceId.value
+        ? { ...current, ...choice }
+        : current,
     );
-    if (field) {
-      programmaticChoiceFocus.value = `${localId}:portionLabel`;
-      field.focus();
-    }
-  });
-}
-function enableMultiple(): void {
-  priceChoices.value = [
-    createLocalChoice({
-      portionLabel: portionLabel.value,
-      price: price.value,
-      isAvailable: isAvailable.value,
-    }),
-    createLocalChoice(),
-  ];
-  isMultiple.value = true;
-  priceChoiceTouched.value = {};
-  focusChoice(priceChoices.value[1]!.localId);
-}
-function addChoice(): void {
-  const choice = createLocalChoice();
-  priceChoices.value = [...priceChoices.value, choice];
-  focusChoice(choice.localId);
-}
-function updateChoice(
-  index: number,
-  field: "portionLabel" | "price",
-  value: string,
-): void {
-  const choice = priceChoices.value[index]!;
-  if (programmaticChoiceFocus.value === `${choice.localId}:${field}`) {
-    programmaticChoiceFocus.value = null;
-  }
-  dismissedChoiceFieldErrors.value = {
-    ...dismissedChoiceFieldErrors.value,
-    [`${choice.localId}:${field}`]: true,
-  };
-  priceChoices.value = priceChoices.value.map((choice, current) =>
-    current === index ? { ...choice, [field]: value } : choice,
-  );
+  else priceChoices.value = [...priceChoices.value, createLocalChoice(choice)];
+  choiceDialogOpen.value = false;
+  requiringFirstLabel.value = false;
 }
 function updateChoiceAvailability(index: number, value: unknown): void {
   priceChoices.value = priceChoices.value.map((choice, current) =>
@@ -444,208 +328,330 @@ function updateChoiceAvailability(index: number, value: unknown): void {
 function removeChoice(index: number): void {
   const next = priceChoices.value.filter((_, current) => current !== index);
   priceChoices.value = next;
-  if (next.length === 1) {
-    const [choice] = next;
-    price.value = choice.price;
-    portionLabel.value = choice.portionLabel;
-    isMultiple.value = false;
-  } else {
-    focusChoice(next[Math.min(index, next.length - 1)]!.localId);
-  }
 }
-function moveChoice(index: number, direction: -1 | 1): void {
-  const target = index + direction;
-  if (target < 0 || target >= priceChoices.value.length) return;
-  const next = [...priceChoices.value];
-  [next[index], next[target]] = [next[target]!, next[index]!];
-  priceChoices.value = next;
-  reorderStatus.value = `Вариант перемещён на позицию ${target + 1} из ${next.length}`;
-  focusChoice(next[target]!.localId);
+function startChoiceDrag(event: PointerEvent, localId: string): void {
+  if (props.disabled || draggedChoiceId.value) return;
+  event.preventDefault();
+  draggedChoiceId.value = localId;
+  dragPointerId.value = event.pointerId;
+  dragStartY.value = event.clientY;
+  dragOffsetY.value = 0;
+  dragTargetIndex.value = priceChoices.value.findIndex(
+    (choice) => choice.localId === localId,
+  );
+  (event.currentTarget as HTMLButtonElement).setPointerCapture(event.pointerId);
 }
-function dropChoice(targetIndex: number): void {
+function moveChoiceDrag(event: PointerEvent): void {
+  if (event.pointerId !== dragPointerId.value || !draggedChoiceId.value) return;
+  dragOffsetY.value = event.clientY - dragStartY.value;
+  const rows = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-price-choice-id]"),
+  );
+  const candidates = rows.filter(
+    (row) => row.dataset.priceChoiceId !== draggedChoiceId.value,
+  );
+  if (candidates.length === 0) return;
+  const target = candidates.reduce((nearest, row) => {
+    const nearestDistance = Math.abs(
+      event.clientY -
+        (nearest.getBoundingClientRect().top +
+          nearest.getBoundingClientRect().height / 2),
+    );
+    const distance = Math.abs(
+      event.clientY -
+        (row.getBoundingClientRect().top +
+          row.getBoundingClientRect().height / 2),
+    );
+    return distance < nearestDistance ? row : nearest;
+  });
+  dragTargetIndex.value = priceChoices.value.findIndex(
+    (choice) => choice.localId === target.dataset.priceChoiceId,
+  );
+}
+function completeChoiceDrag(event: PointerEvent): void {
+  if (event.pointerId !== dragPointerId.value) return;
   const sourceIndex = priceChoices.value.findIndex(
     (choice) => choice.localId === draggedChoiceId.value,
   );
+  const targetIndex = dragTargetIndex.value;
+  if (sourceIndex >= 0 && targetIndex !== null && sourceIndex !== targetIndex) {
+    const next = [...priceChoices.value];
+    const [moved] = next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, moved!);
+    priceChoices.value = next;
+  }
+  finishChoiceDrag(event.currentTarget as HTMLButtonElement);
+}
+function cancelChoiceDrag(): void {
+  finishChoiceDrag();
+}
+function finishChoiceDrag(handle?: HTMLButtonElement): void {
+  if (
+    handle &&
+    dragPointerId.value !== null &&
+    handle.hasPointerCapture(dragPointerId.value)
+  )
+    handle.releasePointerCapture(dragPointerId.value);
   draggedChoiceId.value = null;
-  if (sourceIndex < 0 || sourceIndex === targetIndex) return;
-  const next = [...priceChoices.value];
-  const [moved] = next.splice(sourceIndex, 1);
-  next.splice(targetIndex, 0, moved!);
-  priceChoices.value = next;
-  reorderStatus.value = `Вариант перемещён на позицию ${targetIndex + 1} из ${next.length}`;
-  focusChoice(moved!.localId);
+  dragPointerId.value = null;
+  dragOffsetY.value = 0;
+  dragTargetIndex.value = null;
+}
+function choiceDragStyle(
+  choice: LocalPriceChoiceDraft,
+  index: number,
+): Record<string, string> | undefined {
+  if (!draggedChoiceId.value || dragTargetIndex.value === null)
+    return undefined;
+  if (choice.localId === draggedChoiceId.value)
+    return { transform: `translateY(${dragOffsetY.value}px)` };
+  const sourceIndex = priceChoices.value.findIndex(
+    (current) => current.localId === draggedChoiceId.value,
+  );
+  const targetIndex = dragTargetIndex.value;
+  const movesUp =
+    targetIndex < sourceIndex && index >= targetIndex && index < sourceIndex;
+  const movesDown =
+    targetIndex > sourceIndex && index <= targetIndex && index > sourceIndex;
+  if (!movesUp && !movesDown) return undefined;
+  const offset = movesUp ? "100%" : "-100%";
+  return { transform: `translateY(${offset})` };
 }
 function confirm(): void {
   if (props.disabled || !isValid.value) return;
+  const [singleChoice] = priceChoices.value;
+  const isSingleChoice = priceChoices.value.length === 1;
   emit("confirm", {
     categoryId: categoryIdValue.value,
     name: name.value.trim(),
     description: description.value,
     isActive: isActive.value,
-    isAvailable: isAvailable.value,
-    price: isMultiple.value ? null : Number(price.value),
-    portionLabel: isMultiple.value ? null : portionLabel.value.trim() || null,
-    priceChoices: isMultiple.value
-      ? priceChoices.value.map((choice, sortOrder) => ({
+    isAvailable: isSingleChoice
+      ? singleChoice!.isAvailable
+      : priceChoices.value.some((choice) => choice.isAvailable),
+    price: isSingleChoice ? Number(singleChoice!.price) : null,
+    portionLabel: isSingleChoice
+      ? singleChoice!.portionLabel.trim() || null
+      : null,
+    priceChoices: isSingleChoice
+      ? []
+      : priceChoices.value.map((choice, sortOrder) => ({
           id: choice.id,
           portionLabel: choice.portionLabel.trim(),
           price: Number(choice.price),
           sortOrder,
           isAvailable: choice.isAvailable,
-        }))
-      : [],
+        })),
   } satisfies CreateProductFormData);
 }
 function reset(): void {
   categoryIdValue.value = "";
   name.value = "";
   description.value = "";
-  price.value = "";
-  portionLabel.value = "";
   isActive.value = true;
-  isAvailable.value = true;
-  isMultiple.value = false;
   priceChoices.value = [];
-  priceChoiceTouched.value = {};
-  dismissedChoiceFieldErrors.value = {};
-  programmaticChoiceFocus.value = null;
+  finishChoiceDrag();
+  choiceDialogOpen.value = false;
+  requiringFirstLabel.value = false;
+  editingChoiceId.value = null;
+  choiceDraft.value = createPriceChoiceDraft();
+  rejectedPrice.value = null;
 }
 function closeDialog(): void {
-  if (props.disabled) return;
-  reset();
-  open.value = false;
-  restoreFocus();
+  if (!props.disabled) {
+    reset();
+    open.value = false;
+  }
 }
 function cancel(): void {
-  if (props.disabled) return;
-  closeDialog();
-  emit("cancel");
+  if (!props.disabled) {
+    closeDialog();
+    emit("cancel");
+  }
 }
 function updateOpen(value: boolean): void {
-  if (value) {
-    open.value = true;
-    return;
-  }
-  if (props.disabled) return;
-  cancel();
-}
-function focusFirstField(): void {
-  categoryInput.value?.focus();
-}
-function priceAvailabilityControlId(localId: string): string {
-  return `add-product-price-availability-${localId}`;
+  if (value) open.value = true;
+  else if (!props.disabled) cancel();
 }
 watch(open, (isOpen, wasOpen) => {
-  if (isOpen && !wasOpen) captureReturnFocus();
   if (!isOpen && wasOpen) {
     reset();
-    restoreFocus();
   }
 });
 watch(
-  () => props.fieldErrors,
-  () => {
-    dismissedChoiceFieldErrors.value = {};
+  () => props.fieldErrors.price,
+  (priceError) => {
+    if (priceError && open.value && priceChoices.value.length === 1) {
+      rejectedPrice.value = priceChoices.value[0]!.price;
+      openChoiceDialog(priceChoices.value[0]);
+    }
   },
 );
 </script>
 
 <style scoped lang="scss">
-.add-dialog__fields,
-.add-dialog__pricing,
-.add-dialog__publication {
+.add-dialog__content,
+.add-dialog__section {
   display: grid;
   gap: var(--expressa-space-sm);
 }
-.add-dialog__pricing {
-  --add-dialog-price-grid: auto minmax(0, 1fr) minmax(0, 1fr) auto auto;
+.add-dialog__fields {
+  display: grid;
   gap: var(--expressa-space-md);
 }
-.add-dialog__pricing-heading,
-.add-dialog__toggle,
-.add-dialog__choice-actions {
+.add-dialog__toggle-field {
+  translate: 0 var(--expressa-space-sm);
+}
+.add-dialog__content {
+  gap: var(--expressa-space-md);
+}
+.add-dialog__section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
 }
-.add-dialog__price-columns {
-  display: grid;
-  grid-template-columns: var(--add-dialog-price-grid);
-  gap: var(--expressa-space-md);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-caption);
-}
-.add-dialog__pricing-heading h3,
-.add-dialog__publication h3,
-.add-dialog__choice h4,
-.add-dialog__publication p {
+.add-dialog__section-title {
   margin: 0;
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-action);
+  font-weight: var(--expressa-font-weight-semibold);
+  line-height: var(--expressa-line-height-body);
 }
-.add-dialog__choice {
-  display: grid;
-  grid-template-columns: var(--add-dialog-price-grid);
-  gap: var(--expressa-space-sm) var(--expressa-space-md);
-  padding-block: var(--expressa-space-sm);
-  border-block-end: var(--expressa-border-width-default) solid
+.add-dialog__pricing-table {
+  border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
-.add-dialog__choice-order {
-  display: flex;
-  align-items: center;
-  gap: var(--expressa-space-xs);
+.add-dialog__pricing-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.add-dialog__choice-order-column {
+  width: var(--expressa-size-control-min-height);
+}
+.add-dialog__choice-price-column,
+.add-dialog__choice-availability-column {
+  width: max-content;
+}
+.add-dialog__choice-actions-column {
+  width: calc(
+    var(--expressa-size-control-compact-min-height) * 2 +
+      var(--expressa-space-2xs)
+  );
+}
+.add-dialog__pricing-table th {
+  padding: var(--expressa-space-xs) var(--expressa-space-sm);
+  color: var(--expressa-color-text-secondary);
+  background: var(--expressa-color-surface-raised);
+  font-size: var(--expressa-font-size-caption);
+  font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-body);
+  text-align: start;
+  white-space: nowrap;
+}
+.add-dialog__pricing-table th:first-child,
+.add-dialog__pricing-table td:first-child {
+  padding-inline-start: 0;
+}
+.add-dialog__pricing-table th:last-child,
+.add-dialog__pricing-table td:last-child {
+  padding-inline-end: 0;
+}
+.add-dialog__pricing-table tbody tr {
+  transition: transform var(--expressa-motion-duration-control) ease-out;
+}
+.add-dialog__pricing-table td {
+  padding: var(--expressa-space-xs) var(--expressa-space-sm);
+  border-block-start: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  vertical-align: middle;
+}
+.add-dialog__choice--dragging {
+  position: relative;
+  z-index: 1;
+  background: var(--expressa-color-surface-raised);
+  box-shadow: var(--expressa-shadow-card);
+  transition: transform none;
 }
 .add-dialog__drag-handle {
-  min-width: var(--expressa-size-control-min-height);
+  display: inline-grid;
+  width: var(--expressa-size-control-min-height);
   min-height: var(--expressa-size-control-min-height);
-  border: var(--expressa-border-width-none);
+  padding: 0;
+  place-items: center;
+  border: 0;
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-transparent);
   cursor: grab;
+  touch-action: none;
 }
-.add-dialog__drag-handle:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
+.add-dialog__choice-value {
+  min-width: 0;
+  color: var(--expressa-color-text-primary);
 }
-.add-dialog__choice--dragging {
-  opacity: var(--expressa-state-disabled-opacity);
-}
-.add-dialog__reorder-status {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
+.add-dialog__choice-size {
+  display: block;
   overflow: hidden;
-  clip-path: inset(50%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.add-dialog__empty-prices {
+  color: var(--expressa-color-text-secondary);
+  text-align: center;
+}
+.add-dialog__choice-price {
+  font-variant-numeric: tabular-nums;
+}
+.add-dialog__choice-availability {
+  text-align: center;
 }
 .add-dialog__choice-actions {
-  grid-column: 4 / -1;
-  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--expressa-space-2xs);
 }
-.add-dialog__price-cell {
-  min-width: 0;
+.add-dialog__choice-action {
+  width: var(--expressa-size-control-compact-min-height);
+  min-width: var(--expressa-size-control-compact-min-height);
+  padding-inline: 0;
 }
-.add-dialog__field-error {
-  margin: var(--expressa-space-2xs) 0 0;
+.add-dialog__choice-action--delete {
   color: var(--expressa-color-status-error);
-  font-size: var(--expressa-font-size-caption);
 }
-.add-dialog__visually-hidden {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+.add-dialog__description {
+  min-height: calc(
+    var(--expressa-font-size-body) * var(--expressa-line-height-body) * 2 +
+      var(--expressa-space-control-block) * 2
+  );
 }
 @media (max-width: 599px) {
-  .add-dialog__pricing {
-    --add-dialog-price-grid: auto minmax(0, 1fr) minmax(0, 1fr);
+  .add-dialog__section-heading {
+    flex-wrap: wrap;
   }
-  .add-dialog__choice-actions {
-    grid-column: 1 / -1;
+  .add-dialog__pricing-table {
+    overflow-x: auto;
+  }
+  .add-dialog__pricing-table table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+  }
+  .add-dialog__pricing-table th,
+  .add-dialog__pricing-table td {
+    padding-inline: var(--expressa-space-2xs);
   }
 }
-.add-dialog__order-label,
-.add-dialog__publication p {
-  color: var(--expressa-color-text-secondary);
+@media (pointer: coarse), (max-width: 767px) {
+  .add-dialog__choice-actions-column {
+    width: calc(
+      var(--expressa-size-button-min-height) * 2 + var(--expressa-space-2xs)
+    );
+  }
+  .add-dialog__choice-action {
+    width: var(--expressa-size-button-min-height);
+    min-width: var(--expressa-size-button-min-height);
+  }
 }
 </style>

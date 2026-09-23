@@ -1,6 +1,5 @@
 <template>
   <AdminDialog
-    :aria-labelledby="titleId"
     cancel-label="Отмена"
     full-screen-below-600
     :model-value="open"
@@ -10,7 +9,6 @@
     :submit-disabled="props.disabled || props.archivePending || !canSave"
     submit-label="Сохранить"
     title="Редактировать категорию"
-    @after-enter="focusFirstField"
     @update:model-value="requestClose"
   >
     <form
@@ -20,13 +18,11 @@
     >
       <div class="category-dialog__fields">
         <CategoryFormFields
-          ref="fields"
           :description="draft.description.value"
           :disabled="props.disabled || props.archivePending"
           :errors="errors"
           :is-active="draft.isActive.value"
           :name="draft.name.value"
-          name-autofocus
           @blur-name="nameTouched = true"
           @submit="save"
           @update:description="draft.description.value = $event"
@@ -34,7 +30,7 @@
           @update:name="draft.name.value = $event"
         />
       </div>
-      <section class="category-dialog__danger" aria-label="Опасные действия">
+      <section class="category-dialog__danger">
         <AdminButton
           :disabled="props.disabled || props.archivePending"
           type="button"
@@ -66,14 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import CategoryFormFields from "./CategoryFormFields.vue";
 import { EDIT_CATEGORY_DIALOG_DEFAULTS } from "./EditCategoryDialog.constants";
 import { useCategoryDraft } from "./composables/useCategoryDraft";
-import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   EditCategoryDialogEmits,
   EditCategoryDialogProps,
@@ -85,13 +80,9 @@ const props = withDefaults(
 );
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<EditCategoryDialogEmits>();
-const titleId = `edit-category-title-${useId()}`;
-const fields =
-  useTemplateRef<InstanceType<typeof CategoryFormFields>>("fields");
 const nameTouched = shallowRef(false);
 const archiveOpen = shallowRef(false);
 const discardOpen = shallowRef(false);
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const draft = useCategoryDraft({
   categories: () => props.categories ?? [],
   excludedCategoryId: () => props.category?.id,
@@ -107,9 +98,6 @@ const errors = computed(() => ({
   ...props.fieldErrors,
 }));
 const canSave = computed(() => draft.isDirty.value && draft.isValid.value);
-function focusFirstField(): void {
-  fields.value?.focusName();
-}
 function save(): void {
   nameTouched.value = true;
   if (props.disabled || props.archivePending || !canSave.value) return;
@@ -139,8 +127,6 @@ watch(
       draft.reset();
       nameTouched.value = false;
     }
-    if (isOpen && !wasOpen) captureReturnFocus();
-    if (!isOpen && wasOpen) restoreFocus();
     if (!isOpen) archiveOpen.value = false;
   },
 );

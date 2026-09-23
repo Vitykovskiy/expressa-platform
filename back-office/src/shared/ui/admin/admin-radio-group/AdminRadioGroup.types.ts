@@ -4,7 +4,6 @@ export interface AdminRadioOption {
 }
 
 export interface AdminRadioGroupProps {
-  "aria-label": string;
   disabled?: boolean;
   items: readonly AdminRadioOption[];
   modelValue: string;

@@ -9,18 +9,12 @@
     >
       <AdminTextField
         :id="field.controlId"
-        ref="phoneInput"
         v-model="phoneModel"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
         autocomplete="tel"
-        autofocus
         inputmode="tel"
         name="phone"
         :required="field.required"
         type="tel"
-        @keydown.enter.prevent="emit('submit')"
       >
         <template #prepend><AdminIcon :icon="Phone" /></template>
       </AdminTextField>
@@ -33,7 +27,7 @@
 
 <script setup lang="ts">
 import { Phone } from "lucide-vue-next";
-import { computed, onMounted, useTemplateRef } from "vue";
+import { computed } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
@@ -49,11 +43,6 @@ const phoneModel = computed({
   get: () => props.phone,
   set: (value: string) => emit("update:phone", value),
 });
-
-const phoneInput =
-  useTemplateRef<InstanceType<typeof AdminTextField>>("phoneInput");
-
-onMounted(() => phoneInput.value?.focus());
 </script>
 
 <style scoped lang="scss">

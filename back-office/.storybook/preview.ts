@@ -1,12 +1,5 @@
 import { setup, type Preview } from "@storybook/vue3-vite";
-import {
-  defineComponent,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-} from "vue";
+import { defineComponent, onBeforeUnmount, shallowRef } from "vue";
 import "vuetify/styles";
 
 import "../src/styles/main.css";
@@ -21,11 +14,8 @@ import {
 } from "../src/app/notifications/notification-runtime.types";
 import NotificationHost from "../src/shared/ui/notifications/NotificationHost.vue";
 import { setOperationPort } from "../src/shared/lib/operations/operation-port";
-import { createOverlayCoordinator } from "../src/shared/ui/overlay/overlay-coordinator";
-import { overlayCoordinatorKey } from "../src/shared/ui/overlay/overlay-coordinator.types";
 
 const notificationRuntime = createNotificationRuntime();
-const overlayCoordinator = createOverlayCoordinator();
 setOperationPort(notificationRuntime);
 
 const storyRouter = createRouter({
@@ -51,7 +41,6 @@ setup((app) => {
     }),
   );
   app.provide(notificationRuntimeKey, notificationRuntime);
-  app.provide(overlayCoordinatorKey, overlayCoordinator);
 });
 
 const preview: Preview = {
@@ -62,9 +51,6 @@ const preview: Preview = {
         setup() {
           const entries = shallowRef(notificationRuntime.entries);
           const visibleEntries = shallowRef(notificationRuntime.visibleEntries);
-          let unregisterNotificationRegion: (() => void) | undefined;
-          const pageRegion = ref<HTMLElement | null>(null);
-          let unregisterPageRegion: (() => void) | undefined;
           const unsubscribe = notificationRuntime.subscribe(() => {
             const nextEntries = notificationRuntime.entries;
             const nextVisibleEntries = notificationRuntime.visibleEntries;
@@ -77,49 +63,25 @@ const preview: Preview = {
           });
           const dismiss = (id: string) => {
             notificationRuntime.dismiss(id);
-            void nextTick(() => overlayCoordinator.restoreFocus(id));
-          };
-          const captureOrigin = (id: string, origin: HTMLElement | null) =>
-            overlayCoordinator.captureNotificationOrigin(id, origin);
-          const registerRegion = (region: HTMLElement | null) => {
-            unregisterNotificationRegion?.();
-            unregisterNotificationRegion =
-              region === null
-                ? undefined
-                : overlayCoordinator.registerNotificationRegion(region);
           };
           onBeforeUnmount(() => {
             unsubscribe();
-            unregisterNotificationRegion?.();
-            unregisterPageRegion?.();
-          });
-          onMounted(() => {
-            if (pageRegion.value !== null)
-              unregisterPageRegion = overlayCoordinator.registerPageRegion(
-                pageRegion.value,
-                null,
-              );
           });
           return {
-            captureOrigin,
             dismiss,
             entries,
             notificationRuntime,
-            pageRegion,
-            registerRegion,
             visibleEntries,
           };
         },
         template: `
           <VApp>
-            <div ref="pageRegion"><story /></div>
+            <div><story /></div>
             <NotificationHost
               :candidate-entries="entries"
               :entries="visibleEntries"
               @dismiss="dismiss"
-              @origin="captureOrigin"
               @recover="notificationRuntime.recover"
-              @region="registerRegion"
               @visibility="notificationRuntime.setVisibility"
             />
           </VApp>

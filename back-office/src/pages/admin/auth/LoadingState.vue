@@ -1,5 +1,5 @@
 <template>
-  <section aria-label="Загрузка" class="auth-state" role="status">
+  <section class="auth-state">
     <AdminProgress label="Подождите…" />
   </section>
 </template>

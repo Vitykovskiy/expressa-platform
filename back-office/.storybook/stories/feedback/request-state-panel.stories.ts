@@ -27,14 +27,6 @@ export const Pending: Story = {
   args: { pending: true, pendingLabel: "Повторяем…" },
   render,
 };
-export const AlertAndFocus: Story = {
-  args: { announcementMode: "alert", focusOnAppear: true },
-  render,
-};
-export const StatusAnnouncement: Story = {
-  args: { announcementMode: "status" },
-  render,
-};
 export const LongCopy: Story = {
   args: {
     title: "Не удалось обновить список позиций выбранной категории",

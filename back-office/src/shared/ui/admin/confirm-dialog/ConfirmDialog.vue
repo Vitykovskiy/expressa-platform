@@ -1,13 +1,9 @@
 <template>
   <AdminDialog
-    :aria-describedby="descriptionId"
-    :aria-labelledby="titleId"
-    aria-modal="true"
     :cancel-label="props.cancelLabel"
     :pending="props.pending"
     :model-value="open"
     max-width="var(--expressa-size-confirm-dialog-max-width)"
-    role="alertdialog"
     :submit-disabled="props.pending"
     submit-form="confirm-dialog-form"
     :submit-label="props.confirmLabel"
@@ -25,24 +21,14 @@
       </p>
 
       <div v-if="props.requireInput" class="confirm-dialog-reason">
-        <v-text-field
+        <label :for="reasonInputId">Причина</label>
+        <AdminTextField
           :id="reasonInputId"
           class="confirm-dialog-reason-input"
-          :aria-describedby="reasonDescribedBy"
-          :error="Boolean(reasonError)"
-          label="Причина"
           :model-value="reason"
-          density="comfortable"
-          hide-details
-          variant="outlined"
           @update:model-value="handleReasonUpdate"
         />
-        <p
-          v-if="reasonError"
-          :id="reasonErrorId"
-          class="confirm-dialog-error"
-          role="alert"
-        >
+        <p v-if="reasonError" :id="reasonErrorId" class="confirm-dialog-error">
           {{ reasonError }}
         </p>
       </div>
@@ -51,15 +37,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useId, watch } from "vue";
+import { nextTick, shallowRef, useId, watch } from "vue";
 
 import { CONFIRM_DIALOG_DEFAULTS } from "./ConfirmDialog.constants";
 import type {
   ConfirmDialogEmits,
   ConfirmDialogProps,
-  FocusableElement,
 } from "./ConfirmDialog.types";
 import AdminDialog from "../admin-dialog/AdminDialog.vue";
+import AdminTextField from "../admin-text-field/AdminTextField.vue";
 
 const props = withDefaults(
   defineProps<ConfirmDialogProps>(),
@@ -71,14 +57,9 @@ const emit = defineEmits<ConfirmDialogEmits>();
 
 const reason = shallowRef("");
 const reasonError = shallowRef("");
-const returnFocusTarget = shallowRef<FocusableElement | null>(null);
-const titleId = `confirm-dialog-title-${useId()}`;
 const descriptionId = `confirm-dialog-description-${useId()}`;
 const reasonInputId = `confirm-dialog-reason-${useId()}`;
 const reasonErrorId = `confirm-dialog-reason-error-${useId()}`;
-const reasonDescribedBy = computed(() =>
-  reasonError.value ? reasonErrorId : undefined,
-);
 
 function resetDraft() {
   reason.value = "";
@@ -127,33 +108,13 @@ async function handleConfirm() {
   }
 }
 
-function isFocusableElement(value: unknown): value is FocusableElement {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "focus" in value &&
-    typeof value.focus === "function"
-  );
-}
-
 watch(open, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) {
-    const activeElement = globalThis.document?.activeElement;
-    returnFocusTarget.value = isFocusableElement(activeElement)
-      ? activeElement
-      : null;
     return;
   }
 
   if (!isOpen && wasOpen) {
     resetDraft();
-
-    const focusTarget = returnFocusTarget.value;
-    returnFocusTarget.value = null;
-
-    if (focusTarget) {
-      void nextTick(() => focusTarget.focus());
-    }
   }
 });
 </script>
@@ -170,11 +131,6 @@ watch(open, (isOpen, wasOpen) => {
 
 .confirm-dialog-reason {
   padding: 0 0 var(--expressa-space-md);
-}
-
-.confirm-dialog-reason:focus-within {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-space-2xs);
 }
 
 .confirm-dialog-error {

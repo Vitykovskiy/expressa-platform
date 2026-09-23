@@ -1,10 +1,8 @@
 <template>
   <button
-    ref="button"
     v-bind="attrs"
     class="admin-button"
-    :class="`admin-button--${props.variant}`"
-    :aria-busy="props.pending || undefined"
+    :class="[`admin-button--${props.variant}`, `admin-button--${props.size}`]"
     :disabled="props.disabled || props.pending"
     :type="props.type"
     @click="emit('click', $event)"
@@ -14,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAttrs, useTemplateRef } from "vue";
+import { useAttrs } from "vue";
 import { ADMIN_BUTTON_DEFAULTS } from "./AdminButton.constants";
 import type { AdminButtonEmits, AdminButtonProps } from "./AdminButton.types";
 
@@ -26,20 +24,13 @@ const props = withDefaults(
 );
 const emit = defineEmits<AdminButtonEmits>();
 const attrs = useAttrs();
-const button = useTemplateRef<HTMLButtonElement>("button");
 defineSlots<{ default(): unknown }>();
-
-function focus(): void {
-  button.value?.focus();
-}
-
-defineExpose({ focus });
 </script>
 
 <style scoped lang="scss">
 .admin-button {
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-control-block)
+  min-height: var(--expressa-size-button-min-height);
+  padding: var(--expressa-space-button-block)
     var(--expressa-space-button-inline);
   border: var(--expressa-border-width-none) solid
     var(--expressa-color-transparent);
@@ -59,18 +50,11 @@ defineExpose({ focus });
 .admin-button:disabled {
   pointer-events: none;
   cursor: not-allowed;
-  color: var(--expressa-color-text-muted);
-  background: var(--expressa-color-control-disabled-surface);
-  border-color: var(--expressa-color-border);
+  opacity: var(--expressa-state-disabled-opacity);
 }
 
 .admin-button:active:not(:disabled) {
   opacity: var(--expressa-state-pressed-opacity);
-}
-
-.admin-button:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-button--primary {
@@ -95,20 +79,31 @@ defineExpose({ focus });
 
 .admin-button--destructive {
   color: var(--expressa-color-status-error);
-  background: var(--expressa-color-status-error-surface);
+  background: var(--expressa-color-surface);
+  border-width: var(--expressa-border-width-default);
+  border-color: var(--expressa-color-status-error);
 }
 
 .admin-button--destructive:hover:not(:disabled) {
-  color: var(--expressa-color-text-on-accent);
-  background: var(--expressa-color-status-error);
+  background: var(--expressa-color-control-hover-surface);
 }
 
 .admin-button--destructive:active:not(:disabled) {
-  background: var(--expressa-color-status-error-hover);
+  color: var(--expressa-color-status-error-active);
+  border-color: var(--expressa-color-status-error-active);
 }
 
 .admin-button--ghost {
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-transparent);
+}
+.admin-button--compact {
+  min-height: var(--expressa-size-control-compact-min-height);
+  padding: var(--expressa-space-xs) var(--expressa-space-control-inline);
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .admin-button--compact {
+    min-height: var(--expressa-size-button-min-height);
+  }
 }
 </style>

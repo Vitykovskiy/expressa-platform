@@ -4,12 +4,11 @@
       <strong>Expressa</strong>
       <span>{{ role === "administrator" ? "Администратор" : "Бариста" }}</span>
     </header>
-    <nav aria-label="Разделы администратора" class="side-nav-links">
+    <nav class="side-nav-links">
       <AdminButton
         v-for="section in sections"
         :key="section.id"
         class="side-nav-link"
-        :aria-current="section.id === activeSection ? 'page' : undefined"
         :class="{ 'side-nav-link--active': section.id === activeSection }"
         type="button"
         variant="ghost"
@@ -94,6 +93,11 @@ const emit = defineEmits<SideNavEmits>();
   font-size: var(--expressa-font-size-action);
   font-weight: var(--expressa-font-weight-medium);
   text-align: left;
+  transition:
+    color var(--expressa-motion-duration-control)
+      var(--expressa-motion-ease-state),
+    background-color var(--expressa-motion-duration-control)
+      var(--expressa-motion-ease-state);
   cursor: pointer;
 }
 .side-nav-link--active {

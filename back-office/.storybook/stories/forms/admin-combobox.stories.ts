@@ -14,7 +14,7 @@ const options = [
 const meta = {
   title: "Forms/AdminCombobox",
   component: AdminCombobox,
-  args: { label: "Категория", modelValue: "coffee", options },
+  args: { modelValue: "coffee", options },
   parameters: { layout: "padded" },
 } satisfies Meta<typeof AdminCombobox>;
 

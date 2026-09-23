@@ -1,70 +1,67 @@
 <template>
-  <v-dialog
-    v-bind="dialogAttrs"
-    content-class="admin-dialog__content"
-    :location="dialogLocation"
-    :max-height="dialogMaxHeight"
-    :max-width="dialogMaxWidth"
-    :model-value="props.modelValue"
-    :persistent="props.persistent || props.pending || props.dismissDisabled"
-    :transition="false"
-    :width="dialogWidth"
-    @after-enter="emit('afterEnter')"
-    @update:model-value="emit('update:modelValue', $event)"
-  >
+  <Teleport to="body">
     <div
-      ref="surface"
-      class="admin-dialog__surface"
-      :class="{ 'admin-dialog__surface--full-screen': isFullScreen }"
+      v-if="props.modelValue"
+      v-bind="dialogAttrs"
+      class="admin-dialog__layer"
+      :class="{ 'admin-dialog__layer--mobile': isMobile }"
+      @click.self="requestBackdropClose"
     >
-      <header v-if="hasHeader" class="admin-dialog__header">
-        <h2 v-if="props.title" :id="titleId" class="admin-dialog__title">
-          {{ props.title }}
-        </h2>
-        <slot v-else name="header" />
-        <AdminButton
-          :aria-label="props.closeLabel"
-          class="admin-dialog__close"
-          :disabled="props.pending || props.dismissDisabled"
-          type="button"
-          variant="ghost"
-          @click="requestClose"
+      <div class="admin-dialog__content" :style="dialogContentStyle">
+        <div
+          class="admin-dialog__surface"
+          :class="{ 'admin-dialog__surface--full-screen': isFullScreen }"
         >
-          <AdminIcon :icon="X" />
-        </AdminButton>
-      </header>
-      <div class="admin-dialog__body">
-        <slot />
+          <header v-if="hasHeader" class="admin-dialog__header">
+            <h2 v-if="props.title" class="admin-dialog__title">
+              {{ props.title }}
+            </h2>
+            <slot v-else name="header" />
+            <AdminButton
+              class="admin-dialog__close"
+              :disabled="props.pending || props.dismissDisabled"
+              type="button"
+              variant="ghost"
+              @click="requestClose"
+            >
+              <AdminIcon :icon="X" />
+            </AdminButton>
+          </header>
+          <div class="admin-dialog__body">
+            <slot />
+          </div>
+          <footer v-if="hasActions" class="admin-dialog__footer">
+            <AdminButton
+              v-if="props.cancelLabel"
+              :disabled="props.pending || props.dismissDisabled"
+              :size="props.actionSize"
+              type="button"
+              variant="ghost"
+              @click="requestClose"
+            >
+              {{ props.cancelLabel }}
+            </AdminButton>
+            <AdminButton
+              v-if="props.submitLabel"
+              :disabled="props.submitDisabled"
+              :size="props.actionSize"
+              :form="props.submitForm"
+              :pending="props.pending"
+              type="submit"
+              :variant="props.submitVariant"
+            >
+              {{ props.submitLabel }}
+            </AdminButton>
+          </footer>
+        </div>
       </div>
-      <footer v-if="hasActions" class="admin-dialog__footer">
-        <AdminButton
-          v-if="props.cancelLabel"
-          :disabled="props.pending || props.dismissDisabled"
-          type="button"
-          variant="ghost"
-          @click="requestClose"
-        >
-          {{ props.cancelLabel }}
-        </AdminButton>
-        <AdminButton
-          v-if="props.submitLabel"
-          :disabled="props.submitDisabled"
-          :form="props.submitForm"
-          :pending="props.pending"
-          type="submit"
-          :variant="props.submitVariant"
-        >
-          {{ props.submitLabel }}
-        </AdminButton>
-      </footer>
     </div>
-  </v-dialog>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import {
   computed,
-  inject,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -81,7 +78,6 @@ import {
 import type { AdminDialogEmits, AdminDialogProps } from "./AdminDialog.types";
 import AdminButton from "../admin-button/AdminButton.vue";
 import AdminIcon from "../admin-icon/AdminIcon.vue";
-import { overlayCoordinatorKey } from "../../overlay/overlay-coordinator.types";
 
 defineOptions({ inheritAttrs: false });
 
@@ -92,14 +88,6 @@ const props = withDefaults(
 const emit = defineEmits<AdminDialogEmits>();
 const attrs = useAttrs();
 const slots = useSlots();
-const overlayCoordinator = inject(overlayCoordinatorKey, null);
-const surface = shallowRef<HTMLElement | null>(null);
-let unregisterModalRegion: (() => void) | null = null;
-const titleId = computed(() =>
-  typeof attrs["aria-labelledby"] === "string"
-    ? attrs["aria-labelledby"]
-    : undefined,
-);
 const isMobile = shallowRef(true);
 const isFullScreen = shallowRef(false);
 const mobileMedia =
@@ -111,30 +99,27 @@ const fullScreenMedia =
     ? globalThis.matchMedia("(max-width: 599px)")
     : null;
 const dialogAttrs = computed(() => ({
-  "aria-describedby": attrs["aria-describedby"],
-  "aria-labelledby": attrs["aria-labelledby"],
-  "aria-modal": attrs["aria-modal"] ?? true,
-  role: attrs.role ?? "dialog",
   class: attrs.class,
   "data-testid": attrs["data-testid"],
   style: attrs.style,
 }));
-const dialogLocation = computed(() =>
-  isMobile.value ? "bottom center" : "center center",
-);
-const dialogMaxWidth = computed(() =>
-  isMobile.value ? "100%" : props.maxWidth,
-);
-const dialogMaxHeight = computed(() =>
-  isFullScreen.value ? "100dvh" : "var(--expressa-size-dialog-max-block)",
-);
-const dialogWidth = computed(() =>
-  isMobile.value || isFullScreen.value ? "100%" : undefined,
-);
+const dialogContentStyle = computed(() => ({
+  maxWidth: isMobile.value ? "100%" : toCssSize(props.maxWidth),
+  maxHeight: isFullScreen.value
+    ? "100dvh"
+    : "var(--expressa-size-dialog-max-block)",
+  width: "100%",
+}));
 const hasActions = computed(() =>
   Boolean(props.cancelLabel || props.submitLabel),
 );
 const hasHeader = computed(() => Boolean(props.title || slots.header));
+
+function toCssSize(value: number | string | undefined): string | undefined {
+  return typeof value === "number" || /^\d+(\.\d+)?$/.test(value ?? "")
+    ? `${value}px`
+    : value;
+}
 
 function requestClose(): void {
   if (props.pending || props.dismissDisabled) return;
@@ -142,17 +127,9 @@ function requestClose(): void {
   emit("update:modelValue", false);
 }
 
-function syncModalRegion(isOpen: boolean): void {
-  unregisterModalRegion?.();
-  unregisterModalRegion = null;
-  if (!isOpen || !surface.value || !overlayCoordinator) return;
-  const primary = surface.value.querySelector<HTMLElement>(
-    "button:not(:disabled)",
-  );
-  unregisterModalRegion = overlayCoordinator.registerModalRegion(
-    surface.value,
-    primary,
-  );
+function requestBackdropClose(): void {
+  if (props.persistent) return;
+  requestClose();
 }
 
 function syncMobileLayout(): void {
@@ -167,27 +144,41 @@ onMounted(() => {
   syncMobileLayout();
   mobileMedia?.addEventListener("change", syncMobileLayout);
   fullScreenMedia?.addEventListener("change", syncMobileLayout);
-  void nextTick(() => syncModalRegion(props.modelValue));
-});
-
-onBeforeUnmount(() => {
-  mobileMedia?.removeEventListener("change", syncMobileLayout);
-  fullScreenMedia?.removeEventListener("change", syncMobileLayout);
-  unregisterModalRegion?.();
 });
 
 watch(
   () => props.modelValue,
-  async (isOpen) => {
-    await nextTick();
-    syncModalRegion(isOpen);
+  async (visible) => {
+    if (visible) {
+      await nextTick();
+      emit("afterEnter");
+    }
   },
+  { immediate: true },
 );
+
+onBeforeUnmount(() => {
+  mobileMedia?.removeEventListener("change", syncMobileLayout);
+  fullScreenMedia?.removeEventListener("change", syncMobileLayout);
+});
 </script>
 
 <style scoped>
-:global(.admin-dialog__content) {
+.admin-dialog__layer {
+  position: fixed;
+  z-index: var(--expressa-z-modal-layer);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--expressa-color-overlay);
+}
+.admin-dialog__layer--mobile {
+  align-items: flex-end;
+}
+.admin-dialog__content {
   margin: 0;
+  max-width: calc(100% - 2 * var(--expressa-space-dialog-inset));
   overflow-y: auto;
 }
 
@@ -197,13 +188,14 @@ watch(
   max-height: var(--expressa-size-dialog-max-block);
   background: var(--expressa-color-surface);
   border-radius: var(--expressa-radius-lg) var(--expressa-radius-lg) 0 0;
+  box-shadow: var(--expressa-shadow-modal);
 }
 .admin-dialog__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
+  padding: var(--expressa-space-lg) var(--expressa-space-dialog-inset);
 }
 .admin-dialog__title {
   margin: 0;
@@ -215,6 +207,7 @@ watch(
   block-size: 100dvh;
   max-height: 100dvh;
   border-radius: 0;
+  box-shadow: none;
 }
 
 .admin-dialog__footer {
@@ -222,7 +215,7 @@ watch(
   flex: 0 0 auto;
   justify-content: flex-end;
   gap: var(--expressa-space-control-inline);
-  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
+  padding: var(--expressa-space-lg) var(--expressa-space-dialog-inset);
 }
 
 .admin-dialog__body {
@@ -232,7 +225,7 @@ watch(
 }
 
 @media (min-width: 768px) {
-  :global(.admin-dialog__content) {
+  .admin-dialog__content {
     margin: var(--expressa-space-dialog-inset);
   }
 

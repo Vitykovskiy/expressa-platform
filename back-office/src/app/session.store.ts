@@ -18,7 +18,6 @@ import type { AuthCurrentUser } from "../shared/api/auth.api.types";
 export function createSessionStore(dependencies: SessionStoreDependencies) {
   let restorePromise: Promise<void> | null = null;
   let sessionEpoch = crypto.randomUUID();
-  const operationPort = getOperationPort();
   const operationContext = (
     operationKey: string,
     resourceKey: string,
@@ -44,7 +43,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
     }),
     actions: {
       async requestOtp(phone: string) {
-        const result = await operationPort.run(
+        const result = await getOperationPort().run(
           operationContext("auth.otp.request", "otp", "mutation", {
             phone: { path: "phone" },
           }),
@@ -67,7 +66,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       async verifyOtp(phone: string, code: string): Promise<void> {
-        const result = await operationPort.run(
+        const result = await getOperationPort().run(
           operationContext("auth.otp.verify", "otp", "mutation", {
             code: { path: "code" },
           }),
@@ -75,7 +74,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
         );
         if (result.status === "success") {
           const access = result.value;
-          const userResult = await operationPort.run(
+          const userResult = await getOperationPort().run(
             operationContext("auth.current-user", "session", "read"),
             () => dependencies.authApi.getCurrentUser(access.accessToken),
           );
@@ -106,7 +105,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
               this.setAnonymous();
               return;
             }
-            await operationPort.run(
+            await getOperationPort().run(
               operationContext("session.restore", "session", "read"),
               () => Promise.reject(error),
             );
@@ -143,7 +142,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       async logout(): Promise<void> {
-        const result = await operationPort.run(
+        const result = await getOperationPort().run(
           operationContext("session.logout", "session", "mutation"),
           () => dependencies.authApi.logout(),
         );
@@ -164,7 +163,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           return;
         }
 
-        await operationPort.run(
+        await getOperationPort().run(
           operationContext("session.denied.logout", "session", "mutation"),
           () => dependencies.authApi.logout(),
         );
@@ -182,7 +181,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       setAnonymous(): void {
-        operationPort.clearSession(sessionEpoch);
+        getOperationPort().clearSession(sessionEpoch);
         sessionEpoch = crypto.randomUUID();
         this.accessToken = null;
         this.currentUser = null;

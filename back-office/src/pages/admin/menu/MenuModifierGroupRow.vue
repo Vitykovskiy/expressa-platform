@@ -7,7 +7,6 @@
     <AdminButton
       type="button"
       variant="ghost"
-      :aria-label="`Редактировать группу добавок ${props.group.name}`"
       @click="emit('edit', props.group)"
     >
       Редактировать

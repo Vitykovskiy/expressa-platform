@@ -49,7 +49,6 @@ export const RadioGroup: Story = {
         { label: "Администратор", value: "administrator" },
       ],
     }),
-    template:
-      '<AdminRadioGroup v-model="modelValue" aria-label="Роль" :items="items" />',
+    template: '<AdminRadioGroup v-model="modelValue" :items="items" />',
   }),
 };

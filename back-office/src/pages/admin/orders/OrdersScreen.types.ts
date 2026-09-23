@@ -14,7 +14,6 @@ export type OrdersScreenProps = {
   status: "error" | "loading" | "ready" | "unresolved";
   error?: QueueScreenError | null;
   refreshError?: QueueScreenError | null;
-  errorFocus?: boolean;
   accessRecoveryPending?: boolean;
   requiresAccessRecovery?: boolean;
   selectedOrderId: string | null;

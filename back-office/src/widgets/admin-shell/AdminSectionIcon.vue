@@ -1,19 +1,7 @@
 <template>
-  <AdminIcon
-    v-if="section === 'orders'"
-    aria-hidden="true"
-    :icon="ClipboardList"
-  />
-  <AdminIcon
-    v-else-if="section === 'availability'"
-    aria-hidden="true"
-    :icon="ToggleRight"
-  />
-  <AdminIcon
-    v-else-if="section === 'menu'"
-    aria-hidden="true"
-    :icon="BookOpen"
-  />
+  <AdminIcon v-if="section === 'orders'" :icon="ClipboardList" />
+  <AdminIcon v-else-if="section === 'availability'" :icon="ToggleRight" />
+  <AdminIcon v-else-if="section === 'menu'" :icon="BookOpen" />
 </template>
 
 <script setup lang="ts">

@@ -1,6 +1,5 @@
 <template>
   <AdminDialog
-    :aria-labelledby="titleId"
     cancel-label="Отмена"
     full-screen-below-600
     :model-value="open"
@@ -10,7 +9,6 @@
     :submit-disabled="props.disabled || !canSave"
     submit-label="Сохранить"
     title="Новая категория"
-    @after-enter="focusFirstField"
     @update:model-value="requestClose"
   >
     <form
@@ -20,13 +18,11 @@
     >
       <div class="category-dialog__fields">
         <CategoryFormFields
-          ref="fields"
           :description="draft.description.value"
           :disabled="props.disabled"
           :errors="errors"
           :is-active="draft.isActive.value"
           :name="draft.name.value"
-          name-autofocus
           @blur-name="nameTouched = true"
           @submit="confirm"
           @update:description="draft.description.value = $event"
@@ -48,13 +44,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, useId, useTemplateRef, watch } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import CategoryFormFields from "./CategoryFormFields.vue";
 import { ADD_CATEGORY_DIALOG_DEFAULTS } from "./AddCategoryDialog.constants";
 import { useCategoryDraft } from "./composables/useCategoryDraft";
-import { useDialogFocusLifecycle } from "./composables/useDialogFocusLifecycle";
 import type {
   AddCategoryDialogEmits,
   AddCategoryDialogProps,
@@ -66,12 +61,8 @@ const props = withDefaults(
 );
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<AddCategoryDialogEmits>();
-const titleId = `add-category-title-${useId()}`;
-const fields =
-  useTemplateRef<InstanceType<typeof CategoryFormFields>>("fields");
 const nameTouched = shallowRef(false);
 const discardOpen = shallowRef(false);
-const { captureReturnFocus, restoreFocus } = useDialogFocusLifecycle();
 const draft = useCategoryDraft({
   categories: () => props.categories ?? [],
   initial: () => ({ name: "", description: "", isActive: true }),
@@ -83,9 +74,6 @@ const errors = computed(() => ({
 }));
 const canSave = computed(() => draft.isDirty.value && draft.isValid.value);
 
-function focusFirstField(): void {
-  fields.value?.focusName();
-}
 function confirm(): void {
   nameTouched.value = true;
   if (props.disabled || !canSave.value) return;
@@ -108,9 +96,7 @@ watch(open, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) {
     draft.reset();
     nameTouched.value = false;
-    captureReturnFocus();
   }
-  if (!isOpen && wasOpen) restoreFocus();
 });
 </script>
 

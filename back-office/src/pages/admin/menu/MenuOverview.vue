@@ -3,7 +3,6 @@
     <div class="menu-overview__toolbar">
       <AdminActionGroup class="menu-overview__actions">
         <AdminButton
-          ref="addCategoryAction"
           type="button"
           :disabled="props.disabled"
           @click="emit('addCategory')"
@@ -17,7 +16,6 @@
         >
       </AdminActionGroup>
       <AdminButton
-        ref="reorderAction"
         type="button"
         variant="secondary"
         :disabled="props.disabled"
@@ -25,7 +23,7 @@
         >Настроить порядок</AdminButton
       >
     </div>
-    <p v-if="props.reorderSaved" class="menu-overview__status" role="status">
+    <p v-if="props.reorderSaved" class="menu-overview__status">
       Порядок сохранён
     </p>
     <p class="menu-overview__summary">
@@ -82,7 +80,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { useTemplateRef } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import MenuCategoryGroup from "./MenuCategoryGroup.vue";
@@ -99,20 +96,6 @@ const props = withDefaults(defineProps<MenuOverviewProps>(), {
   disabled: false,
 });
 const emit = defineEmits<MenuOverviewEmits>();
-const reorderAction =
-  useTemplateRef<InstanceType<typeof AdminButton>>("reorderAction");
-const addCategoryAction =
-  useTemplateRef<InstanceType<typeof AdminButton>>("addCategoryAction");
-
-function focusReorderAction(): void {
-  reorderAction.value?.focus();
-}
-
-function focusAddCategoryAction(): void {
-  addCategoryAction.value?.focus();
-}
-
-defineExpose({ focusAddCategoryAction, focusReorderAction });
 
 function productsFor(categoryId: string) {
   return props.products

@@ -23,9 +23,6 @@ function renderText(args: Story["args"]) {
       <AdminFieldWrapper v-bind="args" v-slot="field">
           <AdminTextField
             :id="field.controlId"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :required="field.required"
             model-value="Капучино"
           />
@@ -42,6 +39,32 @@ export const Error: Story = {
     required: true,
   },
   render: renderText,
+};
+export const TableError: Story = {
+  args: {
+    error: "Укажите цену в целых рублях",
+    label: "Цена варианта 1",
+    layout: "table",
+    required: true,
+  },
+  render(args: Story["args"]) {
+    return {
+      components: { AdminFieldWrapper, AdminTextField },
+      setup: () => ({ args }),
+      template: `
+        <div>
+          <span>Цена, ₽</span>
+          <AdminFieldWrapper v-bind="args" v-slot="field">
+            <AdminTextField
+              :id="field.controlId"
+              :required="field.required"
+              model-value=""
+            />
+          </AdminFieldWrapper>
+        </div>
+      `,
+    };
+  },
 };
 export const Disabled: Story = {
   render(args: Story["args"]) {

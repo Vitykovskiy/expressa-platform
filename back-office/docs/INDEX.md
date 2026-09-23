@@ -27,6 +27,7 @@ Back-office — отдельное Vue-приложение сотруднико
 - [Рабочие области](30-domains/INDEX.md) — вход, роли, маршруты, каталог, API и границы активных экранов.
 - [Архитектура UI](10-architecture/ui-ownership.md) — владельцы состояния, responsive и accessibility-границы.
 - [ADR-001](ADR/ADR-001-feature-sliced-runtime-and-storybook.md) — границы feature-sliced runtime.
+- [ADR-010](../../docs/20-architecture/ADR/ADR-010-back-office-interaction-boundary.md) — граница доступности и управления Admin.
 
 ## Устройство UI
 

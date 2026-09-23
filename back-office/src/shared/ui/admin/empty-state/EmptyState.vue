@@ -1,6 +1,6 @@
 <template>
-  <section v-bind="attrs" class="empty-state" role="status">
-    <div v-if="$slots.icon" class="empty-state__icon" aria-hidden="true">
+  <section v-bind="attrs" class="empty-state">
+    <div v-if="$slots.icon" class="empty-state__icon">
       <slot name="icon" />
     </div>
     <h2 class="empty-state__title">
@@ -29,7 +29,7 @@ defineSlots<{
   min-width: 0;
   max-width: 100%;
   justify-items: center;
-  gap: var(--expressa-space-sm);
+  gap: var(--expressa-space-md);
   padding: var(--expressa-space-empty-state-block) var(--expressa-space-lg);
   color: var(--expressa-color-text-muted);
   text-align: center;
@@ -37,8 +37,8 @@ defineSlots<{
 
 .empty-state__icon {
   display: flex;
-  min-width: var(--expressa-size-control-min-height);
-  min-height: var(--expressa-size-control-min-height);
+  min-width: var(--expressa-space-48);
+  min-height: var(--expressa-space-48);
   align-items: center;
   justify-content: center;
   color: var(--expressa-color-text-muted);

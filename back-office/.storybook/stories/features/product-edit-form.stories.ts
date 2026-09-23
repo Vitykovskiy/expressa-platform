@@ -28,9 +28,6 @@ function render(args: Story["args"]) {
           <AdminFieldWrapper id="product-name" label="Название товара" required v-slot="field">
             <AdminTextField
               :id="field.controlId"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               v-model="name"
               :required="field.required"
             />

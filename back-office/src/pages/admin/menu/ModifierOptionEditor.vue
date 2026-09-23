@@ -2,7 +2,6 @@
   <article
     class="modifier-option-editor"
     :class="{ 'modifier-option-editor--disabled': props.disabled }"
-    aria-label="Поля варианта добавки"
   >
     <div class="modifier-option-editor__body">
       <AdminFieldWrapper
@@ -14,9 +13,6 @@
       >
         <AdminTextField
           :id="field.controlId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           data-testid="modifier-option-name"
           :disabled="props.disabled"
           :model-value="props.modelValue.name"
@@ -35,9 +31,6 @@
       >
         <AdminTextField
           :id="field.controlId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="props.disabled"
           :model-value="props.modelValue.priceDelta"
           inputmode="numeric"
@@ -55,10 +48,6 @@
       >
         <AdminToggle
           :id="field.controlId"
-          :aria-labelledby="field.labelId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="props.disabled"
           :model-value="props.modelValue.isDefault"
           @update:model-value="updateField('isDefault', Boolean($event))"
@@ -72,10 +61,6 @@
       >
         <AdminToggle
           :id="field.controlId"
-          :aria-labelledby="field.labelId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="props.disabled"
           :model-value="props.modelValue.isAvailable"
           @update:model-value="updateField('isAvailable', Boolean($event))"

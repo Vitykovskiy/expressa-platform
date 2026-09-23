@@ -17,18 +17,13 @@
           <span class="availability-screen__search-control">
             <AdminTextField
               :id="field.controlId"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               :model-value="props.search"
               :required="field.required"
               type="search"
-              @keydown="handleSearchKeydown"
               @update:model-value="emit('update:search', $event)"
             />
             <AdminButton
               v-if="props.search"
-              aria-label="Очистить поиск"
               class="availability-screen__clear-search"
               variant="ghost"
               @click="emit('update:search', '')"
@@ -45,11 +40,7 @@
           @update:model-value="emit('update:activeCategory', $event)"
         />
       </div>
-      <section
-        v-if="props.loading"
-        aria-label="Загружаем доступность"
-        class="availability-screen__loading"
-      >
+      <section v-if="props.loading" class="availability-screen__loading">
         <span
           v-for="index in 3"
           :key="index"
@@ -178,9 +169,6 @@ function resetFilters(): void {
   emit("update:search", "");
   emit("update:activeCategory", AVAILABILITY_ALL_CATEGORY);
 }
-function handleSearchKeydown(event: KeyboardEvent): void {
-  if (event.key === "Escape") emit("update:search", "");
-}
 </script>
 
 <style scoped lang="scss">
@@ -255,6 +243,9 @@ function handleSearchKeydown(event: KeyboardEvent): void {
 }
 .availability-screen__intake-title {
   margin: 0 0 var(--expressa-space-8);
+}
+.availability-screen__intake :deep(.toggle-row) {
+  border-bottom: var(--expressa-border-width-none);
 }
 .availability-screen__groups {
   display: grid;

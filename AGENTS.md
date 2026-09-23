@@ -20,6 +20,7 @@
 
 - Область: весь UI front-office и back-office. Нормативные требования и local canonical owners: [front-office UI contracts](front-office/docs/30-conventions/UI-contracts.md) и [back-office UI ownership](back-office/docs/10-architecture/ui-ownership.md).
 - Это required target до отдельной независимой приёмки; существующий runtime не считается соответствующим только из-за этой записи.
+- В каждой задаче создания или изменения видимого UI применяй [процесс визуальной работы](docs/40-quality/Validation-strategy.md#Процесс-визуальной-работы) без отдельного напоминания пользователя. Макет Figma не обязателен; итог требует осмотра после последних правок и независимой визуальной проверки.
 
 ## Оркестрация
 

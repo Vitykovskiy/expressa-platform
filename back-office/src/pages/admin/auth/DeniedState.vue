@@ -1,6 +1,6 @@
 <template>
-  <section class="auth-denied" role="alert">
-    <div class="auth-denied__icon" aria-hidden="true">
+  <section class="auth-denied">
+    <div class="auth-denied__icon">
       <AdminIcon :icon="ShieldX" />
     </div>
     <h2>Доступ запрещён</h2>

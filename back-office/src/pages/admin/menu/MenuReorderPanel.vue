@@ -1,18 +1,10 @@
 <template>
-  <section class="menu-reorder" aria-labelledby="menu-reorder-title">
+  <section class="menu-reorder">
     <div class="menu-reorder__bar">
       <div>
-        <h2 id="menu-reorder-title" ref="title" tabindex="-1">
-          Настройка порядка
-        </h2>
-        <p v-if="props.pending" class="menu-reorder__status" role="status">
-          Сохраняем…
-        </p>
-        <p
-          v-else-if="dirtyScopes.length"
-          class="menu-reorder__status"
-          role="status"
-        >
+        <h2 id="menu-reorder-title">Настройка порядка</h2>
+        <p v-if="props.pending" class="menu-reorder__status">Сохраняем…</p>
+        <p v-else-if="dirtyScopes.length" class="menu-reorder__status">
           Есть несохранённые изменения
         </p>
       </div>
@@ -31,9 +23,6 @@
         >
       </AdminActionGroup>
     </div>
-    <p v-if="announcement" class="menu-reorder__hint" aria-live="polite">
-      {{ announcement }}
-    </p>
     <ConfirmDialog
       v-model:open="discardOpen"
       cancel-label="Вернуться"
@@ -47,22 +36,16 @@
     <div
       ref="categoryList"
       class="menu-reorder__list"
-      role="list"
-      :aria-busy="props.pending"
       @scroll="onCategoryScroll"
     >
       <div
         class="menu-reorder__category-spacer"
         :style="{ height: `${categoryVirtual.beforeSize.value}px` }"
-        aria-hidden="true"
       />
       <section
         v-for="(categoryId, index) in visibleCategoryIds"
         :key="categoryId"
         class="menu-reorder__subtree"
-        role="listitem"
-        :aria-posinset="categoryStart + index + 1"
-        :aria-setsize="draft.categoryIds.length"
       >
         <MenuReorderRow
           :id="categoryId"
@@ -76,25 +59,18 @@
           disclosable
           :expanded="isExpanded(categoryId)"
           @move="moveCategory(categoryId, $event)"
-          @keyboard-drag-cancel="
-            cancelKeyboardDrag(categoryName(categoryId), null, categoryId)
-          "
-          @keyboard-drag-start="startKeyboardDrag"
           @toggle="toggle(categoryId)"
         />
         <div
           v-if="isExpanded(categoryId)"
           :ref="(element) => setProductList(categoryId, element)"
           class="menu-reorder__products"
-          role="list"
-          :aria-label="`Товары категории ${categoryName(categoryId)}`"
           :style="{ blockSize: `${productPanelHeight(categoryId)}px` }"
           @scroll="onProductScroll(categoryId)"
         >
           <p
             v-if="productIds(categoryId).length === 0"
             class="menu-reorder__empty-products"
-            role="status"
           >
             Товаров в этой категории пока нет
           </p>
@@ -104,7 +80,6 @@
             :style="{
               height: `${productVirtual(categoryId).beforeSize.value}px`,
             }"
-            aria-hidden="true"
           />
           <MenuReorderRow
             v-for="(productId, productIndex) in productIds(categoryId).length >
@@ -123,14 +98,7 @@
             :disabled="props.pending"
             :position="productStart(categoryId) + productIndex + 1"
             :total="productIds(categoryId).length"
-            role="listitem"
-            :aria-posinset="productStart(categoryId) + productIndex + 1"
-            :aria-setsize="productIds(categoryId).length"
             @move="moveProduct(categoryId, productId, $event)"
-            @keyboard-drag-cancel="
-              cancelKeyboardDrag(productName(productId), categoryId, productId)
-            "
-            @keyboard-drag-start="startKeyboardDrag"
           />
           <div
             v-if="productIds(categoryId).length > 0"
@@ -138,7 +106,6 @@
             :style="{
               height: `${productVirtual(categoryId).afterSize.value}px`,
             }"
-            aria-hidden="true"
           />
         </div>
       </section>
@@ -147,7 +114,6 @@
         :style="{
           height: `${categoryVirtual.afterSize.value}px`,
         }"
-        aria-hidden="true"
       />
     </div>
   </section>
@@ -171,7 +137,6 @@ import type {
   MenuReorderPanelEmits,
   MenuReorderPanelProps,
 } from "./MenuReorderPanel.types";
-import type { MenuReorderDraft } from "./composables/useMenuReorderDraft.types";
 import MenuReorderRow from "./MenuReorderRow.vue";
 import { useVirtualSiblingRows } from "./composables/useVirtualSiblingRows";
 import { menuReorderGeometry } from "./MenuReorderPanel.constants";
@@ -186,13 +151,10 @@ const { draft, dirtyScopes, move, reset } = useMenuReorderDraft(
   categories,
   products,
 );
-const announcement = ref("");
 const discardOpen = ref(false);
 const closeRequested = ref(false);
 const pendingNavigation = ref<string | null>(null);
 const categoryList = ref<HTMLElement | null>(null);
-const title = ref<HTMLElement | null>(null);
-const keyboardDragSnapshot = ref<MenuReorderDraft | null>(null);
 const categoryVirtual = useVirtualSiblingRows(
   () => draft.value.categoryIds.length,
   (index) => categorySubtreeHeight(draft.value.categoryIds[index] ?? ""),
@@ -311,25 +273,20 @@ onMounted(() => {
     onCategoryScroll();
     for (const [categoryId, element] of productLists)
       syncProductViewport(categoryId, element);
-    focusTitle();
   });
 });
 async function moved(
-  label: string,
   scope: string | null,
   id: string,
   offset: -1 | 1,
-  control: "handle" | "up" | "down",
 ): Promise<void> {
   if (!move(scope, id, offset)) {
-    announcement.value = `${label}: ${offset === -1 ? "уже первая" : "уже последняя"} позиция`;
     return;
   }
   const ids =
     scope === null
       ? draft.value.categoryIds
       : (draft.value.productIdsByCategory[scope] ?? []);
-  announcement.value = `${label}: позиция ${ids.indexOf(id) + 1} из ${ids.length}`;
   const index = ids.indexOf(id);
   if (scope === null && categoryList.value) {
     categoryList.value.scrollTop = categoryVirtual.scrollTopForIndex(
@@ -350,72 +307,19 @@ async function moved(
       syncProductViewport(scope, list);
     }
   }
-  await nextTick();
-  document
-    .querySelector<HTMLElement>(`[data-reorder-control="${id}:${control}"]`)
-    ?.focus();
 }
 function moveCategory(
   id: string,
   request: { offset: -1 | 1; control: "handle" | "up" | "down" },
 ): void {
-  void moved(categoryName(id), null, id, request.offset, request.control);
+  void moved(null, id, request.offset);
 }
 function moveProduct(
   categoryId: string,
   id: string,
   request: { offset: -1 | 1; control: "handle" | "up" | "down" },
 ): void {
-  void moved(productName(id), categoryId, id, request.offset, request.control);
-}
-function startKeyboardDrag(): void {
-  keyboardDragSnapshot.value = {
-    categoryIds: [...draft.value.categoryIds],
-    productIdsByCategory: Object.fromEntries(
-      Object.entries(draft.value.productIdsByCategory).map(
-        ([categoryId, ids]) => [categoryId, [...ids]],
-      ),
-    ),
-  };
-}
-async function cancelKeyboardDrag(
-  label: string,
-  scope: string | null,
-  id: string,
-): Promise<void> {
-  if (keyboardDragSnapshot.value === null) return;
-  draft.value = keyboardDragSnapshot.value;
-  keyboardDragSnapshot.value = null;
-  announcement.value = `${label}: перемещение отменено`;
-  await nextTick();
-  const ids =
-    scope === null
-      ? draft.value.categoryIds
-      : (draft.value.productIdsByCategory[scope] ?? []);
-  const index = ids.indexOf(id);
-  if (scope === null && categoryList.value && index >= 0) {
-    categoryList.value.scrollTop = categoryVirtual.scrollTopForIndex(
-      index,
-      categoryList.value.scrollTop,
-      categoryList.value.clientHeight,
-    );
-    onCategoryScroll();
-  } else if (scope !== null && index >= 0) {
-    const list = productLists.get(scope);
-    if (list) {
-      const virtual = productVirtual(scope);
-      list.scrollTop = virtual.scrollTopForIndex(
-        index,
-        list.scrollTop,
-        list.clientHeight,
-      );
-      syncProductViewport(scope, list);
-    }
-  }
-  await nextTick();
-  document
-    .querySelector<HTMLElement>(`[data-reorder-control="${id}:handle"]`)
-    ?.focus();
+  void moved(categoryId, id, request.offset);
 }
 function requestClose(): void {
   if (dirtyScopes.value.length === 0) {
@@ -456,10 +360,7 @@ onBeforeRouteUpdate((to) => {
   }
   return true;
 });
-function focusTitle(): void {
-  title.value?.focus();
-}
-defineExpose({ focusTitle, requestClose });
+defineExpose({ requestClose });
 function onBeforeUnload(event: BeforeUnloadEvent): void {
   if (dirtyScopes.value.length === 0) return;
   event.preventDefault();

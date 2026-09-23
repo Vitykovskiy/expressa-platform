@@ -1,7 +1,5 @@
 <template>
   <AdminDialog
-    :aria-describedby="descriptionId"
-    :aria-labelledby="titleId"
     cancel-label="Отмена"
     :model-value="open"
     max-width="400"
@@ -32,30 +30,17 @@
       </p>
 
       <div v-if="isRoleChange" class="user-action-dialog-roles">
-        <AdminRadioGroup
-          ref="roleOption"
-          v-model="selectedRole"
-          aria-label="Роль"
-          :items="roleOptions"
-        />
+        <AdminRadioGroup v-model="selectedRole" :items="roleOptions" />
       </div>
     </form>
   </AdminDialog>
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, watch } from "vue";
 
 import { DEFAULT_ACTION_USER_ROLE } from "./UserActionDialog.constants";
 import type {
-  FocusableElement,
   UserActionDialogEmits,
   UserActionDialogPresentation,
   UserActionDialogProps,
@@ -67,10 +52,6 @@ const props = defineProps<UserActionDialogProps>();
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<UserActionDialogEmits>();
 const selectedRole = shallowRef(DEFAULT_ACTION_USER_ROLE);
-const returnFocusTarget = shallowRef<FocusableElement | null>(null);
-const roleOption =
-  useTemplateRef<InstanceType<typeof AdminRadioGroup>>("roleOption");
-const titleId = `user-action-dialog-title-${useId()}`;
 const descriptionId = `user-action-dialog-description-${useId()}`;
 const roleOptions = [
   { label: "Бариста", value: "barista" },
@@ -130,33 +111,14 @@ function confirmAction(): void {
   open.value = false;
 }
 
-function isFocusableElement(value: unknown): value is FocusableElement {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "focus" in value &&
-    typeof value.focus === "function"
-  );
-}
-
 watch(open, (isOpen, wasOpen) => {
   if (isOpen && !wasOpen) {
-    const activeElement = globalThis.document?.activeElement;
-    returnFocusTarget.value = isFocusableElement(activeElement)
-      ? activeElement
-      : null;
     resetDraft();
     return;
   }
 
   if (!isOpen && wasOpen) {
     resetDraft();
-    const focusTarget = returnFocusTarget.value;
-    returnFocusTarget.value = null;
-
-    if (focusTarget) {
-      void nextTick(() => focusTarget.focus());
-    }
   }
 });
 </script>

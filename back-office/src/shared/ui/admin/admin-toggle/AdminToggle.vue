@@ -2,13 +2,12 @@
   <button
     v-bind="attrs"
     class="admin-toggle"
-    :aria-checked="props.modelValue === true"
+    :data-selected="props.modelValue === true"
     :disabled="props.disabled"
-    role="switch"
     type="button"
     @click="toggle"
   >
-    <span class="admin-toggle__track" aria-hidden="true">
+    <span class="admin-toggle__track">
       <span class="admin-toggle__thumb" />
     </span>
   </button>
@@ -53,7 +52,7 @@ function toggle(): void {
 .admin-toggle__track {
   display: inline-flex;
   box-sizing: border-box;
-  width: var(--expressa-size-switch-track-inline);
+  width: var(--expressa-size-control-min-height);
   height: var(--expressa-size-switch-track-block);
   align-items: center;
   padding: var(--expressa-space-2xs);
@@ -63,7 +62,7 @@ function toggle(): void {
     var(--expressa-motion-ease-state);
 }
 
-.admin-toggle[aria-checked="true"] .admin-toggle__track {
+.admin-toggle[data-selected="true"] .admin-toggle__track {
   justify-content: flex-end;
   background: var(--expressa-color-accent);
 }
@@ -77,11 +76,6 @@ function toggle(): void {
   background: var(--expressa-color-control-disabled-surface);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-}
-
-.admin-toggle:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 
 .admin-toggle__thumb {

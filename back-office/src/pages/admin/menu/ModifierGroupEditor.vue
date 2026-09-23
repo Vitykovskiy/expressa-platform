@@ -1,10 +1,5 @@
 <template>
-  <section
-    class="modifier-group-editor"
-    :aria-labelledby="
-      props.embedded ? undefined : 'modifier-group-editor-title'
-    "
-  >
+  <section class="modifier-group-editor">
     <form
       :id="props.formId"
       class="modifier-group-editor__form"
@@ -29,7 +24,6 @@
           </AdminButton>
           <AdminButton
             v-if="props.group !== null"
-            aria-label="Архивировать группу"
             :disabled="isDraftActionLocked"
             class="modifier-group-editor__icon-action"
             type="button"
@@ -39,7 +33,6 @@
             <AdminIcon :icon="Archive" />
           </AdminButton>
           <AdminButton
-            aria-label="Закрыть"
             :disabled="isDismissalLocked"
             class="modifier-group-editor__icon-action"
             type="button"
@@ -50,11 +43,7 @@
           </AdminButton>
         </AdminActionGroup>
       </header>
-      <p
-        v-if="props.loading"
-        class="modifier-group-editor__state"
-        role="status"
-      >
+      <p v-if="props.loading" class="modifier-group-editor__state">
         Загрузка группы добавок…
       </p>
       <fieldset
@@ -70,10 +59,7 @@
         >
           <AdminTextField
             :id="field.controlId"
-            :aria-describedby="field.describedBy"
             :model-value="name"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             autocomplete="off"
             :required="field.required"
             type="text"
@@ -89,9 +75,6 @@
         >
           <AdminSelect
             :id="field.controlId"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
             :model-value="selectionType"
             :items="modifierSelectionTypeItems"
             :required="field.required"
@@ -104,14 +87,7 @@
           label="Выбор обязателен"
           layout="row"
         >
-          <AdminToggle
-            :id="field.controlId"
-            v-model="isRequired"
-            :aria-labelledby="field.labelId"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
-          />
+          <AdminToggle :id="field.controlId" v-model="isRequired" />
         </AdminFieldWrapper>
         <div class="modifier-group-editor__limits">
           <AdminFieldWrapper
@@ -123,9 +99,6 @@
           >
             <AdminTextField
               :id="field.controlId"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               :model-value="minSelect"
               inputmode="numeric"
               min="0"
@@ -144,9 +117,6 @@
             <AdminTextField
               :id="field.controlId"
               :model-value="maxSelect"
-              :aria-describedby="field.describedBy"
-              :aria-invalid="field.invalid"
-              :aria-required="field.required"
               inputmode="numeric"
               min="0"
               :required="field.required"
@@ -161,32 +131,19 @@
           label="Группа активна"
           layout="row"
         >
-          <AdminToggle
-            :id="field.controlId"
-            v-model="active"
-            :aria-labelledby="field.labelId"
-            :aria-describedby="field.describedBy"
-            :aria-invalid="field.invalid"
-            :aria-required="field.required"
-          />
+          <AdminToggle :id="field.controlId" v-model="active" />
         </AdminFieldWrapper>
-        <section
-          :aria-describedby="shownDefaultError ? optionsErrorId : undefined"
-          aria-labelledby="modifier-options-title"
-          class="modifier-group-editor__options"
-        >
+        <section class="modifier-group-editor__options">
           <h3 id="modifier-options-title">Варианты добавок</h3>
           <section
             v-for="(option, index) in options"
             :key="option.id ?? index"
-            ref="optionRows"
             class="modifier-group-editor__option"
           >
             <header class="modifier-group-editor__option-header">
               <h3>Вариант {{ index + 1 }} из {{ options.length }}</h3>
               <AdminActionGroup class="modifier-group-editor__option-actions">
                 <AdminButton
-                  :aria-label="`Переместить вариант ${index + 1} вверх`"
                   :disabled="isDraftActionLocked || index === 0"
                   class="modifier-group-editor__icon-action"
                   type="button"
@@ -195,7 +152,6 @@
                   ><AdminIcon :icon="ChevronUp"
                 /></AdminButton>
                 <AdminButton
-                  :aria-label="`Переместить вариант ${index + 1} вниз`"
                   :disabled="
                     isDraftActionLocked || index === options.length - 1
                   "
@@ -206,7 +162,6 @@
                   ><AdminIcon :icon="ChevronDown"
                 /></AdminButton>
                 <AdminButton
-                  aria-label="Удалить вариант"
                   :disabled="isDraftActionLocked"
                   class="modifier-group-editor__icon-action"
                   type="button"
@@ -225,7 +180,6 @@
             />
           </section>
           <AdminButton
-            ref="addOptionButton"
             :disabled="isDraftActionLocked"
             type="button"
             variant="secondary"
@@ -241,7 +195,6 @@
           v-if="shownDefaultError"
           :id="optionsErrorId"
           class="modifier-group-editor__error"
-          role="alert"
         >
           {{ shownDefaultError }}
         </p>
@@ -262,7 +215,6 @@
       <section
         v-if="hasPendingMessage || (props.saveOutcome ?? 'idle') !== 'idle'"
         class="modifier-group-editor__feedback"
-        role="status"
       >
         <p v-if="hasPendingMessage">
           {{ props.pendingMessage }}
@@ -326,14 +278,7 @@
 
 <script setup lang="ts">
 import { Archive, ChevronDown, ChevronUp, Trash2, X } from "lucide-vue-next";
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, watch } from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
@@ -389,11 +334,6 @@ const optionTouched = shallowRef<
 const dismissedServerFields = shallowRef<ReadonlySet<string>>(new Set());
 const optionRemovalIndex = shallowRef<number | null>(null);
 const optionRemovalOpen = shallowRef(false);
-const restoreOptionFocus = shallowRef(false);
-const optionFocusIndex = shallowRef<number | null>(null);
-const optionRows = useTemplateRef<HTMLElement[]>("optionRows");
-const addOptionButton =
-  useTemplateRef<InstanceType<typeof AdminButton>>("addOptionButton");
 const requiredControlId = `modifier-group-required-${useId()}`;
 const activeControlId = `modifier-group-active-${useId()}`;
 const nameInputId = `modifier-group-name-${useId()}`;
@@ -574,12 +514,9 @@ function openOptionRemoval(index: number): void {
 function confirmOptionRemoval(): void {
   const index = optionRemovalIndex.value;
   if (index !== null) {
-    optionFocusIndex.value =
-      index < options.value.length - 1 ? index : index - 1;
     removeOption(index);
   }
   optionRemovalIndex.value = null;
-  restoreOptionFocus.value = true;
 }
 function archive() {
   if (isDraftActionLocked.value || props.group === null) return;
@@ -727,24 +664,6 @@ watch(
     dismissedServerFields.value = new Set();
   },
 );
-watch(optionRemovalOpen, (isOpen, wasOpen) => {
-  if (isOpen || !wasOpen || !restoreOptionFocus.value) return;
-  restoreOptionFocus.value = false;
-  void nextTick(() => {
-    globalThis.requestAnimationFrame(() => {
-      const target = optionFocusIndex.value;
-      optionFocusIndex.value = null;
-      const input =
-        target === null
-          ? null
-          : optionRows.value?.[target]?.querySelector<HTMLInputElement>(
-              "input",
-            );
-      if (input) input.focus();
-      else addOptionButton.value?.focus();
-    });
-  });
-});
 </script>
 
 <style scoped lang="scss">

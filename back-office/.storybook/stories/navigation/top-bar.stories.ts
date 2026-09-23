@@ -19,7 +19,7 @@ export const Action: Story = {
     components: { Plus, TopBar },
     setup: () => ({ args }),
     template:
-      '<TopBar v-bind="args"><template #action><Plus aria-hidden="true" color="currentColor" :size="20" /></template></TopBar>',
+      '<TopBar v-bind="args"><template #action><Plus color="currentColor" :size="20" /></template></TopBar>',
   }),
 };
 export const DisabledAction: Story = {

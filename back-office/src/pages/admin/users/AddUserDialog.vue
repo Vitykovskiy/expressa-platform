@@ -1,6 +1,5 @@
 <template>
   <AdminDialog
-    :aria-labelledby="titleId"
     cancel-label="Отмена"
     :model-value="open"
     max-width="448"
@@ -8,7 +7,6 @@
     :submit-disabled="!isValid"
     submit-label="Сохранить"
     title="Новый пользователь"
-    @after-enter="focusNameField"
     @update:model-value="handleDialogUpdate"
   >
     <form
@@ -19,11 +17,7 @@
       <AdminFieldWrapper :id="nameId" v-slot="field" label="Имя" required>
         <AdminTextField
           :id="field.controlId"
-          ref="nameField"
           v-model="name"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           autocomplete="name"
           :required="field.required"
           type="text"
@@ -34,9 +28,6 @@
         <AdminTextField
           :id="field.controlId"
           :model-value="phone"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           autocomplete="tel"
           inputmode="tel"
           :required="field.required"
@@ -49,10 +40,6 @@
         <AdminRadioGroup
           :id="field.controlId"
           v-model="role"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
-          aria-label="Роль"
           :items="roleOptions"
         />
       </AdminFieldWrapper>
@@ -61,20 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  shallowRef,
-  useId,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, shallowRef, useId, watch } from "vue";
 
 import { DEFAULT_NEW_USER_ROLE } from "./AddUserDialog.constants";
-import type {
-  AddUserDialogEmits,
-  FocusableElement,
-} from "./AddUserDialog.types";
+import type { AddUserDialogEmits } from "./AddUserDialog.types";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminRadioGroup from "../../../shared/ui/admin/admin-radio-group/AdminRadioGroup.vue";
@@ -89,10 +66,6 @@ const roleOptions = [
   { label: "Бариста", value: "barista" },
   { label: "Администратор", value: "administrator" },
 ] as const;
-const returnFocusTarget = shallowRef<FocusableElement | null>(null);
-const nameField =
-  useTemplateRef<InstanceType<typeof AdminTextField>>("nameField");
-const titleId = `add-user-dialog-title-${useId()}`;
 const nameId = `add-user-dialog-name-${useId()}`;
 const phoneId = `add-user-dialog-phone-${useId()}`;
 const roleId = `add-user-dialog-role-${useId()}`;
@@ -168,36 +141,9 @@ function addUser(): void {
   open.value = false;
 }
 
-function focusNameField(): void {
-  nameField.value?.focus();
-}
-
-function isFocusableElement(value: unknown): value is FocusableElement {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "focus" in value &&
-    typeof value.focus === "function"
-  );
-}
-
 watch(open, (isOpen, wasOpen) => {
-  if (isOpen && !wasOpen) {
-    const activeElement = globalThis.document?.activeElement;
-    returnFocusTarget.value = isFocusableElement(activeElement)
-      ? activeElement
-      : null;
-    return;
-  }
-
   if (!isOpen && wasOpen) {
     resetDraft();
-    const focusTarget = returnFocusTarget.value;
-    returnFocusTarget.value = null;
-
-    if (focusTarget) {
-      void nextTick(() => focusTarget.focus());
-    }
   }
 });
 </script>

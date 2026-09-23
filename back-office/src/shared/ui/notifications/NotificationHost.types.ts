@@ -15,7 +15,6 @@ export interface NotificationHostProps {
 
 export interface NotificationHostVisibility {
   readonly availableHeight: number;
-  readonly focusedId: string | null;
   readonly hoveredId: string | null;
   readonly hidden: boolean;
   readonly stackFits: boolean;

@@ -24,7 +24,6 @@ export interface AvailabilityScreenProps {
   accessRecoveryPending?: boolean;
   activeCategory?: string;
   error?: AvailabilityScreenError | null;
-  errorFocus?: boolean;
   groups: readonly AvailabilityGroup[];
   intake: ServiceIntake | null;
   loading: boolean;

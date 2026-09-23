@@ -5,7 +5,6 @@ export interface AdminComboboxOption {
 
 export interface AdminComboboxProps {
   disabled?: boolean;
-  label?: string;
   loading?: boolean;
   modelValue: string;
   options: readonly AdminComboboxOption[];

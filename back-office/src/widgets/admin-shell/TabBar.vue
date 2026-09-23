@@ -1,10 +1,9 @@
 <template>
-  <nav aria-label="Разделы администратора" class="tab-bar">
+  <nav class="tab-bar">
     <AdminButton
       v-for="section in props.sections"
       :key="section.id"
       class="tab-bar-link"
-      :aria-current="section.id === props.activeSection ? 'page' : undefined"
       :class="{ 'tab-bar-link--active': section.id === props.activeSection }"
       type="button"
       variant="ghost"
@@ -46,6 +45,7 @@ const emit = defineEmits<TabBarEmits>();
   background: var(--expressa-color-surface);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
+  box-shadow: var(--expressa-shadow-tab-bar);
 }
 
 .tab-bar-link {

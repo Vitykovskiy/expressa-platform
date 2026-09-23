@@ -9,17 +9,11 @@
     >
       <AdminTextField
         :id="field.controlId"
-        ref="nameInput"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
-        :autofocus="props.nameAutofocus"
         :disabled="props.disabled"
         :model-value="props.name"
         :required="field.required"
         type="text"
         @blur="emit('blurName')"
-        @keydown.enter.prevent="emit('submit')"
         @update:model-value="emit('update:name', $event)"
       />
     </AdminFieldWrapper>
@@ -31,9 +25,6 @@
     >
       <AdminTextarea
         :id="field.controlId"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
         :disabled="props.disabled"
         :model-value="props.description"
         :required="field.required"
@@ -48,10 +39,6 @@
     >
       <AdminToggle
         :id="field.controlId"
-        :aria-describedby="field.describedBy"
-        :aria-invalid="field.invalid"
-        :aria-required="field.required"
-        :aria-labelledby="field.labelId"
         :disabled="props.disabled"
         :model-value="props.isActive"
         @update:model-value="emit('update:isActive', $event === true)"
@@ -61,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { useId, useTemplateRef } from "vue";
+import { useId } from "vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminTextarea from "../../../shared/ui/admin/admin-textarea/AdminTextarea.vue";
 import AdminTextField from "../../../shared/ui/admin/admin-text-field/AdminTextField.vue";
@@ -71,20 +58,11 @@ import type {
   CategoryFormFieldsProps,
 } from "./CategoryFormFields.types";
 
-const props = withDefaults(defineProps<CategoryFormFieldsProps>(), {
-  nameAutofocus: false,
-});
+const props = defineProps<CategoryFormFieldsProps>();
 const emit = defineEmits<CategoryFormFieldsEmits>();
 const nameId = `category-name-${useId()}`;
 const descriptionId = `category-description-${useId()}`;
 const visibilityControlId = `category-visibility-control-${useId()}`;
-const nameInput =
-  useTemplateRef<InstanceType<typeof AdminTextField>>("nameInput");
-
-function focusName(): void {
-  nameInput.value?.focus();
-}
-defineExpose({ focusName });
 </script>
 
 <style scoped lang="scss">

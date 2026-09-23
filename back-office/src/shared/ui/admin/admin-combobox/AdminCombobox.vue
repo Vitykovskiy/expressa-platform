@@ -1,53 +1,39 @@
 <template>
-  <div class="admin-combobox">
+  <div ref="root" class="admin-combobox">
     <div class="admin-combobox__control">
       <input
         v-bind="attrs"
         :id="inputId"
-        ref="input"
         v-model="query"
-        :aria-activedescendant="activeId"
-        :aria-controls="listboxId"
-        :aria-expanded="open"
         :disabled="props.disabled || props.loading"
-        aria-autocomplete="list"
-        :aria-label="accessibleLabel"
         class="admin-combobox__input"
         :class="{ 'admin-combobox__input--loading': props.loading }"
-        role="combobox"
-        @focus="openList"
-        @keydown="onKeydown"
+        @click="openList"
+        @input="onInput"
       />
-      <span v-if="props.loading" class="admin-combobox__loader" role="status">
-        <v-progress-circular
-          aria-label="Загружаем варианты"
-          indeterminate
-          size="18"
-          width="2"
-        />
+      <AdminIcon
+        v-if="!props.loading"
+        :icon="ChevronDown"
+        class="admin-combobox__chevron"
+      />
+      <span v-if="props.loading" class="admin-combobox__loader">
+        <span class="admin-combobox__spinner" />
       </span>
     </div>
-    <div
-      v-if="!props.loading && open"
-      :id="listboxId"
-      :aria-label="accessibleLabel"
-      class="admin-combobox__menu"
-      role="listbox"
-    >
+    <div v-if="!props.loading && open" class="admin-combobox__menu">
       <p v-if="matches.length === 0" class="admin-combobox__state">
         Нет вариантов
       </p>
       <button
-        v-for="(option, index) in matches"
+        v-for="option in matches"
         v-else
-        :id="optionId(index)"
         :key="option.id"
-        :aria-selected="option.id === props.modelValue"
-        :class="{ 'admin-combobox__option--active': index === activeIndex }"
+        :class="{
+          'admin-combobox__option--active': option.id === props.modelValue,
+        }"
         class="admin-combobox__option"
-        role="option"
         type="button"
-        @mousedown.prevent="select(option.id)"
+        @click="select(option.id)"
       >
         {{ option.label }}
       </button>
@@ -58,12 +44,16 @@
 <script setup lang="ts">
 import {
   computed,
+  onBeforeUnmount,
+  onMounted,
   shallowRef,
   useAttrs,
   useId,
   useTemplateRef,
   watch,
 } from "vue";
+import { ChevronDown } from "lucide-vue-next";
+import AdminIcon from "../admin-icon/AdminIcon.vue";
 import { ADMIN_COMBOBOX_DEFAULTS } from "./AdminCombobox.constants";
 import type {
   AdminComboboxEmits,
@@ -79,45 +69,46 @@ const props = withDefaults(
 const emit = defineEmits<AdminComboboxEmits>();
 const attrs = useAttrs();
 const id = useId();
-const input = useTemplateRef<HTMLInputElement>("input");
-const accessibleLabel = computed(
-  () =>
-    props.label ||
-    (typeof attrs["aria-label"] === "string" ? attrs["aria-label"] : undefined),
-);
+const root = useTemplateRef<HTMLElement>("root");
 const inputId = computed(() =>
   typeof attrs.id === "string" ? attrs.id : `admin-combobox-${id}`,
 );
-const listboxId = `admin-combobox-listbox-${id}`;
 const open = shallowRef(false);
+const filtering = shallowRef(false);
 const query = shallowRef("");
-const activeIndex = shallowRef(-1);
 const selectedLabel = computed(
   () =>
     props.options.find((option) => option.id === props.modelValue)?.label ?? "",
 );
 const matches = computed(() =>
-  props.options
-    .filter((option) =>
-      option.label
-        .toLocaleLowerCase("ru")
-        .includes(query.value.toLocaleLowerCase("ru")),
-    )
-    .slice(0, 50),
+  (filtering.value
+    ? props.options.filter((option) =>
+        option.label
+          .toLocaleLowerCase("ru")
+          .includes(query.value.toLocaleLowerCase("ru")),
+      )
+    : props.options
+  ).slice(0, 50),
 );
-const activeId = computed(() =>
-  activeIndex.value >= 0 ? optionId(activeIndex.value) : undefined,
-);
-
-function optionId(index: number): string {
-  return `admin-combobox-option-${id}-${index}`;
+function openList(): void {
+  if (props.disabled || props.loading) return;
+  filtering.value = false;
+  open.value = true;
 }
 
-function openList(): void {
+function onInput(): void {
+  filtering.value = true;
   open.value = true;
-  activeIndex.value = matches.value.findIndex(
-    (option) => option.id === props.modelValue,
-  );
+}
+
+function closeList(): void {
+  open.value = false;
+  filtering.value = false;
+  query.value = selectedLabel.value;
+}
+
+function onPointerDown(event: PointerEvent): void {
+  if (!root.value?.contains(event.target as Node)) closeList();
 }
 
 function select(value: string): void {
@@ -125,45 +116,13 @@ function select(value: string): void {
   query.value =
     props.options.find((option) => option.id === value)?.label ?? "";
   open.value = false;
-  activeIndex.value = -1;
-  input.value?.focus();
+  filtering.value = false;
 }
 
-function onKeydown(event: KeyboardEvent): void {
-  if (props.loading) {
-    if (event.key === "Escape") open.value = false;
-    return;
-  }
-
-  const total = matches.value.length;
-  if (event.key === "Escape") {
-    open.value = false;
-    query.value = selectedLabel.value;
-    activeIndex.value = -1;
-    return;
-  }
-  if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-    event.preventDefault();
-    open.value = true;
-    if (!total) return;
-    if (event.key === "Home") activeIndex.value = 0;
-    else if (event.key === "End") activeIndex.value = total - 1;
-    else
-      activeIndex.value =
-        event.key === "ArrowDown"
-          ? (activeIndex.value + 1 + total) % total
-          : (activeIndex.value - 1 + total) % total;
-    return;
-  }
-  if (event.key === "Enter" && open.value && activeIndex.value >= 0) {
-    event.preventDefault();
-    select(matches.value[activeIndex.value]!.id);
-  }
-}
-
-watch(query, () => {
-  activeIndex.value = matches.value.length ? 0 : -1;
-});
+onMounted(() => document.addEventListener("pointerdown", onPointerDown));
+onBeforeUnmount(() =>
+  document.removeEventListener("pointerdown", onPointerDown),
+);
 watch(
   () => props.modelValue,
   () => {
@@ -185,13 +144,24 @@ watch(
   width: 100%;
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-control-block)
-    var(--expressa-space-control-inline);
+    calc(
+      var(--expressa-space-control-inline) + var(--expressa-size-icon-action)
+    )
+    var(--expressa-space-control-block) var(--expressa-space-control-inline);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-md);
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+}
+.admin-combobox__chevron {
+  position: absolute;
+  inset-inline-end: var(--expressa-space-control-inline);
+  inset-block-start: 50%;
+  color: var(--expressa-color-text-secondary);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 .admin-combobox__input--loading {
   padding-inline-end: calc(
@@ -207,14 +177,23 @@ watch(
   color: var(--expressa-color-primary);
   transform: translateY(-50%);
 }
+.admin-combobox__spinner {
+  width: var(--expressa-size-checkbox);
+  height: var(--expressa-size-checkbox);
+  border: var(--expressa-border-width-strong) solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: admin-combobox-spin 700ms linear infinite;
+}
+@keyframes admin-combobox-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .admin-combobox__input:disabled {
   cursor: not-allowed;
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-control-disabled-surface);
-}
-.admin-combobox__input:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 .admin-combobox__menu {
   position: absolute;
@@ -225,7 +204,7 @@ watch(
   overflow: auto;
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  border-radius: var(--expressa-radius-panel);
+  border-radius: var(--expressa-radius-md);
   background: var(--expressa-color-surface);
   box-shadow: var(--expressa-shadow-menu);
 }
@@ -245,10 +224,6 @@ watch(
 .admin-combobox__option--active,
 .admin-combobox__option:hover {
   background: var(--expressa-color-control-hover-surface);
-}
-.admin-combobox__option:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: calc(-1 * var(--expressa-border-width-strong));
 }
 .admin-combobox__state {
   margin: 0;

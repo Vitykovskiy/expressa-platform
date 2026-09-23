@@ -18,8 +18,8 @@ const props = defineProps<StatusBadgeProps>();
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: var(--expressa-space-4) var(--expressa-space-8);
-  border-radius: var(--expressa-radius-sm);
+  padding: var(--expressa-space-badge-block) var(--expressa-space-control-block);
+  border-radius: var(--expressa-radius-pill);
   font-size: var(--expressa-font-size-status);
   line-height: var(--expressa-line-height-control);
   white-space: nowrap;

@@ -47,8 +47,6 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
 
 .availability-group__header {
   padding: var(--expressa-space-control-inline) var(--expressa-space-md);
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
 }
 
 .availability-group__title {
@@ -65,7 +63,7 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
   padding: 0 var(--expressa-space-md);
 }
 
-.availability-group__items > :last-child {
+.availability-group__items :deep(.toggle-row) {
   border-bottom: var(--expressa-border-width-none);
 }
 </style>

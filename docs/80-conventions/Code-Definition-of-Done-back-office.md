@@ -20,7 +20,7 @@ updated: 2026-08-01
 Документ определяет готовность production-кода автономного PWA `back-office` на Vue 3, Vuetify, TypeScript, Vite и Pinia. Он применяется к новой реализации, изменению и приёмке кода приложения; требования к продуктовым сценариям, поставке и инфраструктуре находятся вне этой ноты. Границы приложения и рекомендуемая структура определены в [Архитектуре клиентов](../20-architecture/Client-architecture.md) и [Границах приложений](../20-architecture/Repository-boundaries.md).
 Для всего UI-кода обязательны [UI DoD](../40-quality/Definition-of-done.md),
 [стиль Vue-кода](../40-quality/Vue-code-style.md),
-[доступность](../40-quality/UI-accessibility.md) и
+[контракт UI back-office](../../back-office/docs/10-architecture/ui-ownership.md) и
 [стратегия проверки](../40-quality/Validation-strategy.md).
 
 ## Простота и ответственность

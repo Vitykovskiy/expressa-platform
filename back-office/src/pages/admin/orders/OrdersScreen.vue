@@ -1,5 +1,5 @@
 <template>
-  <section class="orders-screen" aria-label="Очередь заказов">
+  <section class="orders-screen">
     <TopBar
       :action-disabled="queueControlsDisabled"
       action-label="Обновить очередь"
@@ -28,9 +28,6 @@
       >
         <AdminTextField
           :id="field.controlId"
-          :aria-describedby="field.describedBy"
-          :aria-invalid="field.invalid"
-          :aria-required="field.required"
           :disabled="queueControlsDisabled"
           :model-value="props.search"
           :required="field.required"
@@ -46,16 +43,11 @@
         class="orders-screen__loading-state"
       >
         <AdminProgress label="Загружаем очередь заказов…" />
-        <div
-          class="orders-screen__grid"
-          aria-busy="true"
-          aria-label="Загрузка очереди"
-        >
+        <div class="orders-screen__grid">
           <div
             v-for="index in 5"
             :key="index"
             class="orders-screen__skeleton"
-            aria-hidden="true"
           />
         </div>
       </div>
@@ -194,13 +186,15 @@ const emptyContent = computed(() => {
 .orders-screen__skeleton {
   min-height: var(--expressa-size-row-min);
   border-radius: var(--expressa-radius-lg);
-  background: linear-gradient(
-    90deg,
-    var(--expressa-color-surface) 0%,
-    var(--expressa-color-surface-raised) 50%,
-    var(--expressa-color-surface) 100%
-  );
-  background-size: 200% 100%;
+  background: var(--expressa-color-surface-subtle);
+  animation: orders-screen-skeleton-pulse
+    var(--expressa-motion-duration-disclosure) var(--expressa-motion-ease-state)
+    infinite alternate;
+}
+@keyframes orders-screen-skeleton-pulse {
+  to {
+    opacity: var(--expressa-state-disabled-opacity);
+  }
 }
 .orders-screen__state,
 .orders-screen__action-error {

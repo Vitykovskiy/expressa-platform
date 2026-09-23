@@ -1,11 +1,6 @@
 <template>
-  <section class="request-state-panel" :role="announcementRole">
-    <h2
-      v-if="!props.pending"
-      ref="titleElement"
-      class="request-state-panel__title"
-      tabindex="-1"
-    >
+  <section class="request-state-panel">
+    <h2 v-if="!props.pending" class="request-state-panel__title">
       {{ props.title }}
     </h2>
     <AdminButton
@@ -16,14 +11,13 @@
     >
       {{ props.actionLabel }}
     </AdminButton>
-    <p v-else class="request-state-panel__pending" role="status">
+    <p v-else class="request-state-panel__pending">
       {{ props.pendingLabel }}
     </p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from "vue";
 import AdminButton from "../admin-button/AdminButton.vue";
 import { ADMIN_REQUEST_STATE_PANEL_DEFAULTS } from "./AdminRequestStatePanel.constants";
 import type {
@@ -36,14 +30,6 @@ const props = withDefaults(
   ADMIN_REQUEST_STATE_PANEL_DEFAULTS,
 );
 const emit = defineEmits<AdminRequestStatePanelEmits>();
-const titleElement = useTemplateRef<HTMLHeadingElement>("titleElement");
-const announcementRole = computed(() =>
-  props.announcementMode === "none" ? undefined : props.announcementMode,
-);
-
-onMounted(() => {
-  if (props.focusOnAppear) titleElement.value?.focus();
-});
 </script>
 
 <style scoped lang="scss">
@@ -63,10 +49,6 @@ onMounted(() => {
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-title);
   line-height: var(--expressa-line-height-title);
-}
-.request-state-panel__title:focus-visible {
-  outline: var(--expressa-focus-ring);
-  outline-offset: var(--expressa-focus-offset);
 }
 .request-state-panel__pending {
   margin: 0;

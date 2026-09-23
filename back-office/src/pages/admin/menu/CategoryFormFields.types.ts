@@ -6,7 +6,6 @@ export interface CategoryFormFieldsProps {
   description: string;
   isActive: boolean;
   name: string;
-  nameAutofocus?: boolean;
 }
 
 export interface CategoryFormFieldsEmits {

@@ -4,11 +4,7 @@
     <section v-else-if="props.state === 'denied'" class="auth-screen__card">
       <DeniedState @retry="emit('retry')" />
     </section>
-    <p
-      v-else-if="props.state === 'success'"
-      class="auth-screen__success"
-      role="status"
-    >
+    <p v-else-if="props.state === 'success'" class="auth-screen__success">
       <AdminIcon :icon="CircleCheckBig" />
       <span>Вход выполнен</span>
     </p>

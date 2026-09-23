@@ -70,7 +70,6 @@ export interface OperationPort {
 
 export interface OperationVisibility {
   availableHeight: number;
-  focusedId: string | null;
   hoveredId: string | null;
   hidden: boolean;
   stackFits: boolean;

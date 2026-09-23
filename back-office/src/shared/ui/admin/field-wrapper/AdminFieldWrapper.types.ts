@@ -2,7 +2,7 @@ export interface AdminFieldWrapperProps {
   error?: string;
   id: string;
   label: string;
-  layout?: "row" | "stack";
+  layout?: "row" | "stack" | "table";
   required?: boolean;
 }
 

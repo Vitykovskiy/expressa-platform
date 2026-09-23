@@ -11,8 +11,6 @@
         type="button"
         variant="ghost"
         :disabled="props.disabled"
-        :aria-expanded="props.expanded"
-        :aria-label="`Открыть категорию ${props.category.name}`"
         @click="emit('toggle', props.category)"
         ><AdminIcon :icon="props.expanded ? ChevronDown : ChevronRight" /><span
           class="menu-category__copy"
@@ -24,34 +22,18 @@
         type="button"
         variant="ghost"
         :disabled="props.disabled"
-        :aria-label="`Редактировать категорию ${props.category.name}`"
         @click="emit('edit-category', props.category)"
         >Редактировать</AdminButton
       ><AdminButton
-        ref="moreTrigger"
         class="menu-category__more"
         type="button"
         :disabled="props.disabled"
-        :aria-expanded="overflowOpen"
-        :aria-label="`Действия: ${props.category.name}`"
         @click="openOverflow"
       >
         Ещё
       </AdminButton>
-      <div
-        v-if="overflowOpen"
-        class="menu-category__menu"
-        role="menu"
-        :aria-label="`Действия с категорией ${props.category.name}`"
-        @keydown.escape.stop="closeOverflow"
-      >
-        <AdminButton
-          ref="menuItem"
-          role="menuitem"
-          type="button"
-          :aria-label="`Редактировать категорию ${props.category.name}`"
-          @click="selectEdit"
-        >
+      <div v-if="overflowOpen" class="menu-category__menu">
+        <AdminButton type="button" @click="selectEdit">
           Редактировать
         </AdminButton>
       </div>
@@ -74,14 +56,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
@@ -94,24 +69,14 @@ import type {
 const props = defineProps<MenuCategoryGroupProps>();
 const emit = defineEmits<MenuCategoryGroupEmits>();
 const overflowOpen = ref(false),
-  root = ref<HTMLElement | null>(null),
-  moreTrigger = useTemplateRef<InstanceType<typeof AdminButton>>("moreTrigger"),
-  menuItem = useTemplateRef<InstanceType<typeof AdminButton>>("menuItem");
+  root = ref<HTMLElement | null>(null);
 const countLabel = computed(() => productCountLabel(props.products.length));
-function closeOverflow() {
-  overflowOpen.value = false;
-  void nextTick(() => moreTrigger.value?.focus());
-}
 function openOverflow() {
   overflowOpen.value = true;
-  void nextTick(() => menuItem.value?.focus());
 }
 function selectEdit() {
   overflowOpen.value = false;
-  void nextTick(() => {
-    moreTrigger.value?.focus();
-    emit("edit-category", props.category);
-  });
+  emit("edit-category", props.category);
 }
 function outside(event: PointerEvent) {
   if (root.value && !root.value.contains(event.target as Node))
@@ -141,15 +106,18 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  min-block-size: var(--expressa-size-row-min);
+  min-block-size: var(--expressa-size-control-min-height);
   background: var(--expressa-color-surface-raised);
+}
+.menu-category__header:hover {
+  background: var(--expressa-color-control-hover-surface);
 }
 .menu-category__toggle {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: var(--expressa-space-sm);
-  padding: 0 var(--expressa-space-md);
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
   text-align: left;
 }
 .menu-category__copy {

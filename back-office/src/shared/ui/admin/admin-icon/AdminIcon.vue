@@ -1,10 +1,8 @@
 <template>
   <component
     :is="props.icon"
-    aria-hidden="true"
     class="admin-icon"
     :class="`admin-icon--${props.size}`"
-    focusable="false"
   />
 </template>
 

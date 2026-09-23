@@ -123,10 +123,7 @@ export function createNotificationRuntime(): NotificationRuntime {
     const visibleIds = new Set(getVisibleEntries().map((entry) => entry.id));
     timedEntries.forEach((timed, id) => {
       const paused =
-        visibility.hidden ||
-        !visibleIds.has(id) ||
-        visibility.hoveredId === id ||
-        visibility.focusedId === id;
+        visibility.hidden || !visibleIds.has(id) || visibility.hoveredId === id;
       if (!paused) timed.elapsed += Math.max(0, current - timed.lastTick);
       timed.lastTick = current;
     });

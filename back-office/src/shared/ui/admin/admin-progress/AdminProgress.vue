@@ -1,6 +1,6 @@
 <template>
-  <p class="admin-progress" role="status">
-    <span aria-hidden="true" class="admin-progress__indicator" />
+  <p class="admin-progress">
+    <span class="admin-progress__indicator" />
     {{ props.label }}
   </p>
 </template>
@@ -33,11 +33,6 @@ const props = defineProps<AdminProgressProps>();
 @keyframes admin-progress-spin {
   to {
     transform: rotate(1turn);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .admin-progress__indicator {
-    animation: none;
   }
 }
 </style>
