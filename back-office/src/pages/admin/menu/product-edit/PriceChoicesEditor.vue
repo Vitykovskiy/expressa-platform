@@ -1,9 +1,5 @@
 <template>
   <div class="price-choices">
-    <p>
-      Изменения сохранятся вместе с товаром. Доступность настраивается для
-      каждой цены.
-    </p>
     <p v-if="!model.length">Добавьте хотя бы одну цену</p>
     <PriceChoiceRow
       v-for="(choice, index) in model"
@@ -98,3 +94,16 @@ function move(index: number, offset: -1 | 1): void {
   model.value = choices;
 }
 </script>
+<style scoped lang="scss">
+.price-choices {
+  display: grid;
+  gap: var(--expressa-space-md);
+}
+.price-choices > p {
+  margin: 0;
+  color: var(--expressa-color-text-secondary);
+}
+.price-choices > .admin-button {
+  justify-self: start;
+}
+</style>

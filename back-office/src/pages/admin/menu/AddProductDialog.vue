@@ -149,6 +149,9 @@
                     }}<template v-if="choice.price"> ₽</template>
                   </td>
                   <td class="add-dialog__choice-availability">
+                    <span class="add-dialog__availability-label"
+                      >В продаже</span
+                    >
                     <AdminToggle
                       :model-value="choice.isAvailable"
                       :disabled="props.disabled"
@@ -536,8 +539,7 @@ watch(
 }
 .add-dialog__choice-actions-column {
   width: calc(
-    var(--expressa-size-control-compact-min-height) * 2 +
-      var(--expressa-space-2xs)
+    var(--expressa-size-control-min-height) * 2 + var(--expressa-space-2xs)
   );
 }
 .add-dialog__pricing-table th {
@@ -557,6 +559,11 @@ watch(
 .add-dialog__pricing-table th:last-child,
 .add-dialog__pricing-table td:last-child {
   padding-inline-end: 0;
+}
+@media (min-width: 600px) {
+  .add-dialog__pricing-table td:last-child {
+    padding-inline-start: 0;
+  }
 }
 .add-dialog__pricing-table tbody tr {
   transition: transform var(--expressa-motion-duration-control) ease-out;
@@ -606,6 +613,9 @@ watch(
 .add-dialog__choice-availability {
   text-align: center;
 }
+.add-dialog__availability-label {
+  display: none;
+}
 .add-dialog__choice-actions {
   display: flex;
   align-items: center;
@@ -613,8 +623,8 @@ watch(
   gap: var(--expressa-space-2xs);
 }
 .add-dialog__choice-action {
-  width: var(--expressa-size-control-compact-min-height);
-  min-width: var(--expressa-size-control-compact-min-height);
+  width: var(--expressa-size-control-min-height);
+  min-width: var(--expressa-size-control-min-height);
   padding-inline: 0;
 }
 .add-dialog__choice-action--delete {
@@ -631,27 +641,75 @@ watch(
     flex-wrap: wrap;
   }
   .add-dialog__pricing-table {
-    overflow-x: auto;
+    border: 0;
   }
-  .add-dialog__pricing-table table {
-    width: max-content;
-    min-width: 100%;
-    table-layout: auto;
+  .add-dialog__pricing-table table,
+  .add-dialog__pricing-table tbody {
+    display: block;
+    width: 100%;
   }
-  .add-dialog__pricing-table th,
+  .add-dialog__pricing-table thead,
+  .add-dialog__pricing-table colgroup {
+    display: none;
+  }
+  .add-dialog__pricing-table tbody tr {
+    display: grid;
+    grid-template-columns:
+      var(--expressa-size-control-min-height) minmax(0, 1fr)
+      auto;
+    align-items: center;
+    border-block-start: var(--expressa-border-width-default) solid
+      var(--expressa-color-border);
+  }
   .add-dialog__pricing-table td {
-    padding-inline: var(--expressa-space-2xs);
+    min-width: 0;
+    padding: var(--expressa-space-2xs) 0;
+    border: 0;
   }
-}
-@media (pointer: coarse), (max-width: 767px) {
-  .add-dialog__choice-actions-column {
-    width: calc(
-      var(--expressa-size-button-min-height) * 2 + var(--expressa-space-2xs)
-    );
+  .add-dialog__pricing-table td:first-child {
+    grid-column: 1;
+    grid-row: 1 / 3;
   }
-  .add-dialog__choice-action {
-    width: var(--expressa-size-button-min-height);
-    min-width: var(--expressa-size-button-min-height);
+  .add-dialog__pricing-table td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+    padding-inline: var(--expressa-space-xs);
+  }
+  .add-dialog__pricing-table td:nth-child(3) {
+    grid-column: 3;
+    grid-row: 1;
+    white-space: nowrap;
+  }
+  .add-dialog__pricing-table td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+    padding-inline-start: var(--expressa-space-xs);
+  }
+  .add-dialog__pricing-table td:nth-child(5) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .add-dialog__choice-size {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+  .add-dialog__choice-availability {
+    display: flex;
+    align-items: center;
+    gap: var(--expressa-space-2xs);
+    color: var(--expressa-color-text-secondary);
+    font-size: var(--expressa-font-size-caption);
+    white-space: nowrap;
+  }
+  .add-dialog__availability-label {
+    display: inline;
+  }
+  .add-dialog__pricing-table td.add-dialog__empty-prices {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding: var(--expressa-space-sm) 0;
   }
 }
 </style>

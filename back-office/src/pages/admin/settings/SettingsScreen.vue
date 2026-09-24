@@ -5,18 +5,12 @@
       <h1 class="settings-screen__title">Настройки</h1>
       <SettingsForm :settings="settings" @save="save" />
     </main>
-    <div v-if="snackbarOpen" class="settings-screen__snackbar">
-      Настройки сохранены
-    </div>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, shallowRef } from "vue";
-
 import TopBar from "../../../widgets/admin-shell/TopBar.vue";
 import SettingsForm from "./SettingsForm.vue";
-import { SETTINGS_SNACKBAR_TIMEOUT } from "./SettingsScreen.constants";
 import type {
   SettingsScreenEmits,
   SettingsScreenProps,
@@ -26,19 +20,9 @@ defineProps<SettingsScreenProps>();
 
 const emit = defineEmits<SettingsScreenEmits>();
 
-const snackbarOpen = shallowRef(false);
-let snackbarTimer: ReturnType<typeof setTimeout> | undefined;
-
 function save(settings: SettingsScreenProps["settings"]) {
   emit("save", settings);
-  snackbarOpen.value = true;
-  clearTimeout(snackbarTimer);
-  snackbarTimer = setTimeout(() => {
-    snackbarOpen.value = false;
-  }, SETTINGS_SNACKBAR_TIMEOUT);
 }
-
-onBeforeUnmount(() => clearTimeout(snackbarTimer));
 </script>
 
 <style scoped lang="scss">
@@ -52,17 +36,6 @@ onBeforeUnmount(() => clearTimeout(snackbarTimer));
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface-raised);
 }
-.settings-screen__snackbar {
-  position: fixed;
-  z-index: var(--expressa-z-modal-layer);
-  bottom: var(--expressa-space-md);
-  left: var(--expressa-space-md);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-surface);
-  background: var(--expressa-color-text-primary);
-}
-
 .settings-screen__content {
   display: flex;
   width: 100%;

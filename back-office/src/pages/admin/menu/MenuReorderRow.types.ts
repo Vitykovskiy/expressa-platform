@@ -14,5 +14,6 @@ export interface MenuReorderRowEmits {
   "keyboard-drag-cancel": [];
   "keyboard-drag-start": [];
   move: [request: { offset: -1 | 1; control: "handle" | "up" | "down" }];
+  "show-label": [];
   toggle: [];
 }

@@ -113,6 +113,41 @@ function selectTab(value: T) {
   opacity: var(--expressa-state-disabled-opacity);
 }
 
+.filter-tabs--wrapped {
+  overflow: visible;
+}
+
+.filter-tabs--wrapped .filter-tabs__items {
+  flex-wrap: wrap;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.filter-tabs--wrapped .filter-tab__visual {
+  padding-inline: var(--expressa-space-12);
+}
+
+.filter-tabs--balanced-pairs {
+  overflow: visible;
+}
+
+.filter-tabs--balanced-pairs .filter-tab__visual {
+  padding-inline: var(--expressa-space-12);
+}
+
+@media (max-width: 374px) {
+  .filter-tabs--balanced-pairs .filter-tabs__items {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  .filter-tabs--balanced-pairs .filter-tab {
+    justify-self: start;
+  }
+}
+
 @media (min-width: 768px) {
   .filter-tabs--responsive {
     inline-size: max-content;

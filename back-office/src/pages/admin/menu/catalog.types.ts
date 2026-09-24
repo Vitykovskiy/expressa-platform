@@ -116,6 +116,8 @@ export interface CatalogStoreDependencies {
   >;
 }
 
+export type ReorderOperationIntent = "save" | "compensate";
+
 export interface CatalogStoreActions {
   archiveCategory(accessToken: string, categoryId: string): Promise<void>;
   archiveModifierGroup(accessToken: string, groupId: string): Promise<void>;
@@ -140,11 +142,13 @@ export interface CatalogStoreActions {
   reorderCategories(
     accessToken: string,
     categoryIds: readonly string[],
+    intent?: ReorderOperationIntent,
   ): Promise<void>;
   reorderProducts(
     accessToken: string,
     categoryId: string,
     productIds: readonly string[],
+    intent?: ReorderOperationIntent,
   ): Promise<void>;
   replaceCategoryModifierGroups(
     accessToken: string,

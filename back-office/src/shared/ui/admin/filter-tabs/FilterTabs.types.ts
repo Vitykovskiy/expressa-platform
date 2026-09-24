@@ -3,7 +3,8 @@ export interface FilterTab<T extends string> {
   label: string;
 }
 
-export type FilterTabsLayout = "contained" | "intrinsic" | "responsive";
+export type FilterTabsLayout =
+  "contained" | "intrinsic" | "responsive" | "wrapped" | "balanced-pairs";
 
 export interface FilterTabsProps<T extends string> {
   disabled?: boolean;

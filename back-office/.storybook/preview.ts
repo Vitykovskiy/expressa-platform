@@ -76,14 +76,16 @@ const preview: Preview = {
         },
         template: `
           <VApp>
-            <div><story /></div>
-            <NotificationHost
-              :candidate-entries="entries"
-              :entries="visibleEntries"
-              @dismiss="dismiss"
-              @recover="notificationRuntime.recover"
-              @visibility="notificationRuntime.setVisibility"
-            />
+            <div style="display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; min-height: 0">
+              <NotificationHost
+                :candidate-entries="entries"
+                :entries="visibleEntries"
+                @dismiss="dismiss"
+                @recover="notificationRuntime.recover"
+                @visibility="notificationRuntime.setVisibility"
+              />
+              <div style="min-height: 0; overflow-y: auto"><story /></div>
+            </div>
           </VApp>
         `,
       }),

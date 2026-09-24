@@ -10,6 +10,7 @@ export interface MenuCategoryGroupProps {
 
 export interface MenuCategoryGroupEmits {
   toggle: [category: Category];
+  showLabel: [label: string];
   "edit-category": [category: Category];
   edit: [product: Product];
 }

@@ -82,7 +82,6 @@ const availableActions = computed<readonly UserAction[]>(() => [
 
 <style scoped lang="scss">
 .user-row {
-  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -91,13 +90,6 @@ const availableActions = computed<readonly UserAction[]>(() => [
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   background: var(--expressa-color-surface);
-}
-
-.user-row :deep(.action-menu-trigger) {
-  position: absolute;
-  top: 50%;
-  right: var(--expressa-space-md);
-  transform: translateY(-50%);
 }
 
 .user-row:last-child {

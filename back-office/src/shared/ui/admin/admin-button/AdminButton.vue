@@ -97,13 +97,12 @@ defineSlots<{ default(): unknown }>();
   color: var(--expressa-color-text-secondary);
   background: var(--expressa-color-transparent);
 }
+.admin-button:has(> .admin-icon:only-child) {
+  min-width: var(--expressa-size-control-min-height);
+  padding-inline: 0;
+}
 .admin-button--compact {
   min-height: var(--expressa-size-control-compact-min-height);
   padding: var(--expressa-space-xs) var(--expressa-space-control-inline);
-}
-@media (pointer: coarse), (max-width: 767px) {
-  .admin-button--compact {
-    min-height: var(--expressa-size-button-min-height);
-  }
 }
 </style>

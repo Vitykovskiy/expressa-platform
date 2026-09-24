@@ -5,7 +5,7 @@
         <h2 id="menu-reorder-title">Настройка порядка</h2>
         <p v-if="props.pending" class="menu-reorder__status">Сохраняем…</p>
         <p v-else-if="dirtyScopes.length" class="menu-reorder__status">
-          Есть несохранённые изменения
+          Не сохранено
         </p>
       </div>
       <AdminActionGroup align="end" class="menu-reorder__actions">
@@ -19,7 +19,7 @@
           type="button"
           :disabled="props.pending || dirtyScopes.length === 0"
           @click="emit('save', dirtyScopes)"
-          >{{ props.pending ? "Сохраняем…" : "Сохранить порядок" }}</AdminButton
+          >Сохранить</AdminButton
         >
       </AdminActionGroup>
     </div>
@@ -32,6 +32,12 @@
       title="Отменить изменения порядка?"
       @cancel="cancelDiscard"
       @confirm="confirmDiscard"
+    />
+    <AdminDialog
+      :model-value="fullLabel !== null"
+      :title="fullLabel ?? ''"
+      :max-width="'var(--expressa-size-confirm-dialog-max-width)'"
+      @update:model-value="fullLabel = null"
     />
     <div
       ref="categoryList"
@@ -59,6 +65,7 @@
           disclosable
           :expanded="isExpanded(categoryId)"
           @move="moveCategory(categoryId, $event)"
+          @show-label="fullLabel = categoryName(categoryId)"
           @toggle="toggle(categoryId)"
         />
         <div
@@ -99,6 +106,7 @@
             :position="productStart(categoryId) + productIndex + 1"
             :total="productIds(categoryId).length"
             @move="moveProduct(categoryId, productId, $event)"
+            @show-label="fullLabel = productName(productId)"
           />
           <div
             v-if="productIds(categoryId).length > 0"
@@ -128,8 +136,8 @@ import {
   toRef,
   watch,
 } from "vue";
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import { useMenuReorderDraft } from "./composables/useMenuReorderDraft";
@@ -144,7 +152,6 @@ const props = withDefaults(defineProps<MenuReorderPanelProps>(), {
   pending: false,
 });
 const emit = defineEmits<MenuReorderPanelEmits>();
-const router = useRouter();
 const categories = toRef(props, "categories");
 const products = toRef(props, "products");
 const { draft, dirtyScopes, move, reset } = useMenuReorderDraft(
@@ -152,6 +159,7 @@ const { draft, dirtyScopes, move, reset } = useMenuReorderDraft(
   products,
 );
 const discardOpen = ref(false);
+const fullLabel = ref<string | null>(null);
 const closeRequested = ref(false);
 const pendingNavigation = ref<string | null>(null);
 const categoryList = ref<HTMLElement | null>(null);
@@ -322,6 +330,7 @@ function moveProduct(
   void moved(categoryId, id, request.offset);
 }
 function requestClose(): void {
+  if (props.pending) return;
   if (dirtyScopes.value.length === 0) {
     reset();
     emit("cancel");
@@ -330,7 +339,8 @@ function requestClose(): void {
   closeRequested.value = true;
   discardOpen.value = true;
 }
-async function confirmDiscard(): Promise<void> {
+function confirmDiscard(): void {
+  if (props.pending) return;
   const target = pendingNavigation.value;
   const close = closeRequested.value;
   closeRequested.value = false;
@@ -340,27 +350,23 @@ async function confirmDiscard(): Promise<void> {
     emit("cancel");
     return;
   }
-  if (target) await router.push(target);
+  if (target) emit("navigate", target);
 }
 function cancelDiscard(): void {
   closeRequested.value = false;
   pendingNavigation.value = null;
 }
-onBeforeRouteLeave((to) => {
+function requestNavigation(target: string): boolean {
+  if (props.pending) return false;
   if (!dirtyScopes.value.length) return true;
-  pendingNavigation.value = to.fullPath;
+  pendingNavigation.value = target;
   discardOpen.value = true;
   return false;
-});
-onBeforeRouteUpdate((to) => {
-  if (to.query.mode !== "reorder" && dirtyScopes.value.length) {
-    pendingNavigation.value = to.fullPath;
-    discardOpen.value = true;
-    return false;
-  }
-  return true;
-});
-defineExpose({ requestClose });
+}
+function confirmSaved(): void {
+  reset();
+}
+defineExpose({ requestClose, requestNavigation, confirmSaved });
 function onBeforeUnload(event: BeforeUnloadEvent): void {
   if (dirtyScopes.value.length === 0) return;
   event.preventDefault();
@@ -384,11 +390,11 @@ onBeforeUnmount(() =>
   top: 0;
   z-index: 1;
   display: flex;
-  min-height: var(--expressa-size-row-min);
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-md);
-  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
   background: var(--expressa-color-surface);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -397,20 +403,27 @@ onBeforeUnmount(() =>
 .menu-reorder__bar p {
   margin: 0;
 }
+.menu-reorder__bar h2 {
+  font-size: var(--expressa-font-size-title);
+}
 .menu-reorder__bar p {
   color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-status);
 }
 .menu-reorder__status {
   margin-top: var(--expressa-space-xs);
 }
+.menu-reorder__actions {
+  margin-inline-start: auto;
+}
 .menu-reorder__products {
   overflow: auto;
-  padding-left: var(--expressa-space-xl);
+  padding-left: var(--expressa-space-24);
   background: var(--expressa-color-surface-raised);
 }
 .menu-reorder__empty-products {
   box-sizing: border-box;
-  block-size: var(--expressa-size-row-min);
+  block-size: calc(var(--expressa-space-48) + var(--expressa-space-8));
   margin: 0;
   padding: var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
@@ -419,28 +432,12 @@ onBeforeUnmount(() =>
   max-height: 70vh;
   overflow: auto;
 }
-.menu-reorder__disclosure {
-  min-height: var(--expressa-size-control-min-height);
-  margin: 0 var(--expressa-space-md);
-}
-.menu-reorder__hint {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-.menu-reorder__error {
-  margin: var(--expressa-space-control-inline) var(--expressa-space-md);
-  color: var(--expressa-color-status-error);
-}
 @media (max-width: 767px) {
-  .menu-reorder__bar {
-    align-items: stretch;
-    flex-direction: column;
-  }
   .menu-reorder__actions > * {
-    flex: 1;
+    min-height: var(--expressa-size-control-min-height);
+  }
+  .menu-reorder__products {
+    padding-left: var(--expressa-space-md);
   }
 }
 </style>

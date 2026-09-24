@@ -10,25 +10,27 @@
             @recover="notificationRuntime.recover"
             @visibility="notificationRuntime.setVisibility"
           />
-          <LoadingState
-            v-if="
-              sessionStore.status === 'unknown' &&
-              route.path !== routePaths.login
-            "
-          />
-          <template v-else>
-            <AdminShell
-              v-if="sessionStore.currentUser !== null"
-              :active-section="activeSection"
-              :items="navigationItems"
-              :role="sessionStore.currentUser.role"
-              @logout="logout"
-              @navigate="navigate"
-            >
-              <RouterView />
-            </AdminShell>
-            <RouterView v-else />
-          </template>
+          <div class="app-screen">
+            <LoadingState
+              v-if="
+                sessionStore.status === 'unknown' &&
+                route.path !== routePaths.login
+              "
+            />
+            <template v-else>
+              <AdminShell
+                v-if="sessionStore.currentUser !== null"
+                :active-section="activeSection"
+                :items="navigationItems"
+                :role="sessionStore.currentUser.role"
+                @logout="logout"
+                @navigate="navigate"
+              >
+                <RouterView />
+              </AdminShell>
+              <RouterView v-else />
+            </template>
+          </div>
         </VContainer>
       </div>
     </VMain>
@@ -119,10 +121,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .app-content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   max-width: none;
+  height: 100dvh;
   padding: 0;
 }
 .app-root {
   min-height: 100dvh;
+}
+.app-screen {
+  min-height: 0;
+  overflow-y: auto;
 }
 </style>

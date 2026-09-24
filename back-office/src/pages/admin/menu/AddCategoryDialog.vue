@@ -1,7 +1,6 @@
 <template>
   <AdminDialog
     cancel-label="Отмена"
-    full-screen-below-600
     :model-value="open"
     max-width="560"
     :pending="props.disabled"

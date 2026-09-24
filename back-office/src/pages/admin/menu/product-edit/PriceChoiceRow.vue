@@ -5,11 +5,13 @@
       type="button"
       @click="emit('toggle')"
     >
-      <span
-        ><strong>{{ choice.portionLabel || "Без подписи" }}</strong
-        ><span>{{ choice.price || "—" }} ₽</span></span
-      >
-      <span>{{ choice.isAvailable ? "Доступен" : "Недоступен" }}</span>
+      <span class="price-choice-row__summary-copy">
+        <strong>{{ choice.portionLabel || "Без подписи" }}</strong>
+        <span class="price-choice-row__price">{{ choice.price || "—" }} ₽</span>
+      </span>
+      <span class="price-choice-row__availability">{{
+        choice.isAvailable ? "Доступен" : "Недоступен"
+      }}</span>
     </button>
     <div v-if="expanded" class="price-choice-row__editor">
       <AdminFieldWrapper
@@ -108,3 +110,61 @@ const emit = defineEmits<{
   "update:isAvailable": [value: boolean];
 }>();
 </script>
+<style scoped lang="scss">
+.price-choice-row {
+  min-width: 0;
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-md);
+  background: var(--expressa-color-surface);
+  overflow: hidden;
+}
+.price-choice-row__summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--expressa-size-control-min-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--expressa-space-md);
+  padding: var(--expressa-space-8) var(--expressa-space-16);
+  border: 0;
+  background: var(--expressa-color-surface);
+  color: var(--expressa-color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.price-choice-row__summary:hover,
+.price-choice-row__summary:focus-visible {
+  background: var(--expressa-color-control-hover-surface);
+}
+.price-choice-row__summary-copy {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: var(--expressa-space-8);
+}
+.price-choice-row__summary-copy strong {
+  overflow-wrap: anywhere;
+}
+.price-choice-row__price,
+.price-choice-row__availability {
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-body);
+}
+.price-choice-row__availability {
+  flex: none;
+}
+.price-choice-row__editor {
+  display: grid;
+  gap: var(--expressa-space-16);
+  padding: var(--expressa-space-16);
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+}
+@media (max-width: 599px) {
+  .price-choice-row__summary {
+    align-items: center;
+  }
+}
+</style>

@@ -37,7 +37,7 @@ const sections = computed(() =>
 .admin-shell {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   background: var(--expressa-color-surface-raised);
 }
@@ -50,6 +50,10 @@ const sections = computed(() =>
 }
 
 @media (min-width: 768px) {
+  .admin-shell {
+    background: var(--expressa-color-surface);
+  }
+
   .admin-shell-content {
     margin-left: var(--expressa-size-side-nav-width);
   }

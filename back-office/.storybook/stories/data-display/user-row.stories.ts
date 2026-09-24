@@ -17,3 +17,21 @@ export const NoRole: Story = { args: { user: { ...user, role: null } } };
 export const Blocked: Story = {
   args: { user: { ...user, status: "blocked" } },
 };
+export const LongName: Story = {
+  args: {
+    user: {
+      ...user,
+      name: "Александра Константиновна Преображенская",
+      role: "administrator",
+    },
+  },
+};
+export const LongUnbrokenName: Story = {
+  args: {
+    user: {
+      ...user,
+      name: "АлександраКонстантиновнаПреображенская",
+      status: "blocked",
+    },
+  },
+};

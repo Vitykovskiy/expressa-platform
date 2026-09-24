@@ -10,6 +10,7 @@
     </p>
     <section v-else class="auth-screen__card">
       <header class="auth-screen__header">
+        <span class="auth-screen__brand">EXPRESSA ADMIN</span>
         <h1>{{ presentation.title }}</h1>
       </header>
       <PhoneStep
@@ -65,9 +66,9 @@ const emit = defineEmits<AuthScreenEmits>();
 }
 
 .auth-screen__card {
-  width: min(100%, var(--expressa-size-auth-card-max-width));
+  width: min(100%, 360px);
   min-height: var(--expressa-size-loading-state-min-height);
-  padding: var(--expressa-space-xl);
+  padding: var(--expressa-space-32);
   background: var(--expressa-color-surface);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -76,7 +77,16 @@ const emit = defineEmits<AuthScreenEmits>();
 }
 
 .auth-screen__header {
-  margin-bottom: var(--expressa-space-lg);
+  margin-bottom: var(--expressa-space-24);
+}
+
+.auth-screen__brand {
+  display: block;
+  margin-bottom: var(--expressa-space-8);
+  color: var(--expressa-color-text-muted);
+  font-size: var(--expressa-font-size-caption);
+  font-weight: var(--expressa-font-weight-semibold);
+  letter-spacing: var(--expressa-letter-spacing-section-title);
 }
 
 .auth-screen__header h1,

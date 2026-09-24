@@ -1,5 +1,9 @@
 <template>
-  <section ref="host" class="notification-host">
+  <section
+    ref="host"
+    class="notification-host"
+    :class="{ 'notification-host--visible': entries.length > 0 }"
+  >
     <article
       v-for="entry in entries"
       :key="entry.id"
@@ -164,22 +168,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .notification-host {
-  position: fixed;
+  position: static;
   z-index: var(--expressa-z-notification-layer);
-  inset: calc(
-      var(--expressa-space-48) + var(--expressa-space-md) +
-        var(--expressa-safe-area-top)
-    )
-    var(--expressa-space-md) auto auto;
   display: grid;
   gap: var(--expressa-space-sm);
   width: min(25rem, calc(100vw - var(--expressa-space-32)));
-  max-height: calc(
-    100dvh - var(--expressa-space-32) - var(--expressa-safe-area-top) -
-      var(--expressa-safe-area-bottom)
-  );
-  overflow: auto;
+  height: 0;
+  max-height: var(--expressa-size-notification-desktop-max-block);
+  margin: 0 var(--expressa-space-md) 0 auto;
+  overflow: hidden;
   pointer-events: none;
+}
+.notification-host--visible {
+  height: auto;
+  margin-block: calc(var(--expressa-safe-area-top) + var(--expressa-space-md))
+    var(--expressa-space-sm);
+  overflow-y: auto;
 }
 .notification-host__card {
   --notification-close-size: var(--expressa-size-control-min-height);
@@ -251,6 +255,19 @@ onBeforeUnmount(() => {
 @media (pointer: coarse), (max-width: 767px) {
   .notification-host__card {
     --notification-close-size: var(--expressa-size-control-coarse-min-height);
+  }
+}
+@media (max-width: 767px) {
+  .notification-host {
+    width: auto;
+    max-height: var(--expressa-size-notification-mobile-max-block);
+    margin-inline: 0;
+  }
+  .notification-host--visible {
+    margin: calc(var(--expressa-safe-area-top) + var(--expressa-space-sm))
+      max(var(--expressa-space-md), var(--expressa-safe-area-right))
+      var(--expressa-space-sm)
+      max(var(--expressa-space-md), var(--expressa-safe-area-left));
   }
 }
 </style>

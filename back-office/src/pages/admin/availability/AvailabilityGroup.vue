@@ -47,6 +47,8 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
 
 .availability-group__header {
   padding: var(--expressa-space-control-inline) var(--expressa-space-md);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 
 .availability-group__title {
@@ -56,6 +58,7 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
   font-weight: var(--expressa-font-weight-semibold);
   letter-spacing: var(--expressa-letter-spacing-section-title);
   line-height: var(--expressa-line-height-heading);
+  text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 
@@ -63,7 +66,7 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
   padding: 0 var(--expressa-space-md);
 }
 
-.availability-group__items :deep(.toggle-row) {
+.availability-group__items :deep(.toggle-row:last-child) {
   border-bottom: var(--expressa-border-width-none);
 }
 </style>

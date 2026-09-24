@@ -18,7 +18,7 @@
         class="orders-screen__filters"
         :disabled="queueControlsDisabled"
         :items="queueFilters"
-        layout="contained"
+        layout="wrapped"
       />
       <AdminFieldWrapper
         id="orders-search"
@@ -136,7 +136,7 @@ const emptyContent = computed(() => {
 }
 .orders-screen__toolbar {
   display: grid;
-  gap: var(--expressa-space-sm);
+  gap: var(--expressa-space-md);
   background: var(--expressa-color-surface);
 }
 .orders-screen__title {
@@ -150,11 +150,11 @@ const emptyContent = computed(() => {
 .orders-screen__filters {
   min-inline-size: 0;
   max-inline-size: 100%;
-  order: 1;
+  order: 0;
 }
 .orders-screen__search {
   display: grid;
-  order: 0;
+  order: 1;
   gap: var(--expressa-space-field-label);
   padding: 0 var(--expressa-space-md) var(--expressa-space-md);
 }
@@ -234,7 +234,7 @@ const emptyContent = computed(() => {
     background: var(--expressa-color-surface);
   }
   .orders-screen__toolbar {
-    gap: var(--expressa-space-md);
+    gap: var(--expressa-space-lg);
     padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
   }
   .orders-screen__title {
@@ -247,7 +247,7 @@ const emptyContent = computed(() => {
     padding: 0;
   }
   .orders-screen__content {
-    padding: var(--expressa-space-md) var(--expressa-space-lg)
+    padding: var(--expressa-space-lg) var(--expressa-space-lg)
       var(--expressa-space-lg);
   }
   .orders-screen__grid {
@@ -259,19 +259,33 @@ const emptyContent = computed(() => {
 }
 @media (min-width: 768px) {
   .orders-screen__toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+    align-items: center;
   }
   .orders-screen__title {
-    width: 100%;
+    grid-column: 1;
+    grid-row: 1;
   }
   .orders-screen__filters {
-    flex: 1 1 0;
+    grid-column: 1;
+    grid-row: 2;
   }
   .orders-screen__search {
     min-inline-size: 0;
-    flex: 1 1 0;
+    grid-column: 2;
+    grid-row: 2;
+    order: initial;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .orders-screen__toolbar {
+    align-items: start;
+  }
+  .orders-screen__filters {
+    grid-column: 1 / -1;
+  }
+  .orders-screen__search {
+    grid-row: 1;
   }
 }
 </style>

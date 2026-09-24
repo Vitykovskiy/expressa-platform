@@ -81,12 +81,8 @@ const emit = defineEmits<TabBarEmits>();
 }
 .tab-bar-link__label {
   display: block;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-control);
-  text-overflow: ellipsis;
 }
 @media (min-width: 768px) {
   .tab-bar {

@@ -31,7 +31,11 @@
             />
           </div>
         </AdminFieldWrapper>
-        <FilterTabs v-model="activeFilter" :items="USER_FILTER_ITEMS" />
+        <FilterTabs
+          v-model="activeFilter"
+          :items="USER_FILTER_ITEMS"
+          layout="balanced-pairs"
+        />
       </section>
     </div>
 
@@ -69,14 +73,11 @@
       @cancel="closeActionDialog"
       @confirm="confirmAction"
     />
-    <div v-if="isSnackbarOpen" class="users-screen__snackbar">
-      {{ snackbarMessage }}
-    </div>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, shallowRef } from "vue";
+import { computed, shallowRef } from "vue";
 import { Plus, Search } from "lucide-vue-next";
 
 import type {
@@ -95,11 +96,7 @@ import TopBar from "../../../widgets/admin-shell/TopBar.vue";
 import AddUserDialog from "./AddUserDialog.vue";
 import UserActionDialog from "./UserActionDialog.vue";
 import UserRow from "./UserRow.vue";
-import {
-  USER_FILTER_ALL,
-  USER_FILTER_ITEMS,
-  USERS_SNACKBAR_TIMEOUT,
-} from "./UsersScreen.constants";
+import { USER_FILTER_ALL, USER_FILTER_ITEMS } from "./UsersScreen.constants";
 import type {
   ActionSelection,
   UserFilter,
@@ -116,9 +113,6 @@ const searchQuery = shallowRef("");
 const isAddDialogOpen = shallowRef(false);
 const isActionDialogOpen = shallowRef(false);
 const actionSelection = shallowRef<ActionSelection | null>(null);
-const snackbarMessage = shallowRef("");
-const isSnackbarOpen = shallowRef(false);
-let snackbarTimer: ReturnType<typeof setTimeout> | undefined;
 
 const filteredUsers = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase("ru-RU");
@@ -149,17 +143,6 @@ const filteredUsers = computed(() => {
   });
 });
 
-function showSnackbar(message: string): void {
-  snackbarMessage.value = message;
-  isSnackbarOpen.value = true;
-  clearTimeout(snackbarTimer);
-  snackbarTimer = setTimeout(() => {
-    isSnackbarOpen.value = false;
-  }, USERS_SNACKBAR_TIMEOUT);
-}
-
-onBeforeUnmount(() => clearTimeout(snackbarTimer));
-
 function openActionDialog(action: UserAction, user: User): void {
   actionSelection.value = { action, user };
   isActionDialogOpen.value = true;
@@ -172,7 +155,6 @@ function closeActionDialog(): void {
 
 function addUser(data: AddUserData): void {
   emit("add-user", data);
-  showSnackbar(`«${data.name}» добавлен`);
 }
 
 function confirmAction(role: UserRole | undefined): void {
@@ -184,16 +166,10 @@ function confirmAction(role: UserRole | undefined): void {
 
   if (selection.action === "change_role" && role) {
     emit("update-role", { userId: selection.user.id, role });
-    showSnackbar(
-      `Роль изменена на «${role === "barista" ? "Бариста" : "Администратор"}»`,
-    );
   }
 
   if (selection.action === "block" || selection.action === "unblock") {
     emit("toggle-block", { userId: selection.user.id });
-    showSnackbar(
-      `«${selection.user.name}» ${selection.action === "block" ? "заблокирован" : "разблокирован"}`,
-    );
   }
 
   closeActionDialog();
@@ -278,17 +254,6 @@ function confirmAction(role: UserRole | undefined): void {
 
 .users-screen__list {
   min-height: 100%;
-}
-
-.users-screen__snackbar {
-  position: fixed;
-  z-index: var(--expressa-z-modal-layer);
-  bottom: var(--expressa-space-md);
-  left: var(--expressa-space-md);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-surface);
-  background: var(--expressa-color-text-primary);
 }
 
 .users-screen__rows {

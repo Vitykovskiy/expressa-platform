@@ -6,6 +6,8 @@
     <AdminButton
       class="menu-reorder-row__handle"
       type="button"
+      variant="ghost"
+      size="compact"
       :disabled="props.disabled"
       :data-reorder-control="`${props.id}:handle`"
       @pointerdown="startPointer"
@@ -19,12 +21,29 @@
       v-if="props.disclosable"
       class="menu-reorder-row__disclosure"
       type="button"
+      variant="ghost"
+      size="compact"
+      :disabled="props.disabled"
       @click="emit('toggle')"
     >
-      {{ props.expanded ? "Скрыть товары" : "Показать товары" }}</AdminButton
-    ><span class="menu-reorder-row__label">{{ props.label }}</span>
+      <AdminIcon :icon="props.expanded ? ChevronDown : ChevronRight" />
+    </AdminButton>
+    <AdminButton
+      class="menu-reorder-row__label"
+      :class="{ 'menu-reorder-row__label--truncated': isTruncated }"
+      type="button"
+      variant="ghost"
+      size="compact"
+      :disabled="props.disabled"
+      @click="openLabel"
+      ><span ref="labelText" class="menu-reorder-row__label-text">{{
+        props.label
+      }}</span></AdminButton
+    >
     <AdminButton
       type="button"
+      variant="ghost"
+      size="compact"
       :disabled="props.disabled || !props.canMoveUp"
       :data-reorder-control="`${props.id}:up`"
       @click="emit('move', { offset: -1, control: 'up' })"
@@ -33,6 +52,8 @@
     </AdminButton>
     <AdminButton
       type="button"
+      variant="ghost"
+      size="compact"
       :disabled="props.disabled || !props.canMoveDown"
       :data-reorder-control="`${props.id}:down`"
       @click="emit('move', { offset: 1, control: 'down' })"
@@ -42,8 +63,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, GripVertical } from "lucide-vue-next";
-import { ref } from "vue";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  GripVertical,
+} from "lucide-vue-next";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import type {
@@ -55,6 +81,29 @@ const props = withDefaults(defineProps<MenuReorderRowProps>(), {
 });
 const emit = defineEmits<MenuReorderRowEmits>();
 const grabbed = ref(false);
+const labelText = ref<HTMLElement | null>(null);
+const isTruncated = ref(false);
+let labelObserver: ResizeObserver | null = null;
+function updateTruncation(): void {
+  const text = labelText.value;
+  isTruncated.value =
+    text !== null && text.scrollHeight > text.clientHeight + 1;
+}
+function openLabel(): void {
+  if (isTruncated.value) emit("show-label");
+}
+onMounted(() => {
+  if (labelText.value !== null) {
+    labelObserver = new ResizeObserver(updateTruncation);
+    labelObserver.observe(labelText.value);
+  }
+  updateTruncation();
+});
+onBeforeUnmount(() => labelObserver?.disconnect());
+watch(
+  () => props.label,
+  () => void nextTick(updateTruncation),
+);
 const pointerY = ref<number | null>(null);
 const stagedOffset = ref(0);
 function commit(offset: -1 | 1): void {
@@ -89,9 +138,9 @@ function cancelDrag(): void {
 .menu-reorder-row {
   display: flex;
   box-sizing: border-box;
-  block-size: var(--expressa-size-row-min);
-  min-block-size: var(--expressa-size-row-min);
-  flex-basis: var(--expressa-size-row-min);
+  block-size: calc(var(--expressa-space-48) + var(--expressa-space-8));
+  min-block-size: calc(var(--expressa-space-48) + var(--expressa-space-8));
+  flex-basis: calc(var(--expressa-space-48) + var(--expressa-space-8));
   align-items: center;
   gap: var(--expressa-space-sm);
   border-bottom: var(--expressa-border-width-default) solid
@@ -105,6 +154,7 @@ function cancelDrag(): void {
 .menu-reorder-row .admin-button {
   min-width: var(--expressa-size-control-min-height);
   min-height: var(--expressa-size-control-min-height);
+  padding: var(--expressa-space-8);
 }
 .menu-reorder-row__handle {
   cursor: grab;
@@ -112,19 +162,33 @@ function cancelDrag(): void {
 .menu-reorder-row--grabbed .menu-reorder-row__handle {
   cursor: grabbing;
 }
-.menu-reorder-row__label {
+.menu-reorder-row .menu-reorder-row__label {
   min-width: 0;
   flex: 1;
+  display: flex;
+  align-items: center;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding-inline: 0;
+  color: var(--expressa-color-text-primary);
+  text-align: start;
   font-weight: var(--expressa-font-weight-semibold);
+  cursor: default;
 }
-.menu-reorder-row__disclosure {
-  min-width: var(--expressa-size-control-min-height);
-  min-height: var(--expressa-size-control-min-height);
+.menu-reorder-row .menu-reorder-row__label--truncated {
+  cursor: pointer;
 }
-@media (pointer: coarse) {
+.menu-reorder-row__label-text {
+  display: -webkit-box;
+  min-width: 0;
+  max-block-size: calc(2em * var(--expressa-line-height-tight));
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+  line-height: var(--expressa-line-height-tight);
+}
+@media (pointer: coarse), (max-width: 767px) {
   .menu-reorder-row__handle {
     display: none;
   }

@@ -24,6 +24,8 @@ export const operationMessages = {
   "catalog.refresh": "Не удалось обновить список",
   "catalog.refreshLongContent":
     "Не удалось обновить список. Проверьте подключение и повторите действие после восстановления доступа к сети.",
+  "catalog.reorder": "Не удалось сохранить порядок",
+  "catalog.reorder.compensate": "Не удалось восстановить порядок",
   "catalog.save": "Не удалось сохранить изменения",
   "notifications.enable": "Не удалось включить уведомления",
   "session.logout": "Не удалось выйти",

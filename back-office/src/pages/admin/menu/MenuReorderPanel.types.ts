@@ -9,6 +9,7 @@ export interface MenuReorderPanelProps {
 }
 export interface MenuReorderPanelEmits {
   cancel: [];
+  navigate: [target: string];
   "request-close": [];
   save: [scopes: readonly MenuReorderScope[]];
   "update:expandedCategoryIds": [ids: ReadonlySet<string>];

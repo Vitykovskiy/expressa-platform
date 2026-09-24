@@ -2,19 +2,28 @@
   <div class="menu-product-row">
     <AdminButton
       :id="`menu-product-${props.product.id}`"
-      class="menu-product-row__edit"
+      class="menu-product-row__label"
       type="button"
       variant="ghost"
-      @click="emit('edit', props.product)"
+      :disabled="props.disabled"
+      @click="openProductLabel"
     >
       <span class="menu-product-row__content">
-        <span class="menu-product-row__name">
+        <span ref="labelText" class="menu-product-row__name">
           {{ props.product.name }}
         </span>
         <span class="menu-product-row__price">
           {{ priceLabel(props.product) }}
         </span>
       </span>
+    </AdminButton>
+    <AdminButton
+      class="menu-product-row__edit"
+      type="button"
+      variant="ghost"
+      :disabled="props.disabled"
+      @click="emit('edit', props.product)"
+    >
       <AdminIcon v-if="!props.showManagementActions" :icon="ChevronRight" />
       <span v-else class="menu-product-row__edit-label">Изменить</span>
     </AdminButton>
@@ -47,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
 import { ArrowDown, ArrowUp, ChevronRight } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
@@ -59,6 +69,32 @@ import type {
 
 const props = defineProps<MenuProductRowProps>();
 const emit = defineEmits<MenuProductRowEmits>();
+const labelText = shallowRef<HTMLElement | null>(null);
+const isTruncated = shallowRef(false);
+let labelObserver: ResizeObserver | null = null;
+
+function updateTruncation(): void {
+  const text = labelText.value;
+  isTruncated.value = text !== null && text.scrollWidth > text.clientWidth + 1;
+}
+
+function openProductLabel(): void {
+  if (isTruncated.value) emit("showLabel", props.product.name);
+  else emit("edit", props.product);
+}
+
+onMounted(() => {
+  if (labelText.value !== null) {
+    labelObserver = new ResizeObserver(updateTruncation);
+    labelObserver.observe(labelText.value);
+  }
+  updateTruncation();
+});
+onBeforeUnmount(() => labelObserver?.disconnect());
+watch(
+  () => props.product.name,
+  () => void nextTick(updateTruncation),
+);
 
 function priceLabel(product: Product): string {
   if (product.priceChoices && product.priceChoices.length > 0) {
@@ -90,18 +126,30 @@ function formatPrice(price: number): string {
     var(--expressa-color-border);
 }
 
+.menu-product-row__label:hover,
 .menu-product-row__edit:hover {
   background: var(--expressa-color-control-hover-surface);
 }
 
-.menu-product-row__edit {
+.menu-product-row__label {
   display: flex;
   min-width: 0;
+  min-block-size: var(--expressa-size-control-min-height);
   align-items: center;
   flex: 1;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  padding: var(--expressa-space-sm) var(--expressa-space-md)
+    var(--expressa-space-sm) var(--expressa-space-48);
   text-align: left;
+}
+.menu-product-row__edit {
+  display: inline-flex;
+  min-inline-size: var(--expressa-size-control-min-height);
+  min-block-size: var(--expressa-size-control-min-height);
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: var(--expressa-space-sm);
+  color: var(--expressa-color-text-muted);
 }
 
 .menu-product-row__move {
@@ -143,10 +191,6 @@ function formatPrice(price: number): string {
 }
 
 @media (max-width: 767px) {
-  .menu-product-row__edit {
-    width: 100%;
-  }
-
   .menu-product-row__order {
     margin-inline-start: var(--expressa-space-md);
   }

@@ -72,7 +72,7 @@
   );
   --expressa-space-empty-state-block: var(--expressa-space-48);
   --expressa-space-product-indent: var(--expressa-space-48);
-  --expressa-space-dialog-inset: var(--expressa-space-md);
+  --expressa-space-dialog-inset: var(--expressa-space-lg);
 
   --expressa-radius-sm: 6px;
   --expressa-radius-md: 10px;
@@ -91,7 +91,7 @@
   --expressa-font-size-body-strong: 0.9375rem;
   --expressa-font-size-metadata: 0.75rem;
   --expressa-font-size-title: 1.125rem;
-  --expressa-font-size-brand: 1.125rem;
+  --expressa-font-size-brand: 1.25rem;
   --expressa-font-size-heading: 1.5rem;
   --expressa-font-size-screen-title: 1.5rem;
   --expressa-font-weight-medium: 500;
@@ -119,8 +119,10 @@
   --expressa-size-switch-thumb: 1.25rem;
   --expressa-size-option: 44px;
   --expressa-size-control-min-height: 44px;
-  --expressa-size-button-min-height: 40px;
-  --expressa-size-control-compact-min-height: 36px;
+  --expressa-size-button-min-height: var(--expressa-size-control-min-height);
+  --expressa-size-control-compact-min-height: var(
+    --expressa-size-control-min-height
+  );
   --expressa-size-control-coarse-min-height: 48px;
   --expressa-size-top-bar-min-height: 52px;
   --expressa-size-tab-bar-min-height: 60px;
@@ -138,6 +140,8 @@
   );
   --expressa-size-confirm-dialog-max-width: 25rem;
   --expressa-size-dialog-max-block: calc(100dvh - var(--expressa-space-32));
+  --expressa-size-notification-mobile-max-block: 25dvh;
+  --expressa-size-notification-desktop-max-block: 40dvh;
   --expressa-size-icon-action: 1.25rem;
   --expressa-size-textarea-min-height: 6rem;
   --expressa-size-combobox-menu-max-block: min(
@@ -182,13 +186,6 @@
     --expressa-size-control-min-height: var(
       --expressa-size-control-coarse-min-height
     );
-    --expressa-size-button-min-height: 44px;
-  }
-}
-
-@media (min-width: 768px) {
-  :root {
-    --expressa-space-dialog-inset: var(--expressa-space-lg);
   }
 }
 

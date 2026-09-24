@@ -1,8 +1,11 @@
 <template>
-  <PageShell class="menu-page__shell" title="Меню">
+  <PageShell class="menu-page__shell">
+    <MenuScreenHeading />
     <p
       v-if="
-        catalogStore.status === 'loading' && modifierPendingMessage === null
+        catalogStore.status === 'loading' &&
+        modifierPendingMessage === null &&
+        !reorderPending
       "
       class="menu-page__state"
     >
@@ -36,6 +39,7 @@
           :expanded-category-ids="expandedCategoryIds"
           :pending="reorderPending"
           @cancel="closeReorder"
+          @navigate="router.push($event)"
           @request-close="closeReorder"
           @save="saveReorder"
           @update:expanded-category-ids="expandedCategoryIds = $event"
@@ -101,7 +105,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  useRoute,
+  useRouter,
+} from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
 import AddCategoryDialog from "./admin/menu/AddCategoryDialog.vue";
@@ -111,6 +120,7 @@ import type { CreateProductFormData } from "./admin/menu/AddProductDialog.types"
 import EditCategoryDialog from "./admin/menu/EditCategoryDialog.vue";
 import MenuReorderPanel from "./admin/menu/MenuReorderPanel.vue";
 import MenuOverview from "./admin/menu/MenuOverview.vue";
+import MenuScreenHeading from "./admin/menu/MenuScreenHeading.vue";
 import type { MenuReorderScope } from "./admin/menu/composables/useMenuReorderDraft.types";
 import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
@@ -135,9 +145,12 @@ const modifierEditorSession = shallowRef(0);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const managementOpen = computed(() => route.query.mode === "reorder");
 const reorderPending = shallowRef(false);
+const trustedReorderExit = shallowRef<string | null>(null);
 const reorderSaved = shallowRef(false);
 const reorderPanel = shallowRef<{
   requestClose: () => void;
+  requestNavigation: (target: string) => boolean;
+  confirmSaved: () => void;
 } | null>(null);
 const selectedCategory = shallowRef<Category | null>(null);
 const selectedModifierGroup = shallowRef<ModifierGroup | null>(null);
@@ -194,6 +207,17 @@ const productFieldErrors = computed(() => catalogStore.fieldErrors);
 const modifierFieldErrors = computed(() => catalogStore.fieldErrors);
 
 onMounted(loadCatalog);
+
+onBeforeRouteLeave((to) => {
+  if (reorderPending.value) return false;
+  return reorderPanel.value?.requestNavigation(to.fullPath) ?? true;
+});
+onBeforeRouteUpdate((to) => {
+  if (reorderPending.value) return to.fullPath === trustedReorderExit.value;
+  return to.query.mode !== "reorder"
+    ? (reorderPanel.value?.requestNavigation(to.fullPath) ?? true)
+    : true;
+});
 
 watch(
   () => catalogStore.status,
@@ -254,11 +278,17 @@ async function closeReorder(): Promise<void> {
   await setReorderMode(false);
 }
 
-async function setReorderMode(open: boolean): Promise<void> {
+async function setReorderMode(open: boolean, trusted = false): Promise<void> {
   const query = { ...route.query };
   if (open) query.mode = "reorder";
   else delete query.mode;
-  await router.push({ query });
+  const target = { query };
+  if (trusted) trustedReorderExit.value = router.resolve(target).fullPath;
+  try {
+    await router.push(target);
+  } finally {
+    if (trusted) trustedReorderExit.value = null;
+  }
 }
 
 async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
@@ -285,7 +315,8 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
         throw new Error("reorder failed");
       confirmed.push(scope);
     }
-    await setReorderMode(false);
+    reorderPanel.value?.confirmSaved();
+    await setReorderMode(false, true);
     reorderSaved.value = true;
   } catch {
     // Best-effort compensation keeps confirmed server scopes aligned with the original draft.
@@ -294,12 +325,14 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
         await catalogStore.reorderCategories(
           authorizationValue,
           scope.originalIds,
+          "compensate",
         );
       else
         await catalogStore.reorderProducts(
           authorizationValue,
           scope.categoryId,
           scope.originalIds,
+          "compensate",
         );
     }
     await catalogStore.refresh(authorizationValue);

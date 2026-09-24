@@ -10,6 +10,7 @@ export interface MenuProductRowProps {
 
 export interface MenuProductRowEmits {
   edit: [product: Product];
+  showLabel: [label: string];
   moveUp: [product: Product];
   moveDown: [product: Product];
 }

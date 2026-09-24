@@ -22,6 +22,7 @@ import type {
   ModifierOption,
   Product,
   ProductPriceChoice,
+  ReorderOperationIntent,
 } from "./catalog.types";
 
 export const useCatalogStore = defineStore(catalogStoreId, {
@@ -84,12 +85,16 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     reorderCategories(
       accessToken: string,
       categoryIds: readonly string[],
+      intent: ReorderOperationIntent = "save",
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.reorderCategories(
-          accessToken,
-          categoryIds,
-        ),
+      return this.mutate(
+        accessToken,
+        () =>
+          getCatalogStoreDependencies().catalogApi.reorderCategories(
+            accessToken,
+            categoryIds,
+          ),
+        intent,
       );
     },
 
@@ -132,13 +137,17 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       categoryId: string,
       productIds: readonly string[],
+      intent: ReorderOperationIntent = "save",
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.reorderProducts(
-          accessToken,
-          categoryId,
-          productIds,
-        ),
+      return this.mutate(
+        accessToken,
+        () =>
+          getCatalogStoreDependencies().catalogApi.reorderProducts(
+            accessToken,
+            categoryId,
+            productIds,
+          ),
+        intent,
       );
     },
 
@@ -229,16 +238,23 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     mutate(
       accessToken: string,
       mutation: () => Promise<unknown>,
+      reorderIntent?: ReorderOperationIntent,
     ): Promise<void> {
       if (this.activeOperation !== null) {
         this.lastCommandSucceeded = false;
         return this.activeOperation;
       }
 
-      return this.execute(accessToken, async () => {
-        await mutation();
-        return getCatalogStoreDependencies().catalogApi.getCatalog(accessToken);
-      });
+      return this.execute(
+        accessToken,
+        async () => {
+          await mutation();
+          return getCatalogStoreDependencies().catalogApi.getCatalog(
+            accessToken,
+          );
+        },
+        reorderIntent,
+      );
     },
 
     saveCatalogForm(
@@ -295,6 +311,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     execute(
       accessToken: string,
       operation: () => Promise<CatalogApiResult>,
+      reorderIntent?: ReorderOperationIntent,
     ): Promise<void> {
       this.status = catalogStatuses.loading;
       this.error = null;
@@ -302,8 +319,18 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.lastCommandSucceeded = false;
       this.resetFormSaveOutcome();
 
+      const context =
+        reorderIntent === undefined
+          ? catalogContext("catalog.read", "catalog", "read")
+          : catalogContext(
+              reorderIntent === "save"
+                ? "catalog.reorder"
+                : "catalog.reorder.compensate",
+              "catalog",
+              "mutation",
+            );
       const activeOperation = getOperationPort()
-        .run(catalogContext("catalog.read", "catalog", "read"), operation)
+        .run(context, operation)
         .then((result) => {
           if (result.status !== "success") {
             this.fieldErrors = fieldErrors(result);

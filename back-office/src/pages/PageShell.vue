@@ -40,7 +40,7 @@ const slots = defineSlots<{
 .page-shell {
   width: 100%;
   min-width: 0;
-  padding: var(--expressa-space-32);
+  padding: var(--expressa-space-24);
 }
 
 .page-shell-title {
@@ -54,12 +54,6 @@ const slots = defineSlots<{
 
 .page-shell-content {
   margin-top: var(--expressa-space-24);
-}
-
-@media (max-width: 1023px) {
-  .page-shell {
-    padding: var(--expressa-space-24);
-  }
 }
 
 @media (max-width: 767px) {
