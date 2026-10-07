@@ -18,7 +18,7 @@ Front-office и back-office — независимые Vue/Vite PWA. Кажды�
 
 Front-office содержит меню, корзину, OTP, историю `/orders` и детали `/orders/:id`. История и детали читают backend; это не оболочки без данных. [Маршрутизатор](../../front-office/src/app/router.ts), [история](../../front-office/src/pages/OrdersPage.vue), [детали](../../front-office/src/pages/OrderPage.vue).
 
-Back-office содержит вход, очередь `/queue`, доступность `/availability` и административный каталог `/menu`. Очередь и доступность подключены к активным страницам. Неактивные композиции перечислены отдельно в [границах экранов](../../back-office/docs/30-domains/Inactive-screens.md). [Маршруты](../../back-office/src/app/router.constants.ts).
+Back-office содержит вход, очередь `/queue`, доступность `/availability` и административный каталог `/menu`. Очередь и доступность подключены к активным страницам. Активные композиции и удалённый неподключённый UI описаны в [границах экранов](../../back-office/docs/30-domains/Inactive-screens.md). [Маршруты](../../back-office/src/app/router.constants.ts).
 
 ## Границы совместимости
 

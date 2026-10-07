@@ -4,7 +4,8 @@ import MenuCategoryGroup from "../../../src/pages/admin/menu/MenuCategoryGroup.v
 import { category, product } from "../../fixtures/catalog";
 
 const meta = {
-  title: "Features/Menu/MenuCategoryGroup",
+  title: "Бизнес компоненты/Меню/Группа товаров",
+  id: "features-menu-menucategorygroup",
   component: MenuCategoryGroup,
   args: { category, products: [product], expanded: true, disabled: false },
 } satisfies Meta<typeof MenuCategoryGroup>;
@@ -21,6 +22,14 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Expanded: Story = { render };
-export const Collapsed: Story = { args: { expanded: false }, render };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Expanded: Story = { name: "Развёрнуто", render };
+export const Collapsed: Story = {
+  name: "Свёрнуто",
+  args: { expanded: false },
+  render,
+};
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

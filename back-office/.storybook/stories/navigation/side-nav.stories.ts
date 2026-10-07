@@ -6,7 +6,8 @@ const sections = [
   { id: "menu" as const, label: "Меню" },
 ];
 const meta = {
-  title: "Navigation/SideNav",
+  title: "Компоненты/Навигация/Боковое меню",
+  id: "navigation-sidenav",
   component: SideNav,
   globals: { viewport: "desktop" },
   args: { role: "administrator", activeSection: "orders", sections },
@@ -16,8 +17,9 @@ const meta = {
 } satisfies Meta<typeof SideNav>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Administrator: Story = {};
-export const Barista: Story = { args: { role: "barista" } };
+export const Administrator: Story = { name: "Администратор" };
+export const Barista: Story = { name: "Бариста", args: { role: "barista" } };
 export const AvailabilityActive: Story = {
+  name: "Раздел доступности",
   args: { activeSection: "availability" },
 };

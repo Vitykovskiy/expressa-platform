@@ -26,4 +26,4 @@ scope: back-office
 
 Административный каталог и товары используют v3; категории / модификаторы — v2. Очередь читается через v3, переходы стадий — через v2. Доступность и приём используют сохранённые v2 операции, доступность ценовой опции — v3. Точные пути находятся в [OpenAPI](../../contracts/openapi.json) и [карте staff API](../../../docs/50-interfaces/Back-office-API.md).
 
-Связанное: [вход и роли](Authentication-and-role-gates.md), [каталог](Catalog-management.md), [активные и неподключённые экраны](Inactive-screens.md).
+Связанное: [вход и роли](Authentication-and-role-gates.md), [каталог](Catalog-management.md), [границы экранов](Inactive-screens.md).

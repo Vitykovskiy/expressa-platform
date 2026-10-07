@@ -96,17 +96,17 @@ const preview: Preview = {
     viewport: {
       options: {
         mobile: {
-          name: "Mobile",
+          name: "Телефон",
           styles: { width: "375px", height: "812px" },
           type: "mobile",
         },
         tablet: {
-          name: "Tablet",
+          name: "Планшет",
           styles: { width: "768px", height: "1024px" },
           type: "tablet",
         },
         desktop: {
-          name: "Desktop",
+          name: "Компьютер",
           styles: { width: "1440px", height: "960px" },
           type: "desktop",
         },
@@ -115,15 +115,30 @@ const preview: Preview = {
     options: {
       storySort: {
         order: [
-          "Foundations",
-          "Navigation",
-          "Feedback",
-          "Forms",
-          "Dialogs",
-          "Data display",
-          "Layout",
-          "Features",
-          "Internals",
+          "Базовые элементы",
+          [
+            "Токены оформления",
+            "Иконка",
+            "Индикатор загрузки",
+            "Кнопка",
+            "Текстовое поле",
+            "Многострочное поле",
+            "Переключатель",
+            "Список выбора",
+            "Выбор с поиском",
+          ],
+          "Компоненты",
+          ["Формы", "Диалоги", "Навигация", "Обратная связь"],
+          "Бизнес компоненты",
+          ["Вход", "Заказы", "Доступность", "Меню"],
+          "Экраны",
+          [
+            "Вход",
+            "Очередь заказов",
+            "Доступность",
+            "Меню",
+            "Редактирование товара",
+          ],
         ],
       },
     },

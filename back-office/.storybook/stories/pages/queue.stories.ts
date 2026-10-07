@@ -7,7 +7,8 @@ import { order, orderDetails } from "../../fixtures/catalog";
 
 const items = createNavigationItems("administrator");
 const meta = {
-  title: "Screens/Queue",
+  title: "Экраны/Очередь заказов",
+  id: "screens-queue",
   component: OrdersScreen,
   args: {
     orders: [
@@ -94,18 +95,59 @@ function render(args: Story["args"]) {
     </AdminShell>`,
   };
 }
-export const Ready: Story = { render, globals: { viewport: "desktop" } };
-export const ReadyMobile: Story = { render, globals: { viewport: "mobile" } };
+export const Ready: Story = {
+  name: "Готово",
+  render,
+  globals: { viewport: "desktop" },
+};
+export const ReadyMobile: Story = {
+  name: "Мобильный вид",
+  render,
+  globals: { viewport: "mobile" },
+};
 export const SelectedDetails: Story = {
+  name: "Открытые детали",
   render,
   args: { selectedOrderId: order.id, details: orderDetails },
 };
 export const Loading: Story = {
+  name: "Загрузка",
   render,
   args: { status: "loading", orders: [] },
 };
-export const Empty: Story = { render, args: { orders: [] } };
+export const Empty: Story = { name: "Пусто", render, args: { orders: [] } };
 export const Unresolved: Story = {
+  name: "Данные не подтверждены",
   render,
   args: { status: "unresolved", orders: [] },
+};
+
+export const DetailsLoading: Story = {
+  name: "Загрузка деталей",
+  render,
+  args: { selectedOrderId: order.id, detailsLoading: true },
+};
+export const TransitionPending: Story = {
+  name: "Изменение стадии",
+  render,
+  args: {
+    selectedOrderId: order.id,
+    details: orderDetails,
+    transitionLoading: true,
+  },
+};
+export const SearchEmpty: Story = {
+  name: "Поиск без результатов",
+  render,
+  args: { orders: [], search: "123" },
+};
+export const StageEmpty: Story = {
+  name: "Пустая стадия",
+  render,
+  args: { orders: [], stage: "READY" },
+};
+export const SearchAndStageEmpty: Story = {
+  name: "Поиск и стадия без результатов",
+  render,
+  args: { orders: [], search: "123", stage: "READY" },
 };

@@ -3,7 +3,8 @@ import { shallowRef } from "vue";
 import AdminToggle from "../../../src/shared/ui/admin/admin-toggle/AdminToggle.vue";
 
 const meta = {
-  title: "Forms/AdminToggle",
+  title: "Базовые элементы/Переключатель",
+  id: "forms-admintoggle",
   component: AdminToggle,
   args: { modelValue: true },
   parameters: { layout: "padded" },
@@ -21,9 +22,18 @@ function render(args: Story["args"]) {
   };
 }
 
-export const On: Story = { args: { modelValue: true }, render };
-export const Off: Story = { args: { modelValue: false }, render };
+export const On: Story = {
+  name: "Включён",
+  args: { modelValue: true },
+  render,
+};
+export const Off: Story = {
+  name: "Выключен",
+  args: { modelValue: false },
+  render,
+};
 export const Disabled: Story = {
+  name: "Недоступно",
   args: { modelValue: true, disabled: true },
   render,
 };

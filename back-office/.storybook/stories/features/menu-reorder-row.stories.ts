@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import MenuReorderRow from "../../../src/pages/admin/menu/MenuReorderRow.vue";
 const meta = {
-  title: "Features/Menu/MenuReorderRow",
+  title: "Бизнес компоненты/Меню/Строка изменения порядка",
+  id: "features-menu-menureorderrow",
   component: MenuReorderRow,
   args: {
     entityType: "category",
@@ -15,7 +16,8 @@ const meta = {
 } satisfies Meta<typeof MenuReorderRow>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Category: Story = {};
+export const Category: Story = { name: "Категория" };
 export const ProductDisabled: Story = {
+  name: "Недоступный товар",
   args: { entityType: "product", disabled: true },
 };

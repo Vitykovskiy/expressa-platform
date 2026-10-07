@@ -4,7 +4,8 @@ import MenuOverview from "../../../src/pages/admin/menu/MenuOverview.vue";
 import { category, product, modifierGroup } from "../../fixtures/catalog";
 
 const meta = {
-  title: "Features/Menu/MenuOverview",
+  title: "Бизнес компоненты/Меню/Список категорий и добавок",
+  id: "features-menu-menuoverview",
   component: MenuOverview,
   args: {
     categories: [category],
@@ -38,8 +39,9 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Content: Story = { render };
+export const Content: Story = { name: "С содержимым", render };
 export const Empty: Story = {
+  name: "Пусто",
   args: {
     categories: [],
     products: [],
@@ -48,4 +50,8 @@ export const Empty: Story = {
   },
   render,
 };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

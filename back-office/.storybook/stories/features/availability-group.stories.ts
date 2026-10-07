@@ -5,7 +5,8 @@ import AvailabilityGroup from "../../../src/pages/admin/availability/Availabilit
 import { availabilityItems } from "../../fixtures/catalog";
 
 const meta = {
-  title: "Features/Availability/AvailabilityGroup",
+  title: "Бизнес компоненты/Доступность/Группа позиций",
+  id: "features-availability-availabilitygroup",
   component: AvailabilityGroup,
   args: { category: "Кофе", items: availabilityItems },
 } satisfies Meta<typeof AvailabilityGroup>;
@@ -35,5 +36,9 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Default: Story = { render };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Default: Story = { name: "Обычное состояние", render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

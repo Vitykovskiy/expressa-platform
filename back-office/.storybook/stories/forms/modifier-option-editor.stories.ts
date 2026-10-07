@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import ModifierOptionEditor from "../../../src/pages/admin/menu/ModifierOptionEditor.vue";
 import { shallowRef } from "vue";
 const meta = {
-  title: "Forms/ModifierOptionEditor",
+  title: "Бизнес компоненты/Меню/Редактор добавки",
+  id: "forms-modifieroptioneditor",
   component: ModifierOptionEditor,
   args: {
     modelValue: {
@@ -28,11 +29,9 @@ function render(args: Story["args"]) {
     template: '<ModifierOptionEditor v-bind="args" v-model="value" />',
   };
 }
-export const Default: Story = { render };
-// Ordering and deletion are intentionally owned by ModifierGroupEditor, where
-// sibling position is known. This direct story remains field-only.
-export const Middle: Story = { render };
+export const Default: Story = { name: "Обычное состояние", render };
 export const Validation: Story = {
+  name: "Ошибки ввода",
   args: {
     fieldErrors: {
       name: "Введите название",
@@ -41,4 +40,8 @@ export const Validation: Story = {
   },
   render,
 };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

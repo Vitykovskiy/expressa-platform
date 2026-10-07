@@ -8,7 +8,8 @@ import { availabilityItems } from "../../fixtures/catalog";
 
 const items = createNavigationItems("administrator");
 const meta = {
-  title: "Screens/Availability",
+  title: "Экраны/Доступность",
+  id: "screens-availability",
   component: AvailabilityScreen,
   args: {
     groups: [
@@ -89,15 +90,29 @@ function render(args: Story["args"]) {
     </AdminShell>`,
   };
 }
-export const Ready: Story = { render, globals: { viewport: "desktop" } };
-export const ReadyMobile: Story = { render, globals: { viewport: "mobile" } };
+export const Ready: Story = {
+  name: "Готово",
+  render,
+  globals: { viewport: "desktop" },
+};
+export const ReadyMobile: Story = {
+  name: "Мобильный вид",
+  render,
+  globals: { viewport: "mobile" },
+};
 export const Loading: Story = {
+  name: "Загрузка",
   render,
   args: { loading: true, intake: null, groups: [] },
 };
-export const Empty: Story = { render, args: { groups: [] } };
+export const Empty: Story = { name: "Пусто", render, args: { groups: [] } };
 export const FilteredEmpty: Story = {
+  name: "Нет совпадений",
   render,
   args: { search: "Несуществующий" },
 };
-export const Saving: Story = { render, args: { saving: true } };
+export const Saving: Story = {
+  name: "Сохранение",
+  render,
+  args: { saving: true },
+};

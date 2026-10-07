@@ -40,7 +40,8 @@ const manyProducts = Array.from({ length: 120 }, (_, index) => ({
   sortOrder: index,
 }));
 const meta = {
-  title: "Screens/Menu",
+  title: "Экраны/Меню",
+  id: "screens-menu",
   component: MenuOverview,
   args: {
     categories: [category, teaCategory],
@@ -84,15 +85,18 @@ function renderReorder(args: Story["args"]) {
   };
 }
 export const Overview: Story = {
+  name: "Обзор",
   render: renderOverview,
   globals: { viewport: "desktop" },
 };
 export const OverviewMobile: Story = {
+  name: "Обзор — мобильный вид",
   render: renderOverview,
   args: { expandedCategoryIds: new Set() },
   globals: { viewport: "mobile" },
 };
 export const Empty: Story = {
+  name: "Пусто",
   render: renderOverview,
   args: {
     categories: [],
@@ -102,6 +106,7 @@ export const Empty: Story = {
   },
 };
 export const OverviewLongNames: Story = {
+  name: "Обзор — длинные названия",
   render: renderOverview,
   args: {
     categories: [longCategory],
@@ -111,6 +116,7 @@ export const OverviewLongNames: Story = {
   globals: { viewport: "mobile" },
 };
 export const OverviewManyRows: Story = {
+  name: "Обзор — много строк",
   render: renderOverview,
   args: {
     categories: manyCategories,
@@ -120,18 +126,22 @@ export const OverviewManyRows: Story = {
   globals: { viewport: "mobile" },
 };
 export const Reorder: Story = {
+  name: "Изменение порядка",
   render: renderReorder,
   globals: { viewport: "desktop" },
 };
 export const ReorderMobile: Story = {
+  name: "Порядок — мобильный вид",
   render: renderReorder,
   globals: { viewport: "mobile" },
 };
 export const ReorderPending: Story = {
+  name: "Порядок — ожидание",
   render: renderReorder,
   args: { disabled: true },
 };
 export const ReorderLongNames: Story = {
+  name: "Порядок — длинные названия",
   render: renderReorder,
   args: {
     categories: [longCategory],
@@ -141,6 +151,7 @@ export const ReorderLongNames: Story = {
   globals: { viewport: "mobile" },
 };
 export const ReorderManyRows: Story = {
+  name: "Порядок — много строк",
   render: renderReorder,
   args: {
     categories: manyCategories,
@@ -150,6 +161,7 @@ export const ReorderManyRows: Story = {
   globals: { viewport: "mobile" },
 };
 export const ReorderEmptyCategory: Story = {
+  name: "Порядок — пустая категория",
   render: renderReorder,
   args: {
     categories: [teaCategory],

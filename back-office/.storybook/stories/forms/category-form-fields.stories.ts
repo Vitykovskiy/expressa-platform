@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
 import CategoryFormFields from "../../../src/pages/admin/menu/CategoryFormFields.vue";
 const meta = {
-  title: "Forms/CategoryFormFields",
+  title: "Бизнес компоненты/Меню/Поля категории",
+  id: "forms-categoryformfields",
   component: CategoryFormFields,
   args: {
     name: "Кофе",
@@ -36,9 +37,14 @@ function render(args: Story["args"]) {
     `,
   };
 }
-export const Filled: Story = { render };
+export const Filled: Story = { name: "Заполнено", render };
 export const Validation: Story = {
+  name: "Ошибки ввода",
   args: { errors: { name: "Такое название уже есть" } },
   render,
 };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

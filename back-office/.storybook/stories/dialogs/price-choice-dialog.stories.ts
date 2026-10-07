@@ -4,7 +4,8 @@ import PriceChoiceDialog from "../../../src/pages/admin/menu/PriceChoiceDialog.v
 import { dialogHost } from "../../fixtures/hosts";
 
 const meta = {
-  title: "Dialogs/PriceChoiceDialog",
+  title: "Бизнес компоненты/Меню/Цена и порция",
+  id: "dialogs-pricechoicedialog",
   component: PriceChoiceDialog,
   args: {
     choice: { portionLabel: "300 мл", price: "290", isAvailable: true },
@@ -31,8 +32,9 @@ function render(args: Story["args"]) {
       '<PriceChoiceDialog v-bind="args" :choice="choice" v-model:open="open" />',
   };
 }
-export const Create: Story = { render };
+export const Create: Story = { name: "Создание", render };
 export const Edit: Story = {
+  name: "Редактирование",
   args: {
     editing: true,
     requiredLabel: true,
@@ -45,12 +47,14 @@ export const Edit: Story = {
   render,
 };
 export const SinglePriceWithoutLabel: Story = {
+  name: "Одна цена без названия порции",
   args: {
     choice: { portionLabel: "", price: "290", isAvailable: true },
   },
   render,
 };
 export const RejectedPrice: Story = {
+  name: "Цена отклонена",
   args: {
     editing: true,
     choice: { portionLabel: "", price: "2147483648", isAvailable: true },

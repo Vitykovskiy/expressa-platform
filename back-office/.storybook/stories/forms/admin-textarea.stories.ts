@@ -4,7 +4,8 @@ import AdminTextarea from "../../../src/shared/ui/admin/admin-textarea/AdminText
 import AdminFieldWrapper from "../../../src/shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 
 const meta = {
-  title: "Forms/AdminTextarea",
+  title: "Базовые элементы/Многострочное поле",
+  id: "forms-admintextarea",
   component: AdminTextarea,
   args: { modelValue: "Описание напитка" },
   parameters: { layout: "padded" },
@@ -30,9 +31,10 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Filled: Story = { render };
-export const Empty: Story = {
-  args: { modelValue: "" },
+export const Filled: Story = { name: "Заполнено", render };
+export const Empty: Story = { name: "Пусто", args: { modelValue: "" }, render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
   render,
 };
-export const Disabled: Story = { args: { disabled: true }, render };

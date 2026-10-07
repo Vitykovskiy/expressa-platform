@@ -8,7 +8,6 @@ import type {
   OrderDetails,
   OrderListItem,
 } from "../../src/shared/api/orders.api.types";
-import type { User } from "../../src/shared/ui/admin/Admin.types";
 
 export const category: Category = {
   id: "coffee",
@@ -63,13 +62,6 @@ export const availabilityItems: readonly AvailabilityItem[] = [
     isAvailable: false,
   },
 ];
-export const user: User = {
-  id: "user-1",
-  name: "Анна Иванова",
-  role: "barista",
-  status: "active",
-  phone: "+7 900 000-00-00",
-};
 export const order: OrderListItem = {
   id: "order-42",
   number: "42",

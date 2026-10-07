@@ -71,6 +71,7 @@ Breakpoint мобильного диалога — не шире 767px.
 [AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
 [AvailabilityScreen](../../back-office/src/pages/admin/availability/AvailabilityScreen.vue).
 
-`AvailabilityScreen` — активный дочерний UI `AvailabilityPage`; `UsersScreen` и
-`SettingsScreen` не зарегистрированы среди active routes.
+`AvailabilityScreen` — активный дочерний UI `AvailabilityPage`. Неподключённые
+композиции управления пользователями и настроек удалены; активных маршрутов
+для них нет.
 [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).

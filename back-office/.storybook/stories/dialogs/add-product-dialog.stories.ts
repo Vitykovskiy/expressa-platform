@@ -3,7 +3,8 @@ import AddProductDialog from "../../../src/pages/admin/menu/AddProductDialog.vue
 import { category } from "../../fixtures/catalog";
 import { dialogHost } from "../../fixtures/hosts";
 const meta = {
-  title: "Dialogs/AddProductDialog",
+  title: "Бизнес компоненты/Меню/Добавление товара",
+  id: "dialogs-addproductdialog",
   component: AddProductDialog,
   args: { disabled: false, categories: [category] },
   parameters: { layout: "fullscreen" },
@@ -17,9 +18,14 @@ function render(args: Story["args"]) {
     template: '<AddProductDialog v-bind="args" v-model:open="open" />',
   };
 }
-export const Default: Story = { render };
-export const DisabledPending: Story = { args: { disabled: true }, render };
+export const Default: Story = { name: "Обычное состояние", render };
+export const DisabledPending: Story = {
+  name: "Ожидание и блокировка",
+  args: { disabled: true },
+  render,
+};
 export const Invalid: Story = {
+  name: "Некорректное значение",
   args: { fieldErrors: { name: "Введите название товара" } },
   render,
 };

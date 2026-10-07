@@ -10,7 +10,8 @@ const choice = {
   isAvailable: true,
 };
 const meta = {
-  title: "Features/Menu/PriceChoiceRow",
+  title: "Бизнес компоненты/Меню/Строка варианта цены",
+  id: "features-menu-pricechoicerow",
   component: PriceChoiceRow,
   args: { choice, expanded: true, first: true, last: false },
 } satisfies Meta<typeof PriceChoiceRow>;
@@ -41,10 +42,19 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Expanded: Story = { render };
-export const Collapsed: Story = { args: { expanded: false }, render };
+export const Expanded: Story = { name: "Развёрнуто", render };
+export const Collapsed: Story = {
+  name: "Свёрнуто",
+  args: { expanded: false },
+  render,
+};
 export const Validation: Story = {
+  name: "Ошибки ввода",
   args: { errors: { price: "Введите цену" } },
   render,
 };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

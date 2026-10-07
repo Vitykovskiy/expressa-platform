@@ -16,7 +16,8 @@ import { category, product } from "../../fixtures/catalog";
 
 const items = createNavigationItems("administrator");
 const meta = {
-  title: "Screens/Product edit",
+  title: "Экраны/Редактирование товара",
+  id: "screens-product-edit",
   component: ProductEditContent,
   args: {
     name: product.name,
@@ -106,19 +107,38 @@ function render(args: Story["args"]) {
     </AdminShell>`,
   };
 }
-export const Ready: Story = { render, globals: { viewport: "desktop" } };
-export const ReadyMobile: Story = { render, globals: { viewport: "mobile" } };
+export const Ready: Story = {
+  name: "Готово",
+  render,
+  globals: { viewport: "desktop" },
+};
+export const ReadyMobile: Story = {
+  name: "Мобильный вид",
+  render,
+  globals: { viewport: "mobile" },
+};
 export const Validation: Story = {
+  name: "Ошибки ввода",
   render,
   args: { name: "" },
 };
-export const Changed: Story = { render, args: { name: "Капучино большой" } };
+export const Changed: Story = {
+  name: "Изменено",
+  render,
+  args: { name: "Капучино большой" },
+};
 export const Pending: Story = {
+  name: "Ожидание операции",
   render,
   args: { name: "Капучино большой", pending: true },
 };
-export const Saved: Story = { render, args: { saved: true, dirty: false } };
+export const Saved: Story = {
+  name: "Сохранено",
+  render,
+  args: { saved: true, dirty: false },
+};
 export const LongChoices: Story = {
+  name: "Длинные названия порций",
   render,
   args: {
     choices: [

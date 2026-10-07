@@ -7,7 +7,8 @@ const items = [
   { section: "menu" as const, label: "Меню" },
 ];
 const meta = {
-  title: "Layout/AdminShell",
+  title: "Компоненты/Навигация/Оболочка приложения",
+  id: "layout-adminshell",
   component: AdminShell,
   globals: { viewport: "desktop" },
   args: { role: "administrator", activeSection: "orders", items },
@@ -25,9 +26,14 @@ function render(args: Story["args"]) {
       '<AdminShell v-bind="args"><section><h1>Заказы</h1></section></AdminShell>',
   };
 }
-export const Administrator: Story = { render };
-export const Barista: Story = { args: { role: "barista" }, render };
+export const Administrator: Story = { name: "Администратор", render };
+export const Barista: Story = {
+  name: "Бариста",
+  args: { role: "barista" },
+  render,
+};
 export const Mobile: Story = {
+  name: "Мобильный вид",
   globals: { viewport: "mobile" },
   render,
 };

@@ -12,7 +12,8 @@ const options = [
 ];
 
 const meta = {
-  title: "Forms/AdminCombobox",
+  title: "Базовые элементы/Выбор с поиском",
+  id: "forms-admincombobox",
   component: AdminCombobox,
   args: { modelValue: "coffee", options },
   parameters: { layout: "padded" },
@@ -29,7 +30,19 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Selected: Story = { render };
-export const Loading: Story = { args: { loading: true }, render };
-export const Disabled: Story = { args: { disabled: true }, render };
-export const LongOption: Story = { args: { modelValue: "seasonal" }, render };
+export const Selected: Story = { name: "Выбрано", render };
+export const Loading: Story = {
+  name: "Загрузка",
+  args: { loading: true },
+  render,
+};
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};
+export const LongOption: Story = {
+  name: "Длинный вариант",
+  args: { modelValue: "seasonal" },
+  render,
+};

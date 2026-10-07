@@ -4,6 +4,7 @@ export default defineMain({
   framework: "@storybook/vue3-vite",
   stories: ["./stories/**/*.stories.ts"],
   addons: ["@storybook/addon-docs"],
+  features: { sidebarOnboardingChecklist: false },
   async viteFinal(config) {
     return {
       ...config,

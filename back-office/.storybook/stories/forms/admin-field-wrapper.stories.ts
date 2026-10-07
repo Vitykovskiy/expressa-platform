@@ -6,7 +6,8 @@ import AdminTextField from "../../../src/shared/ui/admin/admin-text-field/AdminT
 import AdminTextarea from "../../../src/shared/ui/admin/admin-textarea/AdminTextarea.vue";
 
 const meta = {
-  title: "Forms/AdminFieldWrapper",
+  title: "Компоненты/Формы/Оболочка поля",
+  id: "forms-adminfieldwrapper",
   component: AdminFieldWrapper,
   args: { id: "product-name", label: "Название товара" },
   parameters: { layout: "padded" },
@@ -31,9 +32,17 @@ function renderText(args: Story["args"]) {
   };
 }
 
-export const Required: Story = { args: { required: true }, render: renderText };
-export const Optional: Story = { render: renderText };
+export const Required: Story = {
+  name: "Обязательное поле",
+  args: { required: true },
+  render: renderText,
+};
+export const Optional: Story = {
+  name: "Необязательное поле",
+  render: renderText,
+};
 export const Error: Story = {
+  name: "Ошибка ввода",
   args: {
     error: "Название должно содержать не более 120 символов.",
     required: true,
@@ -41,6 +50,7 @@ export const Error: Story = {
   render: renderText,
 };
 export const TableError: Story = {
+  name: "Ошибка в таблице",
   args: {
     error: "Укажите цену в целых рублях",
     label: "Цена варианта 1",
@@ -67,6 +77,7 @@ export const TableError: Story = {
   },
 };
 export const Disabled: Story = {
+  name: "Недоступно",
   render(args: Story["args"]) {
     return {
       components: { AdminFieldWrapper, AdminTextField },
@@ -80,6 +91,7 @@ export const Disabled: Story = {
   },
 };
 export const LongLabel: Story = {
+  name: "Длинная подпись",
   args: {
     label:
       "Название позиции, которое будет отображаться в списке доступных товаров",
@@ -87,6 +99,7 @@ export const LongLabel: Story = {
   render: renderText,
 };
 export const Select: Story = {
+  name: "Список выбора",
   render(args: Story["args"]) {
     return {
       components: { AdminFieldWrapper, AdminSelect },
@@ -107,6 +120,7 @@ export const Select: Story = {
   },
 };
 export const Textarea: Story = {
+  name: "Многострочное поле",
   render(args: Story["args"]) {
     return {
       components: { AdminFieldWrapper, AdminTextarea },

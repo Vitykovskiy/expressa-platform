@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { shallowRef } from "vue";
 import ToggleRow from "../../../src/shared/ui/admin/toggle-row/ToggleRow.vue";
 const meta = {
-  title: "Forms/ToggleRow",
+  title: "Компоненты/Формы/Строка переключателя",
+  id: "forms-togglerow",
   component: ToggleRow,
   args: {
     label: "Принимать новые заказы",
@@ -18,5 +19,9 @@ function render(args: Story["args"]) {
     template: `<ToggleRow v-bind="args" v-model="value" />`,
   };
 }
-export const Default: Story = { render };
-export const Disabled: Story = { args: { disabled: true }, render };
+export const Default: Story = { name: "Обычное состояние", render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};

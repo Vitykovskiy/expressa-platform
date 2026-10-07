@@ -3,7 +3,8 @@ import AddCategoryDialog from "../../../src/pages/admin/menu/AddCategoryDialog.v
 import { category } from "../../fixtures/catalog";
 import { dialogHost } from "../../fixtures/hosts";
 const meta = {
-  title: "Dialogs/AddCategoryDialog",
+  title: "Бизнес компоненты/Меню/Добавление категории",
+  id: "dialogs-addcategorydialog",
   component: AddCategoryDialog,
   args: { disabled: false, categories: [category] },
   parameters: { layout: "fullscreen" },
@@ -17,9 +18,14 @@ function render(args: Story["args"]) {
     template: '<AddCategoryDialog v-bind="args" v-model:open="open" />',
   };
 }
-export const Default: Story = { render };
-export const DisabledPending: Story = { args: { disabled: true }, render };
+export const Default: Story = { name: "Обычное состояние", render };
+export const DisabledPending: Story = {
+  name: "Ожидание и блокировка",
+  args: { disabled: true },
+  render,
+};
 export const Invalid: Story = {
+  name: "Некорректное значение",
   args: { fieldErrors: { name: "Введите название категории" } },
   render,
 };

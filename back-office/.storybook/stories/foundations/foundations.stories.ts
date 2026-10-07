@@ -59,7 +59,8 @@ function resolveToken(token: string, property: string): string {
 }
 
 const meta = {
-  title: "Foundations/Tokens",
+  title: "Базовые элементы/Токены оформления",
+  id: "foundations-tokens",
   component: VApp,
   parameters: { layout: "padded" },
 } satisfies Meta<typeof VApp>;
@@ -67,6 +68,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Values: Story = {
+  name: "Значения",
   render: () => ({
     components: { TokenShowcase },
     setup: () => {

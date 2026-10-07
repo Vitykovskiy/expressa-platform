@@ -3,7 +3,8 @@ import { Plus } from "lucide-vue-next";
 import TopBar from "../../../src/widgets/admin-shell/TopBar.vue";
 
 const meta = {
-  title: "Navigation/TopBar",
+  title: "Компоненты/Навигация/Заголовок раздела",
+  id: "navigation-topbar",
   component: TopBar,
   args: { title: "Пользователи" },
   globals: { viewport: "mobile" },
@@ -13,8 +14,9 @@ const meta = {
 } satisfies Meta<typeof TopBar>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Title: Story = {};
+export const Title: Story = { name: "С заголовком" };
 export const Action: Story = {
+  name: "С действием",
   render: (args) => ({
     components: { Plus, TopBar },
     setup: () => ({ args }),
@@ -23,6 +25,7 @@ export const Action: Story = {
   }),
 };
 export const DisabledAction: Story = {
+  name: "Действие недоступно",
   args: { actionDisabled: true },
   render: Action.render,
 };

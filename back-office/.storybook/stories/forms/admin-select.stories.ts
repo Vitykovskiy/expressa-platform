@@ -3,7 +3,8 @@ import { shallowRef } from "vue";
 import AdminSelect from "../../../src/shared/ui/admin/admin-select/AdminSelect.vue";
 import AdminFieldWrapper from "../../../src/shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 const meta = {
-  title: "Forms/AdminSelect",
+  title: "Базовые элементы/Список выбора",
+  id: "forms-adminselect",
   component: AdminSelect,
   args: {
     modelValue: "barista",
@@ -43,7 +44,14 @@ function render(args: Story["args"]) {
     `,
   };
 }
-export const Selected: Story = { render };
-export const Disabled: Story = { args: { disabled: true }, render };
-export const LongOption: Story = { args: { modelValue: "long" }, render };
-export const OpenKeyboard: Story = { render };
+export const Selected: Story = { name: "Выбрано", render };
+export const Disabled: Story = {
+  name: "Недоступно",
+  args: { disabled: true },
+  render,
+};
+export const LongOption: Story = {
+  name: "Длинный вариант",
+  args: { modelValue: "long" },
+  render,
+};

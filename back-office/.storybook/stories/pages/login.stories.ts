@@ -7,7 +7,8 @@ import {
 } from "../../../src/pages/LoginPage.constants";
 
 const meta = {
-  title: "Screens/Login",
+  title: "Экраны/Вход",
+  id: "screens-login",
   component: AuthScreen,
   args: {
     state: "phone",
@@ -44,9 +45,18 @@ function render(args: Story["args"]) {
       '<AuthScreen v-bind="args" :phone="phone" :otp="otp" :phone-valid="phoneValid" :otp-valid="otpValid" @update:phone="phone = $event" @update:otp="otp = $event" />',
   };
 }
-export const Phone: Story = { render, globals: { viewport: "desktop" } };
-export const PhoneMobile: Story = { render, globals: { viewport: "mobile" } };
+export const Phone: Story = {
+  name: "Ввод телефона",
+  render,
+  globals: { viewport: "desktop" },
+};
+export const PhoneMobile: Story = {
+  name: "Телефон — мобильный вид",
+  render,
+  globals: { viewport: "mobile" },
+};
 export const Otp: Story = {
+  name: "Ввод кода",
   render,
   args: {
     state: "otp",
@@ -56,12 +66,24 @@ export const Otp: Story = {
   },
   globals: { viewport: "desktop" },
 };
-export const OtpMobile: Story = { ...Otp, globals: { viewport: "mobile" } };
+export const OtpMobile: Story = {
+  ...Otp,
+  name: "Код — мобильный вид",
+  globals: { viewport: "mobile" },
+};
 export const PhoneError: Story = {
+  name: "Ошибка телефона",
   render,
   args: { error: "Введите номер полностью" },
 };
 export const Denied: Story = {
+  name: "Нет доступа",
   render,
   args: { state: "denied", error: "У вас нет доступа" },
+};
+
+export const Loading: Story = {
+  name: "Загрузка",
+  args: { state: "loading" },
+  render,
 };

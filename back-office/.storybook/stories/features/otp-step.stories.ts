@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { computed, shallowRef } from "vue";
 import OtpStep from "../../../src/pages/admin/auth/OtpStep.vue";
 const meta = {
-  title: "Features/Authentication/OtpStep",
+  title: "Бизнес компоненты/Вход/Ввод кода",
+  id: "features-authentication-otpstep",
   component: OtpStep,
   args: {
     phone: "+7 900 000-00-00",
@@ -32,8 +33,9 @@ function render(args: Story["args"]) {
     `,
   };
 }
-export const Waiting: Story = { render };
+export const Waiting: Story = { name: "Ожидание кода", render };
 export const ErrorAndResend: Story = {
+  name: "Ошибка и повторная отправка",
   args: {
     otp: "123456",
     error: "Код неверный",

@@ -3,7 +3,8 @@ import { shallowRef } from "vue";
 import PhoneStep from "../../../src/pages/admin/auth/PhoneStep.vue";
 
 const meta = {
-  title: "Features/Authentication/PhoneStep",
+  title: "Бизнес компоненты/Вход/Ввод телефона",
+  id: "features-authentication-phonestep",
   component: PhoneStep,
   args: { phone: "", error: "", valid: false },
 } satisfies Meta<typeof PhoneStep>;
@@ -20,8 +21,9 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Default: Story = { render };
+export const Default: Story = { name: "Обычное состояние", render };
 export const Error: Story = {
+  name: "Ошибка ввода",
   args: { error: "Введите номер полностью" },
   render,
 };

@@ -1,9 +1,9 @@
 ---
-title: "Неактивные экраны"
+title: "Границы экранов"
 type: feature
 implementation_status: current
 owner: back-office
-last_verified: 2026-08-26
+last_verified: 2026-10-08
 sources:
   - ../../src/app/router.constants.ts
   - ../../src/pages/QueuePage.vue
@@ -12,7 +12,7 @@ knowledge_role: implementation
 scope: back-office
 ---
 
-# Неактивные экраны
+# Границы экранов
 
 Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
 
@@ -25,11 +25,16 @@ scope: back-office
 [router.constants.ts](../../src/app/router.constants.ts).
 
 `OrdersScreen` и `AvailabilityScreen` входят в активные страницы соответственно
-очереди и управления доступностью. `SettingsScreen`, `UsersScreen`,
-`AddUserDialog` и `UserActionDialog` не импортируются маршрутизатором; они не
-создают активных маршрутов, API-вызовов или ролевых прав приложения.
-[QueuePage.vue](../../src/pages/QueuePage.vue),
-[AvailabilityPage.vue](../../src/pages/AvailabilityPage.vue),
+очереди и управления доступностью. `AuthScreen` используется на активном `/login`.
+В runtime остаются только экранные композиции действующих маршрутов: вход,
+очередь, доступность, меню и редактирование товара. Неиспользуемые композиции
+управления пользователями и настроек вместе с их каталоговыми историями удалены;
+действующих маршрутов для них нет.
+[LoginPage.vue](../../src/pages/LoginPage.vue),
+[MenuPage.vue](../../src/pages/MenuPage.vue),
+[ProductEditPage.vue](../../src/pages/ProductEditPage.vue),
 [router.constants.ts](../../src/app/router.constants.ts).
 
-`AuthScreen` не входит в этот список: его импортирует [LoginPage](../../src/pages/LoginPage.vue) на активном `/login`. Полный контракт — в [входе и ролях](Authentication-and-role-gates.md). При подключении любого неактивного экрана необходимо одновременно обновить router, role matrix, API/store, feature note, COVERAGE и tests.
+Создание учётных записей сотрудников и изменение ролей остаются операционными
+командами backend; удаление неподключённого UI их не меняет.
+[Роли и права](../../../docs/10-overview/Roles-and-access.md).

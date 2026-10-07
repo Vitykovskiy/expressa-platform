@@ -4,7 +4,8 @@ import AdminTextField from "../../../src/shared/ui/admin/admin-text-field/AdminT
 import AdminFieldWrapper from "../../../src/shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 
 const meta = {
-  title: "Forms/AdminTextField",
+  title: "Базовые элементы/Текстовое поле",
+  id: "forms-admintextfield",
   component: AdminTextField,
   args: { modelValue: "Капучино" },
   parameters: { layout: "padded" },
@@ -30,12 +31,14 @@ function render(args: Story["args"]) {
   };
 }
 
-export const Filled: Story = { args: { modelValue: "Капучино" }, render };
-export const Empty: Story = {
-  args: { modelValue: "" },
+export const Filled: Story = {
+  name: "Заполнено",
+  args: { modelValue: "Капучино" },
   render,
 };
+export const Empty: Story = { name: "Пусто", args: { modelValue: "" }, render };
 export const Disabled: Story = {
+  name: "Недоступно",
   args: { modelValue: "Капучино", disabled: true },
   render,
 };

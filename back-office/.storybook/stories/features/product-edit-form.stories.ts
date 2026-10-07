@@ -5,7 +5,8 @@ import AdminTextField from "../../../src/shared/ui/admin/admin-text-field/AdminT
 import AdminToggle from "../../../src/shared/ui/admin/admin-toggle/AdminToggle.vue";
 import AdminFieldWrapper from "../../../src/shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 const meta = {
-  title: "Features/Menu/ProductEditForm",
+  title: "Бизнес компоненты/Меню/Форма товара",
+  id: "features-menu-producteditform",
   component: ProductEditForm,
   args: { dirty: true, valid: true, pending: false },
 } satisfies Meta<typeof ProductEditForm>;
@@ -38,6 +39,14 @@ function render(args: Story["args"]) {
         </ProductEditForm>`,
   };
 }
-export const Valid: Story = { render };
-export const Pristine: Story = { args: { dirty: false, valid: false }, render };
-export const Pending: Story = { args: { pending: true }, render };
+export const Valid: Story = { name: "Можно сохранить", render };
+export const Pristine: Story = {
+  name: "Без изменений",
+  args: { dirty: false, valid: false },
+  render,
+};
+export const Pending: Story = {
+  name: "Ожидание операции",
+  args: { pending: true },
+  render,
+};

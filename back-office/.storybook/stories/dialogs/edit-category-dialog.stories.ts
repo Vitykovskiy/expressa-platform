@@ -3,7 +3,8 @@ import EditCategoryDialog from "../../../src/pages/admin/menu/EditCategoryDialog
 import { category } from "../../fixtures/catalog";
 import { dialogHost } from "../../fixtures/hosts";
 const meta = {
-  title: "Dialogs/EditCategoryDialog",
+  title: "Бизнес компоненты/Меню/Редактирование категории",
+  id: "dialogs-editcategorydialog",
   component: EditCategoryDialog,
   args: { disabled: false, category, categories: [category] },
   parameters: { layout: "fullscreen" },
@@ -17,10 +18,19 @@ function render(args: Story["args"]) {
     template: '<EditCategoryDialog v-bind="args" v-model:open="open" />',
   };
 }
-export const Default: Story = { render };
-export const DisabledPendingSave: Story = { args: { disabled: true }, render };
-export const ArchivePending: Story = { args: { archivePending: true }, render };
+export const Default: Story = { name: "Обычное состояние", render };
+export const DisabledPendingSave: Story = {
+  name: "Сохранение и блокировка",
+  args: { disabled: true },
+  render,
+};
+export const ArchivePending: Story = {
+  name: "Архивация",
+  args: { archivePending: true },
+  render,
+};
 export const Invalid: Story = {
+  name: "Некорректное значение",
   args: { fieldErrors: { name: "Введите название категории" } },
   render,
 };

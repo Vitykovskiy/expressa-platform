@@ -6,7 +6,8 @@ const sections = [
   { id: "menu" as const, label: "Меню" },
 ];
 const meta = {
-  title: "Navigation/TabBar",
+  title: "Компоненты/Навигация/Нижнее меню",
+  id: "navigation-tabbar",
   component: TabBar,
   globals: { viewport: "mobile" },
   args: { sections, activeSection: "orders" },
@@ -16,5 +17,5 @@ const meta = {
 } satisfies Meta<typeof TabBar>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Orders: Story = {};
-export const Menu: Story = { args: { activeSection: "menu" } };
+export const Orders: Story = { name: "Заказы" };
+export const Menu: Story = { name: "Меню", args: { activeSection: "menu" } };
