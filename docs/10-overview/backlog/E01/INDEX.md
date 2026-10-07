@@ -1,3 +1,11 @@
+---
+title: "E01 — Фундаменты репозиториев и поставки"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E01 — Фундаменты репозиториев и поставки
 
 [К backlog](../INDEX.md).

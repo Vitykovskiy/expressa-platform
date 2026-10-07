@@ -1,5 +1,5 @@
 ---
-title: ADR-001 runtime-слои и изоляция Storybook
+title: "ADR-001: runtime-слои и изоляция Storybook"
 type: adr
 owner: back-office
 last_verified: 2026-09-22
@@ -8,6 +8,8 @@ sources:
   - ../../.storybook/main.ts
   - ../../.storybook/preview.ts
   - ../../.storybook/stories/
+knowledge_role: decision
+scope: back-office
 ---
 
 # ADR-001: runtime-слои и изоляция Storybook

@@ -1,13 +1,13 @@
 ---
-title: Карта обзора
+title: "От продуктовой цели к задаче"
 description: Навигация по целям, границам MVP и ролям Expressa.
 type: moc
 area: overview
 status: current
 tags: [expressa, overview, mvp]
 updated: 2026-07-26
-source_mode: normative
-sources: [Expressa_MVP_Техническое_задание.md]
+sources:
+  - ../_sources/Expressa_MVP_Техническое_задание.md
 requirements: [TR-REP-001, TR-REP-002, TR-REP-003]
 repositories: [backend, front-office, back-office]
 related:
@@ -16,12 +16,13 @@ related:
     "[MVP-scope](MVP-scope.md)",
     "[Roles-and-access](Roles-and-access.md)",
   ]
+owner: root
+knowledge_role: navigation
+scope: system
 ---
 
-# Карта обзора
+# От продуктовой цели к задаче
 
-- [Проект Expressa](Project-overview.md)
-- [Границы MVP](MVP-scope.md)
-- [Роли и доступ](Roles-and-access.md)
-- [Эпики и порядок реализации](Epic-roadmap.md)
-- [Бэклог разработки](Backlog.md)
+Локальная карта — [INDEX.md](INDEX.md). Сначала прочтите [обзор](Project-overview.md), [границы MVP](MVP-scope.md) и [роли](Roles-and-access.md). Это определяет ожидаемый результат и актор.
+
+Затем сопоставьте вопрос с [эпиками](Epic-roadmap.md), [бэклогом](backlog/INDEX.md) и [трассировкой требований](Backlog-coverage.md). Планирование не подтверждает выполнение: фактический статус ищите в предметной ноте и её первичных источниках через [общую карту](../INDEX.md).

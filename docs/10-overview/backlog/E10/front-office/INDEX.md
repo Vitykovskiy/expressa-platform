@@ -1,3 +1,11 @@
+---
+title: "E10 — front-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: front-office
+---
+
 # E10 — front-office
 
 Плановые карточки области `front-office` в эпике [E10 — Текущий заказ, история, повтор и уведомления](../INDEX.md).

@@ -1,11 +1,13 @@
 ---
-title: Межконтурные контракты
+title: "Межконтурные контракты"
 type: contract
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/openapi/openapi.json
   - ../../backend/package.json
+knowledge_role: requirements
+scope: system
 ---
 
 # Межконтурные контракты

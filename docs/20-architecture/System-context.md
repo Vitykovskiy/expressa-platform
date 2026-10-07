@@ -1,11 +1,13 @@
 ---
-title: Контекст системы
+title: "Контекст системы"
 type: architecture
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/openapi/openapi.json
   - ../../deploy/compose.yml
+knowledge_role: implementation
+scope: system
 ---
 
 # Контекст системы

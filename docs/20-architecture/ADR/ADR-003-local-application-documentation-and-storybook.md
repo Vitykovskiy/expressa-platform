@@ -1,5 +1,5 @@
 ---
-title: Локальная документация и Storybook (заменён)
+title: "ADR-003. Локальная документация и Storybook"
 description: Историческое решение о границе корневых и контурных документов и размещении Storybook.
 type: adr
 area: architecture
@@ -11,6 +11,8 @@ sources:
   - ADR-004-remove-storybook.md
 updated: 2026-08-11
 supersedes: [ADR-001]
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-003. Локальная документация и Storybook

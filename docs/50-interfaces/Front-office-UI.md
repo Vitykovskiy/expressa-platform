@@ -1,65 +1,35 @@
 ---
-title: Интерфейс front-office
+title: "Интерфейс front-office"
 type: interface
 owner: root
 implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-10-08
 sources:
   - ../../front-office/src/app/router.ts
   - ../../front-office/src/entities/customer/model/menu.store.ts
   - ../../front-office/src/features/checkout/checkout.store.ts
   - ../../front-office/src/pages/CartPage.vue
+knowledge_role: requirements
+scope: system
 ---
 
 # Интерфейс front-office
 
-## Активные границы
+## Реализация по исходникам
 
-Маршрутизатор регистрирует меню, корзину, OTP, текущий заказ и `/orders`.
-[front-office/src/app/router.ts:router](../../front-office/src/app/router.ts).
+[Маршрутизатор](../../front-office/src/app/router.ts) регистрирует меню, корзину, OTP, историю и детали заказа. История и детали защищены customer guard. Безопасный внутренний `returnTo` определяет `getSafeAuthReturnTo` в [auth-return.ts](../../front-office/src/shared/lib/auth-return.ts).
 
-`customerNavigationGuard` защищает маршруты заказа и направляет анонима на
-вход. [front-office/src/app/router.ts:customerNavigationGuard](../../front-office/src/app/router.ts).
+| Область                            | Основной источник                                                                                                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Маршруты и потребляемый API        | [Контур front-office](../../front-office/docs/00-meta/Scope.md)                                                                                             |
+| Меню и конфигурация                | [Локальная feature-нота](../../front-office/docs/30-features/Menu-and-configuration.md)                                                                     |
+| Корзина, checkout и ошибки         | [Локальная feature-нота](../../front-office/docs/30-features/Cart-and-checkout.md), [межконтурный сценарий](../40-features/Authenticate-and-place-order.md) |
+| История, детали и локальный повтор | [Локальная feature-нота](../../front-office/docs/30-features/Orders.md)                                                                                     |
+| Переиспользуемый UI и владельцы    | [UI-контракты](../../front-office/docs/30-conventions/UI-contracts.md)                                                                                      |
 
-`getSafeReturnTo` принимает только внутренний путь и отбрасывает auth paths.
-[front-office/src/app/router.ts:getSafeReturnTo](../../front-office/src/app/router.ts).
+Это описание исходников. Работающий UI в этой документационной правке не наблюдался; визуальная приёмка и выполнение требований ниже не утверждаются.
 
-Страница меню показывает loading, error с повтором и empty.
-[front-office/src/pages/MenuPage.vue:entry](../../front-office/src/pages/MenuPage.vue).
-
-`useMenuStore` получает публичное меню и сохраняет result/error.
-[front-office/src/entities/customer/model/menu.store.ts:useMenuStore](../../front-office/src/entities/customer/model/menu.store.ts).
-
-Корзина передаёт checkout-state в `CartScreen`; при закрытом intake, submitting
-или недоступных позициях кнопка оформления блокируется. [front-office/src/features/checkout/CartScreen.vue:entry](../../front-office/src/features/checkout/CartScreen.vue).
-
-`checkout` вызывает confirm либо retry сетевой ошибки.
-[front-office/src/pages/CartPage.vue:checkout](../../front-office/src/pages/CartPage.vue).
-
-`reconfirm` отправляет явное повторное подтверждение итога.
-[front-office/src/pages/CartPage.vue:reconfirm](../../front-office/src/pages/CartPage.vue).
-
-`finishCheckout` после успешного ответа очищает корзину и открывает
-`/orders/:id`. [front-office/src/pages/CartPage.vue:finishCheckout](../../front-office/src/pages/CartPage.vue).
-
-Тест `CartPage` проверяет retry, reconfirm и переход после успешного заказа.
-[front-office/src/pages/CartPage.spec.ts:CartPage](../../front-office/src/pages/CartPage.spec.ts).
-
-`useCheckoutStore` вызывает `ordersApi.createOrder`.
-[front-office/src/features/checkout/checkout.store.ts:useCheckoutStore](../../front-office/src/features/checkout/checkout.store.ts).
-
-В заполненной корзине и деталях созданного заказа показывается точный текст
-«Оплата на кассе при получении». [CartScreen](../../front-office/src/features/checkout/CartScreen.vue), [OrderPage](../../front-office/src/pages/OrderPage.vue).
-
-Изменение итога переводит checkout в reconfirmation, недоступность и закрытый
-intake — в error state.
-[front-office/src/features/checkout/checkout.store.ts:handleError](../../front-office/src/features/checkout/checkout.store.ts).
-
-`createOrdersApi` отправляет `POST /api/v3/orders` с Bearer token и
-idempotency key; API остаётся источником созданного заказа.
-[front-office/src/shared/api/orders.api.ts:createOrdersApi](../../front-office/src/shared/api/orders.api.ts).
-
-## Навигация customer
+## Требования к навигации customer
 
 Ниже 1024px header всегда содержит один left-aligned touch-control с видимой
 надписью «Экспресса» (и декоративной чашкой там, где она помещается), без
@@ -81,7 +51,7 @@ browser association и не меняет browser permission или local subscri
 сценарий уведомлений — в [системной feature-ноте](../40-features/Track-history-and-repeat-order.md),
 а контракт shell — в [UI-контрактах front-office](../../front-office/docs/30-conventions/UI-contracts.md).
 
-## Account и пустая History
+## Требования к Account и пустой History
 
 Гость открывает компактный Account ровно с заголовком «Аккаунт», текстом «Вы
 не вошли в аккаунт» и действием «Войти»; дополнительного объяснения и

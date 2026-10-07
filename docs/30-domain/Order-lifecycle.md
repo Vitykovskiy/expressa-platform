@@ -1,17 +1,18 @@
 ---
+title: "Жизненный цикл заказа"
 type: domain
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/src/orders/domain/order-lifecycle.constants.ts
   - ../../backend/src/orders/adapters/postgres-order-lifecycle.repository.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Жизненный цикл заказа
 
-## 9. Модель состояний заказа
-
-### 8.5. Оплата при получении
+## Стадии и выдача
 
 Заказ проходит стадии `CREATED` → `ACCEPTED` → `PREPARING` → `READY` → `ISSUED`.
 Каждый успешный переход атомарно сохраняет новую стадию и событие с автором,

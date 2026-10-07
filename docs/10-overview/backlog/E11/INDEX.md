@@ -1,3 +1,11 @@
+---
+title: "E11 — Оперативная доступность"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E11 — Оперативная доступность
 
 [К backlog](../INDEX.md).

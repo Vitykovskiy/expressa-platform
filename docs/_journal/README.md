@@ -1,5 +1,5 @@
 ---
-title: Журнал документации
+title: "Журнал документации"
 description: Назначение журнала существенных изменений базы знаний Expressa.
 type: journal
 area: journal
@@ -15,6 +15,9 @@ related:
     "[../00-meta/Update-protocol](../00-meta/Update-protocol.md)",
     "[../README](../README.md)",
   ]
+owner: root
+knowledge_role: history
+scope: system
 ---
 
 # Журнал документации

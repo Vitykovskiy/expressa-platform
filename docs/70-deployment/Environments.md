@@ -1,11 +1,13 @@
 ---
-title: Среды поставки
+title: "Среды поставки"
 type: operations
 owner: root
 last_verified: 2026-09-14
 sources:
   - ../../.github/workflows/development-delivery.yml
   - ../../deploy/deploy.sh
+knowledge_role: operations
+scope: system
 ---
 
 # Среды поставки

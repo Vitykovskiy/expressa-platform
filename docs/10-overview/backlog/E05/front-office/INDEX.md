@@ -1,3 +1,11 @@
+---
+title: "E05 — front-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: front-office
+---
+
 # E05 — front-office
 
 Плановые карточки области `front-office` в эпике [E05 — Каталог и публичное меню](../INDEX.md).

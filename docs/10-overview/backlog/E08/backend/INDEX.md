@@ -1,3 +1,11 @@
+---
+title: "E08 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E08 — backend
 
 Плановые карточки области `backend` в эпике [E08 — Очередь и стадии заказа](../INDEX.md).

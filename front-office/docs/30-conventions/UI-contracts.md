@@ -1,4 +1,5 @@
 ---
+title: "Контракты повторно используемого UI"
 type: ui-contract
 owner: front-office
 implementation_status: current
@@ -6,6 +7,8 @@ last_verified: 2026-08-11
 sources:
   - ../../src/widgets/customer-shell/CustomerShell.vue
   - ../../src/shared/ui/customer/phone-input/UiPhoneInput.vue
+knowledge_role: requirements
+scope: front-office
 ---
 
 # Контракты повторно используемого UI

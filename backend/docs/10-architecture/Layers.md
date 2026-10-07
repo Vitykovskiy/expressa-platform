@@ -1,5 +1,5 @@
 ---
-title: Слои и модули backend
+title: "Слои и модули"
 type: architecture
 area: backend
 status: current
@@ -10,6 +10,8 @@ sources:
   - ../../src/auth/auth.module.ts
   - ../../src/catalog/catalog.module.ts
   - ../../src/orders/orders.module.ts
+knowledge_role: implementation
+scope: backend
 ---
 
 # Слои и модули

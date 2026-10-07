@@ -1,9 +1,12 @@
 ---
+title: "Требования к качеству и уровни тестирования"
 type: testing
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../_sources/Expressa_MVP_Техническое_задание.md
+knowledge_role: requirements
+scope: system
 ---
 
 # Требования к качеству и уровни тестирования

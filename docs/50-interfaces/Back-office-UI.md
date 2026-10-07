@@ -1,5 +1,5 @@
 ---
-title: Интерфейс back-office
+title: "Интерфейс back-office"
 type: interface
 owner: root
 implementation_status: current
@@ -10,9 +10,13 @@ sources:
   - ../../back-office/src/pages/MenuPage.vue
   - ../../back-office/src/pages/admin/menu/catalog.store.ts
   - ../../back-office/src/pages/QueuePage.vue
+knowledge_role: implementation
+scope: system
 ---
 
 # Интерфейс back-office
+
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
 
 ## Активные границы
 

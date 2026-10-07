@@ -1,13 +1,21 @@
 ---
-title: Catalog management
+title: "Управление каталогом"
 type: domain
 owner: back-office
-last_verified: 2026-09-20
+last_verified: 2026-10-08
 sources:
   - ../../contracts/openapi.json
   - ../../src/shared/api/catalog.api.ts
+knowledge_role: implementation
+scope: back-office
 ---
 
-# Catalog management
+# Управление каталогом
 
-Catalog read and product commands use v3. Category and modifier-group management remain current v2 routes. A product uses price choices; no variant/S-M-L model or removed product endpoint exists. In product creation, multiple saved choices are shown in read-only rows: a compact two-line layout below 600 px and a table from 600 px. Adding or editing a choice opens its own dialog, while availability remains in the row. Exact inventory: [Back-office API](../../../docs/50-interfaces/Back-office-API.md).
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+
+Чтение каталога и команды товаров используют v3; категории и группы модификаторов остаются текущими v2 API. HTTP-границу задают [catalog API](../../src/shared/api/catalog.api.ts) и [OpenAPI](../../contracts/openapi.json); полный маршрут — [staff API](../../../docs/50-interfaces/Back-office-API.md).
+
+Товар имеет одну цену либо `priceChoices`; удалённой модели вариантов S/M/L нет. При создании товара сохранённые варианты цены показаны строками: ниже 600 px — компактная двухстрочная композиция, от 600 px — таблица. Добавление или редактирование открывает отдельный диалог; доступность остаётся в строке. Владельцы: [AddProductDialog](../../src/pages/admin/menu/AddProductDialog.vue) и [PriceChoiceDialog](../../src/pages/admin/menu/PriceChoiceDialog.vue).
+
+Запросы и канонический каталог принадлежат [catalog store](../../src/pages/admin/menu/catalog.store.ts); детали сценария — [управление меню](../../../docs/40-features/Manage-menu.md). Наличие исходников не означает выполненную визуальную приёмку.

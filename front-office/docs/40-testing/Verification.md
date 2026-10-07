@@ -1,23 +1,29 @@
 ---
+title: "Проверка front-office"
 type: verification
 owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/app/App.spec.ts
+knowledge_role: requirements
+scope: front-office
 ---
 
 # Проверка front-office
 
 Команды и параметры принадлежат [package.json](../../package.json). `lint`,
-`typecheck`, `test -- --run` и `build` проверяют код; `contract:check` сверяет
+`typecheck` и `build` проверяют код; `contract:check` сверяет
 OpenAPI.
 
-| Сценарий                                                              | Основные доказательства                                                                                                                                                                                    |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Меню, навигация, конфигурация, корзина                                | [shell spec](../../src/widgets/customer-shell/ShellNavigation.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
-| Phone/OTP и безопасный возврат                                        | [form spec](../../src/features/auth/AuthForm.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                               |
-| Оформление и ошибки API                                               | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                                      |
-| Покрытие объектов и их авторитетные ноты: [COVERAGE](../COVERAGE.md). |
+| Сценарий                               | Основные доказательства                                                                                                                                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Меню, навигация, конфигурация, корзина | [shell spec](../../src/widgets/customer-shell/ShellNavigation.spec.ts), [MenuFlow spec](../../src/features/menu/MenuFlow.spec.ts), [cart store spec](../../src/entities/customer/model/cart.store.spec.ts) |
+| Phone/OTP и безопасный возврат         | [form spec](../../src/features/auth/AuthForm.spec.ts), [страницы auth](../../src/pages/AuthCodePage.spec.ts)                                                                                               |
+| Оформление и ошибки API                | [checkout store spec](../../src/features/checkout/checkout.store.spec.ts), [orders API spec](../../src/shared/api/orders.api.spec.ts)                                                                      |
+
+Покрытие объектов и их основные ноты: [COVERAGE](../COVERAGE.md).
+
+Тестовые файлы в таблице — существующие исходники, не доказательство выполненного прогона. Создание, изменение и запуск тестов допустимы только по [корневым ограничениям](../../../AGENTS.md).
 
 Visual snapshots с OS suffix — evidence, созданное на указанной платформе из
 одной revision, а не ветка дизайна. Darwin image нельзя выдавать за Linux или

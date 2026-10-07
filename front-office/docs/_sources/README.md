@@ -1,9 +1,12 @@
 ---
+title: "Источники"
 type: sources
 owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/shared/api/client.ts
+knowledge_role: source
+scope: front-office
 ---
 
 # Источники

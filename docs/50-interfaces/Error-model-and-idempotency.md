@@ -1,9 +1,12 @@
 ---
+title: "Модель ошибок и идемпотентность"
 type: interface
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/src/platform/observability/unified-exception.filter.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Модель ошибок и идемпотентность

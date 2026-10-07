@@ -1,3 +1,11 @@
+---
+title: "E05 — Каталог и публичное меню"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E05 — Каталог и публичное меню
 
 [К backlog](../INDEX.md).

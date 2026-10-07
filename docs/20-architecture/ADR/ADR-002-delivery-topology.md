@@ -1,5 +1,5 @@
 ---
-title: Топология поставки development
+title: "ADR-002: топология поставки development"
 description: Одноразовая development-среда без сохранения данных.
 type: adr
 area: architecture
@@ -11,6 +11,8 @@ updated: 2026-09-14
 sources:
   - ../../../.github/workflows/development-delivery.yml
   - ../../../deploy/deploy.sh
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-002: топология поставки development

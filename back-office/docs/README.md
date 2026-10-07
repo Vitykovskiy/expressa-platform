@@ -1,10 +1,12 @@
 ---
-title: Документация back-office
+title: "Документация back-office"
 type: index
 owner: back-office
 last_verified: 2026-08-11
 sources:
   - INDEX.md
+knowledge_role: navigation
+scope: back-office
 ---
 
 # Документация back-office

@@ -1,5 +1,5 @@
 ---
-title: Управление доступностью
+title: "Управление доступностью"
 type: feature
 owner: root
 implementation_status: current
@@ -8,13 +8,17 @@ sources:
   - ../../back-office/src/pages/AvailabilityPage.vue
   - ../../back-office/src/pages/admin/availability/AvailabilityScreen.vue
   - ../../backend/src/catalog/transport/backoffice-availability.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Управление доступностью
 
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+
 Barista и administrator управляют доступностью на `/availability`. Экран
-показывает приём новых заказов и активные категории с товарами, размерами
-напитков и добавками; сотрудник сужает список поиском и категорией, затем
+показывает приём новых заказов и активные категории с товарами, вариантами цены
+и добавками; сотрудник сужает список поиском и категорией, затем
 включает или выключает выбранную позицию либо приём новых заказов.
 [AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
 [AvailabilityScreen](../../back-office/src/pages/admin/availability/AvailabilityScreen.vue),

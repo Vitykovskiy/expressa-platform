@@ -1,10 +1,13 @@
 ---
+title: "API аутентификации"
 type: interface
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/openapi/openapi.json
   - ../../backend/src/auth/transport/auth.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # API аутентификации

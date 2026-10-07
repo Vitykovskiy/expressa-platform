@@ -1,3 +1,11 @@
+---
+title: "E04 — Телефонная авторизация и доступ"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E04 — Телефонная авторизация и доступ
 
 [К backlog](../INDEX.md).

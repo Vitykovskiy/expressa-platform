@@ -1,3 +1,11 @@
+---
+title: "E04 — front-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: front-office
+---
+
 # E04 — front-office
 
 Плановые карточки области `front-office` в эпике [E04 — Телефонная авторизация и доступ](../INDEX.md).

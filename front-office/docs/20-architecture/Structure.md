@@ -1,9 +1,12 @@
 ---
+title: "Структура runtime"
 type: architecture
 owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/app/router.ts
+knowledge_role: implementation
+scope: front-office
 ---
 
 # Структура runtime

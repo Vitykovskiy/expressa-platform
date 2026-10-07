@@ -1,5 +1,5 @@
 ---
-title: Одна цена и варианты цены товара
+title: "ADR-006: одна цена и варианты цены товара"
 type: adr
 status: superseded
 superseded_by: ADR-008-v3-catalog-orders-cutover.md
@@ -8,6 +8,8 @@ date: 2026-09-14
 last_verified: 2026-09-20
 sources:
   - ADR-008-v3-catalog-orders-cutover.md
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-006: одна цена и варианты цены товара

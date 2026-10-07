@@ -1,5 +1,5 @@
 ---
-title: Definition of Done для production-кода back-office
+title: "Definition of Done для production-кода back-office"
 description: Обязательные критерии готовности и приёмки production-кода автономного приложения back-office.
 type: convention
 owner: root
@@ -11,6 +11,8 @@ area: back-office
 status: stable
 tags: [definition-of-done, back-office, vue, typescript]
 updated: 2026-08-01
+knowledge_role: requirements
+scope: system
 ---
 
 # Definition of Done для production-кода back-office

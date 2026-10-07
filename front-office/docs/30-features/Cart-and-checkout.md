@@ -1,14 +1,18 @@
 ---
-title: Cart and checkout
+title: "Корзина и оформление"
 type: feature
 owner: front-office
-last_verified: 2026-09-20
+last_verified: 2026-10-07
 sources:
   - ../../contracts/openapi.json
   - ../../src/entities/customer/model/cart.store.ts
   - ../../src/features/checkout/checkout.store.ts
+knowledge_role: implementation
+scope: front-office
 ---
 
-# Cart and checkout
+# Корзина и оформление
 
-Checkout creates order through `POST /api/v3/orders`. A cart item has product, optional price-choice id and modifier selections; it has no variant or S/M/L state. Server remains authority for total, availability and intake.
+Checkout создаёт заказ через `POST /api/v3/orders`. Позиция корзины содержит товар, выбранную ценовую опцию при необходимости и модификаторы; модели variant/S-M-L нет. Владелец локальных данных — [cart store](../../src/entities/customer/model/cart.store.ts), отправки — [checkout store](../../src/features/checkout/checkout.store.ts).
+
+Итог, доступность и приём заказов повторно проверяет сервер. Формат тела и ошибок задаёт [OpenAPI](../../contracts/openapi.json); клиентская сумма не является источником цены. Межконтурный сценарий и восстановление после ошибки — [оформление заказа](../../../docs/40-features/Authenticate-and-place-order.md).

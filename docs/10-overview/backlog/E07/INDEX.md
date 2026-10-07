@@ -1,3 +1,11 @@
+---
+title: "E07 — Корзина и создание заказа"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E07 — Корзина и создание заказа
 
 [К backlog](../INDEX.md).

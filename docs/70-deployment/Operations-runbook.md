@@ -1,5 +1,5 @@
 ---
-title: Операционный запуск
+title: "Операционный запуск"
 type: operations
 owner: root
 last_verified: 2026-09-14
@@ -7,6 +7,8 @@ sources:
   - ../../deploy/deploy.sh
   - ../../deploy/compose.yml
   - ../../deploy/run-remote.sh
+knowledge_role: operations
+scope: system
 ---
 
 # Операционный запуск

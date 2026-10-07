@@ -1,3 +1,11 @@
+---
+title: "E12 — delivery"
+type: index
+owner: root
+knowledge_role: navigation
+scope: delivery
+---
+
 # E12 — delivery
 
 Плановые карточки области `delivery` в эпике [E12 — Приёмка и выпуск](../INDEX.md).

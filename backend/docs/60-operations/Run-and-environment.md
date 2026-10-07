@@ -1,5 +1,5 @@
 ---
-title: Запуск, безопасность и наблюдаемость
+title: "Запуск, безопасность и наблюдаемость"
 type: operations
 owner: backend
 last_verified: 2026-09-14
@@ -8,6 +8,8 @@ sources:
   - ../../src/platform/config/environment.ts
   - ../../Dockerfile
   - ../../scripts/initialize-database.ts
+knowledge_role: operations
+scope: backend
 ---
 
 # Запуск, безопасность и наблюдаемость

@@ -1,10 +1,12 @@
 ---
-title: Доменная модель
+title: "Доменная модель"
 type: domain
 owner: root
 last_verified: 2026-09-14
 sources:
   - ../../backend/schema.sql
+knowledge_role: implementation
+scope: system
 ---
 
 # Доменная модель

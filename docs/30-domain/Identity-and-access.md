@@ -1,10 +1,13 @@
 ---
+title: "Идентификация и доступ"
 type: domain
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/src/auth/domain/otp-policy.constants.ts
   - ../../backend/src/auth/transport/auth.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Идентификация и доступ

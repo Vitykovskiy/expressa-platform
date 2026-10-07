@@ -1,3 +1,11 @@
+---
+title: "E06 — Управление меню"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E06 — Управление меню
 
 [К backlog](../INDEX.md).

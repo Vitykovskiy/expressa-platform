@@ -1,3 +1,11 @@
+---
+title: "E01 — delivery"
+type: index
+owner: root
+knowledge_role: navigation
+scope: delivery
+---
+
 # E01 — delivery
 
 Плановые карточки области `delivery` в эпике [E01 — Фундаменты репозиториев и поставки](../INDEX.md).

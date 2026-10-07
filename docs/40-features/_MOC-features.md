@@ -1,19 +1,20 @@
 ---
+title: "Сквозные пользовательские пути"
 type: moc
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-10-07
 sources:
   - ../../front-office/src/app/router.ts
+knowledge_role: navigation
+scope: system
 ---
 
-# Пользовательские сценарии
+# Сквозные пользовательские пути
 
-Current: [просмотр меню и корзина](Browse-menu-and-build-cart.md),
-[авторизация и оформление](Authenticate-and-place-order.md),
-[управление меню](Manage-menu.md), [текущий заказ, история и повтор](Track-history-and-repeat-order.md)
-— active detail `/orders/:id`; история и повтор в этой ноте остаются unsupported.
-[Источник: front routes](../../front-office/src/app/router.ts).
+Локальная карта — [INDEX.md](INDEX.md). Для сквозного сценария соедините источники обоих акторов:
 
-Unsupported или placeholder: [приготовление и выдача](Prepare-and-hand-off-order.md),
-[управление доступностью](Manage-availability.md).
-Эти ноты описывают границу, а не действующий пользовательский путь.
+1. Покупатель: [меню и корзина](Browse-menu-and-build-cart.md), затем [вход и оформление](Authenticate-and-place-order.md).
+2. Сотрудник: [приготовление и выдача](Prepare-and-hand-off-order.md).
+3. Покупатель: [текущий заказ, история и повтор](Track-history-and-repeat-order.md).
+
+Изменение каталога или продаж связывает [управление меню](Manage-menu.md) и [доступность](Manage-availability.md) с повторной проверкой checkout. Ноты сценариев и их исходники определяют фактическое состояние; эта карта его не дублирует.

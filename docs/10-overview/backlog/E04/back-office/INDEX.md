@@ -1,3 +1,11 @@
+---
+title: "E04 — back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: back-office
+---
+
 # E04 — back-office
 
 Плановые карточки области `back-office` в эпике [E04 — Телефонная авторизация и доступ](../INDEX.md).

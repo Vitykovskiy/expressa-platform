@@ -1,3 +1,11 @@
+---
+title: "E12 — Приёмка и выпуск"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E12 — Приёмка и выпуск
 
 [К backlog](../INDEX.md).

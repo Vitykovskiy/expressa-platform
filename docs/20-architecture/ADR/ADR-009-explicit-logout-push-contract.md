@@ -1,5 +1,5 @@
 ---
-title: явный logout и push-контракт
+title: "ADR-009: явный logout и push-контракт"
 type: adr
 status: accepted
 owner: root
@@ -11,6 +11,8 @@ sources:
   - ../../../backend/src/auth/application/logout.use-case.ts
   - ../../../backend/src/auth/adapters/postgres-auth.repository.ts
   - ../../../backend/src/notifications/transport/push-subscriptions.controller.ts
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-009: явный logout и push-контракт

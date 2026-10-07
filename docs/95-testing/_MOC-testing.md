@@ -1,3 +1,11 @@
+---
+title: "Карта тестирования"
+type: navigation
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # Карта тестирования
 
 - [Требования к качеству и уровни тестирования](Test-strategy.md)

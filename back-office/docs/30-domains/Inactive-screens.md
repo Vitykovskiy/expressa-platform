@@ -1,5 +1,5 @@
 ---
-title: Неактивные экраны back-office
+title: "Неактивные экраны"
 type: feature
 implementation_status: current
 owner: back-office
@@ -8,14 +8,18 @@ sources:
   - ../../src/app/router.constants.ts
   - ../../src/pages/QueuePage.vue
   - ../../src/pages/AvailabilityPage.vue
+knowledge_role: implementation
+scope: back-office
 ---
 
 # Неактивные экраны
 
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+
 `/queue` и `/availability` — активные маршруты для barista и administrator.
 `QueuePage` показывает очередь, поиск, фильтр стадии, детали заказа и доступное
 следующее действие; `AvailabilityPage` показывает приём заказов и доступность
-товаров, размеров и добавок. Guard не допускает на эти маршруты customer.
+товаров, вариантов цены и добавок. Guard не допускает на эти маршруты customer.
 [QueuePage.vue](../../src/pages/QueuePage.vue),
 [AvailabilityPage.vue](../../src/pages/AvailabilityPage.vue),
 [router.constants.ts](../../src/app/router.constants.ts).

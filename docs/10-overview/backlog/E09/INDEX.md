@@ -1,3 +1,11 @@
+---
+title: "E09 — Оплата при получении и выдача"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E09 — Оплата при получении и выдача
 
 [К backlog](../INDEX.md).

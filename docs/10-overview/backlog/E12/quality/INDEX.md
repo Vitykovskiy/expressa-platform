@@ -1,3 +1,11 @@
+---
+title: "E12 — quality"
+type: index
+owner: root
+knowledge_role: navigation
+scope: quality
+---
+
 # E12 — quality
 
 Плановые карточки области `quality` в эпике [E12 — Приёмка и выпуск](../INDEX.md).

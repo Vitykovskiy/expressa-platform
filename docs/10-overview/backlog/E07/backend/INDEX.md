@@ -1,3 +1,11 @@
+---
+title: "E07 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E07 — backend
 
 Плановые карточки области `backend` в эпике [E07 — Корзина и создание заказа](../INDEX.md).

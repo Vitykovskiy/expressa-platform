@@ -1,5 +1,5 @@
 ---
-title: Вход и ролевые ограничения back-office
+title: "Вход и ролевые ограничения"
 type: feature
 implementation_status: current
 owner: back-office
@@ -9,6 +9,8 @@ sources:
   - ../../src/app/session.store.ts
   - ../../src/app/router.ts
   - ../../src/pages/admin/auth/AuthScreen.vue
+knowledge_role: implementation
+scope: back-office
 ---
 
 # Вход и ролевые ограничения

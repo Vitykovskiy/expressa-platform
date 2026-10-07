@@ -14,7 +14,6 @@ front-office/
 ├── public/           # статические ресурсы PWA
 ├── scripts/          # локальные проверки контракта
 ├── src/              # исходный код Vue-приложения
-├── tests/            # сквозные браузерные сценарии клиента
 ├── .nvmrc            # требуемая версия Node.js
 ├── AGENTS.md         # правила работы в контуре
 ├── package.json      # команды и зависимости приложения
@@ -52,7 +51,6 @@ Unit-тесты располагаются рядом с runtime-кодом.
 - `npm run typecheck`;
 - `npm run lint`;
 - `npm run format:check`;
-- `npm test`;
 - `npm run contract:check`.
 
 Полный список и параметры — в [package.json](package.json).
@@ -64,3 +62,5 @@ Unit-тесты располагаются рядом с runtime-кодом.
 - Точку сборки приложения задаёт [src/app/App.vue](src/app/App.vue).
 - Маршруты задаёт [src/app/router.ts](src/app/router.ts).
 - HTTP-границу задаёт [contracts/openapi.json](contracts/openapi.json).
+
+Автоматизированные тесты разрешены только по условиям [корневого AGENTS.md](../AGENTS.md). Перечень команд не разрешает их запуск.

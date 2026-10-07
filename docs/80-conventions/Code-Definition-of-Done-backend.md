@@ -1,5 +1,5 @@
 ---
-title: Definition of Done для production-кода backend
+title: "Definition of Done для production-кода backend"
 description: Обязательные критерии готовности изменений production-кода backend.
 type: convention
 owner: root
@@ -11,6 +11,8 @@ area: backend
 status: stable
 tags: [definition-of-done, backend, nestjs, typescript, postgresql]
 updated: 2026-08-01
+knowledge_role: requirements
+scope: system
 ---
 
 # Definition of Done для production-кода backend

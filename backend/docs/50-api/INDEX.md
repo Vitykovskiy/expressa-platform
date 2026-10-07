@@ -1,7 +1,9 @@
 ---
-title: Индекс HTTP API backend
+title: "HTTP API"
 type: index
 owner: backend
+knowledge_role: navigation
+scope: backend
 ---
 
 # HTTP API

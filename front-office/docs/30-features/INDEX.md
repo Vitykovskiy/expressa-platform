@@ -1,9 +1,12 @@
 ---
+title: "Пользовательские сценарии front-office"
 type: index
 owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/app/router.ts
+knowledge_role: navigation
+scope: front-office
 ---
 
 # Пользовательские сценарии front-office

@@ -1,5 +1,5 @@
 ---
-title: Предпочтения качества продукта
+title: "Предпочтения качества продукта"
 description: Принятые правила продуктового и визуального качества Expressa.
 type: preferences
 area: quality
@@ -8,6 +8,8 @@ owner: quality_owner
 last_verified: 2026-09-04
 sources:
   - ../../AGENTS.md
+knowledge_role: requirements
+scope: system
 ---
 
 # Предпочтения качества продукта

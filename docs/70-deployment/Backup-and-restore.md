@@ -1,11 +1,13 @@
 ---
-title: Данные development
+title: "Данные development"
 type: operations
 owner: root
 last_verified: 2026-09-14
 sources:
   - ../../deploy/deploy.sh
   - ../../backend/schema.sql
+knowledge_role: operations
+scope: system
 ---
 
 # Данные development

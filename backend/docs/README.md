@@ -1,10 +1,12 @@
 ---
-title: Вход в документацию backend
+title: "Документация backend"
 type: entrypoint
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../src/app.module.ts
+knowledge_role: navigation
+scope: backend
 ---
 
 # Документация backend

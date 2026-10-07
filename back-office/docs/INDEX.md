@@ -1,10 +1,13 @@
 ---
+title: "Индекс документации back-office"
 type: index
 owner: back-office
 last_verified: 2026-09-22
 sources:
   - ../src/app/router.ts
   - ../src/pages/MenuPage.vue
+knowledge_role: navigation
+scope: back-office
 ---
 
 # Индекс документации back-office

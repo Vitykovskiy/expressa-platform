@@ -1,9 +1,12 @@
 ---
+title: "Цены"
 type: domain
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../backend/src/orders/domain/order-revalidation.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Цены

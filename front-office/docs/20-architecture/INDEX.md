@@ -1,9 +1,12 @@
 ---
+title: "Архитектура front-office"
 type: index
 owner: front-office
 last_verified: 2026-08-11
 sources:
   - ../../src/app/router.ts
+knowledge_role: navigation
+scope: front-office
 ---
 
 # Архитектура front-office
@@ -13,6 +16,7 @@ sources:
 [маршрутизатор](../../src/app/router.ts) и
 [API-клиент](../../src/shared/api/client.ts).
 
-- [Структура runtime](Structure.md) — слои и направление зависимостей.
-- [Состояние приложения и API](Application-state-and-API.md) — Pinia, HTTP и
-  границы ошибок.
+| Задача или вопрос          | Маршрут                                                                                    | Роль результата                    |
+| -------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Структура runtime          | [Структура runtime](Structure.md) — слои и направление зависимостей.                       | Описание реализации и её источники |
+| Состояние приложения и API | [Состояние приложения и API](Application-state-and-API.md) — Pinia, HTTP и границы ошибок. | Описание реализации и её источники |

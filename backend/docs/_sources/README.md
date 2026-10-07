@@ -1,10 +1,12 @@
 ---
-title: Проверяемые источники backend
+title: "Сохранённые источники backend"
 type: sources
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../../package.json
+knowledge_role: source
+scope: backend
 ---
 
 # Сохранённые источники backend

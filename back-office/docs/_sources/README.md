@@ -1,10 +1,12 @@
 ---
-title: Источники back-office
+title: "Внешние источники"
 type: source-index
 owner: back-office
 last_verified: 2026-08-11
 sources:
   - ../INDEX.md
+knowledge_role: source
+scope: back-office
 ---
 
 # Внешние источники

@@ -1,3 +1,11 @@
+---
+title: "E11 — back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: back-office
+---
+
 # E11 — back-office
 
 Плановые карточки области `back-office` в эпике [E11 — Оперативная доступность](../INDEX.md).

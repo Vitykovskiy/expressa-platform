@@ -1,5 +1,5 @@
 ---
-title: Граница доступности и управления back-office
+title: "ADR-010: граница доступности и управления back-office"
 type: adr
 area: architecture
 status: accepted
@@ -10,6 +10,8 @@ sources:
   - ../../_sources/Expressa_MVP_Техническое_задание.md
   - ../../../back-office/docs/10-architecture/ui-ownership.md
   - ../../40-quality/UI-accessibility.md
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-010: граница доступности и управления back-office

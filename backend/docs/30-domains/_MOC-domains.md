@@ -1,10 +1,12 @@
 ---
-title: Предметные области backend
+title: "Предметные области"
 type: moc
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../../src/auth/auth.module.ts
+knowledge_role: navigation
+scope: backend
 ---
 
 # Предметные области

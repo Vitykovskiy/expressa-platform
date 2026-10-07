@@ -1,3 +1,11 @@
+---
+title: "E09 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E09 — backend
 
 Плановые карточки области `backend` в эпике [E09 — Оплата при получении и выдача](../INDEX.md).

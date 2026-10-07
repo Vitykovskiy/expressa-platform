@@ -1,3 +1,11 @@
+---
+title: "E10 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E10 — backend
 
 Плановые карточки области `backend` в эпике [E10 — Текущий заказ, история, повтор и уведомления](../INDEX.md).

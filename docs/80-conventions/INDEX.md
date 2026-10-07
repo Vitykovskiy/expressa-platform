@@ -1,3 +1,11 @@
+---
+title: "Индекс требований разработки"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # Индекс требований разработки
 
 Вернуться к [карте документации](../INDEX.md).
@@ -22,40 +30,30 @@
 
 ### Backend
 
-- Входы: [AGENTS](../../backend/AGENTS.md), [README](../../backend/README.md) и
-  [карта документации](../../backend/docs/INDEX.md).
-- Готовность кода: [backend DoD](Code-Definition-of-Done-backend.md).
-- Архитектура и code style: [слои](../../backend/docs/10-architecture/Layers.md) и
-  [локальные соглашения](../../backend/docs/80-conventions/INDEX.md).
-- По виду изменения: [HTTP API](../../backend/docs/50-api/INDEX.md),
-  [данные и схема](../../backend/docs/40-data/INDEX.md) или
-  [операции](../../backend/docs/60-operations/INDEX.md).
+| Задача или вопрос | Маршрут                                                                                                                                                                             | Роль результата                                              |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| AGENTS            | Входы: [AGENTS](../../backend/AGENTS.md), [README](../../backend/README.md) и [карта документации](../../backend/docs/INDEX.md).                                                    | Карта дальнейшего чтения                                     |
+| backend DoD       | Готовность кода: [backend DoD](Code-Definition-of-Done-backend.md).                                                                                                                 | Требование или действующее правило                           |
+| слои              | Архитектура и code style: [слои](../../backend/docs/10-architecture/Layers.md) и [локальные соглашения](../../backend/docs/80-conventions/INDEX.md).                                | Описание реализации и её источники; Карта дальнейшего чтения |
+| HTTP API          | По виду изменения: [HTTP API](../../backend/docs/50-api/INDEX.md), [данные и схема](../../backend/docs/40-data/INDEX.md) или [операции](../../backend/docs/60-operations/INDEX.md). | Карта дальнейшего чтения                                     |
 
 ### Front-office
 
-- Входы: [AGENTS](../../front-office/AGENTS.md),
-  [README](../../front-office/README.md) и
-  [карта документации](../../front-office/docs/INDEX.md).
-- Готовность кода: [front-office DoD](Code-Definition-of-Done-front-office.md) и
-  общий [UI DoD](../40-quality/Definition-of-done.md).
-- Code style и проверка: [стиль Vue](../40-quality/Vue-code-style.md),
-  [доступность и взаимодействие](../40-quality/UI-accessibility.md),
-  [стратегия проверки](../40-quality/Validation-strategy.md).
-- UI и архитектура: [UI-контракты](../../front-office/docs/30-conventions/UI-contracts.md)
-  и [локальная архитектура](../../front-office/docs/20-architecture/INDEX.md).
+| Задача или вопрос | Маршрут                                                                                                                                                                                             | Роль результата                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| AGENTS            | Входы: [AGENTS](../../front-office/AGENTS.md), [README](../../front-office/README.md) и [карта документации](../../front-office/docs/INDEX.md).                                                     | Карта дальнейшего чтения                                     |
+| front-office DoD  | Готовность кода: [front-office DoD](Code-Definition-of-Done-front-office.md) и общий [UI DoD](../40-quality/Definition-of-done.md).                                                                 | Требование или действующее правило                           |
+| стиль Vue         | Code style и проверка: [стиль Vue](../40-quality/Vue-code-style.md), [доступность и взаимодействие](../40-quality/UI-accessibility.md), [стратегия проверки](../40-quality/Validation-strategy.md). | Требование или действующее правило                           |
+| UI-контракты      | UI и архитектура: [UI-контракты](../../front-office/docs/30-conventions/UI-contracts.md) и [локальная архитектура](../../front-office/docs/20-architecture/INDEX.md).                               | Требование или действующее правило; Карта дальнейшего чтения |
 
 ### Back-office
 
-- Входы: [AGENTS](../../back-office/AGENTS.md),
-  [README](../../back-office/README.md) и
-  [карта документации](../../back-office/docs/INDEX.md).
-- Готовность кода: [back-office DoD](Code-Definition-of-Done-back-office.md) и
-  общий [UI DoD](../40-quality/Definition-of-done.md).
-- Code style и проверка: [стиль Vue](../40-quality/Vue-code-style.md),
-  [доступность и взаимодействие](../40-quality/UI-accessibility.md),
-  [стратегия проверки](../40-quality/Validation-strategy.md).
-- UI и архитектура: [UI ownership](../../back-office/docs/10-architecture/ui-ownership.md)
-  и [размещение кода](../../back-office/docs/80-conventions/code-layout.md).
+| Задача или вопрос | Маршрут                                                                                                                                                                                             | Роль результата                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| AGENTS            | Входы: [AGENTS](../../back-office/AGENTS.md), [README](../../back-office/README.md) и [карта документации](../../back-office/docs/INDEX.md).                                                        | Карта дальнейшего чтения                                               |
+| back-office DoD   | Готовность кода: [back-office DoD](Code-Definition-of-Done-back-office.md) и общий [UI DoD](../40-quality/Definition-of-done.md).                                                                   | Требование или действующее правило                                     |
+| стиль Vue         | Code style и проверка: [стиль Vue](../40-quality/Vue-code-style.md), [доступность и взаимодействие](../40-quality/UI-accessibility.md), [стратегия проверки](../40-quality/Validation-strategy.md). | Требование или действующее правило                                     |
+| UI ownership      | UI и архитектура: [UI ownership](../../back-office/docs/10-architecture/ui-ownership.md) и [размещение кода](../../back-office/docs/80-conventions/code-layout.md).                                 | Описание реализации и её источники; Требование или действующее правило |
 
 ## Матрица видов изменений
 

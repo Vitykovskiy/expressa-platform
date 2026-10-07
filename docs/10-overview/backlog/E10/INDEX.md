@@ -1,3 +1,11 @@
+---
+title: "E10 — Текущий заказ, история, повтор и уведомления"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E10 — Текущий заказ, история, повтор и уведомления
 
 [К backlog](../INDEX.md).

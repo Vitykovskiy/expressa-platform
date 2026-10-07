@@ -1,3 +1,11 @@
+---
+title: "E02 — front-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: front-office
+---
+
 # E02 — front-office
 
 Плановые карточки области `front-office` в эпике [E02 — Storybook front-office](../INDEX.md).

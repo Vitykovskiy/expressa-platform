@@ -1,11 +1,13 @@
 ---
-title: Размещение кода back-office
+title: "Размещение кода"
 type: convention
 owner: back-office
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
   - ../../src/app/router.ts
+knowledge_role: requirements
+scope: back-office
 ---
 
 # Размещение кода

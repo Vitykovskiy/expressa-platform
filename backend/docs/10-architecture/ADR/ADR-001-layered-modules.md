@@ -1,11 +1,13 @@
 ---
-title: ADR-001 Слоистые предметные модули
+title: "ADR-001: слоистые предметные модули"
 type: adr
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../../../src/app.module.ts
   - ../../../src/auth/auth.module.ts
+knowledge_role: decision
+scope: backend
 ---
 
 # ADR-001: слоистые предметные модули

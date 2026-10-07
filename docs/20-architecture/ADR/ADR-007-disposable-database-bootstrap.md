@@ -1,5 +1,5 @@
 ---
-title: Одноразовые базы и текущая схема
+title: "ADR-007: Одноразовые базы и текущая схема"
 type: adr
 owner: root
 last_verified: 2026-09-14
@@ -9,6 +9,8 @@ sources:
   - ../../../backend/scripts/reset-test-database.ts
   - ../../../backend/scripts/seed.ts
   - ../../../deploy/deploy.sh
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-007: Одноразовые базы и текущая схема

@@ -1,14 +1,18 @@
 ---
-title: Просмотр меню и сбор корзины
+title: "Просмотр меню и сбор корзины"
 type: feature
 owner: root
 implementation_status: current
 last_verified: 2026-08-11
 sources:
   - ../../front-office/docs/30-features/Menu-and-configuration.md
+knowledge_role: implementation
+scope: system
 ---
 
 # Просмотр меню и сбор корзины
+
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
 
 Гость открывает front-office, получает `GET /api/v3/public/menu`, выбирает
 категорию и конфигурирует товар; готовая позиция добавляется в локальную корзину.

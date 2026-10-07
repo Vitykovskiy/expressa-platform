@@ -1,5 +1,5 @@
 ---
-title: Наблюдаемость
+title: "Наблюдаемость"
 type: operations
 owner: root
 last_verified: 2026-08-16
@@ -7,6 +7,8 @@ sources:
   - ../../backend/src/platform/observability/request-observability.middleware.ts
   - ../../backend/src/platform/observability/observability-metrics.service.ts
   - ../../deploy/ops-compose.yml
+knowledge_role: operations
+scope: system
 ---
 
 # Наблюдаемость

@@ -1,5 +1,5 @@
 ---
-title: Charter качества продукта
+title: "Charter качества продукта"
 description: Долговременные принципы оценки качества Expressa.
 type: charter
 area: quality
@@ -8,6 +8,8 @@ owner: quality_owner
 last_verified: 2026-09-04
 sources:
   - ../../AGENTS.md
+knowledge_role: requirements
+scope: system
 ---
 
 # Charter качества продукта

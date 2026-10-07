@@ -1,15 +1,20 @@
 ---
+title: "Приготовление и выдача заказа"
 type: feature
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../../back-office/src/pages/QueuePage.vue
   - ../../backend/src/orders/transport/backoffice-orders.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Приготовление и выдача заказа
 
-## 6.3. Приготовление и выдача
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+
+## Приготовление и выдача
 
 Сотрудник ведёт заказ в `/queue`: открывает детали, видит снимок позиций и
 историю переходов, затем выполняет доступное следующее действие. Сценарий

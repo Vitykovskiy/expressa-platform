@@ -1,5 +1,5 @@
 ---
-title: Definition of Done для front-office
+title: "Definition of Done для front-office"
 description: Обязательные критерии готовности изменений production-кода front-office.
 type: convention
 owner: root
@@ -11,6 +11,8 @@ area: front-office
 status: current
 tags: [definition-of-done, front-office, vue, typescript]
 updated: 2026-08-01
+knowledge_role: requirements
+scope: system
 ---
 
 # Definition of Done для front-office

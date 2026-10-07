@@ -1,5 +1,5 @@
 ---
-title: Связь customer-уведомлений с браузером и logout
+title: "ADR-005: связь customer-уведомлений с браузером и logout"
 type: adr
 status: superseded
 superseded_by: ADR-009-explicit-logout-push-contract.md
@@ -8,6 +8,8 @@ date: 2026-09-13
 last_verified: 2026-09-20
 sources:
   - ADR-009-explicit-logout-push-contract.md
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-005: связь customer-уведомлений с браузером и logout

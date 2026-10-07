@@ -1,3 +1,11 @@
+---
+title: "E04 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E04 — backend
 
 Плановые карточки области `backend` в эпике [E04 — Телефонная авторизация и доступ](../INDEX.md).

@@ -1,3 +1,11 @@
+---
+title: "E08 — Очередь и стадии заказа"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E08 — Очередь и стадии заказа
 
 [К backlog](../INDEX.md).

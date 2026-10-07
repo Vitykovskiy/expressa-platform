@@ -1,3 +1,11 @@
+---
+title: "Журнал"
+type: history
+owner: front-office
+knowledge_role: history
+scope: front-office
+---
+
 # Журнал
 
 Служебный каталог для кратких временных заметок по текущей работе.

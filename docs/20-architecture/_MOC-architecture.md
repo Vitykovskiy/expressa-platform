@@ -1,11 +1,13 @@
 ---
-title: Карта архитектуры
+title: "Карта архитектуры"
 type: moc
 owner: root
 last_verified: 2026-09-14
 sources:
   - ../../backend/docs/INDEX.md
   - ADR/INDEX.md
+knowledge_role: navigation
+scope: system
 ---
 
 # Карта архитектуры

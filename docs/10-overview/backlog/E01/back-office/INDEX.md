@@ -1,3 +1,11 @@
+---
+title: "E01 — back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: back-office
+---
+
 # E01 — back-office
 
 Плановые карточки области `back-office` в эпике [E01 — Фундаменты репозиториев и поставки](../INDEX.md).

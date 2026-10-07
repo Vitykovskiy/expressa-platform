@@ -1,5 +1,5 @@
 ---
-title: Доступность и приём заказов
+title: "Доступность и приём заказов"
 type: domain
 owner: root
 last_verified: 2026-09-14
@@ -7,6 +7,8 @@ sources:
   - ../../backend/schema.sql
   - ../../backend/src/orders/domain/order-revalidation.ts
   - ../../backend/src/catalog/transport/backoffice-availability.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Доступность и приём заказов

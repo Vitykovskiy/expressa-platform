@@ -47,7 +47,7 @@ npm run start:dev
 
 Проверка доступности: `GET http://localhost:3000/health/live`.
 
-API использует префикс `/api/v2`. Денежные значения передаются целыми рублями:
+API содержит текущие маршруты `/api/v2` и `/api/v3`; точный путь задаёт [OpenAPI](openapi/openapi.json). Денежные значения передаются целыми рублями:
 `320 ₽` — это `320`. При `NODE_ENV=local` или `development`
 Swagger доступен по `/docs`.
 
@@ -56,7 +56,6 @@ Swagger доступен по `/docs`.
 ```bash
 npm run lint
 npm run typecheck
-npm test -- --runInBand
 npm run build
 npm run openapi:check
 npm run db:init
@@ -83,3 +82,5 @@ npm run staff -- upsert --phone +79991234567 --role administrator
 - [openapi/openapi.json](openapi/openapi.json) — машиночитаемый HTTP-контракт;
   `npm run openapi:check` сопоставляет его с NestJS-декораторами.
 - [тестирование](docs/95-testing/INDEX.md) — уровни и сценарии проверок.
+
+Автоматизированные тесты разрешены только по условиям [корневого AGENTS.md](../AGENTS.md). Перечень команд не разрешает их запуск.

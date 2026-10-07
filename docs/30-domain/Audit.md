@@ -1,9 +1,12 @@
 ---
+title: "Аудит"
 type: domain
 owner: root
 last_verified: 2026-08-16
 sources:
   - ../../backend/src/catalog
+knowledge_role: implementation
+scope: system
 ---
 
 # Аудит

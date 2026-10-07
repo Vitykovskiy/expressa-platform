@@ -1,5 +1,5 @@
 ---
-title: Стиль Vue-кода
+title: "Стиль Vue-кода"
 description: Общие правила всего Vue-кода в Admin и Customer.
 type: convention
 area: quality
@@ -11,6 +11,8 @@ last_verified: 2026-08-15
 sources:
   - ../../back-office/package.json
   - ../../front-office/package.json
+knowledge_role: requirements
+scope: system
 ---
 
 # Стиль Vue-кода

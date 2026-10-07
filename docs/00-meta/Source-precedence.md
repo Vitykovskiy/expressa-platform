@@ -1,5 +1,5 @@
 ---
-title: Приоритет источников
+title: "Приоритет источников"
 description: Порядок разрешения расхождений между требованиями, планированием и реализацией.
 type: policy
 owner: root
@@ -22,6 +22,8 @@ related:
     "[Update-protocol](Update-protocol.md)",
     "[../20-architecture/ADR/ADR-001-Root-repository-structure](../20-architecture/ADR/ADR-001-Root-repository-structure.md)",
   ]
+knowledge_role: requirements
+scope: system
 ---
 
 # Приоритет источников

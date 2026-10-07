@@ -1,10 +1,12 @@
 ---
-title: Документация Expressa
+title: "Документация Expressa"
 type: navigation
 owner: root
 last_verified: 2026-08-11
 sources:
   - ../scripts/check-docs.mjs
+knowledge_role: navigation
+scope: system
 ---
 
 # Документация Expressa
@@ -35,6 +37,8 @@ docs/
 ```
 
 ## Как пользоваться
+
+Выберите вопрос в [INDEX.md](INDEX.md), затем прочтите [правила чтения](00-meta/How-to-use-this-vault.md). `knowledge_role` отличает нормы, описания реализации, решения и историю.
 
 - [Карта документации](INDEX.md) ведёт к актуальным материалам по задаче.
 - Детали реализации: [backend](../backend/docs/INDEX.md),

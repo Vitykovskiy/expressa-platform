@@ -1,10 +1,12 @@
 ---
-title: Журнал back-office
+title: "Журнал"
 type: journal
 owner: back-office
 last_verified: 2026-08-11
 sources:
   - ../INDEX.md
+knowledge_role: history
+scope: back-office
 ---
 
 # Журнал

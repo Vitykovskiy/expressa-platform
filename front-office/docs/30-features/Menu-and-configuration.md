@@ -1,14 +1,18 @@
 ---
-title: Menu and configuration
+title: "Меню и конфигурация товара"
 type: feature
 owner: front-office
-last_verified: 2026-09-20
+last_verified: 2026-10-07
 sources:
   - ../../contracts/openapi.json
   - ../../src/shared/api/public-menu.api.ts
   - ../../src/features/menu/product-configuration.ts
+knowledge_role: implementation
+scope: front-office
 ---
 
-# Menu and configuration
+# Меню и конфигурация товара
 
-Menu reads `GET /api/v3/public/menu`. A product has one price or ordered price choices; portion label is display text. Client never interprets a choice as `S/M/L`, and no v2 public menu fallback exists.
+Меню читается только через `GET /api/v3/public/menu`; fallback к удалённому v2 меню отсутствует. Источники: [public-menu API](../../src/shared/api/public-menu.api.ts) и [OpenAPI](../../contracts/openapi.json).
+
+Товар имеет одну цену или упорядоченные `priceChoices`. `portionLabel` — отображаемый текст; клиент не интерпретирует выбор как модель S/M/L. Подготовка позиции корзины принадлежит [product-configuration](../../src/features/menu/product-configuration.ts), контракт — [ADR-008](../../../docs/20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md).

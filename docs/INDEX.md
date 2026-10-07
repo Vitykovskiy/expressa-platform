@@ -1,20 +1,25 @@
 ---
-title: Карта документации Expressa
+title: "Карта документации Expressa"
 type: navigation
 owner: root
 last_verified: 2026-09-22
 sources:
   - ../scripts/check-docs.mjs
+knowledge_role: navigation
+scope: system
 ---
 
 # Карта документации Expressa
 
 Корневые ноты описывают систему, межконтурные контракты и поставку. Детали
 реализации находятся в [backend](../backend/docs/INDEX.md),
-[front-office](../front-office/docs/INDEX.md), [back-office](../back-office/docs/INDEX.md)
-.
+[front-office](../front-office/docs/INDEX.md), [back-office](../back-office/docs/INDEX.md).
 
-## Текущее устройство
+## Начать чтение
+
+[Правила чтения](00-meta/How-to-use-this-vault.md) объясняют роль каждого источника. Краткая карта для агента — [llms.txt](../llms.txt). Эта страница маршрутизирует вопросы; статус реализации проверяется в конечной ноте и её первичных источниках.
+
+## Разделы
 
 - [Правила документации](00-meta/INDEX.md) и [реестр покрытия](COVERAGE.md).
 - [Обзор системы](10-overview/INDEX.md), [архитектура](20-architecture/INDEX.md)

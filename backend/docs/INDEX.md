@@ -1,11 +1,13 @@
 ---
-title: Индекс backend Expressa
+title: "Backend Expressa"
 description: Главная карта серверной документации.
 type: moc
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../src/app.module.ts
+knowledge_role: navigation
+scope: backend
 ---
 
 # Backend Expressa
@@ -22,7 +24,7 @@ sources:
 - [HTTP API](50-api/INDEX.md) — карта маршрутов; главный контракт —
   [OpenAPI](../openapi/openapi.json).
 - [Операции](60-operations/INDEX.md) — запуск, окружение и наблюдаемость.
-- [Тестирование](95-testing/INDEX.md) — unit, integration и production.
+- [Тестирование](95-testing/INDEX.md) — допустимые проверки и существующие тестовые исходники.
 
 ## Маршруты по задачам и вопросам
 

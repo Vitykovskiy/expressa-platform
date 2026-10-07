@@ -1,3 +1,11 @@
+---
+title: "E11 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E11 — backend
 
 Плановые карточки области `backend` в эпике [E11 — Оперативная доступность](../INDEX.md).

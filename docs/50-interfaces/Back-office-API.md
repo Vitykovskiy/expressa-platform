@@ -1,5 +1,5 @@
 ---
-title: API back-office
+title: "API back-office"
 type: interface
 owner: root
 last_verified: 2026-09-20
@@ -9,6 +9,8 @@ sources:
   - ../../backend/src/catalog/transport/catalog-products-v3.controller.ts
   - ../../backend/src/orders/transport/backoffice-orders-v3.controller.ts
   - ../../backend/src/orders/transport/backoffice-orders.controller.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # API back-office

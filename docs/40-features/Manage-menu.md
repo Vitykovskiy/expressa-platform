@@ -1,5 +1,5 @@
 ---
-title: Управление меню
+title: "Управление меню"
 type: feature
 owner: root
 implementation_status: current
@@ -7,12 +7,16 @@ last_verified: 2026-08-11
 sources:
   - ../../back-office/docs/30-domains/Catalog-management.md
   - ../../back-office/src/pages/admin/menu/catalog.store.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Управление меню
 
+Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+
 Administrator открывает `/menu`, получает административный каталог и управляет
-категориями, товарами, размерами, группами/вариантами модификаторов и связями
+категориями, товарами, вариантами цены, группами/вариантами модификаторов и связями
 категории. Диалоги и редакторы владеют локальными черновиками; store владеет
 запросами, ошибками и каноническим каталогом, который перечитывает после
 успешной команды. [Category fields](../../back-office/src/pages/admin/menu/CategoryFormFields.vue),

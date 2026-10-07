@@ -1,3 +1,11 @@
+---
+title: "E06 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E06 — backend
 
 Плановые карточки области `backend` в эпике [E06 — Управление меню](../INDEX.md).

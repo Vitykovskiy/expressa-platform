@@ -1,3 +1,11 @@
+---
+title: "Backlog"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # Backlog
 
 Backlog хранит плановые и исторические карточки. Он не описывает текущее поведение системы: его сверяют с [обзором проекта](../Project-overview.md), [картой покрытия](../Backlog-coverage.md) и профильными контрактами.

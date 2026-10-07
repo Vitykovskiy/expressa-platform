@@ -1,10 +1,12 @@
 ---
-title: Соглашения backend
+title: "Соглашения"
 type: moc
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
+knowledge_role: navigation
+scope: backend
 ---
 
 # Соглашения

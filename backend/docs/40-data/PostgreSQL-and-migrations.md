@@ -1,5 +1,5 @@
 ---
-title: PostgreSQL и одноразовая инициализация
+title: "PostgreSQL и одноразовая инициализация"
 type: data
 owner: backend
 last_verified: 2026-09-14
@@ -8,6 +8,8 @@ sources:
   - ../../scripts/initialize-database.ts
   - ../../scripts/reset-test-database.ts
   - ../../scripts/seed.ts
+knowledge_role: implementation
+scope: backend
 ---
 
 # PostgreSQL и одноразовая инициализация

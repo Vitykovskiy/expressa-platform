@@ -1,3 +1,11 @@
+---
+title: "E03 — back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: back-office
+---
+
 # E03 — back-office
 
 Плановые карточки области `back-office` в эпике [E03 — Storybook back-office](../INDEX.md).

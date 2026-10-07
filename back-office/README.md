@@ -60,7 +60,6 @@ npm run storybook:build
 npm run format:check
 npm run lint
 npm run typecheck
-npm test -- --run
 npm run build
 npm run contract:check
 npm run storybook:build
@@ -68,3 +67,5 @@ npm run storybook:build
 
 Отдельный browser/E2E-набор не ведётся. Пользовательские потоки принимают
 вручную в работающем приложении.
+
+Автоматизированные тесты разрешены только по условиям [корневого AGENTS.md](../AGENTS.md). Перечень команд не разрешает их запуск.

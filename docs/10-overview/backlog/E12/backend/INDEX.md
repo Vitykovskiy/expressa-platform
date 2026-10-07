@@ -1,3 +1,11 @@
+---
+title: "E12 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E12 — backend
 
 Плановые карточки области `backend` в эпике [E12 — Приёмка и выпуск](../INDEX.md).

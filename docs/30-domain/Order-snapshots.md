@@ -1,11 +1,13 @@
 ---
-title: Снимки заказа
+title: "Снимки заказа"
 type: domain
 owner: root
 last_verified: 2026-09-14
 sources:
   - ../../backend/schema.sql
   - ../../backend/src/orders/adapters/postgres-order-unit-of-work.ts
+knowledge_role: implementation
+scope: system
 ---
 
 # Снимки заказа

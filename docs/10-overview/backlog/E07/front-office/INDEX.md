@@ -1,3 +1,11 @@
+---
+title: "E07 — front-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: front-office
+---
+
 # E07 — front-office
 
 Плановые карточки области `front-office` в эпике [E07 — Корзина и создание заказа](../INDEX.md).

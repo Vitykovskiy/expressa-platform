@@ -1,5 +1,5 @@
 ---
-title: Доступность и взаимодействие UI
+title: "Доступность и взаимодействие UI"
 description: Критерии взаимодействия Vue UI-кода Customer и ссылка на границу Admin.
 type: standard
 area: quality
@@ -10,6 +10,8 @@ owner: root
 last_verified: 2026-09-23
 sources:
   - ../../front-office/src
+knowledge_role: requirements
+scope: system
 ---
 
 # Доступность и взаимодействие UI

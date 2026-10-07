@@ -1,10 +1,12 @@
 ---
-title: Карта поставки
+title: "Карта поставки"
 type: moc
 owner: root
 last_verified: 2026-08-16
 sources:
   - ../../deploy/compose.yml
+knowledge_role: navigation
+scope: system
 ---
 
 # Карта поставки

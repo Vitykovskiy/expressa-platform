@@ -1,3 +1,11 @@
+---
+title: "E01 — backend"
+type: index
+owner: root
+knowledge_role: navigation
+scope: backend
+---
+
 # E01 — backend
 
 Плановые карточки области `backend` в эпике [E01 — Фундаменты репозиториев и поставки](../INDEX.md).

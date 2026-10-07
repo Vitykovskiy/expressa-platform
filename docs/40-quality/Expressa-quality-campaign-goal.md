@@ -1,5 +1,5 @@
 ---
-title: Goal кампании качества Expressa
+title: "Goal кампании качества Expressa"
 description: Цель, границы и последовательный порядок доведения front-office и back-office до принятого состояния.
 type: goal
 area: quality
@@ -14,6 +14,8 @@ sources:
   - Validation-strategy.md
   - ../80-conventions/Code-Definition-of-Done-front-office.md
   - ../80-conventions/Code-Definition-of-Done-back-office.md
+knowledge_role: requirements
+scope: system
 ---
 
 # Goal кампании качества Expressa

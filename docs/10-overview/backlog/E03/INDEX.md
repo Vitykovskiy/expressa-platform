@@ -1,3 +1,11 @@
+---
+title: "E03 — Storybook back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: system
+---
+
 # E03 — Storybook back-office
 
 [К backlog](../INDEX.md).

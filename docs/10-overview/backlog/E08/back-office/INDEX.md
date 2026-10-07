@@ -1,3 +1,11 @@
+---
+title: "E08 — back-office"
+type: index
+owner: root
+knowledge_role: navigation
+scope: back-office
+---
+
 # E08 — back-office
 
 Плановые карточки области `back-office` в эпике [E08 — Очередь и стадии заказа](../INDEX.md).

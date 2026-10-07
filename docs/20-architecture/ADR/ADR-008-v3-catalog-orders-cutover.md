@@ -1,5 +1,5 @@
 ---
-title: v3 cutover каталога и заказов
+title: "ADR-008: v3 cutover каталога и заказов"
 type: adr
 status: accepted
 owner: root
@@ -10,6 +10,8 @@ sources:
   - ../../../backend/schema.sql
   - ../../../front-office/src/entities/customer/model/cart.store.ts
   - ADR-007-disposable-database-bootstrap.md
+knowledge_role: decision
+scope: system
 ---
 
 # ADR-008: v3 cutover каталога и заказов

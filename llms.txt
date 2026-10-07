@@ -1,0 +1,27 @@
+# Expressa
+
+> Два автономных Vue PWA и NestJS HTTP API в одном репозитории. Этот файл — навигация; обязательные инструкции находятся в AGENTS.md.
+
+## Начало задачи
+
+- [Правила агента](AGENTS.md): ограничения, skills, автономность.
+- [Маршруты документации](docs/INDEX.md): выбрать область и вопрос.
+- [Приоритет источников](docs/00-meta/Source-precedence.md): отличать норму, реализацию, решение и историю.
+- [Правила чтения](docs/00-meta/How-to-use-this-vault.md): минимальный контекст и метаданные.
+- [Требования разработки](docs/80-conventions/INDEX.md): общий набор и правила всех затронутых контуров.
+
+## Контуры и первичные источники
+
+- [Backend](backend/README.md), [карта backend](backend/docs/INDEX.md): сервер, PostgreSQL, авторизация, каталог, заказы.
+- [Front-office](front-office/README.md), [карта front-office](front-office/docs/INDEX.md): покупатель, меню, корзина, история.
+- [Back-office](back-office/README.md), [карта back-office](back-office/docs/INDEX.md): сотрудники, очередь, доступность, каталог.
+- [OpenAPI](backend/openapi/openapi.json): точные HTTP-методы, пути и схемы.
+- [Схема данных](backend/schema.sql): текущая декларативная PostgreSQL-схема.
+- [ADR](docs/20-architecture/ADR/INDEX.md): статус архитектурных решений и замещения.
+- [Поставка](docs/70-deployment/INDEX.md): поддерживаемые операции и среды.
+
+## Планирование и история
+
+- [Бэклог](docs/10-overview/backlog/INDEX.md): плановые и исторические карточки; выполнение проверять по реализации.
+- [Исходные требования](docs/_sources/README.md): зафиксированные материалы с поправками действующих решений.
+- [Журнал изменений](CHANGELOG.md): история выпусков; не источник текущих команд.

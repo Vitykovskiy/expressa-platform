@@ -1,11 +1,13 @@
 ---
-title: Порядок обновления документации backend
+title: "Порядок обновления"
 type: convention
 owner: backend
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
   - ../../../scripts/check-docs.mjs
+knowledge_role: requirements
+scope: backend
 ---
 
 # Порядок обновления
