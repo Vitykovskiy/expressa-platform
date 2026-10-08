@@ -8,6 +8,8 @@ export interface AdminDialogProps {
   actionSize?: AdminButtonSize;
   closeLabel?: string;
   dismissDisabled?: boolean;
+  destructiveLabel?: string;
+  destructiveDisabled?: boolean;
   fullScreenBelow600?: boolean;
   modelValue?: boolean;
   maxWidth?: number | string;
@@ -21,6 +23,7 @@ export interface AdminDialogProps {
 }
 
 export interface AdminDialogEmits {
+  destructive: [];
   cancel: [];
   "update:modelValue": [value: boolean];
   afterEnter: [];

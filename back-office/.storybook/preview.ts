@@ -76,7 +76,7 @@ const preview: Preview = {
         },
         template: `
           <VApp>
-            <div style="display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; min-height: 0">
+            <div style="display: grid; grid-template-rows: minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: hidden">
               <NotificationHost
                 :candidate-entries="entries"
                 :entries="visibleEntries"
@@ -84,7 +84,7 @@ const preview: Preview = {
                 @recover="notificationRuntime.recover"
                 @visibility="notificationRuntime.setVisibility"
               />
-              <div style="min-height: 0; overflow-y: auto"><story /></div>
+              <div style="min-height: 0; overflow-y: auto; overscroll-behavior-y: contain"><story /></div>
             </div>
           </VApp>
         `,

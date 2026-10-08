@@ -1,4 +1,5 @@
-import { ApiClient } from "./client";
+import type { ApiRequestReporting } from "./client.types";
+import { ApiClient, createRequestFeedback } from "./client";
 import {
   authApiPaths,
   authRequestOptions,
@@ -15,13 +16,21 @@ import type {
 export class AuthApi {
   constructor(private readonly client: ApiClient) {}
 
-  async requestOtp(phone: string): Promise<AuthOtpMetadata> {
+  async requestOtp(
+    phone: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<AuthOtpMetadata> {
     const response = await this.client.request(
       authApiPaths.requestOtp,
       isAuthOtpMetadata,
       {
         ...authRequestOptions,
         body: { phone },
+        feedback: createRequestFeedback(reporting, {
+          operationKey: "auth.otp.request",
+          resourceKey: "otp",
+          kind: "mutation",
+        }),
         expectedStatus: 202,
         method: "POST",
       },
@@ -33,13 +42,22 @@ export class AuthApi {
     };
   }
 
-  async verifyOtp(phone: string, code: string): Promise<AuthAccess> {
+  async verifyOtp(
+    phone: string,
+    code: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<AuthAccess> {
     const response = await this.client.request(
       authApiPaths.verifyOtp,
       isAuthAccess,
       {
         ...authRequestOptions,
         body: { code, phone },
+        feedback: createRequestFeedback(reporting, {
+          operationKey: "auth.otp.verify",
+          resourceKey: "otp",
+          kind: "mutation",
+        }),
         expectedStatus: 200,
         method: "POST",
       },
@@ -48,12 +66,17 @@ export class AuthApi {
     return toAuthAccess(response);
   }
 
-  async refresh(): Promise<AuthAccess> {
+  async refresh(reporting?: ApiRequestReporting): Promise<AuthAccess> {
     const response = await this.client.request(
       authApiPaths.refresh,
       isAuthAccess,
       {
         ...authRequestOptions,
+        feedback: createRequestFeedback(reporting, {
+          operationKey: "auth.refresh",
+          resourceKey: "session",
+          kind: "mutation",
+        }),
         expectedStatus: 200,
         method: "POST",
       },
@@ -62,20 +85,33 @@ export class AuthApi {
     return toAuthAccess(response);
   }
 
-  logout(): Promise<void> {
+  logout(reporting?: ApiRequestReporting): Promise<void> {
     return this.client.request(authApiPaths.logout, isUndefined, {
       ...authRequestOptions,
       body: { pushSubscription: null },
+      feedback: createRequestFeedback(reporting, {
+        operationKey: "auth.logout",
+        resourceKey: "session",
+        kind: "mutation",
+      }),
       expectedStatus: 204,
       method: "POST",
     });
   }
 
-  async getCurrentUser(accessToken: string): Promise<AuthCurrentUser> {
+  async getCurrentUser(
+    accessToken: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<AuthCurrentUser> {
     const response = await this.client.request(
       authApiPaths.currentUser,
       isAuthCurrentUser,
       {
+        feedback: createRequestFeedback(reporting, {
+          operationKey: "auth.currentUser",
+          resourceKey: "session",
+          kind: "read",
+        }),
         expectedStatus: 200,
         headers: createBearerHeaders(accessToken),
         method: "GET",

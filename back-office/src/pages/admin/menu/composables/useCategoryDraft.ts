@@ -68,6 +68,8 @@ export function useCategoryDraft(options: UseCategoryDraftOptions) {
     isActive.value = baseline.value.isActive;
   }
 
+  reset();
+
   return {
     data,
     description,

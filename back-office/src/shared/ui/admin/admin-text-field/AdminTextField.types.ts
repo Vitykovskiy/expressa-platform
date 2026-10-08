@@ -1,5 +1,6 @@
 export interface AdminTextFieldProps {
   modelValue?: number | string;
+  presentation?: "text" | "code";
 }
 
 export interface AdminTextFieldEmits {

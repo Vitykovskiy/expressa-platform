@@ -13,8 +13,8 @@ function render(args: Story["args"]) {
     components: { PriceFields },
     setup: () => ({
       args,
-      price: shallowRef("290"),
-      portion: shallowRef("300 мл"),
+      price: shallowRef(args?.price ?? "290"),
+      portion: shallowRef(args?.portionLabel ?? "300 мл"),
     }),
     template:
       '<PriceFields v-bind="args" v-model:price="price" v-model:portion-label="portion" />',
@@ -29,5 +29,22 @@ export const Validation: Story = {
 export const Disabled: Story = {
   name: "Недоступно",
   args: { disabled: true },
+  render,
+};
+export const RequiredBlank: Story = {
+  name: "Обязательная порция без значения",
+  args: { requiredLabel: true, price: "", portionLabel: "" },
+  render,
+};
+export const LongCustom: Story = {
+  name: "Длинная порция и ошибка",
+  args: {
+    requiredLabel: true,
+    price: "2147483648",
+    portionLabel:
+      "Оченьдлиннаяпорциябезпробеловсдополнительныммолокомиразныминаполнителями500мл",
+    priceError: "Цена должна быть целым числом до 2147483647 ₽",
+    portionLabelError: "Такой размер уже добавлен",
+  },
   render,
 };

@@ -2,33 +2,42 @@
   <div class="menu-modifier-row">
     <AdminButton
       class="menu-modifier-row__toggle"
-      type="button"
+      presentation="row"
       variant="ghost"
-      :disabled="props.disabled"
+      :disabled="props.disabled || !options.length"
       @click="expanded = !expanded"
     >
       <AdminIcon :icon="expanded ? ChevronDown : ChevronRight" />
-      <span class="menu-modifier-row__copy"
-        ><strong>{{ props.group.name }}</strong
-        ><small>{{ count }}</small></span
-      >
+      <span class="menu-modifier-row__copy">
+        <span class="menu-modifier-row__name">{{ props.group.name }}</span>
+        <span class="menu-modifier-row__meta"
+          >{{ count
+          }}<template v-if="!props.group.isActive"> · Скрыта</template></span
+        >
+      </span>
     </AdminButton>
     <AdminButton
-      class="menu-modifier-row__edit"
-      type="button"
+      presentation="row"
       variant="ghost"
       :disabled="props.disabled"
       @click="emit('edit', props.group)"
-    >
-      <AdminIcon :icon="Pencil" />
-    </AdminButton>
-    <div v-if="expanded" class="menu-modifier-row__options">
+      ><AdminIcon :icon="Pencil"
+    /></AdminButton>
+    <div v-if="expanded && options.length" class="menu-modifier-row__options">
       <div
-        v-for="option in props.group.options"
+        v-for="option in options"
         :key="option.id"
         class="menu-modifier-row__option"
       >
-        {{ option.name }}
+        <span class="menu-modifier-row__name">{{ option.name }}</span>
+        <span class="menu-modifier-row__meta"
+          >{{
+            option.priceDelta === 0
+              ? "Без доплаты"
+              : `${option.priceDelta > 0 ? "+" : ""}${option.priceDelta} ₽`
+          }}<template v-if="option.isDefault"> · По умолчанию</template
+          ><template v-if="!option.isAvailable"> · Недоступно</template></span
+        >
       </div>
     </div>
   </div>
@@ -49,13 +58,14 @@ const expanded = shallowRef(false);
 const count = computed(() =>
   modifierOptionCountLabel(props.group.options.length),
 );
+const options = computed(() =>
+  [...props.group.options].sort((a, b) => a.sortOrder - b.sortOrder),
+);
 </script>
 <style scoped lang="scss">
 .menu-modifier-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 68px;
-  align-items: center;
   background: var(--expressa-color-surface-raised);
 }
 .menu-modifier-row + .menu-modifier-row {
@@ -63,31 +73,33 @@ const count = computed(() =>
     var(--expressa-color-border);
 }
 .menu-modifier-row__toggle {
-  display: flex;
-  min-width: 0;
-  justify-content: flex-start;
-  gap: var(--expressa-space-md);
-  padding-inline: var(--expressa-space-md);
-  text-align: left;
+  width: 100%;
 }
 .menu-modifier-row__copy {
   display: grid;
+  min-width: 0;
   gap: var(--expressa-space-2xs);
 }
-.menu-modifier-row small {
-  color: var(--expressa-color-text-muted);
+.menu-modifier-row__name {
+  overflow-wrap: anywhere;
+  font-weight: var(--expressa-font-weight-semibold);
 }
-.menu-modifier-row__edit {
-  min-width: var(--expressa-size-control-min-height);
-  margin-inline-end: var(--expressa-space-sm);
-  color: var(--expressa-color-accent);
+.menu-modifier-row__meta {
+  overflow-wrap: anywhere;
+  color: var(--expressa-color-text-secondary);
+  font-size: var(--expressa-font-size-caption);
 }
 .menu-modifier-row__options {
   grid-column: 1 / -1;
   background: var(--expressa-color-surface);
 }
 .menu-modifier-row__option {
-  padding: var(--expressa-space-md) var(--expressa-space-48);
+  display: grid;
+  gap: var(--expressa-space-2xs);
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  padding-inline-start: calc(
+    var(--expressa-space-md) + var(--expressa-space-24)
+  );
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }

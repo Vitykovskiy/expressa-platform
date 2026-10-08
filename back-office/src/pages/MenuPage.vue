@@ -1,5 +1,5 @@
 <template>
-  <PageShell class="menu-page__shell">
+  <PageShell class="menu-page__shell" content-spacing="none">
     <MenuScreenHeading />
     <p
       v-if="
@@ -17,7 +17,6 @@
           v-if="!managementOpen"
           :categories="orderedCategories"
           :expanded-category-ids="expandedCategoryIds"
-          :highlighted-category-id="highlightedCategoryId"
           :modifier-groups="modifierGroups"
           :products="catalogStore.products"
           :reorder-saved="reorderSaved"
@@ -75,13 +74,19 @@
     />
     <AdminDialog
       cancel-label="Отмена"
+      :destructive-label="
+        selectedModifierGroup !== null ? 'В архив' : undefined
+      "
+      :destructive-disabled="modifierArchiveDisabled"
       :dismiss-disabled="modifierDialogPending"
       :model-value="modifierGroupEditorOpen"
       max-width="800"
       :pending="modifierDialogPending"
+      :submit-disabled="modifierSubmitDisabled"
       submit-form="modifier-group-editor-form"
       submit-label="Сохранить"
       title="Группа добавок"
+      @destructive="openModifierArchiveConfirmation"
       @update:model-value="updateModifierGroupEditorOpen"
     >
       <ModifierGroupEditor
@@ -100,11 +105,20 @@
         @refresh="refreshModifierGroupCatalog"
       />
     </AdminDialog>
+    <ConfirmDialog
+      v-model:open="modifierArchiveOpen"
+      :pending="modifierDialogPending"
+      confirm-label="Архивировать"
+      confirm-variant="destructive"
+      description="Группа добавок больше не будет доступна для назначения."
+      title="Архивировать группу добавок?"
+      @confirm="confirmModifierArchive"
+    />
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
 import {
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
@@ -124,23 +138,33 @@ import MenuScreenHeading from "./admin/menu/MenuScreenHeading.vue";
 import type { MenuReorderScope } from "./admin/menu/composables/useMenuReorderDraft.types";
 import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
-import { useCatalogStore } from "./admin/menu/catalog.store";
+import { catalogContext, useCatalogStore } from "./admin/menu/catalog.store";
 import type {
   Category,
   ModifierGroup,
   Product,
 } from "./admin/menu/catalog.types";
 import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
+import ConfirmDialog from "../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import PageShell from "./PageShell.vue";
+import { getOperationPort } from "../shared/lib/operations/operation-port";
 
 const sessionStore = useSessionStore();
 const route = useRoute();
 const router = useRouter();
 const catalogStore = useCatalogStore();
+const modifierOwnerPrefix = crypto.randomUUID();
+let modifierOwnerActive = true;
+let disposeModifierRecovery: (() => void) | null = null;
+onBeforeUnmount(() => {
+  modifierOwnerActive = false;
+  disposeModifierRecovery?.();
+});
 const addCategoryOpen = shallowRef(false);
 const addProductOpen = shallowRef(false);
 const editCategoryOpen = shallowRef(false);
 const modifierGroupEditorOpen = shallowRef(false);
+const modifierArchiveOpen = shallowRef(false);
 const modifierEditorSession = shallowRef(0);
 const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const managementOpen = computed(() => route.query.mode === "reorder");
@@ -161,7 +185,6 @@ const categoryRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
 const categoryArchivePending = shallowRef(false);
-const highlightedCategoryId = shallowRef<string | null>(null);
 const modifierRecoveryState = shallowRef<
   "idle" | "checking" | "retry" | "checked"
 >("idle");
@@ -185,14 +208,26 @@ const modifierFormSaveOutcome = computed(() =>
       ? "checked"
       : catalogStore.formSaveOutcome,
 );
+const modifierSubmitDisabled = computed(
+  () =>
+    accessToken() === null ||
+    modifierDialogPending.value ||
+    modifierRecoveryState.value !== "idle" ||
+    (catalogStore.formSaveOutcome !== "idle" &&
+      (catalogStore.formSaveOutcome !== "rejected" ||
+        modifierOperationKind.value === "archive")),
+);
+const modifierArchiveDisabled = computed(
+  () =>
+    accessToken() === null ||
+    modifierDialogPending.value ||
+    modifierFormSaveOutcome.value !== "idle",
+);
 const modifierPendingMessage = computed<string | null>(() => {
   if (modifierRecoveryState.value === "checking")
     return "Проверяем актуальное меню…";
   if (!modifierSaveInFlight.value) return null;
-  if (catalogStore.formSaveOutcome === "saved")
-    return modifierOperationKind.value === "archive"
-      ? "Группа архивирована. Обновляем меню…"
-      : "Группа сохранена. Обновляем меню…";
+  if (catalogStore.formSaveOutcome === "saved") return "Обновляем меню…";
   return modifierOperationKind.value === "archive"
     ? "Архивируем группу…"
     : "Сохраняем группу…";
@@ -370,6 +405,9 @@ function closeNewProductForm(preserveOutcome = false): void {
 }
 
 function openModifierGroupEditor(group: ModifierGroup | null): void {
+  disposeModifierRecovery?.();
+  disposeModifierRecovery = null;
+  modifierArchiveOpen.value = false;
   catalogStore.resetFormSaveOutcome();
   acknowledgedForm.value = null;
   modifierRecoveryState.value = "idle";
@@ -381,6 +419,9 @@ function openModifierGroupEditor(group: ModifierGroup | null): void {
 
 function closeModifierGroupEditor(preserveOutcome = false): void {
   if (modifierDialogPending.value) return;
+  disposeModifierRecovery?.();
+  disposeModifierRecovery = null;
+  modifierArchiveOpen.value = false;
   if (!preserveOutcome) {
     catalogStore.resetFormSaveOutcome();
     acknowledgedForm.value = null;
@@ -393,6 +434,19 @@ function closeModifierGroupEditor(preserveOutcome = false): void {
 
 function updateModifierGroupEditorOpen(isOpen: boolean): void {
   if (!isOpen) closeModifierGroupEditor();
+}
+
+function openModifierArchiveConfirmation(): void {
+  if (selectedModifierGroup.value === null || modifierArchiveDisabled.value)
+    return;
+  modifierArchiveOpen.value = true;
+}
+
+async function confirmModifierArchive(): Promise<void> {
+  const group = selectedModifierGroup.value;
+  if (group === null || modifierArchiveDisabled.value) return;
+  modifierArchiveOpen.value = false;
+  await archiveModifierGroup(group.id);
 }
 
 async function createCategory(data: CategoryFormData): Promise<void> {
@@ -417,11 +471,6 @@ async function createCategory(data: CategoryFormData): Promise<void> {
         ...expandedCategoryIds.value,
         created.id,
       ]);
-      highlightedCategoryId.value = created.id;
-      window.setTimeout(() => {
-        if (highlightedCategoryId.value === created.id)
-          highlightedCategoryId.value = null;
-      }, 2000);
     }
     closeNewCategoryForm(true);
   }
@@ -508,6 +557,41 @@ async function createProduct(data: CreateProductFormData): Promise<void> {
   }
 }
 
+function modifierOperationOwner() {
+  const editorSession = modifierEditorSession.value;
+  return {
+    ownerIdentity: `${modifierOwnerPrefix}:${editorSession}`,
+    ownerIsActive: () =>
+      modifierOwnerActive &&
+      modifierGroupEditorOpen.value &&
+      modifierEditorSession.value === editorSession,
+  };
+}
+
+function registerModifierRecovery(
+  operationKey: string,
+  resourceKey: string,
+): void {
+  disposeModifierRecovery?.();
+  disposeModifierRecovery = getOperationPort().registerRecovery(
+    {
+      ...catalogContext("catalog.form.save", "catalog", "mutation"),
+      requestTarget: { operationKey, resourceKey },
+      ...modifierOperationOwner(),
+    },
+    {
+      actionLabel: "Обновить меню",
+      safety: "reconciledMutation",
+      async execute() {
+        await refreshModifierGroupCatalog();
+        return modifierRecoveryState.value === "checked"
+          ? { status: "success", value: undefined }
+          : { status: "cancelled" };
+      },
+    },
+  );
+}
+
 async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {
   const authorizationValue = accessToken();
   if (
@@ -521,8 +605,13 @@ async function saveModifierGroup(data: ModifierGroupFormData): Promise<void> {
     return;
   modifierSaveInFlight.value = true;
   modifierOperationKind.value = "save";
+  registerModifierRecovery("catalog.modifierGroup.save", data.id ?? "new");
   try {
-    await catalogStore.saveModifierGroup(authorizationValue, data);
+    await catalogStore.saveModifierGroup(
+      authorizationValue,
+      data,
+      modifierOperationOwner(),
+    );
     if (catalogStore.lastCommandSucceeded) {
       acknowledgedForm.value = "modifier";
       closeModifierGroupEditor(true);
@@ -543,7 +632,9 @@ async function refreshModifierGroupCatalog(): Promise<void> {
   modifierRecoveryState.value = "checking";
   await catalogStore.refresh(authorizationValue);
   modifierRecoveryState.value =
-    catalogStore.status === "ready" ? "checked" : "retry";
+    catalogStore.status === "ready" && catalogStore.lastCommandSucceeded
+      ? "checked"
+      : "retry";
 }
 
 async function archiveModifierGroup(groupId: string): Promise<void> {
@@ -555,9 +646,14 @@ async function archiveModifierGroup(groupId: string): Promise<void> {
   )
     return;
   modifierOperationKind.value = "archive";
+  registerModifierRecovery("catalog.modifierGroup.archive", groupId);
   modifierSaveInFlight.value = true;
   try {
-    await catalogStore.archiveModifierGroup(authorizationValue, groupId);
+    await catalogStore.archiveModifierGroup(
+      authorizationValue,
+      groupId,
+      modifierOperationOwner(),
+    );
     if (catalogStore.lastCommandSucceeded) {
       acknowledgedForm.value = "modifier-archive";
       closeModifierGroupEditor(true);

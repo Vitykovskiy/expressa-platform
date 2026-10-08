@@ -4,7 +4,12 @@
       v-if="props.modelValue"
       v-bind="dialogAttrs"
       class="admin-dialog__layer"
-      :class="{ 'admin-dialog__layer--mobile': isMobile }"
+      :class="{
+        'admin-dialog__layer--mobile': isMobile,
+        'admin-dialog__layer--notice': notificationOccupiedBand > 0,
+        'admin-dialog__layer--full-screen': isFullScreen,
+      }"
+      :style="dialogLayerStyle"
       @click.self="requestBackdropClose"
     >
       <div class="admin-dialog__content" :style="dialogContentStyle">
@@ -20,6 +25,7 @@
             <AdminButton
               class="admin-dialog__close"
               :disabled="props.pending || props.dismissDisabled"
+              :size="props.actionSize"
               type="button"
               variant="ghost"
               @click="requestClose"
@@ -31,27 +37,61 @@
             <slot />
           </div>
           <footer v-if="hasActions" class="admin-dialog__footer">
-            <AdminButton
-              v-if="props.cancelLabel"
-              :disabled="props.pending || props.dismissDisabled"
-              :size="props.actionSize"
-              type="button"
-              variant="ghost"
-              @click="requestClose"
+            <div
+              v-if="props.destructiveLabel"
+              class="admin-dialog__destructive"
             >
-              {{ props.cancelLabel }}
-            </AdminButton>
-            <AdminButton
-              v-if="props.submitLabel"
-              :disabled="props.submitDisabled"
-              :size="props.actionSize"
-              :form="props.submitForm"
-              :pending="props.pending"
-              type="submit"
-              :variant="props.submitVariant"
+              <AdminButton
+                class="admin-dialog__action"
+                :disabled="
+                  props.pending ||
+                  props.destructiveDisabled ||
+                  props.dismissDisabled
+                "
+                :size="props.actionSize"
+                type="button"
+                variant="destructive"
+                @click="requestDestructive"
+              >
+                <span class="admin-dialog__action-label">{{
+                  props.destructiveLabel
+                }}</span>
+              </AdminButton>
+            </div>
+            <AdminActionGroup
+              v-if="props.cancelLabel || props.submitLabel"
+              class="admin-dialog__primary-actions"
             >
-              {{ props.submitLabel }}
-            </AdminButton>
+              <div v-if="props.cancelLabel" class="admin-dialog__action-slot">
+                <AdminButton
+                  class="admin-dialog__action"
+                  :disabled="props.pending || props.dismissDisabled"
+                  :size="props.actionSize"
+                  type="button"
+                  variant="ghost"
+                  @click="requestClose"
+                >
+                  <span class="admin-dialog__action-label">{{
+                    props.cancelLabel
+                  }}</span>
+                </AdminButton>
+              </div>
+              <div v-if="props.submitLabel" class="admin-dialog__action-slot">
+                <AdminButton
+                  class="admin-dialog__action"
+                  :disabled="props.submitDisabled"
+                  :size="props.actionSize"
+                  :form="props.submitForm"
+                  :pending="props.pending"
+                  type="submit"
+                  :variant="props.submitVariant"
+                >
+                  <span class="admin-dialog__action-label">{{
+                    props.submitLabel
+                  }}</span>
+                </AdminButton>
+              </div>
+            </AdminActionGroup>
           </footer>
         </div>
       </div>
@@ -77,7 +117,9 @@ import {
 } from "./AdminDialog.constants";
 import type { AdminDialogEmits, AdminDialogProps } from "./AdminDialog.types";
 import AdminButton from "../admin-button/AdminButton.vue";
+import AdminActionGroup from "../admin-action-group/AdminActionGroup.vue";
 import AdminIcon from "../admin-icon/AdminIcon.vue";
+import { notificationOccupiedBand } from "../../notifications/notification-layout";
 
 defineOptions({ inheritAttrs: false });
 
@@ -103,6 +145,9 @@ const dialogAttrs = computed(() => ({
   "data-testid": attrs["data-testid"],
   style: attrs.style,
 }));
+const dialogLayerStyle = computed(() => ({
+  "--admin-dialog-notification-band": `${notificationOccupiedBand.value}px`,
+}));
 const dialogContentStyle = computed(() => ({
   maxWidth: isMobile.value ? "100%" : toCssSize(props.maxWidth),
   maxHeight: isFullScreen.value
@@ -111,7 +156,7 @@ const dialogContentStyle = computed(() => ({
   width: "100%",
 }));
 const hasActions = computed(() =>
-  Boolean(props.cancelLabel || props.submitLabel),
+  Boolean(props.destructiveLabel || props.cancelLabel || props.submitLabel),
 );
 const hasHeader = computed(() => Boolean(props.title || slots.header));
 
@@ -130,6 +175,12 @@ function requestClose(): void {
 function requestBackdropClose(): void {
   if (props.persistent) return;
   requestClose();
+}
+
+function requestDestructive(): void {
+  if (props.pending || props.destructiveDisabled || props.dismissDisabled)
+    return;
+  emit("destructive");
 }
 
 function syncMobileLayout(): void {
@@ -173,13 +224,20 @@ onBeforeUnmount(() => {
   justify-content: center;
   background: var(--expressa-color-overlay);
 }
+.admin-dialog__layer--notice {
+  box-sizing: border-box;
+  padding-block-start: var(--admin-dialog-notification-band);
+  --admin-dialog-available-block: calc(
+    100dvh - var(--admin-dialog-notification-band)
+  );
+}
 .admin-dialog__layer--mobile {
   align-items: flex-end;
 }
 .admin-dialog__content {
   margin: 0;
   max-width: calc(100% - 2 * var(--expressa-space-dialog-inset));
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .admin-dialog__surface {
@@ -192,16 +250,23 @@ onBeforeUnmount(() => {
 }
 .admin-dialog__header {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-lg) var(--expressa-space-dialog-inset);
+  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
 }
 .admin-dialog__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
   line-height: var(--expressa-line-height-title);
+}
+.admin-dialog__close {
+  flex: 0 0 auto;
 }
 .admin-dialog__surface--full-screen {
   block-size: 100dvh;
@@ -209,19 +274,89 @@ onBeforeUnmount(() => {
   border-radius: 0;
   box-shadow: none;
 }
+.admin-dialog__layer--notice .admin-dialog__content,
+.admin-dialog__layer--notice .admin-dialog__surface {
+  max-height: min(
+    var(--expressa-size-dialog-max-block),
+    var(--admin-dialog-available-block)
+  );
+}
+.admin-dialog__layer--notice .admin-dialog__surface--full-screen {
+  block-size: 100dvh;
+  padding-block-start: var(--admin-dialog-notification-band);
+  max-height: 100dvh;
+  box-sizing: border-box;
+}
+.admin-dialog__layer--notice.admin-dialog__layer--full-screen {
+  padding-block-start: 0;
+}
+.admin-dialog__layer--notice.admin-dialog__layer--full-screen
+  .admin-dialog__content {
+  max-height: 100dvh;
+}
+.admin-dialog__layer--notice .admin-dialog__header,
+.admin-dialog__layer--notice .admin-dialog__footer {
+  padding: var(--expressa-space-dialog-compact-block)
+    var(--expressa-space-dialog-compact-inline);
+}
+.admin-dialog__layer--notice .admin-dialog__footer {
+  gap: var(--expressa-space-sm);
+}
+.admin-dialog__layer--notice .admin-dialog__body {
+  padding: 0 var(--expressa-space-dialog-compact-inline)
+    var(--expressa-space-dialog-compact-block);
+}
 
 .admin-dialog__footer {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--expressa-space-control-inline);
-  padding: var(--expressa-space-lg) var(--expressa-space-dialog-inset);
+  padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
+}
+.admin-dialog__primary-actions {
+  flex: 0 0 auto;
+  max-width: 100%;
+  margin-inline-start: auto;
+}
+.admin-dialog__action-slot,
+.admin-dialog__destructive {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-dialog__destructive {
+  margin-inline-end: auto;
+}
+.admin-dialog__action {
+  max-width: 100%;
+}
+.admin-dialog__action-label {
+  overflow-wrap: anywhere;
 }
 
 .admin-dialog__body {
   min-height: 0;
-  padding: 0 var(--expressa-space-dialog-inset) var(--expressa-space-lg);
+  padding: 0 var(--expressa-space-dialog-inset) var(--expressa-space-md);
   overflow-y: auto;
+}
+
+@media (max-height: 400px) {
+  .admin-dialog__header,
+  .admin-dialog__footer {
+    padding: var(--expressa-space-dialog-compact-block)
+      var(--expressa-space-dialog-compact-inline);
+  }
+
+  .admin-dialog__footer {
+    gap: var(--expressa-space-sm);
+  }
+
+  .admin-dialog__body {
+    padding: 0 var(--expressa-space-dialog-compact-inline)
+      var(--expressa-space-dialog-compact-block);
+  }
 }
 
 @media (min-width: 768px) {
@@ -231,6 +366,13 @@ onBeforeUnmount(() => {
 
   .admin-dialog__surface {
     border-radius: var(--expressa-radius-lg);
+  }
+  .admin-dialog__layer--notice .admin-dialog__content {
+    margin-block: var(--expressa-space-sm);
+    --admin-dialog-available-block: calc(
+      100dvh - var(--admin-dialog-notification-band) - 2 *
+        var(--expressa-space-sm)
+    );
   }
 }
 </style>

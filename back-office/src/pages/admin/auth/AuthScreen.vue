@@ -4,10 +4,7 @@
     <section v-else-if="props.state === 'denied'" class="auth-screen__card">
       <DeniedState @retry="emit('retry')" />
     </section>
-    <p v-else-if="props.state === 'success'" class="auth-screen__success">
-      <AdminIcon :icon="CircleCheckBig" />
-      <span>Вход выполнен</span>
-    </p>
+    <LoadingState v-else-if="props.state === 'success'" />
     <section v-else class="auth-screen__card">
       <header class="auth-screen__header">
         <span class="auth-screen__brand">EXPRESSA ADMIN</span>
@@ -39,12 +36,10 @@
 </template>
 
 <script setup lang="ts">
-import { CircleCheckBig } from "lucide-vue-next";
 import { computed } from "vue";
 import { AUTH_SCREEN_PRESENTATION } from "./AuthScreen.constants";
 import type { AuthScreenEmits, AuthScreenProps } from "./AuthScreen.types";
 import DeniedState from "./DeniedState.vue";
-import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import LoadingState from "./LoadingState.vue";
 import OtpStep from "./OtpStep.vue";
 import PhoneStep from "./PhoneStep.vue";
@@ -66,8 +61,7 @@ const emit = defineEmits<AuthScreenEmits>();
 }
 
 .auth-screen__card {
-  width: min(100%, 360px);
-  min-height: var(--expressa-size-loading-state-min-height);
+  width: min(100%, var(--expressa-size-auth-card-max-width));
   padding: var(--expressa-space-32);
   background: var(--expressa-color-surface);
   border: var(--expressa-border-width-default) solid
@@ -82,35 +76,18 @@ const emit = defineEmits<AuthScreenEmits>();
 
 .auth-screen__brand {
   display: block;
-  margin-bottom: var(--expressa-space-8);
+  margin-bottom: var(--expressa-space-xs);
   color: var(--expressa-color-text-muted);
   font-size: var(--expressa-font-size-caption);
   font-weight: var(--expressa-font-weight-semibold);
   letter-spacing: var(--expressa-letter-spacing-section-title);
 }
 
-.auth-screen__header h1,
-.auth-screen__success {
-  margin: 0;
-}
-
 .auth-screen__header h1 {
+  margin: 0;
   color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-heading);
+  font-size: var(--expressa-font-size-auth-heading);
   font-weight: var(--expressa-font-weight-bold);
   line-height: var(--expressa-line-height-heading);
-}
-
-.auth-screen__success {
-  display: grid;
-  gap: var(--expressa-space-sm);
-  justify-items: center;
-  color: var(--expressa-color-status-success);
-  font-size: var(--expressa-font-size-action);
-  text-align: center;
-}
-
-.auth-screen__success span {
-  color: var(--expressa-color-text-secondary);
 }
 </style>

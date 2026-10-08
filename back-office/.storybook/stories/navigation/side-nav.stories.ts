@@ -1,19 +1,36 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { computed, shallowRef } from "vue";
+import { createNavigationItems } from "../../../src/app/navigation";
 import SideNav from "../../../src/widgets/admin-shell/SideNav.vue";
-const sections = [
-  { id: "orders" as const, label: "Заказы" },
-  { id: "availability" as const, label: "Доступность" },
-  { id: "menu" as const, label: "Меню" },
-];
+
 const meta = {
   title: "Компоненты/Навигация/Боковое меню",
   id: "navigation-sidenav",
   component: SideNav,
   globals: { viewport: "desktop" },
-  args: { role: "administrator", activeSection: "orders", sections },
-  parameters: {
-    layout: "fullscreen",
+  args: {
+    role: "administrator",
+    activeSection: "orders",
+    sections: createNavigationItems("administrator").map(
+      ({ section, label }) => ({ id: section, label }),
+    ),
   },
+  parameters: { layout: "fullscreen" },
+  render: (args) => ({
+    components: { SideNav },
+    setup() {
+      const activeSection = shallowRef(args.activeSection);
+      const sections = computed(() =>
+        createNavigationItems(args.role).map(({ section, label }) => ({
+          id: section,
+          label,
+        })),
+      );
+      return { args, sections, activeSection };
+    },
+    template:
+      '<SideNav v-bind="args" :sections="sections" :active-section="activeSection" @select="activeSection = $event" />',
+  }),
 } satisfies Meta<typeof SideNav>;
 export default meta;
 type Story = StoryObj<typeof meta>;

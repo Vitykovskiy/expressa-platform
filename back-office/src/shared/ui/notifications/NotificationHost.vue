@@ -1,54 +1,81 @@
 <template>
-  <section
-    ref="host"
-    class="notification-host"
-    :class="{ 'notification-host--visible': entries.length > 0 }"
-  >
-    <article
-      v-for="entry in entries"
-      :key="entry.id"
-      class="notification-host__card"
-      :class="`notification-host__card--${entry.level}`"
-      @pointerenter="setHovered(entry.id)"
-      @pointerleave="setHovered(null)"
+  <Teleport to="body">
+    <section
+      v-bind="$attrs"
+      ref="host"
+      class="notification-host"
+      :class="{ 'notification-host--visible': entries.length > 0 }"
     >
-      <component :is="iconFor(entry.level)" class="notification-host__icon" />
-      <div class="notification-host__content">
-        <p>{{ entry.message }}</p>
-        <button
-          v-if="entry.actionLabel !== undefined"
-          type="button"
-          :disabled="entry.busy"
-          @click="$emit('recover', entry.id)"
-        >
-          {{ entry.actionLabel }}
-        </button>
-      </div>
-      <button
-        class="notification-host__close"
-        type="button"
-        :disabled="entry.busy"
-        @click="dismiss(entry.id)"
+      <article
+        v-for="entry in entries"
+        :key="entry.id"
+        class="notification-host__card"
+        :class="`notification-host__card--${entry.level}`"
+        @pointerenter="setHovered(entry.id)"
+        @pointerleave="setHovered(null)"
       >
-        <X />
-      </button>
-    </article>
-  </section>
+        <AdminIcon
+          class="notification-host__icon"
+          :icon="iconFor(entry.level)"
+        />
+        <div class="notification-host__content">
+          <p>
+            {{ entry.message
+            }}<span v-if="entry.accounting !== undefined">
+              · {{ entry.accounting }}</span
+            >
+          </p>
+          <AdminButton
+            v-if="entry.actionLabel !== undefined"
+            class="notification-host__recovery"
+            size="compact"
+            type="button"
+            variant="secondary"
+            :disabled="entry.busy"
+            @click="$emit('recover', entry.id)"
+          >
+            <span class="notification-host__action-label">{{
+              entry.actionLabel
+            }}</span>
+          </AdminButton>
+        </div>
+        <AdminButton
+          size="compact"
+          type="button"
+          variant="ghost"
+          :disabled="entry.busy"
+          @click="dismiss(entry.id)"
+        >
+          <AdminIcon :icon="X" />
+        </AdminButton>
+      </article>
+    </section>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { CircleAlert, CircleCheck, Info, X } from "lucide-vue-next";
+import AdminButton from "../admin/admin-button/AdminButton.vue";
+import AdminIcon from "../admin/admin-icon/AdminIcon.vue";
 import type {
   NotificationHostProps,
   NotificationHostVisibility,
 } from "./NotificationHost.types";
+import {
+  publishNotificationBand,
+  releaseNotificationBand,
+} from "./notification-layout";
+
+defineOptions({ inheritAttrs: false });
 
 const hoveredId = ref<string | null>(null);
 const host = ref<HTMLElement | null>(null);
 let lastCandidateSignature: readonly string[] = [];
 let lastStackFits = true;
 let lastVisibility: NotificationHostVisibility | undefined;
+const layoutOwner = Symbol("notification-host-layout");
+let resizeObserver: ResizeObserver | undefined;
 
 const props = defineProps<NotificationHostProps>();
 const emit = defineEmits<{
@@ -57,7 +84,23 @@ const emit = defineEmits<{
   visibility: [visibility: NotificationHostVisibility];
 }>();
 
+function publishLayout(): void {
+  const element = host.value;
+  if (element === null || props.entries.length === 0) {
+    releaseNotificationBand(layoutOwner);
+    return;
+  }
+  const bounds = element.getBoundingClientRect();
+  const styles = window.getComputedStyle(element);
+  const gutter = Number.parseFloat(styles.rowGap) || 0;
+  publishNotificationBand(
+    layoutOwner,
+    Math.min(window.innerHeight, Math.max(0, bounds.bottom + gutter)),
+  );
+}
+
 function reportVisibility(forceMeasurement = false): void {
+  publishLayout();
   const element = host.value;
   const cards =
     element === null
@@ -81,11 +124,11 @@ function reportVisibility(forceMeasurement = false): void {
   );
   const candidateSignature = candidateEntries.map(
     (entry) =>
-      `${entry.id}:${entry.level}:${entry.busy}:${entry.actionLabel ?? ""}:${entry.message}`,
+      `${entry.id}:${entry.level}:${entry.busy}:${entry.actionLabel ?? ""}:${entry.message}:${entry.accounting ?? ""}`,
   );
   const visibleSignature = props.entries.map(
     (entry) =>
-      `${entry.id}:${entry.level}:${entry.busy}:${entry.actionLabel ?? ""}:${entry.message}`,
+      `${entry.id}:${entry.level}:${entry.busy}:${entry.actionLabel ?? ""}:${entry.message}:${entry.accounting ?? ""}`,
   );
   const candidateChanged =
     candidateSignature.length !== lastCandidateSignature.length ||
@@ -158,9 +201,13 @@ onMounted(() => {
   window.addEventListener("resize", onResize);
   document.addEventListener("visibilitychange", onVisibilityChange);
   reportVisibility();
+  resizeObserver = new ResizeObserver(publishLayout);
+  if (host.value !== null) resizeObserver.observe(host.value);
 });
 
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  releaseNotificationBand(layoutOwner);
   window.removeEventListener("resize", onResize);
   document.removeEventListener("visibilitychange", onVisibilityChange);
 });
@@ -168,25 +215,37 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .notification-host {
-  position: static;
+  position: fixed;
   z-index: var(--expressa-z-notification-layer);
+  inset-block-start: calc(
+    var(--expressa-safe-area-top) + var(--expressa-space-md)
+  );
+  inset-inline-start: max(
+    var(--expressa-space-md),
+    var(--expressa-safe-area-left)
+  );
+  inset-inline-end: max(
+    var(--expressa-space-md),
+    var(--expressa-safe-area-right)
+  );
   display: grid;
   gap: var(--expressa-space-sm);
-  width: min(25rem, calc(100vw - var(--expressa-space-32)));
+  width: auto;
+  max-width: var(--expressa-size-notification-max-inline);
   height: 0;
   max-height: var(--expressa-size-notification-desktop-max-block);
-  margin: 0 var(--expressa-space-md) 0 auto;
+  margin-inline: auto;
   overflow: hidden;
   pointer-events: none;
 }
 .notification-host--visible {
   height: auto;
-  margin-block: calc(var(--expressa-safe-area-top) + var(--expressa-space-md))
-    var(--expressa-space-sm);
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .notification-host__card {
   --notification-close-size: var(--expressa-size-control-min-height);
+  --notification-accent: var(--expressa-color-accent);
 
   display: grid;
   grid-template-columns: var(--expressa-size-icon-action) minmax(0, 1fr) var(
@@ -195,39 +254,27 @@ onBeforeUnmount(() => {
   gap: var(--expressa-space-sm);
   align-items: start;
   padding: var(--expressa-space-12) var(--expressa-space-md);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-inline-start: var(--expressa-space-4) solid var(--notification-accent);
   border-radius: var(--expressa-radius-md);
   background: var(--expressa-color-surface);
-  box-shadow: var(--expressa-shadow-menu);
+  color: var(--expressa-color-text-primary);
+  box-shadow: var(--expressa-shadow-notification);
   pointer-events: auto;
 }
+.notification-host__icon {
+  margin-block-start: var(--expressa-space-2xs);
+  color: var(--notification-accent);
+}
 .notification-host__card--error {
-  border-inline-start: var(--expressa-space-4) solid
-    var(--expressa-color-status-error);
-  color: var(--expressa-color-status-error);
-  background: var(--expressa-color-status-error-surface);
+  --notification-accent: var(--expressa-color-status-error);
 }
 .notification-host__card--warning {
-  border-inline-start: var(--expressa-space-4) solid
-    var(--expressa-color-status-warning);
-  color: var(--expressa-color-status-warning);
-  background: var(--expressa-color-status-warning-surface);
+  --notification-accent: var(--expressa-color-status-warning);
 }
 .notification-host__card--success {
-  border-inline-start: var(--expressa-space-4) solid
-    var(--expressa-color-status-success);
-  color: var(--expressa-color-status-success);
-  background: var(--expressa-color-status-success-surface);
-}
-.notification-host__card--info {
-  border-inline-start: var(--expressa-space-4) solid
-    var(--expressa-color-accent);
-  color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-status-info-surface);
-}
-.notification-host__icon {
-  width: var(--expressa-size-icon-action);
-  height: var(--expressa-size-icon-action);
-  color: currentColor;
+  --notification-accent: var(--expressa-color-status-success);
 }
 .notification-host__content {
   display: grid;
@@ -240,17 +287,14 @@ onBeforeUnmount(() => {
   line-height: var(--expressa-line-height-caption-compact);
   overflow-wrap: anywhere;
 }
-.notification-host__card button {
-  min-height: var(--expressa-size-control-min-height);
-  border: var(--expressa-border-width-none);
-  background: var(--expressa-color-transparent);
-  color: currentColor;
-  font-size: var(--expressa-font-size-action);
+.notification-host__recovery {
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
 }
-.notification-host__close {
-  width: var(--notification-close-size);
-  min-width: var(--notification-close-size);
-  min-height: var(--notification-close-size);
+.notification-host__action-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 @media (pointer: coarse), (max-width: 767px) {
   .notification-host__card {
@@ -259,15 +303,10 @@ onBeforeUnmount(() => {
 }
 @media (max-width: 767px) {
   .notification-host {
-    width: auto;
+    inset-block-start: calc(
+      var(--expressa-safe-area-top) + var(--expressa-space-sm)
+    );
     max-height: var(--expressa-size-notification-mobile-max-block);
-    margin-inline: 0;
-  }
-  .notification-host--visible {
-    margin: calc(var(--expressa-safe-area-top) + var(--expressa-space-sm))
-      max(var(--expressa-space-md), var(--expressa-safe-area-right))
-      var(--expressa-space-sm)
-      max(var(--expressa-space-md), var(--expressa-safe-area-left));
   }
 }
 </style>

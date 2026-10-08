@@ -12,36 +12,6 @@
         >
           Группа добавок
         </h2>
-        <AdminActionGroup
-          align="end"
-          class="modifier-group-editor__header-actions"
-        >
-          <AdminButton
-            :disabled="isDraftActionLocked || !isValid"
-            type="submit"
-          >
-            Сохранить
-          </AdminButton>
-          <AdminButton
-            v-if="props.group !== null"
-            :disabled="isDraftActionLocked"
-            class="modifier-group-editor__icon-action"
-            type="button"
-            variant="destructive"
-            @click="openArchive"
-          >
-            <AdminIcon :icon="Archive" />
-          </AdminButton>
-          <AdminButton
-            :disabled="isDismissalLocked"
-            class="modifier-group-editor__icon-action"
-            type="button"
-            variant="ghost"
-            @click="cancel"
-          >
-            <AdminIcon :icon="X" />
-          </AdminButton>
-        </AdminActionGroup>
       </header>
       <p v-if="props.loading" class="modifier-group-editor__state">
         Загрузка группы добавок…
@@ -145,7 +115,7 @@
               <AdminActionGroup class="modifier-group-editor__option-actions">
                 <AdminButton
                   :disabled="isDraftActionLocked || index === 0"
-                  class="modifier-group-editor__icon-action"
+                  size="compact"
                   type="button"
                   variant="ghost"
                   @click="moveOption(index, -1)"
@@ -155,7 +125,7 @@
                   :disabled="
                     isDraftActionLocked || index === options.length - 1
                   "
-                  class="modifier-group-editor__icon-action"
+                  size="compact"
                   type="button"
                   variant="ghost"
                   @click="moveOption(index, 1)"
@@ -163,7 +133,7 @@
                 /></AdminButton>
                 <AdminButton
                   :disabled="isDraftActionLocked"
-                  class="modifier-group-editor__icon-action"
+                  size="compact"
                   type="button"
                   variant="destructive"
                   @click="openOptionRemoval(index)"
@@ -180,7 +150,9 @@
             />
           </section>
           <AdminButton
+            class="modifier-group-editor__add-option"
             :disabled="isDraftActionLocked"
+            size="compact"
             type="button"
             variant="secondary"
             @click="addOption"
@@ -199,63 +171,49 @@
           {{ shownDefaultError }}
         </p>
       </fieldset>
-      <section
-        v-if="props.embedded && props.group !== null"
-        class="modifier-group-editor__archive"
+      <AdminButton
+        v-if="canVerifySave"
+        :disabled="props.disabled"
+        size="compact"
+        type="button"
+        variant="secondary"
+        @click="emit('refresh')"
+        >Проверить сохранение</AdminButton
       >
+      <p v-if="hasPendingMessage" class="modifier-group-editor__state">
+        {{ props.pendingMessage }}
+      </p>
+      <footer v-if="!props.embedded" class="modifier-group-editor__footer">
         <AdminButton
+          v-if="props.group !== null"
+          class="modifier-group-editor__archive"
           :disabled="isDraftActionLocked"
+          size="compact"
           type="button"
           variant="destructive"
           @click="openArchive"
+          >В архив</AdminButton
         >
-          Архивировать группу
-        </AdminButton>
-      </section>
-      <section
-        v-if="hasPendingMessage || (props.saveOutcome ?? 'idle') !== 'idle'"
-        class="modifier-group-editor__feedback"
-      >
-        <p v-if="hasPendingMessage">
-          {{ props.pendingMessage }}
-        </p>
-        <template v-else-if="props.saveOutcome === 'rejected'">
-          {{
-            props.operationKind === "archive"
-              ? "Архивирование группы отклонено. Обновите меню, чтобы проверить её состояние."
-              : "Исправьте отмеченные поля и сохраните группу снова."
-          }}
-        </template>
-        <template v-else-if="props.saveOutcome === 'unconfirmed'">
-          {{
-            props.operationKind === "archive"
-              ? "Не удалось подтвердить архивирование группы. Обновите меню, чтобы проверить её состояние."
-              : "Не удалось подтвердить сохранение группы. Обновите меню, не повторяя сохранение."
-          }}
-        </template>
-        <template v-else-if="props.saveOutcome === 'checked'">
-          Меню обновлено. Закройте форму и проверьте группу.
-        </template>
-        <template v-else-if="props.saveOutcome === 'saved'"
-          >Группа сохранена.</template
+        <AdminActionGroup
+          align="end"
+          class="modifier-group-editor__footer-actions"
         >
-        <p v-else-if="!hasPendingMessage && props.saveError">
-          Не удалось сохранить изменения. Повторите попытку.
-        </p>
-        <AdminButton
-          v-if="
-            !hasPendingMessage &&
-            (props.saveOutcome === 'unconfirmed' ||
-              (props.operationKind === 'archive' &&
-                props.saveOutcome === 'rejected'))
-          "
-          :disabled="props.disabled"
-          type="button"
-          variant="secondary"
-          @click="emit('refresh')"
-          >Обновить меню</AdminButton
-        >
-      </section>
+          <AdminButton
+            :disabled="isDismissalLocked"
+            size="compact"
+            type="button"
+            variant="ghost"
+            @click="cancel"
+            >Отмена</AdminButton
+          >
+          <AdminButton
+            :disabled="isDraftActionLocked || !isValid"
+            size="compact"
+            type="submit"
+            >Сохранить</AdminButton
+          >
+        </AdminActionGroup>
+      </footer>
     </form>
     <ConfirmDialog
       v-model:open="archiveOpen"
@@ -277,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { Archive, ChevronDown, ChevronUp, Trash2, X } from "lucide-vue-next";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-vue-next";
 import { computed, shallowRef, useId, watch } from "vue";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
@@ -358,6 +316,11 @@ const active = computed({
     isActive.value = value;
   },
 });
+const canVerifySave = computed(
+  () =>
+    props.saveOutcome === "unconfirmed" ||
+    (props.operationKind === "archive" && props.saveOutcome === "rejected"),
+);
 const isDismissalLocked = computed(() => props.disabled);
 const isDraftActionLocked = computed(
   () =>
@@ -481,6 +444,7 @@ const isValid = computed(
 );
 
 function resetDraft() {
+  archiveOpen.value = false;
   const group = props.group;
   name.value = group?.name ?? "";
   selectionType.value = group?.selectionType ?? "single";
@@ -678,29 +642,13 @@ watch(
   margin: 0;
   font-size: var(--expressa-font-size-title);
 }
-.modifier-group-editor__header {
-  display: flex;
-  align-items: center;
-  gap: var(--expressa-space-sm);
-}
-@media (max-width: 767px) {
-  .modifier-group-editor__header {
-    flex-wrap: wrap;
-  }
-  .modifier-group-editor__header-actions {
-    width: 100%;
-    flex-wrap: nowrap;
-  }
-}
 .modifier-group-editor__option,
 .modifier-group-editor__option-header {
   display: grid;
   gap: var(--expressa-space-sm);
 }
-.modifier-group-editor__option {
-  padding: var(--expressa-space-md) 0;
-}
 .modifier-group-editor__option + .modifier-group-editor__option {
+  padding-top: var(--expressa-space-md);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
@@ -713,18 +661,18 @@ watch(
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-action);
 }
-.modifier-group-editor__header {
-  justify-content: space-between;
+.modifier-group-editor__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--expressa-space-sm);
+  min-width: 0;
 }
-.modifier-group-editor__header-actions {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.modifier-group-editor__footer-actions {
+  margin-inline-start: auto;
+  flex-wrap: nowrap;
 }
-.modifier-group-editor__icon-action {
-  width: var(--expressa-size-control-min-height);
-  min-width: var(--expressa-size-control-min-height);
-  min-height: var(--expressa-size-control-min-height);
-  padding: 0;
+.modifier-group-editor__add-option {
+  justify-self: start;
 }
 .modifier-group-editor__form,
 .modifier-group-editor__fields,
@@ -738,25 +686,10 @@ watch(
   padding: 0;
   border: 0;
 }
-.modifier-group-editor__label {
-  display: grid;
-  gap: var(--expressa-space-2xs);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-}
 .modifier-group-editor__limits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--expressa-space-md);
-}
-.modifier-group-editor__limits > * {
-  flex: 1 1 10rem;
-}
-.modifier-group-editor__toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--expressa-space-md);
 }
 .modifier-group-editor__error {

@@ -74,6 +74,7 @@ function render(args: Story["args"]) {
           JSON.stringify(choices.value) !== JSON.stringify(args.choices),
       );
       const discardOpen = shallowRef(false);
+      const archiveOpen = shallowRef(false);
       function requestBack(): void {
         if (dirty.value) discardOpen.value = true;
       }
@@ -92,6 +93,8 @@ function render(args: Story["args"]) {
         dirty,
         valid: computed(() => errorMessages.value.length === 0),
         discardOpen,
+        archiveOpen,
+        product,
         requestBack,
       };
     },
@@ -99,7 +102,11 @@ function render(args: Story["args"]) {
       <PageShell class="product-edit-page"><ProductEditContent v-bind="args" v-model:name="name" v-model:category-id="categoryId"
         v-model:description="description" v-model:choices="choices" v-model:is-active="isActive"
         :name-error="nameError" :description-error="descriptionError" :choice-errors="choiceErrors"
-        :dirty="dirty" :valid="valid" @back="requestBack" @cancel="requestBack" />
+        :dirty="dirty" :valid="valid" @back="requestBack" @cancel="requestBack" @archive="archiveOpen = true" />
+        <ConfirmDialog v-model:open="archiveOpen" confirm-label="Архивировать товар"
+          confirm-variant="destructive" :pending="args.pending"
+          :description="'Товар «' + product.name + '» будет скрыт из меню. История заказов сохранится.'"
+          :title="'Архивировать товар «' + product.name + '»?'" />
         <ConfirmDialog v-model:open="discardOpen" cancel-label="Вернуться" confirm-label="Выйти"
           confirm-variant="destructive" description="Несохранённые изменения будут потеряны."
           title="Выйти без сохранения?" />
@@ -130,7 +137,18 @@ export const Changed: Story = {
 export const Pending: Story = {
   name: "Ожидание операции",
   render,
-  args: { name: "Капучино большой", pending: true },
+  args: {
+    name: "Капучино большой",
+    pending: true,
+    choices: [
+      {
+        clientId: "pending-large",
+        portionLabel: "ОченьДлинноеНазваниеПорцииБезПробелов500мл",
+        price: "123456789012345678901234567890",
+        isAvailable: false,
+      },
+    ],
+  },
 };
 export const Saved: Story = {
   name: "Сохранено",
@@ -141,6 +159,12 @@ export const LongChoices: Story = {
   name: "Длинные названия порций",
   render,
   args: {
+    categoryOptions: [
+      {
+        id: category.id,
+        label: "ОченьДлинноеНазваниеКатегорииБезПробеловДляПроверкиКонтейнера",
+      },
+    ],
     choices: [
       {
         clientId: "small",

@@ -79,7 +79,8 @@ function selectTab(value: T) {
   cursor: pointer;
   font: inherit;
   font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-regular);
+  font-weight: var(--expressa-font-weight-medium);
+  line-height: var(--expressa-line-height-body);
   letter-spacing: normal;
   text-transform: none;
   white-space: nowrap;
@@ -88,7 +89,6 @@ function selectTab(value: T) {
 .filter-tab__visual {
   display: flex;
   align-items: center;
-  min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-sm) var(--expressa-space-md);
   border: var(--expressa-border-width-none);
   border-radius: var(--expressa-radius-pill);
@@ -127,6 +127,41 @@ function selectTab(value: T) {
   padding-inline: var(--expressa-space-12);
 }
 
+.filter-tabs--bounded-wrapped {
+  overflow: visible;
+  padding: 0;
+  border-bottom-width: var(--expressa-border-width-none);
+  background: var(--expressa-color-transparent);
+}
+
+.filter-tabs--bounded-wrapped .filter-tabs__items {
+  flex-wrap: wrap;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.filter-tabs--bounded-wrapped .filter-tab {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.filter-tabs--bounded-wrapped .filter-tab__visual {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding-inline: var(--expressa-space-12);
+}
+
+.filter-tabs--bounded-wrapped
+  .filter-tab:not(.filter-tab--selected)
+  .filter-tab__visual {
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  background: var(--expressa-color-surface);
+}
+
 .filter-tabs--balanced-pairs {
   overflow: visible;
 }
@@ -150,9 +185,9 @@ function selectTab(value: T) {
 
 @media (min-width: 768px) {
   .filter-tabs--responsive {
-    inline-size: max-content;
-    min-inline-size: max-content;
-    max-inline-size: none;
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
     padding-inline: var(--expressa-border-width-none);
     border-bottom-width: var(--expressa-border-width-none);
   }

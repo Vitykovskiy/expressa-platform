@@ -30,6 +30,7 @@ import { AVAILABILITY_ALL_CATEGORY } from "./admin/availability/AvailabilityScre
 import {
   getOperationPort,
   type OperationContext,
+  type ApiRequestReporting,
   type OperationResult,
 } from "../shared/lib/operations/operation-port";
 
@@ -52,13 +53,14 @@ let loadRequest = 0;
 let pageActive = true;
 const pageEpoch = crypto.randomUUID();
 const operationPort = getOperationPort();
-const recoveryDisposers = new Set<() => void>();
+const recoveryDisposers = new Map<string, () => void>();
 
 onMounted(() => void loadAvailability());
 onBeforeUnmount(() => {
   pageActive = false;
   recoveryDisposers.forEach((dispose) => dispose());
   recoveryDisposers.clear();
+  operationPort.clearSession(pageEpoch);
 });
 watch([search, activeCategory], () => void persistQuery());
 
@@ -66,10 +68,13 @@ async function loadAvailability(): Promise<void> {
   if (saving.value) return;
   const request = ++loadRequest;
   loading.value = true;
-  const result = await runRead("availability.load", "availability", () =>
-    sessionStore.readWithRecovery((accessToken) =>
-      availabilityApi.get(accessToken),
-    ),
+  const result = await runRead(
+    "availability.load",
+    "availability",
+    (reporting) =>
+      sessionStore.readWithRecovery((accessToken) =>
+        availabilityApi.get(accessToken, reporting),
+      ),
   );
   if (request === loadRequest && result.status === "success")
     availability.value = result.value;
@@ -103,7 +108,14 @@ async function updateAvailability(
       `${item.type}:${item.id}`,
       "mutation",
     ),
-    () => availabilityApi.update(accessToken, item.type, item.id, isAvailable),
+    (reporting) =>
+      availabilityApi.update(
+        accessToken,
+        item.type,
+        item.id,
+        isAvailable,
+        reporting,
+      ),
   );
   if (result.status === "success")
     availability.value = replaceAvailability(current, result.value);
@@ -124,7 +136,8 @@ async function updateIntake(acceptsNewOrders: boolean): Promise<void> {
   };
   const result = await operationPort.run(
     operationContext("availability.intake.update", "intake", "mutation"),
-    () => availabilityApi.updateIntake(accessToken, acceptsNewOrders),
+    (reporting) =>
+      availabilityApi.updateIntake(accessToken, acceptsNewOrders, reporting),
   );
   if (result.status === "success")
     availability.value = { ...current, intake: result.value };
@@ -183,9 +196,12 @@ function operationContext(
 async function runRead<T>(
   operationKey: string,
   resourceKey: string,
-  execute: () => Promise<T>,
+  execute: (reporting: ApiRequestReporting) => Promise<T>,
 ): Promise<OperationResult<T>> {
   const context = operationContext(operationKey, resourceKey, "read");
+  const recoveryKey = JSON.stringify([operationKey, resourceKey]);
+  recoveryDisposers.get(recoveryKey)?.();
+  recoveryDisposers.delete(recoveryKey);
   const dispose = operationPort.registerRecovery(context, {
     actionLabel: "Повторить",
     safety: "read",
@@ -193,7 +209,7 @@ async function runRead<T>(
   });
   const result = await operationPort.run(context, execute);
   if (result.status === "success" || result.status === "cancelled") dispose();
-  else recoveryDisposers.add(dispose);
+  else recoveryDisposers.set(recoveryKey, dispose);
   return result;
 }
 </script>

@@ -115,7 +115,7 @@ async function verifyOtp(): Promise<void> {
 }
 
 function updatePhone(value: string): void {
-  phone.value = formatPhone(value);
+  phone.value = value;
   formError.value = "";
 }
 
@@ -202,34 +202,6 @@ function returnTarget(): string {
   return resolved.matched.some((record) => record.meta.requiresStaff)
     ? resolved.fullPath
     : loginWorkspacePath;
-}
-
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, loginPhoneDigitsLength);
-
-  if (!digits) {
-    return "";
-  }
-
-  let formattedPhone = "+7";
-
-  if (digits.length > 1) {
-    formattedPhone += ` ${digits.slice(1, 4)}`;
-  }
-
-  if (digits.length > 4) {
-    formattedPhone += ` ${digits.slice(4, 7)}`;
-  }
-
-  if (digits.length > 7) {
-    formattedPhone += `-${digits.slice(7, 9)}`;
-  }
-
-  if (digits.length > 9) {
-    formattedPhone += `-${digits.slice(9, loginPhoneDigitsLength)}`;
-  }
-
-  return formattedPhone;
 }
 
 function toLoginOtpMetadata(metadata: AuthOtpMetadata): LoginOtpMetadata {

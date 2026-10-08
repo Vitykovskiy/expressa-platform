@@ -8,7 +8,7 @@
     :pending="props.disabled"
     submit-form="price-choice-dialog-form"
     submit-label="Сохранить"
-    :title="props.editing ? 'Изменить размер' : 'Добавить размер'"
+    :title="props.editing ? 'Редактировать цену' : 'Добавить цену'"
     @cancel="emit('cancel')"
     @update:model-value="updateOpen"
   >

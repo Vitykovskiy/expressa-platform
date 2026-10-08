@@ -1,10 +1,16 @@
+import type { ApiRequestFeedback, ApiRequestReporting } from "./client.types";
 import { bearerTokenType } from "./auth.api.constants";
 import {
   catalogApiPaths,
   catalogModifierSelectionTypes,
   catalogUuidPattern,
 } from "./catalog.api.constants";
-import { ApiClient, ApiError } from "./client";
+import {
+  ApiClient,
+  ApiError,
+  createRequestFeedback,
+  requestReceipt,
+} from "./client";
 import type { ApiTransportKind } from "./client.types";
 import type {
   Catalog,
@@ -39,6 +45,7 @@ export class CatalogApiError extends Error implements CatalogApiErrorData {
   readonly requestId: string | null;
   readonly status: number | null;
   readonly transportKind: ApiTransportKind;
+  readonly settlement?: import("./client.types").ApiRequestReceipt;
 
   constructor({
     code,
@@ -49,6 +56,7 @@ export class CatalogApiError extends Error implements CatalogApiErrorData {
     requestId,
     status,
     transportKind = "response",
+    settlement,
   }: CatalogApiErrorData) {
     super(message);
     this.name = "CatalogApiError";
@@ -59,19 +67,29 @@ export class CatalogApiError extends Error implements CatalogApiErrorData {
     this.requestId = requestId;
     this.status = status;
     this.transportKind = transportKind;
+    this.settlement = settlement;
   }
 }
 
 export class CatalogApi {
   constructor(private readonly client: ApiClient) {}
 
-  async getCatalog(accessToken: string): Promise<Catalog> {
+  async getCatalog(
+    accessToken: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<Catalog> {
     const response = await this.request<AdminV3CatalogResponseDto>(
       catalogApiPaths.catalog,
       isAdminV3CatalogResponseDto,
       accessToken,
       "GET",
       200,
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.get",
+        resourceKey: "catalog",
+        kind: "read",
+      }),
     );
 
     return toCatalogV3(response);
@@ -80,6 +98,7 @@ export class CatalogApi {
   async createCategory(
     accessToken: string,
     category: CreateCatalogCategory,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogCategory> {
     const response = await this.request(
       catalogApiPaths.categories,
@@ -88,6 +107,11 @@ export class CatalogApi {
       "POST",
       201,
       category,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.category.create",
+        resourceKey: "categories",
+        kind: "mutation",
+      }),
     );
 
     return toCatalogCategory(response);
@@ -97,6 +121,7 @@ export class CatalogApi {
     accessToken: string,
     categoryId: string,
     category: UpdateCatalogCategory,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogCategory> {
     const response = await this.request(
       `${catalogApiPaths.categories}/${categoryId}`,
@@ -105,6 +130,11 @@ export class CatalogApi {
       "PATCH",
       200,
       category,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.category.update",
+        resourceKey: categoryId,
+        kind: "mutation",
+      }),
     );
 
     return toCatalogCategory(response);
@@ -113,6 +143,7 @@ export class CatalogApi {
   async reorderCategories(
     accessToken: string,
     categoryIds: readonly string[],
+    reporting?: ApiRequestReporting,
   ): Promise<readonly CatalogCategory[]> {
     const response = await this.request(
       `${catalogApiPaths.categories}/reorder`,
@@ -121,24 +152,40 @@ export class CatalogApi {
       "POST",
       200,
       { categoryIds },
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.category.reorder",
+        resourceKey: "categories",
+        kind: "mutation",
+      }),
     );
 
     return response.map(toCatalogCategory);
   }
 
-  archiveCategory(accessToken: string, categoryId: string): Promise<void> {
+  archiveCategory(
+    accessToken: string,
+    categoryId: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<void> {
     return this.request(
       `${catalogApiPaths.categories}/${categoryId}`,
       isUndefined,
       accessToken,
       "DELETE",
       204,
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.category.archive",
+        resourceKey: categoryId,
+        kind: "mutation",
+      }),
     );
   }
 
   async createProduct(
     accessToken: string,
     product: CreateCatalogProduct,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogProduct> {
     const response = await this.request(
       catalogApiPaths.products,
@@ -147,6 +194,11 @@ export class CatalogApi {
       "POST",
       201,
       toV3CatalogProductCommand(product),
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.product.create",
+        resourceKey: product.categoryId,
+        kind: "mutation",
+      }),
     );
 
     return toCatalogProductV3(response);
@@ -156,6 +208,7 @@ export class CatalogApi {
     accessToken: string,
     productId: string,
     product: UpdateCatalogProduct,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogProduct> {
     const response = await this.request(
       `${catalogApiPaths.products}/${productId}`,
@@ -164,6 +217,11 @@ export class CatalogApi {
       "PATCH",
       200,
       toV3CatalogProductCommand(product),
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.product.update",
+        resourceKey: productId,
+        kind: "mutation",
+      }),
     );
 
     return toCatalogProductV3(response);
@@ -173,6 +231,7 @@ export class CatalogApi {
     accessToken: string,
     categoryId: string,
     productIds: readonly string[],
+    reporting?: ApiRequestReporting,
   ): Promise<readonly CatalogProduct[]> {
     const response = await this.request(
       `${catalogApiPaths.products}/reorder`,
@@ -181,34 +240,60 @@ export class CatalogApi {
       "POST",
       200,
       { categoryId, productIds },
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.product.reorder",
+        resourceKey: categoryId,
+        kind: "mutation",
+      }),
     );
 
     return response.map(toCatalogProductV3);
   }
 
-  archiveProduct(accessToken: string, productId: string): Promise<void> {
+  archiveProduct(
+    accessToken: string,
+    productId: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<void> {
     return this.request(
       `${catalogApiPaths.products}/${productId}`,
       isUndefined,
       accessToken,
       "DELETE",
       204,
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.product.archive",
+        resourceKey: productId,
+        kind: "mutation",
+      }),
     );
   }
 
-  archiveModifierGroup(accessToken: string, groupId: string): Promise<void> {
+  archiveModifierGroup(
+    accessToken: string,
+    groupId: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<void> {
     return this.request(
       `${catalogApiPaths.modifierGroups}/${groupId}`,
       isUndefined,
       accessToken,
       "DELETE",
       204,
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.modifierGroup.archive",
+        resourceKey: groupId,
+        kind: "mutation",
+      }),
     );
   }
 
   async saveModifierGroup(
     accessToken: string,
     group: SaveCatalogModifierGroup,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogModifierGroup> {
     const { id, ...body } = group;
     const response = await this.request<CatalogModifierGroupAggregateDto>(
@@ -220,6 +305,11 @@ export class CatalogApi {
       id === undefined ? "POST" : "PATCH",
       id === undefined ? 201 : 200,
       body,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.modifierGroup.save",
+        resourceKey: group.id ?? "new",
+        kind: "mutation",
+      }),
     );
 
     return toCatalogModifierGroup(response, response.options);
@@ -229,6 +319,7 @@ export class CatalogApi {
     accessToken: string,
     groupId: string,
     option: CreateCatalogModifierOption,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogModifierOption> {
     const response = await this.request(
       `${catalogApiPaths.modifierGroups}/${groupId}/options`,
@@ -237,6 +328,11 @@ export class CatalogApi {
       "POST",
       201,
       option,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.modifierOption.create",
+        resourceKey: groupId,
+        kind: "mutation",
+      }),
     );
 
     return toCatalogModifierOption(response);
@@ -246,6 +342,7 @@ export class CatalogApi {
     accessToken: string,
     optionId: string,
     option: UpdateCatalogModifierOption,
+    reporting?: ApiRequestReporting,
   ): Promise<CatalogModifierOption> {
     const response = await this.request(
       `${catalogApiPaths.modifierGroups}/options/${optionId}`,
@@ -254,18 +351,33 @@ export class CatalogApi {
       "PATCH",
       200,
       option,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.modifierOption.update",
+        resourceKey: optionId,
+        kind: "mutation",
+      }),
     );
 
     return toCatalogModifierOption(response);
   }
 
-  archiveModifierOption(accessToken: string, optionId: string): Promise<void> {
+  archiveModifierOption(
+    accessToken: string,
+    optionId: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<void> {
     return this.request(
       `${catalogApiPaths.modifierGroups}/options/${optionId}`,
       isUndefined,
       accessToken,
       "DELETE",
       204,
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.modifierOption.archive",
+        resourceKey: optionId,
+        kind: "mutation",
+      }),
     );
   }
 
@@ -273,6 +385,7 @@ export class CatalogApi {
     accessToken: string,
     categoryId: string,
     assignments: readonly CatalogCategoryModifierGroupAssignment[],
+    reporting?: ApiRequestReporting,
   ): Promise<readonly CatalogCategoryModifierGroupAssignment[]> {
     const response = await this.request(
       `${catalogApiPaths.categories}/${categoryId}/modifier-groups`,
@@ -287,6 +400,11 @@ export class CatalogApi {
           .sort((left, right) => left.sortOrder - right.sortOrder)
           .map((assignment) => assignment.modifierGroupId),
       },
+      createRequestFeedback(reporting, {
+        operationKey: "catalog.category.modifiers",
+        resourceKey: categoryId,
+        kind: "mutation",
+      }),
     );
 
     return response.map(toCatalogCategoryModifierGroupAssignment);
@@ -299,16 +417,18 @@ export class CatalogApi {
     method: string,
     expectedStatus: number,
     body?: unknown,
+    feedback?: ApiRequestFeedback,
   ): Promise<T> {
     try {
       return await this.client.request(path, validate, {
+        feedback,
         body,
         expectedStatus,
         headers: { authorization: `${bearerTokenType} ${accessToken}` },
         method,
       });
     } catch (error) {
-      throw toCatalogApiError(error);
+      throw toCatalogApiError(error, requestReceipt(feedback));
     }
   }
 }
@@ -327,14 +447,18 @@ function toV3CatalogProductCommand(product: CreateCatalogProduct) {
   };
 }
 
-function toCatalogApiError(error: unknown): CatalogApiError {
+function toCatalogApiError(
+  error: unknown,
+  receipt?: import("./client.types").ApiRequestReceipt,
+): CatalogApiError {
   if (!(error instanceof ApiError)) {
     return new CatalogApiError({
       code: "API_CONTRACT_ERROR",
       details: null,
       fields: [],
       message: "Catalog API returned an invalid error.",
-      occurrenceId: crypto.randomUUID(),
+      occurrenceId: receipt?.id ?? crypto.randomUUID(),
+      settlement: receipt,
       requestId: null,
       status: null,
       transportKind: "contract",
@@ -352,6 +476,7 @@ function toCatalogApiError(error: unknown): CatalogApiError {
     fields: fields ?? [],
     message: error.message,
     occurrenceId: error.occurrenceId,
+    settlement: error.settlement,
     requestId: error.requestId,
     status: error.status,
     transportKind: error.transportKind,

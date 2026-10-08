@@ -31,9 +31,6 @@
         v-model="selectedPortionLabel"
         :disabled="props.disabled"
         :items="portionOptions"
-        :placeholder="
-          props.requiredLabel ? 'Выберите порцию или размер' : undefined
-        "
         :required="field.required"
         @blur="emit('blur:portion-label')"
       />
@@ -107,7 +104,11 @@ const selectedPortionLabel = computed({
   },
 });
 const portionOptions = computed(() => [
-  ...(!props.requiredLabel ? [{ title: "Без подписи", value: "" }] : []),
+  {
+    title: props.requiredLabel ? "" : "Без подписи",
+    value: "",
+    disabled: props.requiredLabel,
+  },
   ...portionLabelSuggestions.map((value) => ({ title: value, value })),
   { title: customPortionLabelOption, value: customPortionLabelOption },
 ]);

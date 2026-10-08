@@ -45,3 +45,13 @@ export const Disabled: Story = {
   args: { disabled: true },
   render,
 };
+export const NameValidation: Story = {
+  name: "Ошибка названия",
+  args: { fieldErrors: { name: "Введите название" } },
+  render,
+};
+export const PriceValidation: Story = {
+  name: "Ошибка цены",
+  args: { fieldErrors: { priceDelta: "Укажите изменение цены" } },
+  render,
+};

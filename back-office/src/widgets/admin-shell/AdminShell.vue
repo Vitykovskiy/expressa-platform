@@ -47,6 +47,7 @@ const sections = computed(() =>
   min-height: 0;
   padding-bottom: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 @media (min-width: 768px) {

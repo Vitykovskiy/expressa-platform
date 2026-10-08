@@ -11,6 +11,7 @@
     <div
       v-if="slots.default"
       class="page-shell-content"
+      :class="{ 'page-shell-content--without-spacing': contentSpacing === 'none' }"
     >
       <slot />
     </div>
@@ -25,8 +26,9 @@ defineOptions({ inheritAttrs: false });
 withDefaults(
   defineProps<{
     title?: string;
+    contentSpacing?: "default" | "none";
   }>(),
-  { title: "" },
+  { title: "", contentSpacing: "default" },
 );
 
 const attrs = useAttrs();
@@ -54,6 +56,10 @@ const slots = defineSlots<{
 
 .page-shell-content {
   margin-top: var(--expressa-space-24);
+}
+
+.page-shell-content--without-spacing {
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {

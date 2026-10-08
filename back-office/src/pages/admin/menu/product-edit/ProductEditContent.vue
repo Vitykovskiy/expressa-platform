@@ -1,17 +1,17 @@
 <template>
   <main class="product-edit-content">
     <nav class="product-edit-content__navigation">
-      <button
-        class="product-edit-content__breadcrumb"
+      <AdminButton
+        size="compact"
         type="button"
+        variant="ghost"
         @click="emit('back')"
       >
-        Меню</button
-      ><span> / </span><span>Редактировать товар</span>
+        <AdminIcon :icon="ArrowLeft" />Меню</AdminButton
+      >
     </nav>
     <div class="product-edit-content__sheet">
       <h1>Редактировать товар</h1>
-      <p v-if="saved" class="product-edit-content__saved">Товар сохранён</p>
       <ProductEditForm
         :dirty="dirty"
         :pending="pending"
@@ -38,6 +38,9 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowLeft } from "lucide-vue-next";
+import AdminButton from "../../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminIcon from "../../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import ProductEditFields from "./ProductEditFields.vue";
 import ProductEditForm from "./ProductEditForm.vue";
 import type { ProductPriceChoiceDraft } from "./useProductDraft.types";
@@ -77,7 +80,7 @@ const isActive = defineModel<boolean>("isActive", { required: true });
   font-size: var(--expressa-font-size-body);
 }
 .product-edit-content__sheet {
-  padding: var(--expressa-space-24);
+  padding: var(--expressa-space-16);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-panel);
@@ -85,21 +88,9 @@ const isActive = defineModel<boolean>("isActive", { required: true });
   box-shadow: var(--expressa-shadow-card);
 }
 .product-edit-content__sheet h1 {
-  margin: 0 0 var(--expressa-space-24);
+  margin: 0 0 var(--expressa-space-16);
   font-size: var(--expressa-font-size-title);
   line-height: var(--expressa-line-height-heading);
-}
-.product-edit-content__saved {
-  margin: 0 0 var(--expressa-space-16);
-  color: var(--expressa-color-status-success);
-}
-.product-edit-content__breadcrumb {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--expressa-color-accent);
-  font: inherit;
-  cursor: pointer;
 }
 @media (max-width: 767px) {
   .product-edit-content {
@@ -120,7 +111,7 @@ const isActive = defineModel<boolean>("isActive", { required: true });
     background: var(--expressa-color-surface);
   }
   .product-edit-content__sheet {
-    padding: var(--expressa-space-24) var(--expressa-space-16);
+    padding: var(--expressa-space-16);
     border: 0;
     border-radius: 0;
     box-shadow: none;

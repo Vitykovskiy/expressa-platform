@@ -1,8 +1,8 @@
 <template>
   <section class="menu-reorder">
     <div class="menu-reorder__bar">
-      <div>
-        <h2 id="menu-reorder-title">Настройка порядка</h2>
+      <div class="menu-reorder__heading">
+        <h2 id="menu-reorder-title">Изменение порядка</h2>
         <p v-if="props.pending" class="menu-reorder__status">Сохраняем…</p>
         <p v-else-if="dirtyScopes.length" class="menu-reorder__status">
           Не сохранено
@@ -11,12 +11,14 @@
       <AdminActionGroup align="end" class="menu-reorder__actions">
         <AdminButton
           type="button"
-          variant="secondary"
+          variant="ghost"
+          size="compact"
           :disabled="props.pending"
           @click="requestClose"
           >Отмена</AdminButton
         ><AdminButton
           type="button"
+          size="compact"
           :disabled="props.pending || dirtyScopes.length === 0"
           @click="emit('save', dirtyScopes)"
           >Сохранить</AdminButton
@@ -379,7 +381,6 @@ onBeforeUnmount(() =>
 </script>
 <style scoped lang="scss">
 .menu-reorder {
-  margin-top: var(--expressa-space-lg);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-panel);
@@ -390,11 +391,10 @@ onBeforeUnmount(() =>
   top: 0;
   z-index: 1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-space-md);
-  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  gap: var(--expressa-space-sm);
+  padding: var(--expressa-space-sm);
   background: var(--expressa-color-surface);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -404,40 +404,53 @@ onBeforeUnmount(() =>
   margin: 0;
 }
 .menu-reorder__bar h2 {
-  font-size: var(--expressa-font-size-title);
+  font-size: var(--expressa-font-size-body);
 }
 .menu-reorder__bar p {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-status);
 }
 .menu-reorder__status {
-  margin-top: var(--expressa-space-xs);
+  margin-top: var(--expressa-space-2xs);
+}
+.menu-reorder__heading {
+  min-width: 0;
+  flex: 1;
 }
 .menu-reorder__actions {
   margin-inline-start: auto;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 .menu-reorder__products {
   overflow: auto;
-  padding-left: var(--expressa-space-24);
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
 }
 .menu-reorder__empty-products {
   box-sizing: border-box;
   block-size: calc(var(--expressa-space-48) + var(--expressa-space-8));
   margin: 0;
-  padding: var(--expressa-space-md);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--expressa-space-md);
   color: var(--expressa-color-text-secondary);
 }
 .menu-reorder__list {
   max-height: 70vh;
   overflow: auto;
 }
-@media (max-width: 767px) {
-  .menu-reorder__actions > * {
-    min-height: var(--expressa-size-control-min-height);
+.menu-reorder {
+  container-type: inline-size;
+}
+.menu-reorder__actions > * {
+  white-space: nowrap;
+}
+@container (max-width: 640px) {
+  .menu-reorder__bar {
+    flex-wrap: wrap;
   }
-  .menu-reorder__products {
-    padding-left: var(--expressa-space-md);
+  .menu-reorder__heading {
+    flex-basis: 100%;
   }
 }
 </style>

@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import AddCategoryDialog from "../../../src/pages/admin/menu/AddCategoryDialog.vue";
+import AdminButton from "../../../src/shared/ui/admin/admin-button/AdminButton.vue";
+import { shallowRef } from "vue";
 import { category } from "../../fixtures/catalog";
 import { dialogHost } from "../../fixtures/hosts";
 const meta = {
@@ -28,4 +30,12 @@ export const Invalid: Story = {
   name: "Некорректное значение",
   args: { fieldErrors: { name: "Введите название категории" } },
   render,
+};
+export const Reopen: Story = {
+  name: "Повторное открытие",
+  render: (args) => ({
+    components: { AddCategoryDialog, AdminButton },
+    setup: () => ({ args, open: shallowRef(false) }),
+    template: `<AdminButton @click="open = true">Новая категория</AdminButton><AddCategoryDialog v-bind="args" v-model:open="open" />`,
+  }),
 };

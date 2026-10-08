@@ -1,39 +1,45 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { computed, shallowRef } from "vue";
+import { createNavigationItems } from "../../../src/app/navigation";
+import { navigationDefinitions } from "../../../src/app/navigation.constants";
+import PageShell from "../../../src/pages/PageShell.vue";
 import AdminShell from "../../../src/widgets/admin-shell/AdminShell.vue";
 
-const items = [
-  { section: "orders" as const, label: "Заказы" },
-  { section: "availability" as const, label: "Доступность" },
-  { section: "menu" as const, label: "Меню" },
-];
 const meta = {
   title: "Компоненты/Навигация/Оболочка приложения",
   id: "layout-adminshell",
   component: AdminShell,
   globals: { viewport: "desktop" },
-  args: { role: "administrator", activeSection: "orders", items },
-  parameters: {
-    layout: "fullscreen",
+  args: {
+    role: "administrator",
+    activeSection: "orders",
+    items: createNavigationItems("administrator"),
   },
+  parameters: { layout: "fullscreen" },
+  render: (args) => ({
+    components: { AdminShell, PageShell },
+    setup() {
+      const activeSection = shallowRef(args.activeSection);
+      const items = computed(() => createNavigationItems(args.role));
+      const title = computed(
+        () =>
+          items.value.find((item) => item.section === activeSection.value)
+            ?.label ?? navigationDefinitions.queue.label,
+      );
+      return { args, activeSection, items, title };
+    },
+    template:
+      '<AdminShell v-bind="args" :items="items" :active-section="activeSection" @navigate="activeSection = $event"><PageShell :title="title" /></AdminShell>',
+  }),
 } satisfies Meta<typeof AdminShell>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-function render(args: Story["args"]) {
-  return {
-    components: { AdminShell },
-    setup: () => ({ args }),
-    template:
-      '<AdminShell v-bind="args"><section><h1>Заказы</h1></section></AdminShell>',
-  };
-}
-export const Administrator: Story = { name: "Администратор", render };
+export const Administrator: Story = { name: "Администратор" };
 export const Barista: Story = {
   name: "Бариста",
-  args: { role: "barista" },
-  render,
+  args: { role: "barista", items: createNavigationItems("barista") },
 };
 export const Mobile: Story = {
   name: "Мобильный вид",
   globals: { viewport: "mobile" },
-  render,
 };

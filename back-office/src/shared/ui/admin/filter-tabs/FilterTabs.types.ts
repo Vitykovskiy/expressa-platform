@@ -4,7 +4,12 @@ export interface FilterTab<T extends string> {
 }
 
 export type FilterTabsLayout =
-  "contained" | "intrinsic" | "responsive" | "wrapped" | "balanced-pairs";
+  | "contained"
+  | "intrinsic"
+  | "responsive"
+  | "wrapped"
+  | "balanced-pairs"
+  | "bounded-wrapped";
 
 export interface FilterTabsProps<T extends string> {
   disabled?: boolean;

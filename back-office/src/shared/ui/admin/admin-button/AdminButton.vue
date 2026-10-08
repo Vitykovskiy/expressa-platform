@@ -2,7 +2,11 @@
   <button
     v-bind="attrs"
     class="admin-button"
-    :class="[`admin-button--${props.variant}`, `admin-button--${props.size}`]"
+    :class="[
+      `admin-button--${props.variant}`,
+      `admin-button--${props.size}`,
+      { 'admin-button--row': props.presentation === 'row' },
+    ]"
     :disabled="props.disabled || props.pending"
     :type="props.type"
     @click="emit('click', $event)"
@@ -29,6 +33,10 @@ defineSlots<{ default(): unknown }>();
 
 <style scoped lang="scss">
 .admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--expressa-space-sm);
   min-height: var(--expressa-size-button-min-height);
   padding: var(--expressa-space-button-block)
     var(--expressa-space-button-inline);
@@ -104,5 +112,25 @@ defineSlots<{ default(): unknown }>();
 .admin-button--compact {
   min-height: var(--expressa-size-control-compact-min-height);
   padding: var(--expressa-space-xs) var(--expressa-space-control-inline);
+}
+
+.admin-button--row,
+.admin-button--row:has(> .admin-icon:only-child) {
+  min-width: var(--expressa-size-control-min-height);
+  min-height: var(--expressa-size-control-min-height);
+  justify-content: flex-start;
+  padding: var(--expressa-space-sm) var(--expressa-space-md);
+  border-width: var(--expressa-border-width-none);
+  border-radius: var(--expressa-radius-row);
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-transparent);
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.admin-button--row:hover:not(:disabled),
+.admin-button--row:active:not(:disabled) {
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-control-hover-surface);
 }
 </style>

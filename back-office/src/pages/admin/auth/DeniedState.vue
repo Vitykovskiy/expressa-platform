@@ -1,7 +1,7 @@
 <template>
   <section class="auth-denied">
     <div class="auth-denied__icon">
-      <AdminIcon :icon="ShieldX" />
+      <AdminIcon :icon="ShieldX" size="state" />
     </div>
     <h2>Доступ запрещён</h2>
     <AdminButton
@@ -36,6 +36,7 @@ const emit = defineEmits<DeniedStateEmits>();
   place-items: center;
   color: var(--expressa-color-status-error);
   background: var(--expressa-color-status-error-surface);
+  border-radius: var(--expressa-radius-pill);
 }
 .auth-denied h2,
 .auth-denied p {
@@ -49,15 +50,6 @@ const emit = defineEmits<DeniedStateEmits>();
   margin-bottom: var(--expressa-space-sm);
 }
 .auth-denied__button {
-  display: flex;
   width: 100%;
-  padding: var(--expressa-space-control-block) 0;
-  align-items: center;
-  justify-content: center;
-  gap: var(--expressa-space-sm);
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-control);
 }
 </style>

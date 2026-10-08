@@ -1,5 +1,11 @@
+import type { ApiRequestFeedback, ApiRequestReporting } from "./client.types";
 import { bearerTokenType } from "./auth.api.constants";
-import { ApiClient, ApiError } from "./client";
+import {
+  ApiClient,
+  ApiError,
+  createRequestFeedback,
+  requestReceipt,
+} from "./client";
 import type {
   Availability,
   AvailabilityApiError,
@@ -21,12 +27,21 @@ import type {
 export class AvailabilityApi {
   constructor(private readonly client: ApiClient) {}
 
-  async get(accessToken: string): Promise<Availability> {
+  async get(
+    accessToken: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<Availability> {
     const response = await this.request(
       "/backoffice/availability",
       isAvailabilityResponseDto,
       accessToken,
       "GET",
+      undefined,
+      createRequestFeedback(reporting, {
+        operationKey: "availability.get",
+        resourceKey: "availability",
+        kind: "read",
+      }),
     );
 
     return toAvailability(response);
@@ -37,6 +52,7 @@ export class AvailabilityApi {
     type: AvailabilityEntityType,
     id: string,
     isAvailable: boolean,
+    reporting?: ApiRequestReporting,
   ): Promise<AvailabilityUpdate> {
     if (type === "priceChoice") {
       return this.request(
@@ -45,6 +61,11 @@ export class AvailabilityApi {
         accessToken,
         "PATCH",
         { isAvailable },
+        createRequestFeedback(reporting, {
+          operationKey: "availability.update",
+          resourceKey: `${type}:${id}`,
+          kind: "mutation",
+        }),
       ).then((update) => ({ ...update, type: "priceChoice" as const }));
     }
     return this.request(
@@ -53,12 +74,18 @@ export class AvailabilityApi {
       accessToken,
       "PATCH",
       { isAvailable },
+      createRequestFeedback(reporting, {
+        operationKey: "availability.update",
+        resourceKey: `${type}:${id}`,
+        kind: "mutation",
+      }),
     );
   }
 
   async updateIntake(
     accessToken: string,
     acceptsNewOrders: boolean,
+    reporting?: ApiRequestReporting,
   ): Promise<ServiceIntake> {
     const intake = await this.request(
       "/backoffice/service/intake",
@@ -66,6 +93,11 @@ export class AvailabilityApi {
       accessToken,
       "PATCH",
       { acceptsNewOrders },
+      createRequestFeedback(reporting, {
+        operationKey: "availability.intake",
+        resourceKey: "intake",
+        kind: "mutation",
+      }),
     );
 
     return toServiceIntake(intake);
@@ -77,23 +109,31 @@ export class AvailabilityApi {
     accessToken: string,
     method: "GET" | "PATCH",
     body?: unknown,
+    feedback?: ApiRequestFeedback,
   ): Promise<T> {
     try {
       return await this.client.request(path, validate, {
+        feedback,
         body,
         expectedStatus: 200,
         headers: { authorization: `${bearerTokenType} ${accessToken}` },
         method,
       });
     } catch (error) {
-      throw toAvailabilityApiError(error);
+      throw toAvailabilityApiError(error, requestReceipt(feedback));
     }
   }
 }
 
-function toAvailabilityApiError(error: unknown): AvailabilityApiError {
+function toAvailabilityApiError(
+  error: unknown,
+  receipt?: import("./client.types").ApiRequestReceipt,
+): AvailabilityApiError {
   if (error instanceof ApiError) {
     return {
+      occurrenceId: error.occurrenceId,
+      transportKind: error.transportKind,
+      settlement: error.settlement,
       code: error.code,
       details: error.details,
       message: error.message,
@@ -103,6 +143,7 @@ function toAvailabilityApiError(error: unknown): AvailabilityApiError {
   }
 
   return {
+    settlement: receipt,
     code: "API_CONTRACT_ERROR",
     details: null,
     message: "Сервис доступности вернул некорректный ответ.",

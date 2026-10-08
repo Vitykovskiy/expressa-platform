@@ -4,7 +4,7 @@ export const ADMIN_DIALOG_MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 
 export const ADMIN_DIALOG_DEFAULTS = {
   cancelLabel: "",
-  actionSize: "default" as const,
+  actionSize: "compact" as const,
   closeLabel: "Закрыть диалог",
   dismissDisabled: false,
   modelValue: false,

@@ -25,3 +25,18 @@ export const Disabled: Story = {
   args: { disabled: true },
   render,
 };
+export const WithoutDivider: Story = {
+  name: "Без разделителя",
+  render,
+  args: { divider: false },
+};
+export const Long: Story = {
+  name: "Длинные подписи",
+  render,
+  args: {
+    separateControl: true,
+    label: "Капучино с овсяным молоком и карамельным сиропом",
+    sublabel:
+      "Большой стакан · 450 мл · 390 ₽ · доступен без дополнительного сахара",
+  },
+};

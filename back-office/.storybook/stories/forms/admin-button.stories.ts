@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import PageShell from "../../../src/pages/PageShell.vue";
 import AdminButton from "../../../src/shared/ui/admin/admin-button/AdminButton.vue";
 const meta = {
   title: "Базовые элементы/Кнопка",
@@ -42,4 +43,26 @@ export const Pending: Story = {
   ...Primary,
   name: "Ожидание операции",
   args: { pending: true },
+};
+
+export const Compact: Story = {
+  ...Primary,
+  name: "Компактная",
+  args: { size: "compact" },
+};
+export const Row: Story = {
+  ...Primary,
+  name: "Действие строки",
+  args: { presentation: "row", variant: "ghost" },
+};
+
+export const DefaultPageShell: Story = {
+  ...Primary,
+  name: "Кнопка в стандартной оболочке страницы",
+  render: (args) => ({
+    components: { AdminButton, PageShell },
+    setup: () => ({ args }),
+    template:
+      '<PageShell title="Заголовок страницы"><AdminButton v-bind="args">Сохранить</AdminButton></PageShell>',
+  }),
 };

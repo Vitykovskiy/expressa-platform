@@ -9,6 +9,7 @@
     <input
       v-bind="attrs"
       class="admin-text-field"
+      :class="{ 'admin-text-field--code': props.presentation === 'code' }"
       :value="props.modelValue"
       @change="emit('change', $event)"
       @input="handleInput"
@@ -24,7 +25,6 @@ import type {
   AdminTextFieldProps,
 } from "./AdminTextField.types";
 
-// VTextField public chrome differs from React by 1,327–1,406 pixels at six widths.
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
@@ -79,6 +79,14 @@ function handleInput(event: AdminTextFieldEmits["input"][0]): void {
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-transparent);
   font: inherit;
+  font-size: var(--expressa-font-size-body);
+  line-height: var(--expressa-line-height-body);
+}
+
+.admin-text-field--code {
+  font-size: var(--expressa-font-size-otp);
+  letter-spacing: var(--expressa-letter-spacing-otp-input);
+  text-align: center;
 }
 
 .admin-text-field__prepend {

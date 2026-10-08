@@ -34,7 +34,7 @@
     <AdminFieldWrapper
       :id="visibilityControlId"
       v-slot="field"
-      label="Показывать категорию в меню"
+      label="Показывать в меню"
       layout="row"
     >
       <AdminToggle
@@ -68,12 +68,6 @@ const visibilityControlId = `category-visibility-control-${useId()}`;
 <style scoped lang="scss">
 .category-form-fields {
   display: grid;
-  gap: var(--expressa-space-button-inline);
-}
-.category-form-fields__label {
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  line-height: var(--expressa-line-height-body);
+  gap: var(--expressa-space-md);
 }
 </style>

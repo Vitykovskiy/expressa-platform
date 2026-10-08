@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import {
   getOperationPort,
   type OperationContext,
+  type ApiRequestReporting,
   type OperationResult,
 } from "../../../shared/lib/operations/operation-port";
 import {
@@ -38,15 +39,21 @@ export const useCatalogStore = defineStore(catalogStoreId, {
         return Promise.resolve();
       }
 
-      return this.execute(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
+      return this.execute(accessToken, (reporting) =>
+        getCatalogStoreDependencies().catalogApi.getCatalog(
+          accessToken,
+          reporting,
+        ),
       );
     },
 
     refresh(accessToken: string): Promise<void> {
       if (this.activeOperation !== null) return this.activeOperation;
-      return this.execute(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
+      return this.execute(accessToken, (reporting) =>
+        getCatalogStoreDependencies().catalogApi.getCatalog(
+          accessToken,
+          reporting,
+        ),
       );
     },
 
@@ -60,10 +67,11 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       category: Parameters<CatalogStoreActions["createCategory"]>[1],
     ): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
+      return this.saveCatalogForm(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.createCategory(
           accessToken,
           category,
+          reporting,
         ),
       );
     },
@@ -73,11 +81,12 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       categoryId: string,
       category: Parameters<CatalogStoreActions["updateCategory"]>[2],
     ): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
+      return this.saveCatalogForm(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.updateCategory(
           accessToken,
           categoryId,
           category,
+          reporting,
         ),
       );
     },
@@ -89,20 +98,22 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     ): Promise<void> {
       return this.mutate(
         accessToken,
-        () =>
+        (reporting) =>
           getCatalogStoreDependencies().catalogApi.reorderCategories(
             accessToken,
             categoryIds,
+            reporting,
           ),
         intent,
       );
     },
 
     archiveCategory(accessToken: string, categoryId: string): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.archiveCategory(
           accessToken,
           categoryId,
+          reporting,
         ),
       );
     },
@@ -111,10 +122,11 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       product: Parameters<CatalogStoreActions["createProduct"]>[1],
     ): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
+      return this.saveCatalogForm(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.createProduct(
           accessToken,
           product,
+          reporting,
         ),
       );
     },
@@ -124,11 +136,12 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       productId: string,
       product: Parameters<CatalogStoreActions["updateProduct"]>[2],
     ): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
+      return this.saveCatalogForm(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.updateProduct(
           accessToken,
           productId,
           product,
+          reporting,
         ),
       );
     },
@@ -141,31 +154,41 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     ): Promise<void> {
       return this.mutate(
         accessToken,
-        () =>
+        (reporting) =>
           getCatalogStoreDependencies().catalogApi.reorderProducts(
             accessToken,
             categoryId,
             productIds,
+            reporting,
           ),
         intent,
       );
     },
 
     archiveProduct(accessToken: string, productId: string): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.archiveProduct(
           accessToken,
           productId,
+          reporting,
         ),
       );
     },
 
-    archiveModifierGroup(accessToken: string, groupId: string): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.archiveModifierGroup(
-          accessToken,
-          groupId,
-        ),
+    archiveModifierGroup(
+      accessToken: string,
+      groupId: string,
+      owner?: Pick<OperationContext, "ownerIdentity" | "ownerIsActive">,
+    ): Promise<void> {
+      return this.saveCatalogForm(
+        accessToken,
+        (reporting) =>
+          getCatalogStoreDependencies().catalogApi.archiveModifierGroup(
+            accessToken,
+            groupId,
+            reporting,
+          ),
+        owner,
       );
     },
 
@@ -174,11 +197,12 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       groupId: string,
       option: Parameters<CatalogStoreActions["createModifierOption"]>[2],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.createModifierOption(
           accessToken,
           groupId,
           option,
+          reporting,
         ),
       );
     },
@@ -188,11 +212,12 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       optionId: string,
       option: Parameters<CatalogStoreActions["updateModifierOption"]>[2],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.updateModifierOption(
           accessToken,
           optionId,
           option,
+          reporting,
         ),
       );
     },
@@ -201,10 +226,11 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       accessToken: string,
       optionId: string,
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.archiveModifierOption(
           accessToken,
           optionId,
+          reporting,
         ),
       );
     },
@@ -214,11 +240,12 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       categoryId: string,
       assignments: readonly CategoryModifierGroupAssignment[],
     ): Promise<void> {
-      return this.mutate(accessToken, () =>
+      return this.mutate(accessToken, (reporting) =>
         getCatalogStoreDependencies().catalogApi.replaceCategoryModifierGroups(
           accessToken,
           categoryId,
           assignments,
+          reporting,
         ),
       );
     },
@@ -226,18 +253,23 @@ export const useCatalogStore = defineStore(catalogStoreId, {
     saveModifierGroup(
       accessToken: string,
       group: Parameters<CatalogStoreActions["saveModifierGroup"]>[1],
+      owner?: Pick<OperationContext, "ownerIdentity" | "ownerIsActive">,
     ): Promise<void> {
-      return this.saveCatalogForm(accessToken, () =>
-        getCatalogStoreDependencies().catalogApi.saveModifierGroup(
-          accessToken,
-          group,
-        ),
+      return this.saveCatalogForm(
+        accessToken,
+        (reporting) =>
+          getCatalogStoreDependencies().catalogApi.saveModifierGroup(
+            accessToken,
+            group,
+            reporting,
+          ),
+        owner,
       );
     },
 
     mutate(
       accessToken: string,
-      mutation: () => Promise<unknown>,
+      mutation: (reporting: ApiRequestReporting) => Promise<unknown>,
       reorderIntent?: ReorderOperationIntent,
     ): Promise<void> {
       if (this.activeOperation !== null) {
@@ -247,10 +279,11 @@ export const useCatalogStore = defineStore(catalogStoreId, {
 
       return this.execute(
         accessToken,
-        async () => {
-          await mutation();
+        async (reporting) => {
+          await mutation(reporting);
           return getCatalogStoreDependencies().catalogApi.getCatalog(
             accessToken,
+            reporting,
           );
         },
         reorderIntent,
@@ -259,7 +292,8 @@ export const useCatalogStore = defineStore(catalogStoreId, {
 
     saveCatalogForm(
       accessToken: string,
-      mutation: () => Promise<unknown>,
+      mutation: (reporting: ApiRequestReporting) => Promise<unknown>,
+      owner?: Pick<OperationContext, "ownerIdentity" | "ownerIsActive">,
     ): Promise<void> {
       if (this.activeOperation !== null) return this.activeOperation;
 
@@ -271,7 +305,10 @@ export const useCatalogStore = defineStore(catalogStoreId, {
       this.formSaveOutcome = "idle";
       const activeOperation = getOperationPort()
         .run(
-          catalogContext("catalog.form.save", "catalog", "mutation"),
+          {
+            ...catalogContext("catalog.form.save", "catalog", "mutation"),
+            ...owner,
+          },
           mutation,
         )
         .then(async (result) => {
@@ -284,14 +321,13 @@ export const useCatalogStore = defineStore(catalogStoreId, {
           }
           this.formSaveOutcome = "saved";
           this.lastCommandSucceeded = true;
-          getOperationPort().publishOutcome(
-            "catalog.saved",
-            catalogContext("catalog.form.save", "catalog", "mutation"),
-          );
           const catalogResult = await getOperationPort().run(
             catalogContext("catalog.reconcile", "catalog", "read"),
-            () =>
-              getCatalogStoreDependencies().catalogApi.getCatalog(accessToken),
+            (reporting) =>
+              getCatalogStoreDependencies().catalogApi.getCatalog(
+                accessToken,
+                reporting,
+              ),
           );
           if (catalogResult.status === "success") {
             const catalog = catalogResult.value;
@@ -310,7 +346,7 @@ export const useCatalogStore = defineStore(catalogStoreId, {
 
     execute(
       accessToken: string,
-      operation: () => Promise<CatalogApiResult>,
+      operation: (reporting: ApiRequestReporting) => Promise<CatalogApiResult>,
       reorderIntent?: ReorderOperationIntent,
     ): Promise<void> {
       this.status = catalogStatuses.loading;
@@ -367,7 +403,7 @@ const catalogFieldTargets: NonNullable<OperationContext["fieldTargets"]> = {
   selectionType: { path: "selectionType" },
 };
 
-function catalogContext(
+export function catalogContext(
   operationKey: string,
   resourceKey: string,
   kind: OperationContext["kind"],

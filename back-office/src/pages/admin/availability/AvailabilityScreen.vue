@@ -14,7 +14,12 @@
           class="availability-screen__search"
           :label="availabilityMessages.searchLabel"
         >
-          <span class="availability-screen__search-control">
+          <span
+            class="availability-screen__search-control"
+            :class="{
+              'availability-screen__search-control--with-clear': props.search,
+            }"
+          >
             <AdminTextField
               :id="field.controlId"
               :model-value="props.search"
@@ -36,7 +41,7 @@
           :model-value="props.activeCategory ?? AVAILABILITY_ALL_CATEGORY"
           class="availability-screen__tabs"
           :items="categoryTabs"
-          layout="responsive"
+          layout="bounded-wrapped"
           @update:model-value="emit('update:activeCategory', $event)"
         />
       </div>
@@ -48,16 +53,6 @@
         />
       </section>
       <section v-if="props.intake !== null" class="availability-screen__ready">
-        <section class="availability-screen__intake">
-          <h2 class="availability-screen__intake-title">Приём заказов</h2>
-          <ToggleRow
-            :disabled="props.saving"
-            :label="availabilityMessages.intakeLabel"
-            :model-value="props.intake.acceptsNewOrders"
-            :sublabel="intakeSublabel"
-            @update:model-value="updateIntake"
-          />
-        </section>
         <EmptyState
           v-if="groupedItems.length === 0"
           :title="
@@ -65,15 +60,18 @@
               ? availabilityMessages.emptyFilteredTitle
               : availabilityMessages.emptyTitle
           "
-          ><template #icon><AdminIcon :icon="ToggleRight" /></template
-        ></EmptyState>
-        <AdminButton
-          v-if="hasItems && groupedItems.length === 0"
-          class="availability-screen__reset-filters"
-          type="button"
-          @click="resetFilters"
-          >{{ availabilityMessages.resetFilters }}</AdminButton
         >
+          <template #icon><AdminIcon :icon="ToggleRight" /></template>
+          <template v-if="hasItems" #action>
+            <AdminButton
+              variant="secondary"
+              type="button"
+              @click="resetFilters"
+            >
+              {{ availabilityMessages.resetFilters }}
+            </AdminButton>
+          </template>
+        </EmptyState>
         <div v-if="groupedItems.length > 0" class="availability-screen__groups">
           <AvailabilityGroup
             v-for="group in groupedItems"
@@ -86,6 +84,17 @@
             "
           />
         </div>
+        <section class="availability-screen__intake">
+          <ToggleRow
+            :disabled="props.saving"
+            :divider="false"
+            separate-control
+            :label="availabilityMessages.intakeLabel"
+            :model-value="props.intake.acceptsNewOrders"
+            :sublabel="intakeSublabel"
+            @update:model-value="updateIntake"
+          />
+        </section>
       </section>
     </div>
   </main>
@@ -197,29 +206,27 @@ function resetFilters(): void {
   display: grid;
   width: 100%;
   gap: var(--expressa-space-4);
-  order: 1;
+  min-inline-size: 0;
 }
 .availability-screen__tabs {
   min-width: 0;
-  order: 0;
-}
-.availability-screen__intake-title {
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-semibold);
 }
 .availability-screen__search-control {
-  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--expressa-space-8);
+  min-inline-size: 0;
+}
+.availability-screen__search-control--with-clear {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 .availability-screen__clear-search {
-  position: absolute;
-  top: 0;
-  right: 0;
   inline-size: var(--expressa-size-control-min-height);
   padding: 0;
 }
 .availability-screen__loading,
-.availability-screen__ready,
-.availability-screen__recovery {
+.availability-screen__ready {
   margin-top: var(--expressa-space-24);
 }
 .availability-screen__loading {
@@ -240,22 +247,14 @@ function resetFilters(): void {
   gap: var(--expressa-space-24);
 }
 .availability-screen__intake {
-  order: 2;
-  padding: var(--expressa-space-16);
+  padding-inline: var(--expressa-space-16);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-panel);
   background: var(--expressa-color-surface);
 }
-.availability-screen__intake-title {
-  margin: 0 0 var(--expressa-space-8);
-}
-.availability-screen__intake :deep(.toggle-row) {
-  border-bottom: var(--expressa-border-width-none);
-}
 .availability-screen__groups {
   display: grid;
-  order: 1;
   gap: var(--expressa-space-24);
 }
 @media (min-width: 768px) {
@@ -272,26 +271,13 @@ function resetFilters(): void {
     font-size: var(--expressa-font-size-screen-title);
     line-height: var(--expressa-line-height-heading);
   }
-  .availability-screen__toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-  }
   .availability-screen__search {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .availability-screen__tabs {
-    grid-column: 1;
-    grid-row: 1;
+    max-inline-size: var(--expressa-size-auth-card-max-width);
   }
 }
 @media (max-width: 767px) {
   .availability-screen__title--desktop {
     display: none;
-  }
-  .availability-screen__tabs {
-    inline-size: calc(100% + 2 * var(--expressa-space-16));
-    max-inline-size: none;
-    margin-inline: calc(-1 * var(--expressa-space-16));
   }
 }
 </style>

@@ -1,7 +1,10 @@
 <template>
   <div
     class="menu-reorder-row"
-    :class="{ 'menu-reorder-row--grabbed': grabbed }"
+    :class="{
+      'menu-reorder-row--grabbed': grabbed,
+      'menu-reorder-row--product': props.entityType === 'product',
+    }"
   >
     <AdminButton
       class="menu-reorder-row__handle"
@@ -29,8 +32,9 @@
       <AdminIcon :icon="props.expanded ? ChevronDown : ChevronRight" />
     </AdminButton>
     <AdminButton
+      v-if="isTruncated"
       class="menu-reorder-row__label"
-      :class="{ 'menu-reorder-row__label--truncated': isTruncated }"
+      presentation="row"
       type="button"
       variant="ghost"
       size="compact"
@@ -40,6 +44,11 @@
         props.label
       }}</span></AdminButton
     >
+    <div v-else class="menu-reorder-row__label">
+      <span ref="labelText" class="menu-reorder-row__label-text">{{
+        props.label
+      }}</span>
+    </div>
     <AdminButton
       type="button"
       variant="ghost"
@@ -48,7 +57,7 @@
       :data-reorder-control="`${props.id}:up`"
       @click="emit('move', { offset: -1, control: 'up' })"
     >
-      <AdminIcon :icon="ChevronUp" />
+      <AdminIcon :icon="ArrowUp" />
     </AdminButton>
     <AdminButton
       type="button"
@@ -58,7 +67,7 @@
       :data-reorder-control="`${props.id}:down`"
       @click="emit('move', { offset: 1, control: 'down' })"
     >
-      <AdminIcon :icon="ChevronDown" />
+      <AdminIcon :icon="ArrowDown" />
     </AdminButton>
   </div>
 </template>
@@ -66,10 +75,11 @@
 import {
   ChevronDown,
   ChevronRight,
-  ChevronUp,
+  ArrowUp,
+  ArrowDown,
   GripVertical,
 } from "lucide-vue-next";
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import type {
@@ -86,22 +96,23 @@ const isTruncated = ref(false);
 let labelObserver: ResizeObserver | null = null;
 function updateTruncation(): void {
   const text = labelText.value;
-  isTruncated.value =
-    text !== null && text.scrollHeight > text.clientHeight + 1;
+  if (text === null) return;
+  isTruncated.value = text.scrollHeight > text.clientHeight + 1;
 }
 function openLabel(): void {
   if (isTruncated.value) emit("show-label");
 }
-onMounted(() => {
-  if (labelText.value !== null) {
+watch(labelText, (text) => {
+  labelObserver?.disconnect();
+  if (text !== null) {
     labelObserver = new ResizeObserver(updateTruncation);
-    labelObserver.observe(labelText.value);
+    labelObserver.observe(text);
   }
-  updateTruncation();
+  if (text !== null) updateTruncation();
 });
 onBeforeUnmount(() => labelObserver?.disconnect());
 watch(
-  () => props.label,
+  () => [props.label, props.id, props.position],
   () => void nextTick(updateTruncation),
 );
 const pointerY = ref<number | null>(null);
@@ -142,19 +153,20 @@ function cancelDrag(): void {
   min-block-size: calc(var(--expressa-space-48) + var(--expressa-space-8));
   flex-basis: calc(var(--expressa-space-48) + var(--expressa-space-8));
   align-items: center;
-  gap: var(--expressa-space-sm);
+  gap: 0;
+  background: var(--expressa-color-surface-raised);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   padding: 0 var(--expressa-space-sm);
 }
+.menu-reorder-row--product {
+  padding-inline-start: calc(
+    var(--expressa-space-sm) + var(--expressa-size-control-min-height)
+  );
+  background: var(--expressa-color-surface);
+}
 .menu-reorder-row--grabbed {
   background: var(--expressa-color-control-hover-surface);
-}
-.menu-reorder-row__handle,
-.menu-reorder-row .admin-button {
-  min-width: var(--expressa-size-control-min-height);
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-8);
 }
 .menu-reorder-row__handle {
   cursor: grab;
@@ -162,20 +174,16 @@ function cancelDrag(): void {
 .menu-reorder-row--grabbed .menu-reorder-row__handle {
   cursor: grabbing;
 }
-.menu-reorder-row .menu-reorder-row__label {
+.menu-reorder-row__label {
   min-width: 0;
   flex: 1;
   display: flex;
   align-items: center;
   overflow: hidden;
-  padding-inline: 0;
-  color: var(--expressa-color-text-primary);
-  text-align: start;
-  font-weight: var(--expressa-font-weight-semibold);
-  cursor: default;
 }
-.menu-reorder-row .menu-reorder-row__label--truncated {
-  cursor: pointer;
+.menu-reorder-row__label-text {
+  font-size: var(--expressa-font-size-body);
+  font-weight: var(--expressa-font-weight-semibold);
 }
 .menu-reorder-row__label-text {
   display: -webkit-box;

@@ -73,7 +73,11 @@
   --expressa-space-empty-state-block: var(--expressa-space-48);
   --expressa-space-product-indent: var(--expressa-space-48);
   --expressa-space-dialog-inset: var(--expressa-space-lg);
+  --expressa-space-dialog-compact-block: 0;
+  --expressa-space-dialog-compact-inline: var(--expressa-space-sm);
 
+  --expressa-radius-row: 0;
+  --expressa-size-menu-top-bar: 52px;
   --expressa-radius-sm: 6px;
   --expressa-radius-md: 10px;
   --expressa-radius-panel: 16px;
@@ -93,6 +97,8 @@
   --expressa-font-size-title: 1.125rem;
   --expressa-font-size-brand: 1.25rem;
   --expressa-font-size-heading: 1.5rem;
+  --expressa-font-size-auth-heading: 1.375rem;
+  --expressa-font-size-otp: 1.125rem;
   --expressa-font-size-screen-title: 1.5rem;
   --expressa-font-weight-medium: 500;
   --expressa-font-weight-semibold: 600;
@@ -109,8 +115,11 @@
   --expressa-letter-spacing-label: 0;
   --expressa-letter-spacing-section-title: 0.06em;
   --expressa-letter-spacing-otp: 0;
+  --expressa-letter-spacing-otp-input: 0.4em;
 
   --expressa-size-icon-clock: 14px;
+  --expressa-size-icon-field: 15px;
+  --expressa-size-icon-state: 24px;
   --expressa-stroke-width-icon: 2;
   --expressa-size-checkbox: 18px;
   --expressa-size-status-min-height: 24px;
@@ -140,6 +149,7 @@
   );
   --expressa-size-confirm-dialog-max-width: 25rem;
   --expressa-size-dialog-max-block: calc(100dvh - var(--expressa-space-32));
+  --expressa-size-notification-max-inline: 25rem;
   --expressa-size-notification-mobile-max-block: 25dvh;
   --expressa-size-notification-desktop-max-block: 40dvh;
   --expressa-size-icon-action: 1.25rem;
@@ -152,6 +162,7 @@
   --expressa-shadow-card: 0 1px 4px rgb(0 0 0 / 8%);
   --expressa-shadow-modal: 0 8px 32px rgb(0 0 0 / 16%);
   --expressa-shadow-tab-bar: 0 -1px 0 var(--expressa-color-border);
+  --expressa-shadow-notification: var(--expressa-shadow-card);
   --expressa-shadow-menu: var(--expressa-shadow-modal);
   --expressa-z-popover-layer: 30;
   --expressa-z-modal-layer: 40;
@@ -194,6 +205,11 @@ body,
 #app {
   min-height: 100%;
   margin: 0;
+}
+
+body {
+  font-size: var(--expressa-font-size-body);
+  line-height: var(--expressa-line-height-body);
 }
 
 * {

@@ -8,8 +8,10 @@
 
     <div class="availability-group__items">
       <ToggleRow
-        v-for="item in props.items"
-        :key="item.id"
+        v-for="(item, index) in props.items"
+        :key="`${item.type}:${item.id}`"
+        :divider="index < props.items.length - 1"
+        separate-control
         :label="item.label"
         :sublabel="item.sublabel"
         :disabled="props.disabled"
@@ -64,9 +66,5 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
 
 .availability-group__items {
   padding: 0 var(--expressa-space-md);
-}
-
-.availability-group__items :deep(.toggle-row:last-child) {
-  border-bottom: var(--expressa-border-width-none);
 }
 </style>

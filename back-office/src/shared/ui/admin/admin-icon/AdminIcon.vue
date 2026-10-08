@@ -27,4 +27,12 @@ const props = withDefaults(defineProps<AdminIconProps>(), ADMIN_ICON_DEFAULTS);
   width: var(--expressa-size-icon-clock);
   height: var(--expressa-size-icon-clock);
 }
+.admin-icon--field {
+  width: var(--expressa-size-icon-field);
+  height: var(--expressa-size-icon-field);
+}
+.admin-icon--state {
+  width: var(--expressa-size-icon-state);
+  height: var(--expressa-size-icon-state);
+}
 </style>

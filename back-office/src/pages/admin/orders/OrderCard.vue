@@ -9,6 +9,14 @@
       <span class="order-card__stage" :data-tone="stage.tone">{{
         stage.label
       }}</span>
+      <AdminButton
+        :disabled="props.detailsLoading"
+        size="compact"
+        variant="ghost"
+        @click="emit('open', props.order.id)"
+      >
+        <AdminIcon :icon="disclosureIcon" />
+      </AdminButton>
     </div>
 
     <div class="order-card__time">
@@ -18,25 +26,7 @@
       }}</span>
     </div>
 
-    <p v-if="props.details !== null" class="order-card__summary">
-      {{ itemsSummary }}
-    </p>
     <p class="order-card__total">{{ formatMoney(props.order.total) }}</p>
-
-    <AdminButton
-      class="order-card__details-button"
-      :disabled="props.detailsLoading"
-      variant="secondary"
-      @click="emit('open', props.order.id)"
-    >
-      {{
-        props.detailsLoading
-          ? "Загрузка деталей…"
-          : props.details === null
-            ? "Открыть детали"
-            : "Скрыть детали"
-      }}
-    </AdminButton>
 
     <div v-if="props.detailsLoading" class="order-card__loading">
       <AdminProgress label="Загрузка деталей…" />
@@ -89,7 +79,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { Clock } from "lucide-vue-next";
+import { ChevronDown, ChevronUp, Clock } from "lucide-vue-next";
 
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
@@ -103,14 +93,8 @@ const stage = computed(() => orderStages[props.order.stage]);
 const action = computed(
   () => orderActions[props.details?.stage ?? props.order.stage],
 );
-const itemsSummary = computed(
-  () =>
-    props.details?.snapshot
-      .map(
-        (item) =>
-          `${item.productName}${item.portionLabel ? ` · ${item.portionLabel}` : ""} × ${item.quantity}`,
-      )
-      .join(", ") ?? "",
+const disclosureIcon = computed(() =>
+  props.details !== null || props.detailsLoading ? ChevronUp : ChevronDown,
 );
 
 function stageLabel(value: keyof typeof orderStages): string {
@@ -146,12 +130,18 @@ function formatMoney(value: number): string {
   background: var(--expressa-color-surface);
   box-shadow: var(--expressa-shadow-card);
 }
-.order-card__heading,
 .order-card__time {
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: space-between;
+  gap: var(--expressa-space-sm);
+}
+.order-card__heading {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
   gap: var(--expressa-space-sm);
 }
 .order-card__number,
@@ -190,24 +180,11 @@ function formatMoney(value: number): string {
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-caption);
 }
-.order-card__summary,
 .order-card__total,
 .order-card__customer {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
-}
-.order-card__summary {
-  display: -webkit-box;
-  min-height: calc(
-    var(--expressa-font-size-body) * var(--expressa-line-height-body) * 2
-  );
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
 }
 .order-card__total {
   color: var(--expressa-color-text-primary);
@@ -215,7 +192,6 @@ function formatMoney(value: number): string {
   font-weight: var(--expressa-font-weight-semibold);
   line-height: var(--expressa-line-height-emphasis);
 }
-.order-card__details-button,
 .order-card__action {
   width: 100%;
 }
@@ -230,10 +206,6 @@ function formatMoney(value: number): string {
   padding-top: var(--expressa-space-sm);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-}
-.order-card__details-error h2,
-.order-card__details-error p {
-  margin: 0;
 }
 .order-card__customer {
   color: var(--expressa-color-text-primary);
@@ -250,7 +222,8 @@ function formatMoney(value: number): string {
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-body);
 }
-.order-card__item {
+.order-card__item,
+.order-card__events li {
   overflow-wrap: anywhere;
 }
 </style>

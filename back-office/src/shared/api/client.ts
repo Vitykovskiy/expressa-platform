@@ -17,6 +17,11 @@ import type {
   ApiErrorPayload,
   ApiRequestOptions,
   ApiTransportKind,
+  ApiRequestReceipt,
+  ApiRequestOutcome,
+  ApiRequestDescriptor,
+  ApiRequestFeedback,
+  ApiRequestReporting,
   ResponseValidator,
 } from "./client.types";
 export { apiClientKey } from "./client.constants";
@@ -38,6 +43,7 @@ export class ApiError extends Error implements ApiErrorData {
   readonly retryAfterSeconds: number | null;
   readonly status: number | null;
   readonly transportKind: ApiTransportKind;
+  readonly settlement?: ApiRequestReceipt;
 
   constructor({
     code,
@@ -48,6 +54,7 @@ export class ApiError extends Error implements ApiErrorData {
     retryAfterSeconds = null,
     status = null,
     transportKind = "response",
+    settlement,
   }: ApiErrorData) {
     super(message);
     this.name = "ApiError";
@@ -58,6 +65,7 @@ export class ApiError extends Error implements ApiErrorData {
     this.retryAfterSeconds = retryAfterSeconds;
     this.status = status;
     this.transportKind = transportKind;
+    this.settlement = settlement;
   }
 }
 
@@ -75,45 +83,91 @@ export class ApiClient {
     validate: ResponseValidator<T>,
     options: ApiRequestOptions = {},
   ): Promise<T> {
-    const { expectedStatus, ...requestOptions } = options;
-    const response = await this.fetchResponse(path, requestOptions);
-    const payload =
-      response.status === noContentStatus
-        ? undefined
-        : await this.readPayload(response, requestOptions);
+    const { expectedStatus, feedback, ...requestOptions } = options;
+    let receipt: ApiRequestReceipt | undefined;
+    let settle: ((outcome: ApiRequestOutcome) => void) | undefined;
+    const issued = () => {
+      receipt = { id: createOccurrenceId(), reported: false };
+      try {
+        if (feedback !== undefined) feedback.receipt = receipt;
+      } catch {
+        console.error("request_feedback_receipt_failed");
+      }
+      try {
+        settle = feedback?.begin();
+      } catch {
+        console.error("request_feedback_start_failed");
+      }
+    };
+    const report = (outcome: ApiRequestOutcome) => {
+      if (settle === undefined || outcome.receipt.reported) return;
+      outcome.receipt.reported = true;
+      try {
+        settle(outcome);
+      } catch {
+        console.error("request_feedback_settlement_failed");
+      }
+    };
+    try {
+      const response = await this.fetchResponse(path, requestOptions, issued);
+      const payload =
+        response.status === noContentStatus
+          ? undefined
+          : await this.readPayload(response, requestOptions);
 
-    if (!response.ok) {
-      throw this.createApiError(payload, response, response.status);
+      if (!response.ok) {
+        throw this.createApiError(payload, response, response.status);
+      }
+
+      if (!matchesExpectedStatus(response.status, expectedStatus)) {
+        throw new ApiError({
+          code: apiContractErrorCode,
+          details: payload,
+          message: apiStatusContractErrorMessage,
+          requestId: response.headers.get("x-request-id"),
+          status: response.status,
+          transportKind: "contract",
+        });
+      }
+
+      if (!validate(payload)) {
+        throw new ApiError({
+          code: apiContractErrorCode,
+          details: payload,
+          message: apiResponseContractErrorMessage,
+          requestId: response.headers.get("x-request-id"),
+          status: response.status,
+          transportKind: "contract",
+        });
+      }
+
+      if (receipt !== undefined) report({ status: "success", receipt });
+      return payload;
+    } catch (error) {
+      if (receipt !== undefined) {
+        if (
+          (typeof error === "object" && error !== null) ||
+          typeof error === "function"
+        ) {
+          try {
+            Object.defineProperty(error, "settlement", {
+              value: receipt,
+              enumerable: true,
+            });
+          } catch {
+            console.error("request_feedback_receipt_failed");
+          }
+        }
+        report({ status: "failure", error, receipt });
+      }
+      throw error;
     }
-
-    if (!matchesExpectedStatus(response.status, expectedStatus)) {
-      throw new ApiError({
-        code: apiContractErrorCode,
-        details: payload,
-        message: apiStatusContractErrorMessage,
-        requestId: response.headers.get("x-request-id"),
-        status: response.status,
-        transportKind: "contract",
-      });
-    }
-
-    if (!validate(payload)) {
-      throw new ApiError({
-        code: apiContractErrorCode,
-        details: payload,
-        message: apiResponseContractErrorMessage,
-        requestId: response.headers.get("x-request-id"),
-        status: response.status,
-        transportKind: "contract",
-      });
-    }
-
-    return payload;
   }
 
   private async fetchResponse(
     path: string,
     options: ApiRequestOptions,
+    issued: () => void,
   ): Promise<Response> {
     let request: RequestInit;
     let url: string;
@@ -133,6 +187,7 @@ export class ApiClient {
     }
 
     try {
+      issued();
       return await this.fetcher(url, request);
     } catch (error) {
       throw new ApiError({
@@ -312,4 +367,26 @@ export function createApiClient(
   const normalizedBaseUrl = apiBaseUrl.replace(/\/+$/, "");
 
   return new ApiClient({ baseUrl: `${normalizedBaseUrl}/api/v2`, fetcher });
+}
+
+export function createRequestFeedback(
+  reporting: ApiRequestReporting | undefined,
+  descriptor: ApiRequestDescriptor,
+): ApiRequestFeedback | undefined {
+  try {
+    return reporting?.(descriptor);
+  } catch {
+    console.error("request_feedback_context_failed");
+    return undefined;
+  }
+}
+
+export function requestReceipt(
+  feedback: ApiRequestFeedback | undefined,
+): ApiRequestReceipt | undefined {
+  try {
+    return feedback?.receipt;
+  } catch {
+    return undefined;
+  }
 }

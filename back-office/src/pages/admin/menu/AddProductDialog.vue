@@ -31,7 +31,6 @@
                 v-model="categoryIdValue"
                 :disabled="props.disabled"
                 :options="categoryOptions"
-                placeholder="Выберите категорию"
                 :required="field.required"
             /></AdminFieldWrapper>
             <AdminFieldWrapper
@@ -49,7 +48,6 @@
             <AdminFieldWrapper
               :id="isActiveControlId"
               v-slot="field"
-              class="add-dialog__toggle-field"
               label="Показывать в меню"
               layout="row"
               ><AdminToggle
@@ -86,7 +84,7 @@
               type="button"
               variant="secondary"
               @click="openChoiceDialog()"
-              >Добавить размер</AdminButton
+              >Добавить цену</AdminButton
             >
           </div>
           <div class="add-dialog__pricing-table">
@@ -110,7 +108,7 @@
               <tbody>
                 <tr v-if="priceChoices.length === 0">
                   <td class="add-dialog__empty-prices" colspan="5">
-                    Размеры пока не добавлены
+                    Цены пока не добавлены
                   </td>
                 </tr>
                 <tr
@@ -124,9 +122,11 @@
                   :data-price-choice-id="choice.localId"
                 >
                   <td>
-                    <button
+                    <AdminButton
                       class="add-dialog__drag-handle"
-                      :disabled="props.disabled"
+                      :disabled="props.disabled || priceChoices.length < 2"
+                      size="compact"
+                      variant="ghost"
                       type="button"
                       @lostpointercapture="cancelChoiceDrag"
                       @pointercancel="cancelChoiceDrag"
@@ -135,14 +135,12 @@
                       @pointerup="completeChoiceDrag"
                     >
                       <AdminIcon :icon="GripVertical" />
-                    </button>
+                    </AdminButton>
                   </td>
                   <td class="add-dialog__choice-value">
-                    <span
-                      class="add-dialog__choice-size"
-                      :title="choice.portionLabel || undefined"
-                      >{{ choice.portionLabel || "—" }}</span
-                    >
+                    <span class="add-dialog__choice-size">{{
+                      choice.portionLabel || "—"
+                    }}</span>
                   </td>
                   <td class="add-dialog__choice-value add-dialog__choice-price">
                     {{ choice.price || "—"
@@ -161,12 +159,11 @@
                     />
                   </td>
                   <td>
-                    <div class="add-dialog__choice-actions">
+                    <AdminActionGroup>
                       <AdminButton
                         :disabled="props.disabled"
                         size="compact"
-                        :title="`Редактировать вариант ${index + 1}`"
-                        class="add-dialog__choice-action"
+                        :title="`Редактировать цену ${index + 1}`"
                         type="button"
                         variant="ghost"
                         @click="openChoiceDialog(choice)"
@@ -174,14 +171,13 @@
                       ><AdminButton
                         :disabled="props.disabled"
                         size="compact"
-                        :title="`Удалить вариант ${index + 1}`"
-                        class="add-dialog__choice-action add-dialog__choice-action--delete"
+                        :title="`Удалить цену ${index + 1}`"
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                         @click="removeChoice(index)"
                         ><AdminIcon :icon="Trash2"
                       /></AdminButton>
-                    </div>
+                    </AdminActionGroup>
                   </td>
                 </tr>
               </tbody>
@@ -213,6 +209,7 @@
 import { computed, shallowRef, useId, watch } from "vue";
 import { GripVertical, Pencil, Trash2 } from "lucide-vue-next";
 import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
+import AdminActionGroup from "../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminCombobox from "../../../shared/ui/admin/admin-combobox/AdminCombobox.vue";
@@ -333,7 +330,8 @@ function removeChoice(index: number): void {
   priceChoices.value = next;
 }
 function startChoiceDrag(event: PointerEvent, localId: string): void {
-  if (props.disabled || draggedChoiceId.value) return;
+  if (props.disabled || priceChoices.value.length < 2 || draggedChoiceId.value)
+    return;
   event.preventDefault();
   draggedChoiceId.value = localId;
   dragPointerId.value = event.pointerId;
@@ -502,9 +500,6 @@ watch(
   display: grid;
   gap: var(--expressa-space-md);
 }
-.add-dialog__toggle-field {
-  translate: 0 var(--expressa-space-sm);
-}
 .add-dialog__content {
   gap: var(--expressa-space-md);
 }
@@ -533,13 +528,17 @@ watch(
 .add-dialog__choice-order-column {
   width: var(--expressa-size-control-min-height);
 }
-.add-dialog__choice-price-column,
+.add-dialog__choice-price-column {
+  width: calc(11ch + var(--expressa-space-sm) * 2);
+}
 .add-dialog__choice-availability-column {
-  width: max-content;
+  width: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm) * 2
+  );
 }
 .add-dialog__choice-actions-column {
   width: calc(
-    var(--expressa-size-control-min-height) * 2 + var(--expressa-space-2xs)
+    var(--expressa-size-control-min-height) * 2 + var(--expressa-space-sm)
   );
 }
 .add-dialog__pricing-table th {
@@ -582,14 +581,6 @@ watch(
   transition: transform none;
 }
 .add-dialog__drag-handle {
-  display: inline-grid;
-  width: var(--expressa-size-control-min-height);
-  min-height: var(--expressa-size-control-min-height);
-  padding: 0;
-  place-items: center;
-  border: 0;
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-transparent);
   cursor: grab;
   touch-action: none;
 }
@@ -609,26 +600,13 @@ watch(
 }
 .add-dialog__choice-price {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .add-dialog__choice-availability {
   text-align: center;
 }
 .add-dialog__availability-label {
   display: none;
-}
-.add-dialog__choice-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--expressa-space-2xs);
-}
-.add-dialog__choice-action {
-  width: var(--expressa-size-control-min-height);
-  min-width: var(--expressa-size-control-min-height);
-  padding-inline: 0;
-}
-.add-dialog__choice-action--delete {
-  color: var(--expressa-color-status-error);
 }
 .add-dialog__description {
   min-height: calc(
@@ -668,7 +646,7 @@ watch(
   }
   .add-dialog__pricing-table td:first-child {
     grid-column: 1;
-    grid-row: 1 / 3;
+    grid-row: 1;
   }
   .add-dialog__pricing-table td:nth-child(2) {
     grid-column: 2;
@@ -681,24 +659,25 @@ watch(
     white-space: nowrap;
   }
   .add-dialog__pricing-table td:nth-child(4) {
-    grid-column: 2;
+    grid-column: 1 / 3;
     grid-row: 2;
-    padding-inline-start: var(--expressa-space-xs);
   }
   .add-dialog__pricing-table td:nth-child(5) {
     grid-column: 3;
     grid-row: 2;
+    justify-self: end;
   }
   .add-dialog__choice-size {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     white-space: normal;
+    overflow-wrap: anywhere;
   }
   .add-dialog__choice-availability {
     display: flex;
     align-items: center;
-    gap: var(--expressa-space-2xs);
+    gap: var(--expressa-space-sm);
     color: var(--expressa-color-text-secondary);
     font-size: var(--expressa-font-size-caption);
     white-space: nowrap;

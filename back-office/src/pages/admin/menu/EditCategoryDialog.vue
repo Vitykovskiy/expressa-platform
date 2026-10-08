@@ -1,6 +1,8 @@
 <template>
   <AdminDialog
     cancel-label="Отмена"
+    destructive-label="В архив"
+    :destructive-disabled="props.disabled || props.archivePending"
     :model-value="open"
     max-width="560"
     :pending="props.disabled || props.archivePending"
@@ -8,6 +10,7 @@
     :submit-disabled="props.disabled || props.archivePending || !canSave"
     submit-label="Сохранить"
     title="Редактировать категорию"
+    @destructive="archiveOpen = true"
     @update:model-value="requestClose"
   >
     <form
@@ -29,15 +32,6 @@
           @update:name="draft.name.value = $event"
         />
       </div>
-      <section class="category-dialog__danger">
-        <AdminButton
-          :disabled="props.disabled || props.archivePending"
-          type="button"
-          variant="destructive"
-          @click="archiveOpen = true"
-          >Архивировать</AdminButton
-        >
-      </section>
     </form>
   </AdminDialog>
   <ConfirmDialog
@@ -56,13 +50,13 @@
     confirm-variant="destructive"
     description="Несохранённые изменения будут потеряны."
     title="Выйти без сохранения?"
+    :pending="props.disabled || props.archivePending"
     @confirm="closeDiscarded"
   />
 </template>
 
 <script setup lang="ts">
 import { computed, shallowRef, watch } from "vue";
-import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminDialog from "../../../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../../../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import CategoryFormFields from "./CategoryFormFields.vue";
@@ -116,7 +110,7 @@ function closeDiscarded(): void {
   emit("cancel");
 }
 function confirmArchive(): void {
-  if (props.category && !props.archivePending)
+  if (props.category && !props.disabled && !props.archivePending)
     emit("archive", props.category.id);
 }
 watch(
@@ -135,10 +129,5 @@ watch(
 .category-dialog__fields {
   display: grid;
   gap: var(--expressa-space-md);
-}
-.category-dialog__danger {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--expressa-space-lg);
 }
 </style>

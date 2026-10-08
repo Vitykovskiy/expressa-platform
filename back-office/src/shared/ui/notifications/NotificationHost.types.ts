@@ -2,6 +2,7 @@ export type NotificationHostLevel = "error" | "warning" | "success" | "info";
 
 export interface NotificationHostEntry {
   readonly actionLabel?: string;
+  readonly accounting?: string;
   readonly busy: boolean;
   readonly id: string;
   readonly level: NotificationHostLevel;

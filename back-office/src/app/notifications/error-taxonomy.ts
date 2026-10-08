@@ -92,6 +92,29 @@ function toNormalizedFailure(error: unknown): NormalizedFailure | null {
     };
   }
 
+  if (
+    isRecord(error) &&
+    typeof error.code === "string" &&
+    typeof error.occurrenceId === "string" &&
+    typeof error.transportKind === "string" &&
+    [
+      "client",
+      "network",
+      "response",
+      "contract",
+      "cancelled",
+      "timeout",
+    ].includes(error.transportKind)
+  ) {
+    return {
+      code: error.code,
+      details: error.details,
+      occurrenceId: error.occurrenceId,
+      requestId: typeof error.requestId === "string" ? error.requestId : null,
+      status: typeof error.status === "number" ? error.status : null,
+      transportKind: error.transportKind as NormalizedFailure["transportKind"],
+    };
+  }
   return null;
 }
 

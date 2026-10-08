@@ -38,6 +38,7 @@
     confirm-variant="destructive"
     description="Введённые данные будут потеряны."
     title="Закрыть без сохранения?"
+    :pending="props.disabled"
     @confirm="closeDiscarded"
   />
 </template>

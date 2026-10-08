@@ -5,21 +5,34 @@
       <span>{{ role === "administrator" ? "Администратор" : "Бариста" }}</span>
     </header>
     <nav class="side-nav-links">
-      <AdminButton
+      <div
         v-for="section in sections"
         :key="section.id"
-        class="side-nav-link"
-        :class="{ 'side-nav-link--active': section.id === activeSection }"
-        type="button"
-        variant="ghost"
-        @click="emit('select', section.id)"
+        class="side-nav-item"
+        :class="{ 'side-nav-item--active': section.id === activeSection }"
       >
-        <AdminSectionIcon :section="section.id" />
-        {{ section.label }}
-      </AdminButton>
+        <AdminButton
+          class="side-nav-link"
+          size="compact"
+          type="button"
+          variant="ghost"
+          @click="emit('select', section.id)"
+        >
+          <span
+            class="side-nav-link__content"
+            :class="{
+              'side-nav-link__content--active': section.id === activeSection,
+            }"
+          >
+            <AdminSectionIcon :section="section.id" />
+            <span>{{ section.label }}</span>
+          </span>
+        </AdminButton>
+      </div>
     </nav>
     <AdminButton
       class="side-nav-logout"
+      size="compact"
       type="button"
       variant="ghost"
       @click="emit('logout')"
@@ -79,49 +92,24 @@ const emit = defineEmits<SideNavEmits>();
 }
 .side-nav-link,
 .side-nav-logout {
-  display: flex;
-  align-items: center;
-  gap: var(--expressa-space-control-inline);
   width: 100%;
-  min-height: var(--expressa-size-control-min-height);
-  padding: var(--expressa-space-control-inline) var(--expressa-space-md);
-  border: var(--expressa-border-width-none);
-  border-radius: var(--expressa-radius-md);
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-transparent);
-  font: inherit;
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
-  text-align: left;
-  transition:
-    color var(--expressa-motion-duration-control)
-      var(--expressa-motion-ease-state),
-    background-color var(--expressa-motion-duration-control)
-      var(--expressa-motion-ease-state);
-  cursor: pointer;
 }
-.side-nav-link--active {
-  color: var(--expressa-color-accent);
+.side-nav-item--active {
+  border-radius: var(--expressa-radius-md);
   background: var(--expressa-color-status-info-surface);
 }
-.side-nav-link:hover:not(.side-nav-link--active),
-.side-nav-logout:hover {
-  background: var(--expressa-color-border);
+.side-nav-link__content--active {
+  color: var(--expressa-color-accent);
 }
 .side-nav-logout {
   margin-top: auto;
-  min-height: var(--expressa-size-control-min-height);
-  padding-block: var(--expressa-space-control-inline);
-  color: var(--expressa-color-text-muted);
 }
+.side-nav-link__content,
 .side-nav-logout__content {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: var(--expressa-space-control-inline);
-}
-.side-nav-logout:hover {
-  color: var(--expressa-color-status-error);
-  background: var(--expressa-color-status-error-surface);
 }
 @media (min-width: 768px) {
   .side-nav {

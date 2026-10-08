@@ -20,6 +20,7 @@
       @update:is-available="update(index, 'isAvailable', $event)"
     />
     <AdminButton
+      size="compact"
       type="button"
       variant="secondary"
       :disabled="disabled"
@@ -82,9 +83,10 @@ function confirmRemove(): void {
 }
 function remove(index: number): void {
   const removed = model.value[index];
-  model.value = model.value.filter((_, itemIndex) => itemIndex !== index);
+  const remaining = model.value.filter((_, itemIndex) => itemIndex !== index);
+  model.value = remaining;
   if (removed?.clientId === expandedId.value)
-    expandedId.value = model.value[0]?.clientId ?? null;
+    expandedId.value = remaining[0]?.clientId ?? null;
 }
 function move(index: number, offset: -1 | 1): void {
   const next = index + offset;

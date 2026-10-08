@@ -6,6 +6,9 @@
     <h2 class="empty-state__title">
       {{ title }}
     </h2>
+    <div v-if="$slots.action" class="empty-state__action">
+      <slot name="action" />
+    </div>
   </section>
 </template>
 
@@ -19,6 +22,7 @@ defineProps<EmptyStateProps>();
 const attrs = useAttrs();
 defineSlots<{
   icon?(): unknown;
+  action?(): unknown;
 }>();
 </script>
 
@@ -42,6 +46,11 @@ defineSlots<{
   align-items: center;
   justify-content: center;
   color: var(--expressa-color-text-muted);
+}
+
+.empty-state__action {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .empty-state__title {

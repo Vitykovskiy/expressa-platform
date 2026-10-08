@@ -10,6 +10,8 @@ import type {
 
 let operationPort: OperationPort | null = null;
 
+export type { ApiRequestReporting } from "../../api/client.types";
+
 export function setOperationPort(port: OperationPort): void {
   operationPort = port;
 }

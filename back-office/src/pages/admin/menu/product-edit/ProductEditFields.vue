@@ -49,21 +49,22 @@
       :errors="choiceErrors"
     />
   </section>
-  <section class="product-edit-fields__section">
-    <h2>Публикация</h2>
-    <div class="product-edit-fields__toggle">
-      <strong :id="publicationLabelId">Показывать в меню</strong>
-      <AdminToggle v-model="isActive" :disabled="pending" />
-    </div>
-  </section>
+  <AdminFieldWrapper
+    :id="publicationLabelId"
+    v-slot="field"
+    label="Показывать в меню"
+    layout="row"
+  >
+    <AdminToggle :id="field.controlId" v-model="isActive" :disabled="pending" />
+  </AdminFieldWrapper>
   <section class="product-edit-fields__archive">
-    <h2>Архив</h2>
     <AdminButton
       :disabled="pending"
+      size="compact"
       type="button"
       variant="destructive"
       @click="emit('archive')"
-      >Архивировать товар</AdminButton
+      >В архив</AdminButton
     >
   </section>
 </template>
@@ -106,12 +107,11 @@ const descriptionFieldId = `product-description-${useId()}`;
 .product-edit-fields__section {
   display: grid;
   gap: var(--expressa-space-16);
-  padding-top: var(--expressa-space-24);
+  padding-top: var(--expressa-space-16);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
-.product-edit-fields__section h2,
-.product-edit-fields__archive h2 {
+.product-edit-fields__section h2 {
   margin: 0;
   font-size: var(--expressa-font-size-body-strong);
   line-height: var(--expressa-line-height-body);
@@ -119,18 +119,11 @@ const descriptionFieldId = `product-description-${useId()}`;
 .product-edit-fields__description {
   min-height: var(--expressa-size-textarea-min-height);
 }
-.product-edit-fields__toggle {
-  display: flex;
-  justify-content: space-between;
-  min-height: var(--expressa-size-control-min-height);
-  align-items: center;
-}
 .product-edit-fields__archive {
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   display: grid;
   justify-items: start;
-  gap: var(--expressa-space-16);
-  padding-top: var(--expressa-space-24);
+  padding-top: var(--expressa-space-16);
 }
 </style>

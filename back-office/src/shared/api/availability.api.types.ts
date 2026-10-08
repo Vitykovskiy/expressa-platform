@@ -40,6 +40,9 @@ export type AvailabilityUpdate = {
 };
 
 export type AvailabilityApiError = {
+  occurrenceId?: string;
+  transportKind?: import("./client.types").ApiTransportKind;
+  settlement?: import("./client.types").ApiRequestReceipt;
   code: string;
   details: unknown;
   message: string;

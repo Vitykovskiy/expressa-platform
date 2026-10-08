@@ -1,3 +1,7 @@
+import type {
+  ApiRequestDescriptor,
+  ApiRequestReporting,
+} from "../../api/client.types";
 export type OperationKind = "read" | "mutation";
 export type OperationOrigin = "user" | "automatic" | "recovery";
 export type OperationOutcomeKey =
@@ -28,7 +32,9 @@ export interface OperationRecovery {
 }
 
 export interface OperationRecoveryInvocation {
-  run<T>(execute: () => Promise<T>): Promise<OperationResult<T>>;
+  run<T>(
+    execute: (reporting: ApiRequestReporting) => Promise<T>,
+  ): Promise<OperationResult<T>>;
 }
 
 export interface OperationContext {
@@ -38,8 +44,10 @@ export interface OperationContext {
   kind: OperationKind;
   operationKey: string;
   ownerIsActive?: () => boolean;
+  ownerIdentity?: string;
   origin: OperationOrigin;
   reportFailure?: boolean;
+  requestTarget?: Pick<ApiRequestDescriptor, "operationKey" | "resourceKey">;
   resourceKey: string;
 }
 
@@ -52,6 +60,7 @@ export type OperationResult<T> =
   | { status: "unconfirmed"; error: unknown };
 
 export interface OperationPort {
+  reporting(context: OperationContext): ApiRequestReporting;
   dismiss(id: string): void;
   publishOutcome(key: OperationOutcomeKey, context: OperationContext): void;
   registerRecovery(
@@ -61,10 +70,10 @@ export interface OperationPort {
   recover(id: string): void;
   run<T>(
     context: OperationContext,
-    execute: () => Promise<T>,
+    execute: (reporting: ApiRequestReporting) => Promise<T>,
   ): Promise<OperationResult<T>>;
   resolve(operationKey: string, resourceKey: string, epoch: string): void;
-  clearSession(epoch: string): void;
+  clearSession(epoch: string, scope?: "owner" | "session"): void;
   setVisibility(visibility: OperationVisibility): void;
 }
 

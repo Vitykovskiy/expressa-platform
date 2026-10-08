@@ -1,18 +1,26 @@
 <template>
   <article class="price-choice-row">
-    <button
-      class="price-choice-row__summary"
-      type="button"
-      @click="emit('toggle')"
-    >
-      <span class="price-choice-row__summary-copy">
-        <strong>{{ choice.portionLabel || "Без подписи" }}</strong>
-        <span class="price-choice-row__price">{{ choice.price || "—" }} ₽</span>
-      </span>
-      <span class="price-choice-row__availability">{{
-        choice.isAvailable ? "Доступен" : "Недоступен"
-      }}</span>
-    </button>
+    <header class="price-choice-row__summary">
+      <div class="price-choice-row__summary-copy">
+        <div class="price-choice-row__values">
+          <strong>{{ choice.portionLabel || "Без подписи" }}</strong>
+          <span class="price-choice-row__price"
+            >{{ choice.price || "—" }} ₽</span
+          >
+        </div>
+        <span class="price-choice-row__availability">{{
+          choice.isAvailable ? "Доступен" : "Недоступен"
+        }}</span>
+      </div>
+      <AdminButton
+        size="compact"
+        type="button"
+        variant="ghost"
+        @click="emit('toggle')"
+      >
+        <AdminIcon :icon="expanded ? ChevronUp : ChevronDown" />
+      </AdminButton>
+    </header>
     <div v-if="expanded" class="price-choice-row__editor">
       <AdminFieldWrapper
         :id="priceId"
@@ -48,7 +56,7 @@
       <AdminFieldWrapper
         :id="availabilityId"
         v-slot="field"
-        label="Доступен для заказа"
+        label="В продаже"
         layout="row"
       >
         <AdminToggle
@@ -58,32 +66,37 @@
           @update:model-value="emit('update:isAvailable', $event === true)"
         />
       </AdminFieldWrapper>
-      <AdminActionGroup>
+      <AdminActionGroup align="end" class="price-choice-row__actions">
         <AdminButton
+          size="compact"
           type="button"
           variant="ghost"
           :disabled="disabled || first"
           @click="emit('move', -1)"
-          >Выше</AdminButton
+          ><AdminIcon :icon="ChevronUp" /></AdminButton
         ><AdminButton
+          size="compact"
           type="button"
           variant="ghost"
           :disabled="disabled || last"
           @click="emit('move', 1)"
-          >Ниже</AdminButton
+          ><AdminIcon :icon="ChevronDown" /></AdminButton
         ><AdminButton
+          size="compact"
           type="button"
-          variant="ghost"
+          variant="destructive"
           :disabled="disabled"
           @click="emit('remove')"
-          >Удалить цену</AdminButton
-        >
+          ><AdminIcon :icon="Trash2"
+        /></AdminButton>
       </AdminActionGroup>
     </div>
   </article>
 </template>
 <script setup lang="ts">
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-vue-next";
 import { useId } from "vue";
+import AdminIcon from "../../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminButton from "../../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminActionGroup from "../../../../shared/ui/admin/admin-action-group/AdminActionGroup.vue";
 import AdminFieldWrapper from "../../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
@@ -120,51 +133,64 @@ const emit = defineEmits<{
   overflow: hidden;
 }
 .price-choice-row__summary {
-  display: flex;
-  width: 100%;
-  min-height: var(--expressa-size-control-min-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--expressa-space-md);
+  gap: var(--expressa-space-8);
   padding: var(--expressa-space-8) var(--expressa-space-16);
-  border: 0;
-  background: var(--expressa-color-surface);
-  color: var(--expressa-color-text-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.price-choice-row__summary:hover,
-.price-choice-row__summary:focus-visible {
-  background: var(--expressa-color-control-hover-surface);
 }
 .price-choice-row__summary-copy {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   min-width: 0;
+  gap: var(--expressa-space-4);
+}
+.price-choice-row__values {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
   gap: var(--expressa-space-8);
 }
-.price-choice-row__summary-copy strong {
-  overflow-wrap: anywhere;
+.price-choice-row__values strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .price-choice-row__price,
 .price-choice-row__availability {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-body);
 }
-.price-choice-row__availability {
-  flex: none;
+.price-choice-row__price {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: end;
 }
 .price-choice-row__editor {
   display: grid;
+  align-items: start;
   gap: var(--expressa-space-16);
   padding: var(--expressa-space-16);
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
+.price-choice-row__actions {
+  flex-wrap: nowrap;
+}
 @media (max-width: 599px) {
-  .price-choice-row__summary {
-    align-items: center;
+  .price-choice-row__values {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--expressa-space-4);
+  }
+  .price-choice-row__price {
+    text-align: start;
+  }
+}
+@media (min-width: 600px) {
+  .price-choice-row__editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+  .price-choice-row__editor > :nth-child(n + 3) {
+    grid-column: 1 / -1;
   }
 }
 </style>

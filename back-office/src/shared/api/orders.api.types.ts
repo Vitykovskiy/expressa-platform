@@ -53,6 +53,7 @@ export type QueueQuery = {
 };
 
 export type OrderApiError = {
+  settlement?: import("./client.types").ApiRequestReceipt;
   code: string;
   details: unknown;
   message: string;

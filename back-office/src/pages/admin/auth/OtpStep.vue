@@ -16,6 +16,7 @@
         autocomplete="one-time-code"
         inputmode="numeric"
         name="otp"
+        presentation="code"
         :required="field.required"
         @input="normalizeOtpInput"
       />
@@ -23,24 +24,28 @@
     <AdminButton class="auth-step__button" :disabled="!valid" type="submit">
       Подтвердить
     </AdminButton>
-    <AdminButton
-      class="auth-step__button"
-      :disabled="props.resendRemainingSeconds > 0"
-      variant="ghost"
-      @click="emit('resend')"
-    >
-      {{
-        props.resendRemainingSeconds > 0 ? "Ожидайте" : "Отправить код повторно"
-      }}
-    </AdminButton>
-    <AdminButton
-      class="auth-step__button"
-      variant="ghost"
-      @click="emit('changePhone')"
-    >
-      <AdminIcon :icon="ArrowLeft" />
-      Изменить номер
-    </AdminButton>
+    <div class="auth-step__secondary">
+      <AdminButton
+        class="auth-step__button"
+        :disabled="props.resendRemainingSeconds > 0"
+        variant="ghost"
+        @click="emit('resend')"
+      >
+        {{
+          props.resendRemainingSeconds > 0
+            ? "Ожидайте"
+            : "Отправить код повторно"
+        }}
+      </AdminButton>
+      <AdminButton
+        class="auth-step__button"
+        variant="ghost"
+        @click="emit('changePhone')"
+      >
+        <AdminIcon :icon="ArrowLeft" />
+        Изменить номер
+      </AdminButton>
+    </div>
   </form>
 </template>
 
@@ -87,23 +92,22 @@ function normalizeOtp(value: string): string {
   gap: var(--expressa-space-button-inline);
 }
 .auth-step__description {
+  margin: 0;
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-action);
   line-height: var(--expressa-line-height-body);
 }
+.auth-step__secondary {
+  display: grid;
+  gap: var(--expressa-space-xs);
+}
 .auth-step__description strong {
   color: var(--expressa-color-text-primary);
   font-weight: var(--expressa-font-weight-semibold);
+  display: inline-block;
+  white-space: nowrap;
 }
 .auth-step__button {
-  display: flex;
   width: 100%;
-  padding: var(--expressa-space-control-block) 0;
-  align-items: center;
-  justify-content: center;
-  gap: var(--expressa-space-sm);
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-control);
 }
 </style>

@@ -1,5 +1,10 @@
 import { shallowRef } from "vue";
 import type {
+  ApiRequestDescriptor,
+  ApiRequestOutcome,
+  ApiRequestReporting,
+} from "../../shared/api/client.types";
+import type {
   OperationContext,
   OperationOutcomeKey,
   OperationRecovery,
@@ -7,7 +12,10 @@ import type {
   OperationVisibility,
 } from "../../shared/lib/operations/operation.types";
 import { classifyError } from "./error-taxonomy";
-import { outcomeMessages } from "./error-taxonomy.constants";
+import {
+  outcomeMessages,
+  requestSuccessMessages,
+} from "./error-taxonomy.constants";
 import {
   defaultNotificationVisibility,
   narrowNotificationViewport,
@@ -17,66 +25,57 @@ import {
 import type {
   CapturedContext,
   NotificationEntry,
-  NotificationEpisode,
-  NotificationFailureMetadata,
   NotificationRuntime,
   OperationGeneration,
   RecoveryRegistration,
-  TimedEntry,
+  NotificationBatch,
+  OperationLifetime,
 } from "./notification-runtime.types";
 
 export function createNotificationRuntime(): NotificationRuntime {
   const entries = shallowRef<readonly NotificationEntry[]>([]);
-  const episodes: NotificationEpisode[] = [];
-  const processedOccurrences = new Map<string, string>();
-  const generations: OperationGeneration[] = [];
+  const batches = new Map<string, NotificationBatch>();
+  const lifetimes = new Map<string, OperationLifetime>();
+  const generations = new Map<string, OperationGeneration>();
   const registrations = new Map<string, RecoveryRegistration>();
-  const entryBindings = new Map<string, string>();
-  const entryContexts = new Map<string, CapturedContext>();
-  const timedEntries = new Map<string, TimedEntry>();
-  const invalidEpochs = new Set<string>();
+  const bindings = new Map<string, string>();
   const listeners = new Set<() => void>();
   let visibility = defaultNotificationVisibility;
   let clock: ReturnType<typeof setInterval> | null = null;
-  let lastClock = 0;
-  const recoveringEntries = new Map<string, string>();
-
-  const now = () => {
-    lastClock = Math.max(lastClock, performance.now());
-    return lastClock;
-  };
-  const sameOperation = (
-    left: Pick<CapturedContext, "epoch" | "operationKey" | "resourceKey">,
-    right: Pick<CapturedContext, "epoch" | "operationKey" | "resourceKey">,
+  let lastTick = performance.now();
+  const operationIdentity = (
+    context: Pick<
+      OperationContext,
+      "epoch" | "operationKey" | "resourceKey" | "ownerIdentity"
+    >,
   ) =>
-    left.epoch === right.epoch &&
-    left.operationKey === right.operationKey &&
-    left.resourceKey === right.resourceKey;
-  const notify = () => listeners.forEach((listener) => listener());
-  const emit = () => {
-    updateClock();
-    notify();
-  };
-  const getVisibleEntries = () => {
-    const maximum =
-      visibility.viewportWidth >= narrowNotificationViewport ? 3 : 1;
-    return entries.value.slice(0, visibility.stackFits ? maximum : 1);
-  };
-  const isCurrent = (context: CapturedContext) => {
-    if (invalidEpochs.has(context.epoch) || context.ownerIsActive?.() === false)
-      return false;
-    if (context.generation === null) return true;
-    return (
-      generations.find((candidate) => sameOperation(candidate, context))
-        ?.latestIssued === context.generation
+    JSON.stringify([
+      context.epoch,
+      context.operationKey,
+      context.resourceKey,
+      context.ownerIdentity ?? null,
+    ]);
+  const visible = () =>
+    entries.value.slice(
+      0,
+      visibility.stackFits &&
+        visibility.viewportWidth >= narrowNotificationViewport
+        ? 3
+        : 1,
     );
+  const lifetimeFor = (epoch: string) => {
+    let lifetime = lifetimes.get(epoch);
+    if (lifetime === undefined || !lifetime.active) {
+      lifetime = { active: true, requests: 0, runs: 0 };
+      lifetimes.set(epoch, lifetime);
+    }
+    return lifetime;
   };
   const capture = (
     context: OperationContext,
-    generation: number | null = null,
+    generation: OperationGeneration | null = null,
   ): CapturedContext => ({
-    attemptId: context.attemptId,
-    epoch: context.epoch,
+    ...context,
     fieldTargets:
       context.fieldTargets === undefined
         ? undefined
@@ -88,235 +87,432 @@ export function createNotificationRuntime(): NotificationRuntime {
               ]),
             ),
           ),
+    lifetime: lifetimeFor(context.epoch),
     generation,
-    kind: context.kind,
-    operationKey: context.operationKey,
-    ownerIsActive: context.ownerIsActive,
-    origin: context.origin,
-    reportFailure: context.reportFailure,
-    resourceKey: context.resourceKey,
+    issuedGeneration: generation?.latestIssued ?? null,
   });
-  const startAttempt = (context: OperationContext) => {
-    const base = capture(context);
-    let generation = generations.find((candidate) =>
-      sameOperation(candidate, base),
-    );
-    if (generation === undefined) {
-      generation = {
-        epoch: base.epoch,
-        latestIssued: 0,
-        operationKey: base.operationKey,
-        resourceKey: base.resourceKey,
-      };
-      generations.push(generation);
-    }
-    generation.latestIssued += 1;
-    return capture(context, generation.latestIssued);
+  const current = (context: CapturedContext) =>
+    context.lifetime.active &&
+    context.ownerIsActive?.() !== false &&
+    (context.generation === null ||
+      context.generation.latestIssued === context.issuedGeneration);
+  const cleanupLifetime = (epoch: string, lifetime: OperationLifetime) => {
+    if (lifetime.requests !== 0 || lifetime.runs !== 0) return;
+    if (
+      [...batches.values()].some((batch) => batch.context.lifetime === lifetime)
+    )
+      return;
+    if (
+      [...registrations.values()].some(
+        (registration) => registration.context.lifetime === lifetime,
+      )
+    )
+      return;
+    if (lifetimes.get(epoch) === lifetime) lifetimes.delete(epoch);
   };
   const updateEntry = (id: string, update: Partial<NotificationEntry>) => {
     entries.value = entries.value.map((entry) =>
       entry.id === id ? { ...entry, ...update } : entry,
     );
   };
-  const settleTimedEntries = () => {
-    const current = now();
-    const visibleIds = new Set(getVisibleEntries().map((entry) => entry.id));
-    timedEntries.forEach((timed, id) => {
-      const paused =
-        visibility.hidden || !visibleIds.has(id) || visibility.hoveredId === id;
-      if (!paused) timed.elapsed += Math.max(0, current - timed.lastTick);
-      timed.lastTick = current;
-    });
-  };
-  const removeEntry = (id: string, settle = true) => {
-    if (settle) settleTimedEntries();
-    entries.value = entries.value.filter((entry) => entry.id !== id);
-    entryContexts.delete(id);
-    entryBindings.delete(id);
-    timedEntries.delete(id);
-  };
-  const findEpisode = (
-    context: CapturedContext,
-    category: NotificationEpisode["category"],
-    code: string,
-  ) =>
-    episodes.find(
-      (episode) =>
-        sameOperation(episode.context, context) &&
-        episode.category === category &&
-        episode.code === code,
-    );
-  const removeEpisode = (episode: NotificationEpisode) => {
-    const index = episodes.indexOf(episode);
-    if (index >= 0) episodes.splice(index, 1);
-    if (episode.entryId !== null) removeEntry(episode.entryId);
-  };
-  const resolveContext = (context: CapturedContext) => {
-    episodes
-      .filter((episode) => sameOperation(episode.context, context))
-      .forEach(removeEpisode);
-  };
-  const registrationFor = (context: CapturedContext) =>
-    [...registrations.values()]
-      .reverse()
-      .find(
-        (registration) =>
-          registration.active && sameOperation(registration.context, context),
-      );
-  const bindRecovery = (entryId: string, context: CapturedContext) => {
-    const registration = registrationFor(context);
-    if (registration === undefined) return;
-    entryBindings.set(entryId, registration.id);
-    updateEntry(entryId, { actionLabel: registration.recovery.actionLabel });
-  };
-  const appendEntry = (entry: NotificationEntry, context: CapturedContext) => {
-    settleTimedEntries();
-    entries.value = [...entries.value, entry];
-    entryContexts.set(entry.id, context);
-    if (entry.level === "success" || entry.level === "info")
-      timedEntries.set(entry.id, { elapsed: 0, lastTick: now() });
-    bindRecovery(entry.id, context);
-  };
-  const logFailure = (
-    occurrenceId: string,
-    context: CapturedContext,
-    metadata: NotificationFailureMetadata,
-  ) => {
-    console.error("operation_failure", {
-      category: metadata.category,
-      code: metadata.code,
-      occurrenceId,
-      operationKey: context.operationKey,
-      ...(metadata.status === null ? {} : { status: metadata.status }),
-      ...(metadata.requestId === null ? {} : { requestId: metadata.requestId }),
-      ...(metadata.clientStack === undefined
-        ? {}
-        : { clientStack: metadata.clientStack }),
-    });
-  };
-  const updateClock = () => {
-    if (timedEntries.size === 0) {
+  const emit = () => {
+    if (entries.value.length === 0) {
       if (clock !== null) clearInterval(clock);
       clock = null;
-    } else if (clock === null) clock = setInterval(tick, notificationTickMs);
+    } else if (clock === null) {
+      lastTick = performance.now();
+      clock = setInterval(tick, notificationTickMs);
+    }
+    listeners.forEach((listener) => listener());
+  };
+  const remove = (id: string) => {
+    const batch = batches.get(id);
+    entries.value = entries.value.filter((entry) => entry.id !== id);
+    batches.delete(id);
+    bindings.delete(id);
+    if (batch !== undefined)
+      cleanupLifetime(batch.context.epoch, batch.context.lifetime);
+  };
+  const retireAction = (id: string) => {
+    bindings.delete(id);
+    updateEntry(id, { actionLabel: undefined, busy: false });
+  };
+  const matchesTarget = (
+    context: CapturedContext,
+    descriptor?: ApiRequestDescriptor,
+  ) =>
+    context.requestTarget === undefined ||
+    (context.requestTarget.operationKey === descriptor?.operationKey &&
+      context.requestTarget.resourceKey === descriptor.resourceKey);
+  const bind = (id: string, context: CapturedContext) => {
+    if (!current(context)) return;
+    const registration = [...registrations.values()]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate.active &&
+          current(candidate.context) &&
+          matchesTarget(candidate.context, batches.get(id)?.descriptor) &&
+          operationIdentity(candidate.context) === operationIdentity(context),
+      );
+    if (registration === undefined) return;
+    bindings.set(id, registration.id);
+    updateEntry(id, { actionLabel: registration.recovery.actionLabel });
+  };
+  const settleTime = () => {
+    const timestamp = performance.now();
+    const elapsed = Math.max(0, timestamp - lastTick);
+    lastTick = timestamp;
+    const visibleIds = new Set(visible().map((entry) => entry.id));
+    for (const entry of entries.value) {
+      const batch = batches.get(entry.id);
+      if (batch !== undefined && visibleIds.has(entry.id)) batch.served = false;
+      if (
+        batch === undefined ||
+        visibility.hidden ||
+        !visibleIds.has(entry.id) ||
+        visibility.hoveredId === entry.id ||
+        entry.busy
+      )
+        continue;
+      batch.elapsed += elapsed;
+      batch.exposed = true;
+    }
   };
   const tick = () => {
-    settleTimedEntries();
-    const expired = [...timedEntries]
-      .filter(([, timed]) => timed.elapsed >= notificationLifetimeMs)
-      .map(([id]) => id);
-    expired.forEach((id) => removeEntry(id, false));
-    if (expired.length > 0) emit();
+    settleTime();
+    let changed = false;
+    for (const entry of [...entries.value]) {
+      const batch = batches.get(entry.id);
+      if (
+        batch === undefined ||
+        batch.elapsed < notificationLifetimeMs ||
+        visibility.hidden ||
+        visibility.hoveredId === entry.id ||
+        entry.busy
+      )
+        continue;
+      changed = true;
+      if (batch.persistent && !batch.resolved) {
+        batch.elapsed = 0;
+        batch.served = true;
+        entries.value = [
+          ...entries.value.filter((candidate) => candidate.id !== entry.id),
+          entry,
+        ];
+      } else remove(entry.id);
+    }
+    if (changed) emit();
   };
-
-  const runtime = {
+  const append = (
+    key: string,
+    entry: Omit<NotificationEntry, "id" | "busy">,
+    context: CapturedContext,
+    requestIdentity: string | null,
+    persistent: boolean,
+    descriptor?: ApiRequestDescriptor,
+    retirementMessage?: string,
+  ) => {
+    settleTime();
+    const equivalent = [...batches.values()].find(
+      (batch) => batch.key === key && !batch.resolved,
+    );
+    if (equivalent !== undefined) {
+      const inCurrentService = visible().some(
+        (entry) => entry.id === equivalent.id,
+      );
+      const protectedEntry =
+        visibility.hoveredId === equivalent.id ||
+        entries.value.some((entry) => entry.id === equivalent.id && entry.busy);
+      if (equivalent.served && !inCurrentService && !protectedEntry) {
+        equivalent.served = false;
+        equivalent.elapsed = 0;
+        const existing = entries.value.find(
+          (entry) => entry.id === equivalent.id,
+        );
+        if (existing !== undefined)
+          entries.value = [
+            ...entries.value.filter((entry) => entry.id !== existing.id),
+            existing,
+          ];
+      }
+      equivalent.count = Math.min(
+        Number.MAX_SAFE_INTEGER,
+        equivalent.count + 1,
+      );
+      updateEntry(equivalent.id, {
+        accounting:
+          equivalent.count === Number.MAX_SAFE_INTEGER
+            ? "Много операций"
+            : operationCountLabel(equivalent.count),
+      });
+      emit();
+      return;
+    }
+    const id = crypto.randomUUID();
+    batches.set(id, {
+      id,
+      key,
+      context,
+      requestIdentity,
+      descriptor,
+      actualRequest: requestIdentity !== null,
+      retirementMessage,
+      count: 1,
+      elapsed: 0,
+      exposed: false,
+      served: false,
+      persistent,
+      resolved: false,
+    });
+    entries.value = [...entries.value, { ...entry, id, busy: false }];
+    if (persistent) bind(id, context);
+    emit();
+  };
+  const resolveRequest = (identity: string) => {
+    for (const batch of [...batches.values()]) {
+      if (batch.requestIdentity !== identity || !batch.persistent) continue;
+      batch.resolved = true;
+      retireAction(batch.id);
+      if (batch.served) remove(batch.id);
+    }
+  };
+  const requestReporter =
+    (
+      captured: CapturedContext,
+      reportedFailure?: (error: unknown) => void,
+    ): ApiRequestReporting =>
+    (descriptor: ApiRequestDescriptor) => ({
+      begin() {
+        captured.lifetime.requests += 1;
+        let settled = false;
+        return (outcome: ApiRequestOutcome) => {
+          if (settled) return;
+          settled = true;
+          try {
+            if (outcome.status === "failure") reportedFailure?.(outcome.error);
+            const active = current(captured);
+            const requestContext = {
+              ...captured,
+              kind: descriptor.kind,
+              operationKey:
+                captured.operationKey === "catalog.reorder.compensate" &&
+                descriptor.kind === "mutation"
+                  ? captured.operationKey
+                  : descriptor.operationKey,
+              fieldTargets: undefined,
+            };
+            const classification =
+              outcome.status === "failure"
+                ? classifyError(outcome.error, requestContext)
+                : null;
+            const notice =
+              classification !== null &&
+              classification.kind !== "cancelled" &&
+              classification.kind !== "fieldValidation"
+                ? classification
+                : null;
+            const mutationCancellation =
+              classification?.kind === "cancelled" &&
+              descriptor.kind === "mutation";
+            const level =
+              outcome.status === "success"
+                ? "success"
+                : mutationCancellation
+                  ? "warning"
+                  : classification?.kind === "cancelled"
+                    ? "info"
+                    : (notice?.level ?? "error");
+            const classificationKey =
+              outcome.status === "success"
+                ? "success"
+                : classification?.kind === "cancelled"
+                  ? mutationCancellation
+                    ? "unconfirmed"
+                    : "cancelled"
+                  : `${notice?.category ?? "technical"}:${notice?.code ?? "VALIDATION_ERROR"}:${notice?.status ?? "none"}:${level}`;
+            const requestIdentity = JSON.stringify([
+              operationIdentity(captured),
+              descriptor.operationKey,
+              descriptor.resourceKey,
+              descriptor.kind,
+            ]);
+            const registration = active
+              ? [...registrations.values()]
+                  .reverse()
+                  .find(
+                    (candidate) =>
+                      candidate.active &&
+                      current(candidate.context) &&
+                      matchesTarget(candidate.context, descriptor) &&
+                      operationIdentity(candidate.context) ===
+                        operationIdentity(captured),
+                  )
+              : undefined;
+            const recoveryMeaning =
+              registration === undefined
+                ? null
+                : [
+                    registration.recovery.safety,
+                    registration.recovery.actionLabel,
+                  ];
+            const key = active
+              ? JSON.stringify([
+                  requestIdentity,
+                  "current",
+                  classificationKey,
+                  recoveryMeaning,
+                ])
+              : JSON.stringify([
+                  "retired",
+                  outcome.receipt.id,
+                  classificationKey,
+                ]);
+            const retirementMessage =
+              outcome.status === "success"
+                ? descriptor.operationKey === "auth.logout"
+                  ? "Вы вышли"
+                  : "Запрос выполнен"
+                : mutationCancellation ||
+                    (descriptor.kind === "mutation" &&
+                      notice?.kind === "failure" &&
+                      notice.level === "warning")
+                  ? "Результат запроса не подтверждён"
+                  : classification?.kind === "cancelled"
+                    ? "Запрос отменён"
+                    : classification?.kind === "domainRefusal"
+                      ? "Запрос отклонён"
+                      : "Запрос завершился ошибкой";
+            const message = !active
+              ? retirementMessage
+              : outcome.status === "success"
+                ? requestSuccessMessage(
+                    descriptor.operationKey,
+                    captured.operationKey,
+                  )
+                : mutationCancellation
+                  ? "Не удалось подтвердить сохранение"
+                  : classification?.kind === "cancelled"
+                    ? "Запрос отменён"
+                    : (notice?.message ?? "Проверьте введённые данные");
+            if (outcome.status === "success" && active)
+              resolveRequest(requestIdentity);
+            if (notice !== null)
+              console.error("operation_failure", {
+                category: notice.category,
+                code: notice.code,
+                occurrenceId: outcome.receipt.id,
+                operationKey: descriptor.operationKey,
+                ...(notice.status === null ? {} : { status: notice.status }),
+                ...(notice.requestId === null
+                  ? {}
+                  : { requestId: notice.requestId }),
+              });
+            append(
+              key,
+              { level, message },
+              active ? captured : retiredContext(captured),
+              active
+                ? requestIdentity
+                : JSON.stringify(["retired", outcome.receipt.id]),
+              level === "warning" || level === "error",
+              active ? descriptor : undefined,
+              retirementMessage,
+            );
+          } finally {
+            captured.lifetime.requests -= 1;
+            cleanupLifetime(captured.epoch, captured.lifetime);
+          }
+        };
+      },
+    });
+  const retiredContext = (context: CapturedContext): CapturedContext => ({
+    attemptId: "retired-request",
+    epoch: context.epoch,
+    kind: context.kind,
+    operationKey: "retired.request",
+    resourceKey: "retired",
+    origin: "automatic",
+    generation: null,
+    issuedGeneration: null,
+    lifetime: context.lifetime,
+  });
+  const resolveOperation = (context: CapturedContext) => {
+    for (const batch of [...batches.values()]) {
+      if (operationIdentity(batch.context) !== operationIdentity(context))
+        continue;
+      batch.resolved = true;
+      retireAction(batch.id);
+      if (batch.served) remove(batch.id);
+    }
+  };
+  const runtime: NotificationRuntime = {
     get entries() {
       return entries.value;
     },
     get visibleEntries() {
-      return getVisibleEntries();
+      return visible();
     },
-    subscribe(listener: () => void) {
+    subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    reporting(context) {
+      return requestReporter(capture(context));
+    },
     async run<T>(
       context: OperationContext,
-      execute: () => Promise<T>,
-      recovery?: { entryId: string; registrationId: string },
+      execute: (reporting: ApiRequestReporting) => Promise<T>,
     ): Promise<OperationResult<T>> {
-      const captured = startAttempt(context);
+      const identity = operationIdentity(context);
+      let generation = generations.get(identity);
+      if (generation === undefined) {
+        generation = { latestIssued: 0, active: 0 };
+        generations.set(identity, generation);
+      }
+      generation.latestIssued += 1;
+      generation.active += 1;
+      const captured = capture(context, generation);
+      captured.lifetime.runs += 1;
+      const reportedFailures = new Set<unknown>();
       try {
-        const value = await execute();
-        if (!isCurrent(captured)) return { status: "cancelled" };
-        resolveContext(captured);
-        emit();
+        const value = await execute(
+          requestReporter(captured, (error) => reportedFailures.add(error)),
+        );
+        if (!current(captured)) return { status: "cancelled" };
         return { status: "success", value };
       } catch (error) {
-        if (!isCurrent(captured)) return { status: "cancelled" };
+        if (!current(captured)) return { status: "cancelled" };
         const classified = classifyError(error, captured);
         if (classified.kind === "cancelled") return { status: "cancelled" };
-        if (
-          classified.kind === "fieldValidation" &&
-          classified.notification === undefined
-        )
-          return { status: "fieldValidation", fields: classified.fields };
         const notice =
           classified.kind === "fieldValidation"
             ? classified.notification
             : classified;
-        if (notice === undefined) return { status: "failure", error };
-        if (captured.reportFailure === false)
-          return {
-            status:
-              captured.kind === "mutation" && notice.level === "warning"
-                ? "unconfirmed"
-                : "failure",
-            error,
-          };
-        const metadata: NotificationFailureMetadata = {
-          category: notice.category,
-          clientStack: notice.clientStack,
-          code: notice.code,
-          requestId: notice.requestId,
-          status: notice.status,
-        };
-        if (!processedOccurrences.has(notice.occurrenceId)) {
-          processedOccurrences.set(notice.occurrenceId, captured.epoch);
-          logFailure(notice.occurrenceId, captured, metadata);
-          const recoveryEntryId =
-            recovery !== undefined &&
-            recoveringEntries.get(recovery.entryId) ===
-              recovery.registrationId &&
-            registrations.get(recovery.registrationId)?.active === true
-              ? recovery.entryId
-              : undefined;
-          const recoveryEpisode =
-            recoveryEntryId === undefined
-              ? undefined
-              : episodes.find((episode) => episode.entryId === recoveryEntryId);
-          let episode =
-            recoveryEpisode ??
-            findEpisode(captured, notice.category, notice.code);
-          if (
-            episode !== undefined &&
-            captured.origin === "user" &&
-            recoveryEpisode === undefined
-          ) {
-            removeEpisode(episode);
-            episode = undefined;
-          }
-          if (episode === undefined) {
-            const id = notice.occurrenceId;
-            episode = {
-              category: notice.category,
-              code: notice.code,
-              context: captured,
-              dismissed: false,
-              entryId: id,
-              latestAttemptId: captured.attemptId,
-              latestFailure: metadata,
-              occurrences: 1,
-            };
-            episodes.push(episode);
-            appendEntry(
-              { busy: false, id, level: notice.level, message: notice.message },
-              captured,
-            );
-          } else {
-            episode.category = notice.category;
-            episode.code = notice.code;
-            episode.latestAttemptId = captured.attemptId;
-            episode.latestFailure = metadata;
-            episode.occurrences += 1;
-            if (episode.entryId !== null)
-              updateEntry(episode.entryId, {
-                busy: false,
-                level: notice.level,
-                message: notice.message,
-              });
-          }
-          emit();
+        if (
+          !reportedFailures.has(error) &&
+          !hasReportedReceipt(error) &&
+          captured.reportFailure !== false &&
+          notice !== undefined
+        ) {
+          append(
+            JSON.stringify([
+              identity,
+              notice.category,
+              notice.code,
+              notice.status,
+            ]),
+            { level: notice.level, message: notice.message },
+            captured,
+            null,
+            true,
+          );
+          console.error("operation_failure", {
+            category: notice.category,
+            code: notice.code,
+            occurrenceId: notice.occurrenceId,
+            operationKey: captured.operationKey,
+          });
         }
         if (classified.kind === "fieldValidation")
           return { status: "fieldValidation", fields: classified.fields };
@@ -324,71 +520,85 @@ export function createNotificationRuntime(): NotificationRuntime {
           return { status: "domainRefusal", error };
         return {
           status:
-            captured.kind === "mutation" && notice.level === "warning"
+            captured.kind === "mutation" && classified.level === "warning"
               ? "unconfirmed"
               : "failure",
           error,
         };
+      } finally {
+        reportedFailures.clear();
+        generation.active -= 1;
+        if (generation.active === 0 && generations.get(identity) === generation)
+          generations.delete(identity);
+        captured.lifetime.runs -= 1;
+        cleanupLifetime(captured.epoch, captured.lifetime);
       }
     },
     publishOutcome(key: OperationOutcomeKey, context: OperationContext) {
       const captured = capture(context);
-      if (!isCurrent(captured) || !Object.hasOwn(outcomeMessages, key)) return;
+      if (!current(captured) || !Object.hasOwn(outcomeMessages, key)) return;
       const outcome = outcomeMessages[key];
-      appendEntry(
-        {
-          busy: false,
-          id: crypto.randomUUID(),
-          level: outcome.level,
-          message: outcome.message,
-        },
+      append(
+        JSON.stringify([operationIdentity(captured), key]),
+        outcome,
         captured,
+        null,
+        outcome.level === "warning",
       );
+    },
+    dismiss(id) {
+      settleTime();
+      if (entries.value.find((entry) => entry.id === id)?.busy) return;
+      remove(id);
       emit();
     },
-    dismiss(id: string) {
-      const episode = episodes.find((candidate) => candidate.entryId === id);
-      if (episode !== undefined) {
-        episode.dismissed = true;
-        episode.entryId = null;
-      }
-      removeEntry(id);
-      emit();
-    },
-    resolve(operationKey: string, resourceKey: string, epoch: string) {
+    resolve(operationKey, resourceKey, epoch) {
       const context = capture({
         attemptId: "explicit-resolution",
         epoch,
         kind: "read",
         operationKey,
-        origin: "automatic",
         resourceKey,
+        origin: "automatic",
       });
-      resolveContext(context);
-      [...entryContexts.entries()]
-        .filter(([, entryContext]) => sameOperation(entryContext, context))
-        .forEach(([id]) => removeEntry(id));
+      resolveOperation(context);
+      cleanupLifetime(epoch, context.lifetime);
       emit();
     },
-    clearSession(epoch: string) {
-      invalidEpochs.add(epoch);
-      [...processedOccurrences.entries()]
-        .filter(([, value]) => value === epoch)
-        .forEach(([id]) => processedOccurrences.delete(id));
-      episodes
-        .filter((episode) => episode.context.epoch === epoch)
-        .forEach(removeEpisode);
-      for (const generation of [...generations])
-        if (generation.epoch === epoch)
-          generations.splice(generations.indexOf(generation), 1);
-      for (const registration of registrations.values())
-        if (registration.context.epoch === epoch) {
-          registration.active = false;
-          registrations.delete(registration.id);
+    clearSession(epoch, scope = "owner") {
+      const lifetime = lifetimes.get(epoch);
+      if (scope === "session")
+        lifetimes.forEach((value) => {
+          value.active = false;
+        });
+      else if (lifetime !== undefined) lifetime.active = false;
+      for (const registration of [...registrations.values()]) {
+        if (scope !== "session" && registration.context.epoch !== epoch)
+          continue;
+        registration.active = false;
+        registrations.delete(registration.id);
+      }
+      for (const batch of [...batches.values()]) {
+        if (scope !== "session" && batch.context.epoch !== epoch) continue;
+        if (!batch.actualRequest) {
+          remove(batch.id);
+          continue;
         }
-      [...entryContexts.entries()]
-        .filter(([, context]) => context.epoch === epoch)
-        .forEach(([id]) => removeEntry(id));
+        retireAction(batch.id);
+        const entry = entries.value.find(
+          (candidate) => candidate.id === batch.id,
+        );
+        if (entry === undefined) continue;
+        batch.context = retiredContext(batch.context);
+        batch.requestIdentity = null;
+        batch.descriptor = undefined;
+        batch.key = JSON.stringify(["retired", batch.id]);
+        updateEntry(batch.id, {
+          message: batch.retirementMessage ?? "Запрос завершён",
+        });
+      }
+      for (const [ownerEpoch, ownerLifetime] of lifetimes)
+        cleanupLifetime(ownerEpoch, ownerLifetime);
       emit();
     },
     registerRecovery(context: OperationContext, recovery: OperationRecovery) {
@@ -404,31 +614,26 @@ export function createNotificationRuntime(): NotificationRuntime {
         recovery,
       };
       registrations.set(registration.id, registration);
-      episodes
-        .filter(
-          (episode) =>
-            sameOperation(episode.context, captured) &&
-            episode.entryId !== null,
+      for (const batch of batches.values())
+        if (
+          batch.persistent &&
+          !batch.resolved &&
+          operationIdentity(batch.context) === operationIdentity(captured)
         )
-        .forEach((episode) =>
-          bindRecovery(episode.entryId as string, captured),
-        );
+          bind(batch.id, batch.context);
       emit();
       return () => {
         if (!registration.active) return;
         registration.active = false;
         registrations.delete(registration.id);
-        [...entryBindings.entries()]
-          .filter(([, bound]) => bound === registration.id)
-          .forEach(([entryId]) => {
-            entryBindings.delete(entryId);
-            updateEntry(entryId, { actionLabel: undefined, busy: false });
-          });
+        for (const [id, bound] of bindings)
+          if (bound === registration.id) retireAction(id);
+        cleanupLifetime(captured.epoch, captured.lifetime);
         emit();
       };
     },
-    recover(id: string) {
-      const registrationId = entryBindings.get(id);
+    recover(id) {
+      const registrationId = bindings.get(id);
       const registration =
         registrationId === undefined
           ? undefined
@@ -441,23 +646,18 @@ export function createNotificationRuntime(): NotificationRuntime {
         entry.busy
       )
         return;
-      if (!isCurrent(registration.context)) {
-        entryBindings.delete(id);
-        updateEntry(id, { actionLabel: undefined });
+      if (!current(registration.context)) {
+        retireAction(id);
         emit();
         return;
       }
+      settleTime();
       updateEntry(id, { actionLabel: "Повторяем…", busy: true });
       emit();
-      recoveringEntries.set(id, registration.id);
-      let invokedBoundary = false;
-      const recovery = {
-        entryId: id,
-        registrationId: registration.id,
-      };
+      let invoked = false;
       const invocation = {
-        run<T>(execute: () => Promise<T>) {
-          invokedBoundary = true;
+        run<T>(execute: (reporting: ApiRequestReporting) => Promise<T>) {
+          invoked = true;
           return runtime.run(
             {
               ...registration.context,
@@ -465,65 +665,78 @@ export function createNotificationRuntime(): NotificationRuntime {
               origin: "recovery",
             },
             execute,
-            recovery,
           );
         },
       };
-      const reenable = () => {
-        if (
-          registration.active &&
-          entryBindings.get(id) === registration.id &&
-          entries.value.some((candidate) => candidate.id === id)
-        ) {
-          updateEntry(id, {
-            actionLabel: registration.recovery.actionLabel,
-            busy: false,
-          });
-          emit();
-        }
-      };
-      const reportTerminal = (error: unknown) => {
-        return invocation
-          .run(() => Promise.reject(error))
-          .then((result) => {
-            reenable();
-            return result;
-          });
-      };
       void Promise.resolve()
         .then(() => registration.recovery.execute(invocation))
-        .then((result) => {
-          if (
-            !registration.active ||
-            entryBindings.get(id) !== registration.id ||
-            !entries.value.some((candidate) => candidate.id === id)
-          )
+        .then(async (result) => {
+          if (!registration.active || bindings.get(id) !== registration.id)
             return;
           if (result.status === "success") {
-            resolveContext(registration.context);
-            emit();
-            return;
-          }
-          if (
-            !invokedBoundary &&
-            (result.status === "failure" ||
-              result.status === "unconfirmed" ||
-              result.status === "domainRefusal")
-          ) {
-            return reportTerminal(result.error);
-          }
-          reenable();
+            const batch = batches.get(id);
+            if (batch !== undefined) {
+              batch.resolved = true;
+              retireAction(id);
+              if (batch.served) remove(id);
+            }
+          } else if (!invoked && "error" in result)
+            await invocation.run(() => Promise.reject(result.error));
         })
-        .catch((error: unknown) => {
-          return reportTerminal(error);
-        })
-        .finally(() => recoveringEntries.delete(id));
+        .catch((error: unknown) => invocation.run(() => Promise.reject(error)))
+        .finally(() => {
+          if (registration.active && bindings.get(id) === registration.id)
+            updateEntry(id, {
+              actionLabel: registration.recovery.actionLabel,
+              busy: false,
+            });
+          emit();
+        });
     },
-    setVisibility(nextVisibility: OperationVisibility) {
-      settleTimedEntries();
-      visibility = nextVisibility;
+    setVisibility(next: OperationVisibility) {
+      settleTime();
+      visibility = next;
       emit();
     },
   };
   return runtime;
+}
+
+function hasReportedReceipt(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("settlement" in error))
+    return false;
+  const receipt = error.settlement;
+  return (
+    typeof receipt === "object" &&
+    receipt !== null &&
+    "reported" in receipt &&
+    receipt.reported === true
+  );
+}
+
+function requestSuccessMessage(operationKey: string, intent: string): string {
+  if (
+    intent === "catalog.reorder.compensate" &&
+    operationKey.endsWith(".reorder")
+  )
+    return "Порядок восстановлен";
+  return Object.hasOwn(requestSuccessMessages, operationKey)
+    ? requestSuccessMessages[
+        operationKey as keyof typeof requestSuccessMessages
+      ]
+    : "Запрос выполнен";
+}
+
+function operationCountLabel(count: number): string {
+  const tail = count % 100;
+  const unit = count % 10;
+  const noun =
+    tail >= 11 && tail <= 14
+      ? "операций"
+      : unit === 1
+        ? "операция"
+        : unit >= 2 && unit <= 4
+          ? "операции"
+          : "операций";
+  return `${count} ${noun}`;
 }

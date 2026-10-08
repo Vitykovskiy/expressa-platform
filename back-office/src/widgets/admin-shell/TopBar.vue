@@ -4,14 +4,13 @@
     <AdminButton
       v-if="slots.action"
       class="top-bar-action"
+      size="compact"
       :disabled="actionDisabled"
       type="button"
       variant="ghost"
       @click="emit('action')"
     >
-      <span class="top-bar-action__icon">
-        <slot name="action" />
-      </span>
+      <slot name="action" />
     </AdminButton>
   </header>
 </template>
@@ -28,29 +27,20 @@ const slots = defineSlots<{ action?(): unknown }>();
 
 <style scoped lang="scss">
 .top-bar {
-  --top-bar-action-icon-size: var(--expressa-size-icon-action);
-
   position: relative;
   display: flex;
   min-height: var(--expressa-size-top-bar-min-height);
   align-items: center;
   justify-content: space-between;
-  padding: var(--expressa-safe-area-top)
-    calc(
-      var(--expressa-space-md) -
-        (
-          var(--expressa-size-control-min-height) - var(
-              --top-bar-action-icon-size
-            )
-        ) /
-        2
-    )
-    0 var(--expressa-space-md);
+  gap: var(--expressa-space-sm);
+  padding: var(--expressa-safe-area-top) var(--expressa-space-md) 0;
   background: var(--expressa-color-surface);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
 .top-bar-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-title);
@@ -58,25 +48,7 @@ const slots = defineSlots<{ action?(): unknown }>();
   line-height: var(--expressa-line-height-title);
 }
 .top-bar-action {
-  display: flex;
-  width: var(--expressa-size-control-min-height);
-  height: var(--expressa-size-control-min-height);
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  border: var(--expressa-border-width-none);
-  border-radius: var(--expressa-radius-sm);
-  color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-transparent);
-  font: inherit;
-  cursor: pointer;
-}
-.top-bar-action__icon {
-  display: block;
-  width: var(--top-bar-action-icon-size);
-  height: var(--top-bar-action-icon-size);
+  flex-shrink: 0;
 }
 @media (min-width: 768px) {
   .top-bar {

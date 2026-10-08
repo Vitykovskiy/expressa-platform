@@ -53,3 +53,11 @@ export const DetailsLoading: Story = {
   name: "Загрузка деталей",
   args: { detailsLoading: true },
 };
+
+export const Ready: Story = {
+  name: "Готов к выдаче",
+  args: {
+    order: { ...order, stage: "READY" },
+    details: { ...orderDetails, stage: "READY" },
+  },
+};

@@ -4,7 +4,6 @@
 
 <style scoped>
 .menu-screen-heading {
-  margin-top: calc(-1 * var(--expressa-space-24));
   margin-bottom: var(--expressa-space-16);
 }
 .menu-screen-heading h1 {
@@ -18,8 +17,8 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    block-size: 52px;
-    margin: calc(-1 * (var(--expressa-space-16) + var(--expressa-space-24)))
+    block-size: var(--expressa-size-menu-top-bar);
+    margin: calc(-1 * var(--expressa-space-16))
       calc(-1 * var(--expressa-space-16)) var(--expressa-space-16);
     padding-inline: var(--expressa-space-16);
     background: var(--expressa-color-surface);

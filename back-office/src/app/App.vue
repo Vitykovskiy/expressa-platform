@@ -122,9 +122,10 @@ onBeforeUnmount(() => {
 <style scoped>
 .app-content {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   max-width: none;
   height: 100dvh;
+  overflow: hidden;
   padding: 0;
 }
 .app-root {
@@ -133,5 +134,6 @@ onBeforeUnmount(() => {
 .app-screen {
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 </style>

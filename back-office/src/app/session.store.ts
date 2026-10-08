@@ -47,7 +47,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           operationContext("auth.otp.request", "otp", "mutation", {
             phone: { path: "phone" },
           }),
-          () => dependencies.authApi.requestOtp(phone),
+          (reporting) => dependencies.authApi.requestOtp(phone, reporting),
         );
         if (result.status === "success") {
           this.error = null;
@@ -70,13 +70,17 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           operationContext("auth.otp.verify", "otp", "mutation", {
             code: { path: "code" },
           }),
-          () => dependencies.authApi.verifyOtp(phone, code),
+          (reporting) => dependencies.authApi.verifyOtp(phone, code, reporting),
         );
         if (result.status === "success") {
           const access = result.value;
           const userResult = await getOperationPort().run(
             operationContext("auth.current-user", "session", "read"),
-            () => dependencies.authApi.getCurrentUser(access.accessToken),
+            (reporting) =>
+              dependencies.authApi.getCurrentUser(
+                access.accessToken,
+                reporting,
+              ),
           );
           if (userResult.status !== "success") return;
           await this.completeAuthentication(
@@ -93,11 +97,15 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
           return restorePromise;
         }
 
+        const reporting = getOperationPort().reporting(
+          operationContext("session.restore", "session", "read"),
+        );
         restorePromise = (async () => {
           try {
-            const access = await dependencies.authApi.refresh();
+            const access = await dependencies.authApi.refresh(reporting);
             const user = await dependencies.authApi.getCurrentUser(
               access.accessToken,
+              reporting,
             );
             await this.completeAuthentication(access.accessToken, user);
           } catch (error) {
@@ -144,7 +152,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       async logout(): Promise<void> {
         const result = await getOperationPort().run(
           operationContext("session.logout", "session", "mutation"),
-          () => dependencies.authApi.logout(),
+          (reporting) => dependencies.authApi.logout(reporting),
         );
         if (result.status === "success") {
           this.setAnonymous();
@@ -165,7 +173,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
 
         await getOperationPort().run(
           operationContext("session.denied.logout", "session", "mutation"),
-          () => dependencies.authApi.logout(),
+          (reporting) => dependencies.authApi.logout(reporting),
         );
 
         this.accessToken = null;
@@ -181,7 +189,7 @@ export function createSessionStore(dependencies: SessionStoreDependencies) {
       },
 
       setAnonymous(): void {
-        getOperationPort().clearSession(sessionEpoch);
+        getOperationPort().clearSession(sessionEpoch, "session");
         sessionEpoch = crypto.randomUUID();
         this.accessToken = null;
         this.currentUser = null;

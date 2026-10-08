@@ -151,3 +151,88 @@ export const SearchAndStageEmpty: Story = {
   render,
   args: { orders: [], search: "123", stage: "READY" },
 };
+
+export const TransitionRecovery: Story = {
+  name: "Сверка стадии",
+  render,
+  args: {
+    selectedOrderId: order.id,
+    details: orderDetails,
+    requiresTransitionRecovery: true,
+  },
+};
+export const LongDetails: Story = {
+  name: "Длинный заказ и история",
+  render,
+  args: {
+    orders: [
+      {
+        ...order,
+        number: "123456789012345678901234567890",
+        total: 1480,
+        stage: "PREPARING",
+      },
+      { ...order, id: "order-43", number: "43", stage: "ACCEPTED" },
+    ],
+    selectedOrderId: order.id,
+    details: {
+      ...orderDetails,
+      number: "123456789012345678901234567890",
+      total: 1480,
+      stage: "PREPARING",
+      snapshot: [
+        {
+          ...orderDetails.snapshot[0],
+          productName: "Капучино с двойной порцией эспрессо и овсяным молоком",
+          quantity: 2,
+          unitTotal: 440,
+          lineTotal: 880,
+          modifiers: [
+            {
+              modifierOptionId: "oat",
+              modifierName: "Овсяное молоко",
+              priceDelta: 60,
+            },
+            {
+              modifierOptionId: "espresso",
+              modifierName: "Дополнительный эспрессо",
+              priceDelta: 85,
+            },
+          ],
+        },
+        {
+          ...orderDetails.snapshot[0],
+          productId: "tea",
+          productName: "Чёрный чай с бергамотом",
+          portionLabel: "Большой чайник 600 мл",
+          quantity: 1,
+          unitTotal: 300,
+          lineTotal: 300,
+        },
+        {
+          ...orderDetails.snapshot[0],
+          productId: "croissant",
+          productName: "Круассан с миндальным кремом и лепестками миндаля",
+          portionLabel: null,
+          quantity: 1,
+          unitTotal: 300,
+          lineTotal: 300,
+        },
+      ],
+      events: [
+        {
+          from: "CREATED",
+          to: "ACCEPTED",
+          occurredAt: "2026-09-21T10:31:00.000Z",
+          actorLabel: "Администратор Анна",
+        },
+        {
+          from: "ACCEPTED",
+          to: "PREPARING",
+          occurredAt: "2026-09-21T10:33:00.000Z",
+          actorLabel: "Бариста Александр Константинопольский",
+        },
+      ],
+    },
+  },
+};

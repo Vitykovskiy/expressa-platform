@@ -62,3 +62,43 @@ export const RejectedPrice: Story = {
   },
   render,
 };
+export const RequiredBlank: Story = {
+  name: "Обязательная порция без значения",
+  args: {
+    requiredLabel: true,
+    choice: { portionLabel: "", price: "", isAvailable: true },
+  },
+  render,
+};
+export const DuplicatePortion: Story = {
+  name: "Повторяющаяся порция",
+  args: {
+    requiredLabel: true,
+    usedLabels: ["300 мл"],
+    choice: { portionLabel: " 300   мл ", price: "290", isAvailable: true },
+  },
+  render,
+};
+export const LongCustom: Story = {
+  name: "Длинная порция",
+  args: {
+    editing: true,
+    requiredLabel: true,
+    choice: {
+      portionLabel:
+        "Оченьдлиннаяпорциябезпробеловсдополнительныммолокомиразныминаполнителями500мл",
+      price: "2147483647",
+      isAvailable: true,
+    },
+  },
+  render,
+};
+export const Pending: Story = {
+  name: "Ожидание и блокировка",
+  args: {
+    disabled: true,
+    editing: true,
+    choice: { portionLabel: "300 мл", price: "290", isAvailable: false },
+  },
+  render,
+};

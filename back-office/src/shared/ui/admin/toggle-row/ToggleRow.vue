@@ -1,5 +1,12 @@
 <template>
-  <div class="toggle-row" :class="{ 'toggle-row--disabled': props.disabled }">
+  <div
+    class="toggle-row"
+    :class="{
+      'toggle-row--disabled': props.disabled,
+      'toggle-row--without-divider': !props.divider,
+      'toggle-row--separated-control': props.separateControl,
+    }"
+  >
     <div class="toggle-row-content">
       <div :id="labelId" class="toggle-row-label">
         {{ props.label }}
@@ -50,6 +57,16 @@ function updateModel(value: boolean | null) {
 .toggle-row-content {
   min-width: 0;
   min-block-size: var(--expressa-size-status-min-height);
+}
+
+.toggle-row--without-divider {
+  border-bottom-width: var(--expressa-border-width-none);
+}
+
+.toggle-row--separated-control {
+  padding-inline-end: calc(
+    var(--expressa-size-control-min-height) + var(--expressa-space-sm)
+  );
 }
 
 .toggle-row-label {

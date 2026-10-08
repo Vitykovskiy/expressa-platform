@@ -43,7 +43,7 @@
         :id="defaultControlId"
         v-slot="field"
         :error="props.fieldErrors?.isDefault"
-        label="Выбран по умолчанию"
+        label="По умолчанию"
         layout="row"
       >
         <AdminToggle
@@ -56,7 +56,7 @@
       <AdminFieldWrapper
         :id="availableControlId"
         v-slot="field"
-        label="Вариант доступен"
+        label="Доступен"
         layout="row"
       >
         <AdminToggle
@@ -111,6 +111,16 @@ function updateField(
 }
 .modifier-option-editor__body {
   display: grid;
-  gap: var(--expressa-space-sm);
+  align-items: start;
+  gap: var(--expressa-space-md);
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  .modifier-option-editor__body {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+  .modifier-option-editor__body > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
 }
 </style>

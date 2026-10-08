@@ -12,29 +12,37 @@
     </TopBar>
 
     <div class="orders-screen__toolbar">
-      <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
-      <FilterTabs
-        v-model="stageModel"
-        class="orders-screen__filters"
-        :disabled="queueControlsDisabled"
-        :items="queueFilters"
-        layout="wrapped"
-      />
-      <AdminFieldWrapper
-        id="orders-search"
-        v-slot="field"
-        class="orders-screen__search"
-        label="Номер заказа"
-      >
-        <AdminTextField
-          :id="field.controlId"
+      <header class="orders-screen__desktop-heading">
+        <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
+        <AdminButton variant="ghost" @click="emit('refresh')">
+          <AdminIcon :icon="RefreshCw" />
+        </AdminButton>
+      </header>
+      <div class="orders-screen__search-row">
+        <AdminFieldWrapper
+          id="orders-search"
+          v-slot="field"
+          class="orders-screen__search"
+          label="Номер заказа"
+        >
+          <AdminTextField
+            :id="field.controlId"
+            :disabled="queueControlsDisabled"
+            :model-value="props.search"
+            :required="field.required"
+            type="search"
+            @update:model-value="emit('update:search', $event)"
+          />
+        </AdminFieldWrapper>
+      </div>
+      <div class="orders-screen__filter-row">
+        <FilterTabs
+          v-model="stageModel"
           :disabled="queueControlsDisabled"
-          :model-value="props.search"
-          :required="field.required"
-          type="search"
-          @update:model-value="emit('update:search', $event)"
+          :items="queueFilters"
+          layout="wrapped"
         />
-      </AdminFieldWrapper>
+      </div>
     </div>
 
     <div class="orders-screen__content">
@@ -92,6 +100,7 @@
 import { computed } from "vue";
 import { ClipboardCheck, RefreshCw } from "lucide-vue-next";
 
+import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminProgress from "../../../shared/ui/admin/admin-progress/AdminProgress.vue";
@@ -136,27 +145,28 @@ const emptyContent = computed(() => {
 }
 .orders-screen__toolbar {
   display: grid;
-  gap: var(--expressa-space-md);
+  padding-top: var(--expressa-space-md);
   background: var(--expressa-color-surface);
 }
-.orders-screen__title {
+.orders-screen__desktop-heading {
   display: none;
+}
+.orders-screen__title {
   margin: 0;
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-screen-title);
   font-weight: var(--expressa-font-weight-bold);
   line-height: var(--expressa-line-height-heading);
 }
-.orders-screen__filters {
+.orders-screen__search-row {
   min-inline-size: 0;
-  max-inline-size: 100%;
-  order: 0;
+  padding-inline: var(--expressa-space-md);
 }
 .orders-screen__search {
-  display: grid;
-  order: 1;
-  gap: var(--expressa-space-field-label);
-  padding: 0 var(--expressa-space-md) var(--expressa-space-md);
+  min-inline-size: 0;
+}
+.orders-screen__filter-row {
+  min-inline-size: 0;
 }
 .orders-screen__content {
   flex: 1 1 auto;
@@ -164,27 +174,20 @@ const emptyContent = computed(() => {
   padding: var(--expressa-space-md) var(--expressa-space-md)
     var(--expressa-space-tab-bar-clearance);
 }
-.orders-screen__recovery {
-  margin-top: var(--expressa-space-24);
-}
-
 .orders-screen__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: var(--expressa-space-md);
 }
 .orders-screen__loading-state {
   display: grid;
   gap: var(--expressa-space-sm);
 }
-.orders-screen__loading-label {
-  margin: 0;
-  color: var(--expressa-color-text-secondary);
-  font-size: var(--expressa-font-size-body);
-  line-height: var(--expressa-line-height-body);
-}
 .orders-screen__skeleton {
   min-height: var(--expressa-size-row-min);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
   border-radius: var(--expressa-radius-lg);
   background: var(--expressa-color-surface-subtle);
   animation: orders-screen-skeleton-pulse
@@ -196,96 +199,37 @@ const emptyContent = computed(() => {
     opacity: var(--expressa-state-disabled-opacity);
   }
 }
-.orders-screen__state,
-.orders-screen__action-error {
-  display: grid;
-  gap: var(--expressa-space-sm);
-  margin: 0;
-  padding: var(--expressa-space-md);
-  border-radius: var(--expressa-radius-lg);
-  background: var(--expressa-color-surface);
-}
-.orders-screen__state--error,
-.orders-screen__action-error {
-  border-left: var(--expressa-border-width-strong) solid
-    var(--expressa-color-status-error);
-}
-.orders-screen__state--error h2 {
-  margin: 0;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-title);
-  line-height: var(--expressa-line-height-title);
-}
-.orders-screen__state--error p {
-  margin: 0;
-  color: var(--expressa-color-text-secondary);
-}
-.orders-screen__action-error {
-  color: var(--expressa-color-status-error);
-}
-.orders-screen__retry {
-  justify-self: start;
-}
-.orders-screen__action-error {
-  margin: 0 var(--expressa-space-md) var(--expressa-space-tab-bar-clearance);
-}
 @media (min-width: 768px) {
   .orders-screen {
     background: var(--expressa-color-surface);
   }
   .orders-screen__toolbar {
-    gap: var(--expressa-space-lg);
-    padding: var(--expressa-space-lg) var(--expressa-space-lg) 0;
+    gap: var(--expressa-space-sm);
+    padding-top: var(--expressa-space-lg);
   }
-  .orders-screen__title {
-    display: block;
+  .orders-screen__desktop-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--expressa-space-md);
+    padding-inline: var(--expressa-space-lg);
   }
-  .orders-screen__filters {
-    order: initial;
+  .orders-screen__search-row {
+    padding-inline: var(--expressa-space-lg);
   }
   .orders-screen__search {
-    padding: 0;
+    /* Search stays bounded using the existing auth-field measure, not a new scale. */
+    max-inline-size: var(--expressa-size-auth-card-max-width);
+  }
+  .orders-screen__filter-row {
+    /* FilterTabs owns its 16px inner gutter; compose it with the list's 24px gutter. */
+    padding-inline: calc(var(--expressa-space-lg) - var(--expressa-space-md));
   }
   .orders-screen__content {
-    padding: var(--expressa-space-lg) var(--expressa-space-lg)
-      var(--expressa-space-lg);
+    padding: var(--expressa-space-lg);
   }
   .orders-screen__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .orders-screen__action-error {
-    margin: 0 var(--expressa-space-lg) var(--expressa-space-lg);
-  }
-}
-@media (min-width: 768px) {
-  .orders-screen__toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-    align-items: center;
-  }
-  .orders-screen__title {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .orders-screen__filters {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .orders-screen__search {
-    min-inline-size: 0;
-    grid-column: 2;
-    grid-row: 2;
-    order: initial;
-  }
-}
-@media (min-width: 768px) and (max-width: 1023px) {
-  .orders-screen__toolbar {
-    align-items: start;
-  }
-  .orders-screen__filters {
-    grid-column: 1 / -1;
-  }
-  .orders-screen__search {
-    grid-row: 1;
   }
 }
 </style>

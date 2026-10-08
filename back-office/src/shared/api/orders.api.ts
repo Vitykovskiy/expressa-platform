@@ -1,5 +1,11 @@
+import type { ApiRequestFeedback, ApiRequestReporting } from "./client.types";
 import { bearerTokenType } from "./auth.api.constants";
-import { ApiClient, ApiError } from "./client";
+import {
+  ApiClient,
+  ApiError,
+  createRequestFeedback,
+  requestReceipt,
+} from "./client";
 import {
   ordersApiPaths,
   orderStages,
@@ -23,6 +29,7 @@ export class OrdersApi {
   async list(
     accessToken: string,
     query: QueueQuery,
+    reporting?: ApiRequestReporting,
   ): Promise<readonly OrderListItem[]> {
     const search = new URLSearchParams();
     if (query.number) search.set("number", query.number);
@@ -34,15 +41,29 @@ export class OrdersApi {
       isOrderList,
       accessToken,
       "GET",
+      createRequestFeedback(reporting, {
+        operationKey: "orders.list",
+        resourceKey: JSON.stringify(query),
+        kind: "read",
+      }),
     );
   }
 
-  async details(accessToken: string, orderId: string): Promise<OrderDetails> {
+  async details(
+    accessToken: string,
+    orderId: string,
+    reporting?: ApiRequestReporting,
+  ): Promise<OrderDetails> {
     const details = await this.request(
       `${ordersApiPaths.orders}/${orderId}`,
       isOrderDetailsDto,
       accessToken,
       "GET",
+      createRequestFeedback(reporting, {
+        operationKey: "orders.details",
+        resourceKey: orderId,
+        kind: "read",
+      }),
     );
 
     return toOrderDetails(details);
@@ -51,6 +72,7 @@ export class OrdersApi {
   async transition(
     accessToken: string,
     order: OrderDetails,
+    reporting?: ApiRequestReporting,
   ): Promise<OrderDetails> {
     const transition =
       orderTransitions[order.stage as keyof typeof orderTransitions];
@@ -68,9 +90,14 @@ export class OrdersApi {
       isOrderListItem,
       accessToken,
       "POST",
+      createRequestFeedback(reporting, {
+        operationKey: "orders.transition",
+        resourceKey: order.id,
+        kind: "mutation",
+      }),
     );
 
-    return this.details(accessToken, order.id);
+    return this.details(accessToken, order.id, reporting);
   }
 
   private async request<T>(
@@ -78,27 +105,34 @@ export class OrdersApi {
     validate: (value: unknown) => value is T,
     accessToken: string,
     method: "GET" | "POST",
+    feedback?: ApiRequestFeedback,
   ): Promise<T> {
     try {
       return await this.client.request(path, validate, {
+        feedback,
         expectedStatus: 200,
         headers: { authorization: `${bearerTokenType} ${accessToken}` },
         method,
       });
     } catch (error) {
-      throw toOrderApiError(error);
+      throw toOrderApiError(error, requestReceipt(feedback));
     }
   }
 }
 
-function toOrderApiError(error: unknown): OrderApiError {
+function toOrderApiError(
+  error: unknown,
+  receipt?: import("./client.types").ApiRequestReceipt,
+): OrderApiError {
   if (error instanceof ApiError) {
     return error;
   }
 
-  if (isOrderApiError(error)) return error;
+  if (isOrderApiError(error))
+    return receipt === undefined ? error : { ...error, settlement: receipt };
 
   return {
+    settlement: receipt,
     code: "API_CONTRACT_ERROR",
     details: null,
     message: "Сервис заказов вернул некорректный ответ.",

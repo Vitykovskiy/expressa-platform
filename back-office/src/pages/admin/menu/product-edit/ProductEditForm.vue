@@ -31,8 +31,8 @@ const emit = defineEmits<{ cancel: []; save: [] }>();
 }
 .product-edit-form__content {
   display: grid;
-  gap: var(--expressa-space-24);
-  padding-bottom: var(--expressa-space-24);
+  gap: var(--expressa-space-16);
+  padding-bottom: var(--expressa-space-16);
 }
 .product-edit-form__footer {
   position: sticky;
@@ -57,9 +57,6 @@ const emit = defineEmits<{ cancel: []; save: [] }>();
 @media (max-width: 374px) {
   .product-edit-form__footer {
     gap: var(--expressa-space-4);
-  }
-  .product-edit-form__footer :deep(.admin-button) {
-    padding-inline: var(--expressa-space-8);
   }
 }
 </style>

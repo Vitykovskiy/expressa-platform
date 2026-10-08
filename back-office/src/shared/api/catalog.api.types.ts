@@ -122,6 +122,7 @@ export interface CatalogValidationField {
 }
 
 export interface CatalogApiErrorData {
+  settlement?: import("./client.types").ApiRequestReceipt;
   code: string;
   details?: unknown;
   fields: readonly CatalogValidationField[];
