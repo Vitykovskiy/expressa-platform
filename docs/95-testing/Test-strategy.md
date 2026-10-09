@@ -34,7 +34,8 @@ scope: system
 ## Доступность интерфейсов
 
 Следующие требования применяются к front-office. Для back-office действует
-[ADR-010](../20-architecture/ADR/ADR-010-back-office-interaction-boundary.md).
+[ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md)
+и [контракт UI](../../back-office/docs/10-architecture/ui-ownership.md).
 
 - целевой уровень WCAG 2.1 AA;
 - стандартная поддержка клавиатуры для форм и элементов управления; отдельные горячие клавиши не разрабатываются;

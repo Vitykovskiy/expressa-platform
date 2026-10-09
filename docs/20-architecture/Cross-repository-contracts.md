@@ -20,7 +20,9 @@ Backend публикует версионированный HTTP API; front-offi
 Изменение HTTP-контракта требует обновить backend OpenAPI и клиентские проверки;
 `openapi:sync` копирует опубликованный документ в оба клиентских контура.
 [Команда](../../backend/package.json), [front contract check](../../front-office/package.json),
-[back contract check](../../back-office/package.json).
+[back-office manifest](../../back-office/package.json). Наличие обязательной проверки
+back-office не предполагается: её команды берутся из фактической конфигурации
+выбранного клиента.
 
 Предметная ownership остаётся локальной: auth/catalog/orders — backend,
 customer UI — front-office, staff UI — back-office. [Backend](../../backend/docs/INDEX.md),

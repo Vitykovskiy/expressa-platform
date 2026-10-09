@@ -2,29 +2,27 @@
 title: "Управление меню"
 type: feature
 owner: root
-implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-10-09
 sources:
-  - ../../back-office/docs/30-domains/Catalog-management.md
-  - ../../back-office/src/pages/admin/menu/catalog.store.ts
-knowledge_role: implementation
+  - ../50-interfaces/Back-office-UI.md
+  - ../30-domain/Catalog-and-menu.md
+  - ../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md
+knowledge_role: requirements
 scope: system
 ---
 
 # Управление меню
 
-Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+Administrator получает административный каталог и управляет категориями,
+товарами, ценами, группами и вариантами модификаторов и связями категорий.
+Сохраняются серверный порядок, архивирование, предметная валидация и аудит.
+Актуальная модель цен определена [ADR-008](../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md),
+точные команды — [API back-office](../50-interfaces/Back-office-API.md).
 
-Administrator открывает `/menu`, получает административный каталог и управляет
-категориями, товарами, вариантами цены, группами/вариантами модификаторов и связями
-категории. Диалоги и редакторы владеют локальными черновиками; store владеет
-запросами, ошибками и каноническим каталогом, который перечитывает после
-успешной команды. [Category fields](../../back-office/src/pages/admin/menu/CategoryFormFields.vue),
-[modifier editor](../../back-office/src/pages/admin/menu/ModifierGroupEditor.vue),
-[catalog store](../../back-office/src/pages/admin/menu/catalog.store.ts),
-[Back-office scenario](../../back-office/docs/30-domains/Catalog-management.md).
+При редактировании сотрудник сохраняет введённые данные до подтверждённого
+результата. Ошибка валидации относится к соответствующему полю;
+неоднозначный результат записи требует проверки серверного состояния.
+Состояния и права определяет [UI-контракт](../50-interfaces/Back-office-UI.md).
 
-Backend проверяет предметные ограничения, архивирует вместо удаления и пишет
-audit в той же транзакции. Переупорядочивание требует полный текущий набор
-идентификаторов; API доступен только administrator. [Catalog domain](../../backend/docs/30-domains/Catalog.md),
-[roles](../../backend/src/catalog/transport/catalog-categories.controller.ts).
+Сценарий не назначает маршрут, диалог, дерево компонентов или store.
+Их выбирают заново по [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md).

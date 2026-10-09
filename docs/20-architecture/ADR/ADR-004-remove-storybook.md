@@ -24,6 +24,10 @@ scope: system
 
 ## Решение
 
+Для back-office 2.0 это решение заменено
+[ADR-011](ADR-011-back-office-clean-slate.md). Следующие требования
+сохраняются для front-office; каталог back-office выбирается для новой задачи.
+
 Каждый клиент поддерживает свой Storybook в `.storybook`. Каталог импортирует
 runtime-компоненты из `src`, но runtime не импортирует Storybook. Истории
 используют статические fixtures и decorators: сеть, API, авторизация и
@@ -35,7 +39,11 @@ runtime-компоненты из `src`, но runtime не импортируе�
 
 ## Текущее состояние интеграции
 
-Back-office содержит [.storybook/main.ts](../../../back-office/.storybook/main.ts) и команды каталога в [package.json](../../../back-office/package.json). В front-office конфигурации `.storybook` и команд `storybook` / `storybook:build` сейчас нет: [package.json](../../../front-office/package.json). Требование этого ADR для front-office остаётся незакрытым; документационная правка не реализует каталог и не принимает его визуальную полноту.
+В front-office конфигурации `.storybook` и команд `storybook` / `storybook:build`
+сейчас нет: [package.json](../../../front-office/package.json). Требование
+этого ADR для front-office остаётся незакрытым; документационная правка
+не реализует каталог и не принимает его визуальную полноту. Наличие каталога
+в рабочем дереве back-office не обязывает переносить его в новую реализацию.
 
 ## Последствия
 

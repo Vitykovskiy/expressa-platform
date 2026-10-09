@@ -1,77 +1,78 @@
 ---
 title: "Интерфейс back-office"
-type: interface
+type: contract
 owner: root
-implementation_status: current
-last_verified: 2026-08-11
+last_verified: 2026-10-09
 sources:
-  - ../../back-office/src/app/router.ts
-  - ../../back-office/src/app/router.constants.ts
-  - ../../back-office/src/pages/MenuPage.vue
-  - ../../back-office/src/pages/admin/menu/catalog.store.ts
-  - ../../back-office/src/pages/QueuePage.vue
-knowledge_role: implementation
-scope: system
+  - ../20-architecture/ADR/ADR-011-back-office-clean-slate.md
+  - ../10-overview/Roles-and-access.md
+  - ../30-domain/Order-lifecycle.md
+  - ../30-domain/Availability.md
+  - ../../backend/openapi/openapi.json
+knowledge_role: requirements
+scope: back-office
 ---
 
 # Интерфейс back-office
 
-Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+Back-office 2.0 проектируется с нуля по
+[ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md).
+Это контракт требуемых результатов, а не описание работающих экранов.
+Он не назначает палитру, темы, layout, компоненты, маршруты или breakpoint.
+Стек и code-style остаются обязательными по
+[техническому DoD](../80-conventions/Code-Definition-of-Done-back-office.md).
 
-## Активные границы
+## Доступ сотрудника
 
-Маршрутизатор регистрирует `/login`, `/queue`, `/availability`, `/menu`; guard
-восстанавливает сессию и направляет неаутентифицированного сотрудника на вход.
-[back-office/src/app/router.ts:createBackOfficeRouter](../../back-office/src/app/router.ts).
+Доступ имеют Barista и Administrator; управление каталогом доступно только
+Administrator по [матрице ролей](../10-overview/Roles-and-access.md).
+Вход использует действующий [контракт аутентификации](Authentication-API.md).
+Ролевая проверка сохраняется для каждого защищённого действия; видимость
+управления в клиенте не заменяет серверную авторизацию.
 
-`/menu` — активная administrator-страница. Она показывает loading, error с
-повтором и подтверждённый empty; во время loading контент получает `aria-busy`
-и блокируется. [back-office/src/pages/MenuPage.vue:entry](../../back-office/src/pages/MenuPage.vue).
+## Заказы
 
-`useCatalogStore` владеет каноническим каталогом, запросом, ошибкой полей и
-флагом результата команды; после mutation он заново читает каталог.
-[back-office/src/pages/admin/menu/catalog.store.ts:useCatalogStore](../../back-office/src/pages/admin/menu/catalog.store.ts).
+Сотрудник находит заказ по номеру и стадии, видит время, сумму, сохранённый
+состав и историю переходов. Данные очереди сортируются по времени создания,
+счётчики и обновление отражают серверные данные. Новые заказы доступны без
+ручного перезапуска клиента; действуют требования push и опроса API.
 
-`MenuPage` владеет refs открытия и передаёт их в dialog components.
-[back-office/src/pages/MenuPage.vue:entry](../../back-office/src/pages/MenuPage.vue).
+Разрешены только переходы [жизненного цикла](../30-domain/Order-lifecycle.md):
+CREATED, ACCEPTED, PREPARING, READY, ISSUED. Следующее допустимое действие
+имеет ясный приоритет. Выдача выполняется после оплаты на кассе; отдельного
+онлайн-платёжного сценария нет. [Snapshots](../30-domain/Order-snapshots.md)
+не заменяются текущим каталогом.
 
-Breakpoint мобильного диалога — не шире 767px.
-[back-office/src/shared/ui/admin/admin-dialog/AdminDialog.constants.ts:ADMIN_DIALOG_MOBILE_MEDIA_QUERY](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.constants.ts).
+## Доступность
 
-На мобильной ширине `AdminDialog` располагается снизу по центру; иначе — по
-центру экрана. [back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:dialogLocation](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
+Сотрудник находит товар, ценовую опцию или добавку и меняет их оперативную
+доступность; отдельно управляет приёмом новых заказов. Сведения о категории,
+текущем значении, авторе и времени изменения показываются, когда они доступны
+в контракте. Остановка приёма не блокирует обработку уже созданных заказов.
+Оптимистичное представление отличается от подтверждённых данных; при ошибке
+восстанавливается подтверждённое состояние, при неизвестном исходе выполняется
+проверка состояния. Инварианты принадлежат [домену доступности](../30-domain/Availability.md).
 
-Поверхность dialog имеет нижние скругления на мобильном экране, полные
-скругления от 768px и max-height 90vh.
-[back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue:admin-dialog__surface](../../back-office/src/shared/ui/admin/admin-dialog/AdminDialog.vue).
+## Каталог
 
-## Очередь и управление доступностью
+Administrator создаёт и изменяет категории, товары, их порядок, цены,
+группы и варианты добавок и связи с категориями. Используется актуальная модель
+price/priceChoices по [ADR-008](../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md),
+без восстановления редактора S/M/L. Архивирование подтверждается;
+серверные ошибки связаны с соответствующим вводом и сохраняют черновик.
+[Предметная модель](../30-domain/Catalog-and-menu.md) и
+[API](Back-office-API.md) определяют допустимые данные и команды.
 
-`/queue` и `/availability` защищены role metadata. [back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
+## Состояния и проверка
 
-`/queue` — активная очередь заказов. `QueuePage` владеет запросами списка и
-деталей, поиском, фильтром стадии, обновлением каждые 5 секунд и ошибками. Ошибка
-списка объясняется человеку, оставляет одну команду повтора, а код, сообщение и
-номер запроса доступны в раскрываемых технических подробностях;
-при повторных сбоях чтения эти подробности остаются открытыми или закрытыми по
-выбору сотрудника до успешного ответа. Ошибка загрузки деталей заказа остаётся
-в выбранной карточке и повторяется её единственной кнопкой, отдельно от ошибки
-перехода заказа;
-`OrdersScreen` показывает loading, error и empty, а `OrderCard` показывает
-снимок, события и только следующее допустимое действие.
-[QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [OrderCard](../../back-office/src/pages/admin/orders/OrderCard.vue).
+Загрузка, отсутствие данных, ошибка, выполнение и завершение операции
+различимы. Повтор одной выполняемой команды защищён от случайного дубля.
+Неоднозначный ответ на изменение не считается успешным; клиент проверяет
+серверное состояние до нового изменения. Технические подробности не заменяют
+понятное объяснение сотруднику. Политика восстановления соответствует
+[принятым preferences](../40-quality/Product-quality-preferences.md).
 
-`/menu` сохраняет черновик товара во время подтверждения записи. Ошибка валидации
-остаётся в форме, а не подтверждённое сохранение предлагает только обновить меню
-и проверить товар перед новым сохранением.
-
-`/availability` — активное управление доступностью. `AvailabilityPage` загружает
-категории и приём заказов, а `AvailabilityScreen` показывает поиск, фильтр и
-переключатели доступности.
-[AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
-[AvailabilityScreen](../../back-office/src/pages/admin/availability/AvailabilityScreen.vue).
-
-`AvailabilityScreen` — активный дочерний UI `AvailabilityPage`. Неподключённые
-композиции управления пользователями и настроек удалены; активных маршрутов
-для них нет.
-[back-office/src/app/router.constants.ts:backOfficeRoutes](../../back-office/src/app/router.constants.ts).
+Форма экранов выбирается для нового сценария и проходит
+[визуальную проверку](../40-quality/Validation-strategy.md).
+Точный HTTP-контракт принадлежит [OpenAPI](../../backend/openapi/openapi.json).
+Исторические описания страниц и старый UI-каталог не являются эталоном.

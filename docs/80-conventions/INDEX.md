@@ -48,12 +48,13 @@ scope: system
 
 ### Back-office
 
-| Задача или вопрос | Маршрут                                                                                                                                                                                             | Роль результата                                                        |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| AGENTS            | Входы: [AGENTS](../../back-office/AGENTS.md), [README](../../back-office/README.md) и [карта документации](../../back-office/docs/INDEX.md).                                                        | Карта дальнейшего чтения                                               |
-| back-office DoD   | Готовность кода: [back-office DoD](Code-Definition-of-Done-back-office.md) и общий [UI DoD](../40-quality/Definition-of-done.md).                                                                   | Требование или действующее правило                                     |
-| стиль Vue         | Code style и проверка: [стиль Vue](../40-quality/Vue-code-style.md), [доступность и взаимодействие](../40-quality/UI-accessibility.md), [стратегия проверки](../40-quality/Validation-strategy.md). | Требование или действующее правило                                     |
-| UI ownership      | UI и архитектура: [UI ownership](../../back-office/docs/10-architecture/ui-ownership.md) и [размещение кода](../../back-office/docs/80-conventions/code-layout.md).                                 | Описание реализации и её источники; Требование или действующее правило |
+| Задача или вопрос | Маршрут                                                                                                                                                                                               | Роль результата                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Входы             | [AGENTS](../../back-office/AGENTS.md), [README](../../back-office/README.md), [карта](../../back-office/docs/INDEX.md).                                                                               | Навигация                                              |
+| Новая версия      | [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md) и [контракт продукта](../50-interfaces/Back-office-UI.md).                                                                       | Действующая граница проектирования и бизнес-результаты |
+| Готовность        | [Back-office DoD](Code-Definition-of-Done-back-office.md), [UI DoD](../40-quality/Definition-of-done.md), [стратегия проверки](../40-quality/Validation-strategy.md).                                 | Требования проверки нового результата                  |
+| Ответственность   | [UI ownership](../../back-office/docs/10-architecture/ui-ownership.md), [размещение кода](../../back-office/docs/80-conventions/code-layout.md).                                                      | Обязательные границы и направление зависимостей        |
+| Стек              | [Back-office DoD](Code-Definition-of-Done-back-office.md), обязательный [Vue style](../40-quality/Vue-code-style.md), manifest и lock-файл реализации, официальная документация установленной версии. | Реальная конфигурация и применимые соглашения          |
 
 ## Матрица видов изменений
 

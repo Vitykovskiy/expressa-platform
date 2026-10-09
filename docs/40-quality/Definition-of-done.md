@@ -17,13 +17,15 @@ scope: system
 
 # Definition of Done для UI
 
-Эта нота задаёт gate завершённости UI-задачи и применяется ко всему Vue UI-коду `front-office` и `back-office`. Детальные правила Vue и Vuetify определяет [стиль Vue-кода](Vue-code-style.md).
+Эта нота задаёт gate завершённости UI-задачи в `front-office` и `back-office`.
+Для Vue/Vuetify-кода обоих клиентов обязателен [стиль Vue-кода](Vue-code-style.md).
+Новый back-office выбирает форму UI по [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md); стек и [технический DoD](../80-conventions/Code-Definition-of-Done-back-office.md) сохраняются.
 
 ## Gate
 
 - Изменение сохраняет границы двух независимых продуктов по [границам приложений](../20-architecture/Repository-boundaries.md).
 - Изменённый Vue/Vuetify-код соответствует [стилю Vue-кода](Vue-code-style.md).
-- Изменённое UI-поведение соответствует применимым требованиям: [требования Customer](UI-accessibility.md) или [ADR-010](../20-architecture/ADR/ADR-010-back-office-interaction-boundary.md) и [UI-контракт back-office](../../back-office/docs/10-architecture/ui-ownership.md).
+- Изменённое UI-поведение соответствует применимым требованиям: [требования Customer](UI-accessibility.md) или [UI-контракт back-office](../../back-office/docs/10-architecture/ui-ownership.md).
 - Для изменения видимого UI выполнен [процесс визуальной работы](Validation-strategy.md#процесс-визуальной-работы): определена визуальная цель и просмотрен результат после последних правок.
 - Выполнены применимые нетестовые проверки из [стратегии проверки](Validation-strategy.md): форматирование, lint, typecheck, сборка и браузерная проверка. Автоматизированные тесты не создаются, не изменяются и не запускаются до явной приёмки пользователем; после неё — только по его прямому запросу.
 - После разработки пройдена обязательная браузерная UI-приёмка по [стратегии проверки](Validation-strategy.md#браузерная-ui-приёмка). Без свежего положительного вердикта UI-задача не завершена.

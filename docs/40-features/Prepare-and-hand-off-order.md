@@ -2,28 +2,29 @@
 title: "Приготовление и выдача заказа"
 type: feature
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-10-09
 sources:
-  - ../../back-office/src/pages/QueuePage.vue
-  - ../../backend/src/orders/transport/backoffice-orders.controller.ts
-knowledge_role: implementation
+  - ../50-interfaces/Back-office-UI.md
+  - ../30-domain/Order-lifecycle.md
+  - ../30-domain/Order-snapshots.md
+knowledge_role: requirements
 scope: system
 ---
 
 # Приготовление и выдача заказа
 
-Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+Сотрудник находит заказ, видит сохранённый состав, сумму и историю, затем
+выполняет допустимое следующее действие. Последовательность CREATED,
+ACCEPTED, PREPARING, READY, ISSUED принадлежит
+[жизненному циклу](../30-domain/Order-lifecycle.md).
+[Снимок заказа](../30-domain/Order-snapshots.md) не подменяется текущим меню.
 
-## Приготовление и выдача
+Оплата выполняется на кассе при получении; выдача переводит READY в ISSUED.
+При неизвестном результате перехода клиент проверяет текущее серверное
+состояние и не повторяет изменение автоматически. Сбой чтения сохраняет
+доступную информацию и предоставляет понятное действие восстановления.
 
-Сотрудник ведёт заказ в `/queue`: открывает детали, видит снимок позиций и
-историю переходов, затем выполняет доступное следующее действие. Сценарий
-последовательно переводит заказ `CREATED` → `ACCEPTED` → `PREPARING` → `READY`
-→ `ISSUED`. [QueuePage](../../back-office/src/pages/QueuePage.vue), [OrdersScreen](../../back-office/src/pages/admin/orders/OrdersScreen.vue), [API](../../backend/src/orders/transport/backoffice-orders.controller.ts).
-
-Оплата выполняется на кассе при получении; выдача остаётся переходом `READY` в
-`ISSUED`, а не отдельным платёжным сценарием. [Интерфейс front-office](../50-interfaces/Front-office-UI.md).
-
-Если ответ на переход не подтверждает результат, очередь не повторяет `POST`
-автоматически. Она читает текущее состояние заказа; при неудаче такой проверки
-сохраняет выбранные детали и предлагает одну проверку состояния. [QueuePage](../../back-office/src/pages/QueuePage.vue).
+[Контракт UI](../50-interfaces/Back-office-UI.md) и
+[API](../50-interfaces/Back-office-API.md) определяют результат и обмен.
+Сценарий не требует прежней карточки, панели, маршрута или компонента:
+новая композиция выбирается по [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md).

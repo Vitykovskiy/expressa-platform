@@ -2,36 +2,29 @@
 title: "Управление доступностью"
 type: feature
 owner: root
-implementation_status: current
-last_verified: 2026-08-26
+last_verified: 2026-10-09
 sources:
-  - ../../back-office/src/pages/AvailabilityPage.vue
-  - ../../back-office/src/pages/admin/availability/AvailabilityScreen.vue
-  - ../../backend/src/catalog/transport/backoffice-availability.controller.ts
-knowledge_role: implementation
+  - ../50-interfaces/Back-office-UI.md
+  - ../30-domain/Availability.md
+  - ../30-domain/Audit.md
+knowledge_role: requirements
 scope: system
 ---
 
 # Управление доступностью
 
-Описание по исходникам; runtime и визуальная приёмка этой редакцией не подтверждены.
+Barista и Administrator находят товар, ценовую опцию или добавку и меняют
+оперативную доступность; отдельно управляют приёмом новых заказов.
+Категория помогает найти нужную позицию, поиск сужает доступный набор.
+Права, требуемые сведения и состояния задаёт [UI-контракт](../50-interfaces/Back-office-UI.md).
 
-Barista и administrator управляют доступностью на `/availability`. Экран
-показывает приём новых заказов и активные категории с товарами, вариантами цены
-и добавками; сотрудник сужает список поиском и категорией, затем
-включает или выключает выбранную позицию либо приём новых заказов.
-[AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
-[AvailabilityScreen](../../back-office/src/pages/admin/availability/AvailabilityScreen.vue),
-[маршруты](../../back-office/src/app/router.constants.ts).
+После действия предварительное значение не выдаётся за подтверждённый успех.
+При определённой ошибке восстанавливается подтверждённое состояние;
+при неизвестном исходе клиент проверяет серверное состояние без слепого
+повтора изменения. Автор и время последнего изменения отражают доступные
+серверные данные без вымышленных значений.
 
-Переключатель блокируется на время сохранения. После успешного изменения экран
-показывает подтверждённое состояние; при неуспехе восстанавливает предыдущее.
-Для приёма заказов экран показывает автора и время последнего изменения, когда
-они возвращены сервером. Доступность отдельных позиций в текущем интерфейсе
-такую метаинформацию не показывает.
-[AvailabilityPage](../../back-office/src/pages/AvailabilityPage.vue),
-[Availability API](../../back-office/src/shared/api/availability.api.ts).
-
-Сервер хранит и аудитирует изменения доступности, а создание заказа использует
-текущее состояние товара и приёма заказов. [Домен доступности](../30-domain/Availability.md),
-[контроллер](../../backend/src/catalog/transport/backoffice-availability.controller.ts).
+[Доступность](../30-domain/Availability.md), [аудит](../30-domain/Audit.md)
+и [API](../50-interfaces/Back-office-API.md) владеют инвариантами и обменом.
+Вид элементов управления, группировка на экране и маршрут выбираются заново
+по [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md).

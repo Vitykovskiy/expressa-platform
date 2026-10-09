@@ -31,7 +31,7 @@ Security throttle отделён от UX cooldown: после разрешённ
 час. Запрос, отклонённый активным UX cooldown, не расходует этот бюджет; при
 исчерпании сервер возвращает остаток окна в `Retry-After`.
 
-Access token живёт в памяти front- и back-office session stores и идёт в Bearer;
+Access token хранится в памяти клиентской сессии и идёт в Bearer;
 refresh token — host-only HttpOnly strict cookie, ротируется при refresh и
 отзывается при logout. Независимость customer/staff recoverable sessions
 достигается только разными same-origin app hosts; при общем API host они
@@ -40,4 +40,4 @@ refresh token — host-only HttpOnly strict cookie, ротируется при 
 path через Vite proxy, а не общий абсолютный API origin. Session
 guard проверяет сессию и актуальную роль; back-office доступен
 barista/administrator, которых заранее provisioned оператор. Front-office принимает только внутренний `returnTo` и
-очищает cart store при успешном logout. [Источники: front session](../../front-office/src/app/session.store.ts), [back session](../../back-office/src/app/session.store.ts), [controller](../../backend/src/auth/transport/auth.controller.ts), [guard](../../backend/src/auth/transport/session.guard.ts), [cart](../../front-office/src/entities/customer/model/cart.store.ts).
+очищает cart store при успешном logout. [Источники: front session](../../front-office/src/app/session.store.ts), [controller](../../backend/src/auth/transport/auth.controller.ts), [guard](../../backend/src/auth/transport/session.guard.ts), [cart](../../front-office/src/entities/customer/model/cart.store.ts).

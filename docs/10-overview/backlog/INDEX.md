@@ -16,7 +16,7 @@ Backlog хранит плановые и исторические карточк
 
 - [E01 — Фундаменты репозиториев и поставки](E01/INDEX.md)
 - [E02 — Storybook front-office](E02/INDEX.md)
-- [E03 — Storybook back-office](E03/INDEX.md)
+- [E03 — исторический UI-каталог back-office](E03/INDEX.md)
 - [E04 — Телефонная авторизация и доступ](E04/INDEX.md)
 - [E05 — Каталог и публичное меню](E05/INDEX.md)
 - [E06 — Управление меню](E06/INDEX.md)

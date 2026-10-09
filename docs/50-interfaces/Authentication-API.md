@@ -28,7 +28,7 @@ logout очищает эту cookie. Refresh cookie ротируется при 
 
 Refresh/logout защищены OriginGuard; `/me` и защищённые бизнес-методы проверяет
 session guard. Front- и back-office используют одинаковые endpoint-пути, но
-локально владеют экранным состоянием. [Источники: controller](../../backend/src/auth/transport/auth.controller.ts), [front consumer](../../front-office/src/shared/api/auth.api.ts), [back consumer](../../back-office/src/shared/api/auth.api.ts).
+локально владеют экранным состоянием. [Источники: controller](../../backend/src/auth/transport/auth.controller.ts), [front consumer](../../front-office/src/shared/api/auth.api.ts).
 
 ## Current customer logout
 

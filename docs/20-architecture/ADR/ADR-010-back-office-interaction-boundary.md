@@ -2,7 +2,8 @@
 title: "ADR-010: граница доступности и управления back-office"
 type: adr
 area: architecture
-status: accepted
+status: superseded
+superseded_by: ADR-011-back-office-clean-slate.md
 owner: root
 date: 2026-09-23
 last_verified: 2026-09-23
@@ -15,6 +16,10 @@ scope: system
 ---
 
 # ADR-010: граница доступности и управления back-office
+
+> Историческое решение. Для back-office 2.0 заменено
+> [ADR-011](ADR-011-back-office-clean-slate.md); перечисленные ниже запреты
+> не являются требованиями новой реализации.
 
 ## Контекст
 

@@ -21,7 +21,7 @@ scope: system
 подтверждают выполненные проверки, а не наличие этой ноты.
 
 Граница требований Admin зафиксирована в
-[ADR-010](../20-architecture/ADR/ADR-010-back-office-interaction-boundary.md);
+[ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md);
 применимый локальный контракт описан в
 [UI ownership](../../back-office/docs/10-architecture/ui-ownership.md).
 
