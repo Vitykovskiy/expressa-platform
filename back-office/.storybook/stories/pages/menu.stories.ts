@@ -3,7 +3,7 @@ import { shallowRef } from "vue";
 import { createNavigationItems } from "../../../src/app/navigation";
 import MenuOverview from "../../../src/pages/admin/menu/MenuOverview.vue";
 import MenuReorderPanel from "../../../src/pages/admin/menu/MenuReorderPanel.vue";
-import MenuScreenHeading from "../../../src/pages/admin/menu/MenuScreenHeading.vue";
+import TopBar from "../../../src/widgets/admin-shell/TopBar.vue";
 import PageShell from "../../../src/pages/PageShell.vue";
 import AdminShell from "../../../src/widgets/admin-shell/AdminShell.vue";
 import { category, modifierGroup, product } from "../../fixtures/catalog";
@@ -55,14 +55,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 function renderOverview(args: Story["args"]) {
   return {
-    components: { AdminShell, PageShell, MenuOverview, MenuScreenHeading },
+    components: { AdminShell, PageShell, MenuOverview, TopBar },
     setup: () => ({
       args,
       items,
       expandedCategoryIds: shallowRef(new Set(args.expandedCategoryIds)),
     }),
     template: `<AdminShell role="administrator" active-section="menu" :items="items">
-      <PageShell class="menu-page__shell" content-spacing="none" style="min-height: 100%; position: relative"><MenuScreenHeading /><MenuOverview v-bind="args" :expanded-category-ids="expandedCategoryIds"
+      <PageShell class="menu-page__shell" content-spacing="none" style="min-height: 100%; position: relative"><TopBar title="Меню" /><MenuOverview v-bind="args" :expanded-category-ids="expandedCategoryIds"
         @toggle-category="({ id }) => { const next = new Set(expandedCategoryIds); next.has(id) ? next.delete(id) : next.add(id); expandedCategoryIds = next }" />
       </PageShell>
     </AdminShell>`,
@@ -70,14 +70,14 @@ function renderOverview(args: Story["args"]) {
 }
 function renderReorder(args: Story["args"]) {
   return {
-    components: { AdminShell, PageShell, MenuReorderPanel, MenuScreenHeading },
+    components: { AdminShell, PageShell, MenuReorderPanel, TopBar },
     setup: () => ({
       args,
       items,
       expandedCategoryIds: shallowRef(new Set(args.expandedCategoryIds)),
     }),
     template: `<AdminShell role="administrator" active-section="menu" :items="items">
-      <PageShell class="menu-page__shell" content-spacing="none" style="min-height: 100%; position: relative"><MenuScreenHeading /><MenuReorderPanel :categories="args.categories" :products="args.products" :pending="args.disabled"
+      <PageShell class="menu-page__shell" content-spacing="none" style="min-height: 100%; position: relative"><TopBar title="Меню" /><MenuReorderPanel :categories="args.categories" :products="args.products" :pending="args.disabled"
         :expanded-category-ids="expandedCategoryIds"
         @update:expanded-category-ids="expandedCategoryIds = $event" />
       </PageShell>
@@ -87,7 +87,6 @@ function renderReorder(args: Story["args"]) {
 export const Overview: Story = {
   name: "Обзор",
   render: renderOverview,
-  globals: { viewport: "desktop" },
 };
 export const OverviewMobile: Story = {
   name: "Обзор — мобильный вид",
@@ -128,7 +127,6 @@ export const OverviewManyRows: Story = {
 export const Reorder: Story = {
   name: "Изменение порядка",
   render: renderReorder,
-  globals: { viewport: "desktop" },
 };
 export const ReorderMobile: Story = {
   name: "Порядок — мобильный вид",
@@ -184,16 +182,6 @@ export const OverviewNoModifiers: Story = {
   name: "Обзор — без групп добавок",
   render: renderOverview,
   args: { modifierGroups: [] },
-};
-export const OverviewHighlighted: Story = {
-  name: "Обзор — новая категория",
-  render: renderOverview,
-  args: { highlightedCategoryId: teaCategory.id },
-};
-export const OverviewSaved: Story = {
-  name: "Обзор — порядок сохранён",
-  render: renderOverview,
-  args: { reorderSaved: true },
 };
 export const OverviewDisabled: Story = {
   name: "Обзор — действия недоступны",
@@ -419,4 +407,10 @@ export const OverviewEmptyModifierGroup: Story = {
   name: "Обзор — пустая группа добавок",
   render: renderOverview,
   args: { modifierGroups: [{ ...modifierGroup, options: [] }] },
+};
+
+export const OverviewTablet: Story = {
+  name: "Обзор — планшет",
+  render: renderOverview,
+  globals: { viewport: "tablet" },
 };

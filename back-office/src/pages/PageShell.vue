@@ -41,8 +41,10 @@ const slots = defineSlots<{
 <style scoped>
 .page-shell {
   width: 100%;
+  max-width: var(--expressa-size-workspace-max-width);
+  margin-inline: auto;
   min-width: 0;
-  padding: var(--expressa-space-24);
+  padding: var(--expressa-space-screen-gutter);
 }
 
 .page-shell-title {

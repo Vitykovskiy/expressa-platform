@@ -80,9 +80,19 @@ defineSlots<{ default(): unknown }>();
 
 .admin-button--secondary {
   color: var(--expressa-color-text-primary);
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
   border-width: var(--expressa-border-width-default);
   border-color: var(--expressa-color-border);
+}
+
+.admin-button--secondary:hover:not(:disabled) {
+  background: var(--expressa-color-control-hover-surface);
+  border-color: var(--expressa-color-border-strong);
+}
+
+.admin-button--ghost:hover:not(:disabled) {
+  color: var(--expressa-color-text-primary);
+  background: var(--expressa-color-control-hover-surface);
 }
 
 .admin-button--destructive {

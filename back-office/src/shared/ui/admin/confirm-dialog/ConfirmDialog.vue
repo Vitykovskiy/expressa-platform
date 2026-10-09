@@ -20,18 +20,22 @@
         {{ props.description }}
       </p>
 
-      <div v-if="props.requireInput" class="confirm-dialog-reason">
-        <label :for="reasonInputId">Причина</label>
+      <AdminFieldWrapper
+        v-if="props.requireInput"
+        :id="reasonInputId"
+        v-slot="field"
+        :error="reasonError"
+        label="Причина"
+        required
+      >
         <AdminTextField
-          :id="reasonInputId"
-          class="confirm-dialog-reason-input"
+          :id="field.controlId"
+          :disabled="props.pending"
           :model-value="reason"
+          :required="field.required"
           @update:model-value="handleReasonUpdate"
         />
-        <p v-if="reasonError" :id="reasonErrorId" class="confirm-dialog-error">
-          {{ reasonError }}
-        </p>
-      </div>
+      </AdminFieldWrapper>
     </form>
   </AdminDialog>
 </template>
@@ -45,6 +49,7 @@ import type {
   ConfirmDialogProps,
 } from "./ConfirmDialog.types";
 import AdminDialog from "../admin-dialog/AdminDialog.vue";
+import AdminFieldWrapper from "../field-wrapper/AdminFieldWrapper.vue";
 import AdminTextField from "../admin-text-field/AdminTextField.vue";
 
 const props = withDefaults(
@@ -59,7 +64,6 @@ const reason = shallowRef("");
 const reasonError = shallowRef("");
 const descriptionId = `confirm-dialog-description-${useId()}`;
 const reasonInputId = `confirm-dialog-reason-${useId()}`;
-const reasonErrorId = `confirm-dialog-reason-error-${useId()}`;
 
 function resetDraft() {
   reason.value = "";
@@ -127,16 +131,5 @@ watch(open, (isOpen, wasOpen) => {
   font-size: var(--expressa-font-size-body);
   line-height: var(--expressa-line-height-body);
   white-space: normal;
-}
-
-.confirm-dialog-reason {
-  padding: 0 0 var(--expressa-space-md);
-}
-
-.confirm-dialog-error {
-  margin: var(--expressa-space-xs) 0 0;
-  color: var(--expressa-color-status-error);
-  font-size: var(--expressa-font-size-caption);
-  line-height: var(--expressa-line-height-caption);
 }
 </style>

@@ -283,8 +283,8 @@ onBeforeUnmount(() => {
 }
 .notification-host__card p {
   margin: 0;
-  font-size: var(--expressa-font-size-status);
-  line-height: var(--expressa-line-height-caption-compact);
+  font-size: var(--expressa-font-size-action);
+  line-height: var(--expressa-line-height-body);
   overflow-wrap: anywhere;
 }
 .notification-host__recovery {

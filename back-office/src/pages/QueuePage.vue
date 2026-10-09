@@ -127,8 +127,12 @@ async function loadQueue(isBackgroundRefresh = false): Promise<void> {
   if (request === queueRequest && result.status === "success") {
     orders.value = result.value;
     queueStatus.value = "ready";
-    if (selectedOrderId.value !== null && !detailsLoading.value) {
-      void loadDetails(selectedOrderId.value);
+    if (
+      selectedOrderId.value !== null &&
+      !detailsLoading.value &&
+      !transitionLoading.value
+    ) {
+      void loadDetails(selectedOrderId.value, keepsConfirmedQueue);
     }
   } else if (
     request === queueRequest &&
@@ -151,10 +155,13 @@ async function toggleDetails(orderId: string): Promise<void> {
   await loadDetails(orderId);
 }
 
-async function loadDetails(orderId: string): Promise<void> {
+async function loadDetails(
+  orderId: string,
+  isBackgroundRefresh = false,
+): Promise<void> {
   const request = ++detailsRequest;
   const accessToken = sessionStore.accessToken;
-  details.value = null;
+  if (!isBackgroundRefresh) details.value = null;
   detailsLoading.value = true;
   if (accessToken === null) {
     detailsLoading.value = false;
@@ -164,7 +171,10 @@ async function loadDetails(orderId: string): Promise<void> {
     ordersApi.details(accessToken, orderId, reporting),
   );
   if (request === detailsRequest && selectedOrderId.value === orderId) {
-    if (result.status === "success") details.value = result.value;
+    if (result.status === "success") {
+      details.value = result.value;
+      requiresTransitionRecovery.value = false;
+    }
     detailsLoading.value = false;
   }
 }
@@ -177,33 +187,38 @@ async function transitionSelectedOrder(): Promise<void> {
 
   transitionLoading.value = true;
   requiresTransitionRecovery.value = false;
-  const result = await operationPort.run(
-    operationContext(
-      "orders.transition",
-      currentDetails.id,
-      "mutation",
-      "user",
-    ),
-    (reporting) => ordersApi.transition(accessToken, currentDetails, reporting),
-  );
-  if (result.status === "success") {
-    const nextDetails = result.value;
-    if (selectedOrderId.value !== currentDetails.id) return;
-    details.value = nextDetails;
-    orders.value = orders.value.map((order) =>
-      order.id === nextDetails.id
-        ? { ...order, stage: nextDetails.stage }
-        : order,
+  try {
+    const result = await operationPort.run(
+      operationContext(
+        "orders.transition",
+        currentDetails.id,
+        "mutation",
+        "user",
+      ),
+      (reporting) =>
+        ordersApi.transition(accessToken, currentDetails, reporting),
     );
-  } else if (
-    result.status !== "cancelled" &&
-    selectedOrderId.value === currentDetails.id &&
-    details.value?.id === currentDetails.id
-  ) {
-    requiresTransitionRecovery.value = true;
-    await recoverTransitionState();
+    if (result.status === "success") {
+      const nextDetails = result.value;
+      orders.value = orders.value.map((order) =>
+        order.id === nextDetails.id
+          ? { ...order, stage: nextDetails.stage }
+          : order,
+      );
+      if (selectedOrderId.value === currentDetails.id) {
+        details.value = nextDetails;
+      }
+    } else if (
+      result.status !== "cancelled" &&
+      selectedOrderId.value === currentDetails.id &&
+      details.value?.id === currentDetails.id
+    ) {
+      requiresTransitionRecovery.value = true;
+      await recoverTransitionState();
+    }
+  } finally {
+    transitionLoading.value = false;
   }
-  transitionLoading.value = false;
 }
 
 async function recoverTransitionState(): Promise<void> {

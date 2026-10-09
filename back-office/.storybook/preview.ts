@@ -26,7 +26,8 @@ const storyRouter = createRouter({
 void storyRouter.push("/");
 
 setup((app) => {
-  app.use(storyRouter);
+  if (!Object.hasOwn(app.config.globalProperties, "$router"))
+    app.use(storyRouter);
   app.use(
     createVuetify({
       theme: {

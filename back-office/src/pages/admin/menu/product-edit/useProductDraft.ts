@@ -13,7 +13,7 @@ export function createProductPriceChoiceDraft(
     id: source?.id,
     isAvailable: source?.isAvailable ?? true,
     portionLabel: source?.portionLabel ?? "",
-    price: source?.price ?? "0",
+    price: source?.price ?? "",
   };
 }
 export function priceChoiceDrafts(
@@ -37,7 +37,7 @@ export function priceChoiceDrafts(
     createProductPriceChoiceDraft({
       isAvailable: fallback.isAvailable,
       portionLabel: fallback.portionLabel ?? "",
-      price: String(fallback.price ?? 0),
+      price: fallback.price == null ? "" : String(fallback.price),
     }),
   ];
 }

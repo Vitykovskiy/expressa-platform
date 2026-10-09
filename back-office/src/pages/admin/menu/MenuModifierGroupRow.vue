@@ -66,7 +66,7 @@ const options = computed(() =>
 .menu-modifier-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
 }
 .menu-modifier-row + .menu-modifier-row {
   border-top: var(--expressa-border-width-default) solid

@@ -53,10 +53,9 @@ function selectTab(value: T) {
   max-inline-size: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: var(--expressa-space-12) var(--expressa-space-md);
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  background: var(--expressa-color-surface);
+  padding: var(--expressa-space-sm) 0;
+  border-bottom: var(--expressa-border-width-none);
+  background: var(--expressa-color-transparent);
   scroll-padding-inline: var(--expressa-space-md);
 }
 
@@ -90,10 +89,11 @@ function selectTab(value: T) {
   display: flex;
   align-items: center;
   padding: var(--expressa-space-sm) var(--expressa-space-md);
-  border: var(--expressa-border-width-none);
-  border-radius: var(--expressa-radius-pill);
+  border: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  border-radius: var(--expressa-radius-sm);
   color: var(--expressa-color-text-secondary);
-  background: var(--expressa-color-surface-subtle);
+  background: var(--expressa-color-transparent);
 }
 
 .filter-tab--selected .filter-tab__visual {
@@ -101,6 +101,12 @@ function selectTab(value: T) {
   color: var(--expressa-color-text-on-accent);
   background-color: var(--expressa-color-accent);
   font-weight: var(--expressa-font-weight-medium);
+}
+
+.filter-tab:hover:not(:disabled):not(.filter-tab--selected)
+  .filter-tab__visual {
+  background: var(--expressa-color-control-hover-surface);
+  border-color: var(--expressa-color-border-strong);
 }
 
 .filter-tab:disabled {
@@ -159,7 +165,7 @@ function selectTab(value: T) {
   .filter-tab__visual {
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  background: var(--expressa-color-surface);
+  background: var(--expressa-color-transparent);
 }
 
 .filter-tabs--balanced-pairs {

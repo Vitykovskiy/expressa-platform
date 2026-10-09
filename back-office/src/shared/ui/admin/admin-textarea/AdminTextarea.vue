@@ -47,6 +47,7 @@ function handleInput(event: InputEvent): void {
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+  font-size: var(--expressa-font-size-field);
   line-height: var(--expressa-line-height-body);
   resize: vertical;
   transition:

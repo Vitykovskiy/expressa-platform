@@ -10,7 +10,7 @@ import type { QueueFilter } from "../../../src/pages/admin/orders/OrdersScreen.t
 import AvailabilityScreen from "../../../src/pages/admin/availability/AvailabilityScreen.vue";
 import { AVAILABILITY_ALL_CATEGORY } from "../../../src/pages/admin/availability/AvailabilityScreen.constants";
 import MenuOverview from "../../../src/pages/admin/menu/MenuOverview.vue";
-import MenuScreenHeading from "../../../src/pages/admin/menu/MenuScreenHeading.vue";
+import TopBar from "../../../src/widgets/admin-shell/TopBar.vue";
 import {
   category,
   modifierGroup,
@@ -142,7 +142,7 @@ function renderPublic(
       OrdersScreen,
       AvailabilityScreen,
       MenuOverview,
-      MenuScreenHeading,
+      TopBar,
     },
     setup() {
       const entries = shallowRef(initialEntries.map((entry) => ({ ...entry })));
@@ -288,14 +288,14 @@ function renderPublic(
               @update:search="search = $event" @update:active-category="activeCategory = $event"
               @intake-change="intake = { ...intake, acceptsNewOrders: $event }"
               @availability-change="(item, value) => groups = groups.map(group => ({ ...group, items: group.items.map(current => current.id === item.id ? { ...current, isAvailable: value } : current) }))" />
-            <PageShell v-else-if="composition === 'menu'"><MenuScreenHeading /><MenuOverview
+            <PageShell v-else-if="composition === 'menu'" content-spacing="none"><TopBar title="Меню" /><MenuOverview
               :categories="categories" :products="products" :modifier-groups="modifierGroups" :expanded-category-ids="expandedCategoryIds"
               @toggle-category="({ id }) => { const next = new Set(expandedCategoryIds); next.has(id) ? next.delete(id) : next.add(id); expandedCategoryIds = next }" /></PageShell>
-            <PageShell v-else><ProductEditContent
+            <PageShell v-else content-spacing="none"><ProductEditContent
               v-model:name="name" v-model:category-id="categoryId" v-model:description="description"
               v-model:choices="choices" v-model:is-active="isActive"
               :category-options="[{ id: 'coffee', label: 'Кофе' }]" :choice-errors="{}"
-              description-error="" name-error="" :dirty="true" :pending="false" :saved="false" :valid="true"
+              description-error="" name-error="" :dirty="true" :pending="false" :valid="true"
               @archive="dialogOpen = true" />
             </PageShell>
           </AdminShell>

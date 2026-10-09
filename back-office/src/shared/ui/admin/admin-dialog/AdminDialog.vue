@@ -87,7 +87,7 @@
                   :variant="props.submitVariant"
                 >
                   <span class="admin-dialog__action-label">{{
-                    props.submitLabel
+                    submitLabel
                   }}</span>
                 </AdminButton>
               </div>
@@ -113,6 +113,7 @@ import {
 import { X } from "lucide-vue-next";
 import {
   ADMIN_DIALOG_DEFAULTS,
+  ADMIN_DIALOG_PENDING_ACTIONS,
   ADMIN_DIALOG_MOBILE_MEDIA_QUERY,
 } from "./AdminDialog.constants";
 import type { AdminDialogEmits, AdminDialogProps } from "./AdminDialog.types";
@@ -159,6 +160,15 @@ const hasActions = computed(() =>
   Boolean(props.destructiveLabel || props.cancelLabel || props.submitLabel),
 );
 const hasHeader = computed(() => Boolean(props.title || slots.header));
+const submitLabel = computed(() => {
+  if (!props.pending || props.submitLabel?.endsWith("…"))
+    return props.submitLabel;
+  return (
+    ADMIN_DIALOG_PENDING_ACTIONS.find(([label]) =>
+      props.submitLabel?.startsWith(label),
+    )?.[1] ?? "Выполняем…"
+  );
+});
 
 function toCssSize(value: number | string | undefined): string | undefined {
   return typeof value === "number" || /^\d+(\.\d+)?$/.test(value ?? "")
@@ -255,6 +265,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: var(--expressa-space-sm);
   padding: var(--expressa-space-md) var(--expressa-space-dialog-inset);
+  border-bottom: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
 }
 .admin-dialog__title {
   flex: 1 1 auto;
@@ -294,20 +306,10 @@ onBeforeUnmount(() => {
   .admin-dialog__content {
   max-height: 100dvh;
 }
-.admin-dialog__layer--notice .admin-dialog__header,
-.admin-dialog__layer--notice .admin-dialog__footer {
-  padding: var(--expressa-space-dialog-compact-block)
-    var(--expressa-space-dialog-compact-inline);
-}
-.admin-dialog__layer--notice .admin-dialog__footer {
-  gap: var(--expressa-space-sm);
-}
-.admin-dialog__layer--notice .admin-dialog__body {
-  padding: 0 var(--expressa-space-dialog-compact-inline)
-    var(--expressa-space-dialog-compact-block);
-}
-
 .admin-dialog__footer {
+  border-top: var(--expressa-border-width-default) solid
+    var(--expressa-color-border);
+  background: var(--expressa-color-surface);
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
@@ -338,7 +340,7 @@ onBeforeUnmount(() => {
 
 .admin-dialog__body {
   min-height: 0;
-  padding: 0 var(--expressa-space-dialog-inset) var(--expressa-space-md);
+  padding: var(--expressa-space-24) var(--expressa-space-dialog-inset);
   overflow-y: auto;
 }
 

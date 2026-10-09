@@ -1,26 +1,30 @@
 <template>
   <div class="menu-overview">
-    <AdminActionGroup align="start" class="menu-overview__actions">
-      <AdminButton :disabled="props.disabled" @click="emit('addCategory')">
-        <AdminIcon :icon="Plus" /><span>Добавить категорию</span>
-      </AdminButton>
-      <AdminButton
-        variant="secondary"
-        :disabled="props.disabled || !props.categories.length"
-        @click="emit('addProduct')"
-      >
-        <AdminIcon :icon="Plus" /><span>Добавить товар</span>
-      </AdminButton>
-      <AdminButton
-        variant="ghost"
-        :disabled="props.disabled || !canReorder"
-        @click="emit('reorder')"
-      >
-        <AdminIcon :icon="ListOrdered" /><span>Изменить порядок</span>
-      </AdminButton>
-    </AdminActionGroup>
     <section>
-      <h2 class="menu-overview__title">Категории</h2>
+      <div class="menu-overview__section-heading">
+        <h2 class="menu-overview__title">Категории и товары</h2>
+        <AdminActionGroup align="start" class="menu-overview__actions">
+          <AdminButton :disabled="props.disabled" @click="emit('addCategory')">
+            <AdminIcon :icon="Plus" /><span>Добавить категорию</span>
+          </AdminButton>
+          <AdminButton
+            v-if="props.categories.length"
+            variant="secondary"
+            :disabled="props.disabled"
+            @click="emit('addProduct')"
+          >
+            <AdminIcon :icon="Plus" /><span>Добавить товар</span>
+          </AdminButton>
+          <AdminButton
+            v-if="canReorder"
+            variant="ghost"
+            :disabled="props.disabled"
+            @click="emit('reorder')"
+          >
+            <AdminIcon :icon="ListOrdered" /><span>Изменить порядок</span>
+          </AdminButton>
+        </AdminActionGroup>
+      </div>
       <div v-if="props.categories.length" class="menu-overview__list">
         <MenuCategoryGroup
           v-for="category in props.categories"
@@ -97,54 +101,52 @@ const canReorder = computed(
     ),
 );
 </script>
-<style scoped lang="scss">
+<style scoped>
 .menu-overview {
   display: grid;
-  gap: var(--expressa-space-24);
+  gap: var(--expressa-space-32);
   container-type: inline-size;
-}
-.menu-overview__actions {
-  gap: var(--expressa-space-sm);
-}
-.menu-overview__actions > *,
-.menu-overview__section-heading > button {
-  white-space: nowrap;
-}
-.menu-overview__title {
-  margin: 0 0 var(--expressa-space-sm);
-  font-size: var(--expressa-font-size-body);
-  font-weight: var(--expressa-font-weight-semibold);
-  color: var(--expressa-color-text-primary);
 }
 .menu-overview__section-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--expressa-space-sm);
-  margin-bottom: var(--expressa-space-sm);
+  gap: var(--expressa-space-16);
+  margin-bottom: var(--expressa-space-16);
 }
-.menu-overview__section-heading .menu-overview__title {
+.menu-overview__title {
   margin: 0;
+  font-size: var(--expressa-font-size-title);
+  font-weight: var(--expressa-font-weight-semibold);
+  color: var(--expressa-color-text-primary);
 }
 .menu-overview__list {
   overflow: hidden;
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  border-radius: var(--expressa-radius-lg);
+  border-radius: var(--expressa-radius-panel);
+  background: var(--expressa-color-surface);
 }
 .menu-overview__empty {
   margin: 0;
-  padding-block: var(--expressa-space-sm);
+  padding: var(--expressa-space-24);
+  border: var(--expressa-border-width-default) dashed
+    var(--expressa-color-border-strong);
+  border-radius: var(--expressa-radius-panel);
   color: var(--expressa-color-text-secondary);
+  background: var(--expressa-color-surface);
+}
+.menu-overview__actions {
+  gap: var(--expressa-space-sm);
 }
 @container (max-width: 640px) {
-  .menu-overview__actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .menu-overview__section-heading {
-    align-items: stretch;
+  .menu-overview__section-heading:has(.menu-overview__actions) {
+    align-items: start;
     flex-direction: column;
+  }
+  .menu-overview__actions {
+    width: 100%;
   }
 }
 </style>

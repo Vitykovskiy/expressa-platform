@@ -4,9 +4,9 @@
       <div class="price-choice-row__summary-copy">
         <div class="price-choice-row__values">
           <strong>{{ choice.portionLabel || "Без подписи" }}</strong>
-          <span class="price-choice-row__price"
-            >{{ choice.price || "—" }} ₽</span
-          >
+          <span class="price-choice-row__price">{{
+            choice.price === "" ? "Нет цены" : `${choice.price} ₽`
+          }}</span>
         </div>
         <span class="price-choice-row__availability">{{
           choice.isAvailable ? "Доступен" : "Недоступен"
@@ -151,9 +151,8 @@ const emit = defineEmits<{
   gap: var(--expressa-space-8);
 }
 .price-choice-row__values strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .price-choice-row__price,
 .price-choice-row__availability {

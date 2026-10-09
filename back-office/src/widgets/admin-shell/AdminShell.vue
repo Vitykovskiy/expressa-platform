@@ -52,7 +52,7 @@ const sections = computed(() =>
 
 @media (min-width: 768px) {
   .admin-shell {
-    background: var(--expressa-color-surface);
+    background: var(--expressa-color-background);
   }
 
   .admin-shell-content {

@@ -48,7 +48,6 @@ function render(args: Story["args"]) {
 export const Phone: Story = {
   name: "Ввод телефона",
   render,
-  globals: { viewport: "desktop" },
 };
 export const PhoneMobile: Story = {
   name: "Телефон — мобильный вид",
@@ -64,7 +63,6 @@ export const Otp: Story = {
     otpMetadata: { expiresInSeconds: 300, retryAfterSeconds: 60 },
     resendRemainingSeconds: 60,
   },
-  globals: { viewport: "desktop" },
 };
 export const OtpMobile: Story = {
   ...Otp,

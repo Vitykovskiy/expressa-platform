@@ -93,7 +93,6 @@ function render(args: Story["args"]) {
 export const Ready: Story = {
   name: "Готово",
   render,
-  globals: { viewport: "desktop" },
 };
 export const ReadyMobile: Story = {
   name: "Мобильный вид",

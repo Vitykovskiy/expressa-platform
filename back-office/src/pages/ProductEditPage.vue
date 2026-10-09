@@ -1,5 +1,5 @@
 <template>
-  <PageShell class="product-edit-page">
+  <PageShell class="product-edit-page" content-spacing="none">
     <section v-if="!loaded" class="product-edit-page__missing">
       Загружаем товар…
     </section>
@@ -16,19 +16,31 @@
       :dirty="dirty"
       :name-error="nameError"
       :pending="pending"
-      :saved="saved"
       :valid="valid"
       @archive="archiveOpen = true"
       @back="cancel"
       @cancel="cancel"
       @save="save"
     />
-    <section v-else class="product-edit-page__missing">
-      <h1>Товар не найден</h1>
-      <p>Товар мог быть удалён или перемещён.</p>
-      <AdminButton type="button" @click="reload">Загрузить меню</AdminButton
-      ><RouterLink to="/menu">Вернуться в меню</RouterLink>
-    </section>
+    <EmptyState
+      v-else
+      :title="
+        catalogStore.status === 'ready'
+          ? 'Товар не найден'
+          : 'Товар пока недоступен'
+      "
+    >
+      <template #action>
+        <div class="product-edit-page__missing-actions">
+          <AdminButton type="button" variant="secondary" @click="reload"
+            >Повторить</AdminButton
+          >
+          <AdminButton type="button" variant="ghost" @click="cancel"
+            >Вернуться в меню</AdminButton
+          >
+        </div>
+      </template>
+    </EmptyState>
     <ConfirmDialog
       v-model:open="archiveOpen"
       confirm-label="Архивировать товар"
@@ -55,6 +67,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "../app/session.store";
 import AdminButton from "../shared/ui/admin/admin-button/AdminButton.vue";
+import EmptyState from "../shared/ui/admin/empty-state/EmptyState.vue";
 import ConfirmDialog from "../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import ProductEditContent from "./admin/menu/product-edit/ProductEditContent.vue";
 import {
@@ -77,7 +90,6 @@ const loaded = shallowRef(false);
 const archiveOpen = shallowRef(false);
 const discardOpen = shallowRef(false);
 const discardTarget = shallowRef<string | null>(null);
-const saved = shallowRef(false);
 const product = computed(() =>
   catalogStore.products.find((item) => item.id === route.params.productId),
 );
@@ -116,7 +128,9 @@ const snapshot = computed(() =>
     choices: choices.value,
   }),
 );
-const dirty = computed(() => snapshot.value !== baseline.value);
+const dirty = computed(
+  () => baseline.value !== "" && snapshot.value !== baseline.value,
+);
 function fill(): void {
   const item = product.value;
   if (!item) return;
@@ -128,7 +142,9 @@ function fill(): void {
   baseline.value = snapshot.value;
 }
 async function reload(): Promise<void> {
-  if (session.accessToken) await catalogStore.load(session.accessToken);
+  if (!session.accessToken) return;
+  if (loaded.value) await catalogStore.refresh(session.accessToken);
+  else await catalogStore.load(session.accessToken);
 }
 async function save(): Promise<void> {
   const item = product.value;
@@ -139,7 +155,10 @@ async function save(): Promise<void> {
     name: name.value.trim(),
     description: description.value.trim(),
     isActive: isActive.value,
-    isAvailable: item.isAvailable,
+    isAvailable:
+      choices.value.length === 1
+        ? choices.value[0]!.isAvailable
+        : item.isAvailable,
     price: choices.value.length === 1 ? Number(choices.value[0]!.price) : null,
     portionLabel:
       choices.value.length === 1
@@ -160,7 +179,6 @@ async function save(): Promise<void> {
   pending.value = false;
   if (catalogStore.lastCommandSucceeded) {
     baseline.value = snapshot.value;
-    saved.value = true;
   }
 }
 async function archive(): Promise<void> {
@@ -198,9 +216,6 @@ onMounted(async () => {
   loaded.value = true;
 });
 watch(product, fill);
-watch(snapshot, () => {
-  if (saved.value && dirty.value) saved.value = false;
-});
 function warnBeforeUnload(event: BeforeUnloadEvent): void {
   if (!dirty.value) return;
   event.preventDefault();
@@ -218,6 +233,12 @@ onBeforeUnmount(() =>
   padding: var(--expressa-space-xl);
   display: grid;
   gap: var(--expressa-space-md);
+}
+.product-edit-page__missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--expressa-space-sm);
 }
 @media (max-width: 599px) {
   .product-edit-page__missing {

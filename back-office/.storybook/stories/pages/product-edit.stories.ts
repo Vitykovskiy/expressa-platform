@@ -31,7 +31,6 @@ const meta = {
     nameError: "",
     dirty: false,
     pending: false,
-    saved: false,
     valid: true,
   },
   parameters: { layout: "fullscreen" },
@@ -67,6 +66,7 @@ function render(args: Story["args"]) {
       );
       const dirty = computed(
         () =>
+          args.dirty ||
           name.value !== product.name ||
           categoryId.value !== product.categoryId ||
           description.value !== product.description ||
@@ -99,7 +99,7 @@ function render(args: Story["args"]) {
       };
     },
     template: `<AdminShell role="administrator" active-section="menu" :items="items">
-      <PageShell class="product-edit-page"><ProductEditContent v-bind="args" v-model:name="name" v-model:category-id="categoryId"
+      <PageShell class="product-edit-page" content-spacing="none"><ProductEditContent v-bind="args" v-model:name="name" v-model:category-id="categoryId"
         v-model:description="description" v-model:choices="choices" v-model:is-active="isActive"
         :name-error="nameError" :description-error="descriptionError" :choice-errors="choiceErrors"
         :dirty="dirty" :valid="valid" @back="requestBack" @cancel="requestBack" @archive="archiveOpen = true" />
@@ -117,7 +117,6 @@ function render(args: Story["args"]) {
 export const Ready: Story = {
   name: "Готово",
   render,
-  globals: { viewport: "desktop" },
 };
 export const ReadyMobile: Story = {
   name: "Мобильный вид",
@@ -134,6 +133,22 @@ export const Changed: Story = {
   render,
   args: { name: "Капучино большой" },
 };
+export const AbsentPrice: Story = {
+  name: "Цена не указана",
+  render,
+  args: {
+    choices: priceChoiceDrafts([], { ...product, price: null }),
+    valid: false,
+  },
+};
+export const AvailabilityDraft: Story = {
+  name: "Изменена доступность одной цены",
+  render,
+  args: {
+    choices: priceChoiceDrafts([], { ...product, isAvailable: false }),
+    dirty: true,
+  },
+};
 export const Pending: Story = {
   name: "Ожидание операции",
   render,
@@ -149,11 +164,6 @@ export const Pending: Story = {
       },
     ],
   },
-};
-export const Saved: Story = {
-  name: "Сохранено",
-  render,
-  args: { saved: true, dirty: false },
 };
 export const LongChoices: Story = {
   name: "Длинные названия порций",

@@ -79,7 +79,7 @@ function handleInput(event: AdminTextFieldEmits["input"][0]): void {
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-transparent);
   font: inherit;
-  font-size: var(--expressa-font-size-body);
+  font-size: var(--expressa-font-size-field);
   line-height: var(--expressa-line-height-body);
 }
 

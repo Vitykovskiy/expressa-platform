@@ -394,7 +394,7 @@ onBeforeUnmount(() =>
   align-items: center;
   justify-content: space-between;
   gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-sm);
+  padding: var(--expressa-space-16);
   background: var(--expressa-color-surface);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
@@ -404,7 +404,7 @@ onBeforeUnmount(() =>
   margin: 0;
 }
 .menu-reorder__bar h2 {
-  font-size: var(--expressa-font-size-body);
+  font-size: var(--expressa-font-size-title);
 }
 .menu-reorder__bar p {
   color: var(--expressa-color-text-secondary);

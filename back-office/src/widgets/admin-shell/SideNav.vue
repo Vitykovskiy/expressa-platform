@@ -65,14 +65,15 @@ const emit = defineEmits<SideNavEmits>();
   display: none;
   width: var(--expressa-size-side-nav-width);
   padding: var(--expressa-space-md);
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
   border-right: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
 }
 .side-nav-brand {
   display: grid;
   gap: var(--expressa-space-xs);
-  margin-bottom: var(--expressa-space-xl);
+  margin-bottom: var(--expressa-space-32);
+  padding: var(--expressa-space-sm) var(--expressa-space-control-inline);
   color: var(--expressa-color-text-primary);
   font-size: var(--expressa-font-size-brand);
 }
@@ -80,7 +81,7 @@ const emit = defineEmits<SideNavEmits>();
   line-height: var(--expressa-line-height-title);
 }
 .side-nav-brand span {
-  color: var(--expressa-color-text-muted);
+  color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-caption-compact);
 }

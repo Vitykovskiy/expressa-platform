@@ -154,7 +154,7 @@ function cancelDrag(): void {
   flex-basis: calc(var(--expressa-space-48) + var(--expressa-space-8));
   align-items: center;
   gap: 0;
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
   border-bottom: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   padding: 0 var(--expressa-space-sm);
@@ -180,6 +180,9 @@ function cancelDrag(): void {
   display: flex;
   align-items: center;
   overflow: hidden;
+}
+.menu-reorder-row--product .menu-reorder-row__label-text {
+  font-weight: var(--expressa-font-weight-medium);
 }
 .menu-reorder-row__label-text {
   font-size: var(--expressa-font-size-body);

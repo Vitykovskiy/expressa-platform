@@ -21,7 +21,8 @@ export function productChoiceErrors(
   const labels = new Map<string, string>();
   for (const choice of choices) {
     const entry: { price?: string; portionLabel?: string } = {};
-    if (!/^\d+$/.test(choice.price) || Number(choice.price) < 0)
+    if (choice.price === "") entry.price = "Укажите цену";
+    else if (!/^\d+$/.test(choice.price) || Number(choice.price) < 0)
       entry.price = "Введите целое неотрицательное значение";
     const normalized = choice.portionLabel
       .trim()

@@ -102,7 +102,7 @@ function productComposition(args: Story["args"]) {
     },
     template: `<AdminShell role="administrator" active-section="menu" :items="items"><PageShell class="product-edit-page">
       <ProductEditContent v-model:name="name" v-model:category-id="categoryId" v-model:description="description" v-model:is-active="isActive" v-model:choices="choices"
-        :category-options="[{ id: category.id, label: category.name }]" :choice-errors="{}" description-error="" name-error="" :dirty="dirty" :pending="Boolean(args.disabled)" :saved="false" :valid="true"
+        :category-options="[{ id: category.id, label: category.name }]" :choice-errors="{}" description-error="" name-error="" :dirty="dirty" :pending="Boolean(args.disabled)" :valid="true"
         @archive="archiveOpen = true" @cancel="cancel" @back="cancel" />
       <ConfirmDialog v-model:open="archiveOpen" confirm-label="Архивировать товар" confirm-variant="destructive"
         :pending="Boolean(args.disabled)" :title="'Архивировать товар «' + product.name + '»?'" :description="'Товар «' + product.name + '» будет скрыт из меню. История заказов сохранится.'" />

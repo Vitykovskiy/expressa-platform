@@ -54,19 +54,22 @@
   --expressa-space-24: 1.5rem;
   --expressa-space-32: 2rem;
   --expressa-space-48: 3rem;
+  --expressa-space-screen-gutter: var(--expressa-space-16);
+  --expressa-size-workspace-max-width: 1200px;
+  --expressa-size-search-max-width: 400px;
   --expressa-space-2xs: 2px;
-  --expressa-space-badge-block: 3px;
+  --expressa-space-badge-block: var(--expressa-space-4);
   --expressa-space-xs: var(--expressa-space-4);
-  --expressa-space-field-label: 6px;
+  --expressa-space-field-label: var(--expressa-space-8);
   --expressa-space-sm: var(--expressa-space-8);
-  --expressa-space-control-block: 10px;
+  --expressa-space-control-block: var(--expressa-space-8);
   --expressa-space-button-block: var(--expressa-space-8);
   --expressa-space-control-inline: var(--expressa-space-12);
   --expressa-space-md: var(--expressa-space-16);
-  --expressa-space-button-inline: 20px;
+  --expressa-space-button-inline: var(--expressa-space-16);
   --expressa-space-lg: var(--expressa-space-24);
   --expressa-space-xl: var(--expressa-space-32);
-  --expressa-space-row-block: 14px;
+  --expressa-space-row-block: var(--expressa-space-12);
   --expressa-space-tab-bar-clearance: calc(
     var(--expressa-size-tab-bar-min-height) + var(--expressa-safe-area-bottom)
   );
@@ -77,11 +80,10 @@
   --expressa-space-dialog-compact-inline: var(--expressa-space-sm);
 
   --expressa-radius-row: 0;
-  --expressa-size-menu-top-bar: 52px;
-  --expressa-radius-sm: 6px;
-  --expressa-radius-md: 10px;
-  --expressa-radius-panel: 16px;
-  --expressa-radius-lg: 16px;
+  --expressa-radius-sm: 8px;
+  --expressa-radius-md: 8px;
+  --expressa-radius-panel: 12px;
+  --expressa-radius-lg: 12px;
   --expressa-radius-pill: 999px;
 
   --expressa-border-width-default: 1px;
@@ -89,17 +91,18 @@
   --expressa-border-width-none: 0;
 
   --expressa-font-size-status: 0.75rem;
-  --expressa-font-size-caption: 0.75rem;
-  --expressa-font-size-action: 0.8125rem;
-  --expressa-font-size-body: 0.875rem;
-  --expressa-font-size-body-strong: 0.9375rem;
-  --expressa-font-size-metadata: 0.75rem;
+  --expressa-font-size-caption: 0.8125rem;
+  --expressa-font-size-action: 0.875rem;
+  --expressa-font-size-body: 0.9375rem;
+  --expressa-font-size-field: 1rem;
+  --expressa-font-size-body-strong: 1rem;
+  --expressa-font-size-metadata: 0.8125rem;
   --expressa-font-size-title: 1.125rem;
   --expressa-font-size-brand: 1.25rem;
   --expressa-font-size-heading: 1.5rem;
-  --expressa-font-size-auth-heading: 1.375rem;
+  --expressa-font-size-auth-heading: 1.5rem;
   --expressa-font-size-otp: 1.125rem;
-  --expressa-font-size-screen-title: 1.5rem;
+  --expressa-font-size-screen-title: 1.75rem;
   --expressa-font-weight-medium: 500;
   --expressa-font-weight-semibold: 600;
   --expressa-font-weight-regular: 400;
@@ -126,7 +129,7 @@
   --expressa-size-switch-track-inline: 2.5rem;
   --expressa-size-switch-track-block: 1.5rem;
   --expressa-size-switch-thumb: 1.25rem;
-  --expressa-size-option: 44px;
+  --expressa-size-option: var(--expressa-size-control-min-height);
   --expressa-size-control-min-height: 44px;
   --expressa-size-button-min-height: var(--expressa-size-control-min-height);
   --expressa-size-control-compact-min-height: var(
@@ -138,11 +141,11 @@
   --expressa-size-role-option-min-height: 64px;
   --expressa-size-row-min: 72px;
   --expressa-size-avatar: 36px;
-  --expressa-size-auth-card-max-width: 360px;
+  --expressa-size-auth-card-max-width: 400px;
   --expressa-size-loading-state-min-height: 160px;
-  --expressa-size-side-nav-width: 220px;
+  --expressa-size-side-nav-width: 192px;
   --expressa-size-menu-min-width: 192px;
-  --expressa-size-settings-content-max-width: 560px;
+  --expressa-size-settings-content-max-width: 720px;
   --expressa-size-users-content-max-width: 720px;
   --expressa-size-editor-context-max-width: var(
     --expressa-size-users-content-max-width
@@ -159,16 +162,16 @@
     calc(100dvh - var(--expressa-space-xl))
   );
 
-  --expressa-shadow-card: 0 1px 4px rgb(0 0 0 / 8%);
+  --expressa-shadow-card: none;
   --expressa-shadow-modal: 0 8px 32px rgb(0 0 0 / 16%);
   --expressa-shadow-tab-bar: 0 -1px 0 var(--expressa-color-border);
-  --expressa-shadow-notification: var(--expressa-shadow-card);
+  --expressa-shadow-notification: 0 4px 16px rgb(24 34 48 / 12%);
   --expressa-shadow-menu: var(--expressa-shadow-modal);
   --expressa-z-popover-layer: 30;
   --expressa-z-modal-layer: 40;
   --expressa-z-notification-layer: 50;
 
-  --expressa-state-disabled-opacity: 0.4;
+  --expressa-state-disabled-opacity: 0.5;
   --expressa-state-pressed-opacity: 0.85;
   --expressa-motion-duration-control: 120ms;
   --expressa-motion-duration-fast: 120ms;
@@ -214,4 +217,16 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --expressa-space-screen-gutter: var(--expressa-space-24);
+  }
+}
+@media (min-width: 1200px) {
+  :root {
+    --expressa-space-screen-gutter: var(--expressa-space-32);
+    --expressa-size-side-nav-width: 224px;
+  }
 }

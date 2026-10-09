@@ -66,7 +66,6 @@
                 :disabled="props.disabled"
                 :required="field.required"
                 rows="2"
-                class="add-dialog__description"
             /></AdminFieldWrapper>
           </div>
         </section>
@@ -590,9 +589,7 @@ watch(
 }
 .add-dialog__choice-size {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .add-dialog__empty-prices {
   color: var(--expressa-color-text-secondary);
@@ -607,12 +604,6 @@ watch(
 }
 .add-dialog__availability-label {
   display: none;
-}
-.add-dialog__description {
-  min-height: calc(
-    var(--expressa-font-size-body) * var(--expressa-line-height-body) * 2 +
-      var(--expressa-space-control-block) * 2
-  );
 }
 @media (max-width: 599px) {
   .add-dialog__section-heading {

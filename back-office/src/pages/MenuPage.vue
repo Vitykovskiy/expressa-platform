@@ -1,6 +1,6 @@
 <template>
   <PageShell class="menu-page__shell" content-spacing="none">
-    <MenuScreenHeading />
+    <TopBar title="Меню" />
     <p
       v-if="
         catalogStore.status === 'loading' &&
@@ -11,6 +11,10 @@
     >
       Загружаем меню…
     </p>
+    <EmptyState
+      v-if="!hasConfirmedCatalog && catalogStore.status !== 'loading'"
+      title="Меню пока недоступно"
+    />
     <template v-if="hasConfirmedCatalog">
       <div :inert="isBusy" class="menu-page__content">
         <MenuOverview
@@ -19,7 +23,6 @@
           :expanded-category-ids="expandedCategoryIds"
           :modifier-groups="modifierGroups"
           :products="catalogStore.products"
-          :reorder-saved="reorderSaved"
           :disabled="isBusy"
           @add-category="openNewCategoryForm"
           @add-modifier-group="openModifierGroupEditor(null)"
@@ -134,7 +137,7 @@ import type { CreateProductFormData } from "./admin/menu/AddProductDialog.types"
 import EditCategoryDialog from "./admin/menu/EditCategoryDialog.vue";
 import MenuReorderPanel from "./admin/menu/MenuReorderPanel.vue";
 import MenuOverview from "./admin/menu/MenuOverview.vue";
-import MenuScreenHeading from "./admin/menu/MenuScreenHeading.vue";
+import TopBar from "../widgets/admin-shell/TopBar.vue";
 import type { MenuReorderScope } from "./admin/menu/composables/useMenuReorderDraft.types";
 import ModifierGroupEditor from "./admin/menu/ModifierGroupEditor.vue";
 import type { ModifierGroupFormData } from "./admin/menu/ModifierGroupEditor.types";
@@ -147,6 +150,7 @@ import type {
 import AdminDialog from "../shared/ui/admin/admin-dialog/AdminDialog.vue";
 import ConfirmDialog from "../shared/ui/admin/confirm-dialog/ConfirmDialog.vue";
 import PageShell from "./PageShell.vue";
+import EmptyState from "../shared/ui/admin/empty-state/EmptyState.vue";
 import { getOperationPort } from "../shared/lib/operations/operation-port";
 
 const sessionStore = useSessionStore();
@@ -170,7 +174,6 @@ const expandedCategoryIds = shallowRef<ReadonlySet<string>>(new Set());
 const managementOpen = computed(() => route.query.mode === "reorder");
 const reorderPending = shallowRef(false);
 const trustedReorderExit = shallowRef<string | null>(null);
-const reorderSaved = shallowRef(false);
 const reorderPanel = shallowRef<{
   requestClose: () => void;
   requestNavigation: (target: string) => boolean;
@@ -304,7 +307,6 @@ async function toggleReorder(): Promise<void> {
     reorderPanel.value?.requestClose();
     return;
   }
-  reorderSaved.value = false;
   await setReorderMode(true);
 }
 
@@ -352,7 +354,6 @@ async function saveReorder(scopes: readonly MenuReorderScope[]): Promise<void> {
     }
     reorderPanel.value?.confirmSaved();
     await setReorderMode(false, true);
-    reorderSaved.value = true;
   } catch {
     // Best-effort compensation keeps confirmed server scopes aligned with the original draft.
     for (const scope of confirmed.reverse()) {
@@ -671,242 +672,17 @@ function bySortOrder(
 }
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .menu-page__shell {
   min-height: 100%;
   position: relative;
-  background: var(--expressa-color-surface-raised);
 }
-
-.menu-page__management-toggle {
-  min-height: var(--expressa-size-control-min-height);
-  margin-inline-start: auto;
-}
-
-.menu-page__management-icon,
-.menu-page__option-chevron,
-.menu-page__option-edit-icon {
-  width: var(--expressa-size-icon-action);
-  height: var(--expressa-size-icon-action);
-}
-
-.menu-page__content,
-.menu-page__section,
-.menu-page__management,
-.menu-page__catalog-tools,
-.menu-page__editor-section,
-.menu-page__error {
-  display: grid;
-  gap: var(--expressa-space-md);
-}
-
 .menu-page__content {
-  gap: var(--expressa-space-lg);
-}
-
-.menu-page__toolbar,
-.menu-page__actions,
-.menu-page__management-heading {
-  display: flex;
-  gap: var(--expressa-space-sm);
-  align-items: center;
-}
-
-.menu-page__toolbar,
-.menu-page__management-heading {
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.menu-page__section {
-  gap: var(--expressa-space-control-inline);
-}
-
-.menu-page__table {
-  overflow: hidden;
-  background: var(--expressa-color-surface);
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-lg);
-}
-
-.menu-page__option-group:not(:last-child) {
-  border-bottom: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-}
-
-.menu-page__option-header,
-.menu-page__option-row {
-  display: flex;
-  min-height: var(--expressa-size-row-min);
-  background: var(--expressa-color-surface-raised);
-}
-
-.menu-page__option-toggle,
-.menu-page__option-edit,
-.menu-page__option-row {
-  border: var(--expressa-border-width-none);
-  border-radius: 0;
-}
-
-.menu-page__option-toggle {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  gap: var(--expressa-space-control-inline);
-  padding: var(--expressa-space-control-block) var(--expressa-space-md);
-  text-align: left;
-}
-
-.menu-page__option-copy,
-.menu-page__option-row-copy {
   display: grid;
-  min-width: 0;
-  gap: var(--expressa-space-2xs);
+  gap: var(--expressa-space-24);
 }
-
-.menu-page__option-chevron {
-  flex: 0 0 var(--expressa-size-icon-action);
-}
-
-.menu-page__option-name {
-  overflow: hidden;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-body-strong);
-  font-weight: var(--expressa-font-weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menu-page__option-count,
-.menu-page__option-price {
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-caption);
-}
-
-.menu-page__option-edit {
-  display: grid;
-  width: var(--expressa-size-control-min-height);
-  min-width: var(--expressa-size-control-min-height);
-  place-items: center;
-  padding: 0;
-  color: var(--expressa-color-accent);
-}
-
-.menu-page__option-row {
-  width: 100%;
-  min-height: var(--expressa-size-row-min);
-  justify-content: space-between;
-  gap: var(--expressa-space-sm);
-  padding: var(--expressa-space-control-block) var(--expressa-space-md)
-    var(--expressa-space-product-indent);
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-body);
-  font-weight: var(--expressa-font-weight-semibold);
-  text-align: left;
-  background: var(--expressa-color-surface);
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-}
-
-.menu-page__option-empty {
-  margin: 0;
-  padding: var(--expressa-space-xl) var(--expressa-space-md);
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-body);
-  text-align: center;
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-}
-
-.menu-page__management {
-  padding-top: var(--expressa-space-lg);
-  border-top: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-}
-
-.menu-page__management-heading h2,
-.menu-page__editor-section h3,
-.menu-page__assignments h3 {
-  margin: 0;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-title);
-}
-
-.menu-page__catalog-tools {
-  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
-}
-
-.menu-page__editor-section,
-.menu-page__assignments {
-  min-inline-size: 0;
-  padding: var(--expressa-space-md);
-  background: var(--expressa-color-surface);
-  border: var(--expressa-border-width-default) solid
-    var(--expressa-color-border);
-  border-radius: var(--expressa-radius-lg);
-}
-
-.menu-page__group-button {
-  display: flex;
-  width: 100%;
-  justify-content: flex-start;
-  min-height: var(--expressa-size-control-min-height);
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.menu-page__editor-section h3,
-.menu-page__assignments h3 {
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
 .menu-page__state {
   margin: 0;
-  color: var(--expressa-color-text-muted);
-}
-
-.menu-page__error {
-  color: var(--expressa-color-status-error);
-  margin-block-end: var(--expressa-space-md);
-}
-
-.menu-page__error p {
-  margin: 0;
-}
-
-@media (min-width: 768px) {
-  .menu-page__error-recovery {
-    justify-self: start;
-    width: fit-content;
-  }
-}
-
-@media (max-width: 767px) {
-  .menu-page__actions {
-    width: 100%;
-  }
-
-  .menu-page__actions > .admin-button:first-child {
-    flex: 1.25;
-  }
-
-  .menu-page__actions > .admin-button:last-child {
-    flex: 1;
-  }
-}
-
-@media (max-width: 40rem) {
-  .menu-page__catalog-tools {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 768px) {
-  .menu-page__shell {
-    padding: var(--expressa-space-lg);
-    background: var(--expressa-color-surface);
-  }
+  color: var(--expressa-color-text-secondary);
 }
 </style>

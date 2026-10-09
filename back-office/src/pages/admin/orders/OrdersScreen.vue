@@ -12,12 +12,6 @@
     </TopBar>
 
     <div class="orders-screen__toolbar">
-      <header class="orders-screen__desktop-heading">
-        <h1 id="orders-title" class="orders-screen__title">Заказы</h1>
-        <AdminButton variant="ghost" @click="emit('refresh')">
-          <AdminIcon :icon="RefreshCw" />
-        </AdminButton>
-      </header>
       <div class="orders-screen__search-row">
         <AdminFieldWrapper
           id="orders-search"
@@ -100,7 +94,6 @@
 import { computed } from "vue";
 import { ClipboardCheck, RefreshCw } from "lucide-vue-next";
 
-import AdminButton from "../../../shared/ui/admin/admin-button/AdminButton.vue";
 import AdminFieldWrapper from "../../../shared/ui/admin/field-wrapper/AdminFieldWrapper.vue";
 import AdminIcon from "../../../shared/ui/admin/admin-icon/AdminIcon.vue";
 import AdminProgress from "../../../shared/ui/admin/admin-progress/AdminProgress.vue";
@@ -135,50 +128,39 @@ const emptyContent = computed(() => {
 });
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .orders-screen {
   display: flex;
   min-height: 100%;
   min-width: 0;
+  max-width: var(--expressa-size-workspace-max-width);
+  margin-inline: auto;
+  padding: var(--expressa-space-screen-gutter);
   flex-direction: column;
-  background: var(--expressa-color-surface-raised);
+  container-type: inline-size;
 }
 .orders-screen__toolbar {
   display: grid;
-  padding-top: var(--expressa-space-md);
-  background: var(--expressa-color-surface);
+  gap: var(--expressa-space-sm);
 }
-.orders-screen__desktop-heading {
-  display: none;
-}
-.orders-screen__title {
-  margin: 0;
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-screen-title);
-  font-weight: var(--expressa-font-weight-bold);
-  line-height: var(--expressa-line-height-heading);
-}
-.orders-screen__search-row {
-  min-inline-size: 0;
-  padding-inline: var(--expressa-space-md);
-}
+.orders-screen__search-row,
+.orders-screen__filter-row,
 .orders-screen__search {
   min-inline-size: 0;
 }
-.orders-screen__filter-row {
-  min-inline-size: 0;
+.orders-screen__search {
+  max-inline-size: var(--expressa-size-search-max-width);
 }
 .orders-screen__content {
   flex: 1 1 auto;
   min-height: 0;
-  padding: var(--expressa-space-md) var(--expressa-space-md)
-    var(--expressa-space-tab-bar-clearance);
+  padding-block: var(--expressa-space-24);
 }
 .orders-screen__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: var(--expressa-space-md);
+  gap: var(--expressa-space-16);
 }
 .orders-screen__loading-state {
   display: grid;
@@ -188,46 +170,10 @@ const emptyContent = computed(() => {
   min-height: var(--expressa-size-row-min);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
-  border-radius: var(--expressa-radius-lg);
-  background: var(--expressa-color-surface-subtle);
-  animation: orders-screen-skeleton-pulse
-    var(--expressa-motion-duration-disclosure) var(--expressa-motion-ease-state)
-    infinite alternate;
+  border-radius: var(--expressa-radius-panel);
+  background: var(--expressa-color-surface);
 }
-@keyframes orders-screen-skeleton-pulse {
-  to {
-    opacity: var(--expressa-state-disabled-opacity);
-  }
-}
-@media (min-width: 768px) {
-  .orders-screen {
-    background: var(--expressa-color-surface);
-  }
-  .orders-screen__toolbar {
-    gap: var(--expressa-space-sm);
-    padding-top: var(--expressa-space-lg);
-  }
-  .orders-screen__desktop-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--expressa-space-md);
-    padding-inline: var(--expressa-space-lg);
-  }
-  .orders-screen__search-row {
-    padding-inline: var(--expressa-space-lg);
-  }
-  .orders-screen__search {
-    /* Search stays bounded using the existing auth-field measure, not a new scale. */
-    max-inline-size: var(--expressa-size-auth-card-max-width);
-  }
-  .orders-screen__filter-row {
-    /* FilterTabs owns its 16px inner gutter; compose it with the list's 24px gutter. */
-    padding-inline: calc(var(--expressa-space-lg) - var(--expressa-space-md));
-  }
-  .orders-screen__content {
-    padding: var(--expressa-space-lg);
-  }
+@container (min-width: 800px) {
   .orders-screen__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

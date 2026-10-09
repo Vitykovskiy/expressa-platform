@@ -55,12 +55,10 @@ function updateAvailability(item: AvailabilityItem, isAvailable: boolean) {
 
 .availability-group__title {
   margin: 0;
-  color: var(--expressa-color-text-muted);
-  font-size: var(--expressa-font-size-body);
+  color: var(--expressa-color-text-primary);
+  font-size: var(--expressa-font-size-body-strong);
   font-weight: var(--expressa-font-weight-semibold);
-  letter-spacing: var(--expressa-letter-spacing-section-title);
   line-height: var(--expressa-line-height-heading);
-  text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 

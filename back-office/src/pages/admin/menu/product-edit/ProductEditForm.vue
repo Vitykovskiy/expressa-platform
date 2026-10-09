@@ -14,7 +14,7 @@
         :disabled="pending || !dirty || !valid"
         size="compact"
         type="submit"
-        >{{ pending ? "Сохраняем…" : "Сохранить изменения" }}</AdminButton
+        >{{ pending ? "Сохраняем…" : "Сохранить" }}</AdminButton
       >
     </AdminActionGroup>
   </form>
@@ -39,13 +39,12 @@ const emit = defineEmits<{ cancel: []; save: [] }>();
   z-index: 1;
   bottom: 0;
   justify-content: flex-end;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-height: var(--expressa-size-control-min-height);
   padding: var(--expressa-space-16) 0 0;
   border-top: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   background: var(--expressa-color-surface);
-  white-space: nowrap;
 }
 @media (max-width: 599px) {
   .product-edit-form__footer {

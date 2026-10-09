@@ -154,6 +154,7 @@ watch(
   color: var(--expressa-color-text-primary);
   background: var(--expressa-color-surface);
   font: inherit;
+  font-size: var(--expressa-font-size-field);
 }
 .admin-combobox__chevron {
   position: absolute;

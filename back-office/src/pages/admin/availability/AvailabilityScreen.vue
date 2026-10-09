@@ -1,12 +1,18 @@
 <template>
   <main class="availability-screen">
-    <TopBar title="Доступность" />
     <div class="availability-screen__page">
-      <h1
-        class="availability-screen__title availability-screen__title--desktop"
-      >
-        Доступность
-      </h1>
+      <TopBar title="Доступность" />
+      <section v-if="props.intake !== null" class="availability-screen__intake">
+        <ToggleRow
+          :disabled="props.saving"
+          :divider="false"
+          separate-control
+          :label="availabilityMessages.intakeLabel"
+          :model-value="props.intake.acceptsNewOrders"
+          :sublabel="intakeSublabel"
+          @update:model-value="updateIntake"
+        />
+      </section>
       <div class="availability-screen__toolbar">
         <AdminFieldWrapper
           id="availability-search"
@@ -45,6 +51,10 @@
           @update:model-value="emit('update:activeCategory', $event)"
         />
       </div>
+      <EmptyState
+        v-if="!props.loading && props.intake === null"
+        title="Доступность пока недоступна"
+      />
       <section v-if="props.loading" class="availability-screen__loading">
         <span
           v-for="index in 3"
@@ -84,17 +94,6 @@
             "
           />
         </div>
-        <section class="availability-screen__intake">
-          <ToggleRow
-            :disabled="props.saving"
-            :divider="false"
-            separate-control
-            :label="availabilityMessages.intakeLabel"
-            :model-value="props.intake.acceptsNewOrders"
-            :sublabel="intakeSublabel"
-            @update:model-value="updateIntake"
-          />
-        </section>
       </section>
     </div>
   </main>
@@ -165,11 +164,11 @@ const hasItems = computed(() =>
 );
 const intakeSublabel = computed(() => {
   if (props.intake === null) return "";
-  if (props.intake.updatedAt === null)
-    return props.intake.acceptsNewOrders
-      ? availabilityMessages.intakeOn
-      : availabilityMessages.intakeOff;
-  return `Изменил ${props.intake.updatedByLabel ?? "Неизвестный сотрудник"} ${new Date(props.intake.updatedAt).toLocaleString("ru-RU")}`;
+  const status = props.intake.acceptsNewOrders
+    ? availabilityMessages.intakeOn
+    : availabilityMessages.intakeOff;
+  if (props.intake.updatedAt === null) return status;
+  return `${status} · Изменил ${props.intake.updatedByLabel ?? "Неизвестный сотрудник"} ${new Date(props.intake.updatedAt).toLocaleString("ru-RU")}`;
 });
 function updateIntake(value: boolean): void {
   emit("intake-change", value);
@@ -180,32 +179,24 @@ function resetFilters(): void {
 }
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .availability-screen {
   min-height: 100%;
-  background: var(--expressa-color-surface-raised);
 }
 .availability-screen__page {
   width: 100%;
-  padding: var(--expressa-space-16) var(--expressa-space-16)
-    var(--expressa-space-48);
-}
-.availability-screen__title {
-  margin: 0 0 var(--expressa-space-24);
-  color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-screen-title);
-  font-weight: var(--expressa-font-weight-semibold);
-  line-height: var(--expressa-line-height-heading);
+  max-width: var(--expressa-size-workspace-max-width);
+  margin-inline: auto;
+  padding: var(--expressa-space-screen-gutter);
 }
 .availability-screen__toolbar {
   display: grid;
-  gap: var(--expressa-space-16);
+  gap: var(--expressa-space-sm);
   align-items: center;
 }
 .availability-screen__search {
-  display: grid;
   width: 100%;
-  gap: var(--expressa-space-4);
+  max-inline-size: var(--expressa-size-search-max-width);
   min-inline-size: 0;
 }
 .availability-screen__tabs {
@@ -215,7 +206,7 @@ function resetFilters(): void {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: var(--expressa-space-8);
+  gap: var(--expressa-space-sm);
   min-inline-size: 0;
 }
 .availability-screen__search-control--with-clear {
@@ -232,7 +223,7 @@ function resetFilters(): void {
 .availability-screen__loading {
   display: grid;
   width: 100%;
-  gap: var(--expressa-space-8);
+  gap: var(--expressa-space-sm);
 }
 .availability-screen__loading-row {
   display: block;
@@ -242,42 +233,17 @@ function resetFilters(): void {
   border-radius: var(--expressa-radius-panel);
   background: var(--expressa-color-surface);
 }
-.availability-screen__ready {
+.availability-screen__ready,
+.availability-screen__groups {
   display: grid;
-  gap: var(--expressa-space-24);
+  gap: var(--expressa-space-16);
 }
 .availability-screen__intake {
+  margin-bottom: var(--expressa-space-24);
   padding-inline: var(--expressa-space-16);
   border: var(--expressa-border-width-default) solid
     var(--expressa-color-border);
   border-radius: var(--expressa-radius-panel);
   background: var(--expressa-color-surface);
-}
-.availability-screen__groups {
-  display: grid;
-  gap: var(--expressa-space-24);
-}
-@media (min-width: 768px) {
-  .availability-screen {
-    background: var(--expressa-color-surface);
-  }
-  .availability-screen__loading-row {
-    background: var(--expressa-color-surface-subtle);
-  }
-  .availability-screen__page {
-    padding: var(--expressa-space-24);
-  }
-  .availability-screen__title {
-    font-size: var(--expressa-font-size-screen-title);
-    line-height: var(--expressa-line-height-heading);
-  }
-  .availability-screen__search {
-    max-inline-size: var(--expressa-size-auth-card-max-width);
-  }
-}
-@media (max-width: 767px) {
-  .availability-screen__title--desktop {
-    display: none;
-  }
 }
 </style>

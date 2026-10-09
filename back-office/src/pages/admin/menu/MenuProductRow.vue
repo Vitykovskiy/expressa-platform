@@ -85,11 +85,11 @@ const prices = computed(() => {
   flex: 1;
   min-width: 0;
   gap: var(--expressa-space-2xs);
-  padding-inline-start: var(--expressa-space-24);
+  padding-inline-start: var(--expressa-space-32);
 }
 .menu-product-row__name {
   font-size: var(--expressa-font-size-body);
-  font-weight: var(--expressa-font-weight-semibold);
+  font-weight: var(--expressa-font-weight-medium);
   overflow-wrap: anywhere;
 }
 .menu-product-row__prices {

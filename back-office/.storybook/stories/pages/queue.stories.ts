@@ -98,7 +98,6 @@ function render(args: Story["args"]) {
 export const Ready: Story = {
   name: "Готово",
   render,
-  globals: { viewport: "desktop" },
 };
 export const ReadyMobile: Story = {
   name: "Мобильный вид",
@@ -126,6 +125,15 @@ export const DetailsLoading: Story = {
   name: "Загрузка деталей",
   render,
   args: { selectedOrderId: order.id, detailsLoading: true },
+};
+export const DetailsRefreshing: Story = {
+  name: "Обновление открытых деталей",
+  render,
+  args: {
+    selectedOrderId: order.id,
+    details: orderDetails,
+    detailsLoading: true,
+  },
 };
 export const TransitionPending: Story = {
   name: "Изменение стадии",

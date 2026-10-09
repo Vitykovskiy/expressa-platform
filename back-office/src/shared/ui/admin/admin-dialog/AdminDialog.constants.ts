@@ -24,3 +24,11 @@ export const ADMIN_DIALOG_DEFAULTS = {
     | "submitVariant"
   >
 >;
+
+export const ADMIN_DIALOG_PENDING_ACTIONS = [
+  ["Сохранить", "Сохраняем…"],
+  ["Создать", "Создаём…"],
+  ["Добавить", "Добавляем…"],
+  ["Архивировать", "Архивируем…"],
+  ["Удалить", "Удаляем…"],
+] as const;

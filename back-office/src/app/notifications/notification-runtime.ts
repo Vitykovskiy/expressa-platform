@@ -300,18 +300,30 @@ export function createNotificationRuntime(): NotificationRuntime {
                 descriptor.kind === "mutation"
                   ? captured.operationKey
                   : descriptor.operationKey,
-              fieldTargets: undefined,
+              fieldTargets:
+                matchesTarget(captured, descriptor) &&
+                (captured.requestTarget !== undefined ||
+                  (captured.operationKey === descriptor.operationKey &&
+                    captured.resourceKey === descriptor.resourceKey))
+                  ? captured.fieldTargets
+                  : undefined,
             };
             const classification =
               outcome.status === "failure"
                 ? classifyError(outcome.error, requestContext)
                 : null;
             const notice =
-              classification !== null &&
-              classification.kind !== "cancelled" &&
-              classification.kind !== "fieldValidation"
-                ? classification
-                : null;
+              classification?.kind === "fieldValidation"
+                ? (classification.notification ?? null)
+                : classification !== null && classification.kind !== "cancelled"
+                  ? classification
+                  : null;
+            if (
+              active &&
+              classification?.kind === "fieldValidation" &&
+              notice === null
+            )
+              return;
             const mutationCancellation =
               classification?.kind === "cancelled" &&
               descriptor.kind === "mutation";
@@ -375,8 +387,8 @@ export function createNotificationRuntime(): NotificationRuntime {
                   : "Запрос выполнен"
                 : mutationCancellation ||
                     (descriptor.kind === "mutation" &&
-                      notice?.kind === "failure" &&
-                      notice.level === "warning")
+                      classification?.kind === "failure" &&
+                      classification.level === "warning")
                   ? "Результат запроса не подтверждён"
                   : classification?.kind === "cancelled"
                     ? "Запрос отменён"

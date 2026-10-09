@@ -4,8 +4,6 @@ export interface MenuOverviewProps {
   modifierGroups: readonly ModifierGroup[];
   products: readonly Product[];
   expandedCategoryIds: ReadonlySet<string>;
-  highlightedCategoryId?: string | null;
-  reorderSaved?: boolean;
   disabled?: boolean;
 }
 export interface MenuOverviewEmits {

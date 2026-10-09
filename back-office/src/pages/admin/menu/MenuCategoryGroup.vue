@@ -72,7 +72,8 @@ const countLabel = computed(() => productCountLabel(props.products.length));
 .menu-category__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  background: var(--expressa-color-surface-raised);
+  background: var(--expressa-color-surface);
+  padding: var(--expressa-space-4) var(--expressa-space-sm);
 }
 .menu-category__toggle {
   width: 100%;

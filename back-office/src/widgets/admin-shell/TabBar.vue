@@ -80,14 +80,8 @@ const emit = defineEmits<TabBarEmits>();
 .tab-bar-link__content--active {
   color: var(--expressa-color-accent);
 }
-.tab-bar-item--active::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: var(--expressa-border-width-strong);
-  content: "";
-  background: var(--expressa-color-accent);
+.tab-bar-item--active {
+  background: var(--expressa-color-control-selected-surface);
 }
 .tab-bar-link__label {
   display: block;

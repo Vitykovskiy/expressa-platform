@@ -6,9 +6,7 @@
   >
     <div class="order-card__heading">
       <span class="order-card__number">#{{ props.order.number }}</span>
-      <span class="order-card__stage" :data-tone="stage.tone">{{
-        stage.label
-      }}</span>
+      <span class="order-card__stage">{{ stage.label }}</span>
       <AdminButton
         :disabled="props.detailsLoading"
         size="compact"
@@ -19,16 +17,20 @@
       </AdminButton>
     </div>
 
-    <div class="order-card__time">
-      <AdminIcon :icon="Clock" size="status" />
-      <span class="order-card__time-value">{{
-        formatDate(props.order.createdAt)
-      }}</span>
+    <div class="order-card__summary">
+      <div class="order-card__time">
+        <AdminIcon :icon="Clock" size="status" /><span
+          class="order-card__time-value"
+          >{{ formatDate(props.order.createdAt) }}</span
+        >
+      </div>
+      <p class="order-card__total">{{ formatMoney(props.order.total) }}</p>
     </div>
 
-    <p class="order-card__total">{{ formatMoney(props.order.total) }}</p>
-
-    <div v-if="props.detailsLoading" class="order-card__loading">
+    <div
+      v-if="props.detailsLoading && props.details === null"
+      class="order-card__loading"
+    >
       <AdminProgress label="Загрузка деталей…" />
     </div>
     <section v-else-if="props.details !== null" class="order-card__details">
@@ -68,7 +70,7 @@
       <AdminButton
         v-if="action !== undefined"
         class="order-card__action"
-        :disabled="props.transitionLoading"
+        :disabled="props.detailsLoading || props.transitionLoading"
         @click="emit('transition')"
       >
         {{ props.transitionLoading ? "Обновление…" : action.label }}
@@ -144,36 +146,32 @@ function formatMoney(value: number): string {
   align-items: center;
   gap: var(--expressa-space-sm);
 }
-.order-card__number,
 .order-card__time {
-  color: var(--expressa-color-text-muted);
+  color: var(--expressa-color-text-secondary);
+}
+.order-card__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--expressa-space-sm);
 }
 .order-card__number {
   min-width: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--expressa-font-size-action);
-  font-weight: var(--expressa-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--expressa-font-size-title);
+  font-weight: var(--expressa-font-weight-semibold);
   overflow-wrap: anywhere;
 }
 .order-card__stage {
   flex: 0 0 auto;
   padding: var(--expressa-space-badge-block) var(--expressa-space-control-block);
-  border-radius: var(--expressa-radius-pill);
+  border-radius: var(--expressa-radius-sm);
+  color: var(--expressa-color-text-secondary);
+  background: var(--expressa-color-surface-subtle);
   font-size: var(--expressa-font-size-status);
   line-height: var(--expressa-line-height-control);
   white-space: nowrap;
-}
-.order-card__stage[data-tone="success"] {
-  color: var(--expressa-color-status-success);
-  background: var(--expressa-color-status-success-surface);
-}
-.order-card__stage[data-tone="warning"] {
-  color: var(--expressa-color-status-warning);
-  background: var(--expressa-color-status-warning-surface);
-}
-.order-card__stage[data-tone="info"] {
-  color: var(--expressa-color-accent);
-  background: var(--expressa-color-status-info-surface);
 }
 .order-card__time {
   justify-content: flex-start;
@@ -188,12 +186,13 @@ function formatMoney(value: number): string {
 }
 .order-card__total {
   color: var(--expressa-color-text-primary);
-  font-size: var(--expressa-font-size-body-strong);
+  font-size: var(--expressa-font-size-title);
   font-weight: var(--expressa-font-weight-semibold);
   line-height: var(--expressa-line-height-emphasis);
 }
 .order-card__action {
-  width: 100%;
+  justify-self: start;
+  max-width: 100%;
 }
 .order-card__loading {
   color: var(--expressa-color-text-secondary);
@@ -221,6 +220,9 @@ function formatMoney(value: number): string {
   color: var(--expressa-color-text-secondary);
   font-size: var(--expressa-font-size-caption);
   line-height: var(--expressa-line-height-body);
+}
+.order-card__items {
+  font-size: var(--expressa-font-size-body);
 }
 .order-card__item,
 .order-card__events li {
