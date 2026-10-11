@@ -2,7 +2,7 @@
 title: "Межконтурные контракты"
 type: contract
 owner: root
-last_verified: 2026-08-11
+last_verified: 2026-10-10
 sources:
   - ../../backend/openapi/openapi.json
   - ../../backend/package.json
@@ -23,6 +23,18 @@ Backend публикует версионированный HTTP API; front-offi
 [back-office manifest](../../back-office/package.json). Наличие обязательной проверки
 back-office не предполагается: её команды берутся из фактической конфигурации
 выбранного клиента.
+
+Клиентские опубликованные копии:
+[front-office/contracts/openapi.json](../../front-office/contracts/openapi.json) и
+[back-office/contracts/openapi.json](../../back-office/contracts/openapi.json).
+Они содержат точные сериализованные байты текущей backend-публикации;
+staff-снимок — новый контрактный артефакт, без импорта или восстановления прежних
+исходников. Его локальный владелец описан в
+[staff slice](../../back-office/docs/10-architecture/staff-read-slice.md#http-снимок).
+Существующий `front-office` `contract:check` сравнивает байты с backend;
+у `back-office` такой команды сейчас нет. Снимок не является runtime-клиентом
+или доказательством авторизации: custom role policy проверяется guard, её
+текстовое описание в операции не задаёт машиночитаемое правило доступа.
 
 Предметная ownership остаётся локальной: auth/catalog/orders — backend,
 customer UI — front-office, staff UI — back-office. [Backend](../../backend/docs/INDEX.md),

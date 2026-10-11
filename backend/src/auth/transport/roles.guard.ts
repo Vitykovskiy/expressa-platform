@@ -55,7 +55,10 @@ function isAuthenticatedRequest(value: unknown): value is AuthenticatedRequest {
 
 function isAllowed(role: CurrentAuth["role"], policy: RolePolicy): boolean {
   if (policy === "Customer") return role === "customer";
+  if (policy === "CustomerOrBarista")
+    return role === "customer" || role === "barista";
   if (policy === "Staff") return role === "barista" || role === "administrator";
+  if (policy === "Administrator") return role === "administrator";
 
-  return role === "administrator";
+  return false;
 }

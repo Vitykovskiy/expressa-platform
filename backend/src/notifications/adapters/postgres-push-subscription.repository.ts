@@ -74,7 +74,7 @@ export class PostgresPushSubscriptionRepository implements PushSubscriptionRepos
 
   async findForStaff(): Promise<readonly PushSubscription[]> {
     return this.find(
-      "JOIN users ON users.id = push_subscriptions.user_id WHERE users.role IN ('barista', 'administrator')",
+      "JOIN users ON users.id = push_subscriptions.user_id WHERE users.role = 'barista'",
       [],
     );
   }

@@ -2598,6 +2598,7 @@
     },
     "/api/v2/push/subscriptions/inspect": {
       "post": {
+        "description": "Доступно Customer и Barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
         "operationId": "PushSubscriptionsController_inspect",
         "parameters": [],
         "requestBody": {
@@ -2665,6 +2666,7 @@
     },
     "/api/v2/push/subscriptions/association": {
       "put": {
+        "description": "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer сохраняет перенос от владельца, прочитанного с ролью customer, с проверкой proof и expectedVersion; конкурентная смена роли до записи не проверяется атомарно.",
         "operationId": "PushSubscriptionsController_associate",
         "parameters": [],
         "requestBody": {
@@ -2740,6 +2742,7 @@
         ]
       },
       "delete": {
+        "description": "Доступно Customer и Barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
         "operationId": "PushSubscriptionsController_deleteAssociation",
         "parameters": [],
         "requestBody": {

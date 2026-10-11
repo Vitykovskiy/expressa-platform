@@ -1,0 +1,43 @@
+# Expressa back-office 2.0
+
+> Автономный staff-клиент: основание, Storybook, OTP/session, заказы, доступность, каталог и metadata установки.
+> Продолжение разрешено; независимая приёмка открыта. В текущей local-среде наблюдены staff-вход/read, customer denial и выбранные recovery-потоки; это частичные доказательства, не API-wide приёмка. Открытые критерии — в staff-read-slice.md.
+
+## Входы
+
+- [Инструкции](AGENTS.md): локальные инварианты и запрет тестов.
+- [README](README.md): текущее состояние каталога.
+- [Карта документации](docs/INDEX.md): маршрут по предмету задачи.
+- [Code-style DoD](docs/80-conventions/code-style-dod.md): применение каноничных правил.
+- [Размещение кода](docs/80-conventions/code-layout.md): действующие владельцы файлов.
+- [UI ownership](docs/10-architecture/ui-ownership.md): контракт состояния и представления.
+
+## Первичные источники
+
+- [Технический DoD](../docs/80-conventions/Code-Definition-of-Done-back-office.md).
+- [Стиль Vue](../docs/40-quality/Vue-code-style.md).
+- [Чистое проектирование](../docs/20-architecture/ADR/ADR-011-back-office-clean-slate.md).
+- [Staff-сценарии](../docs/50-interfaces/Back-office-UI.md).
+- [Точные HTTP-контракты](../backend/openapi/openapi.json).
+
+Нормативное требование не равно факту реализации. Не использовать старый UI;
+не заявлять API-совместимость по историям компонентов. Заказы, доступность,
+категории, товары/цены, группы/добавки и связи категорий имеют текущие исходники;
+полная runtime/визуальная и независимая приёмка открыты. Manifest и иконки
+опубликованы; реальная установка/запуск и staff push/opt-in/click не подтверждены.
+Исторические наблюдения привязаны к своим снимкам, не доказывают текущий runtime.
+
+
+## Runtime
+
+- [Дизайн-система](docs/10-architecture/design-system.md): единый источник темы и публичный UI.
+- [Покрытие](docs/COVERAGE.md): объекты текущего этапа.
+- [Manifest](package.json): exact dependencies и разрешённые нетестовые команды.
+- Цвета: src/shared/config/theme.constants.ts; геометрия: src/shared/styles/tokens.css.
+- Предпочтение темы: src/app/theme.ts. Production-композиция: src/app/App.vue. Workbench остаётся потребителем основания для каталога.
+- [Session и чтение заказов](docs/10-architecture/staff-read-slice.md): URL, concurrency, API, восстановление и ограничения.
+- [Доступность](docs/10-architecture/availability-slice.md), [каталог](docs/10-architecture/catalog-categories-slice.md), [товары](docs/10-architecture/catalog-products-slice.md), [группы](docs/10-architecture/catalog-modifiers-slice.md), [связи категорий](docs/10-architecture/catalog-associations-slice.md): текущие владельцы и открытые критерии.
+- [Установка](docs/10-architecture/pwa-installation.md): public manifest/иконки, static OS palette; runtime theme остаётся app. Нет SW/cache/install handler; весь install/launch/push результат не принят.
+- Session and access lifecycle: src/entities/session/; order read/command/reconciliation: src/entities/order/; lifecycle presentation: src/features/order-transition/; OTP: src/features/auth/.
+- Открывать http://localhost:5174/ с текущим backend localhost:3001; proxy сохраняет Origin.
+- Компоненты: src/shared/ui/; ручные истории рядом в *.stories.constants.ts.

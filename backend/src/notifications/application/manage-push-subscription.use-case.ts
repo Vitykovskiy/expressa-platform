@@ -37,6 +37,37 @@ export class ManagePushSubscriptionUseCase {
     action: "enable" | "transfer",
     expectedVersion: string | null,
   ): Promise<{ association: "current"; version: string }> {
+    return this.associateSubscription(
+      userId,
+      subscription,
+      action,
+      expectedVersion,
+      true,
+    );
+  }
+
+  async associateForBarista(
+    userId: string,
+    subscription: PushSubscriptionCommand,
+    action: "enable" | "transfer",
+    expectedVersion: string | null,
+  ): Promise<{ association: "current"; version: string }> {
+    return this.associateSubscription(
+      userId,
+      subscription,
+      action,
+      expectedVersion,
+      false,
+    );
+  }
+
+  private async associateSubscription(
+    userId: string,
+    subscription: PushSubscriptionCommand,
+    action: "enable" | "transfer",
+    expectedVersion: string | null,
+    allowForeignTransfer: boolean,
+  ): Promise<{ association: "current"; version: string }> {
     if (!isValidPushSubscriptionProof(subscription))
       throw new PushAssociationConflictError();
     if (action === "enable") {
@@ -68,7 +99,7 @@ export class ManagePushSubscriptionUseCase {
       throw new PushAssociationConflictError();
     if (stored.userId === userId)
       return { association: "current", version: stored.associationVersion };
-    if (stored.ownerRole !== "customer")
+    if (!allowForeignTransfer || stored.ownerRole !== "customer")
       throw new PushAssociationConflictError();
     const version = await this.repository.transferAssociation(
       stored,

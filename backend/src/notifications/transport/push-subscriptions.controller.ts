@@ -67,10 +67,14 @@ export class PushSubscriptionsController {
   }
 
   @Post("subscriptions/inspect")
-  @Roles("Customer")
+  @Roles("CustomerOrBarista")
   @Header("Cache-Control", "no-store")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Проверить связь текущей push-подписки" })
+  @ApiOperation({
+    summary: "Проверить связь текущей push-подписки",
+    description:
+      "Доступно Customer и Barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
+  })
   @ApiBody({ type: PushSubscriptionDto })
   @ApiResponse({ status: HttpStatus.OK, type: PushSubscriptionInspectionDto })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ApiHttpErrorDto })
@@ -86,9 +90,13 @@ export class PushSubscriptionsController {
   }
 
   @Put("subscriptions/association")
-  @Roles("Customer")
+  @Roles("CustomerOrBarista")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Включить или перенести связь push-подписки" })
+  @ApiOperation({
+    summary: "Включить или перенести связь push-подписки",
+    description:
+      "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer сохраняет перенос от владельца, прочитанного с ролью customer, с проверкой proof и expectedVersion; конкурентная смена роли до записи не проверяется атомарно.",
+  })
   @ApiBody({ type: PushAssociationRequestDto })
   @ApiResponse({ status: HttpStatus.OK, type: PushAssociationResponseDto })
   @ApiResponse({ status: HttpStatus.CONFLICT, type: ApiHttpErrorDto })
@@ -99,6 +107,15 @@ export class PushSubscriptionsController {
   ): Promise<PushAssociationResponse> {
     const request = parseAssociationRequest(body);
     try {
+      if (auth.role === "barista") {
+        return await this.subscriptions.associateForBarista(
+          auth.userId,
+          toCommand(auth.userId, request.subscription),
+          request.action,
+          request.expectedVersion,
+        );
+      }
+
       return await this.subscriptions.associate(
         auth.userId,
         toCommand(auth.userId, request.subscription),
@@ -111,9 +128,13 @@ export class PushSubscriptionsController {
   }
 
   @Delete("subscriptions/association")
-  @Roles("Customer")
+  @Roles("CustomerOrBarista")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Отключить свою versioned push-связь" })
+  @ApiOperation({
+    summary: "Отключить свою versioned push-связь",
+    description:
+      "Доступно Customer и Barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
+  })
   @ApiBody({ type: PushAssociationDeleteRequestDto })
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @ApiResponse({ status: HttpStatus.CONFLICT, type: ApiHttpErrorDto })
