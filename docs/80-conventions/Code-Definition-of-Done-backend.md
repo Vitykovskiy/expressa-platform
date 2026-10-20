@@ -6,11 +6,12 @@ owner: root
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
+  - Clean-code.md
   - ../../backend/package.json
 area: backend
 status: stable
 tags: [definition-of-done, backend, nestjs, typescript, postgresql]
-updated: 2026-08-01
+updated: 2026-10-20
 knowledge_role: requirements
 scope: system
 ---
@@ -28,6 +29,16 @@ TypeScript и PostgreSQL. Он не заменяет [архитектуру bac
 [границы приложений](../20-architecture/Repository-boundaries.md) и
 [соглашения HTTP API](../50-interfaces/HTTP-API-conventions.md), а задаёт критерии
 приёмки изменений в их пределах.
+
+## Обязательная приёмка чистого кода
+
+Общие [критерии чистого кода](Clean-code.md) являются частью этого DoD:
+KISS, DRY, все пять SOLID и C1–C6 обязательны в применимой области.
+Review подтверждает их по изменённому коду и затронутым потребителям согласно
+[правилам приёмки](Clean-code.md#приёмка-изменения). Неприменимость обоснована;
+нарушение или непроверенный применимый критерий блокируют положительный
+вердикт. Успех форматирования, lint, typecheck или сборки их не заменяет.
+Контурные требования ниже действуют совместно с общим стандартом.
 
 ## Содержательная польза и простота
 

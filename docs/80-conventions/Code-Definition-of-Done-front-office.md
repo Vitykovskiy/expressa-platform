@@ -6,11 +6,12 @@ owner: root
 last_verified: 2026-08-11
 sources:
   - ../../AGENTS.md
+  - Clean-code.md
   - ../../front-office/package.json
 area: front-office
 status: current
 tags: [definition-of-done, front-office, vue, typescript]
-updated: 2026-08-01
+updated: 2026-10-20
 knowledge_role: requirements
 scope: system
 ---
@@ -33,6 +34,16 @@ Pinia после появления реализации. Архитектурн
 [стиль Vue-кода](../40-quality/Vue-code-style.md),
 [доступность](../40-quality/UI-accessibility.md) и
 [стратегия проверки](../40-quality/Validation-strategy.md).
+
+## Обязательная приёмка чистого кода
+
+Общие [критерии чистого кода](Clean-code.md) являются частью этого DoD:
+KISS, DRY, все пять SOLID и C1–C6 обязательны в применимой области.
+Review подтверждает их по изменённому коду и затронутым потребителям согласно
+[правилам приёмки](Clean-code.md#приёмка-изменения). Неприменимость обоснована;
+нарушение или непроверенный применимый критерий блокируют положительный
+вердикт. Успех форматирования, lint, typecheck или сборки их не заменяет.
+Контурные требования ниже действуют совместно с общим стандартом.
 
 ## Простота и ответственность
 

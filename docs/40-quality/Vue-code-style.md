@@ -5,10 +5,11 @@ type: convention
 area: quality
 status: active
 tags: [vue, typescript, quality]
-updated: 2026-10-09
+updated: 2026-10-20
 owner: root
 last_verified: 2026-10-09
 sources:
+  - ../80-conventions/Clean-code.md
   - ../../back-office/package.json
   - ../../front-office/package.json
   - ../../package.json
@@ -22,6 +23,9 @@ scope: system
 
 Это главный источник правил Vue и Vuetify для `back-office` и `front-office`.
 Они обязательны для всего Vue-кода приложений.
+Общие [критерии чистого кода](../80-conventions/Clean-code.md) действуют
+совместно с этой нотой; [их приёмка](../80-conventions/Clean-code.md#приёмка-изменения)
+обязательна для нового и изменяемого кода обоих клиентов.
 Для back-office 2.0 эти правила сохраняются полностью.
 [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md)
 освобождает выбор визуальной формы, но не отменяет code-style, Vue/Vuetify

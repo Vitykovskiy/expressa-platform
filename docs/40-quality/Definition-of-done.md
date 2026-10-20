@@ -5,10 +5,11 @@ type: standard
 area: quality
 status: active
 tags: [quality, ui, vue, dod]
-updated: 2026-09-23
+updated: 2026-10-20
 owner: root
 last_verified: 2026-09-23
 sources:
+  - ../80-conventions/Clean-code.md
   - ../../front-office/package.json
   - ../../back-office/package.json
 knowledge_role: requirements
@@ -23,6 +24,7 @@ scope: system
 
 ## Gate
 
+- Изменённый код соответствует общим [критериям чистого кода](../80-conventions/Clean-code.md#приёмка-изменения); применимое нарушение блокирует приёмку независимо от результата lint или сборки.
 - Изменение сохраняет границы двух независимых продуктов по [границам приложений](../20-architecture/Repository-boundaries.md).
 - Изменённый Vue/Vuetify-код соответствует [стилю Vue-кода](Vue-code-style.md).
 - Изменённое UI-поведение соответствует применимым требованиям: [требования Customer](UI-accessibility.md) или [UI-контракт back-office](../../back-office/docs/10-architecture/ui-ownership.md).
