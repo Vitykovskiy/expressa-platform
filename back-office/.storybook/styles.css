@@ -1,9 +1,0 @@
-.storybook-case {
-  max-inline-size: 36rem;
-  padding: var(--space-xl);
-}
-.storybook-case > p {
-  margin-block-start: var(--space-lg);
-  font-size: var(--font-label);
-  color: var(--color-foreground-muted);
-}
