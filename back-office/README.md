@@ -10,14 +10,19 @@
 
 ## Структура каталога
 
-- `src/app` — запуск, source-оболочка, URL/history и сброс защищённых владельцев.
-- `src/pages` — композиция auth/orders/availability/catalog/users/settings.
-- `src/widgets/staff` — исходная навигация администратора и бариста.
-- `src/features` — действия и формы предметных сценариев, native push lifecycle.
-- `src/entities` — сеанс, реальные DTO/API, подтверждённые данные и команды.
-- `src/shared` — HTTP transport, source UI-примитивы и нативные поля.
-- `public` — шрифт, manifest, исходные иконки и push-only service worker.
-- `docs` — владельцы состояния, HTTP, установка и актуальный реестр покрытия.
+```text
+back-office/
+├── src/
+│   ├── app/            # запуск, source-оболочка, URL/history и сброс защищённых владельцев
+│   ├── pages/          # композиция auth/orders/availability/catalog/users/settings
+│   ├── widgets/
+│   │   └── staff/      # исходная навигация администратора и бариста
+│   ├── features/       # действия и формы предметных сценариев, native push lifecycle
+│   ├── entities/       # сеанс, реальные DTO/API, подтверждённые данные и команды
+│   └── shared/         # HTTP transport, source UI-примитивы и нативные поля
+├── public/             # шрифт, manifest, исходные иконки и push-only service worker
+└── docs/               # владельцы состояния, HTTP, установка и актуальный реестр покрытия
+```
 
 Направление зависимостей и обязательные правила — в
 [размещении кода](docs/80-conventions/code-layout.md).
