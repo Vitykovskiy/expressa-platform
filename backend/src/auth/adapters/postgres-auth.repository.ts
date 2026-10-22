@@ -263,13 +263,20 @@ export class PostgresAuthRepository implements AuthRepository {
           [phoneE164],
         );
         const userResult = await client.query<DatabaseRow>(
-          `SELECT id, phone_e164, role
+          `SELECT id, phone_e164, role, blocked_at
          FROM users
          WHERE phone_e164 = $1
          FOR UPDATE`,
           [phoneE164],
         );
-        const user = parseRequiredRow(userResult.rows[0], parseAuthUser);
+        const userRow = userResult.rows[0];
+        if (userRow === undefined) {
+          throw new Error("Missing OTP account.");
+        }
+        if (readNullableDate(userRow, "blocked_at") !== null) {
+          return { status: "unavailable", challenge: null };
+        }
+        const user = parseAuthUser(userRow);
         const sessionResult = await client.query<DatabaseRow>(
           `INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
          VALUES ($1, $2, $3, $4)
@@ -341,7 +348,8 @@ export class PostgresAuthRepository implements AuthRepository {
               users.role AS current_user_role
        FROM sessions
        JOIN users ON users.id = sessions.user_id
-       WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2`,
+       WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2
+         AND users.blocked_at IS NULL`,
       [sessionId, now],
     );
 
@@ -355,6 +363,19 @@ export class PostgresAuthRepository implements AuthRepository {
     now: Date,
   ): Promise<SessionRotation> {
     return this.withTransaction(async (client) => {
+      // Порядок user → session общий с блокировкой и сменой роли.
+      const account = await client.query<DatabaseRow>(
+        `SELECT users.id, users.blocked_at
+         FROM users JOIN sessions ON sessions.user_id = users.id
+         WHERE sessions.id = $1 FOR UPDATE OF users`,
+        [sessionId],
+      );
+      if (
+        account.rows[0] === undefined ||
+        readNullableDate(account.rows[0], "blocked_at") !== null
+      ) {
+        return { status: "unavailable" };
+      }
       const selected = await client.query<DatabaseRow>(
         `SELECT sessions.id, sessions.user_id, sessions.refresh_token_hash, sessions.expires_at,
                 sessions.revoked_at, sessions.created_at, sessions.rotated_at,
@@ -537,7 +558,8 @@ export class PostgresAuthRepository implements AuthRepository {
       `SELECT users.id, users.phone_e164, users.role
        FROM sessions
        JOIN users ON users.id = sessions.user_id
-       WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2`,
+       WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2
+         AND users.blocked_at IS NULL`,
       [sessionId, now],
     );
 

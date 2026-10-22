@@ -2,7 +2,7 @@
 title: "Backend coverage"
 type: coverage
 owner: backend
-last_verified: 2026-09-20
+last_verified: 2026-10-21
 sources:
   - ../openapi/openapi.json
   - ../src/catalog/catalog.module.ts
@@ -89,6 +89,33 @@ scope: backend
 | `/health/live`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | active | [Operations](60-operations/Run-and-environment.md) | [OpenAPI](../openapi/openapi.json)                                                                                                   | —     | current contract |
 | `/health/ready`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | active | [Operations](60-operations/Run-and-environment.md) | [OpenAPI](../openapi/openapi.json)                                                                                                   | —     | current contract |
 | `/metrics`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | active | [Operations](60-operations/Run-and-environment.md) | [OpenAPI](../openapi/openapi.json)                                                                                                   | —     | current contract |
+
+| `operating-settings-row.ts` | active | [Orders](30-domains/Orders.md) | [operating-settings-row.ts](../src/service-settings/adapters/operating-settings-row.ts) | — | current implementation; independent review separate |
+| `postgres-operating-settings.repository.ts` | active | [Orders](30-domains/Orders.md) | [postgres-operating-settings.repository.ts](../src/service-settings/adapters/postgres-operating-settings.repository.ts) | — | current implementation; independent review separate |
+| `manage-operating-settings.use-case.ts` | active | [Orders](30-domains/Orders.md) | [manage-operating-settings.use-case.ts](../src/service-settings/application/manage-operating-settings.use-case.ts) | — | current implementation; independent review separate |
+| `operating-settings.ts` | active | [Orders](30-domains/Orders.md) | [operating-settings.ts](../src/service-settings/domain/operating-settings.ts) | — | current implementation; independent review separate |
+| `service-settings.module.ts` | active | [Orders](30-domains/Orders.md) | [service-settings.module.ts](../src/service-settings/service-settings.module.ts) | — | current implementation; independent review separate |
+| `operating-settings.controller.ts` | active | [Orders](30-domains/Orders.md) | [operating-settings.controller.ts](../src/service-settings/transport/operating-settings.controller.ts) | — | current implementation; independent review separate |
+| `operating-settings.dto.ts` | active | [Orders](30-domains/Orders.md) | [operating-settings.dto.ts](../src/service-settings/transport/operating-settings.dto.ts) | — | current implementation; independent review separate |
+| `staff-users.module.ts` | active | [Auth](30-domains/Auth.md) | [staff-users.module.ts](../src/staff-users/staff-users.module.ts) | — | current implementation; independent review separate |
+| `staff-users.controller.ts` | active | [Auth](30-domains/Auth.md) | [staff-users.controller.ts](../src/staff-users/transport/staff-users.controller.ts) | — | current implementation; independent review separate |
+| `manage-staff-users.use-case.ts` | active | [Auth](30-domains/Auth.md) | [manage-staff-users.use-case.ts](../src/staff-users/application/manage-staff-users.use-case.ts) | — | current implementation; independent review separate |
+| `postgres-staff-users.repository.ts` | active | [Auth](30-domains/Auth.md) | [postgres-staff-users.repository.ts](../src/staff-users/adapters/postgres-staff-users.repository.ts) | — | current implementation; independent review separate |
+| `source-menu.controller.ts` | active | [Catalog](30-domains/Catalog.md) | [source-menu.controller.ts](../src/catalog/transport/source-menu.controller.ts) | — | current implementation; independent review separate |
+| `GET /api/v3/backoffice/users` | active | [Auth](30-domains/Auth.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/users/{userId}/role` | active | [Auth](30-domains/Auth.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/users/{userId}/block` | active | [Auth](30-domains/Auth.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `GET /api/v3/backoffice/settings` | active | [Orders](30-domains/Orders.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/orders/{orderId}/ready` | active | [Orders](30-domains/Orders.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/orders/{orderId}/reject` | active | [Orders](30-domains/Orders.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/menu/categories` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/menu/categories/{categoryId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/menu/option-groups` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/menu/option-groups/{groupId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/menu/option-groups/{groupId}/options` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/menu/options/{optionId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `POST /api/v3/backoffice/menu/products` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `PATCH /api/v3/backoffice/menu/products/{productId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
 
 Removed v2 catalog/order reads, direct push subscription routes and variant
 schema are not current coverage entries. Local/test/development databases are

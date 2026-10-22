@@ -6,8 +6,12 @@ CREATE TABLE users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_e164 text NOT NULL UNIQUE CHECK (phone_e164 ~ '^\+7[0-9]{10}$'),
   role user_role NOT NULL DEFAULT 'customer',
+  name text CHECK (name IS NULL OR btrim(name) <> ''),
+  blocked_at timestamptz,
+  blocked_by uuid REFERENCES users (id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((blocked_at IS NULL) = (blocked_by IS NULL))
 );
 
 CREATE TABLE otp_challenges (
@@ -139,6 +143,17 @@ CREATE TABLE service_settings (
 );
 INSERT INTO service_settings (key, value) VALUES ('accepts_new_orders', true);
 
+CREATE TABLE service_operating_settings (
+  id smallint PRIMARY KEY CHECK (id = 1),
+  opens_at time NOT NULL,
+  closes_at time NOT NULL,
+  slot_capacity integer NOT NULL CHECK (slot_capacity > 0),
+  updated_at timestamptz,
+  updated_by uuid REFERENCES users (id) ON DELETE RESTRICT,
+  CHECK (opens_at < closes_at),
+  CHECK ((updated_at IS NULL) = (updated_by IS NULL))
+);
+
 CREATE TABLE order_daily_counters (
   order_day date PRIMARY KEY,
   last_number smallint NOT NULL CHECK (last_number BETWEEN 1 AND 999)
@@ -151,10 +166,20 @@ CREATE TABLE orders (
   idempotency_key uuid NOT NULL,
   request_fingerprint text NOT NULL CHECK (btrim(request_fingerprint) <> ''),
   stage order_stage NOT NULL DEFAULT 'CREATED',
+  rejected_at timestamptz,
+  rejected_by uuid REFERENCES users (id) ON DELETE RESTRICT,
+  rejection_reason text CHECK (rejection_reason IS NULL OR btrim(rejection_reason) <> ''),
+  pickup_slot_start timestamptz,
+  pickup_slot_end timestamptz,
   total integer NOT NULL CHECK (total >= 0),
   order_day date NOT NULL DEFAULT ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date),
   daily_number smallint NOT NULL CHECK (daily_number BETWEEN 1 AND 999),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((rejected_at IS NULL) = (rejected_by IS NULL)),
+  CHECK ((rejected_at IS NULL) = (rejection_reason IS NULL)),
+  CHECK (rejected_at IS NULL OR stage = 'CREATED'),
+  CHECK ((pickup_slot_start IS NULL) = (pickup_slot_end IS NULL)),
+  CHECK (pickup_slot_end = pickup_slot_start + interval '10 minutes'),
   CHECK (number = to_char(order_day, 'YYYYMMDD') || '-' || lpad(daily_number::text, 3, '0')),
   UNIQUE (customer_id, idempotency_key),
   UNIQUE (order_day, daily_number)

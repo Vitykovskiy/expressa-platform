@@ -3,7 +3,7 @@ title: "Backend Expressa"
 description: Главная карта серверной документации.
 type: moc
 owner: backend
-last_verified: 2026-08-11
+last_verified: 2026-10-21
 sources:
   - ../src/app.module.ts
 knowledge_role: navigation
@@ -25,6 +25,13 @@ scope: backend
   [OpenAPI](../openapi/openapi.json).
 - [Операции](60-operations/INDEX.md) — запуск, окружение и наблюдаемость.
 - [Тестирование](95-testing/INDEX.md) — допустимые проверки и существующие тестовые исходники.
+
+`AppModule` подключает StaffUsersModule и ServiceSettingsModule:
+административные пользователи принадлежат
+[Auth](30-domains/Auth.md), рабочие часы и вместимость —
+[Orders](30-domains/Orders.md). Новые source-команды меню принадлежат
+[Catalog](30-domains/Catalog.md). Регистрация модуля и OpenAPI описывают
+реализацию; они не подтверждают независимую приёмку или development deploy.
 
 ## Маршруты по задачам и вопросам
 

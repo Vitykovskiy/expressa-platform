@@ -16,6 +16,7 @@ import { useRouter } from "vue-router";
 import { useSessionStore } from "@/app/session.store";
 import OrdersHistoryScreen from "@/features/orders/OrdersHistoryScreen.vue";
 import type { OrdersHistoryScreenProps } from "@/features/orders/OrdersHistoryScreen.types";
+import { isOrderTerminal } from "@/features/orders/order-status";
 import { apiClientKey } from "@/shared/api/client";
 import { createOrdersApi, type CustomerOrder } from "@/shared/api/orders.api";
 
@@ -117,7 +118,7 @@ async function loadPage(cursor?: string): Promise<void> {
   }
 }
 function hasActiveOrders(): boolean {
-  return orders.value.some((order) => order.stage !== "ISSUED");
+  return orders.value.some((order) => !isOrderTerminal(order));
 }
 function syncPolling(): void {
   if (document.hidden || !hasActiveOrders()) return stopPolling();
@@ -152,7 +153,7 @@ async function refreshActiveOrders(): Promise<void> {
   try {
     const api = createOrdersApi(apiClient);
     const activeOrders = orders.value.filter(
-      (order) => order.stage !== "ISSUED",
+      (order) => !isOrderTerminal(order),
     );
     const refreshed = await Promise.all(
       activeOrders.map((order) =>

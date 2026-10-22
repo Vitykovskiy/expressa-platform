@@ -42,3 +42,10 @@ export class IdempotencyKeyReusedError extends OrderDomainError {
     super("Ключ идемпотентности уже использован с другим запросом.");
   }
 }
+
+export class OrderCapacityUnavailableError extends OrderDomainError {
+  readonly code = "ORDER_CAPACITY_UNAVAILABLE";
+  constructor() {
+    super("На сегодня нет свободного времени получения заказа.");
+  }
+}

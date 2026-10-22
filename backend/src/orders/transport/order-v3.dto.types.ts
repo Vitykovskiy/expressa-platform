@@ -1,3 +1,4 @@
+import type { OrderMetadataDto } from "./order-metadata.dto.types";
 export type OrderV3ModifierDto = {
   modifierOptionId: string;
   modifierName: string;
@@ -13,7 +14,7 @@ export type OrderV3ItemDto = {
   lineTotal: number;
   modifiers: OrderV3ModifierDto[];
 };
-export type OrderV3Dto = {
+export type OrderV3Dto = OrderMetadataDto & {
   id: string;
   number: string;
   stage: string;

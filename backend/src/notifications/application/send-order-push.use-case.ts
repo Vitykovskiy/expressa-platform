@@ -21,8 +21,9 @@ export class SendOrderPushUseCase {
         try {
           await this.sender.send(subscription, notification);
         } catch (error) {
-          if (isInvalidSubscription(error))
+          if (isInvalidSubscription(error)) {
             await this.repository.deleteSnapshot(subscription);
+          }
         }
       }),
     );
@@ -34,12 +35,26 @@ function toNotification(order: OrderPush): {
   body: string;
   orderId: string;
 } {
-  if (order.recipient === "staff")
+  if (order.recipient === "staff") {
     return {
       title: "Новый заказ",
       body: `Заказ ${order.number} ожидает принятия`,
       orderId: order.orderId,
     };
+  }
+  if (order.stage === "REJECTED") {
+    if (
+      typeof order.rejectionReason !== "string" ||
+      order.rejectionReason.trim() === ""
+    ) {
+      throw new Error("Missing rejection notification reason");
+    }
+    return {
+      title: `Заказ ${order.number}`,
+      body: `Заказ отклонён: ${order.rejectionReason}`,
+      orderId: order.orderId,
+    };
+  }
   const body =
     order.stage === "ACCEPTED"
       ? "Заказ принят"

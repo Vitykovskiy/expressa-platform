@@ -2,8 +2,9 @@
 title: "API back-office"
 type: interface
 owner: root
-last_verified: 2026-09-20
+last_verified: 2026-10-21
 sources:
+  - ../20-architecture/ADR/ADR-012-back-office-source-contract.md
   - ../../backend/openapi/openapi.json
   - ../../backend/src/catalog/transport/admin-catalog-v3.controller.ts
   - ../../backend/src/catalog/transport/catalog-products-v3.controller.ts
@@ -48,3 +49,39 @@ scope: system
 | `POST /api/v2/backoffice/orders/{orderId}/issue`                            | выдать заказ                      | `backoffice-orders.controller.ts`          |
 
 `GET /api/v2/backoffice/orders` и `GET /api/v2/backoffice/orders/{orderId}` удалены. Чтение очереди и детали существует только под v3.
+
+## Source API полного back-office
+
+[ADR-012](../20-architecture/ADR/ADR-012-back-office-source-contract.md)
+задаёт целевые source-политики. Ниже перечислены опубликованные в текущем
+OpenAPI дополнительные операции. AppModule подключает StaffUsersModule и
+ServiceSettingsModule; SourceMenuController и source-ready/reject принадлежат
+существующим CatalogModule и OrdersModule. У всех новых административных
+команд действуют SessionGuard/RolesGuard: users/settings/menu — Administrator,
+заказы — Staff. Генерация OpenAPI не заменяет проверку фактической авторизации.
+
+| Метод и путь                                                   | HTTP-вход                      |
+| -------------------------------------------------------------- | ------------------------------ |
+| `POST /api/v3/backoffice/menu/categories`                      | `SourceMenuController`         |
+| `PATCH /api/v3/backoffice/menu/categories/{categoryId}`        | `SourceMenuController`         |
+| `POST /api/v3/backoffice/menu/option-groups`                   | `SourceMenuController`         |
+| `PATCH /api/v3/backoffice/menu/option-groups/{groupId}`        | `SourceMenuController`         |
+| `POST /api/v3/backoffice/menu/option-groups/{groupId}/options` | `SourceMenuController`         |
+| `PATCH /api/v3/backoffice/menu/options/{optionId}`             | `SourceMenuController`         |
+| `POST /api/v3/backoffice/menu/products`                        | `SourceMenuController`         |
+| `PATCH /api/v3/backoffice/menu/products/{productId}`           | `SourceMenuController`         |
+| `POST /api/v3/backoffice/orders/{orderId}/ready`               | `BackofficeOrdersV3Controller` |
+| `POST /api/v3/backoffice/orders/{orderId}/reject`              | `BackofficeOrdersV3Controller` |
+| `GET /api/v3/backoffice/users`                                 | `StaffUsersController`         |
+| `POST /api/v3/backoffice/users`                                | `StaffUsersController`         |
+| `PATCH /api/v3/backoffice/users/{userId}/role`                 | `StaffUsersController`         |
+| `PATCH /api/v3/backoffice/users/{userId}/block`                | `StaffUsersController`         |
+| `GET /api/v3/backoffice/settings`                              | `OperatingSettingsController`  |
+| `PUT /api/v3/backoffice/settings`                              | `OperatingSettingsController`  |
+
+Клиентские снимки генерируются существующей командой backend `openapi:sync`.
+В схеме заказов опубликованы реальные nullable pickupSlot/rejection и имя
+клиента в staff-проекции; view-фильтр — new/confirmed/ready/all. Customer-поля
+добавлены опционально для совместимости. Пять стадий и все старые endpoint
+сохранены. Публичное наличие маршрутов и схем не подтверждает UI-приёмку,
+проверку конкурентных операций или development-поставку.

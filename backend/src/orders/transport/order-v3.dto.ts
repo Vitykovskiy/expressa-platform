@@ -1,3 +1,7 @@
+import {
+  PickupSlotResponseDto,
+  OrderRejectionResponseDto,
+} from "./order-metadata.dto";
 import { ApiProperty } from "@nestjs/swagger";
 import type {
   CustomerOrderV3Dto,
@@ -27,6 +31,18 @@ export class OrderV3ResponseDto implements OrderV3Dto {
   @ApiProperty() id!: string;
   @ApiProperty() number!: string;
   @ApiProperty() stage!: string;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: () => PickupSlotResponseDto,
+  })
+  pickupSlot?: PickupSlotResponseDto | null;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: () => OrderRejectionResponseDto,
+  })
+  rejection?: OrderRejectionResponseDto | null;
   @ApiProperty() total!: number;
   @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })
   items!: OrderV3ItemDto[];

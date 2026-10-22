@@ -1,8 +1,5 @@
 <template>
-  <article
-    class="order-card"
-    :class="`order-card--${props.order.stage.toLowerCase()}`"
-  >
+  <article class="order-card" :class="statusClass">
     <button
       type="button"
       class="order-card__header"
@@ -14,7 +11,7 @@
       <span class="order-card__topline">
         <span class="order-card__title-row">
           <span class="order-card__title">Заказ №{{ props.order.number }}</span>
-          <span class="order-card__stage">{{ props.stageLabel }}</span>
+          <span class="order-card__stage">{{ displayedStageLabel }}</span>
         </span>
         <span class="order-card__summary">
           <strong>{{ formatRubles(props.order.total) }}</strong>
@@ -26,7 +23,11 @@
         {{ formattedCreatedAt }}
       </span>
     </button>
-    <p v-if="props.order.stage === 'READY'" class="order-card__pickup-cue">
+    <p v-if="rejectionReason !== null" class="order-card__rejection">
+      Причина: {{ rejectionReason }}
+    </p>
+    <p v-if="!rejected" class="order-card__pickup-cue">{{ pickupLabel }}</p>
+    <p v-if="readyForPickup" class="order-card__pickup-cue">
       Заберите заказ на кассе.
     </p>
     <div v-if="isOpen" :id="detailsId" class="order-card__details">
@@ -53,7 +54,7 @@
       </ul>
     </div>
     <div
-      v-if="props.order.stage === 'ISSUED'"
+      v-if="canRepeat"
       class="order-card__actions"
       :class="{ 'order-card__actions--after-details': isOpen }"
     >
@@ -75,11 +76,34 @@ import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import type { OrderCardEmits, OrderCardProps } from "./OrderCard.types";
 import type { OrderItem } from "@/shared/api/orders.api";
+import { formatOrderPickupSlot, isOrderRejected } from "./order-status";
+import { orderStatusMessages } from "./order-status.constants";
 
 const props = defineProps<OrderCardProps>();
 const emit = defineEmits<OrderCardEmits>();
 const isOpen = ref(false);
 const detailsId = `order-card-details-${props.order.id}`;
+
+const rejected = computed(() => isOrderRejected(props.order));
+const rejectionReason = computed(() => props.order.rejection?.reason ?? null);
+const statusClass = computed(() =>
+  rejected.value
+    ? "order-card--rejected"
+    : `order-card--${props.order.stage.toLowerCase()}`,
+);
+const displayedStageLabel = computed(() =>
+  rejected.value ? orderStatusMessages.rejected : props.stageLabel,
+);
+const pickupLabel = computed(() =>
+  formatOrderPickupSlot(props.order.pickupSlot),
+);
+const readyForPickup = computed(
+  () => !rejected.value && props.order.stage === "READY",
+);
+const canRepeat = computed(
+  () => !rejected.value && props.order.stage === "ISSUED",
+);
+
 const formattedCreatedAt = computed(() =>
   new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
@@ -93,7 +117,7 @@ const disclosureLabel = computed(() =>
 );
 const disclosureAccessibleName = computed(
   () =>
-    `Заказ №${props.order.number}, ${props.stageLabel}, ${formatRubles(props.order.total)}, ${formattedCreatedAt.value}. ${disclosureLabel.value}`,
+    `Заказ №${props.order.number}, ${displayedStageLabel.value}, ${formatRubles(props.order.total)}, ${formattedCreatedAt.value}. ${disclosureLabel.value}`,
 );
 
 function itemKey(item: OrderItem): string {
@@ -167,6 +191,10 @@ function itemKey(item: OrderItem): string {
   color: var(--customer-color-warning);
   background: var(--customer-color-warning-surface);
 }
+.order-card--rejected .order-card__stage {
+  color: var(--customer-color-danger);
+  background: var(--customer-danger-10);
+}
 .order-card--accepted .order-card__stage,
 .order-card--preparing .order-card__stage {
   color: var(--customer-color-blue-500);
@@ -227,6 +255,18 @@ function itemKey(item: OrderItem): string {
 .order-card__pickup-cue {
   margin: 0;
   padding: 0 var(--customer-space-10) var(--customer-space-9);
+}
+.order-card__rejection {
+  margin: 0;
+  padding: 0 var(--customer-space-10) var(--customer-space-9);
+  color: var(--customer-color-danger);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-semibold);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.order-card__pickup-cue {
+  overflow-wrap: anywhere;
 }
 .order-card--issued .order-card__details {
   background: var(--customer-surface-muted-on-brand);

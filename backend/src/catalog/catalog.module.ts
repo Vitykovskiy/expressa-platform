@@ -9,6 +9,7 @@ import { PostgresCategoriesRepository } from "./adapters/postgres-categories.rep
 import { PostgresCategoryModifiersRepository } from "./adapters/postgres-category-modifiers.repository";
 import { PostgresModifiersRepository } from "./adapters/postgres-modifiers.repository";
 import { PostgresProductsRepository } from "./adapters/postgres-products.repository";
+import { PostgresSourceCategoriesRepository } from "./adapters/postgres-source-categories.repository";
 import { PostgresPublicMenuRepository } from "./adapters/postgres-public-menu.repository";
 import { GetAdminCatalogUseCase } from "./application/get-admin-catalog.use-case";
 import { GetPublicMenuUseCase } from "./application/get-public-menu.use-case";
@@ -16,6 +17,10 @@ import { ManageCategoriesUseCase } from "./application/manage-categories.use-cas
 import { ManageCategoryModifiersUseCase } from "./application/manage-category-modifiers.use-case";
 import { ManageModifiersUseCase } from "./application/manage-modifiers.use-case";
 import { ManageV3ProductsUseCase } from "./application/manage-products.use-case";
+import { ManageSourceCategoriesUseCase } from "./application/manage-source-categories.use-case";
+import { ManageSourceModifiersUseCase } from "./application/manage-source-modifiers.use-case";
+import { ManageSourceProductsUseCase } from "./application/manage-source-products.use-case";
+import type { SourceCategoriesUnitOfWork } from "./application/source-menu.types";
 import { ManageAvailabilityUseCase } from "./application/manage-availability.use-case";
 import { ManageServiceIntakeUseCase } from "./application/manage-service-intake.use-case";
 import type {
@@ -33,6 +38,7 @@ import {
   categoryModifiersUnitOfWorkPort,
   modifiersUnitOfWorkPort,
   productsUnitOfWorkPort,
+  sourceCategoriesUnitOfWorkPort,
   publicMenuRepositoryPort,
 } from "./catalog.module.constants";
 import { AdminCatalogV3Controller } from "./transport/admin-catalog-v3.controller";
@@ -43,6 +49,7 @@ import { CatalogProductsV3Controller } from "./transport/catalog-products-v3.con
 import { PublicMenuV3Controller } from "./transport/public-menu-v3.controller";
 import { BackofficeAvailabilityController } from "./transport/backoffice-availability.controller";
 import { BackofficeAvailabilityV3Controller } from "./transport/backoffice-availability-v3.controller";
+import { SourceMenuController } from "./transport/source-menu.controller";
 
 @Module({
   imports: [AuthModule, DatabaseModule],
@@ -55,6 +62,7 @@ import { BackofficeAvailabilityV3Controller } from "./transport/backoffice-avail
     CatalogCategoryModifiersController,
     BackofficeAvailabilityController,
     BackofficeAvailabilityV3Controller,
+    SourceMenuController,
   ],
   providers: [
     {
@@ -110,6 +118,30 @@ import { BackofficeAvailabilityV3Controller } from "./transport/backoffice-avail
       inject: [PostgresCatalogCommandRunner],
       useFactory: (runner: PostgresCatalogCommandRunner) =>
         new PostgresProductsRepository(runner),
+    },
+    {
+      provide: sourceCategoriesUnitOfWorkPort,
+      inject: [PostgresCatalogCommandRunner],
+      useFactory: (runner: PostgresCatalogCommandRunner) =>
+        new PostgresSourceCategoriesRepository(runner),
+    },
+    {
+      provide: ManageSourceCategoriesUseCase,
+      inject: [sourceCategoriesUnitOfWorkPort],
+      useFactory: (unitOfWork: SourceCategoriesUnitOfWork) =>
+        new ManageSourceCategoriesUseCase(unitOfWork),
+    },
+    {
+      provide: ManageSourceProductsUseCase,
+      inject: [productsUnitOfWorkPort],
+      useFactory: (unitOfWork: V3ProductsUnitOfWork) =>
+        new ManageSourceProductsUseCase(unitOfWork),
+    },
+    {
+      provide: ManageSourceModifiersUseCase,
+      inject: [modifiersUnitOfWorkPort],
+      useFactory: (unitOfWork: ModifiersUnitOfWork) =>
+        new ManageSourceModifiersUseCase(unitOfWork),
     },
     {
       provide: modifiersUnitOfWorkPort,

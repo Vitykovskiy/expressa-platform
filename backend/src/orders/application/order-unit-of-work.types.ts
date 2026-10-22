@@ -7,10 +7,13 @@ export type CreateOrderCommand = {
   now: Date;
 };
 
-export type StoredOrder = {
+import type { OrderMetadata } from "../domain/order-metadata.types";
+import type { OrderStage } from "../domain/order-lifecycle.types";
+
+export type StoredOrder = OrderMetadata & {
   id: string;
   number: string;
-  stage: "CREATED";
+  stage: OrderStage;
   total: number;
   items: readonly OrderSnapshotItem[];
 };

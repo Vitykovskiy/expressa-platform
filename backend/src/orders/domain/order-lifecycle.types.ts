@@ -9,7 +9,9 @@ export type OrderStage = (typeof orderStages)[number];
 export type OrderTransitionAction = keyof typeof orderTransitions;
 export type OrderLifecycleErrorCode = (typeof orderLifecycleErrorCodes)[number];
 
-export type OrderQueueItem = {
+import type { OrderMetadata } from "./order-metadata.types";
+
+export type OrderQueueItem = OrderMetadata & {
   id: string;
   number: string;
   createdAt: Date;
@@ -26,7 +28,7 @@ export type OrderEvent = {
 };
 
 export type OrderDetails = OrderQueueItem & {
-  customer: { id: string; phoneE164: string };
+  customer: { id: string; phoneE164: string; name?: string | null };
   snapshot: readonly OrderSnapshotItem[];
   events: readonly OrderEvent[];
 };

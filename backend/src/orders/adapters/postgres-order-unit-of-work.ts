@@ -1,3 +1,9 @@
+import { readOperatingSettings } from "../../service-settings/adapters/operating-settings-row";
+import { operatingSettingsProjection } from "../../service-settings/adapters/postgres-operating-settings.repository.constants";
+import { pickupSlotMilliseconds } from "../domain/order-metadata.constants";
+import { readOrderMetadata } from "./order-metadata";
+import type { OrderStage } from "../domain/order-lifecycle.types";
+import type { PickupSlot } from "../domain/order-metadata.types";
 import {
   catalogAdvisoryLockKey,
   publicMenuAdvisoryLockSql,
@@ -5,7 +11,10 @@ import {
 import { acceptsNewOrdersSettingKey } from "../../catalog/domain/catalog.constants";
 import { createOrderFingerprint } from "../domain/order-fingerprint";
 import { revalidateOrder } from "../domain/order-revalidation";
-import { IdempotencyKeyReusedError } from "../domain/order.errors";
+import {
+  OrderCapacityUnavailableError,
+  IdempotencyKeyReusedError,
+} from "../domain/order.errors";
 import type {
   OrderCatalog,
   OrderCatalogModifierGroup,
@@ -64,11 +73,13 @@ export class PostgresOrderUnitOfWork implements OrderUnitOfWork {
         command.request.items.map((item) => item.productId),
       );
       const snapshot = revalidateOrder(command.request, catalog);
+      const pickupSlot = await this.allocatePickupSlot(client);
       const insertedOrder = await insertOrder(
         client,
         command,
         fingerprint,
         snapshot,
+        pickupSlot,
       );
       const persistedOrder = await findOrderByIdempotencyKey(
         client,
@@ -91,6 +102,58 @@ export class PostgresOrderUnitOfWork implements OrderUnitOfWork {
       client.release();
     }
   }
+
+  private async allocatePickupSlot(
+    client: TransactionClient,
+  ): Promise<PickupSlot> {
+    const settings = await client.query<DatabaseRow>(
+      `SELECT ${operatingSettingsProjection} FROM service_operating_settings WHERE id = 1 FOR UPDATE`,
+    );
+    const operating = readOperatingSettings(settings.rows);
+
+    // Чтение времени и вместимости после ожидания блокировки использует свежий snapshot.
+    const clock = await client.query<DatabaseRow>(
+      "SELECT clock_timestamp() AS now",
+    );
+    const now = clock.rows[0]?.now;
+    if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+      throw new Error("Invalid PostgreSQL allocation clock");
+    }
+    const day = now.toISOString().slice(0, 10);
+    const opensAt = new Date(day + "T" + operating.opensAt + ":00Z");
+    const closesAt = new Date(day + "T" + operating.closesAt + ":00Z");
+    if (
+      Number.isNaN(opensAt.getTime()) ||
+      Number.isNaN(closesAt.getTime()) ||
+      opensAt >= closesAt
+    ) {
+      throw new Error("Invalid persisted operating hours");
+    }
+    const earliest = new Date(
+      Math.max(
+        opensAt.getTime(),
+        Math.ceil(now.getTime() / pickupSlotMilliseconds) *
+          pickupSlotMilliseconds,
+      ),
+    );
+    const available = await client.query<DatabaseRow>(
+      `SELECT candidate AS starts_at FROM generate_series($1::timestamptz, $2::timestamptz - interval '10 minutes', interval '10 minutes') AS candidate
+     WHERE (SELECT count(*) FROM orders WHERE rejected_at IS NULL AND stage <> 'ISSUED' AND pickup_slot_start = candidate) < $3
+     ORDER BY candidate LIMIT 1`,
+      [earliest, closesAt, operating.slotCapacity],
+    );
+    const startsAt = available.rows[0]?.starts_at;
+    if (startsAt === undefined) {
+      throw new OrderCapacityUnavailableError();
+    }
+    if (!(startsAt instanceof Date) || Number.isNaN(startsAt.getTime())) {
+      throw new Error("Invalid PostgreSQL pickup slot");
+    }
+    return {
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + pickupSlotMilliseconds),
+    };
+  }
 }
 
 async function findOrderByIdempotencyKey(
@@ -99,7 +162,7 @@ async function findOrderByIdempotencyKey(
   idempotencyKey: string,
 ): Promise<{ fingerprint: string; order: StoredOrder } | null> {
   const result = await client.query<DatabaseRow>(
-    `SELECT id, number, stage, total, request_fingerprint
+    `SELECT id, number, stage, total, request_fingerprint, pickup_slot_start, pickup_slot_end, rejected_at, rejection_reason, rejected_by
      FROM orders
      WHERE customer_id = $1 AND idempotency_key = $2`,
     [customerId, idempotencyKey],
@@ -118,6 +181,7 @@ async function findOrderByIdempotencyKey(
   return {
     fingerprint,
     order: {
+      ...readOrderMetadata(row),
       id,
       number: readString(row, "number"),
       stage: readOrderStage(row),
@@ -341,8 +405,9 @@ async function insertOrder(
   command: CreateOrderCommand,
   fingerprint: string,
   snapshot: OrderRevalidationResult,
+  pickupSlot: PickupSlot,
 ): Promise<StoredOrder> {
-  const orderDay = toUtcOrderDay(command.now);
+  const orderDay = toUtcOrderDay(pickupSlot.startsAt);
   const dailyNumber = await allocateDailyNumber(client, orderDay);
   const number =
     orderDay.replaceAll("-", "") +
@@ -350,8 +415,8 @@ async function insertOrder(
     dailyNumber.toString().padStart(3, "0");
   const insertedOrder = await client.query<DatabaseRow>(
     `INSERT INTO orders (
-       number, customer_id, idempotency_key, request_fingerprint, total, order_day, daily_number
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+       number, customer_id, idempotency_key, request_fingerprint, total, order_day, daily_number, pickup_slot_start, pickup_slot_end
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id, number, stage, total`,
     [
       number,
@@ -361,6 +426,8 @@ async function insertOrder(
       snapshot.total,
       orderDay,
       dailyNumber,
+      pickupSlot.startsAt,
+      pickupSlot.endsAt,
     ],
   );
   const row = requireSingleRow(insertedOrder.rows, "order insert");
@@ -406,6 +473,8 @@ async function insertOrder(
 
   return {
     id: orderId,
+    pickupSlot,
+    rejection: null,
     number: readString(row, "number"),
     stage: readOrderStage(row),
     total: readNonNegativeInteger(row, "total"),
@@ -446,12 +515,18 @@ function readAcceptsNewOrders(rows: DatabaseRow[]): boolean {
   );
 }
 
-function readOrderStage(row: DatabaseRow): "CREATED" {
+function readOrderStage(row: DatabaseRow): OrderStage {
   const stage = readString(row, "stage");
-  if (stage !== "CREATED") {
-    throw new Error("Invalid PostgreSQL row field: stage");
+  if (
+    stage === "CREATED" ||
+    stage === "ACCEPTED" ||
+    stage === "PREPARING" ||
+    stage === "READY" ||
+    stage === "ISSUED"
+  ) {
+    return stage;
   }
-  return stage;
+  throw new Error("Invalid PostgreSQL row field: stage");
 }
 
 function readSelectionType(row: DatabaseRow): "single" | "multiple" {

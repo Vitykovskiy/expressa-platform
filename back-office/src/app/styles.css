@@ -1,0 +1,43 @@
+@font-face {
+  font-family: Inter;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  font-family: Inter, sans-serif;
+  font-synthesis: none;
+  --color-background: rgb(var(--v-theme-background));
+  --color-surface: rgb(var(--v-theme-surface));
+  --color-foreground: rgb(var(--v-theme-on-surface));
+  --color-foreground-muted: rgb(var(--v-theme-foreground-muted));
+  --color-primary: rgb(var(--v-theme-primary));
+  --color-on-primary: rgb(var(--v-theme-on-primary));
+  --color-border: rgb(var(--v-theme-border));
+  --color-danger: rgb(var(--v-theme-error));
+  --radius-control: 10px;
+  --radius-surface: 16px;
+  --opacity-disabled: 0.4;
+  --toast-surface: #fff;
+  --toast-border: #ededed;
+  --toast-foreground: #171717;
+  --toast-radius: 8px;
+  --toast-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}

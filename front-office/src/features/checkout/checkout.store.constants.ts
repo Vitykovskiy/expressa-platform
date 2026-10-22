@@ -11,6 +11,7 @@ export const checkoutStatuses = {
 } as const;
 
 export const checkoutErrorCodes = {
+  capacityUnavailable: "ORDER_CAPACITY_UNAVAILABLE",
   intakeClosed: "ORDER_INTAKE_CLOSED",
   invalidCart: "INVALID_CART",
   itemUnavailable: "MENU_ITEM_UNAVAILABLE",
@@ -20,6 +21,8 @@ export const checkoutErrorCodes = {
 } as const;
 
 export const checkoutMessages = {
+  capacityUnavailable:
+    "На сегодня нет свободного времени для получения заказа. Заказ не создан, корзина сохранена. Вернитесь к оформлению в другой рабочий день.",
   dependenciesNotConfigured: "Зависимости оформления не настроены.",
   intakeClosed: "Приём новых заказов сейчас закрыт.",
   invalidCart: "Корзина содержит позиции, которые нельзя оформить.",

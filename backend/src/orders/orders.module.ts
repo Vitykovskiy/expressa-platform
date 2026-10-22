@@ -1,3 +1,5 @@
+import { SourceOrderActionsUseCase } from "./application/source-order-actions.use-case";
+import type { SourceOrderUnitOfWork } from "./application/source-order-actions.types";
 import { Module } from "@nestjs/common";
 import type { Pool } from "pg";
 import { AuthModule } from "../auth/auth.module";
@@ -39,6 +41,19 @@ import { BackofficeOrdersV3Controller } from "./transport/backoffice-orders-v3.c
     BackofficeOrdersV3Controller,
   ],
   providers: [
+    {
+      provide: SourceOrderActionsUseCase,
+      inject: [
+        PostgresOrderLifecycleRepository,
+        orderNotificationPort,
+        orderMetricsPort,
+      ],
+      useFactory: (
+        unitOfWork: SourceOrderUnitOfWork,
+        push: OrderNotificationPort,
+        metrics: OrderMetricsPort,
+      ) => new SourceOrderActionsUseCase(unitOfWork, push, metrics),
+    },
     {
       provide: orderUnitOfWorkPort,
       inject: [DatabaseService],

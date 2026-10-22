@@ -1,3 +1,6 @@
+import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
+import { toOrderMetadataDto } from "./order-metadata.mapper";
+import type { CustomerOrder } from "../application/order-lifecycle.types";
 import {
   Body,
   Controller,
@@ -28,6 +31,7 @@ import { GetOrdersUseCase } from "../application/get-orders.use-case";
 import type { StoredOrder } from "../application/order-unit-of-work.types";
 import {
   IdempotencyKeyReusedError,
+  OrderCapacityUnavailableError,
   MenuItemUnavailableError,
   OrderDomainError,
   OrderIntakeClosedError,
@@ -81,11 +85,12 @@ export class OrdersV3Controller {
         await this.getOrders.detailsForCustomer(auth.userId, orderId),
       );
     } catch (error) {
-      if (error instanceof OrderNotFoundError)
+      if (error instanceof OrderNotFoundError) {
         throw new HttpException(
           { code: error.code, message: error.message, details: null },
           HttpStatus.NOT_FOUND,
         );
+      }
       throw error;
     }
   }
@@ -97,13 +102,21 @@ export class OrdersV3Controller {
     schema: { type: "string", format: "uuid" },
   })
   @ApiResponse({ status: 201, type: OrderV3ResponseDto })
+  @ApiResponse({
+    status: 409,
+    type: ApiHttpErrorDto,
+    description:
+      "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+  })
   create(
     @Body() body: CreateOrderV3Dto,
     @Headers("idempotency-key") idempotencyKey: string | undefined,
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<OrderV3Dto> {
     assertBody(body);
-    if (!isUuid(idempotencyKey)) invalid();
+    if (!isUuid(idempotencyKey)) {
+      invalid();
+    }
     return this.execute(body, idempotencyKey, auth.userId);
   }
 
@@ -114,21 +127,30 @@ export class OrdersV3Controller {
     schema: { type: "string", format: "uuid" },
   })
   @ApiResponse({ status: 201, type: OrderV3ResponseDto })
+  @ApiResponse({
+    status: 409,
+    type: ApiHttpErrorDto,
+    description:
+      "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+  })
   async repeat(
     @Param("orderId") orderId: string,
     @Headers("idempotency-key") idempotencyKey: string | undefined,
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<OrderV3Dto> {
     assertUuid(orderId);
-    if (!isUuid(idempotencyKey)) invalid();
+    if (!isUuid(idempotencyKey)) {
+      invalid();
+    }
     const source = await this.getOrders
       .detailsForCustomer(auth.userId, orderId)
       .catch((error: unknown) => {
-        if (error instanceof OrderNotFoundError)
+        if (error instanceof OrderNotFoundError) {
           throw new HttpException(
             { code: error.code, message: error.message, details: null },
             HttpStatus.NOT_FOUND,
           );
+        }
         throw error;
       });
     const body: CreateOrderV3Body = {
@@ -179,6 +201,7 @@ export class OrdersV3Controller {
 
 function toOrderDto(order: StoredOrder): OrderV3Dto {
   return {
+    ...toOrderMetadataDto(order),
     id: order.id,
     number: order.number,
     stage: order.stage,
@@ -195,21 +218,16 @@ function toOrderDto(order: StoredOrder): OrderV3Dto {
     })),
   };
 }
-function toCustomerDto(order: {
-  id: string;
-  number: string;
-  createdAt: Date;
-  stage: string;
-  total: number;
-  snapshot: readonly import("../domain/order.types").OrderSnapshotItem[];
-}): CustomerOrderV3Dto {
+function toCustomerDto(order: CustomerOrder): CustomerOrderV3Dto {
   return {
-    ...toOrderDto({ ...order, items: order.snapshot } as StoredOrder),
+    ...toOrderDto({ ...order, items: order.snapshot }),
     createdAt: order.createdAt.toISOString(),
   };
 }
 function assertBody(body: unknown): asserts body is CreateOrderV3Body {
-  if (!isRecord(body)) invalid();
+  if (!isRecord(body)) {
+    invalid();
+  }
   const expectedTotal = body.expectedTotal;
   const items = body.items;
   if (
@@ -219,11 +237,14 @@ function assertBody(body: unknown): asserts body is CreateOrderV3Body {
     !Array.isArray(items) ||
     items.length === 0 ||
     items.some((item) => !isItem(item))
-  )
+  ) {
     invalid();
+  }
 }
 function isItem(value: unknown): boolean {
-  if (!isRecord(value)) return false;
+  if (!isRecord(value)) {
+    return false;
+  }
   const quantity = value.quantity;
   return (
     isUuid(value.productId) &&
@@ -248,7 +269,9 @@ function isUuid(value: unknown): value is string {
   );
 }
 function assertUuid(value: unknown): asserts value is string {
-  if (!isUuid(value)) invalid();
+  if (!isUuid(value)) {
+    invalid();
+  }
 }
 function invalid(): never {
   throw new HttpException(
@@ -261,8 +284,10 @@ function invalid(): never {
   );
 }
 function throwOrderError(error: unknown): never {
-  if (!(error instanceof OrderDomainError)) throw error;
-  if (error instanceof OrderTotalChangedError)
+  if (!(error instanceof OrderDomainError)) {
+    throw error;
+  }
+  if (error instanceof OrderTotalChangedError) {
     throw new HttpException(
       {
         code: error.code,
@@ -271,7 +296,8 @@ function throwOrderError(error: unknown): never {
       },
       HttpStatus.BAD_REQUEST,
     );
-  if (error instanceof MenuItemUnavailableError)
+  }
+  if (error instanceof MenuItemUnavailableError) {
     throw new HttpException(
       {
         code: error.code,
@@ -280,15 +306,21 @@ function throwOrderError(error: unknown): never {
       },
       HttpStatus.BAD_REQUEST,
     );
+  }
   if (
     error instanceof OrderIntakeClosedError ||
     error instanceof OrderValidationError
-  )
+  ) {
     invalid();
-  if (error instanceof IdempotencyKeyReusedError)
+  }
+  if (
+    error instanceof IdempotencyKeyReusedError ||
+    error instanceof OrderCapacityUnavailableError
+  ) {
     throw new HttpException(
       { code: error.code, message: error.message, details: null },
       HttpStatus.CONFLICT,
     );
+  }
   throw error;
 }

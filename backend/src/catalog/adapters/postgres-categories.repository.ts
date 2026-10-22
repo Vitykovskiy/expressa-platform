@@ -26,7 +26,7 @@ export class PostgresCategoriesRepository implements CategoriesUnitOfWork {
   }
 }
 
-class PostgresCategoriesTransactionRepository implements CategoriesRepository {
+export class PostgresCategoriesTransactionRepository implements CategoriesRepository {
   constructor(private readonly client: PoolClient) {}
 
   async findById(id: string): Promise<AdminCategory | null> {

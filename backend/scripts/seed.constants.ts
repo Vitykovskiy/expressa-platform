@@ -6,6 +6,18 @@ import type {
   ProductPriceChoiceSeed,
 } from "./seed.types";
 
+export const operatingSettingsSeed = {
+  opensAt: "09:00",
+  closesAt: "20:00",
+  slotCapacity: 5,
+} as const;
+
+export const operatingSettingsInsertSql = `
+  INSERT INTO service_operating_settings (id, opens_at, closes_at, slot_capacity)
+  VALUES (1, $1::time, $2::time, $3)
+  ON CONFLICT (id) DO NOTHING
+`;
+
 const coffeeCategoryId = "00000000-0000-4000-8000-000000000001";
 const bakeryCategoryId = "00000000-0000-4000-8000-000000000002";
 const cappuccinoId = "00000000-0000-4000-8000-000000000010";

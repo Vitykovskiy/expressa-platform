@@ -1,0 +1,35 @@
+{
+  "name": "expressa-back-office",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host localhost --port 5174 --strictPort",
+    "format:check": "prettier --config ../.prettierrc.json --check package.json index.html *.ts *.json *.mjs src",
+    "lint": "eslint src vite.config.ts vite.config.constants.ts eslint.config.mjs eslint.config.constants.mjs",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vue": "3.5.44",
+    "vuetify": "3.13.7",
+    "pinia": "3.0.4"
+  },
+  "devDependencies": {
+    "vite": "7.3.7",
+    "@vitejs/plugin-vue": "6.0.10",
+    "typescript": "5.9.3",
+    "vue-tsc": "3.3.13",
+    "eslint": "9.39.5",
+    "eslint-plugin-vue": "10.11.1",
+    "typescript-eslint": "8.72.0",
+    "prettier": "3.9.10",
+    "@eslint/js": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "@types/node": "22.20.5",
+    "@stylistic/eslint-plugin": "5.10.0"
+  }
+}

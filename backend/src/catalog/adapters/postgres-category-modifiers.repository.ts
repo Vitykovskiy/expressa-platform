@@ -30,7 +30,7 @@ export class PostgresCategoryModifiersRepository implements CategoryModifiersUni
   }
 }
 
-class PostgresCategoryModifiersTransactionRepository implements CategoryModifiersRepository {
+export class PostgresCategoryModifiersTransactionRepository implements CategoryModifiersRepository {
   constructor(private readonly client: PoolClient) {}
 
   async categoryExists(categoryId: string): Promise<boolean> {

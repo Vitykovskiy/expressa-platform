@@ -6,7 +6,12 @@ import type {
 } from "../domain/order-lifecycle.types";
 import type { OrderSnapshotItem } from "../domain/order.types";
 
-export type ListOrdersQuery = { stage?: OrderStage; number?: string };
+import type { OrderQueueView } from "../domain/order-metadata.types";
+export type ListOrdersQuery = {
+  stage?: OrderStage;
+  number?: string;
+  view?: OrderQueueView;
+};
 export type TransitionOrderCommand = {
   orderId: string;
   action: OrderTransitionAction;

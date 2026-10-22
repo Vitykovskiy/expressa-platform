@@ -20,7 +20,8 @@ export type OrderPush = {
   recipient: PushRecipient;
   orderId: string;
   number: string;
-  stage: "CREATED" | "ACCEPTED" | "READY" | "ISSUED";
+  stage: "CREATED" | "ACCEPTED" | "READY" | "ISSUED" | "REJECTED";
+  rejectionReason?: string;
   customerId: string;
 };
 

@@ -11,6 +11,8 @@ import {
   productUpsertSql,
   productModifierGroupUpsertSql,
   productPriceChoiceUpsertSql,
+  operatingSettingsSeed,
+  operatingSettingsInsertSql,
 } from "./seed.constants";
 
 async function seedCatalog(
@@ -193,14 +195,20 @@ async function main(): Promise<void> {
             "products",
             "product_price_choices",
             "orders",
+            "service_operating_settings",
           ],
         ],
       )
       .then((result) => {
-        if (result.rowCount !== 5) {
+        if (result.rowCount !== 6) {
           throw new Error("Database schema is not initialized.");
         }
       });
+    await pool.query(operatingSettingsInsertSql, [
+      operatingSettingsSeed.opensAt,
+      operatingSettingsSeed.closesAt,
+      operatingSettingsSeed.slotCapacity,
+    ]);
     const phone = process.env.BOOTSTRAP_ADMIN_PHONE;
     if (phone !== undefined && phone !== "") {
       await pool.query(

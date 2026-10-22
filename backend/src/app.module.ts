@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { CatalogModule } from "./catalog/catalog.module";
 import { OrdersModule } from "./orders/orders.module";
+import { StaffUsersModule } from "./staff-users/staff-users.module";
+import { ServiceSettingsModule } from "./service-settings/service-settings.module";
 import { validateEnvironment } from "./platform/config/environment";
 import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./platform/database/database.module";
@@ -17,6 +19,8 @@ import { ObservabilityModule } from "./platform/observability/observability.modu
     AuthModule,
     CatalogModule,
     OrdersModule,
+    StaffUsersModule,
+    ServiceSettingsModule,
     DatabaseModule,
     HealthModule,
     ObservabilityModule,

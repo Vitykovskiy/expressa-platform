@@ -1,8 +1,9 @@
 import {
   customerOrderStages,
   ordersPaths,
-  ordersStages,
+  ordersPickupSlotDurationMs,
   ordersStatuses,
+  ordersTimestampPattern,
   ordersUuidPattern,
 } from "./orders.api.constants";
 import type {
@@ -16,6 +17,9 @@ import type {
   OrderItemResponse,
   OrderModifier,
   OrderModifierResponse,
+  OrderMetadata,
+  OrderPickupSlot,
+  OrderRejection,
   OrderResponse,
   OrdersApiClient,
 } from "./orders.api.types";
@@ -95,8 +99,9 @@ function isOrderResponse(value: unknown): value is OrderResponse {
     isRecord(value) &&
     isUuid(value.id) &&
     typeof value.number === "string" &&
-    ordersStages.some((stage) => stage === value.stage) &&
+    customerOrderStages.some((stage) => stage === value.stage) &&
     isNonNegativeInt32(value.total) &&
+    isOrderMetadata(value) &&
     isArrayOf(value.items, isOrderItemResponse)
   );
 }
@@ -115,14 +120,54 @@ function isCustomerOrderResponse(
   value: unknown,
 ): value is CustomerOrderResponse {
   return (
-    isRecord(value) &&
-    isUuid(value.id) &&
-    typeof value.number === "string" &&
+    isOrderResponse(value) &&
+    "createdAt" in value &&
     typeof value.createdAt === "string" &&
-    !Number.isNaN(Date.parse(value.createdAt)) &&
-    customerOrderStages.some((stage) => stage === value.stage) &&
-    isNonNegativeInt32(value.total) &&
-    isArrayOf(value.items, isOrderItemResponse)
+    !Number.isNaN(Date.parse(value.createdAt))
+  );
+}
+
+function isOrderMetadata(value: Record<string, unknown>): boolean {
+  return (
+    (!("pickupSlot" in value) ||
+      value.pickupSlot === null ||
+      isPickupSlot(value.pickupSlot)) &&
+    (!("rejection" in value) ||
+      value.rejection === null ||
+      (value.stage === "CREATED" && isRejection(value.rejection)))
+  );
+}
+
+function isPickupSlot(value: unknown): value is OrderPickupSlot {
+  return (
+    isRecord(value) &&
+    isTimestamp(value.startsAt) &&
+    isTimestamp(value.endsAt) &&
+    Date.parse(value.endsAt) - Date.parse(value.startsAt) ===
+      ordersPickupSlotDurationMs
+  );
+}
+
+function isRejection(value: unknown): value is OrderRejection {
+  return (
+    isRecord(value) &&
+    typeof value.reason === "string" &&
+    value.reason.trim().length > 0 &&
+    isTimestamp(value.at) &&
+    isUuid(value.actorId)
+  );
+}
+
+function isTimestamp(value: unknown): value is string {
+  if (typeof value !== "string" || !ordersTimestampPattern.test(value)) {
+    return false;
+  }
+
+  const timestamp = Date.parse(value);
+
+  return (
+    !Number.isNaN(timestamp) &&
+    new Date(timestamp).toISOString().slice(0, 19) === value.slice(0, 19)
   );
 }
 
@@ -158,6 +203,7 @@ function toOrder(response: OrderResponse): Order {
     stage: response.stage,
     total: response.total,
     items: response.items.map(toOrderItem),
+    ...toOrderMetadata(response),
   };
 }
 
@@ -169,6 +215,24 @@ function toCustomerOrder(response: CustomerOrderResponse): CustomerOrder {
     number: response.number,
     stage: response.stage,
     total: response.total,
+    ...toOrderMetadata(response),
+  };
+}
+
+function toOrderMetadata(response: OrderMetadata): OrderMetadata {
+  return {
+    ...(response.pickupSlot === undefined
+      ? {}
+      : {
+          pickupSlot:
+            response.pickupSlot === null ? null : { ...response.pickupSlot },
+        }),
+    ...(response.rejection === undefined
+      ? {}
+      : {
+          rejection:
+            response.rejection === null ? null : { ...response.rejection },
+        }),
   };
 }
 

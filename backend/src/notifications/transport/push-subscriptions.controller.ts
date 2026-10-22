@@ -11,6 +11,7 @@ import {
   Post,
   Put,
   UseGuards,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -27,7 +28,11 @@ import { Roles } from "../../auth/transport/roles.decorator";
 import { SessionGuard } from "../../auth/transport/session.guard";
 import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
 import { ManagePushSubscriptionUseCase } from "../application/manage-push-subscription.use-case";
-import { PushAssociationConflictError } from "../application/manage-push-subscription.use-case";
+import {
+  PushAssociationUnauthorizedError,
+  PushAssociationAccessDeniedError,
+  PushAssociationConflictError,
+} from "../application/manage-push-subscription.use-case";
 import {
   PushPublicKeyDto,
   PushAssociationRequestDto,
@@ -83,10 +88,15 @@ export class PushSubscriptionsController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<PushSubscriptionInspection> {
     const subscription = parseSubscription(body);
-    return this.subscriptions.inspect(
-      auth.userId,
-      toCommand(auth.userId, subscription),
-    );
+    try {
+      return await this.subscriptions.inspect(
+        auth.userId,
+        toCommand(auth.userId, subscription),
+        auth,
+      );
+    } catch (error) {
+      rethrowAssociationConflict(error);
+    }
   }
 
   @Put("subscriptions/association")
@@ -95,7 +105,7 @@ export class PushSubscriptionsController {
   @ApiOperation({
     summary: "Включить или перенести связь push-подписки",
     description:
-      "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer сохраняет перенос от владельца, прочитанного с ролью customer, с проверкой proof и expectedVersion; конкурентная смена роли до записи не проверяется атомарно.",
+      "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer переносит только привязку текущего customer с proof и expectedVersion. Текущие роль, блокировка и действующая сессия проверяются атомарно с решением и записью; блокировка или отзыв, завершённые первыми, запрещают повторное создание связи.",
   })
   @ApiBody({ type: PushAssociationRequestDto })
   @ApiResponse({ status: HttpStatus.OK, type: PushAssociationResponseDto })
@@ -113,6 +123,7 @@ export class PushSubscriptionsController {
           toCommand(auth.userId, request.subscription),
           request.action,
           request.expectedVersion,
+          auth,
         );
       }
 
@@ -121,6 +132,7 @@ export class PushSubscriptionsController {
         toCommand(auth.userId, request.subscription),
         request.action,
         request.expectedVersion,
+        auth,
       );
     } catch (error) {
       rethrowAssociationConflict(error);
@@ -149,6 +161,7 @@ export class PushSubscriptionsController {
         auth.userId,
         toCommand(auth.userId, request.subscription),
         request.expectedVersion,
+        auth,
       );
     } catch (error) {
       rethrowAssociationConflict(error);
@@ -172,9 +185,13 @@ function parseSubscription(value: unknown): PushSubscriptionRequest {
     typeof value.keys.auth !== "string" ||
     value.keys.p256dh.trim() === "" ||
     value.keys.auth.trim() === ""
-  )
+  ) {
     validationError();
-  return value as PushSubscriptionRequest;
+  }
+  return {
+    endpoint: value.endpoint,
+    keys: { p256dh: value.keys.p256dh, auth: value.keys.auth },
+  };
 }
 function toCommand(userId: string, subscription: PushSubscriptionRequest) {
   return {
@@ -195,8 +212,9 @@ function parseAssociationRequest(value: unknown): PushAssociationRequest {
     (value.expectedVersion !== null &&
       (typeof value.expectedVersion !== "string" ||
         !isUuid(value.expectedVersion)))
-  )
+  ) {
     validationError();
+  }
   return {
     subscription: parseSubscription(value.subscription),
     action: value.action,
@@ -213,8 +231,9 @@ function parseDeleteAssociationRequest(
     !("expectedVersion" in value) ||
     typeof value.expectedVersion !== "string" ||
     !isUuid(value.expectedVersion)
-  )
+  ) {
     validationError();
+  }
   return {
     subscription: parseSubscription(value.subscription),
     expectedVersion: value.expectedVersion,
@@ -226,7 +245,18 @@ function isUuid(value: string): boolean {
   );
 }
 function rethrowAssociationConflict(error: unknown): never {
-  if (!(error instanceof PushAssociationConflictError)) throw error;
+  if (error instanceof PushAssociationUnauthorizedError) {
+    throw new UnauthorizedException();
+  }
+  if (error instanceof PushAssociationAccessDeniedError) {
+    throw new HttpException(
+      { code: "ACCESS_DENIED", details: null, message: "Access denied" },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+  if (!(error instanceof PushAssociationConflictError)) {
+    throw error;
+  }
   throw new HttpException(
     {
       code: error.code,

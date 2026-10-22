@@ -9,7 +9,6 @@ last_verified: 2026-10-08
 sources:
   - ../../../front-office/package.json
   - ../../../back-office/package.json
-  - ../../../back-office/.storybook/main.ts
 knowledge_role: decision
 scope: system
 ---

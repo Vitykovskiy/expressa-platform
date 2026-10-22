@@ -1,5 +1,5 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 
 export type PostgresPushSubscriptionRepositoryDependencies = { pool: Pool };
-type DatabaseValue = string | null;
-export type DatabaseRow = Record<string, DatabaseValue>;
+export type DatabaseRow = Record<string, unknown>;
+export type PushQueryable = Pick<PoolClient, "query">;

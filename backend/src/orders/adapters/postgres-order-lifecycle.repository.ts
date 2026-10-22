@@ -1,3 +1,9 @@
+import { sourceOrderTransitions } from "../domain/source-order-policy";
+import type {
+  SourceOrderCommand,
+  SourceOrderUnitOfWork,
+} from "../application/source-order-actions.types";
+import { readOrderMetadata } from "./order-metadata";
 import type {
   CustomerOrder,
   CustomerOrdersCursor,
@@ -25,11 +31,14 @@ import type {
 import type {
   DatabaseRow,
   PostgresOrderLifecycleDependencies,
-  TransactionClient,
+  Queryable,
 } from "./postgres-order-lifecycle.types";
 
 export class PostgresOrderLifecycleRepository
-  implements OrderReadRepository, OrderTransitionUnitOfWork
+  implements
+    OrderReadRepository,
+    OrderTransitionUnitOfWork,
+    SourceOrderUnitOfWork
 {
   constructor(
     private readonly dependencies: PostgresOrderLifecycleDependencies,
@@ -37,11 +46,17 @@ export class PostgresOrderLifecycleRepository
 
   async list(query: ListOrdersQuery): Promise<readonly OrderQueueItem[]> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, total, stage FROM orders
+      `SELECT id, number, created_at, total, stage, pickup_slot_start, pickup_slot_end, rejected_at, rejection_reason, rejected_by FROM orders
        WHERE ($1::order_stage IS NULL OR stage = $1)
          AND ($2::text IS NULL OR number ILIKE '%' || $2 || '%')
+         AND ($3::text IS NULL OR $3 = 'all' OR
+           (rejected_at IS NULL AND (
+             ($3 = 'new' AND stage = 'CREATED') OR
+             ($3 = 'confirmed' AND stage IN ('ACCEPTED', 'PREPARING')) OR
+             ($3 = 'ready' AND stage = 'READY')
+           )))
        ORDER BY created_at ASC, id ASC`,
-      [query.stage ?? null, query.number ?? null],
+      [query.stage ?? null, query.number ?? null, query.view ?? null],
     );
     return result.rows.map(toQueueItem);
   }
@@ -55,7 +70,7 @@ export class PostgresOrderLifecycleRepository
     cursor: CustomerOrdersCursor | null,
   ): Promise<CustomerOrdersPage> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, created_at::text AS cursor_created_at, total, stage FROM orders
+      `SELECT id, number, created_at, created_at::text AS cursor_created_at, total, stage, pickup_slot_start, pickup_slot_end, rejected_at, rejection_reason, rejected_by FROM orders
        WHERE customer_id = $1
          AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3::uuid))
        ORDER BY created_at DESC, id DESC
@@ -82,14 +97,92 @@ export class PostgresOrderLifecycleRepository
     orderId: string,
   ): Promise<CustomerOrder | null> {
     const result = await this.dependencies.pool.query<DatabaseRow>(
-      `SELECT id, number, created_at, total, stage FROM orders WHERE id = $1 AND customer_id = $2`,
+      `SELECT id, number, created_at, total, stage, pickup_slot_start, pickup_slot_end, rejected_at, rejection_reason, rejected_by FROM orders WHERE id = $1 AND customer_id = $2`,
       [orderId, customerId],
     );
     const row = result.rows[0];
-    if (row === undefined) return null;
-    if (result.rows.length !== 1)
+    if (row === undefined) {
+      return null;
+    }
+    if (result.rows.length !== 1) {
       throw new Error("Invalid PostgreSQL customer order details row count");
+    }
     return readCustomerOrder(this.dependencies.pool, row);
+  }
+
+  async applySourceAction(command: SourceOrderCommand): Promise<OrderDetails> {
+    const client = await this.dependencies.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const locked = await client.query<DatabaseRow>(
+        "SELECT stage, rejected_at FROM orders WHERE id = $1 FOR UPDATE",
+        [command.orderId],
+      );
+      const row = locked.rows[0];
+      if (row === undefined) {
+        throw new OrderNotFoundError();
+      }
+      const from = readStage(row, "stage");
+      const transitions = sourceOrderTransitions(
+        command.action,
+        from,
+        row.rejected_at !== null,
+      );
+      if (command.action === "reject") {
+        await client.query(
+          "UPDATE orders SET rejected_at = $2, rejected_by = $3, rejection_reason = $4 WHERE id = $1",
+          [
+            command.orderId,
+            command.occurredAt,
+            command.actorId,
+            command.reason,
+          ],
+        );
+      } else {
+        for (const transition of transitions) {
+          await client.query(
+            "INSERT INTO order_events(order_id, actor_id, occurred_at, from_stage, to_stage) VALUES ($1, $2, $3, $4, $5)",
+            [
+              command.orderId,
+              command.actorId,
+              command.occurredAt,
+              transition.from,
+              transition.to,
+            ],
+          );
+        }
+        await client.query("UPDATE orders SET stage = 'READY' WHERE id = $1", [
+          command.orderId,
+        ]);
+      }
+      const details = await readDetails(client, command.orderId);
+      if (details === null) {
+        throw new Error("PostgreSQL did not persist source order action");
+      }
+      await client.query(
+        `INSERT INTO audit_events(actor_id, entity_type, entity_id, action, before_state, after_state, request_id, created_at)
+         VALUES ($1, 'order', $2, $3, $4::jsonb, $5::jsonb, $6, $7)`,
+        [
+          command.actorId,
+          command.orderId,
+          command.action,
+          JSON.stringify({ stage: from, rejection: null }),
+          JSON.stringify({
+            stage: details.stage,
+            rejection: details.rejection,
+          }),
+          command.requestId,
+          command.occurredAt,
+        ],
+      );
+      await client.query("COMMIT");
+      return details;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async transition(command: TransitionOrderCommand): Promise<OrderDetails> {
@@ -98,7 +191,7 @@ export class PostgresOrderLifecycleRepository
     try {
       await client.query("BEGIN");
       const updated = await client.query<DatabaseRow>(
-        `UPDATE orders SET stage = $3 WHERE id = $1 AND stage = $2 RETURNING id`,
+        `UPDATE orders SET stage = $3 WHERE id = $1 AND stage = $2 AND rejected_at IS NULL RETURNING id`,
         [command.orderId, transition.from, transition.to],
       );
       if (updated.rows.length === 0) {
@@ -122,8 +215,9 @@ export class PostgresOrderLifecycleRepository
         ],
       );
       const details = await readDetails(client, command.orderId);
-      if (details === null)
+      if (details === null) {
         throw new Error("PostgreSQL did not persist transitioned order");
+      }
       await client.query("COMMIT");
       return details;
     } catch (error) {
@@ -135,22 +229,24 @@ export class PostgresOrderLifecycleRepository
   }
 }
 
-type Queryable = Pick<TransactionClient, "query">;
-
 async function readDetails(
   client: Queryable,
   orderId: string,
 ): Promise<OrderDetails | null> {
   const order = await client.query<DatabaseRow>(
     `SELECT orders.id, orders.number, orders.created_at, orders.total, orders.stage,
-            users.id AS customer_id, users.phone_e164 AS customer_phone_e164
+            orders.pickup_slot_start, orders.pickup_slot_end, orders.rejected_at, orders.rejection_reason, orders.rejected_by,
+            users.id AS customer_id, users.phone_e164 AS customer_phone_e164, users.name AS customer_name
      FROM orders JOIN users ON users.id = orders.customer_id WHERE orders.id = $1`,
     [orderId],
   );
   const row = order.rows[0];
-  if (row === undefined) return null;
-  if (order.rows.length !== 1)
+  if (row === undefined) {
+    return null;
+  }
+  if (order.rows.length !== 1) {
     throw new Error("Invalid PostgreSQL order details row count");
+  }
   const [snapshot, events] = await Promise.all([
     readSnapshot(client, orderId),
     readEvents(client, orderId),
@@ -160,6 +256,7 @@ async function readDetails(
     customer: {
       id: readString(row, "customer_id"),
       phoneE164: readString(row, "customer_phone_e164"),
+      name: readNullableString(row, "customer_name"),
     },
     snapshot,
     events,
@@ -179,7 +276,9 @@ async function readCustomerOrders(
   client: Queryable,
   rows: readonly DatabaseRow[],
 ): Promise<readonly CustomerOrder[]> {
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    return [];
+  }
 
   const orderIds = rows.map((row) => readString(row, "id"));
   const [items, modifiers] = await Promise.all([
@@ -274,7 +373,7 @@ async function readEvents(
     FROM order_events e
     INNER JOIN users u ON u.id = e.actor_id
     WHERE e.order_id = $1
-    ORDER BY e.occurred_at ASC, e.id ASC`,
+    ORDER BY e.occurred_at ASC, CASE e.from_stage WHEN 'CREATED' THEN 0 WHEN 'ACCEPTED' THEN 1 WHEN 'PREPARING' THEN 2 WHEN 'READY' THEN 3 ELSE 4 END ASC, e.id ASC`,
     [orderId],
   );
   return result.rows.map((row) => ({
@@ -288,6 +387,7 @@ async function readEvents(
 
 function toQueueItem(row: DatabaseRow): OrderQueueItem {
   return {
+    ...readOrderMetadata(row),
     id: readString(row, "id"),
     number: readString(row, "number"),
     createdAt: readDate(row, "created_at"),
@@ -297,8 +397,9 @@ function toQueueItem(row: DatabaseRow): OrderQueueItem {
 }
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
-  if (typeof value !== "string")
+  if (typeof value !== "string") {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
   return value;
 }
 function readNullableString(row: DatabaseRow, key: string): string | null {
@@ -306,24 +407,30 @@ function readNullableString(row: DatabaseRow, key: string): string | null {
 }
 function readDate(row: DatabaseRow, key: string): Date {
   const value = row[key];
-  if (!(value instanceof Date) || Number.isNaN(value.getTime()))
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
   return value;
 }
 function readInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
-  if (typeof value !== "number" || !Number.isSafeInteger(value))
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
   return value;
 }
 function readPositiveInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
-  if (value < 1) throw new Error("Invalid PostgreSQL row field: " + key);
+  if (value < 1) {
+    throw new Error("Invalid PostgreSQL row field: " + key);
+  }
   return value;
 }
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
-  if (value < 0) throw new Error("Invalid PostgreSQL row field: " + key);
+  if (value < 0) {
+    throw new Error("Invalid PostgreSQL row field: " + key);
+  }
   return value;
 }
 function readStage(row: DatabaseRow, key: string): OrderStage {
@@ -334,7 +441,8 @@ function readStage(row: DatabaseRow, key: string): OrderStage {
     value === "PREPARING" ||
     value === "READY" ||
     value === "ISSUED"
-  )
+  ) {
     return value;
+  }
   throw new Error("Invalid PostgreSQL row field: " + key);
 }

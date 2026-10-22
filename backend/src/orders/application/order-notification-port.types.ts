@@ -12,7 +12,8 @@ export type OrderNotificationCommand =
       recipient: "customer";
       orderId: string;
       number: string;
-      stage: "ACCEPTED" | "READY" | "ISSUED";
+      stage: "ACCEPTED" | "READY" | "ISSUED" | "REJECTED";
+      rejectionReason?: string;
       customerId: string;
     };
 

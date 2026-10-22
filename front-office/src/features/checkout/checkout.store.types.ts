@@ -10,6 +10,7 @@ export type CheckoutErrorCode =
   | "ORDER_TOTAL_CHANGED"
   | "MENU_ITEM_UNAVAILABLE"
   | "ORDER_INTAKE_CLOSED"
+  | "ORDER_CAPACITY_UNAVAILABLE"
   | "UNKNOWN_ERROR";
 
 export type CheckoutAttempt = {

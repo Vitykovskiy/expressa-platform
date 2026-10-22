@@ -27,10 +27,26 @@ export type CreateOrderItem = {
   quantity: number;
 };
 
-export type Order = {
+export type OrderPickupSlot = {
+  startsAt: string;
+  endsAt: string;
+};
+
+export type OrderRejection = {
+  reason: string;
+  at: string;
+  actorId: string;
+};
+
+export type OrderMetadata = {
+  pickupSlot?: OrderPickupSlot | null;
+  rejection?: OrderRejection | null;
+};
+
+export type Order = OrderMetadata & {
   id: string;
   number: string;
-  stage: "CREATED";
+  stage: CustomerOrderStage;
   total: number;
   items: OrderItem[];
 };
@@ -38,7 +54,7 @@ export type Order = {
 export type CustomerOrderStage =
   "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "ISSUED";
 
-export type CustomerOrder = {
+export type CustomerOrder = OrderMetadata & {
   createdAt: string;
   id: string;
   items: OrderItem[];
@@ -69,7 +85,7 @@ export type OrderModifier = {
   priceDelta: number;
 };
 
-export type CustomerOrderResponse = {
+export type CustomerOrderResponse = OrderMetadata & {
   createdAt: string;
   id: string;
   items: OrderItemResponse[];
@@ -83,10 +99,10 @@ export type CustomerOrdersPageResponse = {
   orders: CustomerOrderResponse[];
 };
 
-export type OrderResponse = {
+export type OrderResponse = OrderMetadata & {
   id: string;
   number: string;
-  stage: "CREATED";
+  stage: CustomerOrderStage;
   total: number;
   items: OrderItemResponse[];
 };

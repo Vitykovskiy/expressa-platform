@@ -164,6 +164,14 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         return;
       }
 
+      if (error.code === checkoutErrorCodes.capacityUnavailable) {
+        this.setError(
+          checkoutErrorCodes.capacityUnavailable,
+          checkoutMessages.capacityUnavailable,
+        );
+        return;
+      }
+
       this.setError(checkoutErrorCodes.unknown, checkoutMessages.orderFailed);
     },
   },

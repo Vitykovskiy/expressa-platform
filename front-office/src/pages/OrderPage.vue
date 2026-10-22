@@ -17,6 +17,7 @@
         <p class="order-page__number">Заказ №{{ order.number }}</p>
         <h1 id="order-title" ref="orderHeading">{{ stageLabel }}</h1>
         <p class="order-page__stage-hint">{{ stageHint }}</p>
+        <p v-if="!rejected" class="order-page__stage-hint">{{ pickupLabel }}</p>
       </header>
       <p
         v-if="refreshFeedback === 'pending'"
@@ -68,10 +69,12 @@
           formatRubles(order.total)
         }}</strong>
       </p>
-      <p class="order-page__payment">Оплата на кассе при получении</p>
+      <p v-if="!rejected" class="order-page__payment">
+        Оплата на кассе при получении
+      </p>
       <OrderNotificationsSection
         :account-id="sessionStore.currentUser?.id ?? null"
-        :eligible="order.stage !== 'ISSUED'"
+        :eligible="!terminal"
         :return-focus-to="orderHeading"
       />
       <ui-btn
@@ -135,6 +138,12 @@ import { toCartItemDraft } from "@/features/menu/product-configuration";
 import { orderCardStageHints } from "@/features/orders/OrderCard.constants";
 import OrderNotificationsSection from "@/features/orders/OrderNotificationsSection.vue";
 import {
+  formatOrderPickupSlot,
+  isOrderRejected,
+  isOrderTerminal,
+} from "@/features/orders/order-status";
+import { orderStatusMessages } from "@/features/orders/order-status.constants";
+import {
   createPublicMenuApi,
   type PublicMenuProduct,
 } from "@/shared/api/public-menu.api";
@@ -175,12 +184,35 @@ let repeatPreparation: OrderRepeatPreparation | null = null;
 let detailRequestOwner = 0;
 let repeatOperationOwner = 0;
 let isMounted = false;
-const stageLabel = computed(() =>
-  order.value === null ? "" : orderPageStageLabels[order.value.stage],
+const rejected = computed(
+  () => order.value !== null && isOrderRejected(order.value),
 );
-const stageHint = computed(() =>
-  order.value === null ? "" : orderCardStageHints[order.value.stage],
+const terminal = computed(
+  () => order.value !== null && isOrderTerminal(order.value),
 );
+const pickupLabel = computed(() =>
+  formatOrderPickupSlot(order.value?.pickupSlot),
+);
+const stageLabel = computed(() => {
+  if (order.value === null) {
+    return "";
+  }
+
+  return rejected.value
+    ? orderStatusMessages.rejected
+    : orderPageStageLabels[order.value.stage];
+});
+const stageHint = computed(() => {
+  if (order.value === null) {
+    return "";
+  }
+
+  if (order.value.rejection != null) {
+    return `Причина: ${order.value.rejection.reason}`;
+  }
+
+  return orderCardStageHints[order.value.stage];
+});
 
 onMounted(() => {
   isMounted = true;
@@ -260,7 +292,7 @@ function syncPolling(): void {
     detailRequestPending.value ||
     refreshFeedback.value === "stale" ||
     order.value === null ||
-    order.value.stage === "ISSUED"
+    terminal.value
   )
     return stopPolling();
   if (pollingTimer === null)
@@ -529,6 +561,8 @@ function itemKey(item: OrderPageItem): string {
   color: var(--customer-color-text-muted-on-brand);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-semibold);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .order-page__state {
   display: grid;
