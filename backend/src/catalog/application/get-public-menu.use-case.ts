@@ -100,7 +100,9 @@ function createV3Product(
         description: product.description,
         price: null,
         portionLabel: null,
-        isAvailable: priceChoices.some((choice) => choice.isAvailable),
+        isAvailable:
+          product.isAvailable &&
+          priceChoices.some((choice) => choice.isAvailable),
         priceChoices,
         modifierGroups,
       },
