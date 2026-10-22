@@ -165,7 +165,7 @@ function isConfiguredCartItemShape(
       typeof value.portionLabel === "string" &&
       value.portionLabel === value.selectedPriceChoice.portionLabel &&
       isNonNegativeInteger(value.price) &&
-      value.price === value.selectedPriceChoice.price
+      value.price === value.unitTotal
     );
   }
   return (
