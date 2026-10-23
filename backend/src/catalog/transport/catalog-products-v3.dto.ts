@@ -22,7 +22,12 @@ export class V3ProductDto {
   })
   price!: number | null;
   @ApiProperty({ nullable: true, type: String }) portionLabel!: string | null;
-  @ApiProperty({ type: () => V3PriceChoiceDto, isArray: true })
+  @ApiProperty({
+    type: () => V3PriceChoiceDto,
+    isArray: true,
+    description:
+      "Empty for fixed pricing; one or more real choices when price is null.",
+  })
   priceChoices!: V3PriceChoiceDto[];
   @ApiProperty({ minimum: 0, maximum: 2_147_483_647, type: "integer" })
   sortOrder!: number;

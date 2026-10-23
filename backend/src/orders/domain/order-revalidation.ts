@@ -91,20 +91,23 @@ function getPriceChoice(
   product: OrderCatalogProduct,
   priceChoiceId: string | null,
 ) {
-  const choices = product.priceChoices;
-  const choice =
-    priceChoiceId === null
-      ? null
-      : choices.find((candidate) => candidate.id === priceChoiceId);
-  if (
-    (choices.length === 0 && priceChoiceId !== null) ||
-    (choices.length >= 2 && choice === undefined) ||
-    choices.length === 1 ||
-    (choices.length >= 2 && !choice?.isAvailable) ||
-    (choices.length === 0 && product.price === null)
-  )
+  if (product.priceChoices.length === 0) {
+    if (priceChoiceId !== null || product.price === null) {
+      throw new OrderValidationError();
+    }
+
+    return null;
+  }
+
+  const choice = product.priceChoices.find(
+    (candidate) => candidate.id === priceChoiceId,
+  );
+
+  if (choice === undefined || !choice.isAvailable) {
     throw new OrderValidationError();
-  return choice ?? null;
+  }
+
+  return choice;
 }
 
 function getValidModifiers(

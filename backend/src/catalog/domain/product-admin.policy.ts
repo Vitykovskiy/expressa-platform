@@ -35,14 +35,10 @@ export function assertV3ProductDetails(value: V3ProductDetails): void {
       invalidV3("portionLabel", "Must not be blank");
     return;
   }
-  if (
-    value.price !== null ||
-    value.portionLabel !== null ||
-    value.priceChoices.length < 2
-  )
+  if (value.price !== null || value.portionLabel !== null)
     invalidV3(
       "priceChoices",
-      "Must contain at least two choices and no direct price",
+      "Choices must not have a direct price or portion label",
     );
   const labels = new Set<string>();
   const orders = new Set<number>();

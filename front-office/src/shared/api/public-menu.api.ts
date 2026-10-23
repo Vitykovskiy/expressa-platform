@@ -155,9 +155,7 @@ function validPricing(value: Record<string, unknown>): boolean {
   const choices = value.priceChoices;
   return choices.length === 0
     ? value.price !== null
-    : value.price === null &&
-        value.portionLabel === null &&
-        choices.length >= 2;
+    : value.price === null && value.portionLabel === null && choices.length > 0;
 }
 function toCategory(category: PublicMenuCategoryResponse): PublicMenuCategory {
   return { ...category, products: category.products.map(toProduct) };

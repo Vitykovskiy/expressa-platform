@@ -89,7 +89,7 @@ function createV3Product(
       isAvailable,
     }));
   if (
-    priceChoices.length >= 2 &&
+    priceChoices.length > 0 &&
     product.price === null &&
     product.portionLabel === null
   ) {

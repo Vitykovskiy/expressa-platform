@@ -1,12 +1,15 @@
 import { computed, readonly, shallowRef } from "vue";
-import { MAX_CATALOG_MONEY } from "../../entities/catalog/catalog.constants";
 import { useCatalogStore } from "../../entities/catalog/catalog.store";
 import type {
   CatalogCommand,
   CatalogItemIdentity,
   CatalogTarget,
 } from "../../entities/catalog/catalog.types";
-import { CATALOG_SIZES } from "./presentation/CatalogEditor.constants";
+import {
+  createChoiceDrafts,
+  parseCatalogMoney,
+  readPricedChoices,
+} from "./catalog-pricing";
 import type {
   CatalogCategoryDraft,
   CatalogProductDraft,
@@ -53,9 +56,8 @@ export function useCatalogEditor() {
         (option) => option.value === current.draft.categoryId,
       ) &&
       (current.draft.hasSizes
-        ? current.draft.choices.length >= 2 &&
-          current.draft.choices.every((choice) => money(choice.price) !== null)
-        : money(current.draft.price) !== null)
+        ? readPricedChoices(current.draft.choices) !== null
+        : parseCatalogMoney(current.draft.price) !== null)
     );
   });
   const productOption = computed(
@@ -202,12 +204,7 @@ export function useCatalogEditor() {
       name: "",
       hasSizes: false,
       price: "",
-      choices: CATALOG_SIZES.map((label) => ({
-        key: label,
-        id: null,
-        label,
-        price: "",
-      })),
+      choices: createChoiceDrafts([]),
     };
 
     if (target === null) {
@@ -215,7 +212,7 @@ export function useCatalogEditor() {
         kind: "product",
         target: { kind: "new-product", name: "Новый товар" },
         draft: empty,
-        originalChoiceIds: [],
+        originalChoices: [],
         summary: null,
       };
     } else if (target.kind === "product") {
@@ -228,14 +225,7 @@ export function useCatalogEditor() {
       const category = data.categories.find(
         (row) => row.id === product.categoryId,
       );
-      const choices = [...product.priceChoices]
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((choice) => ({
-          key: choice.id,
-          id: choice.id,
-          label: choice.portionLabel,
-          price: String(choice.price),
-        }));
+      const choices = createChoiceDrafts(product.priceChoices);
 
       editor.value = {
         kind: "product",
@@ -246,9 +236,12 @@ export function useCatalogEditor() {
           name: product.name,
           hasSizes: product.price === null,
           price: product.price === null ? "" : String(product.price),
-          choices: choices.length === 0 ? empty.choices : choices,
+          choices,
         },
-        originalChoiceIds: choices.map((row) => row.key),
+        originalChoices: product.priceChoices.map((choice) => ({
+          id: choice.id,
+          label: choice.portionLabel,
+        })),
         summary:
           category === undefined ? null : `Категория: "${category.name}"`,
       };
@@ -272,7 +265,7 @@ export function useCatalogEditor() {
           name: option.name,
           price: String(option.priceDelta),
         },
-        originalChoiceIds: [],
+        originalChoices: [],
         summary: group === undefined ? null : `Категория: "${group.name}"`,
       };
     }
@@ -386,7 +379,7 @@ export function useCatalogEditor() {
     }
 
     if (kind === "group") {
-      const amount = money(current.draft.price);
+      const amount = parseCatalogMoney(current.draft.price);
 
       if (amount === null) {
         return null;
@@ -409,7 +402,7 @@ export function useCatalogEditor() {
         : { kind: "product" as const, id, name: current.target.name };
 
     if (!current.draft.hasSizes) {
-      const amount = money(current.draft.price);
+      const amount = parseCatalogMoney(current.draft.price);
 
       return amount === null
         ? null
@@ -424,16 +417,10 @@ export function useCatalogEditor() {
           };
     }
 
-    const choices = [];
+    const choices = readPricedChoices(current.draft.choices);
 
-    for (const choice of current.draft.choices) {
-      const amount = money(choice.price);
-
-      if (amount === null) {
-        return null;
-      }
-
-      choices.push({ id: choice.id, label: choice.label, amount });
+    if (choices === null) {
+      return null;
     }
 
     return {
@@ -479,20 +466,33 @@ export function useCatalogEditor() {
       return;
     }
 
-    if (
-      current.kind === "product" &&
-      current.originalChoiceIds.length > 0 &&
-      !current.draft.hasSizes
-    ) {
-      confirmation.value = {
-        version,
-        command,
-        title: "Заменить цены товара?",
-        description: `У товара «${current.target.name}» будут удалены существующие ценовые опции: ${current.draft.choices.map((row) => row.label).join(", ")}. Будет сохранена одна цена.`,
-        destructive: true,
-      };
+    if (current.kind === "product" && command.action === "save-product") {
+      const pricing = command.values.pricing;
+      const retainedIds = new Set(
+        pricing.kind === "choices"
+          ? pricing.choices.map((choice) => choice.id)
+          : [],
+      );
+      const removed = current.originalChoices.filter(
+        (choice) => !retainedIds.has(choice.id),
+      );
 
-      return;
+      if (removed.length > 0) {
+        const consequence =
+          pricing.kind === "fixed"
+            ? "Будет сохранена одна цена."
+            : "Остальные ценовые опции сохранятся.";
+
+        confirmation.value = {
+          version,
+          command,
+          title: "Заменить цены товара?",
+          description: `У товара «${current.target.name}» будут удалены ценовые опции: ${removed.map((choice) => choice.label).join(", ")}. ${consequence}`,
+          destructive: true,
+        };
+
+        return;
+      }
     }
 
     await execute(command);
@@ -590,16 +590,4 @@ export function useCatalogEditor() {
     acknowledgeUnknown,
     reset,
   };
-}
-
-function money(value: string): number | null {
-  if (!/^\d+$/.test(value)) {
-    return null;
-  }
-
-  const parsed = Number(value);
-
-  return Number.isSafeInteger(parsed) && parsed <= MAX_CATALOG_MONEY
-    ? parsed
-    : null;
 }

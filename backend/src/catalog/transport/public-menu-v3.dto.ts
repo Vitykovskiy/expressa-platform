@@ -37,7 +37,12 @@ export class PublicMenuV3ProductDto {
   price!: number | null;
   @ApiProperty({ nullable: true, type: String }) portionLabel!: string | null;
   @ApiProperty() isAvailable!: boolean;
-  @ApiProperty({ isArray: true, type: () => PublicMenuV3PriceChoiceDto })
+  @ApiProperty({
+    isArray: true,
+    type: () => PublicMenuV3PriceChoiceDto,
+    description:
+      "Empty for fixed pricing; one or more real choices when price is null.",
+  })
   priceChoices!: PublicMenuV3PriceChoiceDto[];
   @ApiProperty({ isArray: true, type: () => PublicMenuModifierGroupDto })
   modifierGroups!: PublicMenuModifierGroupDto[];

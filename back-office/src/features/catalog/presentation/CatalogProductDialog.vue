@@ -79,7 +79,6 @@
             :model-value="choice.price"
             :disabled="props.pending"
             placeholder="Введите цену"
-            required
             @update:model-value="updateChoice(choice.key, $event)"
           />
         </div>

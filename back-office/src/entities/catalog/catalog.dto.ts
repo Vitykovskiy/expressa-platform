@@ -97,7 +97,7 @@ export function parseProduct(value: unknown): CatalogProduct {
   const priceChoices = rows(row.priceChoices).map(parseChoice);
 
   if (
-    (price === null && priceChoices.length < 2) ||
+    (price === null && priceChoices.length === 0) ||
     (price !== null && priceChoices.length !== 0) ||
     new Set(priceChoices.map((choice) => choice.id)).size !==
       priceChoices.length

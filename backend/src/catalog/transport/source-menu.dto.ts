@@ -42,6 +42,11 @@ export class SourceProductDto extends SourceNameDto {
     maximum: 2_147_483_647,
   })
   price!: number | null;
-  @ApiProperty({ type: () => SourcePriceChoiceDto, isArray: true })
+  @ApiProperty({
+    type: () => SourcePriceChoiceDto,
+    isArray: true,
+    description:
+      "Empty for fixed pricing; one or more real choices when price is null.",
+  })
   priceChoices!: SourcePriceChoiceDto[];
 }

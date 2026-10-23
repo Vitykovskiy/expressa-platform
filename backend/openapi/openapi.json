@@ -4837,6 +4837,7 @@
             "type": "boolean"
           },
           "priceChoices": {
+            "description": "Empty for fixed pricing; one or more real choices when price is null.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicMenuV3PriceChoiceDto"
@@ -5359,6 +5360,7 @@
             "nullable": true
           },
           "priceChoices": {
+            "description": "Empty for fixed pricing; one or more real choices when price is null.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/V3PriceChoiceDto"
@@ -5412,6 +5414,7 @@
             "nullable": true
           },
           "priceChoices": {
+            "description": "Empty for fixed pricing; one or more real choices when price is null.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/V3PriceChoiceDto"
@@ -6289,6 +6292,7 @@
             "maximum": 2147483647
           },
           "priceChoices": {
+            "description": "Empty for fixed pricing; one or more real choices when price is null.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SourcePriceChoiceDto"

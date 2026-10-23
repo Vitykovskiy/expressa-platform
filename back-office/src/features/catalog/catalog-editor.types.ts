@@ -20,7 +20,10 @@ export type CatalogEditor =
       readonly kind: "product";
       readonly target: CatalogTarget;
       readonly draft: CatalogProductDraft;
-      readonly originalChoiceIds: readonly string[];
+      readonly originalChoices: readonly {
+        readonly id: string;
+        readonly label: string;
+      }[];
       readonly summary: string | null;
     };
 
