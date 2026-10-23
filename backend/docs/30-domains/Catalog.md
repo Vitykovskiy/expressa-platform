@@ -2,12 +2,14 @@
 title: "Каталог"
 type: domain
 owner: backend
-last_verified: 2026-10-21
+last_verified: 2026-10-23
 sources:
   - ../../openapi/openapi.json
   - ../../src/catalog/transport/public-menu-v3.controller.ts
   - ../../src/catalog/transport/catalog-products-v3.controller.ts
   - ../../src/catalog/transport/source-menu.controller.ts
+  - ../../src/catalog/application/manage-source-products.use-case.ts
+  - ../../src/catalog/adapters/postgres-products.repository.ts
 knowledge_role: implementation
 scope: backend
 ---
@@ -39,3 +41,28 @@ HTTP-валидация отделяет неверный JSON-контракт 
 архивная — 409; повреждённая ценовая ветвь и чужие ID опций — 400.
 OpenAPI и клиентские snapshots обновляет владелец итоговой интеграции после
 регистрации всех маршрутов; документация не означает runtime-приёмку.
+
+## Собственные группы товара
+
+Source-команда товара принимает дополнительный необязательный
+`modifierGroupIds: uuid[]`. При создании отсутствие означает пустой набор,
+при редактировании сохраняет все текущие связи. Явный массив заменяет только
+собственные связи товара, не связи его категории; порядок массива задаёт
+`sort_order`. Повторные, некорректные, отсутствующие или архивные ID в явно
+переданном наборе отклоняются до записи. Продукт, связи и аудит до/после
+фиксируются одной существующей транзакцией и advisory lock каталога.
+
+Административное чтение дополнено `productModifierGroups` со строками
+`{productId, groupId, sortOrder}`. Source-ответ товара дополнен
+`modifierGroupIds`; остальные поля сохранены. Полные v3-команды товара не
+заменяют связи. Публичное меню уже объединяет наследуемые и собственные группы
+по ID, без дублирования; серверная проверка заказа использует эти реальные связи.
+Schema.sql и seed не меняются.
+
+UI сохраняет всю группу опций существующим POST
+`/api/v2/backoffice/catalog/modifier-groups` или PATCH
+`/api/v2/backoffice/catalog/modifier-groups/{groupId}`: имя, ограничения выбора,
+активность и опции с ценами/default/доступностью/ID/порядком. Существующий
+`assertModifierGroupAggregate` остаётся владельцем предметной допустимости.
+Создание обязательной группы не разбивается на промежуточную пустую группу
+и отдельные записи опций.

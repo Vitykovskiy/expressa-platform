@@ -60,7 +60,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref, watch } from "vue";
+import {
+  computed,
+  inject,
+  onMounted,
+  provide,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { VApp } from "vuetify/components";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
@@ -82,7 +90,9 @@ import type {
 
 import { useAppStore } from "./app.store";
 import { appRoute } from "./App.constants";
-import { routePaths } from "./router.constants";
+import { routePaths } from "@/shared/config/customer-routes.constants";
+import { customerRegistrationKey } from "@/features/auth/customer-registration.context.constants";
+import { createCustomerRegistrationApi } from "@/shared/api/customer-registration.api";
 import type { AppBootstrapState, SessionBoundaryState } from "./App.types";
 import { useSessionStore } from "./session.store";
 
@@ -92,6 +102,21 @@ const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
 const notificationStore = useOrderNotificationsStore();
 const apiClient = inject(apiClientKey);
+if (apiClient !== undefined) {
+  const completeRegistration = createCustomerRegistrationApi(apiClient);
+  provide(customerRegistrationKey, {
+    accountId: computed(() => sessionStore.currentUser?.id ?? null),
+    phone: computed(() => sessionStore.currentUser?.phoneE164 ?? ""),
+    pending: computed(() => sessionStore.registrationPending),
+    complete: (name) =>
+      sessionStore.completeRegistration(name, completeRegistration),
+    captureOperation: () => {
+      const generation = sessionStore.generation;
+      const accountId = sessionStore.currentUser?.id ?? null;
+      return () => sessionStore.ownsProtectedRead(generation, accountId);
+    },
+  });
+}
 const route = useRoute();
 const router = useRouter();
 const bootstrapState = reactive<AppBootstrapState>({ ready: false });
@@ -107,7 +132,8 @@ const activeDestination = computed<ShellNavigationDestination>(() => {
   if (route.path === "/cart") return "cart";
   if (
     route.path === routePaths.authPhone ||
-    route.path === routePaths.authCode
+    route.path === routePaths.authCode ||
+    route.path === routePaths.authName
   ) {
     const path = getInternalAuthReturnPath(route.query.returnTo);
     if (path !== undefined) {
@@ -162,7 +188,11 @@ onMounted(async () => {
       sessionStore.readProtected(read),
     );
   cartStore.restore();
-  await sessionStore.bootstrap();
+  if (sessionStore.status === "unknown" && sessionStore.errorMessage === null) {
+    await sessionStore.bootstrap();
+  }
+  // Restore может завершиться после начального перехода маршрутизатора.
+  await resumeRegistration();
   notificationStore.setSession(
     sessionStore.currentUser?.id ?? null,
     sessionStore.accessToken,
@@ -211,6 +241,7 @@ async function retrySession(): Promise<void> {
   sessionRetrying.value = true;
   try {
     await sessionStore.bootstrap();
+    await resumeRegistration();
 
     if (sessionStore.status === "anonymous" && route.meta.requiresCustomer) {
       await router.replace({
@@ -287,13 +318,47 @@ function handleMenuShellCommandAck(requestId: number): void {
 }
 
 function getAuthReturnTo(): string | undefined {
-  if (route.path === routePaths.authPhone || route.path === routePaths.authCode)
+  if (
+    route.path === routePaths.authPhone ||
+    route.path === routePaths.authCode ||
+    route.path === routePaths.authName
+  ) {
     return undefined;
+  }
+
   return route.fullPath;
 }
 
 function getInternalAuthReturnPath(value: unknown): string | undefined {
   return getSafeAuthReturnTo(value);
+}
+
+async function resumeRegistration(): Promise<void> {
+  if (
+    sessionStore.status !== "authenticated" ||
+    sessionStore.currentProfile?.name !== null
+  ) {
+    return;
+  }
+  if (route.path === routePaths.home || route.path === routePaths.authName) {
+    return;
+  }
+  const isAuthDestination =
+    route.path === routePaths.authPhone || route.path === routePaths.authCode;
+  if (
+    !isAuthDestination &&
+    route.path !== "/cart" &&
+    !route.meta.requiresCustomer
+  ) {
+    return;
+  }
+  const returnTo = isAuthDestination
+    ? getSafeAuthReturnTo(route.query.returnTo)
+    : route.fullPath;
+  await router.replace({
+    path: routePaths.authName,
+    query: returnTo === undefined ? {} : { returnTo },
+  });
 }
 </script>
 

@@ -2,7 +2,9 @@ import type {
   AvailabilityDto,
   AvailabilityGroup,
   AvailabilityIntakeDto,
-  AvailabilityItem,
+  AvailabilityProduct,
+  AvailabilityProductDto,
+  AvailabilityStandalone,
 } from "./availability.types";
 
 export function mapAvailability(
@@ -19,34 +21,7 @@ export function mapAvailability(
           (product) => product.isActive && product.categoryId === category.id,
         )
         .sort((left, right) => left.sortOrder - right.sortOrder)
-        .flatMap((product) => [
-          {
-            id: product.id,
-            type: "product" as const,
-            name: product.name,
-            description:
-              product.price === null
-                ? dto.priceChoices
-                    .filter((choice) => choice.productId === product.id)
-                    .sort((left, right) => left.sortOrder - right.sortOrder)
-                    .map(
-                      (choice) => `${choice.portionLabel} · ${choice.price} ₽`,
-                    )
-                    .join(" / ")
-                : `${product.price} ₽`,
-            available: product.isAvailable,
-          },
-          ...dto.priceChoices
-            .filter((choice) => choice.productId === product.id)
-            .sort((left, right) => left.sortOrder - right.sortOrder)
-            .map((choice) => ({
-              id: choice.id,
-              type: "price-choice" as const,
-              name: `${product.name} · ${choice.portionLabel}`,
-              description: `${choice.price} ₽`,
-              available: choice.isAvailable,
-            })),
-        ]),
+        .map((product) => mapProduct(product, dto)),
     }));
   const modifiers = dto.modifierGroups
     .filter((group) => group.isActive)
@@ -60,8 +35,11 @@ export function mapAvailability(
           id: option.id,
           type: "modifier" as const,
           name: option.name,
+          controlLabel: `${group.name} · ${option.name}`,
           description: `${option.priceDelta} ₽`,
-          available: option.isAvailable,
+          persistedAvailable: option.isAvailable,
+          effectiveAvailable: option.isAvailable,
+          disabledReason: null,
         })),
     }));
 
@@ -76,7 +54,57 @@ export function mapAvailability(
   ].filter((group) => group.items.length > 0);
 }
 
-export function mapIntake(dto: AvailabilityIntakeDto): AvailabilityItem {
+function mapProduct(
+  product: AvailabilityProductDto,
+  dto: AvailabilityDto,
+): AvailabilityProduct {
+  const children = dto.priceChoices
+    .filter((choice) => choice.productId === product.id)
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((choice) => ({
+      id: choice.id,
+      type: "price-choice" as const,
+      name: choice.portionLabel,
+      controlLabel: `${product.name} · ${choice.portionLabel}`,
+      description: `${choice.price} ₽`,
+      persistedAvailable: choice.isAvailable,
+      effectiveAvailable: product.isAvailable && choice.isAvailable,
+      disabledReason: product.isAvailable
+        ? null
+        : ("product-unavailable" as const),
+    }));
+  const availableCount = children.filter(
+    (choice) => choice.effectiveAvailable,
+  ).length;
+  let description = `${product.price} ₽`;
+
+  if (children.length > 0) {
+    if (!product.isAvailable) {
+      description = "Весь напиток выключен";
+    } else if (availableCount === 0) {
+      description = "Нет доступных размеров";
+    } else if (availableCount === children.length) {
+      description = "Все размеры доступны";
+    } else {
+      description = `${availableCount} из ${children.length} размеров`;
+    }
+  }
+
+  return {
+    id: product.id,
+    type: "product",
+    name: product.name,
+    controlLabel: product.name,
+    description,
+    persistedAvailable: product.isAvailable,
+    effectiveAvailable:
+      product.isAvailable && (children.length === 0 || availableCount > 0),
+    disabledReason: null,
+    children,
+  };
+}
+
+export function mapIntake(dto: AvailabilityIntakeDto): AvailabilityStandalone {
   const timestamp =
     dto.updatedAt === null
       ? null
@@ -88,13 +116,16 @@ export function mapIntake(dto: AvailabilityIntakeDto): AvailabilityItem {
   const description =
     timestamp === null
       ? "Не влияет на обработку созданных заказов"
-      : `Изменено ${timestamp} UTC${dto.updatedByLabel === null ? "" : ` · ${dto.updatedByLabel}`}`;
+      : `Изменено ${timestamp}${dto.updatedByLabel === null ? "" : ` · ${dto.updatedByLabel}`}`;
 
   return {
     id: "intake",
     type: "intake",
     name: "Принимать новые заказы",
+    controlLabel: "Принимать новые заказы",
     description,
-    available: dto.acceptsNewOrders,
+    persistedAvailable: dto.acceptsNewOrders,
+    effectiveAvailable: dto.acceptsNewOrders,
+    disabledReason: null,
   };
 }

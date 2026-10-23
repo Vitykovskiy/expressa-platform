@@ -1,6 +1,8 @@
-export const orderPickupDateFormat = {
-  day: "numeric",
-  month: "long",
+export const datedOrderNumberPattern = /^\d{8}-(\d{3})$/;
+
+export const orderCreationDateFormat = {
+  day: "2-digit",
+  month: "2-digit",
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",

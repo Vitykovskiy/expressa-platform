@@ -13,8 +13,6 @@ export const orderPageMessages = {
   refreshFailed: "Не удалось обновить заказ.",
   repeatPreparing: "Проверяем доступность позиций…",
   staleData: "Показаны последние доступные данные.",
-  repeatProductUnavailable: "Товар больше недоступен.",
-  repeatConfigurationUnavailable: "Выбранная конфигурация больше недоступна.",
 } as const;
 
 export const orderPollingIntervalMs = 10_000;

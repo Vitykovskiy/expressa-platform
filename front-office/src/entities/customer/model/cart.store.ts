@@ -69,6 +69,42 @@ export const useCartStore = defineStore(cartStoreId, {
         storage,
       );
     },
+    updateConfigured(
+      itemId: string,
+      draft: ConfiguredCartItemDraft,
+      storage: CartStorage = localStorage,
+    ): boolean {
+      const target = this.items.find((item) => item.id === itemId);
+
+      if (target === undefined || target.productId !== draft.productId) {
+        return false;
+      }
+
+      const configurationId = createCartItemId(draft);
+      const matchingItems = this.items.filter(
+        (item) =>
+          item.id !== itemId && createCartItemId(item) === configurationId,
+      );
+      const matchingIds = new Set(matchingItems.map((item) => item.id));
+      const quantity = matchingItems.reduce(
+        (total, item) => total + item.quantity,
+        draft.quantity,
+      );
+      const updatedItem = normalizeCartItem({ ...draft, id: itemId, quantity });
+
+      this.replace(
+        this.items.flatMap((item) => {
+          if (item.id === itemId) {
+            return [updatedItem];
+          }
+
+          return matchingIds.has(item.id) ? [] : [item];
+        }),
+        storage,
+      );
+
+      return true;
+    },
     restore(storage: CartStorage = localStorage): void {
       this.clearRepeatWarnings();
       storage.removeItem(legacyCartStorageKey);
@@ -101,7 +137,7 @@ export const useCartStore = defineStore(cartStoreId, {
     },
     applyRepeat(
       items: CartItem[],
-      warnings: RepeatWarning[],
+      warnings: RepeatWarning[] = [],
       resultOrStorage: RepeatResult | CartStorage | null = null,
       storage: CartStorage = localStorage,
     ): void {
@@ -111,8 +147,6 @@ export const useCartStore = defineStore(cartStoreId, {
         : storage;
       this.repeatWarnings = warnings.map((warning) => ({ ...warning }));
       this.repeatResult = result === null ? null : { ...result };
-
-      if (items.length === 0) return;
 
       this.items = items.map(normalizeCartItem);
       this.persist(targetStorage);

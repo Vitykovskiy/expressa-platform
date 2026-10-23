@@ -6,22 +6,28 @@ import type {
   V3AdminProduct,
   V3ProductDetails,
 } from "../domain/product-admin.policy.types";
-import type { V3ProductsUnitOfWork } from "./products.repository.types";
-import type { SourceActor, SourceProductWrite } from "./source-menu.types";
+import type { SourceProductsUnitOfWork } from "./products.repository.types";
+import type {
+  SourceActor,
+  SourceProductWrite,
+  SourceProductResult,
+} from "./source-menu.types";
 
 export class ManageSourceProductsUseCase {
-  constructor(private readonly unitOfWork: V3ProductsUnitOfWork) {}
+  constructor(private readonly unitOfWork: SourceProductsUnitOfWork) {}
 
   save(
     input: SourceProductWrite,
     actor: SourceActor,
     productId: string | null,
-  ): Promise<V3AdminProduct> {
+  ): Promise<SourceProductResult> {
     return this.unitOfWork
       .runV3(
         async (repository) => {
-          const before =
-            productId === null ? null : await repository.findV3ById(productId);
+          let before: V3AdminProduct | null = null;
+          if (productId !== null) {
+            before = await repository.findV3ById(productId);
+          }
           if (productId !== null && before === null) {
             throw new ProductAdminError("PRODUCT_NOT_FOUND");
           }
@@ -32,10 +38,31 @@ export class ManageSourceProductsUseCase {
             throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
           }
 
-          const categoryProducts =
-            before?.categoryId === input.categoryId
-              ? []
-              : await repository.findCurrentV3ByCategory(input.categoryId);
+          let previousGroups: string[] = [];
+          if (before !== null) {
+            previousGroups = await repository.findModifierGroupIds(before.id);
+          }
+          // Отсутствующий список сохраняет даже не показанные формой связи.
+          const modifierGroupIds = input.modifierGroupIds ?? previousGroups;
+          if (
+            input.modifierGroupIds !== undefined &&
+            (new Set(modifierGroupIds).size !== modifierGroupIds.length ||
+              !(await repository.currentModifierGroupsExist(modifierGroupIds)))
+          ) {
+            throw new ProductAdminError("PRODUCT_INVALID", [
+              {
+                path: "modifierGroupIds",
+                reason: "Must reference distinct current modifier groups",
+              },
+            ]);
+          }
+
+          let categoryProducts: V3AdminProduct[] = [];
+          if (before?.categoryId !== input.categoryId) {
+            categoryProducts = await repository.findCurrentV3ByCategory(
+              input.categoryId,
+            );
+          }
           const sortOrder =
             before?.categoryId === input.categoryId
               ? before.sortOrder
@@ -45,11 +72,25 @@ export class ManageSourceProductsUseCase {
                 );
           const details = this.toProductDetails(input, before, sortOrder);
           assertV3ProductDetails(details);
-          const after =
-            before === null
-              ? await repository.createV3(details)
-              : await repository.updateV3(before.id, details);
-          return { before, after };
+          let after: V3AdminProduct;
+          if (before === null) {
+            after = await repository.createV3(details);
+          } else {
+            after = await repository.updateV3(before.id, details);
+          }
+          if (input.modifierGroupIds !== undefined) {
+            await repository.replaceModifierGroups(after.id, modifierGroupIds);
+          }
+          const savedModifierGroupIds = await repository.findModifierGroupIds(
+            after.id,
+          );
+          return {
+            before:
+              before === null
+                ? null
+                : { ...before, modifierGroupIds: previousGroups },
+            after: { ...after, modifierGroupIds: savedModifierGroupIds },
+          };
         },
         (repository, { before, after }) =>
           repository.writeV3Audit({

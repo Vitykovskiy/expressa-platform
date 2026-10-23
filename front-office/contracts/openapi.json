@@ -287,6 +287,93 @@
         ]
       }
     },
+    "/api/v2/me/registration": {
+      "post": {
+        "operationId": "MeController_completeRegistration",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Завершить первую регистрацию клиента",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v3/public/menu": {
       "get": {
         "operationId": "PublicMenuV3Controller_getMenu",
@@ -2566,7 +2653,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/V3ProductResponseDto"
+                  "$ref": "#/components/schemas/SourceProductResponseDto"
                 }
               }
             }
@@ -2673,7 +2760,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/V3ProductResponseDto"
+                  "$ref": "#/components/schemas/SourceProductResponseDto"
                 }
               }
             }
@@ -4692,6 +4779,10 @@
       "CurrentUserDto": {
         "type": "object",
         "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
           "id": {
             "type": "string"
           },
@@ -4708,6 +4799,7 @@
           }
         },
         "required": [
+          "name",
           "id",
           "phoneE164",
           "role"
@@ -4904,6 +4996,28 @@
         "required": [
           "acceptsNewOrders",
           "categories"
+        ]
+      },
+      "AdminV3ProductModifierGroupDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "productId",
+          "groupId",
+          "sortOrder"
         ]
       },
       "AdminV3CategoryDto": {
@@ -5122,6 +5236,12 @@
       "AdminCatalogV3Dto": {
         "type": "object",
         "properties": {
+          "productModifierGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminV3ProductModifierGroupDto"
+            }
+          },
           "categories": {
             "type": "array",
             "items": {
@@ -5154,6 +5274,7 @@
           }
         },
         "required": [
+          "productModifierGroups",
           "categories",
           "products",
           "modifierGroups",
@@ -6281,6 +6402,14 @@
             "type": "string",
             "minLength": 1
           },
+          "modifierGroupIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "categoryId": {
             "type": "string",
             "format": "uuid"
@@ -6304,6 +6433,74 @@
           "categoryId",
           "price",
           "priceChoices"
+        ]
+      },
+      "SourceProductResponseDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "portionLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceChoices": {
+            "description": "Empty for fixed pricing; one or more real choices when price is null.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3PriceChoiceDto"
+            }
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modifierGroupIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "categoryId",
+          "name",
+          "description",
+          "price",
+          "portionLabel",
+          "priceChoices",
+          "sortOrder",
+          "isActive",
+          "isAvailable",
+          "id",
+          "modifierGroupIds"
         ]
       },
       "BackofficeOrderCustomerResponseDto": {

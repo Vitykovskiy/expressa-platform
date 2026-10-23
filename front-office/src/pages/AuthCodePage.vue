@@ -16,6 +16,7 @@ import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "../app/session.store";
+import { routePaths } from "@/shared/config/customer-routes.constants";
 import { getSessionDependencies } from "../app/session.store.dependencies";
 import AuthScreen from "@/features/auth/AuthScreen.vue";
 import { getSafeAuthReturnTo } from "@/shared/lib/auth-return";
@@ -29,6 +30,7 @@ const errorMessage = shallowRef("");
 const isLoading = shallowRef(false);
 const otp = shallowRef("");
 const now = shallowRef(getSessionDependencies().now());
+let pageActive = true;
 const resendTimer = setInterval(
   () => (now.value = getSessionDependencies().now()),
   1000,
@@ -47,7 +49,10 @@ const resendRemainingSeconds = computed(() => {
     ),
   );
 });
-onBeforeUnmount(() => clearInterval(resendTimer));
+onBeforeUnmount(() => {
+  pageActive = false;
+  clearInterval(resendTimer);
+});
 
 if (!hasActiveOtpRequest()) {
   void router.replace({
@@ -72,10 +77,24 @@ async function verifyOtp(code: string = otp.value): Promise<void> {
 
   isLoading.value = true;
   errorMessage.value = "";
+  const generation = sessionStore.generation + 1;
 
   try {
     await sessionStore.verifyOtp(sessionStore.pendingPhone, code);
-    if (sessionStore.status !== "authenticated") return;
+    if (!pageActive || sessionStore.generation !== generation) {
+      return;
+    }
+    if (sessionStore.status !== "authenticated") {
+      return;
+    }
+
+    if (sessionStore.currentProfile?.name === null) {
+      await router.replace({
+        path: routePaths.authName,
+        query: returnToQuery(),
+      });
+      return;
+    }
     await router.replace(returnTo());
   } catch {
     errorMessage.value = sessionStore.errorMessage ?? "";

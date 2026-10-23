@@ -1,6 +1,7 @@
 import type { CategoriesRepository } from "./categories.repository.types";
 import type { CategoryModifiersRepository } from "./category-modifiers.repository.types";
 import type { AdminCategory } from "../domain/category-admin.policy.types";
+import type { V3AdminProduct } from "../domain/product-admin.policy.types";
 
 export type SourceActor = { actorId: string; requestId: string };
 export type SourceCategoryWrite = {
@@ -29,5 +30,9 @@ export type SourceProductWrite = {
   name: string;
   price: number | null;
   priceChoices: { id?: string; portionLabel: string; price: number }[];
+  modifierGroupIds?: string[];
+};
+export type SourceProductResult = V3AdminProduct & {
+  modifierGroupIds: string[];
 };
 export type SourceOptionWrite = { name: string; priceDelta: number };

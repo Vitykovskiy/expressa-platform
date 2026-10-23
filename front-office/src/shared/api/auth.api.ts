@@ -1,13 +1,13 @@
 import { authPaths, authStatuses } from "./auth.api.constants";
 import type {
   AccessSession,
-  AuthApi,
+  AuthProfileApi,
   AuthApiClient,
-  CurrentUser,
+  CurrentUserProfile,
   OtpRequestMetadata,
 } from "./auth.api.types";
 
-export function createAuthApi(client: AuthApiClient): AuthApi {
+export function createAuthApi(client: AuthApiClient): AuthProfileApi {
   return {
     requestOtp: (phone) =>
       client.request(authPaths.requestOtp, isOtpRequestMetadata, {
@@ -36,7 +36,7 @@ export function createAuthApi(client: AuthApiClient): AuthApi {
         expectedStatus: authStatuses.logout,
       }),
     getCurrentUser: (accessToken) =>
-      client.request(authPaths.currentUser, isCurrentUser, {
+      client.request(authPaths.currentUser, isCurrentUserProfile, {
         headers: { authorization: `Bearer ${accessToken}` },
         method: "GET",
         expectedStatus: authStatuses.success,
@@ -54,13 +54,17 @@ function isAccessSession(value: unknown): value is AccessSession {
   );
 }
 
-function isCurrentUser(value: unknown): value is CurrentUser {
+export function isCurrentUserProfile(
+  value: unknown,
+): value is CurrentUserProfile {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
     value.id !== "" &&
     typeof value.phoneE164 === "string" &&
     value.phoneE164 !== "" &&
+    (value.name === null ||
+      (typeof value.name === "string" && value.name.trim() !== "")) &&
     (value.role === "customer" ||
       value.role === "barista" ||
       value.role === "administrator")

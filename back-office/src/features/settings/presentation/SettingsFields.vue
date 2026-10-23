@@ -1,15 +1,7 @@
 <template>
   <div class="settings-fields">
-    <section
-      class="settings-fields__section"
-      aria-labelledby="settings-hours"
-      title="Рабочие часы указаны в UTC"
-      aria-describedby="settings-time-basis"
-    >
+    <section class="settings-fields__section" aria-labelledby="settings-hours">
       <h2 id="settings-hours" class="settings-fields__heading">РАБОЧИЕ ЧАСЫ</h2>
-      <span id="settings-time-basis" class="settings-fields__time-basis"
-        >Время UTC</span
-      >
       <div class="settings-fields__hours">
         <OperationsInput
           label="Открытие"
@@ -81,14 +73,6 @@ function updateField(field: keyof SettingsDraft, value: string) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
-}
-
-.settings-fields__time-basis {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
 }
 
 .settings-fields__heading,

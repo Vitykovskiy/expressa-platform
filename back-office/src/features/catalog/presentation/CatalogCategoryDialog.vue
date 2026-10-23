@@ -1,9 +1,11 @@
 <template>
   <OperationsModal
+    class="catalog-category-dialog"
     :open="props.open"
     :title="title"
     :persistent="props.pending"
     bottom-sheet
+    :width="modalWidth"
     @close="close"
   >
     <template #header="{ titleId }">
@@ -13,7 +15,7 @@
         :summary="props.summary"
         :editing="editing"
         :pending="props.pending"
-        delete-label="Удалить категорию"
+        :delete-label="deleteLabel"
         @delete="remove"
       />
     </template>
@@ -27,12 +29,13 @@
         :label="nameLabel"
         :model-value="props.draft.name"
         :disabled="props.pending"
-        placeholder="Например: Кофе, Чай, Десерты"
+        :placeholder="namePlaceholder"
         required
         autocomplete="off"
         @update:model-value="update('name', $event)"
       />
       <OperationsToggle
+        v-if="!editing"
         label="Группа опций"
         description="Опции, которые можно выбрать для товара"
         :model-value="props.draft.isOptionGroup"
@@ -40,7 +43,15 @@
         @update:model-value="update('isOptionGroup', $event)"
       />
       <div class="catalog-category-form__association">
+        <CatalogGroupFields
+          v-if="props.draft.isOptionGroup"
+          :draft="props.draft.group"
+          :pending="props.pending"
+          :focus-option-key="props.focusOptionKey"
+          @update:draft="update('group', $event)"
+        />
         <OperationsInput
+          v-else
           label="Выбрать группу опций"
           type="select"
           :model-value="props.draft.optionGroupId"
@@ -85,6 +96,7 @@ import OperationsInput from "../../../shared/ui/operations/OperationsInput.vue";
 import OperationsModal from "../../../shared/ui/operations/OperationsModal.vue";
 import OperationsToggle from "../../../shared/ui/operations/OperationsToggle.vue";
 import CatalogDialogHeader from "./CatalogDialogHeader.vue";
+import CatalogGroupFields from "./CatalogGroupFields.vue";
 import type {
   CatalogCategoryDialogEmits,
   CatalogCategoryDialogProps,
@@ -96,18 +108,27 @@ const emit = defineEmits<CatalogCategoryDialogEmits>();
 const formId = useId();
 
 const editing = computed(() => props.mode === "edit");
+const deleteLabel = computed(() =>
+  props.draft.isOptionGroup ? "Удалить группу опций" : "Удалить категорию",
+);
+const modalWidth = computed(() => (props.draft.isOptionGroup ? 560 : 448));
 const kindDisabled = computed(() => editing.value || props.pending);
 const title = computed(() => {
   if (editing.value) {
-    return "Редактировать категорию";
+    return props.draft.isOptionGroup
+      ? "Редактировать группу опций"
+      : "Редактировать категорию";
   }
 
   return props.draft.isOptionGroup ? "Новая группа опций" : "Новая категория";
 });
 const nameLabel = computed(() =>
-  props.draft.isOptionGroup && !editing.value
-    ? "Название группы опций"
-    : "Название категории",
+  props.draft.isOptionGroup ? "Название группы опций" : "Название категории",
+);
+const namePlaceholder = computed(() =>
+  props.draft.isOptionGroup
+    ? "Например: Сахар, Молоко, Сироп"
+    : "Например: Кофе, Чай, Десерты",
 );
 const associationDisabled = computed(
   () => props.pending || props.draft.isOptionGroup,
@@ -119,7 +140,13 @@ const selectOptions = computed(() => [
   { value: "", label: "Не выбрано" },
   ...props.options,
 ]);
-const saveLabel = computed(() => (editing.value ? "Сохранить" : "Добавить"));
+const saveLabel = computed(() => {
+  if (props.pending) {
+    return "Сохранение…";
+  }
+
+  return editing.value ? "Сохранить" : "Добавить";
+});
 const saveDisabled = computed(() => props.pending || !props.canSave);
 
 function update<Key extends keyof CatalogCategoryDraft>(
@@ -156,6 +183,12 @@ function close() {
   flex-direction: column;
   gap: 20px;
   width: 100%;
+}
+:global(.catalog-category-dialog .operations-button),
+:global(.catalog-category-dialog .catalog-dialog-header__delete),
+:global(.catalog-category-dialog .operations-toggle__control) {
+  min-height: 44px;
+  min-width: 44px;
 }
 .catalog-category-form__association {
   display: flex;

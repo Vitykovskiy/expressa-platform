@@ -28,6 +28,14 @@ export type CurrentUser = {
   role: "customer" | "barista" | "administrator";
 };
 
+export type CurrentUserProfile = CurrentUser & {
+  name: string | null;
+};
+
+export type AuthProfileApi = Omit<AuthApi, "getCurrentUser"> & {
+  getCurrentUser(accessToken: string): Promise<CurrentUserProfile>;
+};
+
 export type OtpRequestMetadata = {
   expiresInSeconds: number;
   retryAfterSeconds: number;

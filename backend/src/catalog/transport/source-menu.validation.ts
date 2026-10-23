@@ -51,6 +51,9 @@ export function parseSourceProduct(value: unknown): SourceProductWrite {
     name: string(body.name, "name"),
     categoryId: parseSourceUuid(body.categoryId, "categoryId"),
     price: body.price === null ? null : integer(body.price, "price"),
+    ...(body.modifierGroupIds === undefined
+      ? {}
+      : { modifierGroupIds: parseSourceGroupIds(body.modifierGroupIds) }),
     priceChoices: body.priceChoices.map((value: unknown, index: number) => {
       const choice = object(value, `priceChoices.${index}`);
       const fields = {
@@ -68,6 +71,19 @@ export function parseSourceProduct(value: unknown): SourceProductWrite {
           };
     }),
   };
+}
+
+function parseSourceGroupIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    invalid("modifierGroupIds", "Must be an array of UUIDs");
+  }
+  const ids = value.map((id: unknown, index: number) =>
+    parseSourceUuid(id, `modifierGroupIds.${index}`),
+  );
+  if (new Set(ids).size !== ids.length) {
+    invalid("modifierGroupIds", "Must contain distinct UUIDs");
+  }
+  return ids;
 }
 
 export function parseSourceUuid(value: unknown, path: string): string {

@@ -8,6 +8,7 @@ import type {
   AvailabilityGroup,
   AvailabilityItem,
   AvailabilityScrollPosition,
+  AvailabilityTarget,
 } from "./availability.types";
 
 export const useAvailabilityStore = defineStore("availability", () => {
@@ -125,6 +126,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
       stale.value = false;
       groups.value = outcome.groups;
       phase.value = "ready";
+      message.value = "";
 
       if (
         selectedGroup.value !== null &&
@@ -136,6 +138,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
       return true;
     }
 
+    stale.value = true;
     phase.value = outcome.kind === "cancelled" ? "idle" : "error";
 
     if (outcome.kind === "session-expired") {
@@ -147,18 +150,57 @@ export const useAvailabilityStore = defineStore("availability", () => {
     return false;
   }
 
-  async function toggle(item: AvailabilityItem) {
+  async function refresh() {
     const owner = context;
-    const current = groups.value
-      .flatMap((group) => group.items)
-      .find((row) => row.id === item.id && row.type === item.type);
+    const unresolved = command.value;
 
     if (
       owner === null ||
-      command.value !== null ||
-      phase.value !== "ready" ||
-      current === undefined
+      reading !== null ||
+      (unresolved !== null && unresolved.phase !== "unknown")
     ) {
+      return;
+    }
+
+    if (unresolved !== null) {
+      command.value = { item: unresolved.item, phase: "checking" };
+    }
+
+    const loaded = await load();
+
+    if (context !== owner || unresolved === null) {
+      return;
+    }
+
+    if (loaded) {
+      command.value = null;
+      message.value = `${unresolved.item.controlLabel}: ${AVAILABILITY_MESSAGES.reconciled}`;
+    } else if (!sessionExpired.value) {
+      command.value = { item: unresolved.item, phase: "unknown" };
+      message.value = AVAILABILITY_MESSAGES.checkFailed;
+    }
+  }
+
+  async function toggle(target: AvailabilityTarget) {
+    const owner = context;
+
+    if (owner === null || sessionExpired.value) {
+      return;
+    }
+
+    if (command.value !== null || phase.value !== "ready" || stale.value) {
+      return;
+    }
+
+    const current = groups.value
+      .flatMap((group) =>
+        group.items.flatMap<AvailabilityItem>((row) =>
+          row.type === "product" ? [row, ...row.children] : [row],
+        ),
+      )
+      .find((row) => row.id === target.id && row.type === target.type);
+
+    if (current === undefined || current.disabledReason !== null) {
       return;
     }
 
@@ -180,21 +222,19 @@ export const useAvailabilityStore = defineStore("availability", () => {
     writing = null;
 
     if (outcome.kind === "confirmed") {
-      groups.value = groups.value.map((group) => ({
-        ...group,
-        items: group.items.map((row) =>
-          row.type === current.type && row.id === current.id
-            ? {
-                ...row,
-                available: outcome.available,
-                description: outcome.description ?? row.description,
-              }
-            : row,
-        ),
-      }));
+      // Ответ записи подтверждает одну строку; вся иерархия требует нового чтения.
+      stale.value = true;
+      command.value = { item: current, phase: "refreshing" };
+      const refreshed = await load();
+
+      if (context !== owner) {
+        return;
+      }
+
       command.value = null;
-      if (stale.value) {
-        await load();
+
+      if (!refreshed && !sessionExpired.value) {
+        message.value = AVAILABILITY_MESSAGES.savedReadFailed;
       }
 
       return;
@@ -214,7 +254,8 @@ export const useAvailabilityStore = defineStore("availability", () => {
     }
 
     command.value = { item: current, phase: "checking" };
-    message.value = `${current.name}: ${AVAILABILITY_MESSAGES.unknown}`;
+    stale.value = true;
+    message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.unknown}`;
     const reconciled = await load();
 
     if (context !== owner) {
@@ -223,10 +264,10 @@ export const useAvailabilityStore = defineStore("availability", () => {
 
     if (reconciled) {
       command.value = null;
-      message.value = `${current.name}: ${AVAILABILITY_MESSAGES.reconciled}`;
+      message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.reconciled}`;
     } else if (!sessionExpired.value) {
       command.value = { item: current, phase: "unknown" };
-      message.value = `${current.name}: ${AVAILABILITY_MESSAGES.checkFailed}`;
+      message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.checkFailed}`;
     }
   }
 
@@ -247,6 +288,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
     invalidate,
     selectGroup,
     toggle,
+    refresh,
     clear,
     rememberScroll,
   };

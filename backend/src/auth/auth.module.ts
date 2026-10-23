@@ -12,6 +12,10 @@ import {
 import { authCryptoPort } from "./application/auth-crypto.constants";
 import { clockPort } from "./application/clock.constants";
 import { GetCurrentUserUseCase } from "./application/get-current-user.use-case";
+import { CompleteCustomerRegistrationUseCase } from "./application/complete-customer-registration.use-case";
+import type { CustomerRegistrationRepository } from "./application/customer-registration.repository.types";
+import type { Clock } from "./application/clock.types";
+import { PostgresCustomerRegistrationRepository } from "./adapters/postgres-customer-registration.repository";
 import { LogoutUseCase } from "./application/logout.use-case";
 import { RefreshSessionUseCase } from "./application/refresh-session.use-case";
 import { RequestOtpUseCase } from "./application/request-otp.use-case";
@@ -25,6 +29,7 @@ import { StagingOtpAdapter } from "./adapters/staging-otp.adapter";
 import { SystemClockAdapter } from "./adapters/system-clock.adapter";
 import {
   authRepositoryPort,
+  customerRegistrationRepositoryPort,
   originGuardConfigurationToken,
   otpCodeGeneratorPort,
   sessionGuardConfigurationToken,
@@ -41,6 +46,28 @@ import { SessionGuard } from "./transport/session.guard";
   imports: [DatabaseModule],
   controllers: [AuthController, MeController],
   providers: [
+    {
+      provide: customerRegistrationRepositoryPort,
+      inject: [DatabaseService],
+      useFactory: (database: DatabaseService) =>
+        new PostgresCustomerRegistrationRepository(
+          () => database.connectionPool,
+        ),
+    },
+    {
+      provide: CompleteCustomerRegistrationUseCase,
+      inject: [
+        GetCurrentUserUseCase,
+        customerRegistrationRepositoryPort,
+        clockPort,
+      ],
+      useFactory: (
+        identities: GetCurrentUserUseCase,
+        repository: CustomerRegistrationRepository,
+        clock: Clock,
+      ) =>
+        new CompleteCustomerRegistrationUseCase(identities, repository, clock),
+    },
     {
       provide: authRepositoryPort,
       inject: [DatabaseService],

@@ -37,6 +37,15 @@
           >
         </li>
       </ul>
+      <button
+        type="button"
+        class="cart-item__edit"
+        :aria-label="`Изменить ${props.item.productName}`"
+        :disabled="props.disabled"
+        @click="emit('editItem', props.item.id)"
+      >
+        Изменить
+      </button>
     </div>
     <button
       type="button"
@@ -153,6 +162,31 @@ const addonRows = computed(() => {
   grid-area: details;
   row-gap: var(--customer-space-4);
   min-width: 0;
+}
+
+.cart-item__edit {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 var(--customer-space-5);
+  margin-left: calc(-1 * var(--customer-space-5));
+  color: var(--customer-color-blue-500);
+  background: transparent;
+  border: 0;
+  border-radius: var(--customer-radius-sm);
+  font: inherit;
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
+  cursor: pointer;
+}
+
+.cart-item__edit:focus-visible {
+  outline: 2px solid var(--customer-focus-ring);
+  outline-offset: -2px;
+}
+
+.cart-item__edit:disabled {
+  cursor: default;
+  opacity: var(--customer-state-disabled-opacity);
 }
 
 .cart-item__title {

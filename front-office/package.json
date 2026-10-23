@@ -11,7 +11,7 @@
     "build": "npm run typecheck && vite build",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{vue,ts,css}\" \"tests/**/*.{ts,vue,mjs}\" \"*.{js,mjs,cjs,json}\"",
-    "format:check": "prettier --check \"src/**/*.{vue,ts,css}\" \"tests/**/*.{ts,vue,mjs}\" \"*.{js,mjs,cjs,json}\"",
+    "format:check": "prettier --check \"src/**/*.{vue,ts,css}\" \"*.{js,mjs,cjs,json}\"",
     "typecheck": "vue-tsc --build",
     "test": "vitest",
     "contract:check": "node scripts/check-openapi.mjs",

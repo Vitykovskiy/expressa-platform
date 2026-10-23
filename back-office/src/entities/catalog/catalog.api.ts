@@ -21,7 +21,6 @@ import type {
   CatalogCategoryCreateDto,
   CatalogCategoryUpdateDto,
   CatalogGroupWriteDto,
-  CatalogOptionWriteDto,
   CatalogProductWriteDto,
 } from "./catalog.api.types";
 
@@ -177,9 +176,12 @@ async function sendCatalogCommand(
     }
 
     case "save-group": {
-      const body: CatalogGroupWriteDto = { name: command.name };
+      const body: CatalogGroupWriteDto = {
+        name: command.name,
+        ...command.values,
+      };
 
-      return requestApi(`${SOURCE_MENU_ENDPOINT}/option-groups${suffix}`, {
+      return requestApi(`/api/v2/backoffice/catalog/modifier-groups${suffix}`, {
         method,
         accessToken,
         signal,
@@ -187,22 +189,12 @@ async function sendCatalogCommand(
       });
     }
 
-    case "save-option": {
-      const body: CatalogOptionWriteDto = {
-        name: command.name,
-        priceDelta: command.amount,
-      };
-      const path =
-        command.target.kind === "new-option"
-          ? `${SOURCE_MENU_ENDPOINT}/option-groups/${encodeURIComponent(command.target.groupId)}/options`
-          : `${SOURCE_MENU_ENDPOINT}/options${suffix}`;
-
-      return requestApi(path, { method, accessToken, signal, body });
-    }
-
     case "save-product": {
       const values = command.values;
       const body: CatalogProductWriteDto = {
+        ...(values.modifierGroupIds === undefined
+          ? {}
+          : { modifierGroupIds: values.modifierGroupIds }),
         name: values.name,
         categoryId: values.categoryId,
         price: values.pricing.kind === "fixed" ? values.pricing.amount : null,
@@ -269,7 +261,43 @@ function validResponse(
           return false;
         }
 
-        source.options.forEach(parseOption);
+        const options = source.options.map(parseOption);
+        const expected = command.values;
+
+        if (
+          options.some((option) => option.groupId !== group.id) ||
+          new Set(options.map((option) => option.id)).size !== options.length
+        ) {
+          return false;
+        }
+
+        if (
+          group.selectionType !== expected.selectionType ||
+          group.minSelect !== expected.minSelect ||
+          group.maxSelect !== expected.maxSelect ||
+          group.isActive !== expected.isActive ||
+          options.length !== expected.options.length
+        ) {
+          return false;
+        }
+
+        for (const requested of expected.options) {
+          const actual = options.find(
+            (option) => option.sortOrder === requested.sortOrder,
+          );
+
+          if (
+            actual === undefined ||
+            actual.name !== requested.name ||
+            actual.priceDelta !== requested.priceDelta ||
+            actual.isDefault !== requested.isDefault ||
+            actual.isAvailable !== requested.isAvailable ||
+            (requested.id !== undefined && actual.id !== requested.id)
+          ) {
+            return false;
+          }
+        }
+
         id = group.id;
         break;
       }
@@ -278,6 +306,23 @@ function validResponse(
         const product = parseProduct(source);
         const expected = command.values;
         const pricing = expected.pricing;
+
+        if (!Array.isArray(source.modifierGroupIds)) {
+          return false;
+        }
+
+        const groupIds = source.modifierGroupIds.map(catalogId);
+
+        if (
+          new Set(groupIds).size !== groupIds.length ||
+          (expected.modifierGroupIds !== undefined &&
+            (groupIds.length !== expected.modifierGroupIds.length ||
+              groupIds.some(
+                (id, index) => id !== expected.modifierGroupIds?.[index],
+              )))
+        ) {
+          return false;
+        }
 
         if (
           product.name !== expected.name ||
@@ -307,22 +352,6 @@ function validResponse(
         }
 
         id = product.id;
-        break;
-      }
-
-      case "save-option": {
-        const option = parseOption(source);
-
-        if (
-          option.name !== command.name ||
-          option.priceDelta !== command.amount ||
-          (command.target.kind === "new-option" &&
-            option.groupId !== command.target.groupId)
-        ) {
-          return false;
-        }
-
-        id = option.id;
         break;
       }
     }

@@ -3,11 +3,11 @@
     <p class="settings-recovery__message" role="status">{{ props.message }}</p>
     <dl v-if="props.command.observed" class="settings-recovery__values">
       <div>
-        <dt>Открытие, UTC</dt>
+        <dt>Открытие</dt>
         <dd>{{ props.command.observed.opensAt }}</dd>
       </div>
       <div>
-        <dt>Закрытие, UTC</dt>
+        <dt>Закрытие</dt>
         <dd>{{ props.command.observed.closesAt }}</dd>
       </div>
       <div>

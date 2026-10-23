@@ -15,6 +15,21 @@ scope: backend
 
 # Авторизация и сессии
 
+## Первое имя customer
+
+Целевое изменение: `GET /api/v2/me` возвращает обязательное nullable `name`
+наряду с текущей идентичностью для любой роли. Новый name-only
+`POST /api/v2/me/registration` завершает customer-регистрацию после OTP;
+его [HTTP-контракт](../../../docs/50-interfaces/Authentication-API.md#первое-имя-клиента)
+не меняет запрос/проверку OTP, refresh, logout или схему.
+
+Имя записывается только при `users.name IS NULL`. Транзакция блокирует user,
+затем session и проверяет действующую customer-идентичность заново. Повторы
+возвращают уже сохранённое имя, не перезаписывая его. Остальные роли не могут
+заполнить имя этим endpoint. `/me` не превращает отсутствие поля в null.
+Штатная проекция заказов читает `users.name`; изменения staff UI не нужны.
+Исходники и общий runtime/API-публикация принимаются раздельно.
+
 Текущие маршруты авторизации остаются в v2: запрос / проверка OTP, refresh, logout с обязательным body и `me`. Точный HTTP-контракт принадлежит [OpenAPI](../../openapi/openapi.json), карта — [API аутентификации](../../../docs/50-interfaces/Authentication-API.md).
 
 Logout принимает `pushSubscription: null | object`. Транзакционные ветки, повтор запроса и условия очистки cookie описаны в [ADR-009](../../../docs/20-architecture/ADR/ADR-009-explicit-logout-push-contract.md). Их реализация: [controller](../../src/auth/transport/auth.controller.ts), [use case](../../src/auth/application/logout.use-case.ts), [repository](../../src/auth/adapters/postgres-auth.repository.ts).

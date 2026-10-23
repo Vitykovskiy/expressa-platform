@@ -1,11 +1,15 @@
-import type { V3AdminProduct } from "../domain/product-admin.policy.types";
 import type {
   AdminModifierGroup,
   AdminModifierOption,
 } from "../domain/modifier-admin.policy.types";
-import type { SourceCategoryResult } from "../application/source-menu.types";
-import type { SourceCategoryResponseDto } from "./source-menu.dto";
-import type { V3ProductResponseDto } from "./catalog-products-v3.dto";
+import type {
+  SourceCategoryResult,
+  SourceProductResult,
+} from "../application/source-menu.types";
+import type {
+  SourceCategoryResponseDto,
+  SourceProductResponseDto,
+} from "./source-menu.dto";
 import type {
   ModifierGroupResponseDto,
   ModifierOptionResponseDto,
@@ -22,10 +26,11 @@ export function sourceCategoryResponse(
 }
 
 export function sourceProductResponse(
-  value: V3AdminProduct,
-): V3ProductResponseDto {
+  value: SourceProductResult,
+): SourceProductResponseDto {
   return {
     id: value.id,
+    modifierGroupIds: value.modifierGroupIds,
     categoryId: value.categoryId,
     name: value.name,
     description: value.description,

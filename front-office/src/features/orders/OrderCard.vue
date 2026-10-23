@@ -10,7 +10,7 @@
     >
       <span class="order-card__topline">
         <span class="order-card__title-row">
-          <span class="order-card__title">Заказ №{{ props.order.number }}</span>
+          <span class="order-card__title">Заказ №{{ displayedNumber }}</span>
           <span class="order-card__stage">{{ displayedStageLabel }}</span>
         </span>
         <span class="order-card__summary">
@@ -76,7 +76,12 @@ import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import type { OrderCardEmits, OrderCardProps } from "./OrderCard.types";
 import type { OrderItem } from "@/shared/api/orders.api";
-import { formatOrderPickupSlot, isOrderRejected } from "./order-status";
+import {
+  formatCustomerOrderNumber,
+  formatOrderCreatedAt,
+  formatOrderPickupSlot,
+  isOrderRejected,
+} from "./order-status";
 import { orderStatusMessages } from "./order-status.constants";
 
 const props = defineProps<OrderCardProps>();
@@ -105,19 +110,17 @@ const canRepeat = computed(
 );
 
 const formattedCreatedAt = computed(() =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(props.order.createdAt)),
+  formatOrderCreatedAt(props.order.createdAt),
+);
+const displayedNumber = computed(() =>
+  formatCustomerOrderNumber(props.order.number),
 );
 const disclosureLabel = computed(() =>
   isOpen.value ? "Скрыть состав" : "Показать состав",
 );
 const disclosureAccessibleName = computed(
   () =>
-    `Заказ №${props.order.number}, ${displayedStageLabel.value}, ${formatRubles(props.order.total)}, ${formattedCreatedAt.value}. ${disclosureLabel.value}`,
+    `Заказ №${displayedNumber.value}, ${displayedStageLabel.value}, ${formatRubles(props.order.total)}, ${formattedCreatedAt.value}. ${disclosureLabel.value}`,
 );
 
 function itemKey(item: OrderItem): string {
@@ -326,7 +329,6 @@ function itemKey(item: OrderItem): string {
 }
 .order-card__repeat {
   align-self: start;
-  min-height: 0;
   padding: var(--customer-space-5) var(--customer-space-8);
   color: var(--customer-color-blue-500);
   background: var(--customer-color-blue-500-10);

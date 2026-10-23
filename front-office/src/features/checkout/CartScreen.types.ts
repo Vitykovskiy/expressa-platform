@@ -31,6 +31,7 @@ export type CartScreenCheckoutState =
   "idle" | "submitting" | "reconfirmation-required" | "succeeded" | "error";
 
 export type CartScreenEmits = {
+  editItem: [itemId: string];
   removeItem: [itemId: string];
   updateQuantity: [itemId: string, nextQuantity: number];
   continueShopping: [];

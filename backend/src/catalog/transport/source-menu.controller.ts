@@ -31,7 +31,6 @@ import {
   ModifierGroupResponseDto,
   ModifierOptionResponseDto,
 } from "./catalog-modifiers.controller.dto";
-import { V3ProductResponseDto } from "./catalog-products-v3.dto";
 import {
   SourceCategoryCreateDto,
   SourceCategoryUpdateDto,
@@ -39,6 +38,7 @@ import {
   SourceNameDto,
   SourceOptionDto,
   SourceProductDto,
+  SourceProductResponseDto,
 } from "./source-menu.dto";
 import {
   parseSourceCategory,
@@ -215,12 +215,12 @@ export class SourceMenuController {
   @Post("products")
   @ApiOperation({ summary: "Create source product using canonical v3 prices" })
   @ApiBody({ type: SourceProductDto })
-  @ApiResponse({ status: 201, type: V3ProductResponseDto })
+  @ApiResponse({ status: 201, type: SourceProductResponseDto })
   async createProduct(
     @Body() body: unknown,
     @CurrentAuth() auth: Auth,
     @Req() request: { requestId?: string },
-  ): Promise<V3ProductResponseDto> {
+  ): Promise<SourceProductResponseDto> {
     const input = parseSourceProduct(body);
     const actor = {
       actorId: auth.userId,
@@ -237,13 +237,13 @@ export class SourceMenuController {
   })
   @ApiParam({ name: "productId", format: "uuid" })
   @ApiBody({ type: SourceProductDto })
-  @ApiResponse({ status: 200, type: V3ProductResponseDto })
+  @ApiResponse({ status: 200, type: SourceProductResponseDto })
   async updateProduct(
     @Param("productId") productId: string,
     @Body() body: unknown,
     @CurrentAuth() auth: Auth,
     @Req() request: { requestId?: string },
-  ): Promise<V3ProductResponseDto> {
+  ): Promise<SourceProductResponseDto> {
     const id = parseSourceUuid(productId, "productId");
     const input = parseSourceProduct(body);
     const actor = {

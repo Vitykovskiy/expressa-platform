@@ -344,17 +344,6 @@ function showError(value: string) {
 }
 
 watch(
-  () => domains.availability.message,
-  (value) => {
-    if (
-      intent.value.kind === "valid" &&
-      intent.value.section === "availability"
-    ) {
-      showError(value);
-    }
-  },
-);
-watch(
   () => session.state.kind,
   (kind) => {
     message.value = "";

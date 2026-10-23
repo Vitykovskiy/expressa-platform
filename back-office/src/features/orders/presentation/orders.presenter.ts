@@ -33,11 +33,11 @@ export function toOrderCard(order: OrderRecord): OrderCardModel {
     totalLabel: `${order.total} ₽`,
     details: {
       phone: order.customerPhone,
-      createdAt: `${ORDER_DATE_FORMAT.format(new Date(order.createdAt))} UTC`,
+      createdAt: ORDER_DATE_FORMAT.format(new Date(order.createdAt)),
       pickup:
         pickup === null
           ? ORDER_MESSAGES.missingPickup
-          : `${ORDER_DATE_FORMAT.format(new Date(pickup.startsAt))}–${ORDER_TIME_FORMAT.format(new Date(pickup.endsAt))} UTC`,
+          : `${ORDER_TIME_FORMAT.format(new Date(pickup.startsAt))}–${ORDER_TIME_FORMAT.format(new Date(pickup.endsAt))}`,
       lines: order.items.map((item, index) => ({
         key: `${order.id}:${index}`,
         label: itemLabel(item),
@@ -54,12 +54,12 @@ export function toOrderCard(order: OrderRecord): OrderCardModel {
       })),
       events: order.events.map((event, index) => ({
         key: `${order.id}:${index}`,
-        label: `${ORDER_DATE_FORMAT.format(new Date(event.occurredAt))} UTC · ${ORDER_STAGE_LABELS[event.from]} → ${ORDER_STAGE_LABELS[event.to]} · ${event.actorLabel}`,
+        label: `${ORDER_DATE_FORMAT.format(new Date(event.occurredAt))} · ${ORDER_STAGE_LABELS[event.from]} → ${ORDER_STAGE_LABELS[event.to]} · ${event.actorLabel}`,
       })),
       rejection:
         rejection === null
           ? null
-          : `Отклонён: ${rejection.reason} · ${ORDER_DATE_FORMAT.format(new Date(rejection.at))} UTC · ${rejection.actorId}`,
+          : `Отклонён: ${rejection.reason} · ${ORDER_DATE_FORMAT.format(new Date(rejection.at))} · ${rejection.actorId}`,
     },
   };
 }

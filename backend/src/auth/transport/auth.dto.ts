@@ -33,6 +33,9 @@ export class RequestOtpResponseDto {
 }
 
 export class CurrentUserDto {
+  @ApiProperty({ type: String, nullable: true })
+  name!: string | null;
+
   @ApiProperty()
   id!: string;
 

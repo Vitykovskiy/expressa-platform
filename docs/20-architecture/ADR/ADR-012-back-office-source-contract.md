@@ -93,10 +93,10 @@ Git не восстанавливаются. Поставка — только d
 - `PATCH /api/v3/backoffice/menu/option-groups/{groupId}`: body: {name:string}; response: 200 ModifierGroupDto preserving all existing constraints/options
 - `POST /api/v3/backoffice/menu/option-groups/{groupId}/options`: body: {name:string,priceDelta:integer>=0}; response: 201 ModifierOptionDto
 - `PATCH /api/v3/backoffice/menu/options/{optionId}`: body: {name:string,priceDelta:integer>=0}; response: 200 ModifierOptionDto preserving order/default/availability
-- `POST /api/v3/backoffice/menu/products`: body: SourceProductWrite; response: 201 V3ProductResponseDto
-- `PATCH /api/v3/backoffice/menu/products/{productId}`: body: SourceProductWrite; response: 200 V3ProductResponseDto preserving hidden fields
+- `POST /api/v3/backoffice/menu/products`: body: SourceProductWrite; response: 201 SourceProductResponseDto
+- `PATCH /api/v3/backoffice/menu/products/{productId}`: body: SourceProductWrite; response: 200 SourceProductResponseDto preserving hidden fields
 
-**product_write:** SourceProductWrite={categoryId:uuid,name:string,price:integer>=0|null,priceChoices:Array<{id?:uuid,portionLabel:nonblank string,price:integer>=0}>}. Exactly one-price (price nonnull,choices[]) or choices (price null,nonempty choices) branch. Array order is intended order; unchanged existing ids/availability survive; new choices receive generated IDs and availability=true. Existing priceChoices are not restricted to three or S/M/L. Source new-size preset is three ordinary labels S,M,L; never resurrect removed schema model. Existing arbitrary choice labels/row counts must be visible using the source price-row primitive and preserved, not silently converted or dropped.
+**product_write:** SourceProductWrite={categoryId:uuid,name:string,price:integer>=0|null,priceChoices:Array<{id?:uuid,portionLabel:nonblank string,price:integer>=0}>,modifierGroupIds?:uuid[]}. Exactly one-price (price nonnull,choices[]) or choices (price null,nonempty choices) branch. Array order is intended order; unchanged existing ids/availability survive; new choices receive generated IDs and availability=true. Existing priceChoices are not restricted to three or S/M/L. Source new-size preset is three ordinary labels S,M,L; never resurrect removed schema model. Existing arbitrary choice labels/row counts must be visible using the source price-row primitive and preserved, not silently converted or dropped.
 
 **creation_policy:** Server owns absent create fields: category description='', next unarchived ordering slot, isActive=true; product description='', portionLabel=null for fixed price, next category order,isActive/isAvailable=true; new group selectionType='single',minSelect=0,maxSelect=1,isActive=true; new option isDefault=false,isAvailable=true,next group order. These are explicit G3 policies, not claims that Figma already supplied values. Existing unexposed edit fields and required group constraints are preserved.
 
@@ -195,3 +195,38 @@ ID, сохраняет ID и доступность оставшихся; пов
 `priceChoiceId`; отсутствие, чужой ID или недоступная опция отклоняются.
 Это уточнение заменяет прежнее программное ограничение «не меньше двух»,
 не вводит модель вариантов, новую схему хранения или миграцию seed.
+
+## Группы, доступность и представление по U004
+
+Редактор группы использует существующие агрегатные `POST/PATCH
+/api/v2/backoffice/catalog/modifier-groups`: имя, правила выбора и опции с
+ценами и значениями по умолчанию сохраняются атомарно. Это уточнение заменяет
+ограничение редактора группы одним именем; прежние source-маршруты не удаляются.
+Обязательные группы сохраняют серверные требования доступных бесплатных
+значений по умолчанию. Удаление сохранённых опций подтверждается по именам
+для конкретной версии черновика.
+
+Source-команда товара принимает необязательный `modifierGroupIds`: отсутствие
+при создании означает пустой собственный список, при редактировании сохраняет
+прежние связи; явный пустой список исключает собственные связи. Неверные,
+повторные и несуществующие ID отклоняются до записи. Товар, упорядоченные связи
+и аудит сохраняются в одной транзакции; ответ содержит фактические
+`modifierGroupIds`. Admin catalog дополнен `productModifierGroups` со связями
+`productId/groupId/sortOrder`. Унаследованные группы показываются отдельно;
+собственные выбираются без дублирования эффективной группы.
+
+Общий выключатель товара является gate для его ценовых вариантов, но не
+меняет их сохранённые флаги. Эффективная доступность варианта равна
+`product.isAvailable && choice.isAvailable`. Вложенные строки показывают эту
+доступность, а родительский переключатель — собственный флаг товара. Повторное
+включение восстанавливает прежнее сочетание размеров. После подтверждённой
+записи клиент перечитывает всю иерархию; неизвестная запись разрешается чтением
+без автоматического повтора. Точная семантика принадлежит
+[домену доступности](../../30-domain/Availability.md) и
+[управлению доступностью](../../40-features/Manage-availability.md).
+
+Техническая основа времени UTC и политика распределения сохраняются.
+Окно получения показывается временем HH:mm–HH:mm без даты/UTC; UI не
+преобразует часы в часовую зону браузера. Настройки и их восстановление не
+выводят техническую метку UTC. Исторический контекст и аудит дат сохраняются
+отдельно. Полный номер сотрудника и его фильтры не сокращаются.

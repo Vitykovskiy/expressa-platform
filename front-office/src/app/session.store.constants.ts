@@ -16,6 +16,7 @@ export const sessionMessages = {
   restore: "Не удалось восстановить сессию. Попробуйте ещё раз.",
   roleRejected: "Эта учётная запись не является клиентской.",
   verifyOtp: "Не удалось подтвердить код. Попробуйте ещё раз.",
+  completeRegistration: "Не удалось сохранить имя. Попробуйте ещё раз.",
 } as const;
 
 export const sessionErrorCodes = {
@@ -36,6 +37,7 @@ export const initialSessionState: SessionState = {
   pendingPhone: null,
   phone: null,
   restorePromise: null,
+  registrationPending: false,
   status: sessionStatuses.unknown,
 };
 

@@ -8,14 +8,28 @@
     >
       <h2 class="group-heading">{{ group.name }}</h2>
       <div class="group-rows">
-        <AvailabilityToggleRow
+        <div
           v-for="item in group.items"
           :key="`${item.type}:${item.id}`"
-          :item="item"
-          :disabled="disabled"
-          :status="commandStatus(item)"
-          @toggle="emit('toggle', item)"
-        />
+          class="availability-entry"
+        >
+          <AvailabilityToggleRow
+            :item="item"
+            :disabled="disabled"
+            :command-phase="commandPhase(item)"
+            @toggle="emit('toggle', item)"
+          />
+          <div v-if="item.type === 'product'" class="product-sizes">
+            <AvailabilityToggleRow
+              v-for="choice in item.children"
+              :key="choice.id"
+              :item="choice"
+              :disabled="disabled"
+              :command-phase="commandPhase(choice)"
+              @toggle="emit('toggle', choice)"
+            />
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -29,21 +43,15 @@ import type { AvailabilityGroupsProps } from "./AvailabilityGroups.types";
 const props = defineProps<AvailabilityGroupsProps>();
 const emit = defineEmits<{ toggle: [item: AvailabilityItem] }>();
 
-function commandStatus(item: AvailabilityItem) {
+function commandPhase(item: AvailabilityItem) {
   if (
     props.command?.item.id !== item.id ||
     props.command.item.type !== item.type
   ) {
-    return "";
+    return null;
   }
 
-  if (props.command.phase === "sending") {
-    return "Сохраняем…";
-  }
-
-  return props.command.phase === "checking"
-    ? "Проверяем текущее состояние…"
-    : "Исход изменения неизвестен";
+  return props.command.phase;
 }
 </script>
 
@@ -72,5 +80,11 @@ function commandStatus(item: AvailabilityItem) {
 }
 .group-rows {
   padding: 0 16px;
+}
+.availability-entry + .availability-entry {
+  border-top: 1px solid var(--color-border);
+}
+.product-sizes {
+  padding-left: 20px;
 }
 </style>

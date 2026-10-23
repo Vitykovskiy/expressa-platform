@@ -1,1 +1,5 @@
-export const authReturnBlockedPaths = new Set(["/auth/phone", "/auth/code"]);
+export const authReturnBlockedPaths = new Set([
+  "/auth/phone",
+  "/auth/code",
+  "/auth/name",
+]);

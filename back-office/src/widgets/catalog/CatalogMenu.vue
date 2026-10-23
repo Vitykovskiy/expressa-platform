@@ -94,7 +94,10 @@ const confirmedEmpty = computed(
 );
 const cannotCreateProduct = computed(
   () =>
-    props.disabled || !hasGroups.value || props.loading || props.error !== null,
+    props.disabled ||
+    !hasCategories.value ||
+    props.loading ||
+    props.error !== null,
 );
 </script>
 

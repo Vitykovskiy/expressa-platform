@@ -9,6 +9,17 @@
         :selected="availability.selectedGroup"
         @select="availability.selectGroup"
       />
+      <div v-if="feedback !== ''" class="availability-feedback">
+        <p class="feedback-copy" role="status">{{ feedback }}</p>
+        <button
+          type="button"
+          class="refresh-button"
+          :disabled="refreshDisabled"
+          @click="availability.refresh"
+        >
+          Обновить
+        </button>
+      </div>
       <div class="availability-content">
         <div v-if="initialLoading" class="loading-state" role="status">
           <img :src="loaderIcon" alt="" />
@@ -67,7 +78,26 @@ const empty = computed(
   () => availability.phase === "ready" && availability.groups.length === 0,
 );
 const commandsDisabled = computed(
-  () => availability.command !== null || availability.phase !== "ready",
+  () =>
+    availability.command !== null ||
+    availability.phase !== "ready" ||
+    availability.stale ||
+    availability.sessionExpired,
+);
+const feedback = computed(() => {
+  if (availability.message !== "") {
+    return availability.message;
+  }
+
+  return availability.stale && availability.command === null
+    ? "Данные меню изменились. Обновите доступность."
+    : "";
+});
+const refreshDisabled = computed(
+  () =>
+    availability.phase === "loading" ||
+    availability.sessionExpired ||
+    (availability.command !== null && availability.command.phase !== "unknown"),
 );
 
 watch(
@@ -145,6 +175,40 @@ onScopeDispose(() => {
 .availability-content {
   padding-top: 16px;
 }
+.availability-feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.feedback-copy {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-foreground-muted);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.refresh-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.refresh-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.refresh-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -204,6 +268,9 @@ onScopeDispose(() => {
   }
   .availability-content {
     padding: 16px;
+  }
+  .availability-feedback {
+    margin: 12px 16px 0;
   }
 }
 </style>

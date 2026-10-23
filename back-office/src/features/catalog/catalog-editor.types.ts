@@ -14,6 +14,11 @@ export type CatalogEditor =
       readonly draft: CatalogCategoryDraft;
       readonly originalGroupId: string;
       readonly originalGroups: readonly string[];
+      readonly originalOptions: readonly {
+        readonly id: string;
+        readonly name: string;
+      }[];
+      readonly focusOptionKey: string | null;
       readonly summary: string | null;
     }
   | {
@@ -24,6 +29,7 @@ export type CatalogEditor =
         readonly id: string;
         readonly label: string;
       }[];
+      readonly originalModifierGroups: readonly string[];
       readonly summary: string | null;
     };
 

@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { AdminV3CategoryDto } from "./admin-catalog-v3.dto";
+import { V3ProductResponseDto } from "./catalog-products-v3.dto";
 
 export class SourceNameDto {
   @ApiProperty({ minLength: 1 }) name!: string;
@@ -34,6 +35,14 @@ export class SourcePriceChoiceDto {
   price!: number;
 }
 export class SourceProductDto extends SourceNameDto {
+  @ApiProperty({
+    type: String,
+    format: "uuid",
+    isArray: true,
+    required: false,
+    uniqueItems: true,
+  })
+  modifierGroupIds?: string[];
   @ApiProperty({ format: "uuid" }) categoryId!: string;
   @ApiProperty({
     type: "integer",
@@ -49,4 +58,13 @@ export class SourceProductDto extends SourceNameDto {
       "Empty for fixed pricing; one or more real choices when price is null.",
   })
   priceChoices!: SourcePriceChoiceDto[];
+}
+export class SourceProductResponseDto extends V3ProductResponseDto {
+  @ApiProperty({
+    type: String,
+    format: "uuid",
+    isArray: true,
+    uniqueItems: true,
+  })
+  modifierGroupIds!: string[];
 }

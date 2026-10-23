@@ -8,6 +8,7 @@ export interface CartItemProps {
 }
 
 export interface CartItemEmits {
+  editItem: [itemId: string];
   removeItem: [itemId: string];
   updateQuantity: [itemId: string, nextQuantity: number];
 }

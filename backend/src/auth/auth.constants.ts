@@ -1,4 +1,7 @@
 export const authRepositoryPort = Symbol("authRepositoryPort");
+export const customerRegistrationRepositoryPort = Symbol(
+  "customerRegistrationRepositoryPort",
+);
 export const otpCodeGeneratorPort = Symbol("otpCodeGeneratorPort");
 export const smsSenderPort = Symbol("smsSenderPort");
 export const originGuardConfigurationToken = Symbol(

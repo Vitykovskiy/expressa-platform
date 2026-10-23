@@ -12,7 +12,7 @@
       <h1 id="product-detail-title" class="product-detail__title">
         {{ product.name }}
       </h1>
-      <p class="product-detail__total" aria-live="polite">
+      <p v-if="total !== null" class="product-detail__total" aria-live="polite">
         {{ formatRubles(total) }}
       </p>
     </header>
@@ -110,7 +110,10 @@
       >
         <ShoppingCart :size="17" :stroke-width="2.5" aria-hidden="true" />
         <span class="product-detail__submit-label">
-          {{ actionLabel }} · {{ formatRubles(total) }}
+          {{ actionLabel }}
+          <template v-if="total !== null">
+            · {{ formatRubles(total) }}</template
+          >
         </span>
       </ui-btn>
     </footer>
@@ -145,7 +148,7 @@ const configuration = ref(createInitialConfiguration());
 const totals = computed(() =>
   getProductConfigurationTotals(configuration.value),
 );
-const total = computed(() => totals.value?.lineTotal ?? 0);
+const total = computed(() => totals.value?.lineTotal ?? null);
 const isValid = computed(() =>
   isProductConfigurationValid(configuration.value),
 );

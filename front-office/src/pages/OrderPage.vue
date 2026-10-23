@@ -14,10 +14,13 @@
         </ui-icon-btn>
       </div>
       <header class="order-page__header">
-        <p class="order-page__number">Заказ №{{ order.number }}</p>
+        <p class="order-page__number">Заказ №{{ displayedNumber }}</p>
         <h1 id="order-title" ref="orderHeading">{{ stageLabel }}</h1>
         <p class="order-page__stage-hint">{{ stageHint }}</p>
         <p v-if="!rejected" class="order-page__stage-hint">{{ pickupLabel }}</p>
+        <p v-if="historicalDateLabel" class="order-page__stage-hint">
+          {{ historicalDateLabel }}
+        </p>
       </header>
       <p
         v-if="refreshFeedback === 'pending'"
@@ -85,10 +88,17 @@
         type="button"
         @click="prepareRepeat"
       >
-        Повторить заказ
+        {{ repeatPreparationFailed ? "Повторить попытку" : "Повторить заказ" }}
       </ui-btn>
       <p v-if="repeatPreparationPending" role="status">
         {{ orderPageMessages.repeatPreparing }}
+      </p>
+      <p
+        v-else-if="repeatPreparationFailed"
+        class="order-page__refresh-status"
+        role="alert"
+      >
+        Не удалось подготовить повтор заказа. Попробуйте ещё раз.
       </p>
     </template>
     <div v-else class="order-page__state" role="alert">
@@ -110,16 +120,39 @@
     <ui-dialog
       v-model="repeatConfirmationOpen"
       label="Подтверждение замены корзины"
-      max-width="32rem"
+      max-width="28rem"
       :return-focus-to="repeatTrigger"
     >
       <section class="order-page__dialog" aria-labelledby="repeat-title">
-        <h2 id="repeat-title">Заменить корзину?</h2>
-        <p>Текущие позиции в корзине будут заменены повтором заказа.</p>
-        <ui-btn type="button" @click="confirmRepeat">Заменить корзину</ui-btn>
-        <ui-btn type="button" @click="repeatConfirmationOpen = false"
-          >Отмена</ui-btn
-        >
+        <header class="order-page__dialog-header">
+          <h2 id="repeat-title">Заменить корзину?</h2>
+          <ui-icon-btn
+            type="button"
+            class="order-page__dialog-close"
+            aria-label="Закрыть подтверждение замены корзины"
+            @click="repeatConfirmationOpen = false"
+          >
+            <X :size="20" aria-hidden="true" />
+          </ui-icon-btn>
+        </header>
+        <p>Товары в корзине будут заменены повтором этого заказа.</p>
+        <footer class="order-page__dialog-actions">
+          <ui-btn
+            type="button"
+            class="order-page__dialog-cancel"
+            autofocus
+            @click="repeatConfirmationOpen = false"
+          >
+            Отмена
+          </ui-btn>
+          <ui-btn
+            type="button"
+            class="order-page__dialog-confirm"
+            @click="confirmRepeat"
+          >
+            Заменить корзину
+          </ui-btn>
+        </footer>
       </section>
     </ui-dialog>
   </section>
@@ -127,7 +160,7 @@
 
 <script setup lang="ts">
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
-import { ArrowLeft } from "lucide-vue-next";
+import { ArrowLeft, X } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 
 import { useSessionStore } from "@/app/session.store";
@@ -138,6 +171,8 @@ import { toCartItemDraft } from "@/features/menu/product-configuration";
 import { orderCardStageHints } from "@/features/orders/OrderCard.constants";
 import OrderNotificationsSection from "@/features/orders/OrderNotificationsSection.vue";
 import {
+  formatCustomerOrderNumber,
+  formatHistoricalOrderDate,
   formatOrderPickupSlot,
   isOrderRejected,
   isOrderTerminal,
@@ -177,6 +212,7 @@ const detailRequestPending = ref(false);
 const initialRecoveryAvailable = ref(false);
 const repeatConfirmationOpen = ref(false);
 const repeatPreparationPending = ref(false);
+const repeatPreparationFailed = ref(false);
 const repeatTrigger = ref<InstanceType<typeof UiBtn> | null>(null);
 const orderHeading = ref<HTMLElement | null>(null);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
@@ -192,6 +228,14 @@ const terminal = computed(
 );
 const pickupLabel = computed(() =>
   formatOrderPickupSlot(order.value?.pickupSlot),
+);
+const displayedNumber = computed(() =>
+  order.value === null ? "" : formatCustomerOrderNumber(order.value.number),
+);
+const historicalDateLabel = computed(() =>
+  order.value === null
+    ? null
+    : formatHistoricalOrderDate(order.value.createdAt, new Date()),
 );
 const stageLabel = computed(() => {
   if (order.value === null) {
@@ -231,6 +275,7 @@ watch(
   () => {
     repeatOperationOwner += 1;
     repeatPreparationPending.value = false;
+    repeatPreparationFailed.value = false;
     void loadInitialOrder();
   },
 );
@@ -386,73 +431,85 @@ function finishRefreshRequest(owner: number): void {
   syncPolling();
 }
 async function prepareRepeat(): Promise<void> {
-  if (repeatPreparationPending.value) return;
+  if (repeatPreparationPending.value) {
+    return;
+  }
+
   cartStore.clearRepeatWarnings();
-  if (order.value?.stage !== "ISSUED" || apiClient === undefined) return;
+  if (order.value?.stage !== "ISSUED" || apiClient === undefined) {
+    return;
+  }
+
   const owner = ++repeatOperationOwner;
   repeatPreparationPending.value = true;
+  repeatPreparationFailed.value = false;
+
   try {
     const menu = await createPublicMenuApi(apiClient).getMenu();
-    if (!ownsRepeatOperation(owner)) return;
+    if (!ownsRepeatOperation(owner)) {
+      return;
+    }
+
     const preparation = createRepeatItems(
       order.value,
       menu.categories.flatMap((category) => category.products),
     );
     repeatPreparation = preparation;
+
     if (cartStore.items.length === 0) {
       return applyRepeatAndOpenCart(preparation);
     }
-    if (preparation.items.length === 0) {
-      return applyRepeatAndOpenCart(preparation);
-    }
+
     repeatConfirmationOpen.value = true;
   } catch {
-    if (!ownsRepeatOperation(owner)) return;
-    errorMessage.value = orderPageMessages.loadFailed;
+    if (!ownsRepeatOperation(owner)) {
+      return;
+    }
+
+    repeatPreparationFailed.value = true;
   } finally {
-    if (ownsRepeatOperation(owner)) repeatPreparationPending.value = false;
+    if (ownsRepeatOperation(owner)) {
+      repeatPreparationPending.value = false;
+    }
   }
 }
+
 function ownsRepeatOperation(owner: number): boolean {
   return isMounted && repeatOperationOwner === owner;
 }
+
 async function confirmRepeat(): Promise<void> {
-  if (repeatPreparation === null) return;
-  cartStore.applyRepeat(
-    repeatPreparation.items,
-    repeatPreparation.warnings,
-    repeatPreparation.result,
-  );
+  if (repeatPreparation === null) {
+    return;
+  }
+
+  cartStore.applyRepeat(repeatPreparation.items);
   repeatConfirmationOpen.value = false;
   await router.push("/cart");
 }
+
 async function applyRepeatAndOpenCart(
   preparation: OrderRepeatPreparation,
 ): Promise<void> {
-  cartStore.applyRepeat(
-    preparation.items,
-    preparation.warnings,
-    preparation.result,
-  );
+  cartStore.applyRepeat(preparation.items);
   await router.push("/cart");
 }
+
 function createRepeatItems(
   source: CustomerOrder,
   products: PublicMenuProduct[],
 ): OrderRepeatPreparation {
   const items: OrderRepeatPreparation["items"] = [];
-  const warnings: OrderRepeatPreparation["warnings"] = [];
+
   for (const item of source.items) {
     const product = products.find(
       (candidate) => candidate.id === item.productId,
     );
+
     if (product === undefined || !product.isAvailable) {
-      warnings.push({
-        productName: item.productName,
-        reason: orderPageMessages.repeatProductUnavailable,
-      });
       continue;
     }
+
     const draft = toCartItemDraft({
       product,
       quantity: item.quantity,
@@ -468,25 +525,17 @@ function createRepeatItems(
       })),
       selectedPriceChoiceId: item.priceChoiceId,
     });
+
     if (draft === null || !doesDraftPreserveModifiers(draft, item)) {
-      warnings.push({
-        productName: item.productName,
-        context: getRepeatConfigurationContext(item),
-        reason: orderPageMessages.repeatConfigurationUnavailable,
-      });
       continue;
     }
+
     items.push({ ...draft, id: `repeat-${items.length}` });
   }
-  return {
-    items,
-    result: {
-      addedPositionCount: items.length,
-      requestedPositionCount: source.items.length,
-    },
-    warnings,
-  };
+
+  return { items };
 }
+
 function doesDraftPreserveModifiers(
   draft: ConfiguredCartItemDraft,
   item: OrderPageItem,
@@ -500,16 +549,7 @@ function doesDraftPreserveModifiers(
     )
   );
 }
-function getRepeatConfigurationContext(
-  item: OrderPageItem,
-): string | undefined {
-  const details = [
-    item.portionLabel,
-    ...item.modifiers.map((modifier) => modifier.modifierName),
-  ].filter((detail): detail is string => detail !== null);
 
-  return details.length === 0 ? undefined : details.join(", ");
-}
 function itemKey(item: OrderPageItem): string {
   return [
     item.productId,
@@ -666,10 +706,69 @@ function itemKey(item: OrderPageItem): string {
 }
 .order-page__dialog {
   display: grid;
-  gap: var(--customer-space-5);
-  padding: var(--customer-space-9);
-  background: var(--customer-background);
+  gap: var(--customer-space-9);
+  padding: var(--customer-space-11);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
   border-radius: var(--customer-radius-lg);
+}
+
+.order-page__dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--customer-space-5);
+}
+
+.order-page__dialog-header h2 {
+  margin: 0;
+  font-size: var(--customer-font-size-xl);
+  font-weight: var(--customer-font-weight-extrabold);
+  overflow-wrap: anywhere;
+}
+
+.order-page__dialog-close {
+  flex: 0 0 auto;
+  color: var(--customer-color-blue-500);
+  background: var(--customer-color-blue-500-10);
+  border: 0;
+}
+
+.order-page__dialog-close:hover:not(:disabled) {
+  background: var(--customer-color-blue-500-10);
+}
+
+.order-page__dialog p {
+  margin: 0;
+  color: var(--customer-color-text-secondary-on-surface);
+  font-size: var(--customer-font-size-sm);
+  line-height: var(--customer-line-height-relaxed);
+}
+
+.order-page__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--customer-space-5);
+}
+
+.order-page__dialog-actions .ui-btn {
+  flex: 1 1 8rem;
+  min-height: 44px;
+  padding: var(--customer-space-5) var(--customer-space-7);
+  border-radius: var(--customer-radius-sm);
+  font-size: var(--customer-font-size-sm);
+  font-weight: var(--customer-font-weight-bold);
+  line-height: var(--customer-line-height-label);
+}
+
+.order-page__dialog-cancel {
+  color: var(--customer-color-blue-500);
+  background: var(--customer-color-blue-500-10);
+}
+
+.order-page__dialog-confirm {
+  color: var(--customer-color-text-on-brand);
+  background: var(--customer-color-action-primary);
 }
 @media (min-width: 1024px) {
   .order-page {

@@ -2,30 +2,61 @@
   <div class="availability-row">
     <div class="row-label">
       <p class="row-name">{{ item.name }}</p>
-      <p class="row-description">{{ status || item.description }}</p>
+      <p :id="descriptionId" class="row-description">{{ description }}</p>
     </div>
     <button
       class="row-switch"
       type="button"
       role="switch"
-      :aria-checked="item.available"
-      :aria-label="item.name"
-      :disabled="disabled"
-      :aria-busy="status.length > 0"
+      :aria-checked="checked"
+      :aria-label="item.controlLabel"
+      :aria-describedby="descriptionId"
+      :disabled="switchDisabled"
+      :aria-busy="busy"
       @click="emit('toggle')"
     >
-      <img :src="item.available ? checkedIcon : uncheckedIcon" alt="" />
+      <img
+        class="switch-image"
+        :src="checked ? checkedIcon : uncheckedIcon"
+        alt=""
+      />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { AvailabilityToggleRowProps } from "./AvailabilityToggleRow.types";
+import { AVAILABILITY_COMMAND_STATUS } from "./AvailabilityToggleRow.constants";
 import checkedIcon from "./assets/checked.svg";
 import uncheckedIcon from "./assets/unchecked.svg";
 
-defineProps<AvailabilityToggleRowProps>();
+const props = defineProps<AvailabilityToggleRowProps>();
 const emit = defineEmits<{ toggle: [] }>();
+
+const checked = computed(() =>
+  props.item.type === "product"
+    ? props.item.persistedAvailable
+    : props.item.effectiveAvailable,
+);
+const switchDisabled = computed(
+  () => props.disabled || props.item.disabledReason !== null,
+);
+const descriptionId = computed(
+  () => `availability-${props.item.type}-${props.item.id}-description`,
+);
+const busy = computed(
+  () => props.commandPhase !== null && props.commandPhase !== "unknown",
+);
+const description = computed(() => {
+  if (props.commandPhase !== null) {
+    return AVAILABILITY_COMMAND_STATUS[props.commandPhase];
+  }
+
+  return props.item.disabledReason === "product-unavailable"
+    ? `${props.item.description} · Весь напиток выключен`
+    : props.item.description;
+});
 </script>
 
 <style scoped>
@@ -71,16 +102,25 @@ const emit = defineEmits<{ toggle: [] }>();
   overflow-wrap: anywhere;
 }
 .row-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
-  height: 24px;
+  height: 44px;
   flex: 0 0 44px;
   border: 0;
   padding: 0;
   background: transparent;
   cursor: pointer;
 }
+.switch-image {
+  display: block;
+  width: 44px;
+  height: 24px;
+}
 .row-switch:disabled {
-  cursor: wait;
+  cursor: default;
+  opacity: 0.55;
 }
 .row-switch:focus-visible {
   outline: 2px solid var(--color-primary);

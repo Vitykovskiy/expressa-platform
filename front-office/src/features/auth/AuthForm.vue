@@ -120,6 +120,10 @@
       id="auth-name"
       autocomplete="name"
       aria-label="Ваше имя"
+      :aria-describedby="
+        props.state.errorMessage ? 'auth-name-error' : undefined
+      "
+      :aria-invalid="Boolean(props.state.errorMessage)"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
@@ -136,11 +140,18 @@
         <UserRound class="auth-form__field-icon" aria-hidden="true" />
       </template>
     </ui-text-field>
+    <UiFieldMessage
+      id="auth-name-error"
+      class="auth-form__error-message"
+      :message="props.state.errorMessage"
+      tone="error"
+    />
     <ui-btn
       block
       class="auth-form__primary-button"
       color="surface"
       :disabled="!canSubmitName || isLoading"
+      :loading="isLoading"
       size="x-large"
       type="submit"
     >
@@ -168,7 +179,7 @@ const canSendCode = computed(
 const canVerifyOtp = computed(
   () => props.otp.length === authFormLimits.otpLength,
 );
-const canSubmitName = computed(() => props.state.name.trim().length >= 2);
+const canSubmitName = computed(() => props.state.name.trim() !== "");
 const isLoading = computed(() => props.isLoading ?? false);
 
 function updatePhone(phone: string) {

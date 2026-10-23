@@ -27,6 +27,23 @@ export interface V3ProductsUnitOfWork {
     audit: (repository: V3ProductsRepository, result: Result) => Promise<void>,
   ): Promise<Result>;
 }
+export interface SourceV3ProductsRepository extends V3ProductsRepository {
+  findModifierGroupIds(productId: string): Promise<string[]>;
+  currentModifierGroupsExist(groupIds: readonly string[]): Promise<boolean>;
+  replaceModifierGroups(
+    productId: string,
+    groupIds: readonly string[],
+  ): Promise<void>;
+}
+export interface SourceProductsUnitOfWork {
+  runV3<Result>(
+    command: (repository: SourceV3ProductsRepository) => Promise<Result>,
+    audit: (
+      repository: SourceV3ProductsRepository,
+      result: Result,
+    ) => Promise<void>,
+  ): Promise<Result>;
+}
 export type V3ProductCommand = V3ProductDetails & {
   actorId: string;
   requestId: string;
@@ -47,6 +64,6 @@ export type V3ProductAuditEvent = {
   requestId: string;
   action: ProductAuditAction;
   productId: string;
-  before: V3AdminProduct | null;
-  after: V3AdminProduct | null;
+  before: (V3AdminProduct & { modifierGroupIds?: readonly string[] }) | null;
+  after: (V3AdminProduct & { modifierGroupIds?: readonly string[] }) | null;
 };

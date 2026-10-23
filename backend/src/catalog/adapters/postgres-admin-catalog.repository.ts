@@ -140,6 +140,7 @@ export class PostgresAdminCatalogRepository
       modifierGroups,
       modifierOptions,
       categoryModifierGroups,
+      productModifierGroups,
     ] = await Promise.all([
       this.pool.query<DatabaseRow>(
         "SELECT id,name,description,sort_order,is_active,archived_at FROM categories WHERE archived_at IS NULL ORDER BY sort_order, id",
@@ -158,6 +159,9 @@ export class PostgresAdminCatalogRepository
       ),
       this.pool.query<DatabaseRow>(
         "SELECT cmg.category_id,cmg.group_id,cmg.sort_order FROM category_modifier_groups cmg INNER JOIN categories c ON c.id=cmg.category_id INNER JOIN modifier_groups g ON g.id=cmg.group_id WHERE c.archived_at IS NULL AND g.archived_at IS NULL ORDER BY cmg.category_id,cmg.sort_order",
+      ),
+      this.pool.query<DatabaseRow>(
+        "SELECT pmg.product_id,pmg.group_id,pmg.sort_order FROM product_modifier_groups pmg INNER JOIN products p ON p.id=pmg.product_id INNER JOIN categories c ON c.id=p.category_id INNER JOIN modifier_groups g ON g.id=pmg.group_id WHERE p.archived_at IS NULL AND c.archived_at IS NULL AND g.archived_at IS NULL ORDER BY pmg.product_id,pmg.sort_order,pmg.group_id",
       ),
     ]);
     return {
@@ -180,6 +184,11 @@ export class PostgresAdminCatalogRepository
       categoryModifierGroups: categoryModifierGroups.rows.map(
         parseCategoryModifierGroup,
       ),
+      productModifierGroups: productModifierGroups.rows.map((row) => ({
+        productId: readString(row, "product_id"),
+        groupId: readString(row, "group_id"),
+        sortOrder: readNonNegativeInteger(row, "sort_order"),
+      })),
     };
   }
 

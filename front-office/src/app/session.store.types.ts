@@ -23,6 +23,7 @@ export interface SessionState {
   pendingPhone: string | null;
   phone: string | null;
   restorePromise: Promise<void> | null;
+  registrationPending: boolean;
   status: SessionStatus;
 }
 

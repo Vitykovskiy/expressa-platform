@@ -1,8 +1,9 @@
 import type { PoolClient } from "pg";
 import type {
-  V3ProductsRepository,
   V3ProductsUnitOfWork,
   V3ProductAuditEvent,
+  SourceV3ProductsRepository,
+  SourceProductsUnitOfWork,
 } from "../application/products.repository.types";
 import type {
   V3AdminProduct,
@@ -11,11 +12,16 @@ import type {
 import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
 import type { DatabaseRow } from "./postgres-products.repository.types";
 
-export class PostgresProductsRepository implements V3ProductsUnitOfWork {
+export class PostgresProductsRepository
+  implements V3ProductsUnitOfWork, SourceProductsUnitOfWork
+{
   constructor(private readonly runner: PostgresCatalogCommandRunner) {}
   async runV3<Result>(
-    command: (repository: V3ProductsRepository) => Promise<Result>,
-    audit: (repository: V3ProductsRepository, result: Result) => Promise<void>,
+    command: (repository: SourceV3ProductsRepository) => Promise<Result>,
+    audit: (
+      repository: SourceV3ProductsRepository,
+      result: Result,
+    ) => Promise<void>,
   ): Promise<Result> {
     return this.runner.run(
       (client) => command(new PostgresV3ProductsTransactionRepository(client)),
@@ -25,8 +31,40 @@ export class PostgresProductsRepository implements V3ProductsUnitOfWork {
   }
 }
 
-class PostgresV3ProductsTransactionRepository implements V3ProductsRepository {
+class PostgresV3ProductsTransactionRepository implements SourceV3ProductsRepository {
   constructor(private readonly client: PoolClient) {}
+  async findModifierGroupIds(productId: string): Promise<string[]> {
+    const result = await this.client.query<DatabaseRow>(
+      "SELECT group_id FROM product_modifier_groups WHERE product_id=$1 ORDER BY sort_order, group_id",
+      [productId],
+    );
+    return result.rows.map((row) => readString(row, "group_id"));
+  }
+  async currentModifierGroupsExist(
+    groupIds: readonly string[],
+  ): Promise<boolean> {
+    const result = await this.client.query<DatabaseRow>(
+      "SELECT id FROM modifier_groups WHERE id=ANY($1::uuid[]) AND archived_at IS NULL",
+      [groupIds],
+    );
+    return result.rows.length === groupIds.length;
+  }
+  async replaceModifierGroups(
+    productId: string,
+    groupIds: readonly string[],
+  ): Promise<void> {
+    await this.client.query(
+      "DELETE FROM product_modifier_groups WHERE product_id=$1",
+      [productId],
+    );
+    if (groupIds.length === 0) {
+      return;
+    }
+    await this.client.query(
+      "INSERT INTO product_modifier_groups(product_id,group_id,sort_order) SELECT $1,group_id,sort_order-1 FROM unnest($2::uuid[]) WITH ORDINALITY AS ordered(group_id,sort_order)",
+      [productId, groupIds],
+    );
+  }
   async categoryExists(id: string): Promise<boolean> {
     return (
       (

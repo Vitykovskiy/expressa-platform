@@ -6,7 +6,7 @@ import {
   PRICE_CHOICE_AVAILABILITY_ENDPOINT,
 } from "./availability.constants";
 import { parseAvailability, parseIntake } from "./availability.dto";
-import { mapAvailability, mapIntake } from "./availability.mapper";
+import { mapAvailability } from "./availability.mapper";
 import type {
   AvailabilityChangeOutcome,
   AvailabilityItem,
@@ -59,8 +59,8 @@ export async function changeAvailability(
     signal,
     body:
       item.type === "intake"
-        ? { acceptsNewOrders: !item.available }
-        : { isAvailable: !item.available },
+        ? { acceptsNewOrders: !item.persistedAvailable }
+        : { isAvailable: !item.persistedAvailable },
   });
 
   if ("status" in result && (result.status === 401 || result.status === 403)) {
@@ -76,14 +76,11 @@ export async function changeAvailability(
   if (item.type === "intake" && result.status === 200) {
     const intake = parseIntake(body);
 
-    if (intake !== null && intake.acceptsNewOrders === !item.available) {
-      const confirmed = mapIntake(intake);
-
-      return {
-        kind: "confirmed",
-        available: confirmed.available,
-        description: confirmed.description,
-      };
+    if (
+      intake !== null &&
+      intake.acceptsNewOrders === !item.persistedAvailable
+    ) {
+      return { kind: "confirmed" };
     }
   }
 
@@ -96,9 +93,9 @@ export async function changeAvailability(
     "id" in body &&
     body.id === item.id &&
     "isAvailable" in body &&
-    body.isAvailable === !item.available
+    body.isAvailable === !item.persistedAvailable
   ) {
-    return { kind: "confirmed", available: body.isAvailable };
+    return { kind: "confirmed" };
   }
 
   const error = parseApiHttpError(body);

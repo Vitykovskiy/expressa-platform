@@ -55,18 +55,40 @@ export interface AvailabilityDto {
   readonly priceChoices: readonly AvailabilityChoiceDto[];
 }
 
-export interface AvailabilityItem {
+export interface AvailabilityTarget {
   readonly id: string;
   readonly type: "product" | "modifier" | "price-choice" | "intake";
-  readonly name: string;
-  readonly description: string;
-  readonly available: boolean;
 }
+
+export interface AvailabilityRow extends AvailabilityTarget {
+  readonly name: string;
+  readonly controlLabel: string;
+  readonly description: string;
+  readonly persistedAvailable: boolean;
+  readonly effectiveAvailable: boolean;
+  readonly disabledReason: "product-unavailable" | null;
+}
+
+export interface AvailabilityChoice extends AvailabilityRow {
+  readonly type: "price-choice";
+}
+
+export interface AvailabilityProduct extends AvailabilityRow {
+  readonly type: "product";
+  readonly children: readonly AvailabilityChoice[];
+}
+
+export interface AvailabilityStandalone extends AvailabilityRow {
+  readonly type: "modifier" | "intake";
+}
+
+export type AvailabilityItem =
+  AvailabilityProduct | AvailabilityChoice | AvailabilityStandalone;
 
 export interface AvailabilityGroup {
   readonly key: string;
   readonly name: string;
-  readonly items: readonly AvailabilityItem[];
+  readonly items: readonly (AvailabilityProduct | AvailabilityStandalone)[];
 }
 
 export type AvailabilityReadOutcome =
@@ -76,14 +98,12 @@ export type AvailabilityReadOutcome =
 export type AvailabilityChangeOutcome =
   | {
       readonly kind: "confirmed";
-      readonly available: boolean;
-      readonly description?: string;
     }
   | { readonly kind: "session-expired" | "rejected" | "unknown" };
 
 export interface AvailabilityCommand {
   readonly item: AvailabilityItem;
-  readonly phase: "sending" | "checking" | "unknown";
+  readonly phase: "sending" | "refreshing" | "checking" | "unknown";
 }
 
 export interface AvailabilityIntakeDto {

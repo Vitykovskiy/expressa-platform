@@ -3,6 +3,9 @@ import { defineStore } from "pinia";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
 import { ApiError } from "../shared/api/client";
+import { isCurrentUserProfile } from "@/shared/api/auth.api";
+import type { CurrentUserProfile } from "@/shared/api/auth.api.types";
+import type { CompleteCustomerRegistration } from "../shared/api/customer-registration.api.types";
 import {
   anonymousSessionState,
   initialSessionState,
@@ -22,7 +25,71 @@ const logoutPromises = new WeakMap<object, Promise<void>>();
 
 export const useSessionStore = defineStore("session", {
   state: (): SessionState => ({ ...initialSessionState }),
+  getters: {
+    currentProfile(state): CurrentUserProfile | null {
+      if (state.status !== sessionStatuses.authenticated) {
+        return null;
+      }
+      if (!isCurrentUserProfile(state.currentUser)) {
+        throw new Error(sessionMessages.operationFailed);
+      }
+
+      return state.currentUser;
+    },
+  },
   actions: {
+    async completeRegistration(
+      name: string,
+      complete: CompleteCustomerRegistration,
+    ): Promise<boolean> {
+      if (this.registrationPending) {
+        return false;
+      }
+      const user = this.currentProfile;
+      const accessToken = this.accessToken;
+      if (
+        this.status !== sessionStatuses.authenticated ||
+        user === null ||
+        accessToken === null
+      ) {
+        throw new Error(sessionMessages.completeRegistration);
+      }
+      if (user.name !== null) {
+        return true;
+      }
+      const generation = this.generation;
+      this.registrationPending = true;
+      try {
+        const registered = await complete(accessToken, name);
+        if (!this.ownsProtectedRead(generation, user.id)) {
+          return false;
+        }
+        if (
+          registered.id !== user.id ||
+          registered.role !== "customer" ||
+          registered.phoneE164 !== user.phoneE164 ||
+          registered.name === null
+        ) {
+          throw new Error(sessionMessages.completeRegistration);
+        }
+        this.currentUser = registered;
+        return true;
+      } catch (error) {
+        if (this.ownsProtectedRead(generation, user.id)) {
+          if (
+            error instanceof ApiError &&
+            (error.status === 401 || error.status === 403)
+          ) {
+            this.clear();
+          }
+        }
+        throw error;
+      } finally {
+        if (this.ownsProtectedRead(generation, user.id)) {
+          this.registrationPending = false;
+        }
+      }
+    },
     async bootstrap(): Promise<void> {
       if (this.restorePromise) return this.restorePromise;
 
@@ -66,6 +133,7 @@ export const useSessionStore = defineStore("session", {
     async verifyOtp(phone: string, code: string): Promise<void> {
       this.errorMessage = null;
       const generation = ++this.generation;
+      this.registrationPending = false;
 
       try {
         const accessSession = await getSessionDependencies().authApi.verifyOtp(
@@ -73,9 +141,14 @@ export const useSessionStore = defineStore("session", {
           code,
         );
         await this.authenticate(accessSession.accessToken, generation);
+        if (this.generation !== generation) {
+          return;
+        }
         this.clearOtpRequest();
       } catch (error) {
-        this.errorMessage = getErrorMessage("verifyOtp", error);
+        if (this.generation === generation) {
+          this.errorMessage = getErrorMessage("verifyOtp", error);
+        }
         throw error;
       }
     },
@@ -98,6 +171,7 @@ export const useSessionStore = defineStore("session", {
         const pushSubscription =
           await useOrderNotificationsStore().readLogoutPushSubscription();
         const generation = ++this.generation;
+        this.registrationPending = false;
         await getSessionDependencies().authApi.logout(pushSubscription);
         if (this.generation !== generation) return;
         this.clear();
@@ -117,6 +191,7 @@ export const useSessionStore = defineStore("session", {
     },
     async restore(): Promise<void> {
       const generation = ++this.generation;
+      this.registrationPending = false;
       this.status = sessionStatuses.unknown;
       this.errorMessage = null;
 
@@ -141,7 +216,13 @@ export const useSessionStore = defineStore("session", {
       const currentUser =
         await getSessionDependencies().authApi.getCurrentUser(accessToken);
 
-      if (this.generation !== expectedGeneration) return;
+      if (this.generation !== expectedGeneration) {
+        return;
+      }
+
+      if (!isCurrentUserProfile(currentUser)) {
+        throw new Error(sessionMessages.operationFailed);
+      }
       if (currentUser.role !== "customer") {
         this.clear();
         throw new Error(sessionMessages.roleRejected);

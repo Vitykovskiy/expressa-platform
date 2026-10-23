@@ -1,5 +1,6 @@
 <template>
   <OperationsModal
+    class="catalog-product-dialog"
     :open="props.open"
     :title="title"
     :persistent="props.pending"
@@ -56,7 +57,7 @@
         :label="choicesLabel"
         :description="choicesDescription"
         :model-value="props.draft.hasSizes"
-        :disabled="sizesDisabled"
+        :disabled="props.pending"
         @update:model-value="update('hasSizes', $event)"
       />
       <div
@@ -96,6 +97,35 @@
       <p v-if="props.error" class="catalog-product-form__error" role="alert">
         {{ props.error }}
       </p>
+      <section
+        v-if="hasInheritedGroups"
+        class="catalog-product-form__groups"
+        aria-label="Опции категории"
+      >
+        <h3>Опции категории</h3>
+        <p
+          v-for="group in props.inheritedGroups"
+          :key="group.value"
+          class="catalog-product-form__inherited"
+        >
+          {{ group.label }}
+        </p>
+      </section>
+      <fieldset v-if="hasOwnGroups" class="catalog-product-form__groups">
+        <legend>Дополнительные группы опций</legend>
+        <label
+          v-for="group in props.ownGroups"
+          :key="group.value"
+          class="catalog-product-form__group-check"
+          ><input
+            type="checkbox"
+            :value="group.value"
+            :checked="props.draft.modifierGroupIds.includes(group.value)"
+            :disabled="props.pending"
+            @change="toggleGroup(group.value)"
+          /><span>{{ group.label }}</span></label
+        >
+      </fieldset>
     </form>
     <template #actions>
       <OperationsButton
@@ -135,6 +165,8 @@ const emit = defineEmits<CatalogProductDialogEmits>();
 const formId = useId();
 
 const editing = computed(() => props.mode === "edit");
+const hasInheritedGroups = computed(() => props.inheritedGroups.length > 0);
+const hasOwnGroups = computed(() => props.ownGroups.length > 0);
 const preset = computed(
   () =>
     props.draft.choices.length === CATALOG_SIZES.length &&
@@ -150,11 +182,16 @@ const choicesDescription = computed(() =>
     ? "Включить разные размеры с отдельными ценами"
     : "Включить варианты с отдельными ценами",
 );
-const sizesDisabled = computed(() => props.pending || props.option);
 const title = computed(() =>
   editing.value ? "Редактировать товар" : "Новый товар",
 );
-const saveLabel = computed(() => (editing.value ? "Сохранить" : "Добавить"));
+const saveLabel = computed(() => {
+  if (props.pending) {
+    return "Сохранение…";
+  }
+
+  return editing.value ? "Сохранить" : "Добавить";
+});
 const saveDisabled = computed(() => props.pending || !props.canSave);
 const categoryOptions = computed(() => [
   { value: "", label: "Выберите категорию", disabled: true },
@@ -176,6 +213,17 @@ function updateChoice(key: string, value: string) {
     props.draft.choices.map((choice) =>
       choice.key === key ? { ...choice, price: value } : choice,
     ),
+  );
+}
+
+function toggleGroup(id: string) {
+  const groups = props.draft.modifierGroupIds;
+
+  update(
+    "modifierGroupIds",
+    groups.includes(id)
+      ? groups.filter((current) => current !== id)
+      : [...groups, id],
   );
 }
 
@@ -204,6 +252,12 @@ function close() {
   flex-direction: column;
   gap: 20px;
   width: 100%;
+}
+:global(.catalog-product-dialog .operations-button),
+:global(.catalog-product-dialog .catalog-dialog-header__delete),
+:global(.catalog-product-dialog .operations-toggle__control) {
+  min-height: 44px;
+  min-width: 44px;
 }
 .catalog-product-form__sizes {
   display: flex;
@@ -244,5 +298,46 @@ function close() {
   color: var(--color-danger);
   font-size: 13px;
   line-height: 19.5px;
+}
+.catalog-product-form__groups {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.catalog-product-form__groups h3,
+.catalog-product-form__groups legend {
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--color-foreground-muted);
+}
+.catalog-product-form__inherited {
+  margin: 0;
+  font-size: 14px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.catalog-product-form__group-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.catalog-product-form__group-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+.catalog-product-form__group-check span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 </style>
