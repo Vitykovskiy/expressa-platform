@@ -30,10 +30,7 @@ import type {
 import type { CategoriesUnitOfWork } from "./application/categories.repository.types";
 import type { CategoryModifiersUnitOfWork } from "./application/category-modifiers.repository.types";
 import type { ModifiersUnitOfWork } from "./application/modifiers.repository.types";
-import type {
-  V3ProductsUnitOfWork,
-  SourceProductsUnitOfWork,
-} from "./application/products.repository.types";
+import type { V3ProductsUnitOfWork } from "./application/products.repository.types";
 import type { PublicMenuRepository } from "./application/public-menu.repository.types";
 import {
   adminCatalogRepositoryPort,
@@ -137,7 +134,7 @@ import { SourceMenuController } from "./transport/source-menu.controller";
     {
       provide: ManageSourceProductsUseCase,
       inject: [productsUnitOfWorkPort],
-      useFactory: (unitOfWork: SourceProductsUnitOfWork) =>
+      useFactory: (unitOfWork: V3ProductsUnitOfWork) =>
         new ManageSourceProductsUseCase(unitOfWork),
     },
     {

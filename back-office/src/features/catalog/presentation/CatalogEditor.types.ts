@@ -7,8 +7,8 @@ export interface CatalogSelectOption {
 export interface CatalogCategoryDraft {
   readonly name: string;
   readonly isOptionGroup: boolean;
-  readonly optionGroupId: string;
-  readonly group: CatalogGroupDraft;
+  readonly optionGroupIds: readonly string[];
+  readonly singleSelection: boolean;
 }
 
 export interface CatalogChoiceDraft {
@@ -19,7 +19,6 @@ export interface CatalogChoiceDraft {
 }
 
 export interface CatalogProductDraft {
-  readonly modifierGroupIds: readonly string[];
   readonly categoryId: string;
   readonly name: string;
   readonly hasSizes: boolean;
@@ -37,10 +36,8 @@ export interface CatalogDialogState {
 }
 
 export interface CatalogCategoryDialogProps extends CatalogDialogState {
-  readonly focusOptionKey: string | null;
   readonly draft: CatalogCategoryDraft;
   readonly options: readonly CatalogSelectOption[];
-  readonly associationSummary: string | null;
 }
 
 export interface CatalogCategoryDialogEmits {
@@ -51,45 +48,9 @@ export interface CatalogCategoryDialogEmits {
 }
 
 export interface CatalogProductDialogProps extends CatalogDialogState {
-  readonly inheritedGroups: readonly CatalogSelectOption[];
-  readonly ownGroups: readonly CatalogSelectOption[];
+  readonly isOption: boolean;
   readonly draft: CatalogProductDraft;
   readonly categories: readonly CatalogSelectOption[];
-}
-
-export interface CatalogGroupOptionDraft {
-  readonly key: string;
-  readonly id: string | null;
-  readonly name: string;
-  readonly price: string;
-  readonly sortOrder: number;
-  readonly isDefault: boolean;
-  readonly isAvailable: boolean;
-}
-export interface CatalogGroupDraft {
-  readonly selectionType: "single" | "multiple";
-  readonly minSelect: string;
-  readonly maxSelect: string;
-  readonly isActive: boolean;
-  readonly options: readonly CatalogGroupOptionDraft[];
-}
-export interface CatalogGroupFieldsProps {
-  readonly draft: CatalogGroupDraft;
-  readonly pending: boolean;
-  readonly focusOptionKey: string | null;
-}
-export interface CatalogGroupFieldsEmits {
-  "update:draft": [draft: CatalogGroupDraft];
-}
-export interface CatalogGroupOptionRowProps {
-  readonly option: CatalogGroupOptionDraft;
-  readonly pending: boolean;
-  readonly focus: boolean;
-}
-export interface CatalogGroupOptionRowEmits {
-  change: [option: CatalogGroupOptionDraft];
-  remove: [];
-  selectDefault: [];
 }
 
 export interface CatalogProductDialogEmits {

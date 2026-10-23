@@ -1,22 +1,27 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { AdminV3CategoryDto } from "./admin-catalog-v3.dto";
-import { V3ProductResponseDto } from "./catalog-products-v3.dto";
 
 export class SourceNameDto {
   @ApiProperty({ minLength: 1 }) name!: string;
 }
 export class SourceCategoryCreateDto extends SourceNameDto {
-  @ApiProperty({ type: String, format: "uuid", nullable: true })
-  optionGroupId!: string | null;
+  @ApiProperty({
+    type: String,
+    format: "uuid",
+    isArray: true,
+    uniqueItems: true,
+  })
+  optionGroupIds!: string[];
 }
 export class SourceCategoryUpdateDto extends SourceNameDto {
   @ApiProperty({
     type: String,
     format: "uuid",
-    nullable: true,
+    isArray: true,
+    uniqueItems: true,
     required: false,
   })
-  optionGroupId?: string | null;
+  optionGroupIds?: string[];
 }
 export class SourceCategoryResponseDto {
   @ApiProperty({ type: () => AdminV3CategoryDto })
@@ -28,6 +33,9 @@ export class SourceOptionDto extends SourceNameDto {
   @ApiProperty({ type: "integer", minimum: 0, maximum: 2_147_483_647 })
   priceDelta!: number;
 }
+export class SourceGroupDto extends SourceNameDto {
+  @ApiProperty({ type: Boolean }) singleSelection!: boolean;
+}
 export class SourcePriceChoiceDto {
   @ApiProperty({ type: String, format: "uuid", required: false }) id?: string;
   @ApiProperty({ minLength: 1 }) portionLabel!: string;
@@ -35,14 +43,6 @@ export class SourcePriceChoiceDto {
   price!: number;
 }
 export class SourceProductDto extends SourceNameDto {
-  @ApiProperty({
-    type: String,
-    format: "uuid",
-    isArray: true,
-    required: false,
-    uniqueItems: true,
-  })
-  modifierGroupIds?: string[];
   @ApiProperty({ format: "uuid" }) categoryId!: string;
   @ApiProperty({
     type: "integer",
@@ -58,13 +58,4 @@ export class SourceProductDto extends SourceNameDto {
       "Empty for fixed pricing; one or more real choices when price is null.",
   })
   priceChoices!: SourcePriceChoiceDto[];
-}
-export class SourceProductResponseDto extends V3ProductResponseDto {
-  @ApiProperty({
-    type: String,
-    format: "uuid",
-    isArray: true,
-    uniqueItems: true,
-  })
-  modifierGroupIds!: string[];
 }

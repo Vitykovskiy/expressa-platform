@@ -54,7 +54,6 @@ export interface AdminCatalogRepository {
   findV3Candidates(): Promise<AdminCatalogV3Candidates>;
 }
 export type AdminCatalogV3Candidates = {
-  productModifierGroups: CatalogProductModifierGroupCandidate[];
   categories: CatalogCategoryCandidate[];
   products: Array<CatalogProductCandidate & { portionLabel: string | null }>;
   priceChoices: Array<{

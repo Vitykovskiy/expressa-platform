@@ -149,7 +149,7 @@ async function sendCatalogCommand(
 
         const body: CatalogCategoryCreateDto = {
           name: command.name,
-          optionGroupId: command.association.groupId,
+          optionGroupIds: command.association.groupIds,
         };
 
         return requestApi(`${SOURCE_MENU_ENDPOINT}/categories`, {
@@ -164,7 +164,7 @@ async function sendCatalogCommand(
         name: command.name,
         ...(command.association.kind === "keep"
           ? {}
-          : { optionGroupId: command.association.groupId }),
+          : { optionGroupIds: command.association.groupIds }),
       };
 
       return requestApi(`${SOURCE_MENU_ENDPOINT}/categories${suffix}`, {
@@ -181,7 +181,7 @@ async function sendCatalogCommand(
         ...command.values,
       };
 
-      return requestApi(`/api/v2/backoffice/catalog/modifier-groups${suffix}`, {
+      return requestApi(`${SOURCE_MENU_ENDPOINT}/option-groups${suffix}`, {
         method,
         accessToken,
         signal,
@@ -189,12 +189,23 @@ async function sendCatalogCommand(
       });
     }
 
+    case "save-option": {
+      const path =
+        "id" in command.target
+          ? `${SOURCE_MENU_ENDPOINT}/options/${encodeURIComponent(command.target.id)}`
+          : `${SOURCE_MENU_ENDPOINT}/option-groups/${encodeURIComponent(command.groupId)}/options`;
+
+      return requestApi(path, {
+        method,
+        accessToken,
+        signal,
+        body: { name: command.name, priceDelta: command.amount },
+      });
+    }
+
     case "save-product": {
       const values = command.values;
       const body: CatalogProductWriteDto = {
-        ...(values.modifierGroupIds === undefined
-          ? {}
-          : { modifierGroupIds: values.modifierGroupIds }),
         name: values.name,
         categoryId: values.categoryId,
         price: values.pricing.kind === "fixed" ? values.pricing.amount : null,
@@ -242,10 +253,10 @@ function validResponse(
         if (
           category.name !== command.name ||
           (association.kind === "replace" &&
-            (association.groupId === null
-              ? source.modifierGroupIds.length !== 0
-              : source.modifierGroupIds.length !== 1 ||
-                source.modifierGroupIds[0] !== association.groupId))
+            (source.modifierGroupIds.length !== association.groupIds.length ||
+              source.modifierGroupIds.some(
+                (id, index) => id !== association.groupIds[index],
+              )))
         ) {
           return false;
         }
@@ -272,33 +283,30 @@ function validResponse(
         }
 
         if (
-          group.selectionType !== expected.selectionType ||
-          group.minSelect !== expected.minSelect ||
-          group.maxSelect !== expected.maxSelect ||
-          group.isActive !== expected.isActive ||
-          options.length !== expected.options.length
+          group.selectionType !==
+            (expected.singleSelection ? "single" : "multiple") ||
+          group.minSelect !== 0 ||
+          group.maxSelect !== (expected.singleSelection ? 1 : options.length)
         ) {
           return false;
         }
 
-        for (const requested of expected.options) {
-          const actual = options.find(
-            (option) => option.sortOrder === requested.sortOrder,
-          );
+        id = group.id;
+        break;
+      }
 
-          if (
-            actual === undefined ||
-            actual.name !== requested.name ||
-            actual.priceDelta !== requested.priceDelta ||
-            actual.isDefault !== requested.isDefault ||
-            actual.isAvailable !== requested.isAvailable ||
-            (requested.id !== undefined && actual.id !== requested.id)
-          ) {
-            return false;
-          }
+      case "save-option": {
+        const option = parseOption(source);
+
+        if (
+          option.name !== command.name ||
+          option.priceDelta !== command.amount ||
+          option.groupId !== command.groupId
+        ) {
+          return false;
         }
 
-        id = group.id;
+        id = option.id;
         break;
       }
 
@@ -306,23 +314,6 @@ function validResponse(
         const product = parseProduct(source);
         const expected = command.values;
         const pricing = expected.pricing;
-
-        if (!Array.isArray(source.modifierGroupIds)) {
-          return false;
-        }
-
-        const groupIds = source.modifierGroupIds.map(catalogId);
-
-        if (
-          new Set(groupIds).size !== groupIds.length ||
-          (expected.modifierGroupIds !== undefined &&
-            (groupIds.length !== expected.modifierGroupIds.length ||
-              groupIds.some(
-                (id, index) => id !== expected.modifierGroupIds?.[index],
-              )))
-        ) {
-          return false;
-        }
 
         if (
           product.name !== expected.name ||

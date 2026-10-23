@@ -27,17 +27,7 @@ export function createProductConfiguration(
     quantity: initialProductConfigurationQuantity,
     selectedModifierGroups: product.modifierGroups.map((group) => ({
       groupId: group.id,
-      optionIds:
-        group.minSelect === 0
-          ? []
-          : group.options
-              .filter(
-                (option) =>
-                  option.isAvailable &&
-                  option.isDefault &&
-                  option.priceDelta === 0,
-              )
-              .map((option) => option.id),
+      optionIds: group.options[0]?.isAvailable ? [group.options[0].id] : [],
     })),
     selectedPriceChoiceId:
       (product.priceChoices ?? []).find((choice) => choice.isAvailable)?.id ??

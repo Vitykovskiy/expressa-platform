@@ -58,17 +58,7 @@ function createV3Category(
             .filter((product) => product.categoryId === category.id)
             .filter(isPublishedCatalogEntity)
             .flatMap<PublicMenuV3Product>((product) =>
-              createV3Product(
-                product,
-                candidates,
-                mergeModifierGroups(
-                  product.id,
-                  modifierGroups,
-                  candidates.productModifierGroups,
-                  candidates.modifierGroups,
-                  publishableGroups,
-                ),
-              ),
+              createV3Product(product, candidates, modifierGroups),
             ),
   };
 }
@@ -121,31 +111,6 @@ function createV3Product(
       modifierGroups,
     },
   ];
-}
-
-function mergeModifierGroups(
-  productId: string,
-  categoryGroups: PublicMenuModifierGroup[],
-  assignments: Array<{ productId?: string; groupId: string }>,
-  candidates: CatalogModifierGroupCandidate[],
-  groups: Map<string, PublicMenuModifierGroup>,
-): PublicMenuModifierGroup[] {
-  const result = [...categoryGroups];
-  const active = new Set(
-    candidates.filter(isPublishedCatalogEntity).map((group) => group.id),
-  );
-  for (const assignment of assignments.filter(
-    (item) => item.productId === productId,
-  )) {
-    const group = groups.get(assignment.groupId);
-    if (
-      active.has(assignment.groupId) &&
-      group !== undefined &&
-      !result.some((item) => item.id === group.id)
-    )
-      result.push(group);
-  }
-  return result;
 }
 
 function createPublishableModifierGroups(

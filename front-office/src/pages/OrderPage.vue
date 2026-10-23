@@ -135,7 +135,7 @@
             <X :size="20" aria-hidden="true" />
           </ui-icon-btn>
         </header>
-        <p>Товары в корзине будут заменены повтором этого заказа.</p>
+        <p>Товары в корзине будут заменены.</p>
         <footer class="order-page__dialog-actions">
           <ui-btn
             type="button"
@@ -150,7 +150,7 @@
             class="order-page__dialog-confirm"
             @click="confirmRepeat"
           >
-            Заменить корзину
+            Заменить
           </ui-btn>
         </footer>
       </section>

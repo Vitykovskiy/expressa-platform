@@ -163,11 +163,6 @@ export function parseCatalog(value: unknown): CatalogData | null {
     const products = rows(source.products).map(parseProduct);
     const modifierGroups = rows(source.modifierGroups).map(parseGroup);
     const modifierOptions = rows(source.modifierOptions).map(parseOption);
-    const productModifierGroups = parseProductGroupLinks(
-      source.productModifierGroups,
-      products,
-      modifierGroups,
-    );
     const categoryModifierGroups = rows(source.categoryModifierGroups).map(
       (entry) => {
         const row = catalogObject(entry);
@@ -213,51 +208,8 @@ export function parseCatalog(value: unknown): CatalogData | null {
       modifierGroups,
       modifierOptions,
       categoryModifierGroups,
-      productModifierGroups,
     };
   } catch {
     return null;
   }
-}
-
-function parseProductGroupLinks(
-  value: unknown,
-  products: readonly CatalogProduct[],
-  groups: readonly CatalogModifierGroup[],
-): CatalogData["productModifierGroups"] {
-  const links = rows(value).map((entry) => {
-    const row = catalogObject(entry);
-
-    return {
-      productId: catalogId(row.productId),
-      groupId: catalogId(row.groupId),
-      sortOrder: integer(row.sortOrder),
-    };
-  });
-
-  if (
-    links.some(
-      (link) =>
-        !products.some((product) => product.id === link.productId) ||
-        !groups.some((group) => group.id === link.groupId),
-    )
-  ) {
-    throw new TypeError("Связь товара с неизвестной группой");
-  }
-
-  if (
-    new Set(links.map((link) => `${link.productId}:${link.groupId}`)).size !==
-    links.length
-  ) {
-    throw new TypeError("Повторная группа товара");
-  }
-
-  if (
-    new Set(links.map((link) => `${link.productId}:${link.sortOrder}`)).size !==
-    links.length
-  ) {
-    throw new TypeError("Повторный порядок групп товара");
-  }
-
-  return links;
 }

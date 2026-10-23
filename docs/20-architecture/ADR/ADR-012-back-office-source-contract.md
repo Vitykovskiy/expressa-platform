@@ -87,20 +87,20 @@ Git не восстанавливаются. Поставка — только d
 
 ### routes
 
-- `POST /api/v3/backoffice/menu/categories`: body: {name:string,optionGroupId:uuid|null}; response: 201 {category:AdminV3CategoryDto,modifierGroupIds:uuid[]}
-- `PATCH /api/v3/backoffice/menu/categories/{categoryId}`: body: {name:string,optionGroupId?:uuid|null}; response: 200 same shape; omitted association preserves all current links, explicit id/null replaces with selected one/empty atomically
-- `POST /api/v3/backoffice/menu/option-groups`: body: {name:string}; response: 201 ModifierGroupDto with real empty options
-- `PATCH /api/v3/backoffice/menu/option-groups/{groupId}`: body: {name:string}; response: 200 ModifierGroupDto preserving all existing constraints/options
+- `POST /api/v3/backoffice/menu/categories`: body: {name:string,optionGroupIds:uuid[]}; response: 201 {category:AdminV3CategoryDto,modifierGroupIds:uuid[]}
+- `PATCH /api/v3/backoffice/menu/categories/{categoryId}`: body: {name:string,optionGroupIds?:uuid[]}; response: 200 same shape; omitted association preserves all current links, explicit ordered distinct array replaces all links; [] clears atomically
+- `POST /api/v3/backoffice/menu/option-groups`: body: {name:string,singleSelection:boolean}; response: 201 ModifierGroupDto with real empty options
+- `PATCH /api/v3/backoffice/menu/option-groups/{groupId}`: body: {name:string,singleSelection:boolean}; response: 200 ModifierGroupDto preserving options/activity and applying the simple selection policy
 - `POST /api/v3/backoffice/menu/option-groups/{groupId}/options`: body: {name:string,priceDelta:integer>=0}; response: 201 ModifierOptionDto
 - `PATCH /api/v3/backoffice/menu/options/{optionId}`: body: {name:string,priceDelta:integer>=0}; response: 200 ModifierOptionDto preserving order/default/availability
-- `POST /api/v3/backoffice/menu/products`: body: SourceProductWrite; response: 201 SourceProductResponseDto
-- `PATCH /api/v3/backoffice/menu/products/{productId}`: body: SourceProductWrite; response: 200 SourceProductResponseDto preserving hidden fields
+- `POST /api/v3/backoffice/menu/products`: body: SourceProductWrite; response: 201 V3ProductResponseDto
+- `PATCH /api/v3/backoffice/menu/products/{productId}`: body: SourceProductWrite; response: 200 V3ProductResponseDto preserving hidden fields
 
-**product_write:** SourceProductWrite={categoryId:uuid,name:string,price:integer>=0|null,priceChoices:Array<{id?:uuid,portionLabel:nonblank string,price:integer>=0}>,modifierGroupIds?:uuid[]}. Exactly one-price (price nonnull,choices[]) or choices (price null,nonempty choices) branch. Array order is intended order; unchanged existing ids/availability survive; new choices receive generated IDs and availability=true. Existing priceChoices are not restricted to three or S/M/L. Source new-size preset is three ordinary labels S,M,L; never resurrect removed schema model. Existing arbitrary choice labels/row counts must be visible using the source price-row primitive and preserved, not silently converted or dropped.
+**product_write:** SourceProductWrite={categoryId:uuid,name:string,price:integer>=0|null,priceChoices:Array<{id?:uuid,portionLabel:nonblank string,price:integer>=0}>}. Exactly one-price (price nonnull,choices[]) or choices (price null,nonempty choices) branch. Array order is intended order; unchanged existing ids/availability survive; new choices receive generated IDs and availability=true. Existing priceChoices are not restricted to three or S/M/L. Source new-size preset is three ordinary labels S,M,L; never resurrect removed schema model. Existing arbitrary choice labels/row counts must be visible using the source price-row primitive and preserved, not silently converted or dropped.
 
-**creation_policy:** Server owns absent create fields: category description='', next unarchived ordering slot, isActive=true; product description='', portionLabel=null for fixed price, next category order,isActive/isAvailable=true; new group selectionType='single',minSelect=0,maxSelect=1,isActive=true; new option isDefault=false,isAvailable=true,next group order. These are explicit G3 policies, not claims that Figma already supplied values. Existing unexposed edit fields and required group constraints are preserved.
+**creation_policy:** Category/product hidden create fields remain unchanged. Source group Save takes an explicit singleSelection flag and sets minSelect=0; true means single/max1, false means multiple/max current option count. New group is active and empty. Options are separate commands, available on create, appended by persisted order. The first current option is the sole stored default regardless of price; no administrator default control. Normalize defaults transactionally on all group/option mutations, including reorder/archive; availability never reorders. Preserve legacy required-group validation outside the explicit simple source Save policy.
 
-**atomicity:** Source category Save covers name+explicit selected group replacement in one transaction/audit; no frontend POST→PUT chain. If category has multiple existing associations, unchanged selection omits optionGroupId and preserves them; deliberate change asks source confirmation with actual prior group names before replacement. Product removal of existing choices needs explicit version-bound confirmation, never implicit discard. Category/group kind is immutable on edit; create toggle chooses resource kind.
+**atomicity:** Source category Save covers name+all explicit optionGroupIds in one transaction/audit. Create requires array, update omission preserves links, [] clears. Validate distinct current IDs before writes. The category multiselect reads/saves all links and confirms named removals for the current draft version. Product removal of price choices retains version-bound confirmation. Category/group kind remains immutable on edit. No product-level modifier assignment remains active.
 
 **archive:** Use existing DELETE category/group/option/product routes with actual target confirmation and full catalog refetch. Never delete historical order snapshots. Existing reorder endpoints retained; source absent reorder gestures do not license extra permanent controls.
 
@@ -198,22 +198,23 @@ ID, сохраняет ID и доступность оставшихся; пов
 
 ## Группы, доступность и представление по U004
 
-Редактор группы использует существующие агрегатные `POST/PATCH
-/api/v2/backoffice/catalog/modifier-groups`: имя, правила выбора и опции с
-ценами и значениями по умолчанию сохраняются атомарно. Это уточнение заменяет
-ограничение редактора группы одним именем; прежние source-маршруты не удаляются.
-Обязательные группы сохраняют серверные требования доступных бесплатных
-значений по умолчанию. Удаление сохранённых опций подтверждается по именам
-для конкретной версии черновика.
+Поздние U007/U008 отменяют прежнее объединённое редактирование группы и опций
+и собственные группы товара. Группа создаётся пустой; отдельные диалоги наполняют
+её опциями. У группы только имя и флаг «Единственное значение», при создании
+сохраняется переключатель вида категории/группы. Категория выбирает несколько
+групп через мультиселект. Source-контракты раздела «Меню» выше обновлены.
 
-Source-команда товара принимает необязательный `modifierGroupIds`: отсутствие
-при создании означает пустой собственный список, при редактировании сохраняет
-прежние связи; явный пустой список исключает собственные связи. Неверные,
-повторные и несуществующие ID отклоняются до записи. Товар, упорядоченные связи
-и аудит сохраняются в одной транзакции; ответ содержит фактические
-`modifierGroupIds`. Admin catalog дополнен `productModifierGroups` со связями
-`productId/groupId/sortOrder`. Унаследованные группы показываются отдельно;
-собственные выбираются без дублирования эффективной группы.
+Первый неархивный вариант по порядку — default, включая платный. Клиент выбирает
+его только если он доступен; следующая доступная опция не подставляется.
+Одиночный выбор заменяет предыдущий; multiple позволяет независимые значения.
+Сервер сохраняет цены и исторические snapshots заказа. Группы применяются
+только через category_modifier_groups в публичном меню и проверке заказа.
+Продуктовые поля source/admin-v3 и их persistence-порт удалены, старое поле
+API доступности остаётся пустым deprecated-совместимым массивом. Таблица
+product_modifier_groups не удаляется, но не читается и не заполняется seed.
+Прежнее распределение seed по товарам не переносится объединением на категории.
+Это явное изменение контракта по новым требованиям, а не восстановление файлов
+из Git. Остальные действующие endpoints и согласованные функции сохраняются.
 
 Общий выключатель товара является gate для его ценовых вариантов, но не
 меняет их сохранённые флаги. Эффективная доступность варианта равна

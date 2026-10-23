@@ -12,7 +12,7 @@
       />
       <OperationsButton
         class="catalog-menu__add-product"
-        label="Добавить товар"
+        label="Добавить товар / опцию"
         kind="secondary"
         :disabled="cannotCreateProduct"
         @click="emit('createProduct')"
@@ -94,10 +94,7 @@ const confirmedEmpty = computed(
 );
 const cannotCreateProduct = computed(
   () =>
-    props.disabled ||
-    !hasCategories.value ||
-    props.loading ||
-    props.error !== null,
+    props.disabled || !hasGroups.value || props.loading || props.error !== null,
 );
 </script>
 
@@ -134,7 +131,7 @@ const cannotCreateProduct = computed(
   padding: 16px 0 12px;
 }
 .catalog-menu__add-product {
-  width: 145px;
+  min-width: 145px;
 }
 .catalog-menu__section {
   display: flex;
@@ -211,7 +208,7 @@ const cannotCreateProduct = computed(
     display: none;
   }
   .catalog-menu__add-product {
-    width: 155px;
+    min-width: 155px;
   }
 }
 </style>

@@ -117,6 +117,8 @@ scope: backend
 | `PATCH /api/v3/backoffice/menu/options/{optionId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
 | `POST /api/v3/backoffice/menu/products` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
 | `PATCH /api/v3/backoffice/menu/products/{productId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
+| `src/catalog/domain/modifier-option-defaults.ts` | current; independent review pending | [Catalog](30-domains/Catalog.md) | [Source](../src/catalog/domain/modifier-option-defaults.ts) | not run | Deterministic first-option default normalization. |
+| `src/catalog/application/save-modifier-options.ts` | current; independent review pending | [Catalog](30-domains/Catalog.md) | [Source](../src/catalog/application/save-modifier-options.ts) | not run | Atomic option set/default/count validation and persistence. |
 
 Removed v2 catalog/order reads, direct push subscription routes and variant
 schema are not current coverage entries. Local/test/development databases are

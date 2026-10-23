@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from "pg";
+import { normalizeModifierDefaults } from "../src/catalog/domain/modifier-option-defaults";
 import { validateEnvironment } from "../src/platform/config/environment";
 import {
   catalogSeed,
@@ -9,7 +10,6 @@ import {
   modifierGroupUpsertSql,
   modifierOptionUpsertSql,
   productUpsertSql,
-  productModifierGroupUpsertSql,
   productPriceChoiceUpsertSql,
   operatingSettingsSeed,
   operatingSettingsInsertSql,
@@ -65,16 +65,21 @@ async function seedCatalog(
     ]);
   }
 
-  for (const modifierOption of seed.modifierOptions) {
-    await pool.query(modifierOptionUpsertSql, [
-      modifierOption.id,
-      modifierOption.groupId,
-      modifierOption.name,
-      modifierOption.priceDelta,
-      modifierOption.sortOrder,
-      modifierOption.isDefault,
-      modifierOption.isAvailable,
-    ]);
+  for (const group of seed.modifierGroups) {
+    const options = normalizeModifierDefaults(
+      seed.modifierOptions.filter((option) => option.groupId === group.id),
+    );
+    for (const modifierOption of options) {
+      await pool.query(modifierOptionUpsertSql, [
+        modifierOption.id,
+        modifierOption.groupId,
+        modifierOption.name,
+        modifierOption.priceDelta,
+        modifierOption.sortOrder,
+        modifierOption.isDefault,
+        modifierOption.isAvailable,
+      ]);
+    }
   }
 
   for (const categoryModifierGroup of seed.categoryModifierGroups) {
@@ -84,13 +89,6 @@ async function seedCatalog(
       categoryModifierGroup.sortOrder,
     ]);
   }
-  for (const assignment of seed.productModifierGroups) {
-    await pool.query(productModifierGroupUpsertSql, [
-      assignment.productId,
-      assignment.groupId,
-      assignment.sortOrder,
-    ]);
-  }
 }
 
 async function seedDevelopmentCustomerMenu(pool: Pool): Promise<void> {
@@ -98,10 +96,6 @@ async function seedDevelopmentCustomerMenu(pool: Pool): Promise<void> {
   try {
     await client.query("BEGIN");
     await client.query("SELECT pg_advisory_xact_lock($1)", [7_249_001]);
-    await client.query(
-      "DELETE FROM product_modifier_groups WHERE product_id = ANY($1::uuid[]) OR group_id = ANY($2::uuid[])",
-      [developmentCatalogOwnedIds.products, developmentCatalogOwnedIds.groups],
-    );
     await client.query(
       "DELETE FROM category_modifier_groups WHERE category_id = ANY($1::uuid[]) OR group_id = ANY($2::uuid[])",
       [

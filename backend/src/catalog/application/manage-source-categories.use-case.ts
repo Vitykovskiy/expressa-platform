@@ -40,11 +40,15 @@ export class ManageSourceCategoriesUseCase {
               : { ...before, name: input.name };
           assertCategoryDetails(details);
 
-          if (input.optionGroupId != null) {
+          if (input.optionGroupIds !== undefined) {
             const existing = await associations.findCurrentModifierGroupIds([
-              input.optionGroupId,
+              ...input.optionGroupIds,
             ]);
-            if (existing.length !== 1) {
+            if (
+              new Set(input.optionGroupIds).size !==
+                input.optionGroupIds.length ||
+              existing.length !== input.optionGroupIds.length
+            ) {
               throw new ModifierAdminError("MODIFIER_GROUP_NOT_FOUND");
             }
           }
@@ -57,10 +61,10 @@ export class ManageSourceCategoriesUseCase {
             category.id,
           );
           let links = previousLinks;
-          if (input.optionGroupId !== undefined) {
+          if (input.optionGroupIds !== undefined) {
             links = await associations.replace(
               category.id,
-              input.optionGroupId === null ? [] : [input.optionGroupId],
+              input.optionGroupIds,
             );
           }
           return { before, category, previousLinks, links };
@@ -69,7 +73,7 @@ export class ManageSourceCategoriesUseCase {
           { categories, associations },
           { before, category, previousLinks, links },
         ) => {
-          if (input.optionGroupId !== undefined) {
+          if (input.optionGroupIds !== undefined) {
             await associations.writeAudit({
               ...actor,
               categoryId: category.id,

@@ -35,14 +35,13 @@ import {
   SourceCategoryCreateDto,
   SourceCategoryUpdateDto,
   SourceCategoryResponseDto,
-  SourceNameDto,
+  SourceGroupDto,
   SourceOptionDto,
   SourceProductDto,
-  SourceProductResponseDto,
 } from "./source-menu.dto";
 import {
   parseSourceCategory,
-  parseSourceName,
+  parseSourceGroup,
   parseSourceOption,
   parseSourceProduct,
   parseSourceRequestId,
@@ -54,6 +53,7 @@ import {
   sourceOptionResponse,
   sourceProductResponse,
 } from "./source-menu.response";
+import { V3ProductResponseDto } from "./catalog-products-v3.dto";
 import { executeSourceCommand } from "./source-menu.error";
 
 @ApiTags("source-menu")
@@ -79,7 +79,7 @@ export class SourceMenuController {
   ) {}
 
   @Post("categories")
-  @ApiOperation({ summary: "Create category and selected group atomically" })
+  @ApiOperation({ summary: "Create category and selected groups atomically" })
   @ApiBody({ type: SourceCategoryCreateDto })
   @ApiResponse({ status: 201, type: SourceCategoryResponseDto })
   async createCategory(
@@ -99,7 +99,7 @@ export class SourceMenuController {
 
   @Patch("categories/:categoryId")
   @ApiOperation({
-    summary: "Save category; omitted group preserves all associations",
+    summary: "Save category; omitted groups preserve all associations",
   })
   @ApiParam({ name: "categoryId", format: "uuid" })
   @ApiBody({ type: SourceCategoryUpdateDto })
@@ -122,28 +122,32 @@ export class SourceMenuController {
   }
 
   @Post("option-groups")
-  @ApiOperation({ summary: "Create optional single-select option group" })
-  @ApiBody({ type: SourceNameDto })
+  @ApiOperation({
+    summary: "Create empty option group with single-selection flag",
+  })
+  @ApiBody({ type: SourceGroupDto })
   @ApiResponse({ status: 201, type: ModifierGroupResponseDto })
   async createGroup(
     @Body() body: unknown,
     @CurrentAuth() auth: Auth,
     @Req() request: { requestId?: string },
   ): Promise<ModifierGroupResponseDto> {
-    const name = parseSourceName(body);
+    const input = parseSourceGroup(body);
     const actor = {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
     return executeSourceCommand(async () =>
-      sourceGroupResponse(await this.modifiers.saveGroup(name, actor, null)),
+      sourceGroupResponse(await this.modifiers.saveGroup(input, actor, null)),
     );
   }
 
   @Patch("option-groups/:groupId")
-  @ApiOperation({ summary: "Rename group preserving constraints and options" })
+  @ApiOperation({
+    summary: "Save group name and single-selection flag preserving options",
+  })
   @ApiParam({ name: "groupId", format: "uuid" })
-  @ApiBody({ type: SourceNameDto })
+  @ApiBody({ type: SourceGroupDto })
   @ApiResponse({ status: 200, type: ModifierGroupResponseDto })
   async updateGroup(
     @Param("groupId") groupId: string,
@@ -152,13 +156,13 @@ export class SourceMenuController {
     @Req() request: { requestId?: string },
   ): Promise<ModifierGroupResponseDto> {
     const id = parseSourceUuid(groupId, "groupId");
-    const name = parseSourceName(body);
+    const input = parseSourceGroup(body);
     const actor = {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
     return executeSourceCommand(async () =>
-      sourceGroupResponse(await this.modifiers.saveGroup(name, actor, id)),
+      sourceGroupResponse(await this.modifiers.saveGroup(input, actor, id)),
     );
   }
 
@@ -215,12 +219,12 @@ export class SourceMenuController {
   @Post("products")
   @ApiOperation({ summary: "Create source product using canonical v3 prices" })
   @ApiBody({ type: SourceProductDto })
-  @ApiResponse({ status: 201, type: SourceProductResponseDto })
+  @ApiResponse({ status: 201, type: V3ProductResponseDto })
   async createProduct(
     @Body() body: unknown,
     @CurrentAuth() auth: Auth,
     @Req() request: { requestId?: string },
-  ): Promise<SourceProductResponseDto> {
+  ): Promise<V3ProductResponseDto> {
     const input = parseSourceProduct(body);
     const actor = {
       actorId: auth.userId,
@@ -237,13 +241,13 @@ export class SourceMenuController {
   })
   @ApiParam({ name: "productId", format: "uuid" })
   @ApiBody({ type: SourceProductDto })
-  @ApiResponse({ status: 200, type: SourceProductResponseDto })
+  @ApiResponse({ status: 200, type: V3ProductResponseDto })
   async updateProduct(
     @Param("productId") productId: string,
     @Body() body: unknown,
     @CurrentAuth() auth: Auth,
     @Req() request: { requestId?: string },
-  ): Promise<SourceProductResponseDto> {
+  ): Promise<V3ProductResponseDto> {
     const id = parseSourceUuid(productId, "productId");
     const input = parseSourceProduct(body);
     const actor = {

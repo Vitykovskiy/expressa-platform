@@ -52,8 +52,6 @@ export class AdminV3CategoryModifierGroupDto {
   @ApiProperty({ minimum: 0, type: "integer" }) sortOrder!: number;
 }
 export class AdminCatalogV3Dto {
-  @ApiProperty({ type: () => AdminV3ProductModifierGroupDto, isArray: true })
-  productModifierGroups!: AdminV3ProductModifierGroupDto[];
   @ApiProperty({ type: () => AdminV3CategoryDto, isArray: true })
   categories!: AdminV3CategoryDto[];
   @ApiProperty({ type: () => AdminV3ProductDto, isArray: true })
@@ -64,9 +62,4 @@ export class AdminCatalogV3Dto {
   modifierOptions!: AdminV3ModifierOptionDto[];
   @ApiProperty({ type: () => AdminV3CategoryModifierGroupDto, isArray: true })
   categoryModifierGroups!: AdminV3CategoryModifierGroupDto[];
-}
-export class AdminV3ProductModifierGroupDto {
-  @ApiProperty({ format: "uuid" }) productId!: string;
-  @ApiProperty({ format: "uuid" }) groupId!: string;
-  @ApiProperty({ minimum: 0, type: "integer" }) sortOrder!: number;
 }

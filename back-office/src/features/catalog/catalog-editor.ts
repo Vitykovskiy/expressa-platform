@@ -18,8 +18,6 @@ import type {
   CatalogConfirmation,
   CatalogEditor,
 } from "./catalog-editor.types";
-import { createGroupDraft, readGroupValues } from "./catalog-group-draft";
-import { PRESERVE_ASSOCIATIONS } from "./catalog-editor.constants";
 
 export function useCatalogEditor() {
   const catalog = useCatalogStore();
@@ -50,8 +48,10 @@ export function useCatalogEditor() {
 
     if (current.kind === "category") {
       return (
-        !current.draft.isOptionGroup ||
-        readGroupValues(current.draft.group) !== null
+        current.draft.isOptionGroup ||
+        current.draft.optionGroupIds.every((id) =>
+          categoryOptions.value.some((group) => group.value === id),
+        )
       );
     }
 
@@ -59,25 +59,17 @@ export function useCatalogEditor() {
       productOptions.value.some(
         (option) => option.value === current.draft.categoryId,
       ) &&
-      (current.draft.hasSizes
+      (!productOption.value && current.draft.hasSizes
         ? readPricedChoices(current.draft.choices) !== null
         : parseCatalogMoney(current.draft.price) !== null)
     );
   });
-  const categoryOptions = computed(() => {
-    const groups = (catalog.data?.modifierGroups ?? []).map((group) => ({
+  const categoryOptions = computed(() =>
+    (catalog.data?.modifierGroups ?? []).map((group) => ({
       value: group.id,
       label: group.name,
-    }));
-    const current = editor.value;
-
-    return current?.kind === "category" && current.originalGroups.length > 1
-      ? [
-          { value: PRESERVE_ASSOCIATIONS, label: "Сохранить текущие связи" },
-          ...groups,
-        ]
-      : groups;
-  });
+    })),
+  );
   const productOptions = computed(() => {
     const data = catalog.data;
 
@@ -85,50 +77,28 @@ export function useCatalogEditor() {
       return [];
     }
 
+    const current = editor.value;
+    const editing = current !== null && "id" in current.target;
     const categories = data.categories.map((category) => ({
       value: `category:${category.id}`,
       label: category.name,
     }));
+    const groups = data.modifierGroups.map((group) => ({
+      value: `group:${group.id}`,
+      label: `Опции: ${group.name}`,
+    }));
 
-    return categories;
-  });
-
-  const inheritedGroups = computed(() => {
-    const current = editor.value;
-    const data = catalog.data;
-
-    if (current?.kind !== "product" || data === null) {
-      return [];
+    if (!editing) {
+      return [...categories, ...groups];
     }
 
-    const categoryId = current.draft.categoryId.replace(/^category:/, "");
-
-    return data.categoryModifierGroups
-      .filter((link) => link.categoryId === categoryId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((link) => ({
-        value: link.groupId,
-        label:
-          data.modifierGroups.find((group) => group.id === link.groupId)
-            ?.name ?? link.groupId,
-      }));
+    return current.target.kind === "option" ? groups : categories;
   });
-  const ownGroups = computed(() => {
-    const current = editor.value;
-
-    if (current?.kind !== "product") {
-      return [];
-    }
-
-    return (catalog.data?.modifierGroups ?? [])
-      .filter(
-        (group) =>
-          !inheritedGroups.value.some(
-            (inherited) => inherited.value === group.id,
-          ) || current.draft.modifierGroupIds.includes(group.id),
-      )
-      .map((group) => ({ value: group.id, label: group.name }));
-  });
+  const productOption = computed(
+    () =>
+      editor.value?.kind === "product" &&
+      editor.value.draft.categoryId.startsWith("group:"),
+  );
 
   function available() {
     return (
@@ -136,11 +106,7 @@ export function useCatalogEditor() {
     );
   }
 
-  function openCategory(
-    id: string | null,
-    group = false,
-    focusOptionKey: string | null = null,
-  ) {
+  function openCategory(id: string | null, group = false) {
     if (!available()) {
       return;
     }
@@ -162,13 +128,6 @@ export function useCatalogEditor() {
       id === null || group
         ? []
         : data.categoryModifierGroups.filter((row) => row.categoryId === id);
-    const [firstLink] = links;
-    const originalGroupId =
-      links.length > 1
-        ? PRESERVE_ASSOCIATIONS
-        : firstLink === undefined
-          ? ""
-          : firstLink.groupId;
     const originalGroups = links.map((row) => row.groupId);
     let target: CatalogTarget;
 
@@ -191,22 +150,13 @@ export function useCatalogEditor() {
       draft: {
         name: record?.name ?? "",
         isOptionGroup: group,
-        optionGroupId: originalGroupId,
-        group: createGroupDraft(
-          group
-            ? (data.modifierGroups.find((row) => row.id === id) ?? null)
-            : null,
-          group ? data.modifierOptions.filter((row) => row.groupId === id) : [],
-        ),
+        optionGroupIds: originalGroups,
+        singleSelection:
+          group &&
+          data.modifierGroups.find((row) => row.id === id)?.selectionType ===
+            "single",
       },
-      originalGroupId,
       originalGroups,
-      originalOptions: group
-        ? data.modifierOptions
-            .filter((row) => row.groupId === id)
-            .map(({ id, name }) => ({ id, name }))
-        : [],
-      focusOptionKey,
       summary:
         id === null
           ? null
@@ -230,18 +180,7 @@ export function useCatalogEditor() {
       return;
     }
 
-    if (target?.kind === "option") {
-      const option = data.modifierOptions.find((row) => row.id === target.id);
-
-      if (option !== undefined) {
-        openCategory(option.groupId, true, option.id);
-      }
-
-      return;
-    }
-
     const empty: CatalogProductDraft = {
-      modifierGroupIds: [],
       categoryId: "",
       name: "",
       hasSizes: false,
@@ -255,7 +194,6 @@ export function useCatalogEditor() {
         target: { kind: "new-product", name: "Новый товар" },
         draft: empty,
         originalChoices: [],
-        originalModifierGroups: [],
         summary: null,
       };
     } else if (target.kind === "product") {
@@ -280,21 +218,36 @@ export function useCatalogEditor() {
           hasSizes: product.price === null,
           price: product.price === null ? "" : String(product.price),
           choices,
-          modifierGroupIds: data.productModifierGroups
-            .filter((row) => row.productId === product.id)
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map((row) => row.groupId),
         },
-        originalModifierGroups: data.productModifierGroups
-          .filter((row) => row.productId === product.id)
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((row) => row.groupId),
         originalChoices: product.priceChoices.map((choice) => ({
           id: choice.id,
           label: choice.portionLabel,
         })),
         summary:
           category === undefined ? null : `Категория: "${category.name}"`,
+      };
+    } else if (target.kind === "option") {
+      const option = data.modifierOptions.find((row) => row.id === target.id);
+
+      if (option === undefined) {
+        return;
+      }
+
+      const group = data.modifierGroups.find(
+        (row) => row.id === option.groupId,
+      );
+
+      editor.value = {
+        kind: "product",
+        target: { kind: "option", id: option.id, name: option.name },
+        draft: {
+          ...empty,
+          categoryId: `group:${option.groupId}`,
+          name: option.name,
+          price: String(option.priceDelta),
+        },
+        originalChoices: [],
+        summary: group === undefined ? null : `Группа: «${group.name}»`,
       };
     }
 
@@ -366,15 +319,9 @@ export function useCatalogEditor() {
 
     if (current.kind === "category") {
       if (current.draft.isOptionGroup) {
-        const values = readGroupValues(current.draft.group);
-
-        if (values === null) {
-          return null;
-        }
-
         return {
-          values,
           action: "save-group",
+          values: { singleSelection: current.draft.singleSelection },
           target:
             id === null
               ? { kind: "new-group", name }
@@ -383,7 +330,10 @@ export function useCatalogEditor() {
         };
       }
 
-      const changed = current.draft.optionGroupId !== current.originalGroupId;
+      const groups = current.draft.optionGroupIds;
+      const changed =
+        groups.length !== current.originalGroups.length ||
+        groups.some((id, index) => id !== current.originalGroups[index]);
 
       return {
         action: "save-category",
@@ -395,19 +345,36 @@ export function useCatalogEditor() {
         association:
           id !== null && !changed
             ? { kind: "keep" }
-            : {
-                kind: "replace",
-                groupId:
-                  current.draft.optionGroupId === ""
-                    ? null
-                    : current.draft.optionGroupId,
-              },
+            : { kind: "replace", groupIds: groups },
       };
     }
 
     const [kind, parentId] = current.draft.categoryId.split(":");
 
-    if (kind !== "category" || parentId === undefined) {
+    if (parentId === undefined) {
+      return null;
+    }
+
+    if (kind === "group") {
+      const amount = parseCatalogMoney(current.draft.price);
+
+      if (amount === null) {
+        return null;
+      }
+
+      return {
+        action: "save-option",
+        target:
+          id === null
+            ? { kind: "new-option", name }
+            : { kind: "option", id, name: current.target.name },
+        groupId: parentId,
+        name,
+        amount,
+      };
+    }
+
+    if (kind !== "category") {
       return null;
     }
 
@@ -426,7 +393,6 @@ export function useCatalogEditor() {
             target,
             values: {
               name,
-              ...productGroupValues(current),
               categoryId: parentId,
               pricing: { kind: "fixed", amount },
             },
@@ -444,23 +410,10 @@ export function useCatalogEditor() {
       target,
       values: {
         name,
-        ...productGroupValues(current),
         categoryId: parentId,
         pricing: { kind: "choices", choices },
       },
     };
-  }
-
-  function productGroupValues(
-    current: Extract<CatalogEditor, { kind: "product" }>,
-  ) {
-    const groups = current.draft.modifierGroupIds;
-    const original = current.originalModifierGroups;
-
-    return groups.length === original.length &&
-      groups.every((id, index) => id === original[index])
-      ? {}
-      : { modifierGroupIds: groups };
   }
 
   async function submit() {
@@ -471,42 +424,25 @@ export function useCatalogEditor() {
       return;
     }
 
-    if (
-      current.kind === "category" &&
-      current.originalGroups.length > 1 &&
-      current.draft.optionGroupId !== current.originalGroupId
-    ) {
-      const names = current.originalGroups
-        .map(
-          (id) =>
-            catalog.data?.modifierGroups.find((group) => group.id === id)
-              ?.name ?? id,
-        )
-        .join(", ");
-
-      confirmation.value = {
-        version,
-        command,
-        title: "Заменить группы опций?",
-        description: `Текущие связи: ${names}. Они будут заменены выбранной группой.`,
-        destructive: false,
-      };
-
-      return;
-    }
-
-    if (current.kind === "category" && command.action === "save-group") {
-      const ids = new Set(command.values.options.map((option) => option.id));
-      const removed = current.originalOptions.filter(
-        (option) => !ids.has(option.id),
+    if (current.kind === "category" && command.action === "save-category") {
+      const removed = current.originalGroups.filter(
+        (id) => !current.draft.optionGroupIds.includes(id),
       );
 
       if (removed.length > 0) {
+        const names = removed
+          .map(
+            (id) =>
+              catalog.data?.modifierGroups.find((group) => group.id === id)
+                ?.name ?? id,
+          )
+          .join(", ");
+
         confirmation.value = {
           version,
           command,
-          title: "Удалить опции группы?",
-          description: `Из группы «${current.target.name}» будут удалены опции: ${removed.map((option) => option.name).join(", ")}.`,
+          title: "Убрать группы опций?",
+          description: `Из категории будут убраны группы: ${names}.`,
           destructive: true,
         };
 
@@ -525,11 +461,7 @@ export function useCatalogEditor() {
         (choice) => !retainedIds.has(choice.id),
       );
 
-      const removedGroups = current.originalModifierGroups.filter(
-        (id) => !current.draft.modifierGroupIds.includes(id),
-      );
-
-      if (removed.length > 0 || removedGroups.length > 0) {
+      if (removed.length > 0) {
         const consequence =
           pricing.kind === "fixed"
             ? "Будет сохранена одна цена."
@@ -539,16 +471,7 @@ export function useCatalogEditor() {
           version,
           command,
           title: "Сохранить изменения товара?",
-          description: [
-            removed.length === 0
-              ? null
-              : `Будут удалены ценовые опции: ${removed.map((choice) => choice.label).join(", ")}. ${consequence}`,
-            removedGroups.length === 0
-              ? null
-              : `Будут удалены собственные группы: ${removedGroups.map((id) => catalog.data?.modifierGroups.find((group) => group.id === id)?.name ?? id).join(", ")}.`,
-          ]
-            .filter((text) => text !== null)
-            .join(" "),
+          description: `Будут удалены ценовые опции: ${removed.map((choice) => choice.label).join(", ")}. ${consequence}`,
           destructive: true,
         };
 
@@ -638,8 +561,7 @@ export function useCatalogEditor() {
     canSave,
     categoryOptions,
     productOptions,
-    inheritedGroups,
-    ownGroups,
+    productOption,
     openCategory,
     openProduct,
     updateCategory,

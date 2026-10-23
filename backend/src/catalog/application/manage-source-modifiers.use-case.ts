@@ -3,46 +3,53 @@ import {
   assertCurrentModifierOption,
   assertPublishableModifierGroup,
 } from "../domain/modifier-admin.policy";
+import { normalizeModifierDefaults } from "../domain/modifier-option-defaults";
 import type {
   AdminModifierGroup,
   AdminModifierOption,
 } from "../domain/modifier-admin.policy.types";
 import type { ModifiersUnitOfWork } from "./modifiers.repository.types";
-import type { SourceActor, SourceOptionWrite } from "./source-menu.types";
+import type {
+  SourceActor,
+  SourceGroupWrite,
+  SourceOptionWrite,
+} from "./source-menu.types";
+import { saveModifierOptions } from "./save-modifier-options";
 
 export class ManageSourceModifiersUseCase {
   constructor(private readonly unitOfWork: ModifiersUnitOfWork) {}
 
   saveGroup(
-    name: string,
+    input: SourceGroupWrite,
     actor: SourceActor,
     groupId: string | null,
   ): Promise<AdminModifierGroup> {
     return this.unitOfWork
       .run(
         async (repository) => {
-          const before =
-            groupId === null
-              ? null
-              : assertCurrentModifierGroup(
-                  await repository.findGroupById(groupId),
-                );
-          const details =
-            before === null
-              ? {
-                  name,
-                  selectionType: "single" as const,
-                  minSelect: 0,
-                  maxSelect: 1,
-                  isActive: true,
-                }
-              : { ...before, name };
-          const options = before?.options ?? [];
+          let before: AdminModifierGroup | null = null;
+          if (groupId !== null) {
+            before = assertCurrentModifierGroup(
+              await repository.findGroupById(groupId),
+            );
+          }
+          const options = normalizeModifierDefaults(before?.options ?? []);
+          const details = {
+            name: input.name,
+            selectionType: input.singleSelection
+              ? ("single" as const)
+              : ("multiple" as const),
+            minSelect: 0,
+            maxSelect: input.singleSelection ? 1 : options.length,
+            isActive: before?.isActive ?? true,
+          };
           assertPublishableModifierGroup(details, options);
-          const after =
-            before === null
-              ? await repository.createGroup(details, options)
-              : await repository.updateGroup(before.id, details, options);
+          let after: AdminModifierGroup;
+          if (before === null) {
+            after = await repository.createGroup(details, options);
+          } else {
+            after = await repository.updateGroup(before.id, details, options);
+          }
           return { before, after };
         },
         (repository, { before, after }) =>
@@ -69,12 +76,12 @@ export class ManageSourceModifiersUseCase {
     return this.unitOfWork
       .run(
         async (repository) => {
-          const before =
-            "optionId" in target
-              ? assertCurrentModifierOption(
-                  await repository.findOptionById(target.optionId),
-                )
-              : null;
+          let before: AdminModifierOption | null = null;
+          if ("optionId" in target) {
+            before = assertCurrentModifierOption(
+              await repository.findOptionById(target.optionId),
+            );
+          }
           const groupId =
             "groupId" in target ? target.groupId : before?.groupId;
           if (groupId === undefined) {
@@ -101,24 +108,30 @@ export class ManageSourceModifiersUseCase {
               : group.options.map((option) =>
                   option.id === before.id ? details : option,
                 );
-          assertPublishableModifierGroup(group, options);
-          const after =
-            before === null
-              ? await repository.createOption(groupId, details)
-              : await repository.updateOption(before.id, details);
-          return { before, after };
+          const afterGroup = await saveModifierOptions(
+            repository,
+            group,
+            options,
+          );
+          const after = afterGroup.options.find(
+            (option) => option.sortOrder === details.sortOrder,
+          );
+          if (after === undefined) {
+            throw new Error("Saved modifier option was not returned");
+          }
+          return { before, after, beforeGroup: group, afterGroup };
         },
-        (repository, { before, after }) =>
+        (repository, result) =>
           repository.writeAudit({
             ...actor,
             action:
-              before === null
+              result.before === null
                 ? "MODIFIER_OPTION_CREATED"
                 : "MODIFIER_OPTION_UPDATED",
             entityType: "modifier_option",
-            entityId: after.id,
-            before,
-            after,
+            entityId: result.after.id,
+            before: result.beforeGroup,
+            after: result.afterGroup,
           }),
       )
       .then(({ after }) => after);

@@ -27,8 +27,6 @@
       :error="editor.error.value"
       :draft="categoryEditor.draft"
       :options="editor.categoryOptions.value"
-      :association-summary="associationSummary"
-      :focus-option-key="categoryEditor.focusOptionKey"
       @update:draft="editor.updateCategory"
       @save="editor.submit"
       @delete="editor.requestDelete"
@@ -44,8 +42,7 @@
       :error="editor.error.value"
       :draft="productEditor.draft"
       :categories="editor.productOptions.value"
-      :inherited-groups="editor.inheritedGroups.value"
-      :own-groups="editor.ownGroups.value"
+      :is-option="editor.productOption.value"
       @update:draft="editor.updateProduct"
       @save="editor.submit"
       @delete="editor.requestDelete"
@@ -142,12 +139,6 @@ const lists = computed(() =>
 );
 const initialLoading = computed(
   () => catalog.loading || (catalog.data === null && catalog.error === null),
-);
-const associationSummary = computed(() =>
-  categoryEditor.value !== null &&
-  categoryEditor.value.originalGroups.length > 1
-    ? `Связаны группы: ${categoryEditor.value.originalGroups.map((id) => catalog.data?.modifierGroups.find((row) => row.id === id)?.name ?? id).join(", ")}. Без нового выбора все связи сохраняются.`
-    : null,
 );
 const commandsDisabled = computed(
   () =>

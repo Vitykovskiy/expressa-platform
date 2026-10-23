@@ -2,12 +2,12 @@ import type { CatalogGroupValues } from "./catalog.types";
 
 export interface CatalogCategoryCreateDto {
   readonly name: string;
-  readonly optionGroupId: string | null;
+  readonly optionGroupIds: readonly string[];
 }
 
 export interface CatalogCategoryUpdateDto {
   readonly name: string;
-  readonly optionGroupId?: string | null;
+  readonly optionGroupIds?: readonly string[];
 }
 
 export interface CatalogGroupWriteDto extends CatalogGroupValues {
@@ -15,7 +15,6 @@ export interface CatalogGroupWriteDto extends CatalogGroupValues {
 }
 
 export interface CatalogProductWriteDto {
-  readonly modifierGroupIds?: readonly string[];
   readonly name: string;
   readonly categoryId: string;
   readonly price: number | null;

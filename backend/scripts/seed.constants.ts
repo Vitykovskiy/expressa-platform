@@ -239,13 +239,6 @@ export const categoryModifierGroupUpsertSql = `
     sort_order = EXCLUDED.sort_order
 `;
 
-export const productModifierGroupUpsertSql = `
-  INSERT INTO product_modifier_groups (product_id, group_id, sort_order)
-  VALUES ($1, $2, $3)
-  ON CONFLICT (product_id, group_id) DO UPDATE SET
-    sort_order = EXCLUDED.sort_order
-`;
-
 const customerCategoryIds = [
   "10000000-0000-4000-8000-000000000001",
   "10000000-0000-4000-8000-000000000002",
@@ -508,75 +501,6 @@ const customerModifierOptions: ModifierOptionSeed[] =
     }),
   );
 
-const productIds = (suffixes: readonly string[]) =>
-  suffixes.map(customerProductId);
-const customerProductModifierGroups = [
-  ...productIds(["101"]).map((productId) => [productId, "201"] as const),
-  ...productIds([
-    "106",
-    "107",
-    "119",
-    "120",
-    "121",
-    "122",
-    "123",
-    "124",
-    "125",
-    "126",
-    "127",
-    "128",
-    "129",
-    "130",
-    "131",
-    "132",
-    "133",
-  ]).map((productId) => [productId, "209"] as const),
-  ...productIds([
-    "101",
-    "102",
-    "104",
-    "105",
-    "121",
-    "122",
-    "123",
-    "124",
-    "125",
-    "126",
-    "127",
-    "128",
-  ]).map((productId) => [productId, "202"] as const),
-  ...productIds([
-    "119",
-    "120",
-    "121",
-    "122",
-    "123",
-    "124",
-    "125",
-    "126",
-    "127",
-    "128",
-    "129",
-    "130",
-    "131",
-    "132",
-    "133",
-  ]).flatMap((productId) => [
-    [productId, "203"] as const,
-    [productId, "208"] as const,
-  ]),
-  ...productIds(["116"]).map((productId) => [productId, "204"] as const),
-  ...productIds(["114"]).map((productId) => [productId, "205"] as const),
-  ...productIds(["101", "102", "104", "105"]).map(
-    (productId) => [productId, "206"] as const,
-  ),
-  ...productIds(["106", "107"]).map((productId) => [productId, "207"] as const),
-].map(([productId, groupSuffix], sortOrder) => ({
-  productId,
-  groupId: customerProductId(groupSuffix),
-  sortOrder,
-}));
-
 export const customerMenuCatalogSeed: CatalogSeed = {
   categories: [
     "Какао / шоколад",
@@ -598,7 +522,7 @@ export const customerMenuCatalogSeed: CatalogSeed = {
   modifierGroups: customerModifierGroups,
   modifierOptions: customerModifierOptions,
   categoryModifierGroups: [],
-  productModifierGroups: customerProductModifierGroups,
+  productModifierGroups: [],
 };
 
 export const developmentCatalogOwnedIds = {

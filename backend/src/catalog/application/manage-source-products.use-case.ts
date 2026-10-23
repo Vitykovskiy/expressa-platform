@@ -6,21 +6,17 @@ import type {
   V3AdminProduct,
   V3ProductDetails,
 } from "../domain/product-admin.policy.types";
-import type { SourceProductsUnitOfWork } from "./products.repository.types";
-import type {
-  SourceActor,
-  SourceProductWrite,
-  SourceProductResult,
-} from "./source-menu.types";
+import type { V3ProductsUnitOfWork } from "./products.repository.types";
+import type { SourceActor, SourceProductWrite } from "./source-menu.types";
 
 export class ManageSourceProductsUseCase {
-  constructor(private readonly unitOfWork: SourceProductsUnitOfWork) {}
+  constructor(private readonly unitOfWork: V3ProductsUnitOfWork) {}
 
   save(
     input: SourceProductWrite,
     actor: SourceActor,
     productId: string | null,
-  ): Promise<SourceProductResult> {
+  ): Promise<V3AdminProduct> {
     return this.unitOfWork
       .runV3(
         async (repository) => {
@@ -36,25 +32,6 @@ export class ManageSourceProductsUseCase {
           }
           if (!(await repository.categoryExists(input.categoryId))) {
             throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
-          }
-
-          let previousGroups: string[] = [];
-          if (before !== null) {
-            previousGroups = await repository.findModifierGroupIds(before.id);
-          }
-          // Отсутствующий список сохраняет даже не показанные формой связи.
-          const modifierGroupIds = input.modifierGroupIds ?? previousGroups;
-          if (
-            input.modifierGroupIds !== undefined &&
-            (new Set(modifierGroupIds).size !== modifierGroupIds.length ||
-              !(await repository.currentModifierGroupsExist(modifierGroupIds)))
-          ) {
-            throw new ProductAdminError("PRODUCT_INVALID", [
-              {
-                path: "modifierGroupIds",
-                reason: "Must reference distinct current modifier groups",
-              },
-            ]);
           }
 
           let categoryProducts: V3AdminProduct[] = [];
@@ -78,19 +55,7 @@ export class ManageSourceProductsUseCase {
           } else {
             after = await repository.updateV3(before.id, details);
           }
-          if (input.modifierGroupIds !== undefined) {
-            await repository.replaceModifierGroups(after.id, modifierGroupIds);
-          }
-          const savedModifierGroupIds = await repository.findModifierGroupIds(
-            after.id,
-          );
-          return {
-            before:
-              before === null
-                ? null
-                : { ...before, modifierGroupIds: previousGroups },
-            after: { ...after, modifierGroupIds: savedModifierGroupIds },
-          };
+          return { before, after };
         },
         (repository, { before, after }) =>
           repository.writeV3Audit({

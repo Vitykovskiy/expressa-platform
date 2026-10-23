@@ -85,3 +85,11 @@ ServiceSettingsModule; SourceMenuController и source-ready/reject принад�
 добавлены опционально для совместимости. Пять стадий и все старые endpoint
 сохранены. Публичное наличие маршрутов и схем не подтверждает UI-приёмку,
 проверку конкурентных операций или development-поставку.
+
+Source-сохранение категории принимает упорядоченный `optionGroupIds:uuid[]`
+(при создании обязателен, при изменении отсутствие сохраняет связи, [] очищает).
+Группа принимает `{name,singleSelection:boolean}` и может быть пустой; опции
+сохраняются отдельными командами. Продуктовый source payload/response не содержит
+modifierGroupIds, admin-v3 catalog не содержит productModifierGroups. Поле
+productModifierGroups API доступности оставлено пустым для совместимости.
+Политики первого варианта и atomic audit — [ADR-012](../20-architecture/ADR/ADR-012-back-office-source-contract.md#меню).

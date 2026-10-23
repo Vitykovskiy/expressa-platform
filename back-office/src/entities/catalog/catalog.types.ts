@@ -53,11 +53,6 @@ export interface CatalogData {
   readonly modifierGroups: readonly CatalogModifierGroup[];
   readonly modifierOptions: readonly CatalogOption[];
   readonly categoryModifierGroups: readonly CatalogAssociation[];
-  readonly productModifierGroups: readonly {
-    readonly productId: string;
-    readonly groupId: string;
-    readonly sortOrder: number;
-  }[];
 }
 
 export interface CatalogContext {
@@ -72,12 +67,12 @@ export type CatalogTarget =
       readonly name: string;
     }
   | {
-      readonly kind: "new-category" | "new-group" | "new-product";
+      readonly kind:
+        "new-category" | "new-group" | "new-product" | "new-option";
       readonly name: string;
     };
 
 export interface CatalogProductValues {
-  readonly modifierGroupIds?: readonly string[];
   readonly name: string;
   readonly categoryId: string;
   readonly pricing:
@@ -101,7 +96,7 @@ export type CatalogCommand =
       readonly name: string;
       readonly association:
         | { readonly kind: "keep" }
-        | { readonly kind: "replace"; readonly groupId: string | null };
+        | { readonly kind: "replace"; readonly groupIds: readonly string[] };
     }
   | {
       readonly action: "save-group";
@@ -115,6 +110,15 @@ export type CatalogCommand =
         readonly kind: "product" | "new-product";
       };
       readonly values: CatalogProductValues;
+    }
+  | {
+      readonly action: "save-option";
+      readonly target: CatalogTarget & {
+        readonly kind: "option" | "new-option";
+      };
+      readonly groupId: string;
+      readonly name: string;
+      readonly amount: number;
     }
   | {
       readonly action: "archive";
@@ -154,16 +158,5 @@ export interface CatalogListGroup {
 }
 
 export interface CatalogGroupValues {
-  readonly selectionType: "single" | "multiple";
-  readonly minSelect: number;
-  readonly maxSelect: number;
-  readonly isActive: boolean;
-  readonly options: readonly {
-    readonly id?: string;
-    readonly name: string;
-    readonly priceDelta: number;
-    readonly sortOrder: number;
-    readonly isDefault: boolean;
-    readonly isAvailable: boolean;
-  }[];
+  readonly singleSelection: boolean;
 }

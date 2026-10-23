@@ -13,7 +13,6 @@ import type {
   CatalogModifierGroupCandidate,
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
-  CatalogProductModifierGroupCandidate,
   CatalogModifierSelectionType,
 } from "../domain/catalog.types";
 import type { DatabaseRow } from "./postgres-public-menu.repository.types";
@@ -30,7 +29,6 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
       modifierGroups,
       modifierOptions,
       categoryModifierGroups,
-      productModifierGroups,
     ] = await Promise.all([
       this.pool.query<DatabaseRow>(
         "SELECT value FROM service_settings WHERE key = $1",
@@ -49,13 +47,10 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
         "SELECT id, name, selection_type, min_select, max_select, is_active, archived_at FROM modifier_groups",
       ),
       this.pool.query<DatabaseRow>(
-        "SELECT id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at FROM modifier_options ORDER BY sort_order",
+        "SELECT id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at FROM modifier_options ORDER BY sort_order, id",
       ),
       this.pool.query<DatabaseRow>(
         "SELECT category_id, group_id, sort_order FROM category_modifier_groups ORDER BY sort_order",
-      ),
-      this.pool.query<DatabaseRow>(
-        "SELECT product_id, group_id, sort_order FROM product_modifier_groups ORDER BY sort_order",
       ),
     ]);
     return {
@@ -69,9 +64,6 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
       modifierOptions: modifierOptions.rows.map(parseModifierOption),
       categoryModifierGroups: categoryModifierGroups.rows.map(
         parseCategoryModifierGroup,
-      ),
-      productModifierGroups: productModifierGroups.rows.map(
-        parseProductModifierGroup,
       ),
       priceChoices: choices.rows.map((row) => ({
         id: readString(row, "id"),
@@ -161,16 +153,6 @@ function parseCategoryModifierGroup(
     ...(row["product_id"] === null || row["product_id"] === undefined
       ? {}
       : { productId: readString(row, "product_id") }),
-    groupId: readString(row, "group_id"),
-    sortOrder: readNonNegativeInteger(row, "sort_order"),
-  };
-}
-
-function parseProductModifierGroup(
-  row: DatabaseRow,
-): CatalogProductModifierGroupCandidate {
-  return {
-    productId: readString(row, "product_id"),
     groupId: readString(row, "group_id"),
     sortOrder: readNonNegativeInteger(row, "sort_order"),
   };

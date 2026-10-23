@@ -19,13 +19,6 @@ export class AdminCatalogV3Controller {
   async get(): Promise<AdminCatalogV3Dto> {
     const value = await this.catalog.executeV3();
     return {
-      productModifierGroups: value.productModifierGroups.map(
-        ({ productId, groupId, sortOrder }) => ({
-          productId,
-          groupId,
-          sortOrder,
-        }),
-      ),
       categories: value.categories.map(
         ({ id, name, description, sortOrder, isActive }) => ({
           id,

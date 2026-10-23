@@ -1,5 +1,6 @@
 import type {
   SourceCategoryWrite,
+  SourceGroupWrite,
   SourceOptionWrite,
   SourceProductWrite,
 } from "../application/source-menu.types";
@@ -15,23 +16,30 @@ export function parseSourceCategory(
 ): SourceCategoryWrite {
   const body = object(value, "body");
   const name = string(body.name, "name");
-  if (body.optionGroupId === undefined) {
+  if (body.optionGroupId !== undefined) {
+    invalid("optionGroupId", "Use optionGroupIds for category assignments");
+  }
+  if (body.optionGroupIds === undefined) {
     if (creating) {
-      invalid("optionGroupId", "Must be a UUID or null");
+      invalid("optionGroupIds", "Must be an array of distinct UUIDs");
     }
     return { name };
   }
   return {
     name,
-    optionGroupId:
-      body.optionGroupId === null
-        ? null
-        : parseSourceUuid(body.optionGroupId, "optionGroupId"),
+    optionGroupIds: parseSourceGroupIds(body.optionGroupIds),
   };
 }
 
-export function parseSourceName(value: unknown): string {
-  return string(object(value, "body").name, "name");
+export function parseSourceGroup(value: unknown): SourceGroupWrite {
+  const body = object(value, "body");
+  if (typeof body.singleSelection !== "boolean") {
+    invalid("singleSelection", "Must be a boolean");
+  }
+  return {
+    name: string(body.name, "name"),
+    singleSelection: body.singleSelection,
+  };
 }
 
 export function parseSourceOption(value: unknown): SourceOptionWrite {
@@ -44,6 +52,9 @@ export function parseSourceOption(value: unknown): SourceOptionWrite {
 
 export function parseSourceProduct(value: unknown): SourceProductWrite {
   const body = object(value, "body");
+  if (body.modifierGroupIds !== undefined) {
+    invalid("modifierGroupIds", "Assign modifier groups to the category");
+  }
   if (!Array.isArray(body.priceChoices)) {
     invalid("priceChoices", "Must be an array");
   }
@@ -51,9 +62,6 @@ export function parseSourceProduct(value: unknown): SourceProductWrite {
     name: string(body.name, "name"),
     categoryId: parseSourceUuid(body.categoryId, "categoryId"),
     price: body.price === null ? null : integer(body.price, "price"),
-    ...(body.modifierGroupIds === undefined
-      ? {}
-      : { modifierGroupIds: parseSourceGroupIds(body.modifierGroupIds) }),
     priceChoices: body.priceChoices.map((value: unknown, index: number) => {
       const choice = object(value, `priceChoices.${index}`);
       const fields = {
@@ -75,13 +83,13 @@ export function parseSourceProduct(value: unknown): SourceProductWrite {
 
 function parseSourceGroupIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
-    invalid("modifierGroupIds", "Must be an array of UUIDs");
+    invalid("optionGroupIds", "Must be an array of UUIDs");
   }
   const ids = value.map((id: unknown, index: number) =>
-    parseSourceUuid(id, `modifierGroupIds.${index}`),
+    parseSourceUuid(id, `optionGroupIds.${index}`),
   );
   if (new Set(ids).size !== ids.length) {
-    invalid("modifierGroupIds", "Must contain distinct UUIDs");
+    invalid("optionGroupIds", "Must contain distinct UUIDs");
   }
   return ids;
 }

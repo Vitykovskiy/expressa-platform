@@ -4,7 +4,6 @@ import type {
   CatalogModifierGroupCandidate,
   CatalogModifierOptionCandidate,
   CatalogProductCandidate,
-  CatalogProductModifierGroupCandidate,
 } from "../domain/catalog.types";
 
 export interface PublicMenuRepository {
@@ -18,7 +17,6 @@ export type PublicMenuV3Candidates = {
   modifierGroups: CatalogModifierGroupCandidate[];
   modifierOptions: CatalogModifierOptionCandidate[];
   categoryModifierGroups: CatalogCategoryModifierGroupCandidate[];
-  productModifierGroups: CatalogProductModifierGroupCandidate[];
   priceChoices: Array<{
     id: string;
     productId: string;
