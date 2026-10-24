@@ -24,6 +24,7 @@ export const useOrdersStore = defineStore("orders", () => {
   const orders = shallowRef<readonly OrderRecord[]>([]);
   const phase = shallowRef<"idle" | "loading" | "ready" | "error">("idle");
   const message = shallowRef<string | null>(null);
+  const rejectionError = shallowRef<string | null>(null);
   const readError = shallowRef<string | null>(null);
   const sessionExpired = shallowRef(false);
   const intent = shallowRef<OrdersIntent>({ kind: "invalid" });
@@ -74,6 +75,9 @@ export const useOrdersStore = defineStore("orders", () => {
       command.value !== null ||
       intent.value.kind === "invalid",
   );
+  const rejectionDialogOpen = computed(
+    () => dialog.value?.mode === "reject" && command.value === null,
+  );
 
   function stopPolling() {
     if (polling !== null) {
@@ -103,6 +107,7 @@ export const useOrdersStore = defineStore("orders", () => {
     orders.value = [];
     phase.value = "idle";
     message.value = null;
+    rejectionError.value = null;
     readError.value = null;
     sessionExpired.value = false;
     intent.value = { kind: "invalid" };
@@ -192,6 +197,7 @@ export const useOrdersStore = defineStore("orders", () => {
       !active ||
       owner === null ||
       selectedQuery === null ||
+      rejectionDialogOpen.value ||
       reading !== null ||
       detailReading !== null ||
       command.value?.phase === "sending" ||
@@ -289,7 +295,7 @@ export const useOrdersStore = defineStore("orders", () => {
     const owner = context;
     const id = selectedOrderId.value;
 
-    if (reading !== null) {
+    if (reading !== null || rejectionDialogOpen.value) {
       return;
     }
 
@@ -367,6 +373,12 @@ export const useOrdersStore = defineStore("orders", () => {
       return;
     }
 
+    if (mode === "reject") {
+      // Черновик отклонения удерживает прочитанный заказ до результата отправки.
+      stopReads();
+      rejectionError.value = null;
+    }
+
     dialog.value = { orderId: id, mode, reason: "", error: null };
   }
 
@@ -379,6 +391,7 @@ export const useOrdersStore = defineStore("orders", () => {
   function closeDialog() {
     if (command.value === null) {
       dialog.value = null;
+      rejectionError.value = null;
     }
   }
 
@@ -435,6 +448,7 @@ export const useOrdersStore = defineStore("orders", () => {
 
     writing = controller;
     command.value = submitted;
+    rejectionError.value = null;
     checkedOrder.value = null;
     message.value = null;
     const result = await sendOrderCommand(
@@ -468,6 +482,16 @@ export const useOrdersStore = defineStore("orders", () => {
       message.value = ORDER_MESSAGES.confirmed;
       await refresh();
       await loadSelectedOrder();
+
+      return;
+    }
+
+    if (action === "reject") {
+      command.value = null;
+      rejectionError.value =
+        result.kind === "unknown"
+          ? ORDER_MESSAGES.rejectionNoResponse
+          : ORDER_MESSAGES.rejectionFailed;
 
       return;
     }
@@ -612,6 +636,7 @@ export const useOrdersStore = defineStore("orders", () => {
     orders: readonly(orders),
     phase: readonly(phase),
     message: readonly(message),
+    rejectionError: readonly(rejectionError),
     readError: readonly(readError),
     sessionExpired: readonly(sessionExpired),
     intent: readonly(intent),

@@ -48,9 +48,6 @@
         <p v-if="checkedState" class="orders-feedback__copy">
           Текущее состояние: {{ checkedState }}
         </p>
-        <p v-if="recovery.action === 'reject'" class="orders-feedback__copy">
-          Причина отклонения: {{ recovery.reason }}
-        </p>
         <OperationsButton
           v-if="recovery.phase !== 'reconciled'"
           label="Проверить состояние заказа"
@@ -82,12 +79,20 @@
     :mode="dialogMode"
     :reason="orders.dialog?.reason ?? ''"
     :pending="orders.command?.phase === 'sending'"
-    :error-message="orders.dialog?.error ?? null"
+    :commands-disabled="orders.commandsDisabled"
+    :error-message="
+      orders.dialog?.mode === 'issue' ? orders.dialog.error : null
+    "
     @update:reason="orders.updateReason"
     @close="orders.closeDialog"
     @reject="reject"
     @issue="orders.submitDialog"
   />
+  <Teleport to="body">
+    <div v-if="orders.rejectionError" class="orders-rejection-toast">
+      <SourceToast type="error" :message="orders.rejectionError" />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -111,6 +116,7 @@ import {
 import { toOrderCard } from "../../features/orders/presentation/orders.presenter";
 import OrderActionDialog from "../../features/orders/presentation/OrderActionDialog.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
+import SourceToast from "../../shared/ui/SourceToast/SourceToast.vue";
 import OrdersPage from "./OrdersPage.vue";
 import {
   ORDER_FILTER_TO_VIEW,
@@ -143,7 +149,9 @@ const extraSelectedCard = computed(() =>
     : null,
 );
 const recovery = computed(() =>
-  orders.command !== null && orders.command.phase !== "sending"
+  orders.command !== null &&
+  orders.command.action !== "reject" &&
+  orders.command.phase !== "sending"
     ? orders.command
     : null,
 );
@@ -271,6 +279,21 @@ onScopeDispose(rememberAndDeactivate);
 </script>
 
 <style scoped>
+.orders-rejection-toast {
+  position: fixed;
+  z-index: 2500;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+}
+
+@media (max-width: 767px) {
+  .orders-rejection-toast {
+    top: 16px;
+  }
+}
+
 .orders-feedback {
   display: flex;
   flex-direction: column;

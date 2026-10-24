@@ -63,6 +63,7 @@ const copy = computed(() =>
 const canSubmit = computed(
   () =>
     !props.pending &&
+    (props.mode !== "reject" || !props.commandsDisabled) &&
     props.mode !== null &&
     (props.mode === "issue" || props.reason.trim().length > 0),
 );

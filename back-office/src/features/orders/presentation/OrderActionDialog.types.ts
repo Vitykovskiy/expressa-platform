@@ -2,6 +2,7 @@ export interface OrderActionDialogProps {
   readonly mode: "reject" | "issue" | null;
   readonly reason: string;
   readonly pending: boolean;
+  readonly commandsDisabled: boolean;
   readonly errorMessage: string | null;
 }
 

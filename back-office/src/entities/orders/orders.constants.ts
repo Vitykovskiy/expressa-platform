@@ -57,6 +57,8 @@ export const ORDER_ACTION_ALLOWED_STAGES: Readonly<
   issue: ["READY"],
 };
 export const ORDER_MESSAGES = {
+  rejectionFailed: "Не удалось отклонить заказ. Попробуйте ещё раз.",
+  rejectionNoResponse: "Не удалось получить ответ.",
   readFailed:
     "Не удалось обновить заказы. Показаны последние полученные данные.",
   detailFailed: "Не удалось загрузить заказ. Можно повторить чтение.",
