@@ -1,6 +1,7 @@
 export interface CatalogSelectOption {
   readonly value: string;
   readonly label: string;
+  readonly selectedLabel?: string;
   readonly disabled?: boolean;
 }
 

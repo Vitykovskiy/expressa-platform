@@ -45,6 +45,7 @@
         v-if="props.draft.isOptionGroup"
         label="Единственное значение"
         description="Можно выбрать только одно значение группы"
+        :divider="false"
         :model-value="props.draft.singleSelection"
         :disabled="props.pending"
         @update:model-value="update('singleSelection', $event)"

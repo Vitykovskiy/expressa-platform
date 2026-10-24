@@ -25,7 +25,7 @@
       @submit.prevent="save"
     >
       <OperationsInput
-        v-if="!editing"
+        v-if="!editing && !props.isOption"
         :label="parentLabel"
         type="select"
         :model-value="props.draft.categoryId"
@@ -48,7 +48,7 @@
         @update:model-value="update('name', $event)"
       />
       <OperationsInput
-        v-if="editing"
+        v-if="editing || props.isOption"
         :label="parentLabel"
         type="select"
         :model-value="props.draft.categoryId"
@@ -180,7 +180,13 @@ const saveLabel = computed(() => {
 const saveDisabled = computed(() => props.pending || !props.canSave);
 const categoryOptions = computed(() => [
   { value: "", label: "Выберите категорию или группу", disabled: true },
-  ...props.categories,
+  ...props.categories.map((option) => ({
+    ...option,
+    label:
+      props.isOption && option.value === props.draft.categoryId
+        ? (option.selectedLabel ?? option.label)
+        : option.label,
+  })),
 ]);
 
 function update<Key extends keyof CatalogProductDraft>(

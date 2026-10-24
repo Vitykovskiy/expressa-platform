@@ -86,6 +86,7 @@ export function useCatalogEditor() {
     const groups = data.modifierGroups.map((group) => ({
       value: `group:${group.id}`,
       label: `Опции: ${group.name}`,
+      selectedLabel: group.name,
     }));
 
     if (!editing) {
