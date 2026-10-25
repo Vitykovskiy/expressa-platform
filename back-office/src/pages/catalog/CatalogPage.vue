@@ -73,7 +73,7 @@
       </template>
     </OperationsModal>
     <OperationsModal
-      :open="unknown"
+      :open="hasUnknownCommand"
       title="Результат изменения неизвестен"
       :description="unknownDescription"
       layout="confirmation"
@@ -117,9 +117,9 @@ import {
   countLabel,
   mapCatalogLists,
 } from "../../entities/catalog/catalog.mapper";
-import { useCatalogEditor } from "../../features/catalog/catalog-editor";
-import CatalogCategoryDialog from "../../features/catalog/presentation/CatalogCategoryDialog.vue";
-import CatalogProductDialog from "../../features/catalog/presentation/CatalogProductDialog.vue";
+import { useCatalogEditor } from "../../features/catalog/model/catalog-editor";
+import CatalogCategoryDialog from "../../features/catalog/ui/CatalogCategoryDialog.vue";
+import CatalogProductDialog from "../../features/catalog/ui/CatalogProductDialog.vue";
 import CatalogMenu from "../../widgets/catalog/CatalogMenu.vue";
 import OperationsModal from "../../shared/ui/operations/OperationsModal.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
@@ -132,14 +132,19 @@ const editor = useCatalogEditor();
 const root = useTemplateRef<globalThis.HTMLElement>("root");
 let disposed = false;
 
-const lists = computed(() =>
-  catalog.data === null
-    ? { categories: [], optionGroups: [] }
-    : mapCatalogLists(catalog.data),
-);
+const lists = computed(() => {
+  if (catalog.data === null) {
+    // Пустая проекция до ответа не означает пустое меню: загрузка и ошибка передаются отдельно.
+    return { categories: [], optionGroups: [] };
+  }
+
+  return mapCatalogLists(catalog.data);
+});
+
 const initialLoading = computed(
   () => catalog.loading || (catalog.data === null && catalog.error === null),
 );
+
 const commandsDisabled = computed(
   () =>
     catalog.stale ||
@@ -147,33 +152,52 @@ const commandsDisabled = computed(
     editor.busy.value ||
     catalog.data === null,
 );
-const summary = computed(
-  () =>
-    `${countLabel(lists.value.categories.length, ["категория", "категории", "категорий"])} · ${countLabel(lists.value.optionGroups.length, ["группа опций", "группы опций", "групп опций"])}`,
-);
+
+const summary = computed(() => {
+  const categories = countLabel(lists.value.categories.length, [
+    "категория",
+    "категории",
+    "категорий",
+  ]);
+  const optionGroups = countLabel(lists.value.optionGroups.length, [
+    "группа опций",
+    "группы опций",
+    "групп опций",
+  ]);
+
+  return `${categories} · ${optionGroups}`;
+});
+
 const categoryEditor = computed(() =>
   editor.editor.value?.kind === "category" ? editor.editor.value : null,
 );
+
 const productEditor = computed(() =>
   editor.editor.value?.kind === "product" ? editor.editor.value : null,
 );
-const unknown = computed(() => catalog.command?.phase === "unknown");
+
+const hasUnknownCommand = computed(() => catalog.command?.phase === "unknown");
+
 const ordinaryDialogOpen = computed(
-  () => !unknown.value && editor.confirmation.value === null,
+  () => !hasUnknownCommand.value && editor.confirmation.value === null,
 );
+
 const cannotAcknowledge = computed(
   () => catalog.command?.checked !== true || catalog.loading,
 );
+
 const confirmationKind = computed(() =>
   editor.confirmation.value?.destructive
     ? ("destructive" as const)
     : ("primary" as const),
 );
+
 const unknownDescription = computed(() =>
   catalog.command === null
     ? ""
     : `Объект: «${catalog.command.command.target.name}». Команда отправлена; подтверждения нет. Повтор автоматически не выполняется.`,
 );
+
 const currentTargetDescription = computed(() => {
   const target = catalog.command?.command.target;
   const data = catalog.data;
@@ -190,20 +214,37 @@ const currentTargetDescription = computed(() => {
     return "Перед повторным созданием проверьте список: новый объект мог сохраниться.";
   }
 
-  const records =
-    target.kind === "category"
-      ? data.categories
-      : target.kind === "group"
-        ? data.modifierGroups
-        : target.kind === "product"
-          ? data.products
-          : data.modifierOptions;
-  const current = records.find((row) => row.id === target.id);
+  let currentName: string | undefined;
 
-  return current === undefined
+  switch (target.kind) {
+    case "category":
+      currentName = data.categories.find((row) => row.id === target.id)?.name;
+      break;
+    case "group":
+      currentName = data.modifierGroups.find(
+        (row) => row.id === target.id,
+      )?.name;
+      break;
+    case "product":
+      currentName = data.products.find((row) => row.id === target.id)?.name;
+      break;
+    case "option":
+      currentName = data.modifierOptions.find(
+        (row) => row.id === target.id,
+      )?.name;
+      break;
+    default: {
+      const unsupportedTarget: never = target;
+
+      return unsupportedTarget;
+    }
+  }
+
+  return currentName === undefined
     ? `Исходный объект «${target.name}» отсутствует в текущем меню.`
-    : `Исходный объект сейчас в меню: «${current.name}».`;
+    : `Исходный объект сейчас в меню: «${currentName}».`;
 });
+
 const recoveryDescription = computed(() =>
   catalog.command?.checked
     ? "Текущее состояние меню получено. Оно не подтверждает результат исходной команды. Вернитесь в меню и проверьте объект перед новыми действиями."
@@ -220,14 +261,7 @@ watch(
     }
   },
 );
-watch(
-  () => catalog.revision,
-  (current, previous) => {
-    if (current > previous) {
-      emit("catalogChanged");
-    }
-  },
-);
+
 watch(
   () => props.context,
   (context) => {
@@ -249,6 +283,7 @@ onMounted(async () => {
 });
 
 onScopeDispose(() => {
+  // KeepAlive сохраняет черновик; обычные чтения при смене раздела останавливает StaffScreen.
   disposed = true;
   catalog.deactivate();
 });

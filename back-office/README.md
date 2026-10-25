@@ -13,10 +13,10 @@
 ```text
 back-office/
 ├── src/
-│   ├── app/            # запуск, source-оболочка, URL/history и сброс защищённых владельцев
+│   ├── app/            # запуск, сеанс/URL/history; staff/ — экран и срок жизни владельцев
 │   ├── pages/          # композиция auth/orders/availability/catalog/users/settings
 │   ├── widgets/
-│   │   └── staff/      # исходная навигация администратора и бариста
+│   │   └── staff/      # адаптивный layout и навигация администратора и бариста
 │   ├── features/       # действия и формы предметных сценариев, native push lifecycle
 │   ├── entities/       # сеанс, реальные DTO/API, подтверждённые данные и команды
 │   └── shared/         # HTTP transport, source UI-примитивы и нативные поля
@@ -25,7 +25,16 @@ back-office/
 ```
 
 Направление зависимостей и обязательные правила — в
-[размещении кода](docs/80-conventions/code-layout.md).
+[размещении кода](docs/80-conventions/code-layout.md). Feature-каталоги разделены
+по фактическим обязанностям на `api`, `model` и `ui`; маршрутная навигация
+заказов находится в `pages/orders`. Это локальная адаптация FSD по
+[ADR-013](../docs/20-architecture/ADR/ADR-013-back-office-feature-organization.md):
+клиент сохраняет явные импорты модулей и существующих владельцев состояния.
+`app/staff/StaffScreen.vue` компонует рабочие страницы и lifecycle;
+`widgets/staff/StaffWorkspaceLayout.vue` отображает каркас, навигацию и действия
+через props/events/default slot. `app/App.vue` сохраняет композицию входа,
+сеанса, URL/history и native intent. Это разделение следует
+[ADR-014](../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#экран-и-layout).
 
 ## Локальный запуск
 
@@ -71,7 +80,7 @@ npm run build
 - [Технический DoD](../docs/80-conventions/Code-Definition-of-Done-back-office.md) — обязательные критерии кода.
 - [Правила выпуска](../docs/70-deployment/Release-and-version-compatibility.md) — поддерживаемая development-поставка.
 
-Текущий локальный production-runtime обслуживает настоящий собранный клиент.
+До текущего рефакторинга локальный production-runtime обслуживал настоящий собранный клиент.
 Нативные подписки Customer и Barista получены через обычный интерфейс;
 наблюдались реальные association/inspect/disable и доставка уведомлений до
 browser notification registry после настоящего заказа. Подготовка разрешения
@@ -84,7 +93,8 @@ browser notification registry после настоящего заказа. По
 доступности и установки сохраняют историческую область; они не подтверждают
 полный текущий клиент. Обязательные native click, установка с повторным запуском
 полного клиента, независимое review и проверка deployed origin остаются
-отдельными результатами.
+отдельными результатами. Независимое review ограниченных частей рефакторинга
+не заменяет приёмку итоговой интеграции и пользовательских сценариев.
 
 ## Контейнер
 
@@ -93,6 +103,10 @@ browser notification registry после настоящего заказа. По
 ```bash
 docker build -t expressa-back-office:local back-office
 ```
+
+Сборка принимает `VITE_API_BASE_URL` (по умолчанию `/`); значение
+используется HTTP-транспортом клиента. Отдельного переключателя окружения
+`VITE_APP_ENV` у back-office нет.
 
 Образ слушает непривилегированный порт `8080`, проверяет `/health`,
 обслуживает SPA и проксирует `/api` к сервису `backend:3000` без переписывания

@@ -51,11 +51,13 @@ import type { CatalogGroupEmits, CatalogGroupProps } from "./CatalogMenu.types";
 const props = defineProps<CatalogGroupProps>();
 const emit = defineEmits<CatalogGroupEmits>();
 const itemsId = useId();
+// Раскрытие группы — локальное состояние просмотра, независимое от запрета редактирования.
 const expanded = ref(false);
 
 const chevron = computed(() =>
   expanded.value ? CATALOG_ASSETS.expanded : CATALOG_ASSETS.collapsed,
 );
+
 const editLabel = computed(() => `Редактировать: ${props.group.name}`);
 </script>
 
@@ -148,7 +150,7 @@ const editLabel = computed(() => `Редактировать: ${props.group.name
 }
 @media (max-width: 767px) {
   .catalog-group__edit {
-    /* Макет390 сохраняет248px имени и свободное место после иконки. */
+    /* Отступ после иконки сохраняет исходную узкую компоновку; token для 18px отсутствует. */
     margin-right: 18px;
   }
 }

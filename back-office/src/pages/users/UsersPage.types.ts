@@ -5,7 +5,7 @@ import type {
   UsersDialog,
   UsersFilter,
   UserDialogPhase,
-} from "../../features/users/presentation/Users.types";
+} from "../../features/users/ui/Users.types";
 
 export interface UsersPageProps {
   readonly users: readonly UserPresentation[];

@@ -38,28 +38,23 @@ export const useOrdersStore = defineStore("orders", () => {
   const scrollPosition = shallowRef(0);
   let context: OrdersContext | null = null;
   let active = false;
-  let polling: ReturnType<typeof globalThis.setInterval> | null = null;
-  let reading: AbortController | null = null;
-  let detailReading: AbortController | null = null;
-  let detailReadId: string | null = null;
-  let writing: AbortController | null = null;
-  let commandReading: AbortController | null = null;
+  let pollingTimer: ReturnType<typeof globalThis.setInterval> | null = null;
+  let listReadController: AbortController | null = null;
+  let detailReadController: AbortController | null = null;
+  let detailRequestOrderId: string | null = null;
+  let commandController: AbortController | null = null;
+  let reconciliationController: AbortController | null = null;
 
   const selectedOrderId = computed(() =>
     intent.value.kind === "valid" ? intent.value.orderId : null,
   );
+
   const selectedOrder = computed(() => {
-    const selected = selectedOrderId.value;
+    const id = selectedOrderId.value;
 
-    if (selected === null) {
-      return null;
-    }
-
-    return (
-      orders.value.find((order) => order.id === selected) ??
-      (detail.value?.id === selected ? detail.value : null)
-    );
+    return id === null ? null : findOrder(id);
   });
+
   const query = computed<OrdersQuery | null>(() =>
     intent.value.kind === "valid"
       ? {
@@ -69,29 +64,31 @@ export const useOrdersStore = defineStore("orders", () => {
         }
       : null,
   );
+
   const commandsDisabled = computed(
     () =>
       phase.value !== "ready" ||
       command.value !== null ||
       intent.value.kind === "invalid",
   );
+
   const rejectionDialogOpen = computed(
     () => dialog.value?.mode === "reject" && command.value === null,
   );
 
   function stopPolling() {
-    if (polling !== null) {
-      globalThis.clearInterval(polling);
-      polling = null;
+    if (pollingTimer !== null) {
+      globalThis.clearInterval(pollingTimer);
+      pollingTimer = null;
     }
   }
 
   function stopReads() {
-    reading?.abort();
-    detailReading?.abort();
-    reading = null;
-    detailReading = null;
-    detailReadId = null;
+    listReadController?.abort();
+    detailReadController?.abort();
+    listReadController = null;
+    detailReadController = null;
+    detailRequestOrderId = null;
     detailLoading.value = false;
   }
 
@@ -100,10 +97,10 @@ export const useOrdersStore = defineStore("orders", () => {
     context = null;
     stopPolling();
     stopReads();
-    writing?.abort();
-    commandReading?.abort();
-    writing = null;
-    commandReading = null;
+    commandController?.abort();
+    reconciliationController?.abort();
+    commandController = null;
+    reconciliationController = null;
     orders.value = [];
     phase.value = "idle";
     message.value = null;
@@ -137,13 +134,13 @@ export const useOrdersStore = defineStore("orders", () => {
       context = nextContext;
     }
 
-    const previous = intent.value;
-    const changed =
-      previous.kind !== nextIntent.kind ||
-      (previous.kind === "valid" &&
+    const previousIntent = intent.value;
+    const queueChanged =
+      previousIntent.kind !== nextIntent.kind ||
+      (previousIntent.kind === "valid" &&
         nextIntent.kind === "valid" &&
-        (previous.number !== nextIntent.number ||
-          previous.stage !== nextIntent.stage));
+        (previousIntent.number !== nextIntent.number ||
+          previousIntent.stage !== nextIntent.stage));
 
     intent.value = nextIntent;
     active = nextIntent.kind === "valid";
@@ -163,14 +160,14 @@ export const useOrdersStore = defineStore("orders", () => {
       view.value = ORDER_STAGE_VIEWS[nextIntent.stage];
     }
 
-    if (changed) {
+    if (queueChanged) {
       stopReads();
       orders.value = [];
       phase.value = "idle";
     }
 
-    if (polling === null) {
-      polling = globalThis.setInterval(() => {
+    if (pollingTimer === null) {
+      pollingTimer = globalThis.setInterval(() => {
         void refresh().then(loadSelectedOrder);
       }, ORDERS_POLL_INTERVAL);
     }
@@ -183,7 +180,11 @@ export const useOrdersStore = defineStore("orders", () => {
     active = false;
     stopPolling();
     stopReads();
+    restorePhaseAfterReadStopped();
+    // Отправленная команда и её сверка живут до результата, даже вне раздела.
+  }
 
+  function restorePhaseAfterReadStopped() {
     if (phase.value === "loading") {
       phase.value = orders.value.length > 0 ? "ready" : "idle";
     }
@@ -193,13 +194,20 @@ export const useOrdersStore = defineStore("orders", () => {
     const owner = context;
     const selectedQuery = query.value;
 
+    if (!active || owner === null || selectedQuery === null) {
+      return;
+    }
+
+    // Открытая форма удерживает заказ: опрос не должен блокировать отправку.
+    if (rejectionDialogOpen.value) {
+      return;
+    }
+
+    if (listReadController !== null || detailReadController !== null) {
+      return;
+    }
+
     if (
-      !active ||
-      owner === null ||
-      selectedQuery === null ||
-      rejectionDialogOpen.value ||
-      reading !== null ||
-      detailReading !== null ||
       command.value?.phase === "sending" ||
       command.value?.phase === "checking"
     ) {
@@ -208,7 +216,7 @@ export const useOrdersStore = defineStore("orders", () => {
 
     const controller = new AbortController();
 
-    reading = controller;
+    listReadController = controller;
     phase.value = "loading";
     const result = await readOrders(
       owner.accessToken,
@@ -216,11 +224,11 @@ export const useOrdersStore = defineStore("orders", () => {
       controller.signal,
     );
 
-    if (context !== owner || reading !== controller) {
+    if (context !== owner || listReadController !== controller) {
       return;
     }
 
-    reading = null;
+    listReadController = null;
 
     if (result.kind === "session-expired") {
       expireSession();
@@ -295,17 +303,17 @@ export const useOrdersStore = defineStore("orders", () => {
     const owner = context;
     const id = selectedOrderId.value;
 
-    if (reading !== null || rejectionDialogOpen.value) {
+    if (listReadController !== null || rejectionDialogOpen.value) {
       return;
     }
 
-    if (detailReading !== null && detailReadId === id) {
+    if (detailReadController !== null && detailRequestOrderId === id) {
       return;
     }
 
-    detailReading?.abort();
-    detailReading = null;
-    detailReadId = null;
+    detailReadController?.abort();
+    detailReadController = null;
+    detailRequestOrderId = null;
     detailMessage.value = null;
     detailLoading.value = false;
 
@@ -321,37 +329,47 @@ export const useOrdersStore = defineStore("orders", () => {
 
     const controller = new AbortController();
 
-    detailReading = controller;
-    detailReadId = id;
+    detailReadController = controller;
+    detailRequestOrderId = id;
     detailLoading.value = true;
     const result = await readOrder(owner.accessToken, id, controller.signal);
 
     if (
       context !== owner ||
-      detailReading !== controller ||
+      detailReadController !== controller ||
       selectedOrderId.value !== id
     ) {
       return;
     }
 
-    detailReading = null;
-    detailReadId = null;
+    detailReadController = null;
+    detailRequestOrderId = null;
     detailLoading.value = false;
 
     if (result.kind === "session-expired") {
       expireSession();
-    } else if (result.kind === "loaded") {
-      detail.value = toOrderRecord(result.order);
-    } else if (result.kind !== "cancelled") {
-      if (result.kind === "not-found" && detail.value?.id === id) {
-        detail.value = null;
-      }
 
-      detailMessage.value =
-        result.kind === "not-found"
-          ? ORDER_MESSAGES.notFound
-          : ORDER_MESSAGES.detailFailed;
+      return;
     }
+
+    if (result.kind === "loaded") {
+      detail.value = toOrderRecord(result.order);
+
+      return;
+    }
+
+    if (result.kind === "cancelled") {
+      return;
+    }
+
+    if (result.kind === "not-found" && detail.value?.id === id) {
+      detail.value = null;
+    }
+
+    detailMessage.value =
+      result.kind === "not-found"
+        ? ORDER_MESSAGES.notFound
+        : ORDER_MESSAGES.detailFailed;
   }
 
   function findOrder(id: string) {
@@ -405,6 +423,14 @@ export const useOrdersStore = defineStore("orders", () => {
     }
   }
 
+  function removeOrder(id: string) {
+    orders.value = orders.value.filter((order) => order.id !== id);
+
+    if (detail.value?.id === id) {
+      detail.value = null;
+    }
+  }
+
   function matchesQuery(order: OrderRecord) {
     const current = query.value;
 
@@ -426,19 +452,19 @@ export const useOrdersStore = defineStore("orders", () => {
   async function perform(id: string, action: OrderAction, reason = "") {
     const owner = context;
     const order = findOrder(id);
-    const legal =
-      order !== null &&
-      order.rejection === null &&
-      ORDER_ACTION_ALLOWED_STAGES[action].includes(order.stage);
+
+    if (owner === null || !active || commandsDisabled.value || order === null) {
+      return;
+    }
 
     if (
-      owner === null ||
-      !active ||
-      commandsDisabled.value ||
-      !legal ||
-      order === null ||
-      (action === "reject" && reason.trim().length === 0)
+      order.rejection !== null ||
+      !ORDER_ACTION_ALLOWED_STAGES[action].includes(order.stage)
     ) {
+      return;
+    }
+
+    if (action === "reject" && reason.trim().length === 0) {
       return;
     }
 
@@ -446,7 +472,7 @@ export const useOrdersStore = defineStore("orders", () => {
     const controller = new AbortController();
     const submitted: OrderCommand = { order, action, reason, phase: "sending" };
 
-    writing = controller;
+    commandController = controller;
     command.value = submitted;
     rejectionError.value = null;
     checkedOrder.value = null;
@@ -461,13 +487,13 @@ export const useOrdersStore = defineStore("orders", () => {
 
     if (
       context !== owner ||
-      writing !== controller ||
+      commandController !== controller ||
       command.value !== submitted
     ) {
       return;
     }
 
-    writing = null;
+    commandController = null;
 
     if (result.kind === "session-expired") {
       expireSession();
@@ -487,6 +513,7 @@ export const useOrdersStore = defineStore("orders", () => {
     }
 
     if (action === "reject") {
+      // При ошибке отклонения сохраняем причину для формы без отдельной сверки.
       command.value = null;
       rejectionError.value =
         result.kind === "unknown"
@@ -497,12 +524,7 @@ export const useOrdersStore = defineStore("orders", () => {
     }
 
     if (result.kind === "not-found") {
-      orders.value = orders.value.filter((row) => row.id !== id);
-
-      if (detail.value?.id === id) {
-        detail.value = null;
-      }
-
+      removeOrder(id);
       command.value = null;
       dialog.value = null;
       message.value = ORDER_MESSAGES.notFound;
@@ -551,7 +573,7 @@ export const useOrdersStore = defineStore("orders", () => {
       owner === null ||
       submitted === null ||
       submitted.phase !== "unknown" ||
-      commandReading !== null ||
+      reconciliationController !== null ||
       intent.value.kind !== "valid"
     ) {
       return;
@@ -561,13 +583,9 @@ export const useOrdersStore = defineStore("orders", () => {
     const checking: OrderCommand = { ...submitted, phase: "checking" };
 
     stopReads();
-
-    if (phase.value === "loading") {
-      phase.value = orders.value.length > 0 ? "ready" : "idle";
-    }
-
+    restorePhaseAfterReadStopped();
     command.value = checking;
-    commandReading = controller;
+    reconciliationController = controller;
     const result = await readOrder(
       owner.accessToken,
       submitted.order.id,
@@ -576,13 +594,13 @@ export const useOrdersStore = defineStore("orders", () => {
 
     if (
       context !== owner ||
-      commandReading !== controller ||
+      reconciliationController !== controller ||
       command.value !== checking
     ) {
       return;
     }
 
-    commandReading = null;
+    reconciliationController = null;
 
     if (result.kind === "session-expired") {
       expireSession();
@@ -593,19 +611,13 @@ export const useOrdersStore = defineStore("orders", () => {
     if (result.kind === "loaded") {
       const current = toOrderRecord(result.order);
 
+      // GET показывает текущее состояние, но не подтверждает авторство команды.
       publishOrder(current);
       checkedOrder.value = current;
       command.value = { ...submitted, phase: "reconciled" };
       message.value = ORDER_MESSAGES.reconciled;
     } else if (result.kind === "not-found") {
-      orders.value = orders.value.filter(
-        (order) => order.id !== submitted.order.id,
-      );
-
-      if (detail.value?.id === submitted.order.id) {
-        detail.value = null;
-      }
-
+      removeOrder(submitted.order.id);
       command.value = { ...submitted, phase: "reconciled" };
       message.value = `${ORDER_MESSAGES.notFound} ${ORDER_MESSAGES.reconciled}`;
     } else {

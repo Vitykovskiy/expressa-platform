@@ -40,6 +40,20 @@ export type UserCommand =
   | { readonly kind: "role"; readonly id: string; readonly role: StaffUserRole }
   | { readonly kind: "block"; readonly id: string; readonly blocked: boolean };
 
+export interface UserCommandRequest {
+  readonly path: string;
+  readonly method: "POST" | "PATCH";
+  readonly body:
+    | {
+        readonly name: string;
+        readonly phoneE164: string;
+        readonly role: StaffUserRole;
+      }
+    | { readonly role: StaffUserRole }
+    | { readonly blocked: boolean };
+  readonly expectedStatus: 200 | 201;
+}
+
 export type UsersReadOutcome =
   | { readonly kind: "loaded"; readonly users: readonly StaffUser[] }
   | { readonly kind: "failed" | "session-expired" | "cancelled" };

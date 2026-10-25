@@ -6,10 +6,16 @@ import {
 import type { SettingsDraft, SettingsInput } from "./settings.types";
 
 export function isSettingsInputValid(value: SettingsInput): boolean {
+  // После проверки HH:mm строковый порядок совпадает с порядком часов.
+  if (
+    !SETTINGS_TIME_PATTERN.test(value.opensAt) ||
+    !SETTINGS_TIME_PATTERN.test(value.closesAt) ||
+    value.opensAt >= value.closesAt
+  ) {
+    return false;
+  }
+
   return (
-    SETTINGS_TIME_PATTERN.test(value.opensAt) &&
-    SETTINGS_TIME_PATTERN.test(value.closesAt) &&
-    value.opensAt < value.closesAt &&
     Number.isInteger(value.slotCapacity) &&
     value.slotCapacity >= 1 &&
     value.slotCapacity <= SETTINGS_CAPACITY_MAX

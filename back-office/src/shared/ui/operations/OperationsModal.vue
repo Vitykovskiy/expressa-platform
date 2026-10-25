@@ -2,14 +2,14 @@
   <VDialog
     v-bind="dialogAttributes"
     :model-value="props.open"
-    :width="dialogWidth"
-    :max-width="dialogMaxWidth"
+    :width="dialogGeometry.width"
+    :max-width="dialogGeometry.maxWidth"
     :persistent="props.persistent"
     :opacity="0.4"
     scrim="#000000"
     :transition="false"
     :content-props="contentProps"
-    @update:model-value="updateOpen"
+    @update:model-value="requestClose"
   >
     <section v-bind="$attrs" class="operations-modal" :class="modalClass">
       <header class="operations-modal__header">
@@ -35,6 +35,7 @@ import { computed, onMounted, onScopeDispose, shallowRef, useId } from "vue";
 import { VDialog } from "vuetify/components/VDialog";
 import {
   MODAL_CONTENT_STYLE,
+  MODAL_MAX_WIDTH,
   MODAL_DEFAULTS,
   MOBILE_SHEET_QUERY,
   MODAL_SHEET_STYLE,
@@ -50,49 +51,70 @@ defineOptions({ inheritAttrs: false });
 const props = withDefaults(defineProps<OperationsModalProps>(), MODAL_DEFAULTS);
 const emit = defineEmits<OperationsModalEmits>();
 const slots = defineSlots<OperationsModalSlots>();
+
 const titleId = useId();
 const dialogAttributes = { "aria-labelledby": titleId };
-const mobileViewport = shallowRef(false);
+const matchesMobileViewport = shallowRef(false);
 let stopWatchingViewport: (() => void) | null = null;
 
-const sheetActive = computed(() => props.bottomSheet && mobileViewport.value);
-const dialogWidth = computed(() => (sheetActive.value ? "100vw" : props.width));
-const dialogMaxWidth = computed(() =>
-  sheetActive.value ? "100vw" : "calc(100vw - 32px)",
+const sheetActive = computed(
+  () => props.bottomSheet && matchesMobileViewport.value,
 );
+
+const dialogGeometry = computed(() => {
+  if (sheetActive.value) {
+    return {
+      width: MODAL_SHEET_STYLE.width,
+      maxWidth: MODAL_SHEET_STYLE.maxWidth,
+      contentStyle: MODAL_SHEET_STYLE,
+    };
+  }
+
+  return {
+    width: props.width,
+    maxWidth: MODAL_MAX_WIDTH,
+    contentStyle: MODAL_CONTENT_STYLE,
+  };
+});
+
 const modalClass = computed(() => [
   `operations-modal--${props.layout}`,
   { "operations-modal--sheet": sheetActive.value },
 ]);
 const contentProps = computed(() => ({
-  style: sheetActive.value ? MODAL_SHEET_STYLE : MODAL_CONTENT_STYLE,
+  style: dialogGeometry.value.contentStyle,
   "aria-labelledby": titleId,
 }));
 
-onMounted(() => {
-  const viewport = globalThis.matchMedia(MOBILE_SHEET_QUERY);
-  const updateViewport = () => {
-    mobileViewport.value = viewport.matches;
-  };
-
-  updateViewport();
-  viewport.addEventListener("change", updateViewport);
-  stopWatchingViewport = () =>
-    viewport.removeEventListener("change", updateViewport);
-});
-
+onMounted(watchMobileViewport);
 onScopeDispose(() => {
   stopWatchingViewport?.();
 });
 
-function updateOpen(value: boolean) {
-  if (!value) {
+function watchMobileViewport() {
+  const mobileQuery = globalThis.matchMedia(MOBILE_SHEET_QUERY);
+  const syncViewportMatch = () => {
+    matchesMobileViewport.value = mobileQuery.matches;
+  };
+
+  syncViewportMatch();
+  mobileQuery.addEventListener("change", syncViewportMatch);
+  stopWatchingViewport = () => {
+    mobileQuery.removeEventListener("change", syncViewportMatch);
+  };
+}
+
+function requestClose(open: boolean) {
+  // VDialog сообщает запрос закрытия; значение open меняет только потребитель.
+  if (!open) {
     emit("close");
   }
 }
 </script>
 
 <style scoped>
+/* Внутренние отступы и шрифт принадлежат исходной оболочке диалога; tokens
+   для них нет. Ширину overlay выбирает dialogGeometry, цвета и радиус — тема. */
 .operations-modal {
   width: 100%;
   padding: 24px;
@@ -102,15 +124,20 @@ function updateOpen(value: boolean) {
   color: var(--color-foreground);
   font-family: Inter, sans-serif;
 }
+/* Заголовок отделён от содержимого собственными интервалами оболочки;
+   они не задают отступы форм, переданных через slots. */
 .operations-modal__header {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding-bottom: 24px;
 }
+/* Подтверждение компактнее формы; это локальный вариант той же оболочки. */
 .operations-modal--confirmation .operations-modal__header {
   padding-bottom: 16px;
 }
+/* Пара заголовок/описание сохраняет исходную иерархию диалога;
+   общей типографической шкалы в текущих tokens нет. */
 .operations-modal__title {
   margin: 0;
   font-size: 18px;
@@ -124,6 +151,8 @@ function updateOpen(value: boolean) {
   font-weight: 400;
   line-height: 20px;
 }
+/* Интервалы body и actions относятся к раскладке slots, а не к полям внутри них;
+   отдельных tokens для этих расстояний нет. */
 .operations-modal__body {
   display: flex;
   flex-direction: column;
@@ -137,10 +166,13 @@ function updateOpen(value: boolean) {
   gap: 8px;
 }
 
+/* Тот же компактный интервал отделяет содержимое подтверждения от действий. */
 .operations-modal--confirmation .operations-modal__body {
   padding-bottom: 16px;
 }
 
+/* Внутренняя прокручиваемая поверхность ограничена той же высотой viewport,
+   что и внешний MODAL_SHEET_STYLE; фиксированная высота экрана здесь не нужна. */
 .operations-modal--sheet {
   max-height: 100dvh;
 }

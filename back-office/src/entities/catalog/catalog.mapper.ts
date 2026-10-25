@@ -1,4 +1,8 @@
-import type { CatalogData, CatalogListGroup } from "./catalog.types";
+import type {
+  CatalogData,
+  CatalogListGroup,
+  CatalogProduct,
+} from "./catalog.types";
 
 export function mapCatalogLists(data: CatalogData): {
   categories: readonly CatalogListGroup[];
@@ -19,13 +23,7 @@ export function mapCatalogLists(data: CatalogData): {
           kind: "product" as const,
           id: product.id,
           name: product.name,
-          priceLabel:
-            product.price === null
-              ? [...product.priceChoices]
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((choice) => `${choice.portionLabel}: ${choice.price} ₽`)
-                  .join(" · ")
-              : `${product.price} ₽`,
+          priceLabel: formatProductPrice(product),
         })),
       };
     });
@@ -51,20 +49,35 @@ export function mapCatalogLists(data: CatalogData): {
   return { categories, optionGroups };
 }
 
+function formatProductPrice(product: CatalogProduct): string {
+  if (product.price !== null) {
+    return `${product.price} ₽`;
+  }
+
+  return [...product.priceChoices]
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((choice) => `${choice.portionLabel}: ${choice.price} ₽`)
+    .join(" · ");
+}
+
 export function countLabel(
   count: number,
   forms: readonly [string, string, string],
 ): string {
   const lastTwo = count % 100;
   const last = count % 10;
-  const word =
-    lastTwo >= 11 && lastTwo <= 14
-      ? forms[2]
-      : last === 1
-        ? forms[0]
-        : last >= 2 && last <= 4
-          ? forms[1]
-          : forms[2];
 
-  return `${count} ${word}`;
+  if (lastTwo >= 11 && lastTwo <= 14) {
+    return `${count} ${forms[2]}`;
+  }
+
+  if (last === 1) {
+    return `${count} ${forms[0]}`;
+  }
+
+  if (last >= 2 && last <= 4) {
+    return `${count} ${forms[1]}`;
+  }
+
+  return `${count} ${forms[2]}`;
 }

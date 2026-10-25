@@ -1,5 +1,10 @@
 import { PUSH_WORKER_PATH } from "./notifications.constants";
 import type { PushProof } from "./notifications.types";
+import {
+  P256_PUBLIC_KEY_BYTES,
+  P256_UNCOMPRESSED_POINT_PREFIX,
+  VAPID_PUBLIC_KEY_PATTERN,
+} from "./native-push.constants";
 
 export function nativePushSupported() {
   return (
@@ -11,20 +16,14 @@ export function nativePushSupported() {
 }
 
 export async function prepareNativePush(publicKey: string) {
-  if (!nativePushSupported() || !/^[A-Za-z0-9_-]+$/u.test(publicKey)) {
+  if (!nativePushSupported() || !VAPID_PUBLIC_KEY_PATTERN.test(publicKey)) {
     return null;
   }
 
   try {
-    const base64 = publicKey.replace(/-/gu, "+").replace(/_/gu, "/");
-    const decoded = globalThis.atob(
-      base64.padEnd(Math.ceil(base64.length / 4) * 4, "="),
-    );
-    const key = Uint8Array.from(decoded, (character) =>
-      character.charCodeAt(0),
-    );
+    const key = decodeVapidPublicKey(publicKey);
 
-    if (key.length !== 65 || key[0] !== 4) {
+    if (key === null) {
       return null;
     }
 
@@ -46,6 +45,22 @@ export async function prepareNativePush(publicKey: string) {
   } catch {
     return null;
   }
+}
+
+function decodeVapidPublicKey(publicKey: string) {
+  const base64 = publicKey.replace(/-/gu, "+").replace(/_/gu, "/");
+  const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const decoded = globalThis.atob(paddedBase64);
+  const key = Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+
+  if (
+    key.length !== P256_PUBLIC_KEY_BYTES ||
+    key[0] !== P256_UNCOMPRESSED_POINT_PREFIX
+  ) {
+    return null;
+  }
+
+  return key;
 }
 
 export function nativePushProof(

@@ -8,6 +8,7 @@
 deploy/stand-urls.env
 deploy/development-access.env
 node_modules/
+/back-office/dist/
 **/.playwright-cli/
 **/output/playwright/
 **/storybook-static/

@@ -9,10 +9,11 @@ import type {
   StaffUsersQuery,
   UserCommand,
   UserCommandOutcome,
+  UserCommandRequest,
   UsersReadOutcome,
 } from "./users.types";
 
-function denied(result: ApiResult) {
+function isSessionDenied(result: ApiResult) {
   return "status" in result && (result.status === 401 || result.status === 403);
 }
 
@@ -42,7 +43,7 @@ export async function readStaffUsers(
     signal,
   });
 
-  if (denied(result)) {
+  if (isSessionDenied(result)) {
     return { kind: "session-expired" };
   }
 
@@ -56,27 +57,11 @@ export async function readStaffUsers(
 
   const users = parseStaffUsers(result.body);
 
-  return users === null
-    ? { kind: "failed" }
-    : { kind: "loaded", users: users.map(mapStaffUser) };
-}
-
-function matchesCommand(user: StaffUserDto, command: UserCommand) {
-  if (command.kind === "create") {
-    return (
-      user.name === command.name &&
-      user.phoneE164 === command.phoneE164 &&
-      user.role === command.role &&
-      !user.blocked
-    );
+  if (users === null) {
+    return { kind: "failed" };
   }
 
-  return (
-    user.id === command.id &&
-    (command.kind === "role"
-      ? user.role === command.role
-      : user.blocked === command.blocked)
-  );
+  return { kind: "loaded", users: users.map(mapStaffUser) };
 }
 
 export async function sendUserCommand(
@@ -84,24 +69,15 @@ export async function sendUserCommand(
   command: UserCommand,
   signal: AbortSignal,
 ): Promise<UserCommandOutcome> {
-  const path =
-    command.kind === "create"
-      ? USERS_ENDPOINT
-      : `${USERS_ENDPOINT}/${encodeURIComponent(command.id)}/${command.kind}`;
-  const body =
-    command.kind === "create"
-      ? { name: command.name, phoneE164: command.phoneE164, role: command.role }
-      : command.kind === "role"
-        ? { role: command.role }
-        : { blocked: command.blocked };
-  const result = await requestApi(path, {
-    method: command.kind === "create" ? "POST" : "PATCH",
+  const request = buildUserCommandRequest(command);
+  const result = await requestApi(request.path, {
+    method: request.method,
     accessToken,
     signal,
-    body,
+    body: request.body,
   });
 
-  if (denied(result)) {
+  if (isSessionDenied(result)) {
     return { kind: "session-expired" };
   }
 
@@ -109,11 +85,11 @@ export async function sendUserCommand(
     return { kind: "unknown" };
   }
 
-  const expectedStatus = command.kind === "create" ? 201 : 200;
   const user = parseStaffUser(result.body);
 
+  // Подтверждение требует ответа на исходную команду, одного HTTP-статуса мало.
   if (
-    result.status === expectedStatus &&
+    result.status === request.expectedStatus &&
     user !== null &&
     matchesCommand(user, command)
   ) {
@@ -129,4 +105,58 @@ export async function sendUserCommand(
   }
 
   return { kind: "unknown" };
+}
+
+function buildUserCommandRequest(command: UserCommand): UserCommandRequest {
+  if (command.kind === "create") {
+    return {
+      path: USERS_ENDPOINT,
+      method: "POST",
+      body: {
+        name: command.name,
+        phoneE164: command.phoneE164,
+        role: command.role,
+      },
+      expectedStatus: 201,
+    };
+  }
+
+  const path = `${USERS_ENDPOINT}/${encodeURIComponent(command.id)}/${command.kind}`;
+
+  if (command.kind === "role") {
+    return {
+      path,
+      method: "PATCH",
+      body: { role: command.role },
+      expectedStatus: 200,
+    };
+  }
+
+  return {
+    path,
+    method: "PATCH",
+    body: { blocked: command.blocked },
+    expectedStatus: 200,
+  };
+}
+
+function matchesCommand(user: StaffUserDto, command: UserCommand) {
+  if (command.kind === "create") {
+    return (
+      user.name === command.name &&
+      user.phoneE164 === command.phoneE164 &&
+      user.role === command.role &&
+      !user.blocked
+    );
+  }
+
+  if (user.id !== command.id) {
+    return false;
+  }
+
+  if (command.kind === "role") {
+    return user.role === command.role;
+  }
+
+  return user.blocked === command.blocked;
 }

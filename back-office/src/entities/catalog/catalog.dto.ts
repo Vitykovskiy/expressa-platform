@@ -1,6 +1,7 @@
 import { CATALOG_UUID, MAX_CATALOG_MONEY } from "./catalog.constants";
 import type {
   CatalogCategory,
+  CatalogAssociation,
   CatalogChoice,
   CatalogData,
   CatalogModifierGroup,
@@ -28,8 +29,8 @@ function rows(value: unknown): unknown[] {
   return value;
 }
 
-function text(value: unknown, empty = false): string {
-  if (typeof value !== "string" || (!empty && value.trim() === "")) {
+function text(value: unknown, allowEmpty = false): string {
+  if (typeof value !== "string" || (!allowEmpty && value.trim() === "")) {
     throw new TypeError("Некорректная строка каталога");
   }
 
@@ -92,21 +93,39 @@ function parseChoice(value: unknown): CatalogChoice {
 }
 
 export function parseProduct(value: unknown): CatalogProduct {
+  const product = parseCatalogProduct(value);
+
+  // Ответ сохранения обязан содержать полную цену даже у неактивного товара.
+  if (product.price === null && product.priceChoices.length === 0) {
+    throw new TypeError("Некорректная ценовая модель");
+  }
+
+  return product;
+}
+
+function parseCatalogProduct(value: unknown): CatalogProduct {
   const row = catalogObject(value);
   const price = row.price === null ? null : integer(row.price);
   const priceChoices = rows(row.priceChoices).map(parseChoice);
+  const categoryFields = parseCategory(value);
+
+  // Административное чтение включает неактивные заготовки без настроенной цены.
+  if (
+    (categoryFields.isActive && price === null && priceChoices.length === 0) ||
+    (price !== null && priceChoices.length !== 0)
+  ) {
+    throw new TypeError("Некорректная ценовая модель");
+  }
 
   if (
-    (price === null && priceChoices.length === 0) ||
-    (price !== null && priceChoices.length !== 0) ||
     new Set(priceChoices.map((choice) => choice.id)).size !==
-      priceChoices.length
+    priceChoices.length
   ) {
     throw new TypeError("Некорректная ценовая модель");
   }
 
   return {
-    ...parseCategory(value),
+    ...categoryFields,
     categoryId: catalogId(row.categoryId),
     price,
     portionLabel: row.portionLabel === null ? null : text(row.portionLabel),
@@ -160,19 +179,11 @@ export function parseCatalog(value: unknown): CatalogData | null {
   try {
     const source = catalogObject(value);
     const categories = rows(source.categories).map(parseCategory);
-    const products = rows(source.products).map(parseProduct);
+    const products = rows(source.products).map(parseCatalogProduct);
     const modifierGroups = rows(source.modifierGroups).map(parseGroup);
     const modifierOptions = rows(source.modifierOptions).map(parseOption);
     const categoryModifierGroups = rows(source.categoryModifierGroups).map(
-      (entry) => {
-        const row = catalogObject(entry);
-
-        return {
-          categoryId: catalogId(row.categoryId),
-          groupId: catalogId(row.groupId),
-          sortOrder: integer(row.sortOrder),
-        };
-      },
+      parseCategoryAssociation,
     );
 
     for (const collection of [
@@ -189,10 +200,20 @@ export function parseCatalog(value: unknown): CatalogData | null {
     if (
       products.some(
         (row) => !categories.some((category) => category.id === row.categoryId),
-      ) ||
+      )
+    ) {
+      return null;
+    }
+
+    if (
       modifierOptions.some(
         (row) => !modifierGroups.some((group) => group.id === row.groupId),
-      ) ||
+      )
+    ) {
+      return null;
+    }
+
+    if (
       categoryModifierGroups.some(
         (row) =>
           !categories.some((category) => category.id === row.categoryId) ||
@@ -212,4 +233,14 @@ export function parseCatalog(value: unknown): CatalogData | null {
   } catch {
     return null;
   }
+}
+
+function parseCategoryAssociation(value: unknown): CatalogAssociation {
+  const row = catalogObject(value);
+
+  return {
+    categoryId: catalogId(row.categoryId),
+    groupId: catalogId(row.groupId),
+    sortOrder: integer(row.sortOrder),
+  };
 }

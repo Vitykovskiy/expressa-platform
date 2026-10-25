@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import OrderCard from "../../features/orders/presentation/OrderCard.vue";
+import OrderCard from "../../features/orders/ui/OrderCard.vue";
 import type { OrdersQueueProps, OrdersQueueEmits } from "./OrdersQueue.types";
 
 const props = defineProps<OrdersQueueProps>();
@@ -25,6 +25,7 @@ const emit = defineEmits<OrdersQueueEmits>();
 </script>
 
 <style scoped>
+/* Очередь владеет сеткой: tokens не задают её интервал или порог двух колонок. */
 .orders-queue {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

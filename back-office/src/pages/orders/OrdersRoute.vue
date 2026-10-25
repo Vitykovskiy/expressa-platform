@@ -8,7 +8,7 @@
     :commands-disabled="orders.commandsDisabled"
     :pending-order-id="pendingOrderId"
     :expanded-order-id="orders.selectedOrderId"
-    :selected-order="extraSelectedCard"
+    :selected-order="selectedCardOutsideQueue"
     @select-filter="selectFilter"
     @refresh="orders.refresh"
     @confirm="confirm"
@@ -39,22 +39,22 @@
         />
       </div>
       <section
-        v-if="recovery"
+        v-if="commandRecovery"
         class="orders-feedback"
         aria-label="Проверка результата команды"
       >
-        <p class="orders-feedback__copy">Заказ #{{ recovery.order.number }}</p>
+        <p class="orders-feedback__copy">
+          Заказ #{{ commandRecovery.order.number }}
+        </p>
         <p class="orders-feedback__copy" role="status">{{ orders.message }}</p>
-        <p v-if="checkedState" class="orders-feedback__copy">
-          Текущее состояние: {{ checkedState }}
+        <p v-if="checkedOrderState" class="orders-feedback__copy">
+          Текущее состояние: {{ checkedOrderState }}
         </p>
         <OperationsButton
-          v-if="recovery.phase !== 'reconciled'"
+          v-if="commandRecovery.phase !== 'reconciled'"
           label="Проверить состояние заказа"
           kind="secondary"
-          :disabled="
-            recovery.phase === 'checking' || orders.intent.kind === 'invalid'
-          "
+          :disabled="recoveryCheckDisabled"
           @click="orders.checkCommand"
         />
         <OperationsButton
@@ -65,9 +65,7 @@
         />
       </section>
       <p
-        v-else-if="
-          orders.message && orders.phase !== 'error' && orders.dialog === null
-        "
+        v-else-if="showCommandNotice"
         class="orders-feedback__copy orders-feedback__notice"
         role="status"
       >
@@ -80,9 +78,7 @@
     :reason="orders.dialog?.reason ?? ''"
     :pending="orders.command?.phase === 'sending'"
     :commands-disabled="orders.commandsDisabled"
-    :error-message="
-      orders.dialog?.mode === 'issue' ? orders.dialog.error : null
-    "
+    :error-message="issueDialogError"
     @update:reason="orders.updateReason"
     @close="orders.closeDialog"
     @reject="reject"
@@ -101,26 +97,22 @@ import {
   nextTick,
   onMounted,
   onScopeDispose,
-  onActivated,
-  onDeactivated,
   useTemplateRef,
   watch,
 } from "vue";
 import { useOrdersStore } from "../../entities/orders/orders.store";
 import { ORDER_STAGE_LABELS } from "../../entities/orders/orders.constants";
 import type { OrderNavigationRequest } from "../../entities/orders/orders.types";
-import {
-  readOrdersIntent,
-  ordersNavigationHref,
-} from "../../features/orders/orders-navigation";
-import { toOrderCard } from "../../features/orders/presentation/orders.presenter";
-import OrderActionDialog from "../../features/orders/presentation/OrderActionDialog.vue";
+import { readOrdersIntent, ordersNavigationHref } from "./orders-navigation";
+import { toOrderCard } from "../../features/orders/ui/orders.presenter";
+import OrderActionDialog from "../../features/orders/ui/OrderActionDialog.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
 import SourceToast from "../../shared/ui/SourceToast/SourceToast.vue";
 import OrdersPage from "./OrdersPage.vue";
 import {
   ORDER_FILTER_TO_VIEW,
   ORDER_VIEW_TO_FILTER,
+  ORDERS_DOCUMENT_TITLE,
 } from "./OrdersRoute.constants";
 import type { OrdersPageHandle, OrderFilter } from "./OrdersPage.types";
 import type { OrdersRouteProps, OrdersRouteEmits } from "./OrdersRoute.types";
@@ -136,42 +128,85 @@ let needsRestore = true;
 
 const cards = computed(() => orders.orders.map(toOrderCard));
 const filter = computed(() => ORDER_VIEW_TO_FILTER[orders.view]);
+
 const pagePhase = computed(() =>
   orders.phase === "idle" ? "loading" : orders.phase,
 );
+
 const pendingOrderId = computed(() =>
   orders.command?.phase === "sending" ? orders.command.order.id : null,
 );
-const extraSelectedCard = computed(() =>
-  orders.selectedOrder !== null &&
-  !orders.orders.some((order) => order.id === orders.selectedOrder?.id)
-    ? toOrderCard(orders.selectedOrder)
-    : null,
-);
-const recovery = computed(() =>
-  orders.command !== null &&
-  orders.command.action !== "reject" &&
-  orders.command.phase !== "sending"
-    ? orders.command
-    : null,
-);
-const dialogMode = computed(() =>
-  recovery.value === null &&
-  orders.dialog !== null &&
-  orders.intent.kind === "valid"
-    ? orders.dialog.mode
-    : null,
-);
-const checkedState = computed(() => {
-  if (orders.checkedOrder === null) {
+
+const selectedCardOutsideQueue = computed(() => {
+  const selected = orders.selectedOrder;
+
+  if (selected === null) {
     return null;
   }
 
-  if (orders.checkedOrder.rejection !== null) {
-    return `Отклонён · ${orders.checkedOrder.rejection.reason}`;
+  if (orders.orders.some((order) => order.id === selected.id)) {
+    return null;
   }
 
-  return ORDER_STAGE_LABELS[orders.checkedOrder.stage];
+  return toOrderCard(selected);
+});
+
+const commandRecovery = computed(() => {
+  const command = orders.command;
+
+  if (command === null) {
+    return null;
+  }
+
+  // Ошибка отклонения остаётся у формы и SourceToast, без отдельной сверки.
+  if (command.action === "reject" || command.phase === "sending") {
+    return null;
+  }
+
+  return command;
+});
+
+const recoveryCheckDisabled = computed(
+  () =>
+    commandRecovery.value?.phase === "checking" ||
+    orders.intent.kind === "invalid",
+);
+
+const dialogMode = computed(() => {
+  if (commandRecovery.value !== null) {
+    return null;
+  }
+
+  if (orders.dialog === null || orders.intent.kind !== "valid") {
+    return null;
+  }
+
+  return orders.dialog.mode;
+});
+
+const issueDialogError = computed(() =>
+  orders.dialog?.mode === "issue" ? orders.dialog.error : null,
+);
+
+const showCommandNotice = computed(
+  () =>
+    Boolean(orders.message) &&
+    orders.phase !== "error" &&
+    orders.dialog === null,
+);
+
+const checkedOrderState = computed(() => {
+  const checked = orders.checkedOrder;
+
+  if (checked === null) {
+    return null;
+  }
+
+  if (checked.rejection !== null) {
+    return `Отклонён · ${checked.rejection.reason}`;
+  }
+
+  return ORDER_STAGE_LABELS[checked.stage];
 });
 
 async function syncRoute() {
@@ -182,10 +217,12 @@ async function syncRoute() {
   await orders.activate(props.context, readOrdersIntent(props.search));
   await nextTick();
 
-  if (routeActive && needsRestore && page.value !== null) {
-    page.value.restoreScroll(orders.scrollPosition);
-    needsRestore = false;
+  if (!routeActive || !needsRestore || page.value === null) {
+    return;
   }
+
+  page.value.restoreScroll(orders.scrollPosition);
+  needsRestore = false;
 }
 
 function navigate(request: OrderNavigationRequest | null) {
@@ -195,21 +232,21 @@ function navigate(request: OrderNavigationRequest | null) {
 }
 
 async function selectFilter(selected: OrderFilter) {
-  const owner = props.context;
+  const selectionContext = props.context;
   const request = await orders.selectView(ORDER_FILTER_TO_VIEW[selected]);
 
-  if (props.context === owner) {
+  // Завершение выбора прежнего сеанса не меняет адрес нового контекста.
+  if (props.context === selectionContext) {
     navigate(request);
   }
 }
 
 async function toggleDetails(id: string) {
-  const owner = props.context;
-  const request = await orders.selectOrder(
-    orders.selectedOrderId === id ? null : id,
-  );
+  const selectionContext = props.context;
+  const nextOrderId = orders.selectedOrderId === id ? null : id;
+  const request = await orders.selectOrder(nextOrderId);
 
-  if (props.context === owner) {
+  if (props.context === selectionContext) {
     navigate(request);
   }
 }
@@ -247,6 +284,7 @@ function rememberAndDeactivate() {
 watch(() => [props.context, props.search] as const, syncRoute, {
   immediate: true,
 });
+
 watch(
   () => orders.sessionExpired,
   (expired) => {
@@ -257,7 +295,7 @@ watch(
 );
 
 onMounted(async () => {
-  globalThis.document.title = "Заказы · Expressa";
+  globalThis.document.title = ORDERS_DOCUMENT_TITLE;
   await nextTick();
 
   if (routeActive) {
@@ -265,20 +303,11 @@ onMounted(async () => {
   }
 });
 
-onActivated(() => {
-  if (!routeActive) {
-    routeActive = true;
-    needsRestore = true;
-    globalThis.document.title = "Заказы · Expressa";
-    void syncRoute();
-    page.value?.focusHeading();
-  }
-});
-onDeactivated(rememberAndDeactivate);
 onScopeDispose(rememberAndDeactivate);
 </script>
 
 <style scoped>
+/* Локальное размещение toast над страницей: tokens не задают слой и отступы. */
 .orders-rejection-toast {
   position: fixed;
   z-index: 2500;
@@ -294,6 +323,7 @@ onScopeDispose(rememberAndDeactivate);
   }
 }
 
+/* Локальная геометрия блока обратной связи: общих tokens отступов нет. */
 .orders-feedback {
   display: flex;
   flex-direction: column;
@@ -305,6 +335,7 @@ onScopeDispose(rememberAndDeactivate);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
 }
+/* Типографика обратной связи не имеет общей шкалы в tokens приложения. */
 .orders-feedback__copy {
   margin: 0;
   color: var(--color-foreground-muted);

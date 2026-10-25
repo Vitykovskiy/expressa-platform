@@ -5,6 +5,8 @@ export const MODAL_DEFAULTS = {
   persistent: false,
   bottomSheet: false,
 } as const;
+
+export const MODAL_MAX_WIDTH = "calc(100vw - 32px)";
 export const MODAL_CONTENT_STYLE = {
   margin: "16px",
   maxHeight: "calc(100% - 32px)",

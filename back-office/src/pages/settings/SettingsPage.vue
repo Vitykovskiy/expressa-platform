@@ -38,6 +38,7 @@ const feedbackMessage = computed(() => {
 
   return props.saved ? "Настройки сохранены" : "";
 });
+
 const feedbackType = computed(() =>
   props.feedback !== "" ? "error" : "success",
 );
@@ -54,6 +55,8 @@ const feedbackType = computed(() =>
   background: var(--color-surface);
 }
 
+/* Toast сохраняет локальные отступы и слой над содержимым настроек;
+   тема не задаёт его позиционирование и узкую границу экрана. */
 .settings-page__feedback {
   position: fixed;
   z-index: 2500;

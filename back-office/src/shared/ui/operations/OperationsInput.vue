@@ -5,22 +5,16 @@
     }}</span>
     <span class="operations-field__control">
       <img
-        v-if="search"
+        v-if="isSearchField"
         class="operations-field__search"
         :src="SEARCH_ICON"
         alt=""
       />
       <select
-        v-if="select"
-        v-bind="$attrs"
+        v-if="isSelectField"
+        v-bind="{ ...$attrs, ...nativeFieldAttributes }"
         class="operations-field__input"
-        :value="props.modelValue"
-        :disabled="props.disabled"
-        :required="props.required"
-        :autocomplete="props.autocomplete"
-        :autofocus="props.autofocus"
-        :aria-describedby="props['aria-describedby']"
-        @change="updateValue"
+        @change="emitNativeValue"
       >
         <option
           v-for="option in props.options"
@@ -33,19 +27,13 @@
       </select>
       <input
         v-else
-        v-bind="$attrs"
+        v-bind="{ ...$attrs, ...nativeFieldAttributes }"
         class="operations-field__input"
         :type="inputType"
-        :value="props.modelValue"
         :placeholder="props.placeholder"
-        :disabled="props.disabled"
-        :required="props.required"
         :step="props.step"
         :inputmode="props.inputmode"
-        :autocomplete="props.autocomplete"
-        :autofocus="props.autofocus"
-        :aria-describedby="props['aria-describedby']"
-        @input="updateValue"
+        @input="emitNativeValue"
       />
     </span>
   </label>
@@ -63,21 +51,35 @@ defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<OperationsInputProps>(), INPUT_DEFAULTS);
 const emit = defineEmits<OperationsInputEmits>();
-const search = computed(() => props.type === "search");
-const select = computed(() => props.type === "select");
+
+const isSearchField = computed(() => props.type === "search");
+const isSelectField = computed(() => props.type === "select");
+
+// reason задаёт оформление причины, а браузер получает обычное текстовое поле.
 const inputType = computed(() =>
   props.type === "reason" ? "text" : props.type,
 );
+
+// Обе нативные ветки получают один контракт; явные props важнее $attrs.
+const nativeFieldAttributes = computed(() => ({
+  value: props.modelValue,
+  disabled: props.disabled,
+  required: props.required,
+  autocomplete: props.autocomplete,
+  autofocus: props.autofocus,
+  "aria-describedby": props["aria-describedby"],
+}));
+
 const fieldClasses = computed(() => ({
   "operations-field--disabled": props.disabled,
-  "operations-field--search": search.value,
+  "operations-field--search": isSearchField.value,
   "operations-field--reason": props.type === "reason",
 }));
 const labelClasses = computed(() => ({
   "operations-field__label--hidden": props.hideLabel,
 }));
 
-function updateValue(event: globalThis.Event) {
+function emitNativeValue(event: globalThis.Event) {
   const target = event.target;
 
   if (

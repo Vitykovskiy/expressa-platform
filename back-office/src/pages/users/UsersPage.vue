@@ -52,26 +52,40 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import UsersContent from "../../widgets/users/UsersContent.vue";
-import AddUserDialog from "../../features/users/presentation/AddUserDialog.vue";
-import UserAccessDialog from "../../features/users/presentation/UserAccessDialog.vue";
-import type { UserRole } from "../../features/users/presentation/Users.types";
+import AddUserDialog from "../../features/users/ui/AddUserDialog.vue";
+import UserAccessDialog from "../../features/users/ui/UserAccessDialog.vue";
+import type { UserRole } from "../../features/users/ui/Users.types";
 import type { UsersPageProps, UsersPageEmits } from "./UsersPage.types";
 import "../../shared/ui/operations/operations.tokens.css";
 
 const props = defineProps<UsersPageProps>();
 const emit = defineEmits<UsersPageEmits>();
 
-const createDraft = computed(() =>
-  props.dialog?.kind === "create" ? props.dialog.draft : null,
-);
-const accessDialog = computed(() =>
-  props.dialog?.kind === "create" ? null : props.dialog,
-);
-const dialogKey = computed(() =>
-  accessDialog.value
-    ? `${accessDialog.value.kind}:${accessDialog.value.user.id}`
-    : "closed",
-);
+const createDraft = computed(() => {
+  const dialog = props.dialog;
+
+  return dialog?.kind === "create" ? dialog.draft : null;
+});
+
+const accessDialog = computed(() => {
+  const dialog = props.dialog;
+
+  if (dialog === null || dialog.kind === "create") {
+    return null;
+  }
+
+  return dialog;
+});
+
+const dialogKey = computed(() => {
+  const dialog = accessDialog.value;
+
+  if (dialog === null) {
+    return "closed";
+  }
+
+  return `${dialog.kind}:${dialog.user.id}`;
+});
 
 function assignRole(id: string, role: UserRole) {
   emit("assignRole", id, role);
@@ -83,6 +97,8 @@ function setBlocked(id: string, blocked: boolean) {
 </script>
 
 <style scoped>
+/* Ширина, отступы и типографика уведомления согласованы с каталогом пользователей;
+   в теме нет соответствующих шкал геометрии и текста. */
 .users-page-notice {
   max-width: 720px;
   margin: 0 auto;

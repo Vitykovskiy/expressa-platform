@@ -5,7 +5,7 @@ import {
 } from "./users.constants";
 import type { StaffUserDto } from "./users.types";
 
-function timestamp(value: unknown): value is string {
+function isUserTimestamp(value: unknown): value is string {
   if (
     typeof value !== "string" ||
     !USER_TIMESTAMP_PATTERN.test(value) ||
@@ -16,6 +16,7 @@ function timestamp(value: unknown): value is string {
 
   const calendarDate = value.slice(0, 10);
 
+  // Date.parse допускает нормализацию несуществующего дня месяца.
   return (
     new Date(`${calendarDate}T00:00:00Z`).toISOString().slice(0, 10) ===
     calendarDate
@@ -30,27 +31,49 @@ export function parseStaffUser(value: unknown): StaffUserDto | null {
   if (
     !("id" in value) ||
     typeof value.id !== "string" ||
-    !USER_ID_PATTERN.test(value.id) ||
+    !USER_ID_PATTERN.test(value.id)
+  ) {
+    return null;
+  }
+
+  if (
     !("name" in value) ||
     !(
       value.name === null ||
       (typeof value.name === "string" && value.name.trim() !== "")
-    ) ||
+    )
+  ) {
+    return null;
+  }
+
+  if (
     !("phoneE164" in value) ||
     typeof value.phoneE164 !== "string" ||
-    !USER_PHONE_PATTERN.test(value.phoneE164) ||
+    !USER_PHONE_PATTERN.test(value.phoneE164)
+  ) {
+    return null;
+  }
+
+  if (
     !("role" in value) ||
     !(
       value.role === "customer" ||
       value.role === "barista" ||
       value.role === "administrator"
-    ) ||
-    !("blocked" in value) ||
-    typeof value.blocked !== "boolean" ||
+    )
+  ) {
+    return null;
+  }
+
+  if (!("blocked" in value) || typeof value.blocked !== "boolean") {
+    return null;
+  }
+
+  if (
     !("createdAt" in value) ||
-    !timestamp(value.createdAt) ||
+    !isUserTimestamp(value.createdAt) ||
     !("updatedAt" in value) ||
-    !timestamp(value.updatedAt)
+    !isUserTimestamp(value.updatedAt)
   ) {
     return null;
   }

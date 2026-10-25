@@ -19,18 +19,22 @@ export async function readPushKey(
     return { kind: "expired" };
   }
 
+  if (result.kind !== "http" || result.status !== 200) {
+    return { kind: "unknown" };
+  }
+
+  const body = result.body;
+
   if (
-    result.kind !== "http" ||
-    result.status !== 200 ||
-    typeof result.body !== "object" ||
-    result.body === null ||
-    !("publicKey" in result.body) ||
-    typeof result.body.publicKey !== "string"
+    typeof body !== "object" ||
+    body === null ||
+    !("publicKey" in body) ||
+    typeof body.publicKey !== "string"
   ) {
     return { kind: "unknown" };
   }
 
-  return { kind: "confirmed", value: result.body.publicKey };
+  return { kind: "confirmed", value: body.publicKey };
 }
 
 export async function inspectPush(
@@ -47,27 +51,27 @@ export async function inspectPush(
     return { kind: "expired" };
   }
 
-  if (result.kind !== "http") {
+  if (result.kind !== "http" || result.status !== 200) {
     return { kind: "unknown" };
   }
 
-  if (result.status === 401 || result.status === 403) {
-    return { kind: "expired" };
-  }
+  const inspection = parsePushInspection(result.body);
 
-  if (result.status !== 200) {
+  if (inspection === null) {
     return { kind: "unknown" };
   }
 
-  const body = result.body;
+  return { kind: "confirmed", value: inspection };
+}
 
+function parsePushInspection(body: unknown): PushInspection | null {
   if (
     typeof body !== "object" ||
     body === null ||
     !("association" in body) ||
     !("version" in body)
   ) {
-    return { kind: "unknown" };
+    return null;
   }
 
   if (
@@ -75,24 +79,22 @@ export async function inspectPush(
     body.association !== "other" &&
     body.association !== "current"
   ) {
-    return { kind: "unknown" };
+    return null;
   }
 
-  if (
-    body.association === "none"
-      ? body.version !== null
-      : typeof body.version !== "string" || !PUSH_UUID.test(body.version)
-  ) {
-    return { kind: "unknown" };
+  if (body.association === "none") {
+    if (body.version !== null) {
+      return null;
+    }
+
+    return { association: body.association, version: null };
   }
 
-  return {
-    kind: "confirmed",
-    value: {
-      association: body.association,
-      version: typeof body.version === "string" ? body.version : null,
-    },
-  };
+  if (typeof body.version !== "string" || !PUSH_UUID.test(body.version)) {
+    return null;
+  }
+
+  return { association: body.association, version: body.version };
 }
 
 export async function changePush(
@@ -138,21 +140,28 @@ export async function changePush(
     return { kind: "refused" };
   }
 
+  if (command.action !== "enable" || result.status !== 200) {
+    return { kind: "unknown" };
+  }
+
   const body = result.body;
 
   if (
-    command.action === "enable" &&
-    result.status === 200 &&
-    typeof body === "object" &&
-    body !== null &&
-    "association" in body &&
-    body.association === "current" &&
-    "version" in body &&
-    typeof body.version === "string" &&
-    PUSH_UUID.test(body.version)
+    typeof body !== "object" ||
+    body === null ||
+    !("association" in body) ||
+    body.association !== "current"
   ) {
-    return { kind: "confirmed", value: body.version };
+    return { kind: "unknown" };
   }
 
-  return { kind: "unknown" };
+  if (
+    !("version" in body) ||
+    typeof body.version !== "string" ||
+    !PUSH_UUID.test(body.version)
+  ) {
+    return { kind: "unknown" };
+  }
+
+  return { kind: "confirmed", value: body.version };
 }

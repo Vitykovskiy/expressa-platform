@@ -1,68 +1,27 @@
 import { AVAILABILITY_UUID } from "./availability.constants";
 import type {
+  AvailabilityCategoryDto,
+  AvailabilityChoiceDto,
   AvailabilityDto,
+  AvailabilityGroupDto,
   AvailabilityIntakeDto,
+  AvailabilityTarget,
+  AvailabilityModifierDto,
+  AvailabilityProductDto,
 } from "./availability.types";
 
 export function parseAvailability(value: unknown): AvailabilityDto | null {
   try {
     const source = object(value);
-    const categories = collection(source.categories).map((entry) => {
-      const row = object(entry);
-
-      return {
-        id: uuid(row.id),
-        name: text(row.name),
-        sortOrder: integer(row.sortOrder),
-        isActive: boolean(row.isActive),
-      };
-    });
-    const modifierGroups = collection(source.modifierGroups).map((entry) => {
-      const row = object(entry);
-
-      return {
-        id: uuid(row.id),
-        name: text(row.name),
-        isActive: boolean(row.isActive),
-      };
-    });
-    const products = collection(source.products).map((entry) => {
-      const row = object(entry);
-
-      return {
-        id: uuid(row.id),
-        categoryId: uuid(row.categoryId),
-        name: text(row.name),
-        price: row.price === null ? null : integer(row.price),
-        sortOrder: integer(row.sortOrder),
-        isActive: boolean(row.isActive),
-        isAvailable: boolean(row.isAvailable),
-      };
-    });
-    const modifierOptions = collection(source.modifierOptions).map((entry) => {
-      const row = object(entry);
-
-      return {
-        id: uuid(row.id),
-        groupId: uuid(row.groupId),
-        name: text(row.name),
-        priceDelta: integer(row.priceDelta),
-        sortOrder: integer(row.sortOrder),
-        isAvailable: boolean(row.isAvailable),
-      };
-    });
-    const priceChoices = collection(source.priceChoices).map((entry) => {
-      const row = object(entry);
-
-      return {
-        id: uuid(row.id),
-        productId: uuid(row.productId),
-        portionLabel: text(row.portionLabel),
-        isAvailable: boolean(row.isAvailable),
-        price: integer(row.price),
-        sortOrder: integer(row.sortOrder),
-      };
-    });
+    const categories = collection(source.categories).map(readCategory);
+    const modifierGroups = collection(source.modifierGroups).map(
+      readModifierGroup,
+    );
+    const products = collection(source.products).map(readProduct);
+    const modifierOptions = collection(source.modifierOptions).map(
+      readModifier,
+    );
+    const priceChoices = collection(source.priceChoices).map(readPriceChoice);
 
     for (const rows of [
       categories,
@@ -78,19 +37,38 @@ export function parseAvailability(value: unknown): AvailabilityDto | null {
 
     if (
       products.some(
-        (row) => !categories.some((category) => category.id === row.categoryId),
-      ) ||
+        (product) =>
+          !categories.some((category) => category.id === product.categoryId),
+      )
+    ) {
+      return null;
+    }
+
+    if (
       modifierOptions.some(
-        (row) => !modifierGroups.some((group) => group.id === row.groupId),
-      ) ||
+        (option) =>
+          !modifierGroups.some((group) => group.id === option.groupId),
+      )
+    ) {
+      return null;
+    }
+
+    if (
       priceChoices.some(
-        (row) => !products.some((product) => product.id === row.productId),
-      ) ||
+        (choice) =>
+          !products.some((product) => product.id === choice.productId),
+      )
+    ) {
+      return null;
+    }
+
+    // Активному товару нужна фиксированная цена или хотя бы один размер.
+    if (
       products.some(
-        (row) =>
-          row.isActive &&
-          row.price === null &&
-          !priceChoices.some((choice) => choice.productId === row.id),
+        (product) =>
+          product.isActive &&
+          product.price === null &&
+          !priceChoices.some((choice) => choice.productId === product.id),
       )
     ) {
       return null;
@@ -107,6 +85,96 @@ export function parseAvailability(value: unknown): AvailabilityDto | null {
   } catch {
     return null;
   }
+}
+
+export function confirmsAvailabilityChange(
+  value: unknown,
+  target: AvailabilityTarget,
+  expectedAvailable: boolean,
+): boolean {
+  if (target.type === "intake") {
+    const intake = parseIntake(value);
+
+    return intake !== null && intake.acceptsNewOrders === expectedAvailable;
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const responseType =
+    target.type === "price-choice" ? "price_choice" : target.type;
+
+  if (!("type" in value) || value.type !== responseType) {
+    return false;
+  }
+
+  if (!("id" in value) || value.id !== target.id) {
+    return false;
+  }
+
+  return "isAvailable" in value && value.isAvailable === expectedAvailable;
+}
+
+function readCategory(value: unknown): AvailabilityCategoryDto {
+  const row = object(value);
+
+  return {
+    id: uuid(row.id),
+    name: text(row.name),
+    sortOrder: integer(row.sortOrder),
+    isActive: boolean(row.isActive),
+  };
+}
+
+function readModifierGroup(value: unknown): AvailabilityGroupDto {
+  const row = object(value);
+
+  return {
+    id: uuid(row.id),
+    name: text(row.name),
+    isActive: boolean(row.isActive),
+  };
+}
+
+function readProduct(value: unknown): AvailabilityProductDto {
+  const row = object(value);
+
+  return {
+    id: uuid(row.id),
+    categoryId: uuid(row.categoryId),
+    name: text(row.name),
+    price: row.price === null ? null : integer(row.price),
+    sortOrder: integer(row.sortOrder),
+    isActive: boolean(row.isActive),
+    isAvailable: boolean(row.isAvailable),
+  };
+}
+
+function readModifier(value: unknown): AvailabilityModifierDto {
+  const row = object(value);
+
+  return {
+    id: uuid(row.id),
+    groupId: uuid(row.groupId),
+    name: text(row.name),
+    priceDelta: integer(row.priceDelta),
+    sortOrder: integer(row.sortOrder),
+    isAvailable: boolean(row.isAvailable),
+  };
+}
+
+function readPriceChoice(value: unknown): AvailabilityChoiceDto {
+  const row = object(value);
+
+  return {
+    id: uuid(row.id),
+    productId: uuid(row.productId),
+    portionLabel: text(row.portionLabel),
+    isAvailable: boolean(row.isAvailable),
+    price: integer(row.price),
+    sortOrder: integer(row.sortOrder),
+  };
 }
 
 function object(value: unknown): Record<string, unknown> {

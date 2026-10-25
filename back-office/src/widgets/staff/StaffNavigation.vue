@@ -11,16 +11,12 @@
         v-for="item in items"
         :key="item.section"
         class="desktop-link"
-        :class="{ selected: section === item.section }"
-        :href="links[item.section]"
-        :aria-current="section === item.section ? 'page' : undefined"
-        @click="emit('navigate', $event, links[item.section])"
+        :class="item.desktopClasses"
+        :href="item.href"
+        :aria-current="item.ariaCurrent"
+        @click="emit('navigate', $event, item.href)"
       >
-        <img
-          class="navigation-icon"
-          :src="section === item.section ? item.activeIcon : item.icon"
-          alt=""
-        />
+        <img class="navigation-icon" :src="item.desktopIcon" alt="" />
         <span>{{ item.label }}</span>
       </a>
       <div class="navigation-actions">
@@ -35,21 +31,12 @@
         v-for="item in items"
         :key="item.section"
         class="mobile-link"
-        :class="{
-          selected: section === item.section,
-          'users-link': item.section === 'users',
-        }"
-        :href="links[item.section]"
-        :aria-current="section === item.section ? 'page' : undefined"
-        @click="emit('navigate', $event, links[item.section])"
+        :class="item.mobileClasses"
+        :href="item.href"
+        :aria-current="item.ariaCurrent"
+        @click="emit('navigate', $event, item.href)"
       >
-        <img
-          class="navigation-icon"
-          :src="
-            section === item.section ? item.activeMobileIcon : item.mobileIcon
-          "
-          alt=""
-        />
+        <img class="navigation-icon" :src="item.mobileIcon" alt="" />
         <span class="mobile-label">{{ item.label }}</span>
       </a>
     </nav>
@@ -59,17 +46,38 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { STAFF_NAVIGATION } from "./StaffNavigation.constants";
-import type { StaffNavigationProps } from "./StaffNavigation.types";
+import type {
+  StaffNavigationProps,
+  StaffNavigationEmits,
+  StaffNavigationSlots,
+} from "./StaffNavigation.types";
 import logoutIcon from "./assets/logout.svg";
 
 const props = defineProps<StaffNavigationProps>();
-const emit = defineEmits<{
-  navigate: [event: globalThis.MouseEvent, href: string];
-  logout: [];
-}>();
-const items = computed(() =>
-  props.administrator ? STAFF_NAVIGATION : STAFF_NAVIGATION.slice(0, 2),
-);
+const emit = defineEmits<StaffNavigationEmits>();
+
+defineSlots<StaffNavigationSlots>();
+
+const items = computed(() => {
+  const visibleItems = STAFF_NAVIGATION.filter(
+    (item) => props.administrator || !item.administratorOnly,
+  );
+
+  return visibleItems.map((item) => {
+    const selected = props.section === item.section;
+
+    return {
+      section: item.section,
+      label: item.label,
+      href: props.links[item.section],
+      ariaCurrent: selected ? ("page" as const) : undefined,
+      desktopClasses: { selected },
+      mobileClasses: { selected, "users-link": item.section === "users" },
+      desktopIcon: selected ? item.activeIcon : item.icon,
+      mobileIcon: selected ? item.activeMobileIcon : item.mobileIcon,
+    };
+  });
+});
 </script>
 
 <style scoped>
@@ -116,7 +124,8 @@ const items = computed(() =>
   font-weight: 500;
 }
 .desktop-link.selected {
-  background: var(--operations-accent-light, #e8e8ff);
+  /* В текущей теме нет токена для фона выбранного раздела; сохраняем исходный цвет. */
+  background: #e8e8ff;
   color: var(--color-primary);
 }
 .navigation-icon {

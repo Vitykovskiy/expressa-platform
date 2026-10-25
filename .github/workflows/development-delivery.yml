@@ -46,7 +46,7 @@ jobs:
           tag="sha-${GITHUB_SHA}"
           docker build --tag "127.0.0.1:5000/expressa/backend:$tag" backend
           docker build --build-arg VITE_APP_ENV=development --build-arg VITE_API_BASE_URL=/ --tag "127.0.0.1:5000/expressa/front-office:$tag" front-office
-          docker build --build-arg VITE_APP_ENV=development --build-arg VITE_API_BASE_URL=/ --tag "127.0.0.1:5000/expressa/back-office:$tag" back-office
+          docker build --build-arg VITE_API_BASE_URL=/ --tag "127.0.0.1:5000/expressa/back-office:$tag" back-office
           docker push "127.0.0.1:5000/expressa/backend:$tag"
           docker push "127.0.0.1:5000/expressa/front-office:$tag"
           docker push "127.0.0.1:5000/expressa/back-office:$tag"

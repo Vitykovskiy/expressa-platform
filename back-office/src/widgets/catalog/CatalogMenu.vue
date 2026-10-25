@@ -86,15 +86,18 @@ const emit = defineEmits<CatalogMenuEmits>();
 const hasCategories = computed(() => props.categories.length > 0);
 const hasOptionGroups = computed(() => props.optionGroups.length > 0);
 const hasGroups = computed(() => hasCategories.value || hasOptionGroups.value);
+
 const cannotCreateCategory = computed(
   () => props.disabled || props.loading || props.error !== null,
 );
+
+const cannotCreateProduct = computed(
+  () => cannotCreateCategory.value || !hasGroups.value,
+);
+
+// Сохранённые группы остаются видимыми при ошибке обновления; пустота подтверждается отдельно.
 const confirmedEmpty = computed(
   () => !hasGroups.value && !props.loading && props.error === null,
-);
-const cannotCreateProduct = computed(
-  () =>
-    props.disabled || !hasGroups.value || props.loading || props.error !== null,
 );
 </script>
 

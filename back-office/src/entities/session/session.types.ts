@@ -5,6 +5,7 @@ export interface AccessTokenDto {
 }
 
 export interface CurrentUserDto {
+  readonly name: string | null;
   readonly id: string;
   readonly phoneE164: string;
   readonly role: "customer" | "barista" | "administrator";

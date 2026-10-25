@@ -5,21 +5,9 @@ export async function requestApi(
   path: string,
   options: ApiRequestOptions,
 ): Promise<ApiResult> {
-  const configuredBase: unknown = import.meta.env.VITE_API_BASE_URL;
-  const base =
-    configuredBase === undefined ? DEFAULT_API_BASE_URL : configuredBase;
+  const url = resolveApiUrl(path);
 
-  if (typeof base !== "string" || !path.startsWith("/api/")) {
-    return { kind: "configuration-error" };
-  }
-
-  let url: URL;
-
-  try {
-    const baseUrl = new URL(base, import.meta.url);
-
-    url = new URL(path.slice(1), baseUrl);
-  } catch {
+  if (url === null) {
     return { kind: "configuration-error" };
   }
 
@@ -53,6 +41,32 @@ export async function requestApi(
     return { kind: "network-error", cause };
   }
 
+  return readApiResponse(response, options);
+}
+
+function resolveApiUrl(path: string): URL | null {
+  const configuredBase: unknown = import.meta.env.VITE_API_BASE_URL;
+  const base =
+    configuredBase === undefined ? DEFAULT_API_BASE_URL : configuredBase;
+
+  if (typeof base !== "string" || !path.startsWith("/api/")) {
+    return null;
+  }
+
+  try {
+    const baseUrl = new URL(base, import.meta.url);
+
+    // Начальный / убирается, чтобы сохранить префикс пути настроенного base URL.
+    return new URL(path.slice(1), baseUrl);
+  } catch {
+    return null;
+  }
+}
+
+async function readApiResponse(
+  response: Response,
+  options: Pick<ApiRequestOptions, "signal">,
+): Promise<ApiResult> {
   const metadata = {
     status: response.status,
     retryAfter: response.headers.get("Retry-After"),
@@ -62,6 +76,7 @@ export async function requestApi(
     return { kind: "no-content", ...metadata };
   }
 
+  // HTTP-статус и форму body оценивает предметный API, включая ответы 401/403.
   try {
     const body: unknown = await response.json();
 

@@ -8,6 +8,7 @@ export interface OperationsInputOption {
 
 export interface OperationsInputProps {
   readonly label: string;
+  // Число и время тоже остаются строкой: разбор и пустое значение принадлежат форме.
   readonly modelValue: string;
   readonly type?:
     "text" | "search" | "number" | "time" | "tel" | "select" | "reason";

@@ -4,11 +4,11 @@ type: architecture
 owner: back-office
 knowledge_role: implementation
 scope: back-office
-last_verified: 2026-10-21
+last_verified: 2026-10-25
 sources:
   - ../../contracts/openapi.json
   - ../../src/app/App.vue
-  - ../../src/app/useStaffDomains.ts
+  - ../../src/app/staff/useStaffDomains.ts
   - ../../src/entities/availability/availability.api.ts
   - ../../src/entities/orders/orders.api.ts
   - ../../src/entities/catalog/catalog.api.ts
@@ -19,7 +19,7 @@ sources:
   - ../../src/entities/notifications/native-intent.ts
   - ../../src/entities/session/session.store.ts
   - ../../src/entities/session/session.api.ts
-  - ../../src/features/notifications/notifications.store.ts
+  - ../../src/features/notifications/model/notifications.store.ts
   - ../../public/service-worker.js
 ---
 
@@ -34,11 +34,18 @@ sources:
 
 Вход использует v2 OTP/request/verify, refresh, me и logout. Заказы читаются
 через v3 staff orders с view и отдельным detail; accept/issue сохраняют
-действующие v2-команды, ready/reject — v3. Пятистадийная модель, отдельный
-отказ и денежные snapshots не подменяются текущим меню.
+действующие v2-команды, ready/reject — v3. Ответы accept/issue проверяются как
+`OrderCoreDto`: имя покупателя, окно выдачи и метаданные отказа сохраняются из
+отправленного заказа после проверки совпадения покупателя. Чтение и ready/reject
+требуют полный `OrderDto` с явными nullable-полями. Перед подтверждением команды
+проверяются ID заказа, ожидаемая стадия и метаданные отказа. Эта адаптация
+действующих ответов сохраняется. Пятистадийная модель, отдельный отказ и денежные
+snapshots не подменяются текущим меню.
 
-Меню использует v3 catalog и source menu categories/products/modifier-groups/
-modifier-options. Полная цена сохраняется атомарно; произвольные подписи,
+Меню использует v3 catalog и source menu categories/products/option-groups/options.
+В source menu вариант создаётся через `POST option-groups/{groupId}/options`
+и изменяется через `PATCH options/{optionId}`.
+Полная цена сохраняется атомарно; произвольные подписи,
 ID, количество и скрытая доступность существующих вариантов сохраняются.
 Намеренное исключение вариантов и замена множественной связи подтверждаются
 для конкретного текущего draft. Архивирование после 204 перечитывает каталог.
@@ -96,7 +103,7 @@ Native click фокусирует только scoped owned view; cold `/?order=
 
 ## Наблюдения и пределы
 
-В текущем локальном production-runtime выполнены нормальный вход настоящих
+До текущего рефакторинга в локальном production-runtime выполнены нормальный вход настоящих
 Customer и Barista, настоящие PushSubscription и enable200; Barista inspect200,
 own disable204 и новое enable200. Реальный клиентский checkout создал заказ,
 смонтированный staff UI провёл accept, ready и issue. Чтение getNotifications
@@ -110,6 +117,12 @@ own disable204 и новое enable200. Реальный клиентский ch
 независимая backend-проверка proof/version/transfer/revocation и проверка
 после development-deploy остаются отдельными обязательными критериями.
 Секреты, endpoint и ключи подписки в документацию не помещаются.
+
+Эти наблюдения относятся к прежнему интеграционному состоянию. Перенос
+notifications store в `features/notifications/model` и dialog в
+`features/notifications/ui` сохраняет владельцев; source-review не обновляет
+свежесть native-доказательств. Текущий рефакторинг не подтверждает повторную
+доставку, системный клик или установленный runtime.
 
 После связанной правки logout наблюдались настоящий own-proof logout204 и
 переход во вход; новый вход и inspect показали отсутствие связи, затем явный

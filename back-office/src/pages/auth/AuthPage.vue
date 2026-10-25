@@ -1,6 +1,6 @@
 <template>
   <main ref="entry" class="auth-page" tabindex="-1">
-    <AuthPending v-if="restoring || pending" />
+    <AuthPending v-if="showPending" />
     <AuthCard
       v-else
       :step="step"
@@ -8,7 +8,7 @@
       :code="code"
       :phone-invalid="phoneInvalid"
       :can-send="canSend"
-      :can-confirm="canConfirm && !staffHandoff"
+      :can-confirm="canConfirm"
       @phone-changed="setPhone"
       @code-changed="setCode"
       @send-requested="sendCode"
@@ -28,9 +28,9 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
-import AuthCard from "../../features/auth/AuthCard.vue";
-import AuthPending from "../../features/auth/AuthPending.vue";
-import { useAuthEntry } from "../../features/auth/useAuthEntry";
+import AuthCard from "../../features/auth/ui/AuthCard.vue";
+import AuthPending from "../../features/auth/ui/AuthPending.vue";
+import { useAuthEntry } from "../../features/auth/model/useAuthEntry";
 import type {
   AuthPageElement,
   AuthPageEmits,
@@ -40,7 +40,7 @@ import type {
 const props = defineProps<AuthPageProps>();
 const emit = defineEmits<AuthPageEmits>();
 const entry = useTemplateRef<AuthPageElement>("entry");
-let active = false;
+let isPageActive = false;
 
 const {
   step,
@@ -62,14 +62,16 @@ const {
   () => emit("authenticated"),
 );
 
+const showPending = computed(() => props.restoring || pending.value);
 const visiblePhone = computed(() =>
   step.value === "phone" ? phone.value : shownPhone.value,
 );
 
-async function focusEntry() {
+async function focusActiveEntry() {
   await nextTick();
 
-  if (!active || entry.value === null) {
+  // За время обновления DOM KeepAlive мог скрыть вход; фокус остаётся в рабочем разделе.
+  if (!isPageActive || entry.value === null) {
     return;
   }
 
@@ -77,21 +79,23 @@ async function focusEntry() {
 
   if (input !== null) {
     input.focus();
-  } else {
-    entry.value.focus();
+
+    return;
   }
+
+  entry.value.focus();
 }
 
 onActivated(() => {
-  active = true;
-  focusEntry();
+  isPageActive = true;
+  focusActiveEntry();
 });
 
 onDeactivated(() => {
-  active = false;
+  isPageActive = false;
 });
 
-watch(() => [props.restoring, pending.value, step.value], focusEntry, {
+watch(() => [props.restoring, pending.value, step.value], focusActiveEntry, {
   flush: "post",
 });
 </script>

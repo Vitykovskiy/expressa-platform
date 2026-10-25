@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useSettingsStore } from "../../entities/settings/settings.store";
-import SettingsRecovery from "../../features/settings/presentation/SettingsRecovery.vue";
+import SettingsRecovery from "../../features/settings/ui/SettingsRecovery.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
 import SettingsPage from "./SettingsPage.vue";
 
@@ -59,30 +59,45 @@ const settings = useSettingsStore();
 const recoveryCommand = computed(() => {
   const command = settings.command;
 
-  return command !== null &&
-    (command.phase === "unknown" ||
-      command.phase === "inspecting" ||
-      command.phase === "inspected")
-    ? command
-    : null;
+  if (command === null) {
+    return null;
+  }
+
+  if (
+    command.phase === "unknown" ||
+    command.phase === "inspecting" ||
+    command.phase === "inspected"
+  ) {
+    return command;
+  }
+
+  return null;
 });
+
 const loading = computed(() => settings.phase === "loading");
 const failed = computed(() => settings.phase === "error");
+
 const initialMessage = computed(() =>
   failed.value ? settings.message : "Загрузка настроек…",
 );
+
 const feedback = computed(() => {
   if (settings.validationMessage !== "") {
     return settings.validationMessage;
   }
 
-  return recoveryCommand.value !== null || settings.stale
-    ? ""
-    : settings.message;
+  // Сообщение сверки или неактуальности уже показано рядом с формой.
+  if (recoveryCommand.value !== null || settings.stale) {
+    return "";
+  }
+
+  return settings.message;
 });
 </script>
 
 <style scoped>
+/* Ширина, отступы и типографика начального состояния согласованы с формой.
+   Общая тема задаёт цвета и радиусы, но не геометрию этого экрана. */
 .settings-route__initial {
   display: flex;
   flex-direction: column;
@@ -114,6 +129,7 @@ const feedback = computed(() => {
   line-height: 19.5px;
 }
 
+/* Узкое начальное состояние использует ту же границу, что SettingsForm. */
 @media (max-width: 767px) {
   .settings-route__initial {
     padding: 16px;

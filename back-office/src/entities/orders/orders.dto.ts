@@ -11,24 +11,26 @@ import type {
   OrderCoreDto,
   OrderSnapshotItem,
   OrderStage,
+  OrderHistoryEvent,
 } from "./orders.types";
 
+// null означает непригодный ответ; nullable-поля проверяются внутри DTO.
 export function parseOrder(value: unknown): OrderDto | null {
   try {
-    const source = object(value);
-    const core = coreOrder(source);
-    const customer = object(source.customer);
-    const name = customer.name === null ? null : text(customer.name);
+    const source = requireObject(value);
+    const core = readCoreOrder(source);
+    const customer = requireObject(source.customer);
+    const name = customer.name === null ? null : requireText(customer.name);
     const pickup =
-      source.pickupSlot === null ? null : object(source.pickupSlot);
+      source.pickupSlot === null ? null : requireObject(source.pickupSlot);
     const rejection =
-      source.rejection === null ? null : object(source.rejection);
+      source.rejection === null ? null : requireObject(source.rejection);
     const pickupSlot =
       pickup === null
         ? null
         : {
-            startsAt: timestamp(pickup.startsAt),
-            endsAt: timestamp(pickup.endsAt),
+            startsAt: requireTimestamp(pickup.startsAt),
+            endsAt: requireTimestamp(pickup.endsAt),
           };
 
     if (
@@ -51,9 +53,9 @@ export function parseOrder(value: unknown): OrderDto | null {
         rejection === null
           ? null
           : {
-              reason: text(rejection.reason),
-              at: timestamp(rejection.at),
-              actorId: uuid(rejection.actorId),
+              reason: requireText(rejection.reason),
+              at: requireTimestamp(rejection.at),
+              actorId: requireUuid(rejection.actorId),
             },
     };
   } catch {
@@ -61,31 +63,22 @@ export function parseOrder(value: unknown): OrderDto | null {
   }
 }
 
-export function parseLegacyOrder(value: unknown): OrderCoreDto | null {
+// Текущие v2 accept/issue возвращают OrderCoreDto; v3 чтение/ready/reject — полный OrderDto.
+export function parseOrderCore(value: unknown): OrderCoreDto | null {
   try {
-    return coreOrder(object(value));
+    return readCoreOrder(requireObject(value));
   } catch {
     return null;
   }
 }
 
-function coreOrder(source: Record<string, unknown>): OrderCoreDto {
-  const customer = object(source.customer);
-  const phoneE164 = text(customer.phoneE164);
-  const snapshot = collection(source.snapshot).map(item);
-  const events = collection(source.events).map((value) => {
-    const event = object(value);
-
-    return {
-      actorId: uuid(event.actorId),
-      actorLabel: text(event.actorLabel),
-      occurredAt: timestamp(event.occurredAt),
-      from: stage(event.from),
-      to: stage(event.to),
-    };
-  });
-  const currentStage = stage(source.stage);
-  const total = integer(source.total);
+function readCoreOrder(source: Record<string, unknown>): OrderCoreDto {
+  const customer = requireObject(source.customer);
+  const phoneE164 = requireText(customer.phoneE164);
+  const snapshot = requireCollection(source.snapshot).map(readSnapshotItem);
+  const events = requireCollection(source.events).map(readHistoryEvent);
+  const currentStage = requireStage(source.stage);
+  const total = requireNonnegativeInteger(source.total);
   const sum = snapshot.reduce((amount, row) => amount + row.lineTotal, 0);
 
   if (
@@ -97,6 +90,37 @@ function coreOrder(source: Record<string, unknown>): OrderCoreDto {
     throw new TypeError("Некорректный снимок заказа");
   }
 
+  assertOrderHistory(events, currentStage);
+
+  return {
+    id: requireUuid(source.id),
+    number: requireText(source.number),
+    createdAt: requireTimestamp(source.createdAt),
+    total,
+    stage: currentStage,
+    customer: { id: requireUuid(customer.id), phoneE164 },
+    snapshot,
+    events,
+  };
+}
+
+function readHistoryEvent(value: unknown): OrderHistoryEvent {
+  const event = requireObject(value);
+
+  return {
+    actorId: requireUuid(event.actorId),
+    actorLabel: requireText(event.actorLabel),
+    occurredAt: requireTimestamp(event.occurredAt),
+    from: requireStage(event.from),
+    to: requireStage(event.to),
+  };
+}
+
+function assertOrderHistory(
+  events: readonly OrderHistoryEvent[],
+  currentStage: OrderStage,
+): void {
+  // ready может вернуть сразу два события; каждое сохраняет один законный переход.
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index];
     const previous = events[index - 1];
@@ -119,31 +143,20 @@ function coreOrder(source: Record<string, unknown>): OrderCoreDto {
   ) {
     throw new TypeError("Стадия не соответствует истории заказа");
   }
-
-  return {
-    id: uuid(source.id),
-    number: text(source.number),
-    createdAt: timestamp(source.createdAt),
-    total,
-    stage: currentStage,
-    customer: { id: uuid(customer.id), phoneE164 },
-    snapshot,
-    events,
-  };
 }
 
-function item(value: unknown): OrderSnapshotItem {
-  const row = object(value);
-  const quantity = integer(row.quantity);
-  const unitTotal = integer(row.unitTotal);
-  const lineTotal = integer(row.lineTotal);
-  const modifiers = collection(row.modifiers).map((value) => {
-    const modifier = object(value);
+function readSnapshotItem(value: unknown): OrderSnapshotItem {
+  const row = requireObject(value);
+  const quantity = requireNonnegativeInteger(row.quantity);
+  const unitTotal = requireNonnegativeInteger(row.unitTotal);
+  const lineTotal = requireNonnegativeInteger(row.lineTotal);
+  const modifiers = requireCollection(row.modifiers).map((value) => {
+    const modifier = requireObject(value);
 
     return {
-      modifierOptionId: uuid(modifier.modifierOptionId),
-      modifierName: text(modifier.modifierName),
-      priceDelta: integer(modifier.priceDelta),
+      modifierOptionId: requireUuid(modifier.modifierOptionId),
+      modifierName: requireText(modifier.modifierName),
+      priceDelta: requireNonnegativeInteger(modifier.priceDelta),
     };
   });
 
@@ -158,10 +171,12 @@ function item(value: unknown): OrderSnapshotItem {
   }
 
   return {
-    productId: uuid(row.productId),
-    priceChoiceId: row.priceChoiceId === null ? null : uuid(row.priceChoiceId),
-    productName: text(row.productName),
-    portionLabel: row.portionLabel === null ? null : text(row.portionLabel),
+    productId: requireUuid(row.productId),
+    priceChoiceId:
+      row.priceChoiceId === null ? null : requireUuid(row.priceChoiceId),
+    productName: requireText(row.productName),
+    portionLabel:
+      row.portionLabel === null ? null : requireText(row.portionLabel),
     quantity,
     unitTotal,
     lineTotal,
@@ -169,7 +184,7 @@ function item(value: unknown): OrderSnapshotItem {
   };
 }
 
-function object(value: unknown): Record<string, unknown> {
+function requireObject(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) {
     throw new TypeError("Некорректный объект заказа");
   }
@@ -181,7 +196,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function collection(value: unknown): readonly unknown[] {
+function requireCollection(value: unknown): readonly unknown[] {
   if (!Array.isArray(value)) {
     throw new TypeError("Некорректный список заказа");
   }
@@ -189,7 +204,7 @@ function collection(value: unknown): readonly unknown[] {
   return value;
 }
 
-function text(value: unknown): string {
+function requireText(value: unknown): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new TypeError("Некорректное поле заказа");
   }
@@ -197,7 +212,7 @@ function text(value: unknown): string {
   return value;
 }
 
-function integer(value: unknown): number {
+function requireNonnegativeInteger(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
     throw new TypeError("Некорректная сумма заказа");
   }
@@ -205,8 +220,8 @@ function integer(value: unknown): number {
   return value;
 }
 
-function uuid(value: unknown): string {
-  const id = text(value);
+function requireUuid(value: unknown): string {
+  const id = requireText(value);
 
   if (!ORDER_UUID.test(id)) {
     throw new TypeError("Некорректный идентификатор заказа");
@@ -215,8 +230,8 @@ function uuid(value: unknown): string {
   return id;
 }
 
-function timestamp(value: unknown): string {
-  const result = text(value);
+function requireTimestamp(value: unknown): string {
+  const result = requireText(value);
 
   if (
     !ORDER_ISO_TIMESTAMP.test(result) ||
@@ -239,7 +254,7 @@ function timestamp(value: unknown): string {
   return result;
 }
 
-function stage(value: unknown): OrderStage {
+function requireStage(value: unknown): OrderStage {
   const result = ORDER_STAGES.find((candidate) => candidate === value);
 
   if (result === undefined) {

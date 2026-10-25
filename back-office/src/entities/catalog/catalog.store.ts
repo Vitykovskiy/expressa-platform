@@ -17,15 +17,15 @@ const useCatalogState = defineStore("catalog", () => {
   const command = shallowRef<CatalogPendingCommand | null>(null);
   const revision = shallowRef(0);
   let context: CatalogContext | null = null;
-  let reading: AbortController | null = null;
-  let writing: AbortController | null = null;
+  let readController: AbortController | null = null;
+  let writeController: AbortController | null = null;
 
   function clear() {
     context = null;
-    reading?.abort();
-    writing?.abort();
-    reading = null;
-    writing = null;
+    readController?.abort();
+    writeController?.abort();
+    readController = null;
+    writeController = null;
     data.value = null;
     command.value = null;
     loading.value = false;
@@ -51,30 +51,38 @@ const useCatalogState = defineStore("catalog", () => {
 
   function deactivate() {
     if (command.value === null) {
-      reading?.abort();
-      reading = null;
+      readController?.abort();
+      readController = null;
       loading.value = false;
     }
   }
 
   async function load() {
-    const owner = context;
+    const launchContext = context;
 
-    if (owner === null || reading !== null || writing !== null) {
+    if (launchContext === null) {
+      return false;
+    }
+
+    if (readController !== null || writeController !== null) {
       return false;
     }
 
     const controller = new AbortController();
 
-    reading = controller;
+    readController = controller;
     loading.value = true;
-    const outcome = await readCatalog(owner.accessToken, controller.signal);
+    const outcome = await readCatalog(
+      launchContext.accessToken,
+      controller.signal,
+    );
 
-    if (context !== owner || reading !== controller) {
+    // Отмена чтения или смена сеанса отзывает и данные, и ошибку прежнего запроса.
+    if (context !== launchContext || readController !== controller) {
       return false;
     }
 
-    reading = null;
+    readController = null;
     loading.value = false;
 
     if (outcome.kind === "session-expired") {
@@ -105,33 +113,36 @@ const useCatalogState = defineStore("catalog", () => {
     return false;
   }
 
-  async function execute(input: CatalogCommand) {
-    const owner = context;
+  async function execute(submittedCommand: CatalogCommand) {
+    const launchContext = context;
 
-    if (
-      owner === null ||
-      command.value !== null ||
-      loading.value ||
-      stale.value
-    ) {
+    if (launchContext === null || command.value !== null) {
+      return { kind: "blocked" } as const;
+    }
+
+    if (loading.value || stale.value) {
       return { kind: "blocked" } as const;
     }
 
     const controller = new AbortController();
 
-    writing = controller;
-    command.value = { command: input, phase: "sending", checked: false };
+    writeController = controller;
+    command.value = {
+      command: submittedCommand,
+      phase: "sending",
+      checked: false,
+    };
     const outcome = await writeCatalog(
-      owner.accessToken,
-      input,
+      launchContext.accessToken,
+      submittedCommand,
       controller.signal,
     );
 
-    if (context !== owner || writing !== controller) {
+    if (context !== launchContext || writeController !== controller) {
       return { kind: "cancelled" } as const;
     }
 
-    writing = null;
+    writeController = null;
 
     if (outcome.kind === "session-expired") {
       clear();
@@ -141,17 +152,25 @@ const useCatalogState = defineStore("catalog", () => {
     }
 
     if (outcome.kind === "unknown") {
-      command.value = { command: input, phase: "unknown", checked: false };
+      command.value = {
+        command: submittedCommand,
+        phase: "unknown",
+        checked: false,
+      };
       stale.value = true;
 
       return outcome;
     }
 
     if (outcome.kind === "confirmed") {
+      // Доступность устаревает сразу после записи, даже если перечитывание меню не удастся.
       revision.value += 1;
       await load();
 
-      if (context !== owner || command.value?.command !== input) {
+      if (
+        context !== launchContext ||
+        command.value?.command !== submittedCommand
+      ) {
         return { kind: "cancelled" } as const;
       }
     }

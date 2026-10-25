@@ -33,9 +33,11 @@ export async function readSettings(
 
   const dto = parseSettingsDto(result.body);
 
-  return dto === null
-    ? { kind: "failed" }
-    : { kind: "loaded", settings: mapSettings(dto) };
+  if (dto === null) {
+    return { kind: "failed" };
+  }
+
+  return { kind: "loaded", settings: mapSettings(dto) };
 }
 
 export async function saveSettings(
@@ -69,9 +71,16 @@ export async function saveSettings(
     return { kind: "rejected" };
   }
 
-  const dto = result.status === 200 ? parseSettingsDto(result.body) : null;
+  if (result.status !== 200) {
+    return { kind: "unknown" };
+  }
 
-  return dto !== null && sameSettings(dto, input)
-    ? { kind: "confirmed", settings: mapSettings(dto) }
-    : { kind: "unknown" };
+  const dto = parseSettingsDto(result.body);
+
+  // Только ответ записи с теми же часами и вместимостью подтверждает команду.
+  if (dto === null || !sameSettings(dto, input)) {
+    return { kind: "unknown" };
+  }
+
+  return { kind: "confirmed", settings: mapSettings(dto) };
 }

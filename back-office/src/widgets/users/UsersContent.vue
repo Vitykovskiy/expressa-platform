@@ -44,10 +44,12 @@
           @access="emit('access', $event)"
         />
       </ul>
-      <div v-else-if="showEmpty" class="users-content__empty" role="status">
+      <div v-else-if="canShowEmpty" class="users-content__empty" role="status">
         <img :src="USER_ASSETS.empty" alt="" />
-        <h2 class="users-content__empty-title">{{ emptyTitle }}</h2>
-        <p class="users-content__empty-description">{{ emptyDescription }}</p>
+        <h2 class="users-content__empty-title">{{ emptyMessage.title }}</h2>
+        <p class="users-content__empty-description">
+          {{ emptyMessage.description }}
+        </p>
       </div>
     </div>
     <button
@@ -69,7 +71,7 @@ import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
 import {
   USER_ASSETS,
   USERS_FILTERS,
-} from "../../features/users/presentation/Users.constants";
+} from "../../features/users/ui/Users.constants";
 import UserRow from "./UserRow.vue";
 import type {
   UsersContentProps,
@@ -80,21 +82,29 @@ const props = defineProps<UsersContentProps>();
 const emit = defineEmits<UsersContentEmits>();
 
 const hasUsers = computed(() => props.users.length > 0);
-const showEmpty = computed(() => !props.loading && props.error === null);
+
+// Полученный список остаётся видимым при обновлении и ошибке чтения.
+const canShowEmpty = computed(() => !props.loading && props.error === null);
+
 const loadingMessage = computed(() =>
   hasUsers.value
     ? "Обновляем список. Ниже — ранее полученные данные."
     : "Загрузка пользователей…",
 );
-const hasSearch = computed(() => props.query.trim().length > 0);
-const emptyTitle = computed(() =>
-  hasSearch.value ? "Никого не нашли" : "Пользователей нет",
-);
-const emptyDescription = computed(() =>
-  hasSearch.value
-    ? "Измените имя или номер в поиске"
-    : "Они появятся после добавления",
-);
+
+const emptyMessage = computed(() => {
+  if (props.query.trim().length > 0) {
+    return {
+      title: "Никого не нашли",
+      description: "Измените имя или номер в поиске",
+    };
+  }
+
+  return {
+    title: "Пользователей нет",
+    description: "Они появятся после добавления",
+  };
+});
 
 function selectFilter(value: string) {
   const option = USERS_FILTERS.find((filter) => filter.id === value);
@@ -106,6 +116,8 @@ function selectFilter(value: string) {
 </script>
 
 <style scoped>
+/* Локальная геометрия списка, типографика и мобильная компоновка сохраняют
+   исходные размеры: в теме нет шкал отступов, текста и breakpoint. */
 .users-content {
   width: 100%;
   max-width: 720px;

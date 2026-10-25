@@ -5,12 +5,16 @@ import {
   INTAKE_ENDPOINT,
   PRICE_CHOICE_AVAILABILITY_ENDPOINT,
 } from "./availability.constants";
-import { parseAvailability, parseIntake } from "./availability.dto";
+import {
+  confirmsAvailabilityChange,
+  parseAvailability,
+} from "./availability.dto";
 import { mapAvailability } from "./availability.mapper";
 import type {
   AvailabilityChangeOutcome,
   AvailabilityItem,
   AvailabilityReadOutcome,
+  AvailabilityTarget,
 } from "./availability.types";
 
 export async function readAvailability(
@@ -37,9 +41,11 @@ export async function readAvailability(
 
   const dto = parseAvailability(result.body);
 
-  return dto === null
-    ? { kind: "failed" }
-    : { kind: "loaded", groups: mapAvailability(dto) };
+  if (dto === null) {
+    return { kind: "failed" };
+  }
+
+  return { kind: "loaded", groups: mapAvailability(dto) };
 }
 
 export async function changeAvailability(
@@ -47,12 +53,7 @@ export async function changeAvailability(
   item: AvailabilityItem,
   signal: AbortSignal,
 ): Promise<AvailabilityChangeOutcome> {
-  const endpoint =
-    item.type === "intake"
-      ? INTAKE_ENDPOINT
-      : item.type === "price-choice"
-        ? `${PRICE_CHOICE_AVAILABILITY_ENDPOINT}/${encodeURIComponent(item.id)}`
-        : `${AVAILABILITY_ENDPOINT}/${item.type}/${encodeURIComponent(item.id)}`;
+  const endpoint = availabilityChangeEndpoint(item);
   const result = await requestApi(endpoint, {
     method: "PATCH",
     accessToken,
@@ -67,42 +68,34 @@ export async function changeAvailability(
     return { kind: "session-expired" };
   }
 
+  // Отмена ожидания записи не доказывает, что сервер её не применил.
   if (result.kind !== "http") {
     return { kind: "unknown" };
   }
 
-  const body = result.body;
-
-  if (item.type === "intake" && result.status === 200) {
-    const intake = parseIntake(body);
-
-    if (
-      intake !== null &&
-      intake.acceptsNewOrders === !item.persistedAvailable
-    ) {
-      return { kind: "confirmed" };
-    }
-  }
-
   if (
     result.status === 200 &&
-    typeof body === "object" &&
-    body !== null &&
-    "type" in body &&
-    body.type === (item.type === "price-choice" ? "price_choice" : item.type) &&
-    "id" in body &&
-    body.id === item.id &&
-    "isAvailable" in body &&
-    body.isAvailable === !item.persistedAvailable
+    confirmsAvailabilityChange(result.body, item, !item.persistedAvailable)
   ) {
     return { kind: "confirmed" };
   }
 
-  const error = parseApiHttpError(body);
+  const error = parseApiHttpError(result.body);
 
   if (result.status === 404 && error?.code === "AVAILABILITY_ITEM_NOT_FOUND") {
     return { kind: "rejected" };
   }
 
   return { kind: "unknown" };
+}
+
+function availabilityChangeEndpoint(target: AvailabilityTarget): string {
+  switch (target.type) {
+    case "intake":
+      return INTAKE_ENDPOINT;
+    case "price-choice":
+      return `${PRICE_CHOICE_AVAILABILITY_ENDPOINT}/${encodeURIComponent(target.id)}`;
+    default:
+      return `${AVAILABILITY_ENDPOINT}/${target.type}/${encodeURIComponent(target.id)}`;
+  }
 }

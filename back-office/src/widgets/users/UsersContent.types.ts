@@ -1,7 +1,7 @@
 import type {
   UserPresentation,
   UsersFilter,
-} from "../../features/users/presentation/Users.types";
+} from "../../features/users/ui/Users.types";
 
 export interface UsersContentProps {
   readonly users: readonly UserPresentation[];

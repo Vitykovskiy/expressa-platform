@@ -3,23 +3,31 @@ import { isSettingsInputValid } from "./settings.validation";
 import type { OperatingSettingsDto } from "./settings.dto.types";
 
 export function parseSettingsDto(value: unknown): OperatingSettingsDto | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+
   if (
-    typeof value !== "object" ||
-    value === null ||
-    Array.isArray(value) ||
     !("opensAt" in value) ||
     typeof value.opensAt !== "string" ||
     !("closesAt" in value) ||
     typeof value.closesAt !== "string" ||
     !("slotCapacity" in value) ||
-    typeof value.slotCapacity !== "number" ||
+    typeof value.slotCapacity !== "number"
+  ) {
+    return null;
+  }
+
+  if (
     !("slotMinutes" in value) ||
     value.slotMinutes !== 10 ||
     !("timeZone" in value) ||
-    value.timeZone !== "UTC" ||
-    !("updatedAt" in value) ||
-    !isTimestamp(value.updatedAt)
+    value.timeZone !== "UTC"
   ) {
+    return null;
+  }
+
+  if (!("updatedAt" in value) || !isSettingsUpdatedAt(value.updatedAt)) {
     return null;
   }
 
@@ -32,10 +40,14 @@ export function parseSettingsDto(value: unknown): OperatingSettingsDto | null {
     updatedAt: value.updatedAt,
   };
 
-  return isSettingsInputValid(dto) ? dto : null;
+  if (!isSettingsInputValid(dto)) {
+    return null;
+  }
+
+  return dto;
 }
 
-function isTimestamp(value: unknown): value is string | null {
+function isSettingsUpdatedAt(value: unknown): value is string | null {
   if (value === null) {
     return true;
   }
@@ -48,11 +60,12 @@ function isTimestamp(value: unknown): value is string | null {
     return false;
   }
 
-  const day = value.slice(0, 10);
-  const midnight = Date.parse(`${day}T00:00:00.000Z`);
+  // Date.parse может нормализовать несуществующий день месяца.
+  const calendarDay = value.slice(0, 10);
+  const midnightUtc = Date.parse(`${calendarDay}T00:00:00.000Z`);
 
   return (
-    Number.isFinite(midnight) &&
-    new Date(midnight).toISOString().slice(0, 10) === day
+    Number.isFinite(midnightUtc) &&
+    new Date(midnightUtc).toISOString().slice(0, 10) === calendarDay
   );
 }

@@ -1,4 +1,4 @@
-const INTENT_LIFETIME = 120000;
+const INTENT_LIFETIME_MS = 120000;
 const INTENT_PROTOCOL = "expressa-order-intent";
 const VIEW_REPLY_TIMEOUT = 2000;
 let ownedView = null;
@@ -25,7 +25,7 @@ self.addEventListener("push", (event) => {
     payload === null ||
     typeof payload.title !== "string" ||
     typeof payload.body !== "string" ||
-    !isId(payload.orderId)
+    !isUuid(payload.orderId)
   ) {
     return;
   }
@@ -41,15 +41,15 @@ self.addEventListener("message", (event) => {
   event.waitUntil(handleMessage(event));
 });
 self.addEventListener("notificationclick", (event) => {
-  const id = event.notification.data?.orderId;
+  const orderId = event.notification.data?.orderId;
 
   event.notification.close();
-  if (isId(id)) {
-    event.waitUntil(openOrder(id));
+  if (isUuid(orderId)) {
+    event.waitUntil(handleOrderClick(orderId));
   }
 });
 
-function isId(value) {
+function isUuid(value) {
   return (
     typeof value === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(
@@ -57,7 +57,7 @@ function isId(value) {
     )
   );
 }
-function scopedWindow(client) {
+function isScopedWindow(client) {
   if (client?.type !== "window") {
     return false;
   }
@@ -73,45 +73,41 @@ async function handleMessage(event) {
     ? await self.clients.get(event.source.id)
     : null;
 
+  if (!isScopedWindow(client)) {
+    return;
+  }
+
   if (
-    !scopedWindow(client) ||
     typeof data !== "object" ||
     data === null ||
     data.type !== INTENT_PROTOCOL ||
-    !isId(data.lifetime) ||
+    !isUuid(data.lifetime) ||
     !port
   ) {
     return;
   }
 
   if (data.action === "claim") {
-    if (
-      ownedView?.clientId !== client.id ||
-      ownedView.lifetime !== data.lifetime
-    ) {
-      latestIntent = null;
-    }
-
-    ownedView = { clientId: client.id, lifetime: data.lifetime };
+    claimView(client.id, data.lifetime);
     port.postMessage({ accepted: true });
     return;
   }
 
-  const owned =
+  const ownsView =
     ownedView?.clientId === client.id && ownedView.lifetime === data.lifetime;
 
   if (data.action === "release") {
-    if (owned) {
+    if (ownsView) {
       ownedView = null;
       latestIntent = null;
     }
 
-    port.postMessage({ accepted: owned });
+    port.postMessage({ accepted: ownsView });
     return;
   }
 
-  const current =
-    owned &&
+  const matchesCurrentIntent =
+    ownsView &&
     latestIntent !== null &&
     latestIntent.expiresAt > Date.now() &&
     data.intent?.id === latestIntent.id &&
@@ -124,24 +120,31 @@ async function handleMessage(event) {
     return;
   }
 
-  if (current && data.action === "consume") {
+  if (matchesCurrentIntent && data.action === "consume") {
     latestIntent = null;
   }
 
-  port.postMessage({ accepted: Boolean(current) });
+  port.postMessage({ accepted: Boolean(matchesCurrentIntent) });
 }
-async function openOrder(orderId) {
+
+function claimView(clientId, lifetime) {
+  if (ownedView?.clientId !== clientId || ownedView.lifetime !== lifetime) {
+    latestIntent = null;
+  }
+
+  ownedView = { clientId, lifetime };
+}
+
+async function handleOrderClick(orderId) {
+  // Новый клик заменяет прежнее намерение; поздний ответ прежнего клика не публикуется.
   const sequence = ++clickSequence;
   latestIntent = null;
   const windows = (await self.clients.matchAll({ type: "window" })).filter(
-    scopedWindow,
+    isScopedWindow,
   );
-  const candidates = [...windows].sort((left, right) => {
-    const priority = (client) =>
-      client.id === ownedView?.clientId ? 2 : client.focused ? 1 : 0;
-
-    return priority(right) - priority(left);
-  });
+  const candidates = [...windows].sort(
+    (left, right) => viewPriority(right) - viewPriority(left),
+  );
   const replies = await Promise.all(candidates.map(recoverView));
 
   if (sequence !== clickSequence) {
@@ -156,7 +159,7 @@ async function openOrder(orderId) {
     return;
   }
 
-  ownedView = scopedWindow(client) && owner !== undefined ? owner : null;
+  ownedView = isScopedWindow(client) && owner !== undefined ? owner : null;
 
   if (client && ownedView) {
     latestIntent = {
@@ -164,7 +167,7 @@ async function openOrder(orderId) {
       id: self.crypto.randomUUID(),
       orderId,
       lifetime: ownedView.lifetime,
-      expiresAt: Date.now() + INTENT_LIFETIME,
+      expiresAt: Date.now() + INTENT_LIFETIME_MS,
     };
     client.postMessage(latestIntent);
     await client.focus();
@@ -177,6 +180,18 @@ async function openOrder(orderId) {
   }
 
   await self.clients.openWindow(`/?order=${encodeURIComponent(orderId)}`);
+}
+
+function viewPriority(client) {
+  if (client.id === ownedView?.clientId) {
+    return 2;
+  }
+
+  if (client.focused) {
+    return 1;
+  }
+
+  return 0;
 }
 
 function recoverView(client) {
@@ -200,7 +215,7 @@ function recoverView(client) {
         data !== null &&
         data.type === "expressa-view-response" &&
         data.challenge === challenge &&
-        isId(data.lifetime)
+        isUuid(data.lifetime)
       ) {
         finish({ clientId: client.id, lifetime: data.lifetime });
       } else {

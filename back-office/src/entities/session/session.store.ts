@@ -9,6 +9,7 @@ import {
 import { MILLISECONDS_PER_SECOND } from "./session.constants";
 import type {
   SessionOutcome,
+  SessionIdentity,
   SessionState,
   TokenOutcome,
   LogoutProofSupplier,
@@ -17,6 +18,7 @@ import type {
 
 export const useSessionStore = defineStore("session", () => {
   const state = shallowRef<SessionState>({ kind: "anonymous" });
+  // Контроллер обозначает текущую операцию: после invalidate её ответы не меняют сеанс.
   let activeRequest: AbortController | null = null;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -35,10 +37,10 @@ export const useSessionStore = defineStore("session", () => {
       return { kind: "cancelled" };
     }
 
-    const controller = beginRequest();
+    const controller = beginSessionRequest();
     const outcome = await verifySession(phone, code, controller.signal);
 
-    return consumeToken(outcome, controller);
+    return establishFromToken(outcome, controller);
   }
 
   async function restore(): Promise<SessionOutcome> {
@@ -46,10 +48,10 @@ export const useSessionStore = defineStore("session", () => {
       return { kind: "cancelled" };
     }
 
-    const controller = beginRequest();
+    const controller = beginSessionRequest();
     const outcome = await refreshSession(controller.signal);
 
-    return consumeToken(outcome, controller);
+    return establishFromToken(outcome, controller);
   }
 
   async function logout(supplyProof?: LogoutProofSupplier): Promise<boolean> {
@@ -57,12 +59,13 @@ export const useSessionStore = defineStore("session", () => {
       return false;
     }
 
-    const controller = beginRequest();
+    const controller = beginSessionRequest();
     let proof: LogoutPushProof | null = null;
 
     try {
       proof = (await supplyProof?.(controller.signal)) ?? null;
     } catch {
+      // Staff logout допускает session-only запрос, если proof получить не удалось.
       proof = null;
     }
 
@@ -87,7 +90,7 @@ export const useSessionStore = defineStore("session", () => {
     return ended;
   }
 
-  function beginRequest() {
+  function beginSessionRequest() {
     clearTimeout(expiryTimer);
     state.value = { kind: "pending" };
     const controller = new AbortController();
@@ -101,7 +104,7 @@ export const useSessionStore = defineStore("session", () => {
     return activeRequest === controller && !controller.signal.aborted;
   }
 
-  async function consumeToken(
+  async function establishFromToken(
     outcome: TokenOutcome,
     controller: AbortController,
   ): Promise<SessionOutcome> {
@@ -118,9 +121,10 @@ export const useSessionStore = defineStore("session", () => {
       return outcome;
     }
 
+    // Ожидание /me входит в срок токена, поэтому отсчёт начинается до запроса.
     const expiresAt =
       Date.now() + outcome.token.expiresInSeconds * MILLISECONDS_PER_SECOND;
-    const result = await readIdentity(
+    const identityOutcome = await readIdentity(
       outcome.token.accessToken,
       controller.signal,
     );
@@ -131,16 +135,28 @@ export const useSessionStore = defineStore("session", () => {
 
     activeRequest = null;
 
-    if (result.kind !== "identity") {
+    if (identityOutcome.kind !== "identity") {
       state.value = {
-        kind: result.kind === "uncertain" ? "uncertain" : "anonymous",
+        kind: identityOutcome.kind === "uncertain" ? "uncertain" : "anonymous",
       };
 
-      return result;
+      return identityOutcome;
     }
 
-    if (result.identity.role === "customer") {
-      state.value = { kind: "denied", identity: result.identity };
+    return acceptIdentity(
+      identityOutcome.identity,
+      outcome.token.accessToken,
+      expiresAt,
+    );
+  }
+
+  function acceptIdentity(
+    identity: SessionIdentity,
+    accessToken: string,
+    expiresAt: number,
+  ): SessionOutcome {
+    if (identity.role === "customer") {
+      state.value = { kind: "denied", identity };
 
       return { kind: "denied" };
     }
@@ -154,8 +170,8 @@ export const useSessionStore = defineStore("session", () => {
     state.value = {
       kind: "staff",
       session: {
-        identity: result.identity,
-        accessToken: outcome.token.accessToken,
+        identity,
+        accessToken,
         expiresAt,
       },
     };

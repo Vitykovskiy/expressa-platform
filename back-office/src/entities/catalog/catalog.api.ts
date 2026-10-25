@@ -12,6 +12,7 @@ import {
 } from "./catalog.dto";
 import type {
   CatalogCommand,
+  CatalogProductValues,
   CatalogReadOutcome,
   CatalogWriteOutcome,
 } from "./catalog.types";
@@ -46,7 +47,11 @@ export async function readCatalog(
     return { kind: "session-expired" };
   }
 
-  const data = result.status === 200 ? parseCatalog(result.body) : null;
+  if (result.status !== 200) {
+    return { kind: "failed" };
+  }
+
+  const data = parseCatalog(result.body);
 
   return data === null ? { kind: "failed" } : { kind: "loaded", data };
 }
@@ -87,7 +92,7 @@ export async function writeCatalog(
   if (
     command.action !== "archive" &&
     result.status === expectedStatus &&
-    validResponse(command, result.body)
+    matchesSavedCommand(command, result.body)
   ) {
     return { kind: "confirmed" };
   }
@@ -204,32 +209,37 @@ async function sendCatalogCommand(
     }
 
     case "save-product": {
-      const values = command.values;
-      const body: CatalogProductWriteDto = {
-        name: values.name,
-        categoryId: values.categoryId,
-        price: values.pricing.kind === "fixed" ? values.pricing.amount : null,
-        priceChoices:
-          values.pricing.kind === "fixed"
-            ? []
-            : values.pricing.choices.map((choice) => ({
-                ...(choice.id === null ? {} : { id: choice.id }),
-                portionLabel: choice.label,
-                price: choice.amount,
-              })),
-      };
-
       return requestApi(`${SOURCE_MENU_ENDPOINT}/products${suffix}`, {
         method,
         accessToken,
         signal,
-        body,
+        body: mapProductWrite(command.values),
       });
     }
   }
 }
 
-function validResponse(
+function mapProductWrite(values: CatalogProductValues): CatalogProductWriteDto {
+  const product = { name: values.name, categoryId: values.categoryId };
+  const pricing = values.pricing;
+
+  if (pricing.kind === "fixed") {
+    return { ...product, price: pricing.amount, priceChoices: [] };
+  }
+
+  return {
+    ...product,
+    price: null,
+    priceChoices: pricing.choices.map((choice) => ({
+      ...(choice.id === null ? {} : { id: choice.id }),
+      portionLabel: choice.label,
+      price: choice.amount,
+    })),
+  };
+}
+
+/** Ответ подтверждает отправленную команду; последующее чтение принадлежит store. */
+function matchesSavedCommand(
   command: Exclude<CatalogCommand, { readonly action: "archive" }>,
   value: unknown,
 ): boolean {
@@ -250,15 +260,23 @@ function validResponse(
 
         const association = command.association;
 
-        if (
-          category.name !== command.name ||
-          (association.kind === "replace" &&
-            (source.modifierGroupIds.length !== association.groupIds.length ||
-              source.modifierGroupIds.some(
-                (id, index) => id !== association.groupIds[index],
-              )))
-        ) {
+        if (category.name !== command.name) {
           return false;
+        }
+
+        // При keep проверяем форму связей, но не заменяем их прежним снимком.
+        if (association.kind === "replace") {
+          if (source.modifierGroupIds.length !== association.groupIds.length) {
+            return false;
+          }
+
+          if (
+            source.modifierGroupIds.some(
+              (id, index) => id !== association.groupIds[index],
+            )
+          ) {
+            return false;
+          }
         }
 
         id = category.id;
@@ -275,18 +293,23 @@ function validResponse(
         const options = source.options.map(parseOption);
         const expected = command.values;
 
+        if (options.some((option) => option.groupId !== group.id)) {
+          return false;
+        }
+
         if (
-          options.some((option) => option.groupId !== group.id) ||
           new Set(options.map((option) => option.id)).size !== options.length
         ) {
           return false;
         }
 
+        const selectionType = expected.singleSelection ? "single" : "multiple";
+        const maxSelect = expected.singleSelection ? 1 : options.length;
+
         if (
-          group.selectionType !==
-            (expected.singleSelection ? "single" : "multiple") ||
+          group.selectionType !== selectionType ||
           group.minSelect !== 0 ||
-          group.maxSelect !== (expected.singleSelection ? 1 : options.length)
+          group.maxSelect !== maxSelect
         ) {
           return false;
         }

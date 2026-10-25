@@ -13,7 +13,12 @@ export function parseNativeViewChallenge(value: unknown): string | null {
     typeof value !== "object" ||
     value === null ||
     !("type" in value) ||
-    value.type !== "expressa-view-request" ||
+    value.type !== "expressa-view-request"
+  ) {
+    return null;
+  }
+
+  if (
     !("challenge" in value) ||
     typeof value.challenge !== "string" ||
     !PUSH_UUID.test(value.challenge)
@@ -31,16 +36,36 @@ export function parseNativeOrderIntent(
     typeof value !== "object" ||
     value === null ||
     !("type" in value) ||
-    value.type !== "expressa-order-click" ||
+    value.type !== "expressa-order-click"
+  ) {
+    return null;
+  }
+
+  if (
     !("id" in value) ||
     typeof value.id !== "string" ||
-    !PUSH_UUID.test(value.id) ||
+    !PUSH_UUID.test(value.id)
+  ) {
+    return null;
+  }
+
+  if (
     !("orderId" in value) ||
     typeof value.orderId !== "string" ||
-    !PUSH_UUID.test(value.orderId) ||
+    !PUSH_UUID.test(value.orderId)
+  ) {
+    return null;
+  }
+
+  if (
     !("lifetime" in value) ||
     typeof value.lifetime !== "string" ||
-    !PUSH_UUID.test(value.lifetime) ||
+    !PUSH_UUID.test(value.lifetime)
+  ) {
+    return null;
+  }
+
+  if (
     !("expiresAt" in value) ||
     typeof value.expiresAt !== "number" ||
     !Number.isSafeInteger(value.expiresAt) ||
@@ -72,12 +97,21 @@ export async function currentIntentWorker(): Promise<globalThis.ServiceWorker | 
       globalThis.location.origin,
     );
 
-    return registration?.active === controller &&
-      controller?.state === "activated" &&
-      controller.scriptURL === expected.href &&
-      registration.scope === `${globalThis.location.origin}/`
-      ? controller
-      : null;
+    if (
+      registration?.active !== controller ||
+      controller?.state !== "activated"
+    ) {
+      return null;
+    }
+
+    if (
+      controller.scriptURL !== expected.href ||
+      registration.scope !== `${globalThis.location.origin}/`
+    ) {
+      return null;
+    }
+
+    return controller;
   } catch {
     return null;
   }

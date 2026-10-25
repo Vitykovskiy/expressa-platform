@@ -123,14 +123,23 @@ function readTokenOutcome(response: ApiResult): TokenOutcome {
 }
 
 function isAccessToken(value: unknown): value is AccessTokenDto {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (
+    !("accessToken" in value) ||
+    typeof value.accessToken !== "string" ||
+    value.accessToken.trim().length === 0
+  ) {
+    return false;
+  }
+
+  if (!("tokenType" in value) || value.tokenType !== "Bearer") {
+    return false;
+  }
+
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "accessToken" in value &&
-    typeof value.accessToken === "string" &&
-    value.accessToken.trim().length > 0 &&
-    "tokenType" in value &&
-    value.tokenType === "Bearer" &&
     "expiresInSeconds" in value &&
     typeof value.expiresInSeconds === "number" &&
     Number.isSafeInteger(value.expiresInSeconds) &&
@@ -139,15 +148,34 @@ function isAccessToken(value: unknown): value is AccessTokenDto {
 }
 
 function isCurrentUser(value: unknown): value is CurrentUserDto {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (
+    !("name" in value) ||
+    (value.name !== null && typeof value.name !== "string")
+  ) {
+    return false;
+  }
+
+  if (
+    !("id" in value) ||
+    typeof value.id !== "string" ||
+    value.id.trim().length === 0
+  ) {
+    return false;
+  }
+
+  if (
+    !("phoneE164" in value) ||
+    typeof value.phoneE164 !== "string" ||
+    !/^\+7\d{10}$/.test(value.phoneE164)
+  ) {
+    return false;
+  }
+
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "id" in value &&
-    typeof value.id === "string" &&
-    value.id.trim().length > 0 &&
-    "phoneE164" in value &&
-    typeof value.phoneE164 === "string" &&
-    /^\+7\d{10}$/.test(value.phoneE164) &&
     "role" in value &&
     (value.role === "customer" ||
       value.role === "barista" ||

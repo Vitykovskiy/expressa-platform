@@ -5,7 +5,7 @@ import {
   ORDER_ACTION_STAGES,
   ORDERS_ENDPOINT,
 } from "./orders.constants";
-import { parseLegacyOrder, parseOrder } from "./orders.dto";
+import { parseOrderCore, parseOrder } from "./orders.dto";
 import type {
   OrderDto,
   OrderRecord,
@@ -149,36 +149,49 @@ export async function sendOrderCommand(
     return { kind: "unknown" };
   }
 
-  let updated: OrderDto | null;
-
-  if (action === "accept" || action === "issue") {
-    const core = parseLegacyOrder(result.body);
-
-    updated =
-      core === null || core.customer.id !== order.customerId
-        ? null
-        : {
-            ...core,
-            customer: { ...core.customer, name: order.customerName },
-            pickupSlot: order.pickupSlot,
-            rejection: order.rejection,
-          };
-  } else {
-    updated = parseOrder(result.body);
-  }
+  const updated = parseCommandOrder(result.body, order, action);
 
   if (
     updated === null ||
     updated.id !== order.id ||
-    updated.stage !== ORDER_ACTION_STAGES[action] ||
-    (action === "reject"
-      ? updated.rejection?.reason !== reason
-      : updated.rejection !== null)
+    updated.stage !== ORDER_ACTION_STAGES[action]
   ) {
     return { kind: "unknown" };
   }
 
+  if (action === "reject") {
+    if (updated.rejection?.reason !== reason) {
+      return { kind: "unknown" };
+    }
+  } else if (updated.rejection !== null) {
+    return { kind: "unknown" };
+  }
+
   return { kind: "confirmed", order: updated };
+}
+
+function parseCommandOrder(
+  body: unknown,
+  original: OrderRecord,
+  action: OrderAction,
+): OrderDto | null {
+  if (action !== "accept" && action !== "issue") {
+    return parseOrder(body);
+  }
+
+  const core = parseOrderCore(body);
+
+  if (core === null || core.customer.id !== original.customerId) {
+    return null;
+  }
+
+  // Ответ v2 не содержит полей v3; сохраняем их из отправленного заказа.
+  return {
+    ...core,
+    customer: { ...core.customer, name: original.customerName },
+    pickupSlot: original.pickupSlot,
+    rejection: original.rejection,
+  };
 }
 
 function commandBody(action: OrderAction, reason: string): unknown {

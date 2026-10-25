@@ -82,6 +82,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
   }
 
   function deactivate() {
+    // Уход со страницы прекращает обычное чтение, но не сверку отправленной команды.
     if (command.value !== null) {
       return;
     }
@@ -192,13 +193,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
       return;
     }
 
-    const current = groups.value
-      .flatMap((group) =>
-        group.items.flatMap<AvailabilityItem>((row) =>
-          row.type === "product" ? [row, ...row.children] : [row],
-        ),
-      )
-      .find((row) => row.id === target.id && row.type === target.type);
+    const current = findCurrentItem(target);
 
     if (current === undefined || current.disabledReason !== null) {
       return;
@@ -222,20 +217,7 @@ export const useAvailabilityStore = defineStore("availability", () => {
     writing = null;
 
     if (outcome.kind === "confirmed") {
-      // Ответ записи подтверждает одну строку; вся иерархия требует нового чтения.
-      stale.value = true;
-      command.value = { item: current, phase: "refreshing" };
-      const refreshed = await load();
-
-      if (context !== owner) {
-        return;
-      }
-
-      command.value = null;
-
-      if (!refreshed && !sessionExpired.value) {
-        message.value = AVAILABILITY_MESSAGES.savedReadFailed;
-      }
+      await refreshAfterConfirmedChange(owner, current);
 
       return;
     }
@@ -253,9 +235,60 @@ export const useAvailabilityStore = defineStore("availability", () => {
       return;
     }
 
-    command.value = { item: current, phase: "checking" };
+    await reconcileUnknownChange(owner, current);
+  }
+
+  function findCurrentItem(
+    target: AvailabilityTarget,
+  ): AvailabilityItem | undefined {
+    for (const group of groups.value) {
+      for (const item of group.items) {
+        if (item.id === target.id && item.type === target.type) {
+          return item;
+        }
+
+        if (item.type === "product") {
+          const choice = item.children.find(
+            (child) => child.id === target.id && child.type === target.type,
+          );
+
+          if (choice !== undefined) {
+            return choice;
+          }
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  async function refreshAfterConfirmedChange(
+    owner: AvailabilityContext,
+    item: AvailabilityItem,
+  ) {
+    // Ответ записи подтверждает одну строку; вся иерархия требует нового чтения.
     stale.value = true;
-    message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.unknown}`;
+    command.value = { item, phase: "refreshing" };
+    const refreshed = await load();
+
+    if (context !== owner) {
+      return;
+    }
+
+    command.value = null;
+
+    if (!refreshed && !sessionExpired.value) {
+      message.value = AVAILABILITY_MESSAGES.savedReadFailed;
+    }
+  }
+
+  async function reconcileUnknownChange(
+    owner: AvailabilityContext,
+    item: AvailabilityItem,
+  ) {
+    command.value = { item, phase: "checking" };
+    stale.value = true;
+    message.value = `${item.controlLabel}: ${AVAILABILITY_MESSAGES.unknown}`;
     const reconciled = await load();
 
     if (context !== owner) {
@@ -264,10 +297,10 @@ export const useAvailabilityStore = defineStore("availability", () => {
 
     if (reconciled) {
       command.value = null;
-      message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.reconciled}`;
+      message.value = `${item.controlLabel}: ${AVAILABILITY_MESSAGES.reconciled}`;
     } else if (!sessionExpired.value) {
-      command.value = { item: current, phase: "unknown" };
-      message.value = `${current.controlLabel}: ${AVAILABILITY_MESSAGES.checkFailed}`;
+      command.value = { item, phase: "unknown" };
+      message.value = `${item.controlLabel}: ${AVAILABILITY_MESSAGES.checkFailed}`;
     }
   }
 

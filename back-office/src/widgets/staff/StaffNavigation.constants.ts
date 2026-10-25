@@ -23,6 +23,7 @@ import type { StaffNavigationItem } from "./StaffNavigation.types";
 export const STAFF_NAVIGATION: readonly StaffNavigationItem[] = [
   {
     section: "orders",
+    administratorOnly: false,
     label: "Заказы",
     icon: orders,
     mobileIcon: ordersMobile,
@@ -31,6 +32,7 @@ export const STAFF_NAVIGATION: readonly StaffNavigationItem[] = [
   },
   {
     section: "availability",
+    administratorOnly: false,
     label: "Доступность",
     icon: availability,
     mobileIcon: availabilityMobile,
@@ -39,6 +41,7 @@ export const STAFF_NAVIGATION: readonly StaffNavigationItem[] = [
   },
   {
     section: "catalog",
+    administratorOnly: true,
     label: "Меню",
     icon: catalog,
     mobileIcon: catalogMobile,
@@ -47,6 +50,7 @@ export const STAFF_NAVIGATION: readonly StaffNavigationItem[] = [
   },
   {
     section: "users",
+    administratorOnly: true,
     label: "Пользователи",
     icon: users,
     mobileIcon: usersMobile,
@@ -55,6 +59,7 @@ export const STAFF_NAVIGATION: readonly StaffNavigationItem[] = [
   },
   {
     section: "settings",
+    administratorOnly: true,
     label: "Настройки",
     icon: settings,
     mobileIcon: settingsMobile,

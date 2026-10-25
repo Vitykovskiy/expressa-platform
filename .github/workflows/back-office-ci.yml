@@ -23,7 +23,6 @@ jobs:
     name: Build back-office image
     runs-on: ubuntu-24.04
     env:
-      VITE_APP_ENV: development
       VITE_API_BASE_URL: https://api.development.example
     steps:
       - name: Checkout
@@ -34,7 +33,6 @@ jobs:
         working-directory: back-office
         run: >-
           docker build
-          --build-arg VITE_APP_ENV="$VITE_APP_ENV"
           --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL"
           --tag expressa-back-office:ci
           .

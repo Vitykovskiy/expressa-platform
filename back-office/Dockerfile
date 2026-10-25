@@ -7,10 +7,8 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-ARG VITE_APP_ENV=development
 ARG VITE_API_BASE_URL=/
-ENV VITE_APP_ENV=$VITE_APP_ENV \
-    VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
 

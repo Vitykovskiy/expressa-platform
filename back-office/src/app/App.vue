@@ -1,11 +1,12 @@
 <template>
   <VApp>
-    <StaffWorkspace
-      v-if="session.state.kind === 'staff'"
-      :key="`${session.state.session.identity.id}:${session.state.session.identity.role}:${session.state.session.accessToken}`"
-      :session="session.state.session"
+    <StaffScreen
+      v-if="staffSession !== null"
+      :key="sessionKey"
+      :session="staffSession"
       :intent="intent"
       :search="search"
+      :location-href="locationHref"
       :notification-order="notificationOrder"
       :notification-message="notificationMessage"
       :navigation-busy="navigationBusy"
@@ -16,9 +17,8 @@
     />
     <KeepAlive :max="1">
       <AuthPage
-        v-if="session.state.kind !== 'staff'"
+        v-if="staffSession === null"
         :restoring="restoring"
-        :staff-handoff="false"
         @authenticated="message = ''"
         @error="showError"
       />
@@ -47,34 +47,47 @@ import {
 } from "../entities/notifications/native-intent";
 import type { NativeOrderIntent } from "../entities/notifications/native-intent.types";
 import type { NativeIntentBinding } from "./App.types";
+import type { LogoutProofSupplier } from "../entities/session/session.types";
 import { useSessionStore } from "../entities/session/session.store";
 import AuthPage from "../pages/auth/AuthPage.vue";
 import SourceToast from "../shared/ui/SourceToast/SourceToast.vue";
-import StaffWorkspace from "./StaffWorkspace.vue";
+import StaffScreen from "./staff/StaffScreen.vue";
 import { APP_MESSAGES } from "./App.constants";
-import { useSectionIntent } from "./navigation";
-import { useStaffDomains } from "./useStaffDomains";
+import { useSectionIntent } from "./staff/navigation";
+import { useStaffDomains } from "./staff/useStaffDomains";
 
 const session = useSessionStore();
 const intent = useSectionIntent();
-const search = shallowRef(globalThis.window.location.search);
+const locationHref = shallowRef(globalThis.window.location.href);
+const search = computed(() => new globalThis.URL(locationHref.value).search);
 const restoring = shallowRef(true);
 const message = shallowRef("");
 const notificationIntent = shallowRef<NativeOrderIntent | null>(null);
-const notificationOrder = computed(
-  () => notificationIntent.value?.orderId ?? null,
-);
-const sessionKey = computed(() =>
-  session.state.kind === "staff"
-    ? `${session.state.session.identity.id}:${session.state.session.identity.role}:${session.state.session.accessToken}`
-    : "",
-);
+const notificationMessage = shallowRef("");
+const domains = useStaffDomains(expireStaffSession);
 let intentBinding: NativeIntentBinding | null = null;
 let bindingEpoch = 0;
 let receptionEpoch = 0;
-const notificationMessage = shallowRef("");
-const domains = useStaffDomains(expireStaffSession);
 let disposed = false;
+
+const staffSession = computed(() =>
+  session.state.kind === "staff" ? session.state.session : null,
+);
+
+const sessionKey = computed(() => {
+  const current = staffSession.value;
+
+  if (current === null) {
+    return "";
+  }
+
+  // Тот же ключ отзывает native lifetime и уничтожает сохранённые страницы workspace.
+  return `${current.identity.id}:${current.identity.role}:${current.accessToken}`;
+});
+
+const notificationOrder = computed(
+  () => notificationIntent.value?.orderId ?? null,
+);
 
 const navigationBusy = computed(
   () =>
@@ -87,6 +100,50 @@ const navigationBusy = computed(
     domains.availability.command !== null,
 );
 
+const backgroundNotice = computed(() => {
+  if (session.state.kind !== "staff") {
+    return null;
+  }
+
+  const section = intent.value.kind === "valid" ? intent.value.section : null;
+  const notices = [
+    { section: "orders", message: domains.orders.message },
+    { section: "users", message: domains.users.notice ?? "" },
+    { section: "settings", message: domains.settings.message },
+    {
+      section: "catalog",
+      message:
+        domains.catalog.command?.phase === "unknown"
+          ? APP_MESSAGES.catalogOutcomeUnknown
+          : "",
+    },
+    { section: "availability", message: domains.availability.message },
+  ];
+  const notice = notices.find(
+    (item) =>
+      item.section !== section &&
+      typeof item.message === "string" &&
+      item.message.length > 0,
+  );
+
+  if (!notice) {
+    return null;
+  }
+
+  const url = new globalThis.URL(locationHref.value);
+
+  if (notice.section === "orders") {
+    url.searchParams.delete("section");
+  } else {
+    url.searchParams.set("section", notice.section);
+  }
+
+  return {
+    message: notice.message,
+    href: `${url.pathname}${url.search}${url.hash}`,
+  };
+});
+
 async function bindNativeIntent() {
   const epoch = ++bindingEpoch;
   const previous = intentBinding;
@@ -94,6 +151,7 @@ async function bindNativeIntent() {
   intentBinding = null;
   notificationIntent.value = null;
   receptionEpoch++;
+
   if (previous !== null) {
     void requestNativeIntent(previous.worker, "release", previous.lifetime);
   }
@@ -106,26 +164,26 @@ async function bindNativeIntent() {
 
   const worker = await currentIntentWorker();
 
-  if (
-    worker === null ||
-    epoch !== bindingEpoch ||
-    sessionKey.value !== ownerKey ||
-    disposed
-  ) {
+  if (worker === null) {
+    return;
+  }
+
+  if (epoch !== bindingEpoch || sessionKey.value !== ownerKey || disposed) {
     return;
   }
 
   const lifetime = globalThis.crypto.randomUUID();
   const accepted = await requestNativeIntent(worker, "claim", lifetime);
 
-  if (
-    accepted &&
-    epoch === bindingEpoch &&
-    sessionKey.value === ownerKey &&
-    !disposed
-  ) {
-    intentBinding = { ownerKey, lifetime, worker };
+  if (!accepted) {
+    return;
   }
+
+  if (epoch !== bindingEpoch || sessionKey.value !== ownerKey || disposed) {
+    return;
+  }
+
+  intentBinding = { ownerKey, lifetime, worker };
 }
 
 async function receiveNotification(event: globalThis.MessageEvent<unknown>) {
@@ -144,73 +202,92 @@ async function receiveNotification(event: globalThis.MessageEvent<unknown>) {
   const challenge = parseNativeViewChallenge(event.data);
 
   if (challenge !== null) {
-    const port = event.ports[0];
-    const worker = await currentIntentWorker();
-
-    if (
-      port !== undefined &&
-      worker === binding.worker &&
-      intentBinding === binding &&
-      binding.ownerKey === sessionKey.value
-    ) {
-      port.postMessage({
-        type: "expressa-view-response",
-        challenge,
-        lifetime: binding.lifetime,
-      });
-    }
-
-    port?.close();
+    await respondToNativeChallenge(binding, challenge, event.ports[0]);
 
     return;
   }
 
-  const intent = parseNativeOrderIntent(event.data);
+  const candidate = parseNativeOrderIntent(event.data);
 
   if (
-    intent === null ||
-    intent.lifetime !== binding.lifetime ||
-    intent.id === notificationIntent.value?.id
+    candidate === null ||
+    candidate.lifetime !== binding.lifetime ||
+    candidate.id === notificationIntent.value?.id
   ) {
     return;
   }
 
+  await inspectNotificationIntent(binding, candidate);
+}
+
+async function respondToNativeChallenge(
+  binding: NativeIntentBinding,
+  challenge: string,
+  port: globalThis.MessagePort | undefined,
+) {
+  const worker = await currentIntentWorker();
+
+  if (
+    port !== undefined &&
+    worker === binding.worker &&
+    isCurrentIntentBinding(binding)
+  ) {
+    port.postMessage({
+      type: "expressa-view-response",
+      challenge,
+      lifetime: binding.lifetime,
+    });
+  }
+
+  port?.close();
+}
+
+async function inspectNotificationIntent(
+  binding: NativeIntentBinding,
+  candidate: NativeOrderIntent,
+) {
   const epoch = ++receptionEpoch;
   const current = await requestNativeIntent(
     binding.worker,
     "inspect",
     binding.lifetime,
-    intent,
+    candidate,
   );
 
-  if (
-    !current ||
-    epoch !== receptionEpoch ||
-    intentBinding !== binding ||
-    binding.ownerKey !== sessionKey.value ||
-    intent.expiresAt <= Date.now()
-  ) {
+  if (!current) {
+    return;
+  }
+
+  // Более новый клик или смена staff/worker отзывают ожидающий inspect.
+  if (epoch !== receptionEpoch || !isCurrentIntentBinding(binding)) {
+    return;
+  }
+
+  if (candidate.expiresAt <= Date.now()) {
     return;
   }
 
   notificationMessage.value =
     notificationIntent.value !== null &&
-    notificationIntent.value.orderId !== intent.orderId
-      ? "Выбран другой заказ из уведомления."
-      : "Выбран заказ из уведомления.";
-  notificationIntent.value = intent;
+    notificationIntent.value.orderId !== candidate.orderId
+      ? APP_MESSAGES.notificationReplaced
+      : APP_MESSAGES.notificationSelected;
+  notificationIntent.value = candidate;
+}
+
+function isCurrentIntentBinding(binding: NativeIntentBinding): boolean {
+  return intentBinding === binding && binding.ownerKey === sessionKey.value;
 }
 
 async function openNotification() {
   const intent = notificationIntent.value;
   const binding = intentBinding;
 
-  if (
-    intent === null ||
-    binding === null ||
-    navigationBusy.value ||
-    binding.ownerKey !== sessionKey.value
-  ) {
+  if (intent === null || binding === null) {
+    return;
+  }
+
+  if (navigationBusy.value || binding.ownerKey !== sessionKey.value) {
     return;
   }
 
@@ -230,8 +307,9 @@ async function openNotification() {
   }
 
   notificationIntent.value = null;
+
   if (!accepted || navigationBusy.value) {
-    showError("Ссылка на заказ устарела. Откройте заказ в списке.");
+    showError(APP_MESSAGES.notificationExpired);
 
     return;
   }
@@ -243,48 +321,8 @@ async function openNotification() {
   navigate(`${url.pathname}${url.search}${url.hash}`);
 }
 
-const backgroundNotice = computed(() => {
-  if (session.state.kind !== "staff") {
-    return null;
-  }
-
-  const section = intent.value.kind === "valid" ? intent.value.section : null;
-  const notices = [
-    { section: "orders", message: domains.orders.message },
-    { section: "users", message: domains.users.notice ?? "" },
-    { section: "settings", message: domains.settings.message },
-    {
-      section: "catalog",
-      message:
-        domains.catalog.command?.phase === "unknown"
-          ? "Результат изменения меню неизвестен. Проверьте исходную задачу."
-          : "",
-    },
-    { section: "availability", message: domains.availability.message },
-  ];
-  const notice = notices.find(
-    (item) =>
-      item.section !== section &&
-      typeof item.message === "string" &&
-      item.message.length > 0,
-  );
-
-  if (!notice) {
-    return null;
-  }
-
-  const url = new globalThis.URL(globalThis.window.location.href);
-
-  url.searchParams.set("section", notice.section);
-
-  return {
-    message: notice.message,
-    href: `${url.pathname}${url.search}${url.hash}`,
-  };
-});
-
-function syncSearch() {
-  search.value = globalThis.window.location.search;
+function syncLocation() {
+  locationHref.value = globalThis.window.location.href;
 }
 
 function navigate(href: string) {
@@ -324,14 +362,8 @@ function expireStaffSession() {
 }
 
 async function logout() {
-  const current = session.state;
-  const supplier =
-    current.kind === "staff" && current.session.identity.role === "barista"
-      ? domains.notifications.logoutProofSupplier({
-          identityId: current.session.identity.id,
-          accessToken: current.session.accessToken,
-        })
-      : undefined;
+  // Переход session в pending очищает domains; proof фиксируется до logout.
+  const supplier = captureLogoutProofSupplier();
   const ended = await session.logout(supplier);
 
   if (!ended && !disposed) {
@@ -339,19 +371,48 @@ async function logout() {
   }
 }
 
+function captureLogoutProofSupplier(): LogoutProofSupplier | undefined {
+  const current = session.state;
+
+  if (current.kind !== "staff") {
+    return undefined;
+  }
+
+  if (current.session.identity.role !== "barista") {
+    return undefined;
+  }
+
+  return domains.notifications.logoutProofSupplier({
+    identityId: current.session.identity.id,
+    accessToken: current.session.accessToken,
+  });
+}
+
 function showError(value: string) {
   message.value = value;
+}
+
+async function restoreSession() {
+  const outcome = await session.restore();
+
+  if (disposed) {
+    return;
+  }
+
+  restoring.value = false;
+
+  if (outcome.kind === "uncertain" || outcome.kind === "unavailable") {
+    showError(APP_MESSAGES.restoreFailure);
+  }
 }
 
 watch(
   () => session.state.kind,
   (kind) => {
     message.value = "";
-    if (kind !== "staff") {
-      notificationIntent.value = null;
-    }
 
     if (kind !== "staff") {
+      notificationIntent.value = null;
       globalThis.document.title = "Expressa Admin";
     }
   },
@@ -359,7 +420,8 @@ watch(
 );
 
 watch(sessionKey, bindNativeIntent, { flush: "sync" });
-globalThis.window.addEventListener("popstate", syncSearch);
+globalThis.window.addEventListener("popstate", syncLocation);
+
 if ("serviceWorker" in globalThis.navigator) {
   globalThis.navigator.serviceWorker.addEventListener(
     "message",
@@ -371,22 +433,13 @@ if ("serviceWorker" in globalThis.navigator) {
   );
 }
 
-onMounted(async () => {
-  const outcome = await session.restore();
+onMounted(restoreSession);
 
-  if (disposed) {
-    return;
-  }
-
-  restoring.value = false;
-  if (outcome.kind === "uncertain" || outcome.kind === "unavailable") {
-    showError(APP_MESSAGES.restoreFailure);
-  }
-});
 onScopeDispose(() => {
   disposed = true;
   void bindNativeIntent();
-  globalThis.window.removeEventListener("popstate", syncSearch);
+  globalThis.window.removeEventListener("popstate", syncLocation);
+
   if ("serviceWorker" in globalThis.navigator) {
     globalThis.navigator.serviceWorker.removeEventListener(
       "controllerchange",

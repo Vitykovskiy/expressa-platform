@@ -32,27 +32,26 @@
 <script setup lang="ts">
 import {
   computed,
-  onActivated,
   onBeforeUnmount,
-  onDeactivated,
   watch,
   nextTick,
   useTemplateRef,
 } from "vue";
 import UsersPage from "./UsersPage.vue";
-import { useUsersStore } from "../../features/users/users.store";
-import type { UserPresentation } from "../../features/users/presentation/Users.types";
+import { useUsersStore } from "../../features/users/model/users.store";
+import type { UserPresentation } from "../../features/users/ui/Users.types";
 import type { UsersRouteProps, UsersRouteEmits } from "./UsersRoute.types";
 
 const props = defineProps<UsersRouteProps>();
 const emit = defineEmits<UsersRouteEmits>();
+
 const users = useUsersStore();
 const viewport = useTemplateRef<globalThis.HTMLDivElement>("viewport");
 const loading = computed(() => users.phase === "loading");
 
-async function activate() {
-  const owner = props.session;
-  const { identity, accessToken } = owner;
+async function activateDirectory() {
+  const activationSession = props.session;
+  const { identity, accessToken } = activationSession;
 
   await users.activate({
     identityId: identity.id,
@@ -61,12 +60,15 @@ async function activate() {
   });
   await nextTick();
 
-  if (props.session === owner && viewport.value !== null) {
-    viewport.value.scrollTop = users.scrollTop;
+  // Загрузка прежнего сеанса не должна прокручивать страницу нового.
+  if (props.session !== activationSession || viewport.value === null) {
+    return;
   }
+
+  viewport.value.scrollTop = users.scrollTop;
 }
 
-function deactivate() {
+function deactivateDirectory() {
   if (viewport.value !== null) {
     users.rememberScroll(props.session.identity.id, viewport.value.scrollTop);
   }
@@ -82,7 +84,7 @@ function openAccess(user: UserPresentation) {
   users.openUser(user, "access");
 }
 
-watch(() => props.session, activate, { immediate: true });
+watch(() => props.session, activateDirectory, { immediate: true });
 watch(
   () => users.sessionExpired,
   (expired) => {
@@ -91,9 +93,7 @@ watch(
     }
   },
 );
-onActivated(activate);
-onDeactivated(deactivate);
-onBeforeUnmount(deactivate);
+onBeforeUnmount(deactivateDirectory);
 </script>
 
 <style scoped>

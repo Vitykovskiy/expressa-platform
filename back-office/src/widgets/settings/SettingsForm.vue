@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import SettingsFields from "../../features/settings/presentation/SettingsFields.vue";
+import SettingsFields from "../../features/settings/ui/SettingsFields.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
 import type {
   SettingsFormEmits,
@@ -51,6 +51,8 @@ function save() {
 </script>
 
 <style scoped>
+/* Локальная ширина формы и интервалы сохраняют компоновку настроек;
+   тема не содержит шкалы размеров и типографики для этого экрана. */
 .settings-form {
   display: flex;
   flex: 0 1 560px;
@@ -98,6 +100,8 @@ function save() {
   min-height: 40px;
 }
 
+/* На узкой ширине заголовок остаётся над собственной прокруткой формы,
+   а нижнее действие сохраняет прежнее положение без внешнего отступа. */
 @media (max-width: 767px) {
   .settings-form {
     background: var(--color-background);

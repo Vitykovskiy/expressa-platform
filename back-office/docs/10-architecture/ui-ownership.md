@@ -4,19 +4,20 @@ type: architecture
 owner: back-office
 knowledge_role: implementation
 scope: back-office
-last_verified: 2026-10-21
+last_verified: 2026-10-25
 sources:
   - ../../src/app/App.vue
-  - ../../src/app/StaffWorkspace.vue
-  - ../../src/app/useStaffDomains.ts
-  - ../../src/app/navigation.ts
+  - ../../src/app/staff/StaffScreen.vue
+  - ../../src/widgets/staff/StaffWorkspaceLayout.vue
+  - ../../src/app/staff/useStaffDomains.ts
+  - ../../src/app/staff/navigation.ts
   - ../../src/entities/session/session.store.ts
   - ../../src/entities/orders/orders.store.ts
   - ../../src/entities/catalog/catalog.store.ts
   - ../../src/entities/availability/availability.store.ts
   - ../../src/entities/settings/settings.store.ts
-  - ../../src/features/users/users.store.ts
-  - ../../src/features/notifications/notifications.store.ts
+  - ../../src/features/users/model/users.store.ts
+  - ../../src/features/notifications/model/notifications.store.ts
   - ../../../docs/50-interfaces/Back-office-UI.md
 ---
 
@@ -50,23 +51,31 @@ sources:
 
 ## Владельцы
 
-| Область            | Единственный владелец                                | Граница                                                                                                                                        |
-| ------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Запуск             | `app/bootstrap.ts`, `main.ts`                        | Pinia, Vuetify, настоящий App.                                                                                                                 |
-| Оболочка и URL     | `app/App.vue`, `StaffWorkspace.vue`, `navigation.ts` | Роль сервера, history/popstate, пять разделов администратора и два бариста, title/focus, уведомление о фоновой операции.                       |
-| Сброс идентичности | `app/useStaffDomains.ts`                             | Смена ID, роли или token и потеря staff-сеанса очищают все защищённые владельцы. Ключ workspace уничтожает сохранённые страницы.               |
-| Вход               | `features/auth/useAuthEntry.ts`                      | Телефон, OTP, cooldown, подтверждённый отказ, явный logout для смены номера.                                                                   |
-| Сеанс              | `entities/session/session.store.ts`                  | Сеанс в памяти, restore через refresh и `/me`, истечение, подтверждённый logout.                                                               |
-| Заказы             | `entities/orders/orders.store.ts`                    | Очередь, выбор и detail, стадии, один command, опрос только активного раздела, проверка неизвестного исхода.                                   |
-| Меню               | `entities/catalog/catalog.store.ts`                  | Каталог, текущий command и revision; feature владеет редактируемым черновиком. Сохранённая страница CatalogPage отсоединяется через KeepAlive. |
-| Доступность        | `entities/availability/availability.store.ts`        | Подтверждённые группы, фильтр, scroll, одна команда, stale после revision каталога.                                                            |
-| Пользователи       | `features/users/users.store.ts`                      | Реальный поиск, фильтр, список, создание, role/block/unblock, dialog и unknown recovery.                                                       |
-| Настройки          | `entities/settings/settings.store.ts`                | Подтверждённые часы/вместимость, полный draft, сохранение и перечитывание.                                                                     |
-| Уведомления        | `features/notifications/notifications.store.ts`      | Только Barista: readiness, purpose, native association, inspect/enable/disable, неизменный proof неизвестной команды.                          |
-| HTTP               | `shared/api/request.ts`                              | Fetch с credentials и явным bearer, metadata ответа; нет автоматического refresh, мутации или навигации. Предметные API разбирают DTO и исход. |
-| Общие примитивы    | `shared/ui/operations`, `SourceToast`                | Source-геометрия, нативные поля/формы, доступный заголовок dialog; без бизнес-состояния.                                                       |
+| Область            | Единственный владелец                                 | Граница                                                                                                                                        |
+| ------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Запуск             | `app/bootstrap.ts`, `main.ts`                         | Pinia, Vuetify, настоящий App.                                                                                                                 |
+| Вход, сеанс и URL  | `app/App.vue`, `app/staff/navigation.ts`              | Restore/expiry/logout, ключ `ID:role:token`, history/popstate, native intent/proof и фоновые сообщения.                                        |
+| Рабочий экран      | `app/staff/StaffScreen.vue`                           | Композиция пяти страниц, роль и отказ, `NotificationsDialog`, активация catalog/settings/notifications, KeepAlive, title/content focus.        |
+| Адаптивный layout  | `widgets/staff/StaffWorkspaceLayout.vue`              | Каркас workspace, StaffNavigation, действия учётной записи и выбор уведомления; readonly props, события и один default slot.                   |
+| Сброс идентичности | `app/staff/useStaffDomains.ts`                        | Смена ID, роли или token и потеря staff-сеанса очищают все защищённые владельцы. Ключ staff-экрана уничтожает сохранённые страницы.            |
+| Вход               | `features/auth/model/useAuthEntry.ts`                 | Телефон, OTP, cooldown, подтверждённый отказ, явный logout для смены номера.                                                                   |
+| Сеанс              | `entities/session/session.store.ts`                   | Сеанс в памяти, restore через refresh и `/me`, истечение, подтверждённый logout.                                                               |
+| Заказы             | `entities/orders/orders.store.ts`                     | Очередь, выбор и detail, стадии, один command, опрос только активного раздела, проверка неизвестного исхода.                                   |
+| Меню               | `entities/catalog/catalog.store.ts`                   | Каталог, текущий command и revision; feature владеет редактируемым черновиком. Сохранённая страница CatalogPage отсоединяется через KeepAlive. |
+| Доступность        | `entities/availability/availability.store.ts`         | Подтверждённые группы, фильтр, scroll, одна команда, stale после revision каталога.                                                            |
+| Пользователи       | `features/users/model/users.store.ts`                 | Реальный поиск, фильтр, список, создание, role/block/unblock, dialog и unknown recovery.                                                       |
+| Настройки          | `entities/settings/settings.store.ts`                 | Подтверждённые часы/вместимость, полный draft, сохранение и перечитывание.                                                                     |
+| Уведомления        | `features/notifications/model/notifications.store.ts` | Только Barista: readiness, purpose, native association, inspect/enable/disable, неизменный proof неизвестной команды.                          |
+| HTTP               | `shared/api/request.ts`                               | Fetch с credentials и явным bearer, metadata ответа; нет автоматического refresh, мутации или навигации. Предметные API разбирают DTO и исход. |
+| Общие примитивы    | `shared/ui/operations`, `SourceToast`                 | Source-геометрия, нативные поля/формы, доступный заголовок dialog; без бизнес-состояния.                                                       |
 
-`pages` компонуют сценарий; `widgets/staff` отображает role-specific ссылки.
+`pages` компонуют сценарий; `app/staff/StaffScreen` соединяет рабочие страницы
+и их lifecycle. `widgets/staff` владеет адаптивным layout и role-specific ссылками.
+Layout не импортирует страницы, app, store, HTTP или native protocol;
+он передаёт исходное событие клика экрану. Экран помещает в default slot сначала
+`NotificationsDialog`, затем существующий `.staff-content`; его ref, стили
+и фокус остаются у экрана. Граница определена в
+[ADR-014](../../../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#экран-и-layout).
 Направление зависимостей: `app -> pages -> widgets -> features -> entities -> shared`.
 Ни один клиент не импортирует исходники другого приложения.
 
@@ -75,7 +84,9 @@ sources:
 Отсутствующий `section` означает заказы; `catalog` виден как «Меню».
 Допустимы также `orders`, `availability`, `users`, `settings`. Неизвестный,
 пустой или дублированный раздел показывает отказ, сохраняя исходный URL.
-Ссылки сохраняют прочие параметры и hash; обычный клик использует history,
+App хранит текущий URL как реактивный снимок и передаёт его staff-экрану.
+Ссылки разделов и фонового сообщения строятся из этого снимка, сохраняя
+прочие параметры и hash после popstate; обычный клик использует history,
 модифицированный клик сохраняет нативную семантику ссылки.
 Бариста по прямому адресу административного раздела видит отказ без его чтения.
 

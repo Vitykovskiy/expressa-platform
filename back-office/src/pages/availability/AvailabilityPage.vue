@@ -52,10 +52,10 @@ import {
   watch,
 } from "vue";
 import { useAvailabilityStore } from "../../entities/availability/availability.store";
-import AvailabilityFilters from "../../features/availability/AvailabilityFilters.vue";
-import AvailabilityGroups from "../../features/availability/AvailabilityGroups.vue";
-import emptyIcon from "../../features/availability/assets/empty.svg";
-import loaderIcon from "../../features/availability/assets/loader.svg";
+import AvailabilityFilters from "../../features/availability/ui/AvailabilityFilters.vue";
+import AvailabilityGroups from "../../features/availability/ui/AvailabilityGroups.vue";
+import emptyIcon from "../../features/availability/ui/assets/empty.svg";
+import loaderIcon from "../../features/availability/ui/assets/loader.svg";
 import type {
   AvailabilityPageProps,
   AvailabilityHeadingElement,
@@ -109,6 +109,25 @@ watch(
   },
 );
 
+function restoreScroll() {
+  if (desktopScroll.value !== null) {
+    desktopScroll.value.scrollTop = availability.scrollPosition.desktop;
+  }
+
+  if (mobileScroll.value !== null) {
+    mobileScroll.value.scrollTop = availability.scrollPosition.mobile;
+  }
+}
+
+function rememberScroll() {
+  if (desktopScroll.value !== null && mobileScroll.value !== null) {
+    availability.rememberScroll(props.context.identityId, {
+      desktop: desktopScroll.value.scrollTop,
+      mobile: mobileScroll.value.scrollTop,
+    });
+  }
+}
+
 onMounted(async () => {
   globalThis.document.title = "Доступность · Expressa";
   await nextTick();
@@ -118,27 +137,13 @@ onMounted(async () => {
   }
 
   heading.value?.focus();
-
-  if (desktopScroll.value !== null) {
-    desktopScroll.value.scrollTop = availability.scrollPosition.desktop;
-  }
-
-  if (mobileScroll.value !== null) {
-    mobileScroll.value.scrollTop = availability.scrollPosition.mobile;
-  }
-
+  restoreScroll();
   await availability.activate(props.context);
 });
 
 onScopeDispose(() => {
   disposed = true;
-  if (desktopScroll.value !== null && mobileScroll.value !== null) {
-    availability.rememberScroll(props.context.identityId, {
-      desktop: desktopScroll.value.scrollTop,
-      mobile: mobileScroll.value.scrollTop,
-    });
-  }
-
+  rememberScroll();
   availability.deactivate();
 });
 </script>

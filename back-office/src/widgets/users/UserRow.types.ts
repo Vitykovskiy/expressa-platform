@@ -1,4 +1,4 @@
-import type { UserPresentation } from "../../features/users/presentation/Users.types";
+import type { UserPresentation } from "../../features/users/ui/Users.types";
 
 export interface UserRowProps {
   readonly user: UserPresentation;

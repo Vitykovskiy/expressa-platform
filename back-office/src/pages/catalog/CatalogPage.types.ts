@@ -6,5 +6,4 @@ export interface CatalogPageProps {
 
 export interface CatalogPageEmits {
   sessionExpired: [];
-  catalogChanged: [];
 }

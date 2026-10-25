@@ -1,4 +1,4 @@
-import type { OrderCardModel } from "../../features/orders/presentation/OrderCard.types";
+import type { OrderCardModel } from "../../features/orders/ui/OrderCard.types";
 
 export type OrderFilter = "all" | "created" | "confirmed" | "ready";
 
@@ -27,4 +27,8 @@ export interface OrdersPageHandle {
   captureScroll(): number;
   restoreScroll(position: number): void;
   focusHeading(): void;
+}
+
+export interface OrdersPageSlots {
+  feedback?: () => unknown;
 }

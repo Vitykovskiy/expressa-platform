@@ -9,9 +9,20 @@ export interface StaffNavigationProps {
 
 export interface StaffNavigationItem {
   readonly section: StaffSection;
+  readonly administratorOnly: boolean;
   readonly label: string;
   readonly icon: string;
   readonly mobileIcon: string;
   readonly activeIcon: string;
   readonly activeMobileIcon: string;
+}
+
+export interface StaffNavigationEmits {
+  navigate: [event: globalThis.MouseEvent, href: string];
+  logout: [];
+}
+
+export interface StaffNavigationSlots {
+  selection?(): unknown;
+  actions?(): unknown;
 }

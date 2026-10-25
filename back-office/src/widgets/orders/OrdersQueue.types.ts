@@ -1,4 +1,4 @@
-import type { OrderCardModel } from "../../features/orders/presentation/OrderCard.types";
+import type { OrderCardModel } from "../../features/orders/ui/OrderCard.types";
 
 export interface OrdersQueueProps {
   readonly orders: readonly OrderCardModel[];

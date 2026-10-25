@@ -7,9 +7,12 @@
       <div class="user-row__labels">
         <span class="user-row__name">{{ props.user.name }}</span>
         <span class="user-row__badge" :class="roleClass">{{ roleLabel }}</span>
-        <span v-if="showAccess" class="user-row__badge" :class="accessClass">{{
-          accessLabel
-        }}</span>
+        <span
+          v-if="showAccess"
+          class="user-row__badge"
+          :class="accessBadge.className"
+          >{{ accessBadge.label }}</span
+        >
       </div>
       <p class="user-row__phone">{{ props.user.phone }}</p>
     </div>
@@ -37,12 +40,12 @@
         <button
           v-if="props.user.canChangeAccess"
           class="user-menu__action"
-          :class="menuAccessClass"
+          :class="accessAction.className"
           type="button"
           role="menuitem"
           @click="emit('access', props.user)"
         >
-          <img :src="accessIcon" alt="" />{{ accessAction }}
+          <img :src="accessAction.icon" alt="" />{{ accessAction.label }}
         </button>
       </div>
     </VMenu>
@@ -55,7 +58,7 @@ import { VMenu } from "vuetify/components/VMenu";
 import {
   USER_ASSETS,
   USER_ROLE_LABELS,
-} from "../../features/users/presentation/Users.constants";
+} from "../../features/users/ui/Users.constants";
 import type { UserRowProps, UserRowEmits } from "./UserRow.types";
 
 const props = defineProps<UserRowProps>();
@@ -67,32 +70,44 @@ const roleLabel = computed(() =>
 const roleClass = computed(
   () => `user-role--${props.user.role ?? "unassigned"}`,
 );
+
 const showAccess = computed(
   () => props.user.role !== null || props.user.blocked,
 );
-const accessLabel = computed(() =>
-  props.user.blocked ? "Нет доступа" : "Активен",
-);
-const accessClass = computed(() =>
-  props.user.blocked ? "user-access--blocked" : "user-access--active",
-);
+
+const accessBadge = computed(() => {
+  if (props.user.blocked) {
+    return { label: "Нет доступа", className: "user-access--blocked" };
+  }
+
+  return { label: "Активен", className: "user-access--active" };
+});
+
 const hasActions = computed(
   () => props.user.canChangeRole || props.user.canChangeAccess,
 );
-const accessAction = computed(() =>
-  props.user.blocked ? "Разблокировать" : "Заблокировать",
-);
-const accessIcon = computed(() =>
-  props.user.blocked ? USER_ASSETS.unblock : USER_ASSETS.block,
-);
-const menuAccessClass = computed(() =>
-  props.user.blocked
-    ? "user-menu__action--unblock"
-    : "user-menu__action--block",
-);
+
+const accessAction = computed(() => {
+  if (props.user.blocked) {
+    return {
+      label: "Разблокировать",
+      icon: USER_ASSETS.unblock,
+      className: "user-menu__action--unblock",
+    };
+  }
+
+  return {
+    label: "Заблокировать",
+    icon: USER_ASSETS.block,
+    className: "user-menu__action--block",
+  };
+});
 </script>
 
 <style scoped>
+/* Локальные размеры строки, текста и меню не имеют шкал в теме.
+   Цвет разделителей и палитра «Без роли» сохраняют исходное оформление:
+   подходящих семантических tokens для них нет. */
 .user-row {
   display: flex;
   gap: 12px;
@@ -109,7 +124,7 @@ const menuAccessClass = computed(() =>
   height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--operations-radius-pill);
   font:
     600 12px/16px Inter,
     sans-serif;
@@ -135,7 +150,7 @@ const menuAccessClass = computed(() =>
   display: inline-flex;
   flex-shrink: 0;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--operations-radius-pill);
   font:
     500 11px/16.5px Inter,
     sans-serif;

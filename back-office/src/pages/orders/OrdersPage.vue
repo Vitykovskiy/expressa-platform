@@ -6,7 +6,7 @@
         class="orders-page__refresh"
         type="button"
         aria-label="Обновить заказы"
-        :disabled="props.phase === 'loading'"
+        :disabled="loading"
         @click="emit('refresh')"
       >
         <img :src="ORDER_REFRESH_ICON" alt="" />
@@ -20,13 +20,9 @@
         label="Стадии заказов"
         @update:model-value="selectFilter"
       />
-      <div class="orders-page__content" :aria-busy="props.phase === 'loading'">
+      <div class="orders-page__content" :aria-busy="loading">
         <slot name="feedback" />
-        <p
-          v-if="props.phase === 'loading' && props.orders.length === 0"
-          class="orders-page__message"
-          role="status"
-        >
+        <p v-if="showInitialLoading" class="orders-page__message" role="status">
           Загружаем заказы…
         </p>
         <p
@@ -50,18 +46,14 @@
           @toggle-details="emit('toggleDetails', $event)"
         />
         <OperationsEmptyState
-          v-if="
-            props.phase === 'ready' &&
-            props.orders.length === 0 &&
-            props.selectedOrder === null
-          "
+          v-if="showEmptyQueue"
           title="Заказов нет"
           description="Активные заказы появятся здесь"
         />
         <OrdersQueue
           v-else-if="props.orders.length > 0"
           :orders="props.orders"
-          :disabled="props.commandsDisabled || props.phase !== 'ready'"
+          :disabled="queueCommandsDisabled"
           :pending-order-id="props.pendingOrderId"
           :expanded-order-id="props.expandedOrderId"
           @confirm="emit('confirm', $event)"
@@ -76,36 +68,62 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 import OperationsTabs from "../../shared/ui/operations/OperationsTabs.vue";
 import OperationsEmptyState from "../../shared/ui/operations/OperationsEmptyState.vue";
 import OrdersQueue from "../../widgets/orders/OrdersQueue.vue";
-import OrderCard from "../../features/orders/presentation/OrderCard.vue";
+import OrderCard from "../../features/orders/ui/OrderCard.vue";
 import {
   ORDER_FILTER_OPTIONS,
   ORDER_REFRESH_ICON,
   ORDER_MOBILE_QUERY,
 } from "./OrdersPage.constants";
-import type { OrdersPageProps, OrdersPageEmits } from "./OrdersPage.types";
+import type {
+  OrdersPageProps,
+  OrdersPageEmits,
+  OrdersPageSlots,
+} from "./OrdersPage.types";
 
 const props = defineProps<OrdersPageProps>();
 const emit = defineEmits<OrdersPageEmits>();
+
+defineSlots<OrdersPageSlots>();
+
 const desktopScroll = useTemplateRef<globalThis.HTMLElement>("desktopScroll");
 const mobileScroll = useTemplateRef<globalThis.HTMLElement>("mobileScroll");
 const heading = useTemplateRef<globalThis.HTMLHeadingElement>("heading");
 
-function captureScroll() {
-  const surface = globalThis.matchMedia(ORDER_MOBILE_QUERY).matches
+const loading = computed(() => props.phase === "loading");
+
+const showInitialLoading = computed(
+  () => loading.value && props.orders.length === 0,
+);
+
+const showEmptyQueue = computed(
+  () =>
+    props.phase === "ready" &&
+    props.orders.length === 0 &&
+    props.selectedOrder === null,
+);
+
+const queueCommandsDisabled = computed(
+  () => props.commandsDisabled || props.phase !== "ready",
+);
+
+function activeScrollElement() {
+  return globalThis.matchMedia(ORDER_MOBILE_QUERY).matches
     ? mobileScroll.value
     : desktopScroll.value;
+}
+
+function captureScroll() {
+  const surface = activeScrollElement();
 
   return surface?.scrollTop ?? 0;
 }
 
 function restoreScroll(position: number) {
-  const surface = globalThis.matchMedia(ORDER_MOBILE_QUERY).matches
-    ? mobileScroll.value
-    : desktopScroll.value;
+  const surface = activeScrollElement();
 
   if (surface !== null) {
     surface.scrollTop = position;
@@ -116,8 +134,6 @@ function focusHeading() {
   heading.value?.focus({ preventScroll: true });
 }
 
-defineExpose({ captureScroll, restoreScroll, focusHeading });
-
 function selectFilter(value: string) {
   const option = ORDER_FILTER_OPTIONS.find(
     (candidate) => candidate.id === value,
@@ -127,9 +143,12 @@ function selectFilter(value: string) {
     emit("selectFilter", option.id);
   }
 }
+
+defineExpose({ captureScroll, restoreScroll, focusHeading });
 </script>
 
 <style scoped>
+/* Страница владеет геометрией и типографикой; общей шкалы в tokens нет. */
 .orders-page {
   display: flex;
   flex: 1;
@@ -188,6 +207,7 @@ function selectFilter(value: string) {
   color: var(--color-danger);
 }
 @media (max-width: 767px) {
+  /* На узком экране прокручивается внутренний блок под шапкой и навигацией. */
   .orders-page {
     height: calc(100dvh - 60px);
     padding: 0;

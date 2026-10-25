@@ -12,6 +12,7 @@ import type {
   SettingsCommand,
   SettingsContext,
   SettingsDraft,
+  SettingsInput,
   SettingsPhase,
 } from "./settings.types";
 
@@ -26,13 +27,14 @@ export const useSettingsStore = defineStore("operating-settings", () => {
   const active = shallowRef(false);
   const sessionExpired = shallowRef(false);
   let context: SettingsContext | null = null;
-  let reading: AbortController | null = null;
-  let writing: AbortController | null = null;
+  let readController: AbortController | null = null;
+  let commandController: AbortController | null = null;
   let savedTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const parsed = computed(() =>
+  const parsedDraft = computed(() =>
     draft.value === null ? null : parseSettingsDraft(draft.value),
   );
+
   const dirty = computed(() => {
     if (draft.value === null || confirmed.value === null) {
       return false;
@@ -46,23 +48,27 @@ export const useSettingsStore = defineStore("operating-settings", () => {
       draft.value.slotCapacity !== baseline.slotCapacity
     );
   });
+
   const editingDisabled = computed(
     () => command.value !== null || phase.value === "loading" || !active.value,
   );
+
   const canSave = computed(
     () =>
       !editingDisabled.value &&
-      parsed.value !== null &&
+      parsedDraft.value !== null &&
       confirmed.value !== null &&
       !stale.value,
   );
+
   const saving = computed(
     () =>
       command.value?.phase === "sending" ||
       command.value?.phase === "refreshing",
   );
+
   const validationMessage = computed(() =>
-    dirty.value && parsed.value === null ? SETTINGS_MESSAGES.invalid : "",
+    dirty.value && parsedDraft.value === null ? SETTINGS_MESSAGES.invalid : "",
   );
 
   function clearSaved() {
@@ -74,10 +80,10 @@ export const useSettingsStore = defineStore("operating-settings", () => {
   function reset() {
     context = null;
     active.value = false;
-    reading?.abort();
-    writing?.abort();
-    reading = null;
-    writing = null;
+    readController?.abort();
+    commandController?.abort();
+    readController = null;
+    commandController = null;
     clearSaved();
     confirmed.value = null;
     draft.value = null;
@@ -86,6 +92,11 @@ export const useSettingsStore = defineStore("operating-settings", () => {
     stale.value = false;
     message.value = "";
     sessionExpired.value = false;
+  }
+
+  function replaceConfirmedAndDraft(settings: OperatingSettings) {
+    confirmed.value = settings;
+    draft.value = settingsToDraft(settings);
   }
 
   function expire() {
@@ -111,8 +122,9 @@ export const useSettingsStore = defineStore("operating-settings", () => {
 
   function deactivate() {
     active.value = false;
-    reading?.abort();
-    reading = null;
+    readController?.abort();
+    readController = null;
+    // Уже отправленная команда и её перечитывание продолжаются вне раздела.
     clearSaved();
 
     if (phase.value === "loading") {
@@ -138,25 +150,28 @@ export const useSettingsStore = defineStore("operating-settings", () => {
     if (
       context === null ||
       !active.value ||
-      reading !== null ||
+      readController !== null ||
       command.value !== null
     ) {
       return;
     }
 
-    const owner = context;
+    const requestContext = context;
     const controller = new AbortController();
-    const keepDraft = dirty.value;
+    const preserveEditedDraft = dirty.value;
 
-    reading = controller;
+    readController = controller;
     phase.value = "loading";
-    const outcome = await readSettings(owner.accessToken, controller.signal);
+    const outcome = await readSettings(
+      requestContext.accessToken,
+      controller.signal,
+    );
 
-    if (reading !== controller || context !== owner) {
+    if (readController !== controller || context !== requestContext) {
       return;
     }
 
-    reading = null;
+    readController = null;
 
     if (outcome.kind === "session-expired") {
       expire();
@@ -176,7 +191,7 @@ export const useSettingsStore = defineStore("operating-settings", () => {
 
     confirmed.value = outcome.settings;
 
-    if (!keepDraft || draft.value === null) {
+    if (!preserveEditedDraft || draft.value === null) {
       draft.value = settingsToDraft(outcome.settings);
     }
 
@@ -186,25 +201,25 @@ export const useSettingsStore = defineStore("operating-settings", () => {
   }
 
   async function save() {
-    if (!canSave.value || parsed.value === null || context === null) {
+    if (!canSave.value || parsedDraft.value === null || context === null) {
       return;
     }
 
-    const owner = context;
-    const submitted = { ...parsed.value };
+    const requestContext = context;
+    const submitted = { ...parsedDraft.value };
     const controller = new AbortController();
 
-    writing = controller;
+    commandController = controller;
     command.value = { phase: "sending", observed: null };
     message.value = "";
     clearSaved();
     const outcome = await saveSettings(
-      owner.accessToken,
+      requestContext.accessToken,
       submitted,
       controller.signal,
     );
 
-    if (writing !== controller || context !== owner) {
+    if (commandController !== controller || context !== requestContext) {
       return;
     }
 
@@ -215,7 +230,8 @@ export const useSettingsStore = defineStore("operating-settings", () => {
     }
 
     if (outcome.kind === "unknown") {
-      writing = null;
+      commandController = null;
+      // Неизвестный исход оставляет исходный draft заблокированным до сверки.
       command.value = { phase: "unknown", observed: null };
       message.value = SETTINGS_MESSAGES.unknown;
 
@@ -223,7 +239,7 @@ export const useSettingsStore = defineStore("operating-settings", () => {
     }
 
     if (outcome.kind === "rejected" || outcome.kind === "not-sent") {
-      writing = null;
+      commandController = null;
       command.value = null;
       message.value =
         outcome.kind === "rejected"
@@ -233,16 +249,26 @@ export const useSettingsStore = defineStore("operating-settings", () => {
       return;
     }
 
-    confirmed.value = outcome.settings;
-    draft.value = settingsToDraft(outcome.settings);
+    replaceConfirmedAndDraft(outcome.settings);
     command.value = { phase: "refreshing", observed: null };
-    const observed = await readSettings(owner.accessToken, controller.signal);
+    await refreshAfterSave(requestContext, submitted, controller);
+  }
 
-    if (writing !== controller || context !== owner) {
+  async function refreshAfterSave(
+    requestContext: SettingsContext,
+    submitted: SettingsInput,
+    controller: AbortController,
+  ) {
+    const observed = await readSettings(
+      requestContext.accessToken,
+      controller.signal,
+    );
+
+    if (commandController !== controller || context !== requestContext) {
       return;
     }
 
-    writing = null;
+    commandController = null;
     command.value = null;
 
     if (observed.kind === "session-expired") {
@@ -254,8 +280,7 @@ export const useSettingsStore = defineStore("operating-settings", () => {
     stale.value = observed.kind !== "loaded";
 
     if (observed.kind === "loaded") {
-      confirmed.value = observed.settings;
-      draft.value = settingsToDraft(observed.settings);
+      replaceConfirmedAndDraft(observed.settings);
       message.value = sameSettings(observed.settings, submitted)
         ? ""
         : SETTINGS_MESSAGES.changedAfterSave;
@@ -281,18 +306,21 @@ export const useSettingsStore = defineStore("operating-settings", () => {
       return;
     }
 
-    const owner = context;
+    const requestContext = context;
     const controller = new AbortController();
 
-    writing = controller;
+    commandController = controller;
     command.value = { ...original, phase: "inspecting", observed: null };
-    const outcome = await readSettings(owner.accessToken, controller.signal);
+    const outcome = await readSettings(
+      requestContext.accessToken,
+      controller.signal,
+    );
 
-    if (writing !== controller || context !== owner) {
+    if (commandController !== controller || context !== requestContext) {
       return;
     }
 
-    writing = null;
+    commandController = null;
 
     if (outcome.kind === "session-expired") {
       expire();
@@ -307,6 +335,8 @@ export const useSettingsStore = defineStore("operating-settings", () => {
       return;
     }
 
+    // GET показывает текущее состояние, но не доказывает исход нашей записи.
+    // Подтверждённые значения и исходный draft заменит только finishInspection.
     command.value = {
       ...original,
       phase: "inspected",
@@ -326,8 +356,7 @@ export const useSettingsStore = defineStore("operating-settings", () => {
       return;
     }
 
-    confirmed.value = current.observed;
-    draft.value = settingsToDraft(current.observed);
+    replaceConfirmedAndDraft(current.observed);
     command.value = null;
     stale.value = false;
     message.value = "";
