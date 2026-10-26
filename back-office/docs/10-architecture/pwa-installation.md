@@ -11,10 +11,10 @@ sources:
   - ../../public/pwa/icon-192.png
   - ../../public/pwa/icon-512.png
   - ../../src/app/App.vue
-  - ../../src/app/staff/navigation.ts
+  - ../../src/app/navigation.ts
   - ../../src/app/bootstrap.ts
-  - ../../src/entities/notifications/native-push.ts
-  - ../../src/entities/notifications/native-intent.ts
+  - ../../src/modules/notifications/native-push.ts
+  - ../../src/modules/notifications/native-intent.ts
   - ../../public/service-worker.js
   - ../../nginx.conf
   - ../../../docs/50-interfaces/Back-office-UI.md
@@ -82,11 +82,11 @@ Manifest отдаётся как `application/manifest+json`, обе иконк�
 fallback dev-сервера Vite не задаёт контракт собранного Nginx.
 
 Текущие `/service-worker.js`, manifest, иконки, шрифт и assets сохранены.
-Явная [подготовка уведомлений](../../src/entities/notifications/native-push.ts)
+Явная [подготовка уведомлений](../../src/modules/notifications/native-push.ts)
 регистрирует текущий worker с областью `/`; она не запрашивает permission
 и не создаёт подписку. Разрешение и подписка остаются отдельным явным
 действием по [текущему lifecycle](staff-read-slice.md#уведомления-и-logout).
-[Проверка native intent](../../src/entities/notifications/native-intent.ts)
+[Проверка native intent](../../src/modules/notifications/native-intent.ts)
 принимает только активный текущий controller своей регистрации и origin.
 
 Удаление исходников не удаляет прежние browser-managed регистрации:

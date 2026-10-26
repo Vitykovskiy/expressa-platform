@@ -13,28 +13,43 @@
 ```text
 back-office/
 ├── src/
-│   ├── app/            # запуск, сеанс/URL/history; staff/ — экран и срок жизни владельцев
-│   ├── pages/          # композиция auth/orders/availability/catalog/users/settings
-│   ├── widgets/
-│   │   └── staff/      # адаптивный layout и навигация администратора и бариста
-│   ├── features/       # действия и формы предметных сценариев, native push lifecycle
-│   ├── entities/       # сеанс, реальные DTO/API, подтверждённые данные и команды
-│   └── shared/         # HTTP transport, source UI-примитивы и нативные поля
+│   ├── app/            # запуск, выбор входа/рабочего содержимого, URL и lifetime
+│   ├── layouts/        # общий AppLayout, AppNavigation и их assets
+│   ├── modules/        # auth, session, orders, availability, catalog, users,
+│   │                  # settings, notifications; дочерний UI в components
+│   └── shared/         # технический HTTP и переиспользуемые UI-примитивы
 ├── public/             # шрифт, manifest, исходные иконки и push-only service worker
 └── docs/               # владельцы состояния, HTTP, установка и актуальный реестр покрытия
 ```
 
-Направление зависимостей и обязательные правила — в
-[размещении кода](docs/80-conventions/code-layout.md). Feature-каталоги разделены
-по фактическим обязанностям на `api`, `model` и `ui`; маршрутная навигация
-заказов находится в `pages/orders`. Это локальная адаптация FSD по
-[ADR-013](../docs/20-architecture/ADR/ADR-013-back-office-feature-organization.md):
-клиент сохраняет явные импорты модулей и существующих владельцев состояния.
-`app/staff/StaffScreen.vue` компонует рабочие страницы и lifecycle;
-`widgets/staff/StaffWorkspaceLayout.vue` отображает каркас, навигацию и действия
-через props/events/default slot. `app/App.vue` сохраняет композицию входа,
-сеанса, URL/history и native intent. Это разделение следует
-[ADR-014](../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#экран-и-layout).
+Предметная структура следует
+[ADR-015](../docs/20-architecture/ADR/ADR-015-back-office-domain-structure.md).
+Сначала выберите бизнес-область в `modules`, затем файл по обязанности:
+Page/Route, store, API, mapper или дочерний компонент. Глобальных FSD-слоёв
+и пустых каталогов нет; соседние типы/константы остаются у своего владельца.
+Точное направление импортов и исключения session — в
+[размещении кода](docs/80-conventions/code-layout.md).
+
+`app/App.vue` выбирает вход или рабочее содержимое и сохраняет сеанс/native
+lifetime. `app/AppContent.vue` компонует страницы, доступ, активацию и фокус;
+`layouts/AppLayout.vue` отображает общий авторизованный каркас через
+props/events/default slot. Вход имеет прежнее самостоятельное представление,
+защищённая навигация до авторизации не появляется.
+
+Четыре пути для первого чтения:
+
+- Каркас: [AppLayout](src/layouts/AppLayout.vue),
+  [AppNavigation](src/layouts/AppNavigation.vue), затем
+  [AppContent](src/app/AppContent.vue) с содержимым и lifecycle.
+- Заказы: [OrdersRoute](src/modules/orders/OrdersRoute.vue),
+  [OrdersPage](src/modules/orders/OrdersPage.vue),
+  [store](src/modules/orders/orders.store.ts) и [API](src/modules/orders/orders.api.ts).
+- Меню: [CatalogPage](src/modules/catalog/CatalogPage.vue),
+  [CatalogCategoryDialog](src/modules/catalog/components/CatalogCategoryDialog.vue)
+  и соседний [CatalogOptionGroupSelect](src/modules/catalog/components/CatalogOptionGroupSelect.vue).
+- Смена сеанса: ключ в [App](src/app/App.vue),
+  [useApplicationDomains](src/app/useApplicationDomains.ts) и
+  [session store](src/modules/session/session.store.ts).
 
 ## Локальный запуск
 

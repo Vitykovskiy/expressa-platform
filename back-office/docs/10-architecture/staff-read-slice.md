@@ -8,18 +8,18 @@ last_verified: 2026-10-25
 sources:
   - ../../contracts/openapi.json
   - ../../src/app/App.vue
-  - ../../src/app/staff/useStaffDomains.ts
-  - ../../src/entities/availability/availability.api.ts
-  - ../../src/entities/orders/orders.api.ts
-  - ../../src/entities/catalog/catalog.api.ts
-  - ../../src/entities/settings/settings.api.ts
-  - ../../src/entities/users/users.api.ts
-  - ../../src/entities/notifications/notifications.api.ts
-  - ../../src/entities/notifications/native-push.ts
-  - ../../src/entities/notifications/native-intent.ts
-  - ../../src/entities/session/session.store.ts
-  - ../../src/entities/session/session.api.ts
-  - ../../src/features/notifications/model/notifications.store.ts
+  - ../../src/app/useApplicationDomains.ts
+  - ../../src/modules/availability/availability.api.ts
+  - ../../src/modules/orders/orders.api.ts
+  - ../../src/modules/catalog/catalog.api.ts
+  - ../../src/modules/settings/settings.api.ts
+  - ../../src/modules/users/users.api.ts
+  - ../../src/modules/notifications/notifications.api.ts
+  - ../../src/modules/notifications/native-push.ts
+  - ../../src/modules/notifications/native-intent.ts
+  - ../../src/modules/session/session.store.ts
+  - ../../src/modules/session/session.api.ts
+  - ../../src/modules/notifications/notifications.store.ts
   - ../../public/service-worker.js
 ---
 
@@ -118,10 +118,11 @@ own disable204 и новое enable200. Реальный клиентский ch
 после development-deploy остаются отдельными обязательными критериями.
 Секреты, endpoint и ключи подписки в документацию не помещаются.
 
-Эти наблюдения относятся к прежнему интеграционному состоянию. Перенос
+Эти наблюдения относятся к прежнему интеграционному состоянию. Предыдущий перенос
 notifications store в `features/notifications/model` и dialog в
-`features/notifications/ui` сохраняет владельцев; source-review не обновляет
-свежесть native-доказательств. Текущий рефакторинг не подтверждает повторную
+`features/notifications/ui` был этапом прежней структуры. Сейчас оба владельца
+находятся в `modules/notifications`, dialog — в `components`; source-review
+не обновляет свежесть native-доказательств. Текущий рефакторинг не подтверждает повторную
 доставку, системный клик или установленный runtime.
 
 После связанной правки logout наблюдались настоящий own-proof logout204 и

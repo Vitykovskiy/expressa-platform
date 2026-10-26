@@ -14,7 +14,7 @@ scope: back-office
 - [Покрытие runtime](COVERAGE.md) — текущие потребители и явные N/A.
 - [Архитектура](10-architecture/INDEX.md) — владельцы состояния и нативная установка.
 - [Владельцы UI и состояния](10-architecture/ui-ownership.md) — оболочка, разделы, команды и сброс идентичности.
-- [Размещение кода](80-conventions/code-layout.md) — слои, выполненное разделение feature-каталогов и первичные правила.
+- [Размещение кода](80-conventions/code-layout.md) — предметные модули, layout и пути первого чтения.
 - [HTTP и уведомления](10-architecture/staff-read-slice.md) — точные API-потребители и native lifecycle.
 - [Нативная установка](10-architecture/pwa-installation.md) — manifest, исходные иконки и границы наблюдаемого запуска.
 - [Контракт сотрудника](../../docs/50-interfaces/Back-office-UI.md) — требования к полному продукту.

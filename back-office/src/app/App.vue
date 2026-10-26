@@ -1,6 +1,6 @@
 <template>
   <VApp>
-    <StaffScreen
+    <AppContent
       v-if="staffSession !== null"
       :key="sessionKey"
       :session="staffSession"
@@ -44,17 +44,17 @@ import {
   parseNativeOrderIntent,
   parseNativeViewChallenge,
   requestNativeIntent,
-} from "../entities/notifications/native-intent";
-import type { NativeOrderIntent } from "../entities/notifications/native-intent.types";
+} from "../modules/notifications/native-intent";
+import type { NativeOrderIntent } from "../modules/notifications/native-intent.types";
 import type { NativeIntentBinding } from "./App.types";
-import type { LogoutProofSupplier } from "../entities/session/session.types";
-import { useSessionStore } from "../entities/session/session.store";
-import AuthPage from "../pages/auth/AuthPage.vue";
+import type { LogoutProofSupplier } from "../modules/session/session.types";
+import { useSessionStore } from "../modules/session/session.store";
+import AuthPage from "../modules/auth/AuthPage.vue";
 import SourceToast from "../shared/ui/SourceToast/SourceToast.vue";
-import StaffScreen from "./staff/StaffScreen.vue";
+import AppContent from "./AppContent.vue";
 import { APP_MESSAGES } from "./App.constants";
-import { useSectionIntent } from "./staff/navigation";
-import { useStaffDomains } from "./staff/useStaffDomains";
+import { useSectionIntent } from "./navigation";
+import { useApplicationDomains } from "./useApplicationDomains";
 
 const session = useSessionStore();
 const intent = useSectionIntent();
@@ -64,7 +64,7 @@ const restoring = shallowRef(true);
 const message = shallowRef("");
 const notificationIntent = shallowRef<NativeOrderIntent | null>(null);
 const notificationMessage = shallowRef("");
-const domains = useStaffDomains(expireStaffSession);
+const domains = useApplicationDomains(expireStaffSession);
 let intentBinding: NativeIntentBinding | null = null;
 let bindingEpoch = 0;
 let receptionEpoch = 0;

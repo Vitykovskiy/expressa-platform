@@ -7,69 +7,113 @@ scope: back-office
 last_verified: 2026-10-25
 sources:
   - ../../src/main.ts
+  - ../../src/app/App.vue
+  - ../../src/app/AppContent.vue
+  - ../../src/app/useApplicationDomains.ts
+  - ../../src/layouts/AppLayout.vue
+  - ../../src/layouts/AppNavigation.vue
+  - ../../../docs/20-architecture/ADR/ADR-015-back-office-domain-structure.md
   - ../../../docs/80-conventions/Code-Definition-of-Done-back-office.md
   - ../10-architecture/ui-ownership.md
 ---
 
 # Размещение кода back-office
 
-Нормативный владелец структуры — [технический DoD](../../../docs/80-conventions/Code-Definition-of-Done-back-office.md).
-Направление зависимостей: `app -> pages -> widgets -> features -> entities -> shared`.
-Пустые слои ради схемы не создаются. `widgets/staff` содержит адаптивный
-`StaffWorkspaceLayout` и source-навигацию пяти разделов Administrator и двух
-разделов Barista. Layout принимает readonly props, сообщает действия событиями
-и выводит один default slot; страницы, store, HTTP и app он не импортирует.
-`app/App.vue` соединяет вход и staff-сеанс, URL/history, native intent/proof
-и фоновые сообщения. `app/staff/StaffScreen.vue` компонует пять рабочих страниц,
-проверку роли и отказ, `NotificationsDialog`, активацию владельцев, KeepAlive,
-title и content focus. `app/staff/navigation.ts` разбирает URL intent,
-`app/staff/useStaffDomains.ts` владеет общим сбросом идентичности и связью
-catalog revision с доступностью. Бизнес-команды остаются у доменных владельцев.
-Это фактическое разделение следует
-[ADR-014](../../../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#экран-и-layout).
+Исходники перенесены в предметную структуру по
+[ADR-015](../../../docs/20-architecture/ADR/ADR-015-back-office-domain-structure.md).
+Нормативный владелец — [технический DoD](../../../docs/80-conventions/Code-Definition-of-Done-back-office.md).
+Это карта исходников; перенос и сборка не подтверждают runtime или пользовательскую приёмку.
 
-`pages` собирают auth, orders, availability, catalog, users и settings.
-`features` владеют вводом, редактированием и действиями; `entities` — DTO,
-HTTP, подтверждёнными данными и командами. Notifications feature использует
-нативную browser-границу в entities; worker расположен в public и не импортирует
-app. `shared` содержит транспорт и source UI-примитивы без предметного состояния.
-Подробные границы — в [описании владельцев](../10-architecture/ui-ownership.md)
-и [HTTP-ноте](../10-architecture/staff-read-slice.md).
+## Корни и зависимости
 
-Именованные типы размещаются в соседних `*.types.ts`, константы уровня модуля —
-в `*.constants.ts` по DoD. Импорты исходников, конфигурации и типов других
-приложений запрещены. Текущая реализация не добавляет общий межконтурный пакет.
+- `app` собирает запуск, вход/рабочее содержимое, URL/history, общий сброс
+  идентичности и native intent. Импортирует layouts, modules и shared.
+- `layouts` содержит AppLayout, AppNavigation, соседние контракты и assets.
+  Импортирует собственные файлы и shared; не импортирует app, modules,
+  store, HTTP или native controllers.
+- `modules/<область>` содержит реальные Page/Route, API, DTO, mapper, store
+  и helpers этой области. Дочернее представление, его контракты и assets
+  находятся в `components`, где они существуют. Module импортирует свои
+  файлы и shared. Существующие исключения session: auth использует session
+  store, UsersRoute — StaffSession, notifications — LogoutProofSupplier.
+  Session не импортирует потребителей. Новых межпредметных связей нет.
+- `shared` содержит локальный технический HTTP и переиспользуемые UI-примитивы
+  без предметного состояния; не импортирует app/layouts/modules.
 
-## Текущее размещение features
+Глобальных pages/widgets/features/entities, staff-каталога композиции,
+совместимых файлов-прокси и пустых каталогов нет. Прямые импорты сохраняются;
+barrels и aliases ради переноса не добавлены. Именованные типы лежат в соседних
+`*.types.ts`, константы уровня модуля — в `*.constants.ts`. Исходники других
+приложений не импортируются.
 
-[ADR-013](../../../docs/20-architecture/ADR/ADR-013-back-office-feature-organization.md)
-задаёт адаптацию FSD с явными импортами модулей. Предметные переносы выполнены:
-`auth` содержит `api`, `model` и `ui`; `catalog`, `users` и `notifications` —
-`model` и `ui`; `availability`, `orders` и `settings` — `ui`.
-Прежних feature-каталогов `presentation` и совместимых файлов-прокси нет.
-Навигация заказов находится рядом со своим маршрутом в `pages/orders`.
+## Ресурсы
 
-- `api` содержит HTTP-модули feature, `model` — состояние и логику сценария,
-  `ui` — компоненты, стили и presentation-модули. Сегменты появляются по
-  существующим обязанностям; небольшие связные entity-модули остаются плоскими.
-  `entities/catalog/ui/CatalogOptionGroupSelect.vue` изолирует конкретный
-  Vuetify multiselect категорий; редактор и ценовая политика остаются в
-  `features/catalog/model`.
-- Типы и константы перемещаются с модулем-владельцем. Общий контракт
-  импортируется от своего владельца, а не дублируется между сегментами.
-- Композиция разных областей остаётся в `app` и страницах; маршрутная
-  навигация — у своей страницы. Нижние слои не импортируют верхние.
-- Внешние потребители сохраняют явные именованные импорты модулей,
-  внутри области используются относительные пути. Обязательные barrels,
-  глобальные aliases и proxy re-export файлы для перехода не добавляются.
+Импортируемые изображения лежат рядом с самым узким владельцем исходников:
+иконки навигации — в `layouts/assets`, изображения формы входа и доступности —
+в `components/assets` своей области. Сборщик управляет их итоговыми ссылками;
+импортированный ресурс может быть встроен, отдельный файл не гарантируется.
 
-Переносы включают замены путей импортов, ссылок на assets и документации.
+`public` содержит ресурсы с намеренно прямыми URL и сохранёнными именами:
+текущие UI-иконки, шрифты, manifest, PWA-иконки и service worker. Путь
+публичного ресурса соответствует его потребителю: например, иконка товара
+доступна как `/catalog/product-chevron.svg`. Пустые каталоги и placeholders
+для будущих ресурсов не создаются.
+
+## Предметные области
+
+| Каталог                 | Что читать внутри                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `modules/auth`          | AuthPage, useAuthEntry, auth API, phone helpers; формы в components.                                                                 |
+| `modules/session`       | Store/API и контракты сеанса.                                                                                                        |
+| `modules/orders`        | OrdersRoute, OrdersPage, store/API/DTO/mapper и orders-navigation; карточки и диалог в components.                                   |
+| `modules/availability`  | AvailabilityPage, store/API/DTO/mapper; фильтры, группы и строки в components.                                                       |
+| `modules/catalog`       | CatalogPage, store/API/DTO/mapper, catalog-editor и catalog-pricing; меню, диалоги и CatalogOptionGroupSelect в components.          |
+| `modules/users`         | UsersRoute, UsersPage, store/API/DTO; users.mapper преобразует DTO, users.presenter готовит UI/query; строки и диалоги в components. |
+| `modules/settings`      | SettingsRoute, SettingsPage, store/API/DTO/validation; форма, поля и recovery в components.                                          |
+| `modules/notifications` | Store/API, native-push и native-intent; NotificationsDialog в components.                                                            |
+
+Users domain-контракты сохраняют `users.types.ts` и `users.constants.ts`.
+Store-контракты различимы как `users.store.types.ts` и `users.store.constants.ts`;
+`components/Users.types.ts` и `Users.constants.ts` сохраняют свой регистр и UI-владельца.
+CatalogOptionGroupSelect находится рядом со своим единственным компонентом-потребителем
+CatalogCategoryDialog; его тип опции также использует CatalogEditor.types.
+
+## Композиция и layout
+
+`app/App.vue` выбирает кешированный вход или рабочее содержимое с ключом
+`ID:role:token`, сохраняет restore/expiry/logout, URL/history, native intent/proof
+и фоновые сообщения. `app/AppContent.vue` компонует пять рабочих страниц,
+роль и отказ, NotificationsDialog, активацию владельцев, Catalog KeepAlive
+`max=1`, title и content focus. `app/navigation.ts` разбирает URL intent;
+`app/useApplicationDomains.ts` синхронно очищает защищённых владельцев и
+связывает catalog revision с invalidation доступности.
+
+`layouts/AppLayout.vue` — общий авторизованный каркас с действиями учётной
+записи и выбором уведомления. Он принимает readonly props, сообщает действия
+событиями и выводит default slot. AppContent помещает в slot сначала
+NotificationsDialog, затем `.staff-content`; ref, стили и фокус остаются у
+AppContent. AppNavigation содержит пять разделов Administrator и два Barista.
+Вход сохраняет самостоятельное представление без защищённой навигации.
+Бизнес-команды остаются у stores; API и DTO не смешаны с компонентами.
+
+## Четыре пути первого чтения
+
+- Каркас и навигация: [AppLayout](../../src/layouts/AppLayout.vue),
+  [AppNavigation](../../src/layouts/AppNavigation.vue), затем
+  [AppContent](../../src/app/AppContent.vue) с содержимым и lifecycle.
+- Заказы: [OrdersRoute](../../src/modules/orders/OrdersRoute.vue),
+  [OrdersPage](../../src/modules/orders/OrdersPage.vue),
+  [store](../../src/modules/orders/orders.store.ts), [API](../../src/modules/orders/orders.api.ts).
+- Меню: [CatalogPage](../../src/modules/catalog/CatalogPage.vue),
+  [CatalogCategoryDialog](../../src/modules/catalog/components/CatalogCategoryDialog.vue)
+  и [CatalogOptionGroupSelect](../../src/modules/catalog/components/CatalogOptionGroupSelect.vue).
+- Смена сеанса: ключ в [App](../../src/app/App.vue),
+  [useApplicationDomains](../../src/app/useApplicationDomains.ts) и
+  [session store](../../src/modules/session/session.store.ts).
+
 Публичные URL текущего worker `/service-worker.js`, manifest и assets,
-а также порядок CSS сохранены. Прежние `/queue`, `/availability`, `/menu`
-и `/sw.js` сняты по [ADR-014](../../../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#текущий-вход-и-снятые-переходы);
-границы текущего входа описаны в [ноте установки](../10-architecture/pwa-installation.md#текущий-вход-и-снятые-переходы).
-Неиспользуемая дублирующая
-навигация `EmployeeNavigation` удалена; действующая навигация и её SVG
-принадлежат `widgets/staff`. Это описание размещения не подтверждает
-runtime или пользовательскую приёмку. Подробные обязанности состояния и команд
-по-прежнему принадлежат [UI ownership](../10-architecture/ui-ownership.md).
+DOM и порядок CSS сохранены переносом. Снятые `/queue`, `/availability`,
+`/menu`, `/sw.js` не возвращены; [границы входа](../10-architecture/pwa-installation.md#текущий-вход-и-снятые-переходы)
+не менялись. Подробные обязанности состояния и команд принадлежат
+[UI ownership](../10-architecture/ui-ownership.md), HTTP/native —
+[интеграционной ноте](../10-architecture/staff-read-slice.md).

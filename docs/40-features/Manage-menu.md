@@ -7,7 +7,7 @@ sources:
   - ../50-interfaces/Back-office-UI.md
   - ../30-domain/Catalog-and-menu.md
   - ../20-architecture/ADR/ADR-008-v3-catalog-orders-cutover.md
-  - ../../back-office/src/features/catalog/catalog-editor.ts
+  - ../../back-office/src/modules/catalog/catalog-editor.ts
   - ../../backend/src/catalog/application/manage-source-products.use-case.ts
 knowledge_role: requirements
 scope: system

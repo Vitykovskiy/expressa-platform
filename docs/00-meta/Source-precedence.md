@@ -54,7 +54,9 @@ scope: system
 [ADR-011](../20-architecture/ADR/ADR-011-back-office-clean-slate.md) снимает
 унаследованные требования только к форме UI. Стек, организация кода и
 [технический DoD](../80-conventions/Code-Definition-of-Done-back-office.md)
-сохраняются обязательными.
+сохраняются обязательными. Целевое размещение и зависимости уточняет
+[ADR-015](../20-architecture/ADR/ADR-015-back-office-domain-structure.md)
+с независимым review до переноса; прочие технические нормы сохраняются.
 Сохраняемые сценарии задаёт [контракт back-office](../50-interfaces/Back-office-UI.md),
 точные HTTP-схемы — backend OpenAPI. Исходное ТЗ, исторические ADR,
 бэклог и имеющиеся исходники не возвращают исключённые предписания.
