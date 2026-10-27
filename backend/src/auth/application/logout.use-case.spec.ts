@@ -13,6 +13,7 @@ const sessionId = "d2719b1e-6b2c-4c4e-8e61-5c5cc62e1952";
 const refreshSecret = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE";
 const foreignRefreshSecret = "YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmI";
 const revokedSession: AuthSession = {
+  context: "customer",
   createdAt: new Date("2026-08-04T09:00:00.000Z"),
   expiresAt: new Date("2026-08-11T09:00:00.000Z"),
   id: sessionId,

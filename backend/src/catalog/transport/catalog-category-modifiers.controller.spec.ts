@@ -28,7 +28,9 @@ const auth = {
   userId: "actor-id",
   sessionId: "session-id",
   phoneE164: "+79991234567",
-  role: "administrator" as const,
+  context: "staff" as const,
+  customer: null,
+  employee: { role: "administrator" as const, accessEnabled: true },
 };
 const request = { requestId: "request-id" };
 

@@ -11,7 +11,10 @@ import OrdersPage from "./OrdersPage.vue";
 const customer = {
   id: "customer-1",
   phoneE164: "+79991234567",
-  role: "customer" as const,
+  name: "Клиент",
+  context: "customer" as const,
+  customer: { registeredAt: new Date(0).toISOString() },
+  employee: null,
 };
 const accessSession = {
   accessToken: "restored-token",

@@ -293,7 +293,12 @@ describe("session store", () => {
   });
 
   it("rejects a non-customer session", async () => {
-    const dependencies = createDependencies({ ...customer, role: "barista" });
+    const dependencies = createDependencies({
+      ...customer,
+      context: "staff",
+      customer: null,
+      employee: { role: "barista", accessEnabled: true },
+    });
     setSessionDependencies(dependencies);
 
     await expect(
@@ -462,7 +467,10 @@ const accessSession = {
 const customer = {
   id: "customer-1",
   phoneE164: "+79991234567",
-  role: "customer" as const,
+  name: "Клиент",
+  context: "customer" as const,
+  customer: { registeredAt: new Date(0).toISOString() },
+  employee: null,
 };
 const cartItem = {
   addons: [],

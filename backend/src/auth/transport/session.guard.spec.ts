@@ -22,6 +22,7 @@ const claims: AccessTokenClaims = {
 };
 const sessionWithUser: SessionWithUser = {
   session: {
+    context: "customer",
     createdAt: new Date("2026-08-04T09:00:00.000Z"),
     expiresAt: new Date("2026-08-04T11:00:00.000Z"),
     id: "session-id",
@@ -30,7 +31,13 @@ const sessionWithUser: SessionWithUser = {
     rotatedAt: null,
     userId: "user-id",
   },
-  user: { id: "user-id", phoneE164: "+79990000000", role: "customer" },
+  user: {
+    id: "user-id",
+    phoneE164: "+79990000000",
+    context: "customer",
+    customer: null,
+    employee: null,
+  },
 };
 
 function createGuard(
@@ -111,10 +118,12 @@ describe("SessionGuard", () => {
     });
     const changedUser = createGuard(claims, {
       ...sessionWithUser,
+      session: { ...sessionWithUser.session, context: "staff" },
       user: {
         ...sessionWithUser.user,
         id: "other-user",
-        role: "administrator",
+        context: "staff",
+        employee: { role: "administrator", accessEnabled: true },
       },
     });
 

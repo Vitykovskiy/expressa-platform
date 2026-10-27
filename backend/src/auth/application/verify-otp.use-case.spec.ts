@@ -33,7 +33,6 @@ function createRepository(): jest.Mocked<AuthRepository> {
   return {
     findCurrentUser: jest.fn(),
     findOpenOtpChallenge: jest.fn(),
-    findOrCreateCustomer: jest.fn(),
     findSessionByRefreshTokenHash: jest.fn(),
     findSessionWithUser: jest.fn(),
     invalidateOtpChallenge: jest.fn(),
@@ -85,9 +84,12 @@ function createAuthentication(): Extract<
   const user: AuthUser = {
     id: "user-id",
     phoneE164: "+79991234567",
-    role: "customer",
+    context: "customer",
+    customer: null,
+    employee: null,
   };
   const session: AuthSession = {
+    context: "customer",
     id: "session-id",
     userId: user.id,
     refreshTokenHash: "refresh-hash",

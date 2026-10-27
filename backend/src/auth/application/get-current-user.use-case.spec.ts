@@ -16,7 +16,9 @@ const claims: AccessTokenClaims = {
 const user: AuthUser = {
   id: "user-id",
   phoneE164: "+79123456789",
-  role: "administrator",
+  context: "staff",
+  customer: null,
+  employee: { role: "administrator", accessEnabled: true },
 };
 
 function createUseCase(

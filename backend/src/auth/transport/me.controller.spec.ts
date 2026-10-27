@@ -9,7 +9,10 @@ describe("MeController", () => {
       execute: jest.fn().mockResolvedValue({
         id: "user-id",
         phoneE164: "+79123456789",
-        role: "customer",
+        name: null,
+        context: "customer",
+        customer: null,
+        employee: null,
       }),
     };
     const controller = new MeController(getCurrentUser as never);
@@ -19,7 +22,9 @@ describe("MeController", () => {
         sessionId: "session-id",
         userId: "user-id",
         phoneE164: "+79123456789",
-        role: "customer",
+        context: "customer",
+        customer: null,
+        employee: null,
       }),
     ).resolves.toEqual({
       id: "user-id",

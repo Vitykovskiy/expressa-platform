@@ -19,7 +19,13 @@ function context(
             ? undefined
             : {
                 phoneE164: "+79990000000",
-                role,
+                context: role === "customer" ? "customer" : "staff",
+                customer:
+                  role === "customer"
+                    ? { registeredAt: new Date("2026-08-04T10:00:00.000Z") }
+                    : null,
+                employee:
+                  role === "customer" ? null : { role, accessEnabled: true },
                 sessionId: "session-id",
                 userId: "user-id",
               },

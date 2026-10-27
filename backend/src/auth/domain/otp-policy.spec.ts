@@ -1,12 +1,7 @@
-import {
-  AccessDeniedError,
-  ExpiredOtpCodeError,
-  InvalidOtpCodeError,
-} from "./auth.errors";
+import { ExpiredOtpCodeError, InvalidOtpCodeError } from "./auth.errors";
 import type { OtpChallenge } from "./auth.types";
 import {
   assertOtpChallengeCanBeVerified,
-  assertRolePolicy,
   assertValidOtpCode,
 } from "./otp-policy";
 import { otpMaxAttempts } from "./otp-policy.constants";
@@ -66,22 +61,5 @@ describe("OTP policy", () => {
         new Date("2026-08-04T10:01:00.000Z"),
       ),
     ).toThrow(InvalidOtpCodeError);
-  });
-
-  it.each([
-    ["customer", "Customer"],
-    ["barista", "Staff"],
-    ["administrator", "Staff"],
-    ["administrator", "Administrator"],
-  ] as const)("допускает роль %s по политике %s", (role, policy) => {
-    expect(() => assertRolePolicy(role, policy)).not.toThrow();
-  });
-
-  it.each([
-    ["customer", "Staff"],
-    ["customer", "Administrator"],
-    ["barista", "Administrator"],
-  ] as const)("отклоняет роль %s по политике %s", (role, policy) => {
-    expect(() => assertRolePolicy(role, policy)).toThrow(AccessDeniedError);
   });
 });

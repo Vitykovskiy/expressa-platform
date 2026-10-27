@@ -6,7 +6,9 @@ const auth = {
   userId: "ccca6117-9fa5-4d9a-986d-8d02747cc6d5",
   sessionId: "session",
   phoneE164: "+79991234567",
-  role: "barista" as const,
+  context: "staff" as const,
+  customer: null,
+  employee: { role: "barista" as const, accessEnabled: true },
 };
 
 describe("BackofficeOrdersController", () => {

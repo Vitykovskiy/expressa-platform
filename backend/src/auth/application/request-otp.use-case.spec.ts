@@ -33,7 +33,6 @@ function createRepository(): jest.Mocked<AuthRepository> {
   return {
     findCurrentUser: jest.fn(),
     findOpenOtpChallenge: jest.fn(),
-    findOrCreateCustomer: jest.fn(),
     findSessionByRefreshTokenHash: jest.fn(),
     findSessionWithUser: jest.fn(),
     invalidateOtpChallenge: jest.fn(),

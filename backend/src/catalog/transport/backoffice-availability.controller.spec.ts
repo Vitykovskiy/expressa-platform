@@ -17,7 +17,9 @@ describe("BackofficeAvailabilityController", () => {
     userId: "staff",
     sessionId: "session",
     phoneE164: "+79991234567",
-    role: "barista" as const,
+    context: "staff" as const,
+    customer: null,
+    employee: { role: "barista" as const, accessEnabled: true },
   };
   const request = { requestId: "request" };
 
