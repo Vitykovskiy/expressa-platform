@@ -4,13 +4,13 @@ type: architecture
 owner: back-office
 knowledge_role: implementation
 scope: back-office
-last_verified: 2026-10-25
+last_verified: 2026-10-27
 sources:
   - ../../src/app/App.vue
   - ../../src/app/AppContent.vue
   - ../../src/layouts/AppLayout.vue
   - ../../src/app/useApplicationDomains.ts
-  - ../../src/app/navigation.ts
+  - ../../src/app/router.ts
   - ../../src/modules/session/session.store.ts
   - ../../src/modules/orders/orders.store.ts
   - ../../src/modules/catalog/catalog.store.ts
@@ -54,16 +54,16 @@ sources:
 | Область            | Единственный владелец                          | Граница                                                                                                                                               |
 | ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Запуск             | `app/bootstrap.ts`, `main.ts`                  | Pinia, Vuetify, настоящий App.                                                                                                                        |
-| Вход, сеанс и URL  | `app/App.vue`, `app/navigation.ts`             | Restore/expiry/logout, ключ `ID:role:token`, history/popstate, native intent/proof и фоновые сообщения.                                               |
+| Вход, сеанс и URL  | `app/App.vue`, `app/router.ts`                 | Restore/expiry/logout, ключ `ID:employee.role:token`, Vue Router, native intent/proof и фоновые сообщения.                                                     |
 | Рабочий экран      | `app/AppContent.vue`                           | Композиция пяти страниц, роль и отказ, `NotificationsDialog`, активация catalog/settings/notifications, KeepAlive, title/content focus.               |
 | Адаптивный layout  | `layouts/AppLayout.vue`                        | Каркас workspace, AppNavigation, действия учётной записи и выбор уведомления; readonly props, события и один default slot.                            |
 | Сброс идентичности | `app/useApplicationDomains.ts`                 | Смена ID, роли или token и потеря staff-сеанса очищают все защищённые владельцы. Ключ AppContent уничтожает сохранённые страницы.                     |
 | Вход               | `modules/auth/useAuthEntry.ts`                 | Телефон, OTP, cooldown, подтверждённый отказ, явный logout для смены номера.                                                                          |
-| Сеанс              | `modules/session/session.store.ts`             | Сеанс в памяти, restore через refresh и `/me`, истечение, подтверждённый logout.                                                                      |
+| Сеанс              | `modules/session/session.store.ts`             | Staff-context сеанс в памяти, проверка полного `/me` и активного employee, restore/expiry/logout.                                                                      |
 | Заказы             | `modules/orders/orders.store.ts`               | Очередь, выбор и detail, стадии, один command, опрос только активного раздела, проверка неизвестного исхода.                                          |
 | Меню               | `modules/catalog/catalog.store.ts`             | Каталог, текущий command и revision; catalog-editor владеет редактируемым черновиком. Сохранённая страница CatalogPage отсоединяется через KeepAlive. |
 | Доступность        | `modules/availability/availability.store.ts`   | Подтверждённые группы, фильтр, scroll, одна команда, stale после revision каталога.                                                                   |
-| Пользователи       | `modules/users/users.store.ts`                 | Реальный поиск, фильтр, список, создание, role/block/unblock, dialog и unknown recovery.                                                              |
+| Пользователи       | `modules/users/users.store.ts`                 | Employees/Customers, отдельные типы/чтения, поиск, staff-фильтры, enrollment/role/work-access и unknown recovery.                                                              |
 | Настройки          | `modules/settings/settings.store.ts`           | Подтверждённые часы/вместимость, полный draft, сохранение и перечитывание.                                                                            |
 | Уведомления        | `modules/notifications/notifications.store.ts` | Только Barista: readiness, purpose, native association, inspect/enable/disable, неизменный proof неизвестной команды.                                 |
 | HTTP               | `shared/api/request.ts`                        | Fetch с credentials и явным bearer, metadata ответа; нет автоматического refresh, мутации или навигации. Предметные API разбирают DTO и исход.        |
@@ -78,25 +78,54 @@ native protocol; он передаёт исходное событие клик�
 Размещение определяет [ADR-015](../../../docs/20-architecture/ADR/ADR-015-back-office-domain-structure.md),
 с сохранением props/events/slot и поведения ADR-014. Точные зависимости и
 session-исключения — в [карте кода](../80-conventions/code-layout.md).
-Ни один клиент не импортирует исходники другого приложения.
+Bootstrap отключает только router-aware closeOnBack у VDialog/VMenu:
+Back остаётся переходом router, а явное закрытие и persistent-ограничения
+сохраняются у компонентов. Ни один клиент не импортирует исходники другого приложения.
 
 ## Навигация и идентичность
 
-Отсутствующий `section` означает заказы; `catalog` виден как «Меню».
-Допустимы также `orders`, `availability`, `users`, `settings`. Неизвестный,
-пустой или дублированный раздел показывает отказ, сохраняя исходный URL.
-App хранит текущий URL как реактивный снимок и передаёт его AppContent.
-Ссылки разделов и фонового сообщения строятся из этого снимка, сохраняя
-прочие параметры и hash после popstate; обычный клик использует history,
-модифицированный клик сохраняет нативную семантику ссылки.
-Бариста по прямому адресу административного раздела видит отказ без его чтения.
+Пять именованных маршрутов /orders, /availability, /catalog, /users,
+/settings выбирают компоненты в router.ts. `/` переводит на orders с query/hash
+без section; неизвестный application path — на чистый orders. section больше
+не выбирает страницу. Metadata записей владеет заголовком и доступом.
+AppContent выводит matched Component через RouterView после проверки роли;
+бариста по административному пути видит отказ без mount/read, URL сохраняется.
+App остаётся persistent владельцем сеанса/native. RouterLink/push используют
+named locations; layout получает presentation props без app singleton.
+OrdersRoute получает normalized business query и не реагирует чтением на hash-only.
+Обычные ссылки сохраняют unrelated query arrays/hash, опуская section;
+duplicate navigation не добавляет history entry или повторного фокуса.
 
 Неактивные страницы отсутствуют в DOM. Их обычные чтения и опрос прекращаются;
 уже отправленная команда и сверка её исхода остаются у владельца. Возврат
 сохраняет draft, выбор и scroll только в памяти разрешённого сеанса.
 Каталог сохраняет страницу через KeepAlive, настройки — draft в store.
+Деактивация CatalogPage снимает только дочернее представление всех диалогов
+и selector popup; черновик/confirmation/команда остаются у editor/store.
+Активация восстанавливает диалоги из того же состояния без close/reset.
 Смена идентичности/роли/token уничтожает также сохранённый редактор.
 Поздний ответ прежнего контекста не публикуется.
+
+Вход отправляет `context=staff` и проверяет обязательные `context`, `customer`
+и `employee` в `/me`. Рабочий экран монтируется только для staff-контекста
+с включённым employee; отсутствие членства или выключенный рабочий доступ
+дают denied. Совместимое поле `role` проверяется только как часть DTO и не
+попадает в модель сеанса. Роль рабочих потребителей — `employee.role`.
+Смена ID, employee.role или token синхронно очищает защищённых владельцев,
+включая административные данные; native intent/proof сохраняет прежние сроки.
+
+`/users` по умолчанию показывает «Сотрудники»; «Клиенты» остаётся второй
+вкладкой этой страницы. Employees имеет обязательные роли, фильтры и рабочие
+команды; Customers — отдельную role-free проекцию и строки только для чтения.
+Поиск/снимок/ошибка клиентов отделены от сотрудников. Смена вкладки и новый
+запрос отзывают прежнее чтение; незавершённая рабочая команда удерживает свою
+вкладку до явного закрытия. Неизвестный исход не повторяется автоматически.
+Рабочая блокировка вызывает employee access, не глобальный users block.
+`accountBlocked` участвует в фактической недоступности и не может стать
+успешным рабочим разблокированием. Конфликт канонического имени сохраняет
+черновик с явной ошибкой; подтверждение enrollment сопоставляет имя/номер/роль.
+Требуемые исходные состояния — A01/3, Figma `40:1075`, `40:1301`, `40:2209`,
+`40:2419`; код не подтверждает их итоговую runtime-приёмку.
 
 Телефон, OTP и access token не пишутся в URL или browser storage.
 Restore использует серверную cookie. Только подтверждённый logout204 завершает

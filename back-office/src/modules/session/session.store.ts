@@ -155,7 +155,11 @@ export const useSessionStore = defineStore("session", () => {
     accessToken: string,
     expiresAt: number,
   ): SessionOutcome {
-    if (identity.role === "customer") {
+    if (
+      identity.context !== "staff" ||
+      identity.employee === null ||
+      !identity.employee.accessEnabled
+    ) {
       state.value = { kind: "denied", identity };
 
       return { kind: "denied" };
@@ -170,7 +174,11 @@ export const useSessionStore = defineStore("session", () => {
     state.value = {
       kind: "staff",
       session: {
-        identity,
+        identity: {
+          ...identity,
+          context: "staff",
+          employee: { ...identity.employee, accessEnabled: true },
+        },
         accessToken,
         expiresAt,
       },

@@ -1,10 +1,5 @@
-import {
-  AccessDeniedError,
-  ExpiredOtpCodeError,
-  InvalidOtpCodeError,
-} from "./auth.errors";
-import type { OtpChallenge, RolePolicy, UserRole } from "./auth.types";
-import { rolePolicies } from "./auth.constants";
+import { ExpiredOtpCodeError, InvalidOtpCodeError } from "./auth.errors";
+import type { OtpChallenge } from "./auth.types";
 import { otpCodePattern, otpMaxAttempts } from "./otp-policy.constants";
 
 export function isOtpCode(value: string): boolean {
@@ -27,11 +22,5 @@ export function assertOtpChallengeCanBeVerified(
 
   if (challenge.consumedAt !== null || challenge.attempts >= otpMaxAttempts) {
     throw new InvalidOtpCodeError();
-  }
-}
-
-export function assertRolePolicy(role: UserRole, policy: RolePolicy): void {
-  if (!rolePolicies[policy].some((allowedRole) => allowedRole === role)) {
-    throw new AccessDeniedError();
   }
 }

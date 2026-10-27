@@ -2,47 +2,86 @@
 title: "Вход и безопасный returnTo"
 type: feature
 owner: front-office
-last_verified: 2026-10-07
+last_verified: 2026-10-27
 sources:
   - ../../contracts/openapi.json
   - ../../src/shared/api/auth.api.ts
-  - ../../../docs/20-architecture/ADR/ADR-009-explicit-logout-push-contract.md
-knowledge_role: implementation
+  - ../../src/app/session.store.ts
+  - ../../../docs/20-architecture/ADR/ADR-017-account-memberships-and-session-context.md
+knowledge_role: requirements
 scope: front-office
 ---
 
 # Вход и безопасный returnTo
 
-Клиент использует текущие v2 OTP, refresh, `me` и logout с обязательным body. Методы и статусы находятся в [auth API](../../src/shared/api/auth.api.ts), переходы — в [router](../../src/app/router.ts).
+## Целевой вход и регистрация
 
-Guard допускает в защищённые историю и детали только customer-путь и возвращает к входу с внутренним `returnTo`. Правила безопасного возврата принадлежат [auth-return](../../src/shared/lib/auth-return.ts).
+[ADR-017](../../../docs/20-architecture/ADR/ADR-017-account-memberships-and-session-context.md)
+позволяет сотруднику использовать тот же телефон в customer-приложении.
+Клиент явно передаёт `context=customer` при v2 OTP verify. Восстановление
+и `/me` проверяют весь профиль по
+[HTTP-контракту](../../../docs/50-interfaces/Authentication-API.md#профиль-и-совместимое-поле-role),
+а не scalar role. Missing context/membership/name — ошибка контракта;
+разрешённый `customer=null` означает незавершённую регистрацию.
 
-Целевое завершение первой регистрации — `/auth/name`: после OTP и `/me`
-только `name=null` требует один ввод имени через существующую auth-форму.
-Обязательное поле `name` отсутствует или некорректно — ошибка HTTP-контракта,
-а не приглашение зарегистрироваться. Имена с одной буквой и Unicode разрешены;
-крайние пробелы удаляются сервером. Сохранённое имя при повторе не заменяется.
+Готовность клиента определяется customer-участием, не `name!=null`.
+Customer-context без участия проходит `/auth/name`, включая employee с уже
+известным именем. Unnamed account вводит имя через существующую форму;
+named employee подтверждает каноническое имя без редактирования. Оба отправляют
+одну существующую команду регистрации. Нельзя пропустить enrollment из-за
+staff-роли или непустого имени. После сохранения профиль содержит customer;
+повторный вход зарегистрированного клиента пропускает регистрацию и продолжает
+безопасный внутренний `returnTo`. Name conflict показывается явно, без
+перезаписи личности. Правила допустимого имени и concurrent/repeat поведения
+принадлежат [API регистрации](../../../docs/50-interfaces/Authentication-API.md#первое-имя-клиента).
 
-Именованный customer пропускает все экраны входа и продолжает безопасный
-`returnTo`. Восстановленный customer без имени завершает шаг перед cart,
-history/detail и явным входом, включая первоначальную загрузку прямой ссылки.
-Меню не закрывается регистрацией. `/auth/name` исключён из returnTo, как
-phone/code; внешние и некорректные адреса не принимаются.
+Восстановленный customer-context без участия завершает шаг перед cart,
+history/detail и явным входом, включая прямую ссылку. Меню остаётся публичным.
+Сотрудник в customer-контексте получает только собственные customer-заказы;
+staff-context не получает registration/order доступ. Push-success не доказывает
+регистрацию: existing v2 push допускает customer-context до enrollment, без
+нового invitation UI. Общий host не обещает независимости recoverable-сессий;
+[доменная граница](../../../docs/30-domain/Identity-and-access.md#контекст-и-политики)
+сохраняется.
 
-Страница владеет черновиком, session store — текущей идентичностью и
-сохранением. Ошибка оставляет имя на странице, pending блокирует повторную
-отправку. Завершение и навигация привязаны к account/session generation;
-ответ прежнего аккаунта не восстанавливает его после выхода или смены.
-`CurrentUser` описывает только идентичность (`id`, телефон, роль), а
-`CurrentUserProfile` добавляет обязательное nullable-имя из `/me`. Конкретный
-HTTP-клиент проверяет полный профиль; session store повторно подтверждает
-его перед публикацией authenticated-состояния. `currentProfile` — проверенное
-представление того же `currentUser`, без второй изменяемой копии имени.
+## Возврат, состояние и ошибки
 
-`App` передаёт странице узкую возможность регистрации через feature-контекст:
-реактивные account/phone/pending, сохранение имени и проверку актуальности
-операции. Страница не получает store, токены или произвольные session-команды.
-Пути входа принадлежат `shared/config/customer-routes.constants.ts`.
-Реальный сценарий и визуальная приёмка этой целевой редакцией не подтверждены.
+Внутренние адреса проверяет [auth-return](../../src/shared/lib/auth-return.ts).
+`/auth/name` исключён из returnTo, как phone/code; внешние/неверные адреса
+не принимаются. Действующий зарегистрированный профиль продолжает исходную
+защищённую цель. Страница владеет черновиком/подтверждением, session store —
+проверенной идентичностью и сохранением; нет второй изменяемой копии профиля.
+API проверяет полную внешнюю форму. При завершении регистрации session store
+подтверждает тот же account, телефон, context и completed membership перед
+публикацией зарегистрированного профиля; до регистрации customer-context
+остаётся аутентифицированным и допускается к шагу enrollment.
 
-Logout отправляет `pushSubscription: null | object`. Точная серверная семантика и требования к чтению локальной подписки находятся в [ADR-009](../../../docs/20-architecture/ADR/ADR-009-explicit-logout-push-contract.md); эта нота не копирует транзакционный протокол.
+Ошибка сохраняет ввод/состояние подтверждения; pending блокирует повтор.
+Завершение и навигация привязаны к account/session generation; ответ прежнего
+аккаунта после выхода/смены не восстанавливает его. App передаёт узкий
+feature-контекст регистрации: account/phone/pending, команду и актуальность;
+страница не получает токены, весь store или произвольные session-команды.
+Пути остаются у `shared/config/customer-routes.constants.ts`.
+Cart/logout ownership и восстановление ошибок сохраняются. Успешный logout
+очищает клиентскую корзину; его body и exact-proof правила принадлежат
+[ADR-009](../../../docs/20-architecture/ADR/ADR-009-explicit-logout-push-contract.md)
+с контекстной активной веткой ADR-017.
+
+## Граница реализации и приёмки
+
+На 2026-10-27 session store определяет завершение по customer-участию,
+принимает customer-контекст и проверяет полный профиль; scalar role остаётся
+только проверяемым полем DTO. Наличие имени не пропускает регистрацию.
+Это описание исходников, не самостоятельный вердикт браузерной приёмки.
+Маршруты и HTTP-потребитель находятся в
+[router](../../src/app/router.ts), [auth API](../../src/shared/api/auth.api.ts),
+[session store](../../src/app/session.store.ts). Публикация snapshot и работающий
+сценарий имеют отдельные доказательства. Полные typecheck/build пока не проходят
+из-за неизменённых spec-исходников; тестовые файлы остаются нетронутыми.
+
+BO Figma определяет смысл участий, но не новый FO-дизайн. Changed entry/name
+confirmation/returnTo/error-состояния используют существующий
+[FO UI contract](../30-conventions/UI-contracts.md) и требуют финального
+осмотра/независимой проверки по
+[Validation-strategy](../../../docs/40-quality/Validation-strategy.md).
+Тесты не создаются, не меняются и не запускаются без условий корневого AGENTS.

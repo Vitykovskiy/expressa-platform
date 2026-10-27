@@ -20,6 +20,17 @@ scope: back-office
 
 # ADR-015: предметная структура back-office
 
+Навигация и bootstrap уточняются [ADR-016](ADR-016-back-office-vue-router.md):
+Vue Router выбирает страницы и владеет адресом/историей по ADR-016; orders-navigation валидирует бизнес-query.
+Остальные правила размещения и владельцев сохраняются.
+
+## Уточнение маршрутизации
+
+[ADR-016](ADR-016-back-office-vue-router.md) заменяет положения о root/query,
+section selection и server404 для application paths: пять named routes,
+RouterView и home redirect неизвестного пути. Остальные границы сохраняются;
+ниже описаны исходное решение и его исторические наблюдения.
+
 ## Контекст
 
 Пользователь отклонил текущую структуру back-office и прямо поручил её

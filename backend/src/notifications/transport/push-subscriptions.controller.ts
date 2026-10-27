@@ -78,7 +78,7 @@ export class PushSubscriptionsController {
   @ApiOperation({
     summary: "Проверить связь текущей push-подписки",
     description:
-      "Доступно Customer и Barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
+      "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
   })
   @ApiBody({ type: PushSubscriptionDto })
   @ApiResponse({ status: HttpStatus.OK, type: PushSubscriptionInspectionDto })
@@ -105,7 +105,7 @@ export class PushSubscriptionsController {
   @ApiOperation({
     summary: "Включить или перенести связь push-подписки",
     description:
-      "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer переносит только привязку текущего customer с proof и expectedVersion. Текущие роль, блокировка и действующая сессия проверяются атомарно с решением и записью; блокировка или отзыв, завершённые первыми, запрещают повторное создание связи.",
+      "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer переносит только customer-контекстную привязку с proof и expectedVersion. Контекст, актуальное employee-участие, блокировка и действующая сессия проверяются атомарно с решением и записью; блокировка или отзыв, завершённые первыми, запрещают повторное создание связи.",
   })
   @ApiBody({ type: PushAssociationRequestDto })
   @ApiResponse({ status: HttpStatus.OK, type: PushAssociationResponseDto })
@@ -117,7 +117,7 @@ export class PushSubscriptionsController {
   ): Promise<PushAssociationResponse> {
     const request = parseAssociationRequest(body);
     try {
-      if (auth.role === "barista") {
+      if (auth.context === "staff") {
         return await this.subscriptions.associateForBarista(
           auth.userId,
           toCommand(auth.userId, request.subscription),
@@ -145,7 +145,7 @@ export class PushSubscriptionsController {
   @ApiOperation({
     summary: "Отключить свою versioned push-связь",
     description:
-      "Доступно Customer и Barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
+      "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
   })
   @ApiBody({ type: PushAssociationDeleteRequestDto })
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
@@ -193,6 +193,7 @@ function parseSubscription(value: unknown): PushSubscriptionRequest {
     keys: { p256dh: value.keys.p256dh, auth: value.keys.auth },
   };
 }
+
 function toCommand(userId: string, subscription: PushSubscriptionRequest) {
   return {
     userId,
@@ -201,6 +202,7 @@ function toCommand(userId: string, subscription: PushSubscriptionRequest) {
     auth: subscription.keys.auth,
   };
 }
+
 function parseAssociationRequest(value: unknown): PushAssociationRequest {
   if (
     typeof value !== "object" ||
@@ -221,6 +223,7 @@ function parseAssociationRequest(value: unknown): PushAssociationRequest {
     expectedVersion: value.expectedVersion,
   };
 }
+
 function parseDeleteAssociationRequest(
   value: unknown,
 ): PushAssociationDeleteRequest {
@@ -239,11 +242,13 @@ function parseDeleteAssociationRequest(
     expectedVersion: value.expectedVersion,
   };
 }
+
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
 }
+
 function rethrowAssociationConflict(error: unknown): never {
   if (error instanceof PushAssociationUnauthorizedError) {
     throw new UnauthorizedException();
@@ -267,6 +272,7 @@ function rethrowAssociationConflict(error: unknown): never {
     HttpStatus.CONFLICT,
   );
 }
+
 function isUrl(value: string): boolean {
   try {
     return new URL(value).protocol === "https:";
@@ -274,6 +280,7 @@ function isUrl(value: string): boolean {
     return false;
   }
 }
+
 function validationError(): never {
   throw new HttpException(
     {

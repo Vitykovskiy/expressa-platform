@@ -1,8 +1,7 @@
-import type { UserRole } from "../domain/auth.types";
+import type { AuthIdentity } from "../domain/auth.types";
 
-export type CurrentAuth = {
+export type CurrentAuth = AuthIdentity & {
   phoneE164: string;
-  role: UserRole;
   sessionId: string;
   userId: string;
 };

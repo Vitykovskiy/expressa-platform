@@ -7,18 +7,24 @@
           {{ administrator ? "Администратор" : "Бариста" }}
         </p>
       </div>
-      <a
+      <RouterLink
         v-for="item in items"
         :key="item.section"
-        class="desktop-link"
-        :class="item.desktopClasses"
-        :href="item.href"
-        :aria-current="item.ariaCurrent"
-        @click="emit('navigate', $event, item.href)"
+        v-slot="{ href, navigate }"
+        :to="item.href"
+        custom
       >
-        <img class="navigation-icon" :src="item.desktopIcon" alt="" />
-        <span>{{ item.label }}</span>
-      </a>
+        <a
+          class="desktop-link"
+          :class="item.desktopClasses"
+          :href="href"
+          :aria-current="item.ariaCurrent"
+          @click="navigate"
+        >
+          <img class="navigation-icon" :src="item.desktopIcon" alt="" />
+          <span>{{ item.label }}</span>
+        </a>
+      </RouterLink>
       <div class="navigation-actions">
         <slot name="selection" /><slot name="actions" />
       </div>
@@ -27,25 +33,31 @@
       </button>
     </nav>
     <nav class="mobile-navigation" aria-label="Разделы сотрудника">
-      <a
+      <RouterLink
         v-for="item in items"
         :key="item.section"
-        class="mobile-link"
-        :class="item.mobileClasses"
-        :href="item.href"
-        :aria-current="item.ariaCurrent"
-        @click="emit('navigate', $event, item.href)"
+        v-slot="{ href, navigate }"
+        :to="item.href"
+        custom
       >
-        <img class="navigation-icon" :src="item.mobileIcon" alt="" />
-        <span class="mobile-label">{{ item.label }}</span>
-      </a>
+        <a
+          class="mobile-link"
+          :class="item.mobileClasses"
+          :href="href"
+          :aria-current="item.ariaCurrent"
+          @click="navigate"
+        >
+          <img class="navigation-icon" :src="item.mobileIcon" alt="" />
+          <span class="mobile-label">{{ item.label }}</span>
+        </a>
+      </RouterLink>
     </nav>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { APP_NAVIGATION } from "./AppNavigation.constants";
+import { RouterLink } from "vue-router";
 import type {
   AppNavigationProps,
   AppNavigationEmits,
@@ -59,17 +71,13 @@ const emit = defineEmits<AppNavigationEmits>();
 defineSlots<AppNavigationSlots>();
 
 const items = computed(() => {
-  const visibleItems = APP_NAVIGATION.filter(
-    (item) => props.administrator || !item.administratorOnly,
-  );
-
-  return visibleItems.map((item) => {
+  return props.navigation.map((item) => {
     const selected = props.section === item.section;
 
     return {
       section: item.section,
       label: item.label,
-      href: props.links[item.section],
+      href: item.to,
       ariaCurrent: selected ? ("page" as const) : undefined,
       desktopClasses: { selected },
       mobileClasses: { selected, "users-link": item.section === "users" },

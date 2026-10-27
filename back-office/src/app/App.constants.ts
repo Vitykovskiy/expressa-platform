@@ -1,4 +1,5 @@
 export const APP_MESSAGES = {
+  navigationFailure: "Не удалось открыть раздел. Повторите переход.",
   sessionExpired: "Сеанс закончился. Войдите ещё раз.",
   logoutUnconfirmed:
     "Не удалось подтвердить выход. Обновите страницу для проверки сеанса.",

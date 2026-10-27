@@ -17,89 +17,91 @@
       @edit-product="editor.openProduct($event)"
       @retry="catalog.load"
     />
-    <CatalogCategoryDialog
-      v-if="categoryEditor"
-      :open="ordinaryDialogOpen"
-      :mode="editor.mode.value"
-      :summary="categoryEditor.summary"
-      :pending="editor.busy.value"
-      :can-save="editor.canSave.value"
-      :error="editor.error.value"
-      :draft="categoryEditor.draft"
-      :options="editor.categoryOptions.value"
-      @update:draft="editor.updateCategory"
-      @save="editor.submit"
-      @delete="editor.requestDelete"
-      @close="editor.close"
-    />
-    <CatalogProductDialog
-      v-if="productEditor"
-      :open="ordinaryDialogOpen"
-      :mode="editor.mode.value"
-      :summary="productEditor.summary"
-      :pending="editor.busy.value"
-      :can-save="editor.canSave.value"
-      :error="editor.error.value"
-      :draft="productEditor.draft"
-      :categories="editor.productOptions.value"
-      :is-option="editor.productOption.value"
-      @update:draft="editor.updateProduct"
-      @save="editor.submit"
-      @delete="editor.requestDelete"
-      @close="editor.close"
-    />
-    <OperationsModal
-      v-if="editor.confirmation.value"
-      :open="true"
-      :title="editor.confirmation.value.title"
-      :description="editor.confirmation.value.description"
-      layout="confirmation"
-      bottom-sheet
-      @close="editor.cancelConfirmation"
-    >
-      <template #actions>
-        <OperationsButton
-          label="Отмена"
-          kind="ghost"
-          compact
-          @click="editor.cancelConfirmation"
-        />
-        <OperationsButton
-          label="Подтвердить"
-          :kind="confirmationKind"
-          compact
-          @click="editor.confirm"
-        />
-      </template>
-    </OperationsModal>
-    <OperationsModal
-      :open="hasUnknownCommand"
-      title="Результат изменения неизвестен"
-      :description="unknownDescription"
-      layout="confirmation"
-      persistent
-      bottom-sheet
-    >
-      <p class="catalog-page__recovery">{{ recoveryDescription }}</p>
-      <p v-if="currentTargetDescription" class="catalog-page__recovery">
-        {{ currentTargetDescription }}
-      </p>
-      <template #actions>
-        <OperationsButton
-          label="Проверить состояние"
-          kind="secondary"
-          compact
-          :disabled="catalog.loading"
-          @click="catalog.load"
-        />
-        <OperationsButton
-          label="Вернуться в меню"
-          compact
-          :disabled="cannotAcknowledge"
-          @click="editor.acknowledgeUnknown"
-        />
-      </template>
-    </OperationsModal>
+    <template v-if="presentationActive">
+      <CatalogCategoryDialog
+        v-if="categoryEditor"
+        :open="ordinaryDialogOpen"
+        :mode="editor.mode.value"
+        :summary="categoryEditor.summary"
+        :pending="editor.busy.value"
+        :can-save="editor.canSave.value"
+        :error="editor.error.value"
+        :draft="categoryEditor.draft"
+        :options="editor.categoryOptions.value"
+        @update:draft="editor.updateCategory"
+        @save="editor.submit"
+        @delete="editor.requestDelete"
+        @close="closeEditor"
+      />
+      <CatalogProductDialog
+        v-if="productEditor"
+        :open="ordinaryDialogOpen"
+        :mode="editor.mode.value"
+        :summary="productEditor.summary"
+        :pending="editor.busy.value"
+        :can-save="editor.canSave.value"
+        :error="editor.error.value"
+        :draft="productEditor.draft"
+        :categories="editor.productOptions.value"
+        :is-option="editor.productOption.value"
+        @update:draft="editor.updateProduct"
+        @save="editor.submit"
+        @delete="editor.requestDelete"
+        @close="closeEditor"
+      />
+      <OperationsModal
+        v-if="editor.confirmation.value"
+        :open="true"
+        :title="editor.confirmation.value.title"
+        :description="editor.confirmation.value.description"
+        layout="confirmation"
+        bottom-sheet
+        @close="cancelConfirmation"
+      >
+        <template #actions>
+          <OperationsButton
+            label="Отмена"
+            kind="ghost"
+            compact
+            @click="editor.cancelConfirmation"
+          />
+          <OperationsButton
+            label="Подтвердить"
+            :kind="confirmationKind"
+            compact
+            @click="editor.confirm"
+          />
+        </template>
+      </OperationsModal>
+      <OperationsModal
+        :open="hasUnknownCommand"
+        title="Результат изменения неизвестен"
+        :description="unknownDescription"
+        layout="confirmation"
+        persistent
+        bottom-sheet
+      >
+        <p class="catalog-page__recovery">{{ recoveryDescription }}</p>
+        <p v-if="currentTargetDescription" class="catalog-page__recovery">
+          {{ currentTargetDescription }}
+        </p>
+        <template #actions>
+          <OperationsButton
+            label="Проверить состояние"
+            kind="secondary"
+            compact
+            :disabled="catalog.loading"
+            @click="catalog.load"
+          />
+          <OperationsButton
+            label="Вернуться в меню"
+            compact
+            :disabled="cannotAcknowledge"
+            @click="editor.acknowledgeUnknown"
+          />
+        </template>
+      </OperationsModal>
+    </template>
   </main>
 </template>
 
@@ -108,6 +110,9 @@ import {
   computed,
   nextTick,
   onMounted,
+  onActivated,
+  onDeactivated,
+  shallowRef,
   onScopeDispose,
   useTemplateRef,
   watch,
@@ -126,6 +131,7 @@ const props = defineProps<CatalogPageProps>();
 const emit = defineEmits<CatalogPageEmits>();
 const catalog = useCatalogStore();
 const editor = useCatalogEditor();
+const presentationActive = shallowRef(true);
 const root = useTemplateRef<globalThis.HTMLElement>("root");
 let disposed = false;
 
@@ -248,6 +254,27 @@ const recoveryDescription = computed(() =>
     : (catalog.error ??
       "Проверьте текущее состояние меню. Исходное изменение остаётся заблокировано до проверки."),
 );
+
+function closeEditor() {
+  if (presentationActive.value) {
+    editor.close();
+  }
+}
+
+function cancelConfirmation() {
+  if (presentationActive.value) {
+    editor.cancelConfirmation();
+  }
+}
+
+onActivated(() => {
+  presentationActive.value = true;
+});
+
+onDeactivated(() => {
+  // Teleport снимается вместе с представлением, черновик остаётся в editor.
+  presentationActive.value = false;
+});
 
 watch(
   () => catalog.sessionExpired,

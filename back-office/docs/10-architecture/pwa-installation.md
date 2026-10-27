@@ -11,7 +11,7 @@ sources:
   - ../../public/pwa/icon-192.png
   - ../../public/pwa/icon-512.png
   - ../../src/app/App.vue
-  - ../../src/app/navigation.ts
+  - ../../src/app/router.ts
   - ../../src/app/bootstrap.ts
   - ../../src/modules/notifications/native-push.ts
   - ../../src/modules/notifications/native-intent.ts
@@ -30,10 +30,10 @@ sources:
 в приложении нет. Исходная предварительная загрузка иконки ошибки сохранена.
 
 `start_url` и `scope` равны `/` на текущем origin; `display` — `standalone`.
-Новый запуск использует обычный вход приложения. Отсутствующий `section`
-по-прежнему означает `orders`; установка не подменяет маршрут доступностью
-и не предоставляет роль сотрудника. Сеанс восстанавливает существующий
-владелец авторизации через сервер, а не manifest.
+Новый запуск использует обычный вход приложения. Vue Router ожидает initial
+readiness до mount persistent App. Manifest сохраняет start_url `/`,
+который redirect на /orders; установка не предоставляет роль. Сеанс
+восстанавливает существующий владелец через сервер, а не manifest.
 
 Иконки PNG 192×192 и 512×512 используют исходный wordmark `Expressa`
 из [Figma, узел 36:163](https://www.figma.com/design/ZAOqxmGZksdKhQwEjaOrHG/Expressa-Admin-Design-System?node-id=36-163).
@@ -74,12 +74,13 @@ Manifest отдаётся как `application/manifest+json`, обе иконк�
 
 ## Текущий вход и снятые переходы
 
-По [ADR-014](../../../docs/20-architecture/ADR/ADR-014-back-office-composition-and-current-entry.md#текущий-вход-и-снятые-переходы)
-поддерживаемый вход собранного клиента через [Nginx](../../nginx.conf) — `/`
-с текущими query/hash. Прежние `/queue`, `/availability`, `/menu` и `/sw.js`
-возвращают 404. Карта прежних путей, преобразование pathname перед mount,
-прежний worker и его автоматическая замена при запуске удалены. Общий SPA
-fallback dev-сервера Vite не задаёт контракт собранного Nginx.
+По [ADR-016](../../../docs/20-architecture/ADR/ADR-016-back-office-vue-router.md)
+[Nginx](../../nginx.conf) передаёт application paths в index.html. Пять named
+путей работают при прямом входе; `/` и неизвестные пути (также /queue и /menu)
+redirect на orders средствами Vue Router. Старого pathname translator нет.
+Missing static, включая /sw.js, сохраняет404; API/health не получают SPA HTML.
+Worker распознаёт same-origin `/` и пять application paths с optional slash;
+холодный fallback — /orders?order=UUID. Proof/controller/lifetime не меняются.
 
 Текущие `/service-worker.js`, manifest, иконки, шрифт и assets сохранены.
 Явная [подготовка уведомлений](../../src/modules/notifications/native-push.ts)

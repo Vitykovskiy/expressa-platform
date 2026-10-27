@@ -20,6 +20,13 @@ scope: back-office
 
 # ADR-014: композиция back-office и текущий вход
 
+## Уточнение маршрутизации
+
+[ADR-016](ADR-016-back-office-vue-router.md) заменяет положения о root/query,
+section selection и server404 для application paths: пять named routes,
+RouterView и home redirect неизвестного пути. Остальные границы сохраняются;
+ниже описаны исходное решение и его исторические наблюдения.
+
 ## Частичная замена от 25 октября 2026 года
 
 Пути, FSD-направление и запрет отдельного layout в разделе «Экран и layout»

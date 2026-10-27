@@ -7,6 +7,7 @@ import { useCatalogStore } from "../modules/catalog/catalog.store";
 import { useSettingsStore } from "../modules/settings/settings.store";
 import { useUsersStore } from "../modules/users/users.store";
 
+// Очищает данные разделов при смене сеанса и помечает доступность устаревшей после изменения каталога.
 export function useApplicationDomains(onExpired: () => void) {
   const session = useSessionStore();
   const availability = useAvailabilityStore();
@@ -32,7 +33,8 @@ export function useApplicationDomains(onExpired: () => void) {
         state.kind === "staff" &&
         previous.kind === "staff" &&
         state.session.identity.id === previous.session.identity.id &&
-        state.session.identity.role === previous.session.identity.role &&
+        state.session.identity.employee.role ===
+          previous.session.identity.employee.role &&
         state.session.accessToken === previous.session.accessToken
       ) {
         return;

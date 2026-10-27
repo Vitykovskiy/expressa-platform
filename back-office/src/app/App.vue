@@ -4,14 +4,10 @@
       v-if="staffSession !== null"
       :key="sessionKey"
       :session="staffSession"
-      :intent="intent"
-      :search="search"
-      :location-href="locationHref"
       :notification-order="notificationOrder"
       :notification-message="notificationMessage"
       :navigation-busy="navigationBusy"
       @open-notification="openNotification"
-      @navigate="navigate"
       @logout="logout"
       @session-expired="expireStaffSession"
     />
@@ -28,17 +24,20 @@
     </div>
     <div v-if="backgroundNotice" class="background-notice" role="status">
       <span>{{ backgroundNotice.message }}</span>
-      <a
-        :href="backgroundNotice.href"
-        @click="navigateLink($event, backgroundNotice.href)"
-        >Открыть раздел</a
+      <RouterLink
+        v-slot="{ href, navigate }"
+        :to="backgroundNotice.href"
+        custom
       >
+        <a :href="href" @click="navigate">Открыть раздел</a>
+      </RouterLink>
     </div>
   </VApp>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, shallowRef, watch } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   currentIntentWorker,
   parseNativeOrderIntent,
@@ -46,20 +45,25 @@ import {
   requestNativeIntent,
 } from "../modules/notifications/native-intent";
 import type { NativeOrderIntent } from "../modules/notifications/native-intent.types";
-import type { NativeIntentBinding } from "./App.types";
+import type { AppNotice, NativeIntentBinding } from "./App.types";
 import type { LogoutProofSupplier } from "../modules/session/session.types";
 import { useSessionStore } from "../modules/session/session.store";
 import AuthPage from "../modules/auth/AuthPage.vue";
 import SourceToast from "../shared/ui/SourceToast/SourceToast.vue";
 import AppContent from "./AppContent.vue";
 import { APP_MESSAGES } from "./App.constants";
-import { useSectionIntent } from "./navigation";
 import { useApplicationDomains } from "./useApplicationDomains";
 
 const session = useSessionStore();
-const intent = useSectionIntent();
-const locationHref = shallowRef(globalThis.window.location.href);
-const search = computed(() => new globalThis.URL(locationHref.value).search);
+const route = useRoute();
+const router = useRouter();
+const navigationQuery = computed(() => {
+  const query = { ...route.query };
+
+  delete query.section;
+
+  return query;
+});
 const restoring = shallowRef(true);
 const message = shallowRef("");
 const notificationIntent = shallowRef<NativeOrderIntent | null>(null);
@@ -82,7 +86,7 @@ const sessionKey = computed(() => {
   }
 
   // Тот же ключ отзывает native lifetime и уничтожает сохранённые страницы workspace.
-  return `${current.identity.id}:${current.identity.role}:${current.accessToken}`;
+  return `${current.identity.id}:${current.identity.employee.role}:${current.accessToken}`;
 });
 
 const notificationOrder = computed(
@@ -105,8 +109,8 @@ const backgroundNotice = computed(() => {
     return null;
   }
 
-  const section = intent.value.kind === "valid" ? intent.value.section : null;
-  const notices = [
+  const section = route.name;
+  const notices: readonly AppNotice[] = [
     { section: "orders", message: domains.orders.message },
     { section: "users", message: domains.users.notice ?? "" },
     { section: "settings", message: domains.settings.message },
@@ -130,17 +134,13 @@ const backgroundNotice = computed(() => {
     return null;
   }
 
-  const url = new globalThis.URL(locationHref.value);
-
-  if (notice.section === "orders") {
-    url.searchParams.delete("section");
-  } else {
-    url.searchParams.set("section", notice.section);
-  }
-
   return {
     message: notice.message,
-    href: `${url.pathname}${url.search}${url.hash}`,
+    href: {
+      name: notice.section,
+      query: navigationQuery.value,
+      hash: route.hash,
+    },
   };
 });
 
@@ -314,46 +314,15 @@ async function openNotification() {
     return;
   }
 
-  const url = new globalThis.URL(globalThis.window.location.href);
-
-  url.searchParams.delete("section");
-  url.searchParams.set("order", intent.orderId);
-  navigate(`${url.pathname}${url.search}${url.hash}`);
-}
-
-function syncLocation() {
-  locationHref.value = globalThis.window.location.href;
-}
-
-function navigate(href: string) {
-  const url = new globalThis.URL(href, globalThis.window.location.href);
-
-  if (url.origin !== globalThis.window.location.origin) {
-    return;
+  try {
+    await router.push({
+      name: "orders",
+      query: { ...navigationQuery.value, order: intent.orderId },
+      hash: route.hash,
+    });
+  } catch {
+    showError(APP_MESSAGES.navigationFailure);
   }
-
-  globalThis.window.history.pushState(
-    null,
-    "",
-    `${url.pathname}${url.search}${url.hash}`,
-  );
-  globalThis.window.dispatchEvent(new globalThis.PopStateEvent("popstate"));
-  message.value = "";
-}
-
-function navigateLink(event: globalThis.MouseEvent, href: string) {
-  if (
-    event.button !== 0 ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.altKey ||
-    event.shiftKey
-  ) {
-    return;
-  }
-
-  event.preventDefault();
-  navigate(href);
 }
 
 function expireStaffSession() {
@@ -378,7 +347,7 @@ function captureLogoutProofSupplier(): LogoutProofSupplier | undefined {
     return undefined;
   }
 
-  if (current.session.identity.role !== "barista") {
+  if (current.session.identity.employee.role !== "barista") {
     return undefined;
   }
 
@@ -420,7 +389,14 @@ watch(
 );
 
 watch(sessionKey, bindNativeIntent, { flush: "sync" });
-globalThis.window.addEventListener("popstate", syncLocation);
+const removeNavigationError = router.onError(() =>
+  showError(APP_MESSAGES.navigationFailure),
+);
+const removeNavigationComplete = router.afterEach((_to, _from, failure) => {
+  if (!failure) {
+    message.value = "";
+  }
+});
 
 if ("serviceWorker" in globalThis.navigator) {
   globalThis.navigator.serviceWorker.addEventListener(
@@ -438,7 +414,8 @@ onMounted(restoreSession);
 onScopeDispose(() => {
   disposed = true;
   void bindNativeIntent();
-  globalThis.window.removeEventListener("popstate", syncLocation);
+  removeNavigationError();
+  removeNavigationComplete();
 
   if ("serviceWorker" in globalThis.navigator) {
     globalThis.navigator.serviceWorker.removeEventListener(

@@ -1,3 +1,4 @@
+import { staffUsersMembershipLock } from "../../staff-users/adapters/staff-users-lock.constants";
 import type { Pool, PoolClient } from "pg";
 import type {
   AuthRepository,
@@ -11,8 +12,12 @@ import type {
   StoredOtpChallenge,
 } from "../application/auth-repository.types";
 import type { LogoutPushSubscription } from "../application/logout.use-case.types";
-import { userRoles } from "../domain/auth.constants";
-import type { UserRole } from "../domain/auth.types";
+import {
+  accountMembershipColumns,
+  accountMembershipJoins,
+} from "./account-membership.constants";
+import { readAccountMemberships, readAuthContext } from "./account-membership";
+import type { AuthContext } from "../domain/auth.types";
 import {
   otpMaxAttempts,
   otpResendIntervalMs,
@@ -56,7 +61,9 @@ async function reserveOtpSecurityThrottle(
       [scope, key, now, otpSecurityWindowMs],
     );
     const row = result.rows[0];
-    if (row === undefined) throw new Error("Missing throttle result.");
+    if (row === undefined) {
+      throw new Error("Missing throttle result.");
+    }
     const attempts = Number(row.attempts);
     if (attempts > limit) {
       const windowStartedAt = readDate(row, "window_started_at");
@@ -185,6 +192,7 @@ export class PostgresAuthRepository implements AuthRepository {
     sessionId: string,
     refreshTokenHash: string,
     sessionExpiresAt: Date,
+    context?: AuthContext,
   ): Promise<OtpAuthentication> {
     return this.verifyOtpAndCreateSessionInternal(
       phoneE164,
@@ -194,6 +202,7 @@ export class PostgresAuthRepository implements AuthRepository {
       sessionId,
       refreshTokenHash,
       sessionExpiresAt,
+      context,
     );
   }
 
@@ -205,6 +214,7 @@ export class PostgresAuthRepository implements AuthRepository {
     sessionId: string,
     refreshTokenHash: string,
     sessionExpiresAt: Date,
+    context?: AuthContext,
   ): Promise<OtpAuthentication> {
     try {
       return await this.withTransaction(async (client) => {
@@ -257,13 +267,13 @@ export class PostgresAuthRepository implements AuthRepository {
           [challenge.id, now],
         );
         await client.query(
-          `INSERT INTO users (phone_e164, role)
-         VALUES ($1, 'customer')
+          `INSERT INTO users (phone_e164)
+         VALUES ($1)
          ON CONFLICT (phone_e164) DO NOTHING`,
           [phoneE164],
         );
         const userResult = await client.query<DatabaseRow>(
-          `SELECT id, phone_e164, role, blocked_at
+          `SELECT users.id, users.phone_e164, users.blocked_at
          FROM users
          WHERE phone_e164 = $1
          FOR UPDATE`,
@@ -276,13 +286,37 @@ export class PostgresAuthRepository implements AuthRepository {
         if (readNullableDate(userRow, "blocked_at") !== null) {
           return { status: "unavailable", challenge: null };
         }
-        const user = parseAuthUser(userRow);
+        const memberships = await client.query<DatabaseRow>(
+          `SELECT ${accountMembershipColumns} FROM users ${accountMembershipJoins} WHERE users.id = $1`,
+          [readString(userRow, "id")],
+        );
+        const membership = memberships.rows[0];
+        if (membership === undefined) {
+          throw new Error("Missing account memberships.");
+        }
+        const sessionContext =
+          context ??
+          (membership.employee_role !== null &&
+          membership.access_disabled_at === null
+            ? "staff"
+            : "customer");
+        const user = parseAuthUser({
+          ...userRow,
+          ...membership,
+          context: sessionContext,
+        });
         const sessionResult = await client.query<DatabaseRow>(
-          `INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
-         VALUES ($1, $2, $3, $4)
+          `INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at, context)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (id) DO NOTHING
-         RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
-          [sessionId, user.id, refreshTokenHash, sessionExpiresAt],
+         RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+          [
+            sessionId,
+            user.id,
+            refreshTokenHash,
+            sessionExpiresAt,
+            sessionContext,
+          ],
         );
         if (sessionResult.rows[0] === undefined) {
           throw new SessionIdConflictError();
@@ -303,32 +337,11 @@ export class PostgresAuthRepository implements AuthRepository {
     }
   }
 
-  async findOrCreateCustomer(phoneE164: string): Promise<AuthUser> {
-    return this.withTransaction(async (client) => {
-      await client.query(
-        `INSERT INTO users (phone_e164, role)
-         VALUES ($1, 'customer')
-         ON CONFLICT (phone_e164) DO NOTHING`,
-        [phoneE164],
-      );
-
-      const result = await client.query<DatabaseRow>(
-        `SELECT id, phone_e164, role
-         FROM users
-         WHERE phone_e164 = $1
-         FOR UPDATE`,
-        [phoneE164],
-      );
-
-      return parseRequiredRow(result.rows[0], parseAuthUser);
-    });
-  }
-
   async findSessionByRefreshTokenHash(
     refreshTokenHash: string,
   ): Promise<AuthSession | null> {
     const result = await this.pool.query<DatabaseRow>(
-      `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
+      `SELECT id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
        FROM sessions
        WHERE refresh_token_hash = $1`,
       [refreshTokenHash],
@@ -342,12 +355,13 @@ export class PostgresAuthRepository implements AuthRepository {
     now: Date,
   ): Promise<SessionWithUser | null> {
     const result = await this.pool.query<DatabaseRow>(
-      `SELECT sessions.id, sessions.user_id, sessions.refresh_token_hash, sessions.expires_at,
+      `SELECT sessions.id, sessions.user_id, sessions.context, sessions.refresh_token_hash, sessions.expires_at,
               sessions.revoked_at, sessions.created_at, sessions.rotated_at,
               users.id AS current_user_id, users.phone_e164 AS current_user_phone_e164,
-              users.role AS current_user_role
+              ${accountMembershipColumns}
        FROM sessions
        JOIN users ON users.id = sessions.user_id
+       ${accountMembershipJoins}
        WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2
          AND users.blocked_at IS NULL`,
       [sessionId, now],
@@ -377,12 +391,13 @@ export class PostgresAuthRepository implements AuthRepository {
         return { status: "unavailable" };
       }
       const selected = await client.query<DatabaseRow>(
-        `SELECT sessions.id, sessions.user_id, sessions.refresh_token_hash, sessions.expires_at,
+        `SELECT sessions.id, sessions.user_id, sessions.context, sessions.refresh_token_hash, sessions.expires_at,
                 sessions.revoked_at, sessions.created_at, sessions.rotated_at,
                 users.id AS current_user_id, users.phone_e164 AS current_user_phone_e164,
-                users.role AS current_user_role
+                ${accountMembershipColumns}
          FROM sessions
          JOIN users ON users.id = sessions.user_id
+       ${accountMembershipJoins}
          WHERE sessions.id = $1
          FOR UPDATE OF sessions`,
         [sessionId],
@@ -402,7 +417,7 @@ export class PostgresAuthRepository implements AuthRepository {
           `UPDATE sessions
            SET revoked_at = GREATEST($2, created_at)
            WHERE id = $1
-           RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+           RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
           [found.session.id, now],
         );
 
@@ -417,7 +432,7 @@ export class PostgresAuthRepository implements AuthRepository {
         `UPDATE sessions
          SET refresh_token_hash = $2, rotated_at = GREATEST($3, created_at)
          WHERE id = $1
-         RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+         RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
         [found.session.id, nextRefreshTokenHash, now],
       );
 
@@ -435,7 +450,7 @@ export class PostgresAuthRepository implements AuthRepository {
   ): Promise<AuthSession | null> {
     return this.withTransaction(async (client) => {
       const selected = await client.query<DatabaseRow>(
-        `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
+        `SELECT id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
          FROM sessions
          WHERE id = $1
          FOR UPDATE`,
@@ -451,7 +466,7 @@ export class PostgresAuthRepository implements AuthRepository {
         `UPDATE sessions
          SET revoked_at = GREATEST($2, created_at)
          WHERE id = $1
-         RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+         RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
         [session.id, now],
       );
 
@@ -466,7 +481,7 @@ export class PostgresAuthRepository implements AuthRepository {
   ): Promise<SessionLogout> {
     return this.withTransaction(async (client) => {
       const selected = await client.query<DatabaseRow>(
-        `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
+        `SELECT id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
          FROM sessions
          WHERE id = $1
          FOR UPDATE`,
@@ -486,7 +501,7 @@ export class PostgresAuthRepository implements AuthRepository {
         `UPDATE sessions
          SET revoked_at = GREATEST($2, created_at)
          WHERE id = $1
-         RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+         RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
         [session.id, now],
       );
 
@@ -504,6 +519,27 @@ export class PostgresAuthRepository implements AuthRepository {
     now: Date,
   ): Promise<SessionLogout> {
     return this.withTransaction(async (client) => {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+        [staffUsersMembershipLock],
+      );
+      if (sessionId !== null) {
+        const accounts = await client.query<DatabaseRow>(
+          "SELECT users.id FROM users JOIN sessions ON sessions.user_id = users.id WHERE sessions.id = $1 FOR UPDATE OF users",
+          [sessionId],
+        );
+        const accountId = accounts.rows[0]?.id;
+        if (accountId !== undefined) {
+          await client.query(
+            "SELECT user_id FROM customers WHERE user_id = $1 FOR UPDATE",
+            [accountId],
+          );
+          await client.query(
+            "SELECT user_id FROM employees WHERE user_id = $1 FOR UPDATE",
+            [accountId],
+          );
+        }
+      }
       const session =
         sessionId === null
           ? null
@@ -515,7 +551,12 @@ export class PostgresAuthRepository implements AuthRepository {
         session.refreshTokenHash === expectedRefreshHash &&
         session.revokedAt !== null
       ) {
-        await this.deletePushSubscription(client, session.userId, subscription);
+        await this.deletePushSubscription(
+          client,
+          session.userId,
+          session.context,
+          subscription,
+        );
         return { status: "unavailable" };
       }
 
@@ -526,12 +567,17 @@ export class PostgresAuthRepository implements AuthRepository {
         session.revokedAt === null &&
         session.expiresAt > now
       ) {
-        await this.deletePushSubscription(client, session.userId, subscription);
+        await this.deletePushSubscription(
+          client,
+          session.userId,
+          session.context,
+          subscription,
+        );
         const revoked = await client.query<DatabaseRow>(
           `UPDATE sessions
            SET revoked_at = GREATEST($2, created_at)
            WHERE id = $1
-           RETURNING id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
+           RETURNING id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at`,
           [session.id, now],
         );
 
@@ -555,9 +601,10 @@ export class PostgresAuthRepository implements AuthRepository {
     now: Date,
   ): Promise<AuthUser | null> {
     const result = await this.pool.query<DatabaseRow>(
-      `SELECT users.id, users.phone_e164, users.role
+      `SELECT users.id, users.phone_e164, sessions.context, ${accountMembershipColumns}
        FROM sessions
        JOIN users ON users.id = sessions.user_id
+       ${accountMembershipJoins}
        WHERE sessions.id = $1 AND sessions.revoked_at IS NULL AND sessions.expires_at > $2
          AND users.blocked_at IS NULL`,
       [sessionId, now],
@@ -589,7 +636,7 @@ export class PostgresAuthRepository implements AuthRepository {
     sessionId: string,
   ): Promise<AuthSession | null> {
     const selected = await client.query<DatabaseRow>(
-      `SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
+      `SELECT id, user_id, context, refresh_token_hash, expires_at, revoked_at, created_at, rotated_at
        FROM sessions
        WHERE id = $1
        FOR UPDATE`,
@@ -601,12 +648,19 @@ export class PostgresAuthRepository implements AuthRepository {
   private async deletePushSubscription(
     client: PoolClient,
     userId: string,
+    context: AuthContext,
     subscription: LogoutPushSubscription,
   ): Promise<void> {
     await client.query(
       `DELETE FROM push_subscriptions
-       WHERE user_id = $1 AND endpoint = $2 AND p256dh = $3 AND auth = $4`,
-      [userId, subscription.endpoint, subscription.p256dh, subscription.auth],
+       WHERE user_id = $1 AND endpoint = $2 AND p256dh = $3 AND auth = $4 AND context = $5`,
+      [
+        userId,
+        subscription.endpoint,
+        subscription.p256dh,
+        subscription.auth,
+        context,
+      ],
     );
   }
 }
@@ -644,7 +698,7 @@ function parseAuthUser(row: DatabaseRow): AuthUser {
   return {
     id: readString(row, "id"),
     phoneE164: readString(row, "phone_e164"),
-    role: readUserRole(row),
+    ...readAccountMemberships(row, readAuthContext(row.context)),
   };
 }
 
@@ -652,6 +706,7 @@ function parseSession(row: DatabaseRow): AuthSession {
   return {
     id: readString(row, "id"),
     userId: readString(row, "user_id"),
+    context: readAuthContext(row.context),
     refreshTokenHash: readString(row, "refresh_token_hash"),
     expiresAt: readDate(row, "expires_at"),
     revokedAt: readNullableDate(row, "revoked_at"),
@@ -666,7 +721,7 @@ function parseSessionWithUser(row: DatabaseRow): SessionWithUser {
     user: {
       id: readString(row, "current_user_id"),
       phoneE164: readString(row, "current_user_phone_e164"),
-      role: readUserRoleFromKey(row, "current_user_role"),
+      ...readAccountMemberships(row, readAuthContext(row.context)),
     },
   };
 }
@@ -714,22 +769,4 @@ function readAttempts(row: DatabaseRow): number {
   }
 
   return value;
-}
-
-function readUserRole(row: DatabaseRow): UserRole {
-  return readUserRoleFromKey(row, "role");
-}
-
-function readUserRoleFromKey(row: DatabaseRow, key: string): UserRole {
-  const value = readString(row, key);
-
-  if (!isUserRole(value)) {
-    throw new Error("Invalid PostgreSQL row field: " + key);
-  }
-
-  return value;
-}
-
-function isUserRole(value: string): value is UserRole {
-  return userRoles.some((role) => role === value);
 }

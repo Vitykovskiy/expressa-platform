@@ -3,8 +3,7 @@
     <AppNavigation
       :administrator="administrator"
       :section="section"
-      :links="links"
-      @navigate="forwardNavigation"
+      :navigation="navigation"
       @logout="emit('logout')"
     >
       <template #actions
@@ -80,10 +79,6 @@ defineSlots<AppLayoutSlots>();
 const mobileAccountClasses = computed(() => ({
   "orders-account": props.section === "orders",
 }));
-
-function forwardNavigation(event: globalThis.MouseEvent, href: string) {
-  emit("navigate", event, href);
-}
 </script>
 
 <style scoped>

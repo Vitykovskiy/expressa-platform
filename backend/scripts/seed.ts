@@ -1,3 +1,9 @@
+import { PostgresStaffUsersRepository } from "../src/staff-users/adapters/postgres-staff-users.repository";
+import {
+  isAccountRoleNoop,
+  assertAccessChange,
+} from "../src/staff-users/domain/staff-user.policy";
+import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { normalizeModifierDefaults } from "../src/catalog/domain/modifier-option-defaults";
 import { validateEnvironment } from "../src/platform/config/environment";
@@ -164,7 +170,9 @@ async function readSortOffset(
     [...categoryIds],
   );
   const max = result.rows[0]?.max;
-  if (max === null || max === undefined) return 0;
+  if (max === null || max === undefined) {
+    return 0;
+  }
   if (!Number.isSafeInteger(max) || max >= 2_147_483_640) {
     throw new Error("Catalog sort order space is exhausted.");
   }
@@ -185,6 +193,8 @@ async function main(): Promise<void> {
         [
           [
             "users",
+            "customers",
+            "employees",
             "categories",
             "products",
             "product_price_choices",
@@ -194,7 +204,7 @@ async function main(): Promise<void> {
         ],
       )
       .then((result) => {
-        if (result.rowCount !== 6) {
+        if (result.rowCount !== 8) {
           throw new Error("Database schema is not initialized.");
         }
       });
@@ -205,12 +215,44 @@ async function main(): Promise<void> {
     ]);
     const phone = process.env.BOOTSTRAP_ADMIN_PHONE;
     if (phone !== undefined && phone !== "") {
-      await pool.query(
-        `INSERT INTO users (phone_e164, role) VALUES ($1, 'administrator')
-         ON CONFLICT (phone_e164) DO UPDATE
-         SET role = EXCLUDED.role, updated_at = CURRENT_TIMESTAMP`,
-        [phone],
-      );
+      const users = new PostgresStaffUsersRepository(() => pool);
+      await users.run(async (repository) => {
+        const creation = await repository.findOrCreateForOperations(
+          phone,
+          "administrator",
+        );
+        const before = creation.user;
+        if (creation.created) {
+          await repository.writeAudit({
+            actorId: before.id,
+            requestId: "operations:" + randomUUID(),
+            action: "USER_CREATED",
+            before: null,
+            after: before,
+          });
+        } else if (!isAccountRoleNoop(before, "administrator")) {
+          assertAccessChange(
+            before,
+            "operations",
+            "administrator",
+            before.blocked,
+            await repository.countActiveAdministrators(),
+          );
+          const after = await repository.changeRole(
+            before.id,
+            "administrator",
+            before.id,
+          );
+          await repository.revokeAccess(before.id, "staff");
+          await repository.writeAudit({
+            actorId: before.id,
+            requestId: "operations:" + randomUUID(),
+            action: "USER_ROLE_CHANGED",
+            before,
+            after,
+          });
+        }
+      });
     }
 
     if (process.env.NODE_ENV === "development") {

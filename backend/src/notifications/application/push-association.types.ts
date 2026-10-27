@@ -1,4 +1,8 @@
 import type {
+  AuthContext,
+  EmployeeMembership,
+} from "../../auth/domain/auth.types";
+import type {
   PushSubscription,
   PushSubscriptionCommand,
   PushSubscriptionRepository,
@@ -7,7 +11,8 @@ import type {
 export type PushAssociationActor = {
   userId: string;
   sessionId: string;
-  role: "customer" | "barista" | "administrator";
+  context: AuthContext;
+  employee: EmployeeMembership | null;
 };
 export interface PushAssociationTransaction {
   findByEndpoint(endpoint: string): Promise<PushSubscription | null>;
@@ -19,6 +24,7 @@ export interface PushAssociationTransaction {
   ): Promise<string | null>;
   deleteAssociation(subscription: PushSubscription): Promise<boolean>;
 }
+
 export interface PushAssociationUnitOfWork {
   run<Result>(
     actor: PushAssociationActor,
@@ -26,5 +32,6 @@ export interface PushAssociationUnitOfWork {
     operation: (repository: PushAssociationTransaction) => Promise<Result>,
   ): Promise<Result>;
 }
+
 export type PushAssociationRepository = PushSubscriptionRepository &
   Partial<PushAssociationUnitOfWork>;

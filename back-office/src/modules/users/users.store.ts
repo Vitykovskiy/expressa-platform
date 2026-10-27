@@ -1,22 +1,44 @@
 import { defineStore } from "pinia";
 import { computed, onScopeDispose, readonly, shallowRef } from "vue";
-import { readStaffUsers, sendUserCommand } from "./users.api";
+import { readEmployees, readCustomers, sendEmployeeCommand } from "./users.api";
 import { USER_PHONE_PATTERN } from "./users.constants";
-import type { StaffUser, UserCommand, UsersContext } from "./users.types";
+import type {
+  Employee,
+  EmployeeCommand,
+  UsersContext,
+  UsersTab,
+} from "./users.types";
 import type {
   CreateUserInput,
   UserDialogPhase,
-  UserPresentation,
+  EmployeePresentation,
   UserRole,
   UsersDialog,
   UsersFilter,
 } from "./components/Users.types";
 import { USERS_MESSAGES } from "./users.store.constants";
-import { presentStaffUser, buildUsersQuery } from "./users.presenter";
-import type { UsersMutation, UsersReadPhase } from "./users.store.types";
+import {
+  presentEmployee,
+  presentCustomer,
+  buildEmployeesQuery,
+  normalizeUsersSearch,
+} from "./users.presenter";
+import type {
+  UsersMutation,
+  UsersReadPhase,
+  CustomerDirectory,
+} from "./users.store.types";
 
 export const useUsersStore = defineStore("staff-users", () => {
-  const records = shallowRef<readonly StaffUser[]>([]);
+  const records = shallowRef<readonly Employee[]>([]);
+  const tab = shallowRef<UsersTab>("employees");
+  const customerDirectory = shallowRef<CustomerDirectory>({
+    records: [],
+    query: "",
+    phase: "idle",
+    hasSnapshot: false,
+    error: null,
+  });
   const query = shallowRef("");
   const filter = shallowRef<UsersFilter>("all");
   const phase = shallowRef<UsersReadPhase>("idle");
@@ -34,7 +56,7 @@ export const useUsersStore = defineStore("staff-users", () => {
   let commandController: AbortController | null = null;
   let pageActive = false;
 
-  const users = computed(() => {
+  const employees = computed(() => {
     const currentRecords = records.value;
     const requestContext = sessionContext;
 
@@ -43,9 +65,21 @@ export const useUsersStore = defineStore("staff-users", () => {
     }
 
     return currentRecords.map((user) =>
-      presentStaffUser(user, requestContext.identityId),
+      presentEmployee(user, requestContext.identityId),
     );
   });
+  const customers = computed(() =>
+    customerDirectory.value.records.map(presentCustomer),
+  );
+  const activeQuery = computed(() =>
+    tab.value === "employees" ? query.value : customerDirectory.value.query,
+  );
+  const activePhase = computed(() =>
+    tab.value === "employees" ? phase.value : customerDirectory.value.phase,
+  );
+  const activeReadError = computed(() =>
+    tab.value === "employees" ? readError.value : customerDirectory.value.error,
+  );
   const visibleDialog = computed(() =>
     dialogVisible.value ? dialog.value : null,
   );
@@ -70,6 +104,14 @@ export const useUsersStore = defineStore("staff-users", () => {
     readController = null;
     commandController = null;
     records.value = [];
+    tab.value = "employees";
+    customerDirectory.value = {
+      records: [],
+      query: "",
+      phase: "idle",
+      hasSnapshot: false,
+      error: null,
+    };
     query.value = "";
     filter.value = "all";
     phase.value = "idle";
@@ -124,6 +166,13 @@ export const useUsersStore = defineStore("staff-users", () => {
     if (phase.value === "loading") {
       phase.value = hasSnapshot.value ? "ready" : "idle";
     }
+
+    if (customerDirectory.value.phase === "loading") {
+      customerDirectory.value = {
+        ...customerDirectory.value,
+        phase: customerDirectory.value.hasSnapshot ? "ready" : "idle",
+      };
+    }
   }
 
   function rememberScroll(identityId: string, position: number) {
@@ -143,15 +192,19 @@ export const useUsersStore = defineStore("staff-users", () => {
       return false;
     }
 
+    if (tab.value === "customers") {
+      return loadCustomerDirectory(requestContext);
+    }
+
     readController?.abort();
     const controller = new AbortController();
 
     readController = controller;
     phase.value = "loading";
     readError.value = null;
-    const outcome = await readStaffUsers(
+    const outcome = await readEmployees(
       requestContext.accessToken,
-      buildUsersQuery(query.value, filter.value),
+      buildEmployeesQuery(query.value, filter.value),
       controller.signal,
     );
 
@@ -169,7 +222,7 @@ export const useUsersStore = defineStore("staff-users", () => {
     }
 
     if (outcome.kind === "loaded") {
-      records.value = outcome.users;
+      records.value = outcome.employees;
       hasSnapshot.value = true;
       phase.value = "ready";
 
@@ -187,8 +240,100 @@ export const useUsersStore = defineStore("staff-users", () => {
     return false;
   }
 
+  async function loadCustomerDirectory(requestContext: UsersContext) {
+    readController?.abort();
+    const controller = new AbortController();
+    const requestedSearch = normalizeUsersSearch(customerDirectory.value.query);
+
+    readController = controller;
+    customerDirectory.value = {
+      ...customerDirectory.value,
+      phase: "loading",
+      error: null,
+    };
+    const outcome = await readCustomers(
+      requestContext.accessToken,
+      requestedSearch,
+      controller.signal,
+    );
+
+    if (
+      sessionContext !== requestContext ||
+      readController !== controller ||
+      tab.value !== "customers"
+    ) {
+      return false;
+    }
+
+    readController = null;
+
+    if (outcome.kind === "session-expired") {
+      expireSession();
+
+      return false;
+    }
+
+    if (outcome.kind === "loaded") {
+      customerDirectory.value = {
+        ...customerDirectory.value,
+        records: outcome.customers,
+        phase: "ready",
+        hasSnapshot: true,
+        error: null,
+      };
+
+      return true;
+    }
+
+    const previous = customerDirectory.value;
+
+    customerDirectory.value = {
+      ...previous,
+      phase: previous.hasSnapshot ? "ready" : "error",
+      error:
+        outcome.kind === "cancelled"
+          ? null
+          : previous.hasSnapshot
+            ? USERS_MESSAGES.readFailed
+            : USERS_MESSAGES.initialFailed,
+    };
+
+    return false;
+  }
+
+  function selectTab(value: UsersTab) {
+    if (value === tab.value) {
+      return;
+    }
+
+    // Незавершённая рабочая команда остаётся в своей вкладке до явного закрытия.
+    if (busy.value) {
+      revealPending();
+
+      return;
+    }
+
+    readController?.abort();
+    readController = null;
+    phase.value = hasSnapshot.value ? "ready" : "idle";
+    customerDirectory.value = {
+      ...customerDirectory.value,
+      phase: customerDirectory.value.hasSnapshot ? "ready" : "idle",
+    };
+    tab.value = value;
+    scrollTop.value = 0;
+
+    if (pageActive) {
+      void load();
+    }
+  }
+
   function selectQuery(value: string) {
-    query.value = value;
+    if (tab.value === "employees") {
+      query.value = value;
+    } else {
+      customerDirectory.value = { ...customerDirectory.value, query: value };
+    }
 
     if (pageActive && mutation.value === null) {
       void load();
@@ -196,6 +341,10 @@ export const useUsersStore = defineStore("staff-users", () => {
   }
 
   function selectFilter(value: UsersFilter) {
+    if (tab.value !== "employees") {
+      return;
+    }
+
     filter.value = value;
 
     if (pageActive && mutation.value === null) {
@@ -210,7 +359,11 @@ export const useUsersStore = defineStore("staff-users", () => {
   }
 
   function openCreate() {
-    if (sessionContext === null || sessionContext.role !== "administrator") {
+    if (
+      tab.value !== "employees" ||
+      sessionContext === null ||
+      sessionContext.role !== "administrator"
+    ) {
       return;
     }
 
@@ -228,9 +381,10 @@ export const useUsersStore = defineStore("staff-users", () => {
     dialogVisible.value = true;
   }
 
-  function openUser(user: UserPresentation, kind: "role" | "access") {
+  function openUser(user: EmployeePresentation, kind: "role" | "access") {
     if (
       sessionContext === null ||
+      tab.value !== "employees" ||
       sessionContext.role !== "administrator" ||
       user.id === sessionContext.identityId
     ) {
@@ -249,8 +403,8 @@ export const useUsersStore = defineStore("staff-users", () => {
       return;
     }
 
-    const target = presentStaffUser(current, sessionContext.identityId);
-    const accessAction = target.blocked ? "unblock" : "block";
+    const target = presentEmployee(current, sessionContext.identityId);
+    const accessAction = target.workUnavailable ? "unblock" : "block";
 
     dialog.value = {
       kind: kind === "role" ? "role" : accessAction,
@@ -293,7 +447,7 @@ export const useUsersStore = defineStore("staff-users", () => {
     }
   }
 
-  async function submitCommand(command: UserCommand) {
+  async function submitCommand(command: EmployeeCommand) {
     const requestContext = sessionContext;
 
     if (
@@ -315,7 +469,7 @@ export const useUsersStore = defineStore("staff-users", () => {
     mutation.value = { command: submittedCommand, phase: "sending" };
     commandError.value = null;
     notice.value = null;
-    const outcome = await sendUserCommand(
+    const outcome = await sendEmployeeCommand(
       requestContext.accessToken,
       submittedCommand,
       controller.signal,
@@ -390,16 +544,16 @@ export const useUsersStore = defineStore("staff-users", () => {
     }
   }
 
-  async function setBlocked(id: string, blocked: boolean) {
+  async function setWorkAccess(id: string, enabled: boolean) {
     const current = dialog.value;
 
     if (
       current !== null &&
       (current.kind === "block" || current.kind === "unblock") &&
       current.user.id === id &&
-      blocked === (current.kind === "block")
+      enabled === (current.kind === "unblock")
     ) {
-      await submitCommand({ kind: "block", id, blocked });
+      await submitCommand({ kind: "access", id, enabled });
     }
   }
 
@@ -433,12 +587,15 @@ export const useUsersStore = defineStore("staff-users", () => {
   onScopeDispose(clear);
 
   return {
-    users,
-    query: readonly(query),
+    employees,
+    customers,
+    tab: readonly(tab),
+    selectTab,
+    query: activeQuery,
     filter: readonly(filter),
-    phase: readonly(phase),
+    phase: activePhase,
     hasSnapshot: readonly(hasSnapshot),
-    readError: readonly(readError),
+    readError: activeReadError,
     dialog: visibleDialog,
     dialogPhase,
     submitting,
@@ -462,7 +619,7 @@ export const useUsersStore = defineStore("staff-users", () => {
     selectRole,
     create,
     assignRole,
-    setBlocked,
+    setWorkAccess,
     inspectCommand,
     revealPending,
   };

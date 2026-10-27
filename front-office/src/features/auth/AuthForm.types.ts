@@ -5,6 +5,7 @@ export interface AuthFormProps {
   otp: string;
   resendRemainingSeconds: number;
   isLoading?: boolean;
+  nameReadonly?: boolean;
 }
 
 export type AuthFormEmits = {

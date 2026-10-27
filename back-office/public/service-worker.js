@@ -64,7 +64,13 @@ function isScopedWindow(client) {
 
   const url = new URL(client.url);
 
-  return url.origin === self.location.origin && url.pathname === "/";
+  return (
+    url.origin === self.location.origin &&
+    (url.pathname === "/" ||
+      /^\/(?:orders|availability|catalog|users|settings)\/?$/u.test(
+        url.pathname,
+      ))
+  );
 }
 async function handleMessage(event) {
   const data = event.data;
@@ -179,7 +185,7 @@ async function handleOrderClick(orderId) {
     return;
   }
 
-  await self.clients.openWindow(`/?order=${encodeURIComponent(orderId)}`);
+  await self.clients.openWindow(`/orders?order=${encodeURIComponent(orderId)}`);
 }
 
 function viewPriority(client) {

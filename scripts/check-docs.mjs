@@ -619,7 +619,9 @@ function splitTableRow(line) {
 }
 
 function routeReferences(text) {
-  return [...text.matchAll(/(?:^|\s)(\/[^\s|,)`]*)/g)].map((match) => match[1]);
+  return [...text.matchAll(/`(\/[^`\r\n]+)`|(?:^|\s)(\/[^\s|,)`]*)/g)].map(
+    (match) => match[1] ?? match[2],
+  );
 }
 
 function registry(scope) {

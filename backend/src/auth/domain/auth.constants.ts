@@ -1,8 +1,9 @@
 export const userRoles = ["customer", "barista", "administrator"] as const;
 
-export const rolePolicies = {
-  Customer: ["customer"],
-  CustomerOrBarista: ["customer", "barista"],
-  Staff: ["barista", "administrator"],
-  Administrator: ["administrator"],
-} as const;
+export const rolePolicies = [
+  "CustomerContext",
+  "Customer",
+  "CustomerOrBarista",
+  "Staff",
+  "Administrator",
+] as const;

@@ -31,12 +31,14 @@
               id="auth-phone"
               class="auth-input phone-input"
               type="tel"
+              inputmode="tel"
               autocomplete="tel"
               placeholder="+7 900 000-00-00"
               :value="phone"
               :aria-invalid="phoneInvalid"
               :aria-describedby="phoneInvalid ? 'phone-error' : 'phone-help'"
               @input="emitPhoneChange"
+              @beforeinput="handlePhoneDeletion"
               @keydown.enter.prevent="submitEntry"
             />
             <img class="phone-icon" :src="phoneIcon" alt="" />
@@ -111,6 +113,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, useTemplateRef } from "vue";
+import { maskPhoneInput } from "../phone";
 import arrowIcon from "./assets/arrow-left.svg";
 import deniedIcon from "./assets/denied.svg";
 import errorIcon from "./assets/error.svg";
@@ -140,12 +143,85 @@ const codeActionDisabled = computed(() =>
   isExpired.value ? !props.canSend : !props.canConfirm,
 );
 
-function emitPhoneChange(event: globalThis.Event) {
+async function emitPhoneChange(event: globalThis.Event) {
   if (!(event.target instanceof globalThis.HTMLInputElement)) {
     return;
   }
 
-  emit("phoneChanged", event.target.value);
+  await updatePhoneInput(event.target);
+}
+
+async function updatePhoneInput(input: globalThis.HTMLInputElement) {
+  const masked = maskPhoneInput(
+    input.value,
+    input.selectionStart ?? input.value.length,
+  );
+
+  input.value = masked.phone;
+  emit("phoneChanged", masked.phone);
+  await nextTick();
+
+  if (
+    input === globalThis.document.activeElement &&
+    input.value === masked.phone
+  ) {
+    input.setSelectionRange(masked.caret, masked.caret);
+  }
+}
+
+async function handlePhoneDeletion(event: globalThis.InputEvent) {
+  if (!(event.target instanceof globalThis.HTMLInputElement)) {
+    return;
+  }
+
+  const input = event.target;
+  const caret = input.selectionStart;
+  const backward = event.inputType === "deleteContentBackward";
+  const forward = event.inputType === "deleteContentForward";
+
+  if (
+    (!backward && !forward) ||
+    caret === null ||
+    caret !== input.selectionEnd
+  ) {
+    return;
+  }
+
+  if (forward && caret < 3) {
+    event.preventDefault();
+
+    return;
+  }
+
+  if (backward && caret <= 3) {
+    event.preventDefault();
+
+    if (input.value === "+7") {
+      input.value = "";
+      await updatePhoneInput(input);
+    }
+
+    return;
+  }
+
+  let index = backward ? caret - 1 : Math.max(3, caret);
+
+  if (/\d/.test(input.value[index] ?? "")) {
+    return;
+  }
+
+  // Разделитель маски удаляется вместе с соседней цифрой, а не появляется снова.
+  while (index >= 3 && index < input.value.length) {
+    if (/\d/.test(input.value[index] ?? "")) {
+      event.preventDefault();
+      input.setRangeText("", index, index + 1, "start");
+      await updatePhoneInput(input);
+
+      return;
+    }
+
+    index += backward ? -1 : 1;
+  }
 }
 
 function emitCodeChange(event: globalThis.Event) {

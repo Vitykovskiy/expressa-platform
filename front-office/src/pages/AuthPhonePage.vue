@@ -31,6 +31,7 @@ const errorMessage = shallowRef(
     : "",
 );
 const isLoading = shallowRef(false);
+let pageActive = true;
 const now = shallowRef(getSessionDependencies().now());
 const resendTimer = setInterval(
   () => (now.value = getSessionDependencies().now()),
@@ -42,7 +43,10 @@ const resendRemainingSeconds = computed(() => {
   if (cooldownUntil === null) return 0;
   return Math.max(0, Math.ceil((cooldownUntil - now.value) / 1000));
 });
-onBeforeUnmount(() => clearInterval(resendTimer));
+onBeforeUnmount(() => {
+  pageActive = false;
+  clearInterval(resendTimer);
+});
 
 const authState = computed<AuthPhonePageState>(() => ({
   errorMessage: errorMessage.value,
@@ -62,12 +66,18 @@ async function requestOtp(): Promise<void> {
 
   isLoading.value = true;
   errorMessage.value = "";
+  const generation = sessionStore.generation;
 
   try {
     await sessionStore.requestOtp(phone.value);
+    if (!pageActive || sessionStore.generation !== generation) {
+      return;
+    }
     await router.push({ path: authPhoneRoute.code, query: returnToQuery() });
   } catch {
-    errorMessage.value = sessionStore.errorMessage ?? "";
+    if (pageActive && sessionStore.generation === generation) {
+      errorMessage.value = sessionStore.errorMessage ?? "";
+    }
   } finally {
     isLoading.value = false;
   }

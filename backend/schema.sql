@@ -1,17 +1,32 @@
-CREATE TYPE user_role AS ENUM ('customer', 'barista', 'administrator');
+CREATE TYPE staff_role AS ENUM ('barista', 'administrator');
+CREATE TYPE auth_context AS ENUM ('customer', 'staff');
 CREATE TYPE modifier_selection_type AS ENUM ('single', 'multiple');
 CREATE TYPE order_stage AS ENUM ('CREATED', 'ACCEPTED', 'PREPARING', 'READY', 'ISSUED');
 
 CREATE TABLE users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_e164 text NOT NULL UNIQUE CHECK (phone_e164 ~ '^\+7[0-9]{10}$'),
-  role user_role NOT NULL DEFAULT 'customer',
   name text CHECK (name IS NULL OR btrim(name) <> ''),
   blocked_at timestamptz,
   blocked_by uuid REFERENCES users (id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((blocked_at IS NULL) = (blocked_by IS NULL))
+);
+
+CREATE TABLE customers (
+  user_id uuid PRIMARY KEY REFERENCES users (id) ON DELETE RESTRICT,
+  registered_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE employees (
+  user_id uuid PRIMARY KEY REFERENCES users (id) ON DELETE RESTRICT,
+  role staff_role NOT NULL,
+  access_disabled_at timestamptz,
+  access_disabled_by uuid REFERENCES users (id) ON DELETE RESTRICT,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((access_disabled_at IS NULL) = (access_disabled_by IS NULL))
 );
 
 CREATE TABLE otp_challenges (
@@ -32,6 +47,7 @@ CREATE INDEX otp_challenges_open_expires_at ON otp_challenges (expires_at) WHERE
 CREATE TABLE sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+  context auth_context NOT NULL,
   refresh_token_hash text NOT NULL UNIQUE,
   expires_at timestamptz NOT NULL,
   revoked_at timestamptz,
@@ -162,7 +178,7 @@ CREATE TABLE order_daily_counters (
 CREATE TABLE orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   number text NOT NULL UNIQUE,
-  customer_id uuid NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+  customer_id uuid NOT NULL REFERENCES customers (user_id) ON DELETE RESTRICT,
   idempotency_key uuid NOT NULL,
   request_fingerprint text NOT NULL CHECK (btrim(request_fingerprint) <> ''),
   stage order_stage NOT NULL DEFAULT 'CREATED',
@@ -228,6 +244,7 @@ CREATE INDEX order_events_order_id_occurred_at_idx ON order_events (order_id, oc
 CREATE TABLE push_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  context auth_context NOT NULL,
   endpoint text NOT NULL CHECK (btrim(endpoint) <> ''),
   p256dh text NOT NULL CHECK (btrim(p256dh) <> ''),
   auth text NOT NULL CHECK (btrim(auth) <> ''),

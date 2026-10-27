@@ -13,7 +13,7 @@ export const USER_DIALOG_PHASE_LABELS: Record<
 export const USERS_FILTERS: readonly { id: UsersFilter; label: string }[] = [
   { id: "all", label: "Все" },
   { id: "barista", label: "Баристы" },
-  { id: "unassigned", label: "Без роли" },
+  { id: "administrator", label: "Админы" },
   { id: "blocked", label: "Нет доступа" },
 ];
 
@@ -50,3 +50,8 @@ export const USER_ASSETS = {
   radioNeutral: "/users/radio-neutral.svg",
   empty: "/users/empty.svg",
 } as const;
+
+export const USERS_TABS = [
+  { id: "employees", label: "Сотрудники" },
+  { id: "customers", label: "Клиенты" },
+] as const;

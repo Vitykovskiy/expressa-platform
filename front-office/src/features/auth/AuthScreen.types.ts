@@ -23,6 +23,7 @@ export interface AuthScreenProps {
   resendRemainingSeconds: number;
   isLoading?: boolean;
   contextDescription?: string;
+  nameReadonly?: boolean;
 }
 
 export type AuthScreenEmits = {

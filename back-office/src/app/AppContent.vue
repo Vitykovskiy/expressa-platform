@@ -2,64 +2,44 @@
   <AppLayout
     :administrator="administrator"
     :section="section"
-    :links="links"
+    :navigation="navigation"
     :notification-order="notificationOrder"
     :notification-message="notificationMessage"
     :navigation-busy="navigationBusy"
-    @navigate="navigateLink"
     @logout="emit('logout')"
     @show-notifications="notifications.show"
     @open-notification="emit('openNotification')"
   >
     <NotificationsDialog v-if="!administrator" />
     <div ref="content" class="staff-content" tabindex="-1">
-      <OrdersRoute
-        v-if="section === 'orders'"
-        :context="context"
-        :search="search"
-        @session-expired="emit('sessionExpired')"
-        @navigate="emit('navigate', $event)"
-      />
-      <AvailabilityPage
-        v-else-if="section === 'availability'"
-        :context="context"
-        @session-expired="emit('sessionExpired')"
-      />
-      <KeepAlive :max="1"
-        ><CatalogPage
-          v-if="showCatalog"
-          :context="context"
-          @session-expired="emit('sessionExpired')"
-        />
-      </KeepAlive>
-      <UsersRoute
-        v-if="showUsers"
-        :session="session"
-        @session-expired="emit('sessionExpired')"
-      />
-      <SettingsRoute v-else-if="showSettings" />
+      <RouterView v-slot="{ Component }">
+        <KeepAlive include="CatalogPage" :max="1">
+          <component
+            :is="Component"
+            v-if="!routeRefusal"
+            v-bind="pageProps"
+            v-on="pageEvents"
+          />
+        </KeepAlive>
+      </RouterView>
       <section v-if="routeRefusal" class="route-refusal">
         <h1>{{ title }}</h1>
         <p>{{ routeRefusal }}</p>
-        <a :href="links.orders" @click="navigateLink($event, links.orders)"
-          >К заказам</a
-        >
+        <RouterLink v-slot="{ href, navigate }" :to="ordersLocation" custom>
+          <a :href="href" @click="navigate">К заказам</a>
+        </RouterLink>
       </section>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import NotificationsDialog from "../modules/notifications/components/NotificationsDialog.vue";
 import { useNotificationsStore } from "../modules/notifications/notifications.store";
 import { computed, nextTick, onScopeDispose, useTemplateRef, watch } from "vue";
 import AppLayout from "../layouts/AppLayout.vue";
 import { APP_NAVIGATION } from "../layouts/AppNavigation.constants";
-import OrdersRoute from "../modules/orders/OrdersRoute.vue";
-import AvailabilityPage from "../modules/availability/AvailabilityPage.vue";
-import CatalogPage from "../modules/catalog/CatalogPage.vue";
-import UsersRoute from "../modules/users/UsersRoute.vue";
-import SettingsRoute from "../modules/settings/SettingsRoute.vue";
 import { useCatalogStore } from "../modules/catalog/catalog.store";
 import { useSettingsStore } from "../modules/settings/settings.store";
 import type { AppSection } from "../layouts/AppNavigation.types";
@@ -68,88 +48,86 @@ import type { AppContentProps, AppContentEmits } from "./AppContent.types";
 const props = defineProps<AppContentProps>();
 const emit = defineEmits<AppContentEmits>();
 
+const route = useRoute();
+const router = useRouter();
 const catalog = useCatalogStore();
 const settings = useSettingsStore();
 const notifications = useNotificationsStore();
 const content = useTemplateRef<globalThis.HTMLDivElement>("content");
 
 const administrator = computed(
-  () => props.session.identity.role === "administrator",
+  () => props.session.identity.employee.role === "administrator",
 );
-const section = computed(() =>
-  props.intent.kind === "valid" ? props.intent.section : null,
-);
+const section = computed(() => route.name as AppSection);
 const context = computed(() => ({
   identityId: props.session.identity.id,
   accessToken: props.session.accessToken,
 }));
-const selectedNavigation = computed(() =>
-  APP_NAVIGATION.find((item) => item.section === section.value),
-);
-
-const title = computed(
-  () => selectedNavigation.value?.label ?? "Неверный адрес",
-);
-
+const title = computed(() => route.meta.title ?? "Expressa");
 const showCatalog = computed(
   () => section.value === "catalog" && administrator.value,
-);
-const showUsers = computed(
-  () => section.value === "users" && administrator.value,
 );
 const showSettings = computed(
   () => section.value === "settings" && administrator.value,
 );
+const routeRefusal = computed(() =>
+  route.meta.administratorOnly && !administrator.value
+    ? "Раздел доступен только администратору."
+    : null,
+);
+const navigationQuery = computed(() => {
+  const query = { ...route.query };
 
-const routeRefusal = computed(() => {
-  if (section.value === null) {
-    return "Проверьте адрес раздела.";
-  }
+  delete query.section;
 
-  if (selectedNavigation.value?.administratorOnly && !administrator.value) {
-    return "Раздел доступен только администратору.";
-  }
-
-  return null;
+  return query;
 });
+const ordersLocation = computed(() => ({
+  name: "orders",
+  query: navigationQuery.value,
+  hash: route.hash,
+}));
+const navigation = computed(() =>
+  APP_NAVIGATION.flatMap((item) => {
+    const meta = router.resolve({ name: item.section }).meta;
 
-const links = computed(() => {
-  // Реактивный URL сохраняет текущие параметры и hash после переходов внутри страницы.
-  const url = new globalThis.URL(props.locationHref);
-  const result = {
-    orders: "",
-    availability: "",
-    catalog: "",
-    users: "",
-    settings: "",
-  };
-
-  for (const item of APP_NAVIGATION) {
-    url.searchParams.delete("section");
-    if (item.section !== "orders") {
-      url.searchParams.set("section", item.section);
+    if (meta.administratorOnly && !administrator.value) {
+      return [];
     }
 
-    result[item.section] = `${url.pathname}${url.search}${url.hash}`;
-  }
+    return [
+      {
+        ...item,
+        label: meta.title ?? "Expressa",
+        to: {
+          name: item.section,
+          query: navigationQuery.value,
+          hash: route.hash,
+        },
+      },
+    ];
+  }),
+);
 
-  return result;
+// Only adapt page data here; the matched router record selects the component.
+const pageProps = computed(() => {
+  const byName = {
+    orders: { context: context.value, query: route.query },
+    availability: { context: context.value },
+    catalog: { context: context.value },
+    users: { session: props.session },
+    settings: {},
+  } satisfies Record<AppSection, object>;
+
+  return byName[route.name as AppSection];
 });
-
-function navigateLink(event: globalThis.MouseEvent, href: string) {
-  if (
-    event.button !== 0 ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.altKey ||
-    event.shiftKey
-  ) {
-    return;
-  }
-
-  event.preventDefault();
-  emit("navigate", href);
-}
+const pageEvents = computed(() =>
+  section.value === "settings"
+    ? {}
+    : {
+        sessionExpired: () => emit("sessionExpired"),
+      },
+);
 
 async function activateSection() {
   const selected = section.value;
@@ -177,7 +155,7 @@ function activateSectionOwners() {
   }
 }
 
-async function focusSectionAfterRender(selected: AppSection | null) {
+async function focusSectionAfterRender(selected: typeof route.name) {
   await nextTick();
 
   if (section.value !== selected) {

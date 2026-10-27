@@ -13,7 +13,6 @@ import type {
 } from "../application/auth-repository.types";
 import { clockPort } from "../application/clock.constants";
 import type { Clock } from "../application/clock.types";
-import type { UserRole } from "../domain/auth.types";
 import type { AuthenticatedRequest } from "./current-auth.decorator.types";
 import type { SessionGuardConfiguration } from "./session.guard.types";
 import {
@@ -63,7 +62,9 @@ export class SessionGuard implements CanActivate {
 
     request.auth = {
       phoneE164: sessionWithUser.user.phoneE164,
-      role: sessionWithUser.user.role,
+      context: sessionWithUser.session.context,
+      customer: sessionWithUser.user.customer,
+      employee: sessionWithUser.user.employee,
       sessionId: sessionWithUser.session.id,
       userId: sessionWithUser.user.id,
     };
@@ -97,13 +98,7 @@ function isCurrentSession(
     value.session.expiresAt > now &&
     value.user.id === userId &&
     typeof value.user.phoneE164 === "string" &&
-    isUserRole(value.user.role)
-  );
-}
-
-function isUserRole(value: unknown): value is UserRole {
-  return (
-    value === "customer" || value === "barista" || value === "administrator"
+    (value.session.context === "customer" || value.session.context === "staff")
   );
 }
 

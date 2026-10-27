@@ -7,12 +7,9 @@
       <div class="user-row__labels">
         <span class="user-row__name">{{ props.user.name }}</span>
         <span class="user-row__badge" :class="roleClass">{{ roleLabel }}</span>
-        <span
-          v-if="showAccess"
-          class="user-row__badge"
-          :class="accessBadge.className"
-          >{{ accessBadge.label }}</span
-        >
+        <span class="user-row__badge" :class="accessBadge.className">{{
+          accessBadge.label
+        }}</span>
       </div>
       <p class="user-row__phone">{{ props.user.phone }}</p>
     </div>
@@ -23,6 +20,8 @@
           type="button"
           class="user-row__trigger"
           :aria-label="`Действия: ${props.user.name}`"
+          @focus="rememberTrigger"
+          @click="rememberTrigger"
         >
           <img :src="USER_ASSETS.ellipsis" alt="" />
         </button>
@@ -33,7 +32,7 @@
           class="user-menu__action"
           type="button"
           role="menuitem"
-          @click="emit('role', props.user)"
+          @click="emit('role', props.user, actionTrigger)"
         >
           <img :src="USER_ASSETS.role" alt="" />Изменить роль
         </button>
@@ -43,7 +42,7 @@
           :class="accessAction.className"
           type="button"
           role="menuitem"
-          @click="emit('access', props.user)"
+          @click="emit('access', props.user, actionTrigger)"
         >
           <img :src="accessAction.icon" alt="" />{{ accessAction.label }}
         </button>
@@ -60,20 +59,13 @@ import type { UserRowProps, UserRowEmits } from "./UserRow.types";
 
 const props = defineProps<UserRowProps>();
 const emit = defineEmits<UserRowEmits>();
+let actionTrigger: globalThis.HTMLButtonElement | null = null;
 
-const roleLabel = computed(() =>
-  props.user.role === null ? "Без роли" : USER_ROLE_LABELS[props.user.role],
-);
-const roleClass = computed(
-  () => `user-role--${props.user.role ?? "unassigned"}`,
-);
-
-const showAccess = computed(
-  () => props.user.role !== null || props.user.blocked,
-);
+const roleLabel = computed(() => USER_ROLE_LABELS[props.user.role]);
+const roleClass = computed(() => `user-role--${props.user.role}`);
 
 const accessBadge = computed(() => {
-  if (props.user.blocked) {
+  if (props.user.workUnavailable) {
     return { label: "Нет доступа", className: "user-access--blocked" };
   }
 
@@ -85,7 +77,7 @@ const hasActions = computed(
 );
 
 const accessAction = computed(() => {
-  if (props.user.blocked) {
+  if (props.user.workUnavailable) {
     return {
       label: "Разблокировать",
       icon: USER_ASSETS.unblock,
@@ -99,12 +91,19 @@ const accessAction = computed(() => {
     className: "user-menu__action--block",
   };
 });
+
+function rememberTrigger(event: globalThis.Event) {
+  const trigger = event.currentTarget;
+
+  if (trigger instanceof globalThis.HTMLButtonElement) {
+    actionTrigger = trigger;
+  }
+}
 </script>
 
 <style scoped>
 /* Локальные размеры строки, текста и меню не имеют шкал в теме.
-   Цвет разделителей и палитра «Без роли» сохраняют исходное оформление:
-   подходящих семантических tokens для них нет. */
+   Цвет разделителей сохраняет исходное оформление: подходящего token нет. */
 .user-row {
   display: flex;
   gap: 12px;
@@ -160,14 +159,6 @@ const accessAction = computed(() => {
 .user-access--active {
   color: var(--operations-confirmed-foreground);
   background: var(--operations-confirmed-surface);
-}
-.user-row__avatar.user-role--unassigned {
-  color: var(--color-foreground-muted);
-  background: #f0f0f0;
-}
-.user-row__badge.user-role--unassigned {
-  color: #ff9800;
-  background: #fff8e1;
 }
 .user-access--blocked {
   color: var(--color-danger);

@@ -3,7 +3,7 @@ import {
   USER_PHONE_PATTERN,
   USER_TIMESTAMP_PATTERN,
 } from "./users.constants";
-import type { StaffUserDto } from "./users.types";
+import type { EmployeeDto, CustomerDto } from "./users.types";
 
 function isUserTimestamp(value: unknown): value is string {
   if (
@@ -23,7 +23,7 @@ function isUserTimestamp(value: unknown): value is string {
   );
 }
 
-export function parseStaffUser(value: unknown): StaffUserDto | null {
+export function parseEmployee(value: unknown): EmployeeDto | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return null;
   }
@@ -56,16 +56,17 @@ export function parseStaffUser(value: unknown): StaffUserDto | null {
 
   if (
     !("role" in value) ||
-    !(
-      value.role === "customer" ||
-      value.role === "barista" ||
-      value.role === "administrator"
-    )
+    !(value.role === "barista" || value.role === "administrator")
   ) {
     return null;
   }
 
-  if (!("blocked" in value) || typeof value.blocked !== "boolean") {
+  if (
+    !("accessEnabled" in value) ||
+    typeof value.accessEnabled !== "boolean" ||
+    !("accountBlocked" in value) ||
+    typeof value.accountBlocked !== "boolean"
+  ) {
     return null;
   }
 
@@ -83,37 +84,82 @@ export function parseStaffUser(value: unknown): StaffUserDto | null {
     name: value.name,
     phoneE164: value.phoneE164,
     role: value.role,
-    blocked: value.blocked,
+    accessEnabled: value.accessEnabled,
+    accountBlocked: value.accountBlocked,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
   };
 }
 
-export function parseStaffUsers(
-  value: unknown,
-): readonly StaffUserDto[] | null {
+export function parseEmployees(value: unknown): readonly EmployeeDto[] | null {
   if (
     typeof value !== "object" ||
     value === null ||
-    !("users" in value) ||
-    !Array.isArray(value.users)
+    !("employees" in value) ||
+    !Array.isArray(value.employees)
   ) {
     return null;
   }
 
-  const users: StaffUserDto[] = [];
+  const employees: EmployeeDto[] = [];
   const ids = new Set<string>();
 
-  for (const row of value.users) {
-    const user = parseStaffUser(row);
+  for (const row of value.employees) {
+    const employee = parseEmployee(row);
 
-    if (user === null || ids.has(user.id)) {
+    if (employee === null || ids.has(employee.id)) {
       return null;
     }
 
-    ids.add(user.id);
-    users.push(user);
+    ids.add(employee.id);
+    employees.push(employee);
   }
 
-  return users;
+  return employees;
+}
+
+export function parseCustomers(value: unknown): readonly CustomerDto[] | null {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("customers" in value) ||
+    !Array.isArray(value.customers)
+  ) {
+    return null;
+  }
+
+  const customers: CustomerDto[] = [];
+  const ids = new Set<string>();
+
+  for (const row of value.customers) {
+    if (
+      typeof row !== "object" ||
+      row === null ||
+      Array.isArray(row) ||
+      !("id" in row) ||
+      typeof row.id !== "string" ||
+      !USER_ID_PATTERN.test(row.id) ||
+      !("name" in row) ||
+      typeof row.name !== "string" ||
+      row.name.trim() === "" ||
+      !("phoneE164" in row) ||
+      typeof row.phoneE164 !== "string" ||
+      !USER_PHONE_PATTERN.test(row.phoneE164) ||
+      !("registeredAt" in row) ||
+      !isUserTimestamp(row.registeredAt) ||
+      ids.has(row.id)
+    ) {
+      return null;
+    }
+
+    ids.add(row.id);
+    customers.push({
+      id: row.id,
+      name: row.name,
+      phoneE164: row.phoneE164,
+      registeredAt: row.registeredAt,
+    });
+  }
+
+  return customers;
 }

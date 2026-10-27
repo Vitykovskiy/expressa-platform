@@ -82,8 +82,13 @@ ADR-015 проходит независимое review до зависимого
 или пользовательскую приёмку. Исторические правила ADR-013/014 заменяются
 только в явно указанной ADR-015 части.
 
+- По ADR-016 Vue Router records выбирают пять page components; RouterView выводит
+  matched component. Title/access принадлежат metadata; role gate предшествует
+  mount/read. Root и unknown application paths redirect home; business-query
+  validation не выбирает страницу. Bootstrap сохраняет persistent App/session.
 - `app` импортирует layouts, modules и shared; layouts — собственные контракты/assets
-  и shared. Layout не импортирует app, modules, stores, HTTP или native controllers.
+  и shared. Сторонний RouterLink разрешён для anchors по ADR-016; app router singleton
+  не импортируется. Layout не импортирует app, modules, stores, HTTP или native controllers.
 - Module импортирует собственные файлы и shared. Существующие зависимости auth,
   UsersRoute и notifications от session разрешены в точных границах ADR-015;
   session не импортирует потребителей. Новая связь соседних областей не возникает

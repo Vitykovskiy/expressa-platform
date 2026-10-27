@@ -1,10 +1,13 @@
-import type { OtpChallenge, UserRole } from "../domain/auth.types";
+import type {
+  AuthContext,
+  AuthIdentity,
+  OtpChallenge,
+} from "../domain/auth.types";
 import type { LogoutPushSubscription } from "./logout.use-case.types";
 
-export type AuthUser = {
+export type AuthUser = AuthIdentity & {
   id: string;
   phoneE164: string;
-  role: UserRole;
 };
 
 export type StoredOtpChallenge = OtpChallenge & {
@@ -19,6 +22,7 @@ export type OtpChallengeReservation =
 export type AuthSession = {
   id: string;
   userId: string;
+  context: AuthContext;
   refreshTokenHash: string;
   expiresAt: Date;
   revokedAt: Date | null;
@@ -64,8 +68,8 @@ export interface AuthRepository {
     sessionId: string,
     refreshTokenHash: string,
     sessionExpiresAt: Date,
+    context?: AuthContext,
   ): Promise<OtpAuthentication>;
-  findOrCreateCustomer(phoneE164: string): Promise<AuthUser>;
   findSessionByRefreshTokenHash(
     refreshTokenHash: string,
   ): Promise<AuthSession | null>;

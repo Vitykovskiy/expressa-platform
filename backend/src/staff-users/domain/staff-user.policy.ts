@@ -8,7 +8,12 @@ export class StaffUserError extends Error {
 }
 
 export function assertActiveAdministrator(user: StaffUser | null): void {
-  if (user === null || user.blocked || user.role !== "administrator") {
+  if (
+    user === null ||
+    user.blocked ||
+    user.employee?.role !== "administrator" ||
+    !user.employee.accessEnabled
+  ) {
     throw new StaffUserError("USER_ACCESS_DENIED");
   }
 }
@@ -32,11 +37,23 @@ export function assertAccessChange(
     throw new StaffUserError("USER_ACCESS_CONFLICT");
   }
   if (
-    user.role === "administrator" &&
+    user.employee?.role === "administrator" &&
+    user.employee.accessEnabled &&
     !user.blocked &&
     removesAdministrator &&
     activeAdministratorCount <= 1
   ) {
     throw new StaffUserError("USER_ACCESS_CONFLICT");
   }
+}
+
+/** Опубликованная account-команда — no-op только при уже достигнутом состоянии участий. */
+export function isAccountRoleNoop(user: StaffUser, role: UserRole): boolean {
+  if (role === "customer") {
+    return (
+      (user.employee === null || !user.employee.accessEnabled) &&
+      (user.name === null || user.customer !== null)
+    );
+  }
+  return user.employee?.role === role;
 }

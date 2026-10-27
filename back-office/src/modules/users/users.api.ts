@@ -1,27 +1,32 @@
 import { requestApi } from "../../shared/api/request";
 import { parseApiHttpError } from "../../shared/api/http-error";
 import type { ApiResult } from "../../shared/api/request.types";
-import { USERS_ENDPOINT, USER_COMMAND_ERRORS } from "./users.constants";
-import { parseStaffUser, parseStaffUsers } from "./users.dto";
-import { mapStaffUser } from "./users.mapper";
+import {
+  EMPLOYEES_ENDPOINT,
+  CUSTOMERS_ENDPOINT,
+  USER_COMMAND_ERRORS,
+} from "./users.constants";
+import { parseEmployee, parseEmployees, parseCustomers } from "./users.dto";
+import { mapEmployee, mapCustomer } from "./users.mapper";
 import type {
-  StaffUserDto,
-  StaffUsersQuery,
-  UserCommand,
-  UserCommandOutcome,
-  UserCommandRequest,
-  UsersReadOutcome,
+  EmployeeDto,
+  EmployeesQuery,
+  EmployeeCommand,
+  EmployeeCommandOutcome,
+  EmployeeCommandRequest,
+  EmployeesReadOutcome,
+  CustomersReadOutcome,
 } from "./users.types";
 
 function isSessionDenied(result: ApiResult) {
   return "status" in result && (result.status === 401 || result.status === 403);
 }
 
-export async function readStaffUsers(
+export async function readEmployees(
   accessToken: string,
-  query: StaffUsersQuery,
+  query: EmployeesQuery,
   signal: AbortSignal,
-): Promise<UsersReadOutcome> {
+): Promise<EmployeesReadOutcome> {
   const parameters = new URLSearchParams();
 
   if (query.search !== "") {
@@ -37,7 +42,7 @@ export async function readStaffUsers(
   }
 
   const suffix = parameters.size === 0 ? "" : `?${parameters.toString()}`;
-  const result = await requestApi(`${USERS_ENDPOINT}${suffix}`, {
+  const result = await requestApi(`${EMPLOYEES_ENDPOINT}${suffix}`, {
     method: "GET",
     accessToken,
     signal,
@@ -55,21 +60,58 @@ export async function readStaffUsers(
     return { kind: "failed" };
   }
 
-  const users = parseStaffUsers(result.body);
+  const employees = parseEmployees(result.body);
 
-  if (users === null) {
+  if (employees === null) {
     return { kind: "failed" };
   }
 
-  return { kind: "loaded", users: users.map(mapStaffUser) };
+  return { kind: "loaded", employees: employees.map(mapEmployee) };
 }
 
-export async function sendUserCommand(
+export async function readCustomers(
   accessToken: string,
-  command: UserCommand,
+  search: string,
   signal: AbortSignal,
-): Promise<UserCommandOutcome> {
-  const request = buildUserCommandRequest(command);
+): Promise<CustomersReadOutcome> {
+  const parameters = new URLSearchParams();
+
+  if (search !== "") {
+    parameters.set("search", search);
+  }
+
+  const suffix = parameters.size === 0 ? "" : `?${parameters.toString()}`;
+  const result = await requestApi(`${CUSTOMERS_ENDPOINT}${suffix}`, {
+    method: "GET",
+    accessToken,
+    signal,
+  });
+
+  if (isSessionDenied(result)) {
+    return { kind: "session-expired" };
+  }
+
+  if (result.kind === "aborted") {
+    return { kind: "cancelled" };
+  }
+
+  if (result.kind !== "http" || result.status !== 200) {
+    return { kind: "failed" };
+  }
+
+  const customers = parseCustomers(result.body);
+
+  return customers === null
+    ? { kind: "failed" }
+    : { kind: "loaded", customers: customers.map(mapCustomer) };
+}
+
+export async function sendEmployeeCommand(
+  accessToken: string,
+  command: EmployeeCommand,
+  signal: AbortSignal,
+): Promise<EmployeeCommandOutcome> {
+  const request = buildEmployeeCommandRequest(command);
   const result = await requestApi(request.path, {
     method: request.method,
     accessToken,
@@ -85,7 +127,7 @@ export async function sendUserCommand(
     return { kind: "unknown" };
   }
 
-  const user = parseStaffUser(result.body);
+  const user = parseEmployee(result.body);
 
   // Подтверждение требует ответа на исходную команду, одного HTTP-статуса мало.
   if (
@@ -107,10 +149,12 @@ export async function sendUserCommand(
   return { kind: "unknown" };
 }
 
-function buildUserCommandRequest(command: UserCommand): UserCommandRequest {
+function buildEmployeeCommandRequest(
+  command: EmployeeCommand,
+): EmployeeCommandRequest {
   if (command.kind === "create") {
     return {
-      path: USERS_ENDPOINT,
+      path: EMPLOYEES_ENDPOINT,
       method: "POST",
       body: {
         name: command.name,
@@ -121,7 +165,7 @@ function buildUserCommandRequest(command: UserCommand): UserCommandRequest {
     };
   }
 
-  const path = `${USERS_ENDPOINT}/${encodeURIComponent(command.id)}/${command.kind}`;
+  const path = `${EMPLOYEES_ENDPOINT}/${encodeURIComponent(command.id)}/${command.kind}`;
 
   if (command.kind === "role") {
     return {
@@ -135,18 +179,19 @@ function buildUserCommandRequest(command: UserCommand): UserCommandRequest {
   return {
     path,
     method: "PATCH",
-    body: { blocked: command.blocked },
+    body: { enabled: command.enabled },
     expectedStatus: 200,
   };
 }
 
-function matchesCommand(user: StaffUserDto, command: UserCommand) {
+function matchesCommand(user: EmployeeDto, command: EmployeeCommand) {
   if (command.kind === "create") {
     return (
       user.name === command.name &&
       user.phoneE164 === command.phoneE164 &&
       user.role === command.role &&
-      !user.blocked
+      user.accessEnabled &&
+      !user.accountBlocked
     );
   }
 
@@ -158,5 +203,9 @@ function matchesCommand(user: StaffUserDto, command: UserCommand) {
     return user.role === command.role;
   }
 
-  return user.blocked === command.blocked;
+  // Глобальная блокировка не снимается рабочей командой enabled=true.
+  return (
+    user.accessEnabled === command.enabled &&
+    (!command.enabled || !user.accountBlocked)
+  );
 }

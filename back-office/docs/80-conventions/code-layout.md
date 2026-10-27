@@ -46,6 +46,19 @@ barrels и aliases ради переноса не добавлены. Имено
 `*.types.ts`, константы уровня модуля — в `*.constants.ts`. Исходники других
 приложений не импортируются.
 
+## Маршрутизация
+
+[ADR-016](../../../docs/20-architecture/ADR/ADR-016-back-office-vue-router.md)
+задаёт Vue Router5.4.0: bootstrap монтирует persistent App после isReady;
+router.ts сопоставляет пять named paths с конкретными компонентами, metadata
+задаёт title/access. AppContent выводит matched RouterView Component и кеширует
+только CatalogPage, max1. Ключ AppContent — ID/role/token, не fullPath.
+Layout получает готовые navigation props, RouterLink сохраняет native anchors.
+App владеет afterEach/onError и native/background-переходами; OrdersRoute —
+своими named pushes. Orders-navigation валидирует normalized business query,
+без URL origin и выбора страниц. Неизвестный application path redirect orders
+с пустыми query/hash; обычный `/` сохраняет query/hash без section.
+
 ## Ресурсы
 
 Импортируемые изображения лежат рядом с самым узким владельцем исходников:
@@ -81,10 +94,10 @@ CatalogCategoryDialog; его тип опции также использует 
 ## Композиция и layout
 
 `app/App.vue` выбирает кешированный вход или рабочее содержимое с ключом
-`ID:role:token`, сохраняет restore/expiry/logout, URL/history, native intent/proof
-и фоновые сообщения. `app/AppContent.vue` компонует пять рабочих страниц,
+`ID:role:token`, сохраняет restore/expiry/logout, native intent/proof
+и фоновые сообщения. Адрес и history принадлежат injected Vue Router. `app/AppContent.vue` компонует пять рабочих страниц,
 роль и отказ, NotificationsDialog, активацию владельцев, Catalog KeepAlive
-`max=1`, title и content focus. `app/navigation.ts` разбирает URL intent;
+`max=1`, title и content focus. `app/router.ts` выбирает пять компонентов и задаёт metadata, root/catch-all redirect;
 `app/useApplicationDomains.ts` синхронно очищает защищённых владельцев и
 связывает catalog revision с invalidation доступности.
 

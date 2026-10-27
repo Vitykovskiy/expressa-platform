@@ -100,10 +100,11 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useOrdersStore } from "./orders.store";
 import { ORDER_STAGE_LABELS } from "./orders.constants";
 import type { OrderNavigationRequest } from "./orders.types";
-import { readOrdersIntent, ordersNavigationHref } from "./orders-navigation";
+import { readOrdersIntent, ordersLocation } from "./orders-navigation";
 import { toOrderCard } from "./components/orders.presenter";
 import OrderActionDialog from "./components/OrderActionDialog.vue";
 import OperationsButton from "../../shared/ui/operations/OperationsButton.vue";
@@ -122,6 +123,8 @@ defineOptions({ inheritAttrs: false });
 const props = defineProps<OrdersRouteProps>();
 const emit = defineEmits<OrdersRouteEmits>();
 const orders = useOrdersStore();
+const route = useRoute();
+const router = useRouter();
 const page = useTemplateRef<OrdersPageHandle>("page");
 let routeActive = true;
 let needsRestore = true;
@@ -214,7 +217,7 @@ async function syncRoute() {
     return;
   }
 
-  await orders.activate(props.context, readOrdersIntent(props.search));
+  await orders.activate(props.context, readOrdersIntent(props.query));
   await nextTick();
 
   if (!routeActive || !needsRestore || page.value === null) {
@@ -227,7 +230,10 @@ async function syncRoute() {
 
 function navigate(request: OrderNavigationRequest | null) {
   if (routeActive && request !== null) {
-    emit("navigate", ordersNavigationHref(globalThis.location.href, request));
+    // App сообщает ошибку router.onError; команда и выбор не переигрываются.
+    void router
+      .push(ordersLocation(route.query, route.hash, request))
+      .catch(() => undefined);
   }
 }
 
@@ -281,9 +287,18 @@ function rememberAndDeactivate() {
   orders.deactivate();
 }
 
-watch(() => [props.context, props.search] as const, syncRoute, {
-  immediate: true,
-});
+watch(
+  [
+    () => props.context,
+    () => props.query.number,
+    () => props.query.stage,
+    () => props.query.order,
+  ],
+  syncRoute,
+  {
+    immediate: true,
+  },
+);
 
 watch(
   () => orders.sessionExpired,

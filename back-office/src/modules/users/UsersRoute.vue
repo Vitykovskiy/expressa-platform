@@ -1,7 +1,9 @@
 <template>
   <div ref="viewport" class="users-route">
     <UsersPage
-      :users="users.users"
+      :tab="users.tab"
+      :customers="users.customers"
+      :employees="users.employees"
       :query="users.query"
       :filter="users.filter"
       :loading="loading"
@@ -11,6 +13,7 @@
       :command-error="users.commandError"
       :notice="users.notice"
       :needs-inspection="users.needsInspection"
+      @update:tab="users.selectTab"
       @update:query="users.selectQuery"
       @update:filter="users.selectFilter"
       @open-create="users.openCreate"
@@ -19,7 +22,7 @@
       @close-dialog="users.closeDialog"
       @create="users.create"
       @assign-role="users.assignRole"
-      @set-blocked="users.setBlocked"
+      @set-work-access="users.setWorkAccess"
       @update-draft="users.updateDraft"
       @select-role="users.selectRole"
       @inspect="users.inspectCommand"
@@ -39,7 +42,7 @@ import {
 } from "vue";
 import UsersPage from "./UsersPage.vue";
 import { useUsersStore } from "./users.store";
-import type { UserPresentation } from "./components/Users.types";
+import type { EmployeePresentation } from "./components/Users.types";
 import type { UsersRouteProps, UsersRouteEmits } from "./UsersRoute.types";
 
 const props = defineProps<UsersRouteProps>();
@@ -55,7 +58,7 @@ async function activateDirectory() {
 
   await users.activate({
     identityId: identity.id,
-    role: identity.role,
+    role: identity.employee.role,
     accessToken,
   });
   await nextTick();
@@ -76,11 +79,11 @@ function deactivateDirectory() {
   users.deactivate();
 }
 
-function openRole(user: UserPresentation) {
+function openRole(user: EmployeePresentation) {
   users.openUser(user, "role");
 }
 
-function openAccess(user: UserPresentation) {
+function openAccess(user: EmployeePresentation) {
   users.openUser(user, "access");
 }
 

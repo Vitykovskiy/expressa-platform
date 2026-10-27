@@ -1,5 +1,9 @@
-import type { StaffUser, StaffUsersQuery } from "./users.types";
-import type { UserPresentation, UsersFilter } from "./components/Users.types";
+import type { Employee, EmployeesQuery, Customer } from "./users.types";
+import type {
+  EmployeePresentation,
+  UsersFilter,
+  CustomerPresentation,
+} from "./components/Users.types";
 
 function userInitials(name: string | null): string {
   if (name === null) {
@@ -23,10 +27,10 @@ function userInitials(name: string | null): string {
   return initials.toLocaleUpperCase("ru-RU");
 }
 
-export function presentStaffUser(
-  user: StaffUser,
+export function presentEmployee(
+  user: Employee,
   identityId: string,
-): UserPresentation {
+): EmployeePresentation {
   const name = user.name === null ? "Без имени" : user.name;
   const phone = formatUserPhone(user.phone);
   const canManageUser = user.id !== identityId;
@@ -36,32 +40,45 @@ export function presentStaffUser(
     name,
     initials: userInitials(user.name),
     phone,
-    role: user.role === "customer" ? null : user.role,
-    blocked: user.blocked,
+    role: user.role,
+    workUnavailable: !user.accessEnabled || user.accountBlocked,
+    accountBlocked: user.accountBlocked,
     canChangeRole: canManageUser,
     canChangeAccess: canManageUser,
   };
 }
 
-export function buildUsersQuery(
+export function buildEmployeesQuery(
   search: string,
   filter: UsersFilter,
-): StaffUsersQuery {
-  const trimmed = search.trim();
-  const normalized = /^[+\d\s()-]+$/.test(trimmed)
-    ? trimmed.replace(/\D/g, "")
-    : trimmed;
+): EmployeesQuery {
+  const normalized = normalizeUsersSearch(search);
 
   switch (filter) {
     case "barista":
       return { search: normalized, role: "barista" };
-    case "unassigned":
-      return { search: normalized, role: "customer" };
+    case "administrator":
+      return { search: normalized, role: "administrator" };
     case "blocked":
       return { search: normalized, blocked: true };
     case "all":
       return { search: normalized };
   }
+}
+
+export function normalizeUsersSearch(search: string): string {
+  const trimmed = search.trim();
+
+  return /^[+\d\s()-]+$/.test(trimmed) ? trimmed.replace(/\D/g, "") : trimmed;
+}
+
+export function presentCustomer(customer: Customer): CustomerPresentation {
+  return {
+    id: customer.id,
+    name: customer.name,
+    phone: formatUserPhone(customer.phone),
+    initials: userInitials(customer.name),
+  };
 }
 
 function formatUserPhone(phone: string): string {

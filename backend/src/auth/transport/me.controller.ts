@@ -1,3 +1,4 @@
+import { toCurrentUserDto } from "./current-user.projection";
 import {
   Controller,
   Get,
@@ -6,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   ForbiddenException,
+  HttpException,
   Req,
   Res,
   Headers,
@@ -23,6 +25,7 @@ import { CompleteCustomerRegistrationUseCase } from "../application/complete-cus
 import { AccessDeniedError } from "../domain/auth.errors";
 import {
   CustomerRegistrationForbiddenError,
+  CustomerRegistrationNameConflictError,
   CustomerRegistrationUnavailableError,
 } from "../domain/customer-registration.errors";
 import { CompleteCustomerRegistrationDto } from "./customer-registration.dto";
@@ -60,7 +63,9 @@ export class MeController {
     }
 
     try {
-      return await this.registration.currentUser(accessToken, auth.sessionId);
+      return toCurrentUserDto(
+        await this.registration.currentUser(accessToken, auth.sessionId),
+      );
     } catch (error) {
       if (error instanceof AccessDeniedError) {
         throw new UnauthorizedException();
@@ -72,9 +77,13 @@ export class MeController {
   @Post("registration")
   @HttpCode(HttpStatus.OK)
   @UseGuards(SessionGuard, RolesGuard)
-  @Roles("Customer")
+  @Roles("CustomerContext")
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Завершить первую регистрацию клиента" })
+  @ApiOperation({
+    summary: "Завершить первую регистрацию клиента",
+    description:
+      "Customer context only; no prior customer membership required. First enrollment preserves a canonical staff name or returns USER_NAME_CONFLICT. Completed repeats return the stored profile without overwriting name; no cookie replacement or staff privilege change.",
+  })
   @ApiBody({
     schema: {
       type: "object",
@@ -87,6 +96,11 @@ export class MeController {
   @ApiResponse({ status: 400, type: ApiHttpErrorDto })
   @ApiResponse({ status: 401, type: ApiHttpErrorDto })
   @ApiResponse({ status: 403, type: ApiHttpErrorDto })
+  @ApiResponse({
+    status: 409,
+    type: ApiHttpErrorDto,
+    description: "USER_NAME_CONFLICT",
+  })
   @ApiResponse({ status: 503, type: ApiHttpErrorDto })
   async completeRegistration(
     @Body() body: CompleteCustomerRegistrationDto,
@@ -96,17 +110,29 @@ export class MeController {
   ): Promise<CurrentUserDto | AuthErrorResponse> {
     const name = parseRegistrationName(body);
     try {
-      return await this.registration.complete({
-        userId: auth.userId,
-        sessionId: auth.sessionId,
-        name,
-      });
+      return toCurrentUserDto(
+        await this.registration.complete({
+          userId: auth.userId,
+          sessionId: auth.sessionId,
+          name,
+        }),
+      );
     } catch (error) {
       if (error instanceof AccessDeniedError) {
         throw new UnauthorizedException();
       }
       if (error instanceof CustomerRegistrationForbiddenError) {
         throw new ForbiddenException();
+      }
+      if (error instanceof CustomerRegistrationNameConflictError) {
+        throw new HttpException(
+          {
+            code: "USER_NAME_CONFLICT",
+            message: "Account name differs from the submitted name.",
+            details: null,
+          },
+          HttpStatus.CONFLICT,
+        );
       }
       if (error instanceof CustomerRegistrationUnavailableError) {
         response.status(HttpStatus.SERVICE_UNAVAILABLE);

@@ -130,7 +130,11 @@ export class AuthController {
     assertVerifyOtpBody(body);
     let result;
     try {
-      result = await this.verifyOtp.execute(body.phone, body.code);
+      result = await this.verifyOtp.execute(
+        body.phone,
+        body.code,
+        body.context,
+      );
     } catch (error) {
       throwSafeAuthError(error);
     }
@@ -237,7 +241,9 @@ export class AuthController {
           return this.returnLogoutUnavailable(response, request);
         }
 
-        if (!(error instanceof AccessDeniedError)) throw error;
+        if (!(error instanceof AccessDeniedError)) {
+          throw error;
+        }
       }
     } else if (pushSubscription !== null) {
       try {
@@ -272,11 +278,15 @@ export class AuthController {
 
 function getOtpRequestSource(request: Request | undefined): string {
   const peer = request?.socket.remoteAddress;
-  if (peer === undefined) return "unknown";
+  if (peer === undefined) {
+    return "unknown";
+  }
 
   // Only the private edge network may supply the forwarded client address.
   // A directly connected public peer cannot choose a throttle key via XFF.
-  if (isPrivateProxyPeer(peer) && request?.ip !== undefined) return request.ip;
+  if (isPrivateProxyPeer(peer) && request?.ip !== undefined) {
+    return request.ip;
+  }
   return peer;
 }
 
@@ -298,7 +308,13 @@ function assertRequestOtpBody(body: RequestOtpDto): void {
 }
 
 function assertVerifyOtpBody(body: VerifyOtpDto): void {
-  if (typeof body?.phone !== "string" || typeof body?.code !== "string") {
+  if (
+    typeof body?.phone !== "string" ||
+    typeof body?.code !== "string" ||
+    (Object.hasOwn(body, "context") &&
+      body.context !== "customer" &&
+      body.context !== "staff")
+  ) {
     throw new BadRequestException(authErrorResponses.validation);
   }
 }
@@ -307,7 +323,9 @@ function parseLogoutRequest(body: unknown): LogoutPushSubscription | null {
   if (!isExactObject(body, ["pushSubscription"])) validationError();
 
   const subscription = body.pushSubscription;
-  if (subscription === null) return null;
+  if (subscription === null) {
+    return null;
+  }
   if (!isExactObject(subscription, ["endpoint", "keys"])) validationError();
   if (
     typeof subscription.endpoint !== "string" ||

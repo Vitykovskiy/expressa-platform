@@ -5,3 +5,5 @@ export class CustomerRegistrationUnavailableError extends Error {
     super("Customer registration storage is unavailable.", { cause });
   }
 }
+
+export class CustomerRegistrationNameConflictError extends Error {}

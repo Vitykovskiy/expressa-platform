@@ -1,8 +1,10 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
-import type { UserRole } from "../../auth/domain/auth.types";
+import type { StaffRole, UserRole } from "../../auth/domain/auth.types";
 import type {
   StaffUserDetails,
   StaffUserFilter,
+  EmployeeDetails,
+  EmployeeFilter,
 } from "../domain/staff-user.types";
 import {
   userIdPattern,
@@ -47,7 +49,7 @@ export function parseCreateUser(body: unknown): StaffUserDetails {
   if (typeof phoneE164 !== "string" || !userPhonePattern.test(phoneE164)) {
     throw invalidUserField("phoneE164");
   }
-  return { name, phoneE164, role: parseUserRole(record.role) };
+  return { name: name.trim(), phoneE164, role: parseUserRole(record.role) };
 }
 
 export function parseUserBody(
@@ -85,6 +87,38 @@ export function parseUsersQuery(query: unknown): StaffUserFilter {
     } else {
       throw invalidUserField(key);
     }
+  }
+  return filter;
+}
+
+export function parseStaffRole(value: unknown): StaffRole {
+  if (value !== "barista" && value !== "administrator") {
+    throw invalidUserField("role");
+  }
+  return value;
+}
+
+export function parseEnrollEmployee(body: unknown): EmployeeDetails {
+  const details = parseCreateUser(body);
+  return { ...details, role: parseStaffRole(details.role) };
+}
+
+export function parseEmployeesQuery(query: unknown): EmployeeFilter {
+  const filter = parseUsersQuery(query);
+  const { role, ...rest } = filter;
+  return role === undefined ? rest : { ...rest, role: parseStaffRole(role) };
+}
+
+export function parseCustomersQuery(query: unknown): { search?: string } {
+  if (typeof query !== "object" || query === null || Array.isArray(query)) {
+    throw invalidUserField("query");
+  }
+  const filter: { search?: string } = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (key !== "search" || typeof value !== "string") {
+      throw invalidUserField(key);
+    }
+    filter.search = value;
   }
   return filter;
 }

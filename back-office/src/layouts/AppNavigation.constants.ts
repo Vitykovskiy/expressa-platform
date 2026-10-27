@@ -18,13 +18,11 @@ import availabilityMobile from "./assets/availability-mobile.svg";
 import catalogMobile from "./assets/catalog-mobile.svg";
 import usersMobile from "./assets/users-mobile.svg";
 import settingsMobile from "./assets/settings-mobile.svg";
-import type { AppNavigationItem } from "./AppNavigation.types";
+import type { AppNavigationIcon } from "./AppNavigation.types";
 
-export const APP_NAVIGATION: readonly AppNavigationItem[] = [
+export const APP_NAVIGATION: readonly AppNavigationIcon[] = [
   {
     section: "orders",
-    administratorOnly: false,
-    label: "Заказы",
     icon: orders,
     mobileIcon: ordersMobile,
     activeIcon: ordersActive,
@@ -32,8 +30,6 @@ export const APP_NAVIGATION: readonly AppNavigationItem[] = [
   },
   {
     section: "availability",
-    administratorOnly: false,
-    label: "Доступность",
     icon: availability,
     mobileIcon: availabilityMobile,
     activeIcon: availabilityActive,
@@ -41,8 +37,6 @@ export const APP_NAVIGATION: readonly AppNavigationItem[] = [
   },
   {
     section: "catalog",
-    administratorOnly: true,
-    label: "Меню",
     icon: catalog,
     mobileIcon: catalogMobile,
     activeIcon: catalogActive,
@@ -50,8 +44,6 @@ export const APP_NAVIGATION: readonly AppNavigationItem[] = [
   },
   {
     section: "users",
-    administratorOnly: true,
-    label: "Пользователи",
     icon: users,
     mobileIcon: usersMobile,
     activeIcon: usersActive,
@@ -59,8 +51,6 @@ export const APP_NAVIGATION: readonly AppNavigationItem[] = [
   },
   {
     section: "settings",
-    administratorOnly: true,
-    label: "Настройки",
     icon: settings,
     mobileIcon: settingsMobile,
     activeIcon: settingsActive,

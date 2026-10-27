@@ -37,3 +37,27 @@ category, product и order detail. Contextual `Назад` проверяетс�
 left-aligned row под header и перед primary content, а не в header или title
 row; Account, History и Cart сохраняют позиции для guest и authenticated
 sessions.
+
+## Customer-контекст и регистрация
+
+Реализация [auth API](../../src/shared/api/auth.api.ts) отправляет
+`context=customer` при OTP verify, проверяет обязательные nullable memberships
+и отображает DTO в профиль без scalar role. [Session store](../../src/app/session.store.ts)
+и [маршрутизатор](../../src/app/router.ts) определяют enrollment по customer,
+а [страница имени](../../src/pages/AuthNamePage.vue) принимает новое имя либо
+подтверждает сохранённое без редактирования. Источник ожидаемого поведения —
+[контракт входа](../30-features/Authentication-and-returnTo.md).
+
+Ручная приёмка проверяет unnamed account, named employee без customer,
+зарегистрированного клиента, staff-context, безопасный returnTo, 409 name conflict,
+неопределённый результат и повтор, поздний ответ после выхода/замены сессии,
+ошибку logout и сохранность корзины до успешного выхода. Push до регистрации
+не доказывает enrollment; существующий invitation UI не расширяется.
+Предпочтительный режим браузерных проверок — headless.
+
+Для текущей партии lint и contract:check выполнены. Полные typecheck/build
+блокируются устаревшими fixtures в существующих
+`session.store.spec.ts` и `OrdersPage.spec.ts`; тесты не исправлялись и не
+запускались. Browser-приёмка изменённых registration-состояний пока не
+подтверждена: нужны совместный runtime и customer-context session.
+Статическая проверка и доступность phone-формы не заменяют эту приёмку.

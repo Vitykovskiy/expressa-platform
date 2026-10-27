@@ -2,7 +2,10 @@ import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { validateEnvironment } from "../src/platform/config/environment";
 import { PostgresStaffUsersRepository } from "../src/staff-users/adapters/postgres-staff-users.repository";
-import { assertAccessChange } from "../src/staff-users/domain/staff-user.policy";
+import {
+  assertAccessChange,
+  isAccountRoleNoop,
+} from "../src/staff-users/domain/staff-user.policy";
 import { phonePattern, staffRoles } from "./staff.constants";
 import type { StaffCommand, StaffRole } from "./staff.types";
 
@@ -73,7 +76,7 @@ async function main(): Promise<void> {
         });
         return;
       }
-      if (before.role === role) {
+      if (isAccountRoleNoop(before, role)) {
         return;
       }
       assertAccessChange(
@@ -83,8 +86,8 @@ async function main(): Promise<void> {
         before.blocked,
         await repository.countActiveAdministrators(),
       );
-      const after = await repository.changeRole(before.id, role);
-      await repository.revokeAccess(before.id);
+      const after = await repository.changeRole(before.id, role, before.id);
+      await repository.revokeAccess(before.id, "staff");
       await repository.writeAudit({
         actorId: before.id,
         requestId,

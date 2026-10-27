@@ -65,7 +65,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
     sessionStore.status === "authenticated" &&
     sessionStore.currentUser !== null
   ) {
-    if (sessionStore.currentProfile?.name === null) {
+    if (sessionStore.needsCustomerRegistration) {
       if (needsRegistration && destinationPath !== routePaths.authName) {
         const returnTo = isAuthDestination
           ? getSafeAuthReturnTo(to.query.returnTo)

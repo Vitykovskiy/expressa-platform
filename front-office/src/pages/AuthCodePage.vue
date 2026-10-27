@@ -88,7 +88,7 @@ async function verifyOtp(code: string = otp.value): Promise<void> {
       return;
     }
 
-    if (sessionStore.currentProfile?.name === null) {
+    if (sessionStore.needsCustomerRegistration) {
       await router.replace({
         path: routePaths.authName,
         query: returnToQuery(),
@@ -97,7 +97,9 @@ async function verifyOtp(code: string = otp.value): Promise<void> {
     }
     await router.replace(returnTo());
   } catch {
-    errorMessage.value = sessionStore.errorMessage ?? "";
+    if (pageActive && sessionStore.generation === generation) {
+      errorMessage.value = sessionStore.errorMessage ?? "";
+    }
   } finally {
     isLoading.value = false;
   }
@@ -113,13 +115,19 @@ async function resendOtp(): Promise<void> {
 
   isLoading.value = true;
   errorMessage.value = "";
+  const generation = sessionStore.generation;
 
   try {
     await sessionStore.requestOtp(sessionStore.pendingPhone);
+    if (!pageActive || sessionStore.generation !== generation) {
+      return;
+    }
     otp.value = "";
     now.value = getSessionDependencies().now();
   } catch {
-    errorMessage.value = sessionStore.errorMessage ?? "";
+    if (pageActive && sessionStore.generation === generation) {
+      errorMessage.value = sessionStore.errorMessage ?? "";
+    }
   } finally {
     isLoading.value = false;
   }

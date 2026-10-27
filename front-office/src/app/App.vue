@@ -106,6 +106,8 @@ if (apiClient !== undefined) {
   const completeRegistration = createCustomerRegistrationApi(apiClient);
   provide(customerRegistrationKey, {
     accountId: computed(() => sessionStore.currentUser?.id ?? null),
+    generation: computed(() => sessionStore.generation),
+    canonicalName: computed(() => sessionStore.currentProfile?.name ?? null),
     phone: computed(() => sessionStore.currentUser?.phoneE164 ?? ""),
     pending: computed(() => sessionStore.registrationPending),
     complete: (name) =>
@@ -113,7 +115,10 @@ if (apiClient !== undefined) {
     captureOperation: () => {
       const generation = sessionStore.generation;
       const accountId = sessionStore.currentUser?.id ?? null;
-      return () => sessionStore.ownsProtectedRead(generation, accountId);
+      const accessToken = sessionStore.accessToken;
+      return () =>
+        sessionStore.ownsProtectedRead(generation, accountId) &&
+        sessionStore.accessToken === accessToken;
     },
   });
 }
@@ -174,10 +179,18 @@ watch(
 watch(
   () => sessionStore.status,
   async (status) => {
-    if (status !== "anonymous" || !route.meta.requiresCustomer) return;
+    if (status !== "anonymous" || !route.meta.requiresCustomer) {
+      return;
+    }
+
+    const returnTo =
+      route.path === routePaths.authName
+        ? getSafeAuthReturnTo(route.query.returnTo)
+        : route.fullPath;
+
     await router.replace({
       path: routePaths.authPhone,
-      query: { returnTo: route.fullPath },
+      query: returnTo === undefined ? {} : { returnTo },
     });
   },
 );
@@ -194,15 +207,18 @@ onMounted(async () => {
   // Restore может завершиться после начального перехода маршрутизатора.
   await resumeRegistration();
   notificationStore.setSession(
-    sessionStore.currentUser?.id ?? null,
-    sessionStore.accessToken,
+    sessionStore.currentProfile?.id ?? null,
+    sessionStore.currentProfile === null ? null : sessionStore.accessToken,
   );
   bootstrapState.ready = true;
 });
 
 watch(
   () =>
-    [sessionStore.currentUser?.id ?? null, sessionStore.accessToken] as const,
+    [
+      sessionStore.currentProfile?.id ?? null,
+      sessionStore.currentProfile === null ? null : sessionStore.accessToken,
+    ] as const,
   ([accountId, accessToken]) =>
     notificationStore.setSession(accountId, accessToken),
 );
@@ -336,7 +352,7 @@ function getInternalAuthReturnPath(value: unknown): string | undefined {
 async function resumeRegistration(): Promise<void> {
   if (
     sessionStore.status !== "authenticated" ||
-    sessionStore.currentProfile?.name !== null
+    !sessionStore.needsCustomerRegistration
   ) {
     return;
   }

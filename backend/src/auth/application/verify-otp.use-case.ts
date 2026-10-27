@@ -19,6 +19,8 @@ import {
 } from "./verify-otp.use-case.constants";
 import type { VerifyOtpResult } from "./verify-otp.use-case.types";
 
+import type { AuthContext } from "../domain/auth.types";
+
 export class SessionCreationUnavailableError extends Error {
   constructor() {
     super("Session creation is unavailable.");
@@ -32,7 +34,11 @@ export class VerifyOtpUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(phone: string, code: string): Promise<VerifyOtpResult> {
+  async execute(
+    phone: string,
+    code: string,
+    context?: AuthContext,
+  ): Promise<VerifyOtpResult> {
     const phoneE164 = normalizeRussianPhone(phone);
     assertValidOtpCode(code);
 
@@ -69,6 +75,7 @@ export class VerifyOtpUseCase {
         sessionId,
         refreshTokenHash,
         sessionExpiresAt,
+        context,
       );
 
     return this.createResult(authentication, challenge, now, refreshToken);

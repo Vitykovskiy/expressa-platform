@@ -19,6 +19,7 @@ export interface SessionState {
   otpExpiresAt: number | null;
   otpCooldownUntil: number | null;
   otpRequestMetadata: OtpRequestMetadata | null;
+  otpRequestId: number;
   otpRequestedAt: number | null;
   pendingPhone: string | null;
   phone: string | null;

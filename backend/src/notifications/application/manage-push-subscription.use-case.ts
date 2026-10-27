@@ -1,3 +1,4 @@
+import type { AuthContext } from "../../auth/domain/auth.types";
 import type {
   PushAssociationActor,
   PushAssociationRepository,
@@ -44,7 +45,10 @@ export class ManagePushSubscriptionUseCase {
           return { association: "none", version: null };
         }
         return {
-          association: stored.userId === userId ? "current" : "other",
+          association:
+            stored.userId === userId && stored.context === actor?.context
+              ? "current"
+              : "other",
           version: stored.associationVersion,
         };
       },
@@ -58,7 +62,7 @@ export class ManagePushSubscriptionUseCase {
     expectedVersion: string | null,
     actor?: PushAssociationActor,
   ): Promise<{ association: "current"; version: string }> {
-    if (actor?.role !== "customer") {
+    if (actor?.context !== "customer") {
       throw actor === undefined
         ? new PushAssociationUnauthorizedError()
         : new PushAssociationAccessDeniedError();
@@ -74,6 +78,7 @@ export class ManagePushSubscriptionUseCase {
           subscription,
           action,
           expectedVersion,
+          actor.context,
           true,
         ),
     );
@@ -86,7 +91,11 @@ export class ManagePushSubscriptionUseCase {
     expectedVersion: string | null,
     actor?: PushAssociationActor,
   ): Promise<{ association: "current"; version: string }> {
-    if (actor?.role !== "barista") {
+    if (
+      actor?.context !== "staff" ||
+      actor.employee?.role !== "barista" ||
+      !actor.employee.accessEnabled
+    ) {
       throw actor === undefined
         ? new PushAssociationUnauthorizedError()
         : new PushAssociationAccessDeniedError();
@@ -102,6 +111,7 @@ export class ManagePushSubscriptionUseCase {
           subscription,
           action,
           expectedVersion,
+          actor.context,
           false,
         ),
     );
@@ -113,6 +123,7 @@ export class ManagePushSubscriptionUseCase {
     subscription: PushSubscriptionCommand,
     action: "enable" | "transfer",
     expectedVersion: string | null,
+    context: AuthContext,
     allowForeignTransfer: boolean,
   ): Promise<{ association: "current"; version: string }> {
     if (!isValidPushSubscriptionProof(subscription)) {
@@ -132,6 +143,7 @@ export class ManagePushSubscriptionUseCase {
       const stored = await repository.findByEndpoint(subscription.endpoint);
       if (
         stored?.userId === userId &&
+        stored.context === context &&
         hasPushSubscriptionProof(stored, subscription)
       ) {
         return { association: "current", version: stored.associationVersion };
@@ -150,10 +162,13 @@ export class ManagePushSubscriptionUseCase {
     ) {
       throw new PushAssociationConflictError();
     }
+    if (stored.context !== context) {
+      throw new PushAssociationConflictError();
+    }
     if (stored.userId === userId) {
       return { association: "current", version: stored.associationVersion };
     }
-    if (!allowForeignTransfer || stored.ownerRole !== "customer") {
+    if (!allowForeignTransfer || stored.context !== "customer") {
       throw new PushAssociationConflictError();
     }
     const version = await repository.transferAssociation(
@@ -187,6 +202,7 @@ export class ManagePushSubscriptionUseCase {
         }
         if (
           stored.userId !== userId ||
+          stored.context !== actor?.context ||
           stored.associationVersion !== expectedVersion ||
           !hasPushSubscriptionProof(stored, subscription)
         ) {
@@ -212,7 +228,12 @@ export class ManagePushSubscriptionUseCase {
     ) {
       throw new PushAssociationUnauthorizedError();
     }
-    if (actor.role !== "customer" && actor.role !== "barista") {
+    if (
+      actor.context !== "customer" &&
+      (actor.context !== "staff" ||
+        actor.employee?.role !== "barista" ||
+        !actor.employee.accessEnabled)
+    ) {
       throw new PushAssociationAccessDeniedError();
     }
     if (this.repository.run === undefined) {

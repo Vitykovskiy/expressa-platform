@@ -1,7 +1,10 @@
 import { parseApiHttpError } from "../../shared/api/http-error";
 import { requestApi } from "../../shared/api/request";
 import type { ApiResult } from "../../shared/api/request.types";
-import { SESSION_ENDPOINTS } from "./session.constants";
+import {
+  SESSION_ACCOUNT_ID_PATTERN,
+  SESSION_ENDPOINTS,
+} from "./session.constants";
 import type {
   AccessTokenDto,
   CurrentUserDto,
@@ -17,7 +20,7 @@ export async function verifySession(
 ): Promise<TokenOutcome> {
   const response = await requestApi(SESSION_ENDPOINTS.verify, {
     method: "POST",
-    body: { phone, code },
+    body: { phone, code, context: "staff" },
     signal,
   });
 
@@ -81,7 +84,13 @@ export async function readIdentity(
 
   return {
     kind: "identity",
-    identity: { id: dto.id, phone: dto.phoneE164, role: dto.role },
+    identity: {
+      id: dto.id,
+      phone: dto.phoneE164,
+      context: dto.context,
+      customer: dto.customer,
+      employee: dto.employee,
+    },
   };
 }
 
@@ -162,7 +171,8 @@ function isCurrentUser(value: unknown): value is CurrentUserDto {
   if (
     !("id" in value) ||
     typeof value.id !== "string" ||
-    value.id.trim().length === 0
+    value.id !== value.id.trim() ||
+    !SESSION_ACCOUNT_ID_PATTERN.test(value.id)
   ) {
     return false;
   }
@@ -175,10 +185,74 @@ function isCurrentUser(value: unknown): value is CurrentUserDto {
     return false;
   }
 
-  return (
+  if (!(
     "role" in value &&
     (value.role === "customer" ||
       value.role === "barista" ||
       value.role === "administrator")
+  )) {
+    return false;
+  }
+
+  if (
+    !("context" in value) ||
+    (value.context !== "customer" && value.context !== "staff")
+  ) {
+    return false;
+  }
+
+  if (!("customer" in value) || !("employee" in value)) {
+    return false;
+  }
+
+  if (value.customer !== null) {
+    const customer = value.customer;
+
+    if (
+      value.name === null ||
+      value.name.trim() === "" ||
+      typeof customer !== "object" ||
+      Array.isArray(customer) ||
+      !("registeredAt" in customer) ||
+      typeof customer.registeredAt !== "string" ||
+      !isMembershipTimestamp(customer.registeredAt)
+    ) {
+      return false;
+    }
+  }
+
+  if (value.employee !== null) {
+    const employee = value.employee;
+
+    if (
+      typeof employee !== "object" ||
+      Array.isArray(employee) ||
+      !("role" in employee) ||
+      (employee.role !== "barista" && employee.role !== "administrator") ||
+      !("accessEnabled" in employee) ||
+      typeof employee.accessEnabled !== "boolean"
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isMembershipTimestamp(value: string): boolean {
+  if (
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      value,
+    ) ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    return false;
+  }
+
+  const calendarDate = value.slice(0, 10);
+
+  return (
+    new Date(`${calendarDate}T00:00:00Z`).toISOString().slice(0, 10) ===
+    calendarDate
   );
 }

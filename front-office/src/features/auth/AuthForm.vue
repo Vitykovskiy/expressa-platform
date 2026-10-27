@@ -118,12 +118,14 @@
   >
     <ui-text-field
       id="auth-name"
+      :readonly="props.nameReadonly"
       autocomplete="name"
       aria-label="Ваше имя"
       :aria-describedby="
         props.state.errorMessage ? 'auth-name-error' : undefined
       "
       :aria-invalid="Boolean(props.state.errorMessage)"
+      :error="Boolean(props.state.errorMessage)"
       autofocus
       base-color="var(--customer-border)"
       bg-color="var(--customer-color-surface-subtle)"
@@ -209,7 +211,9 @@ function formatPhone(value: string): string {
 }
 
 function updateName(name: string) {
-  if (!isLoading.value) emit("updateName", name);
+  if (!isLoading.value && !props.nameReadonly) {
+    emit("updateName", name);
+  }
 }
 
 function sendCode() {

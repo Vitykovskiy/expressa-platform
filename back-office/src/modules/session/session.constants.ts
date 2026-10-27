@@ -6,3 +6,6 @@ export const SESSION_ENDPOINTS = {
 } as const;
 
 export const MILLISECONDS_PER_SECOND = 1000;
+
+export const SESSION_ACCOUNT_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

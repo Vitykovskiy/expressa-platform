@@ -1,6 +1,8 @@
+import type { UsersTab } from "./users.types";
 import type {
   CreateUserInput,
-  UserPresentation,
+  EmployeePresentation,
+  CustomerPresentation,
   UserRole,
   UsersDialog,
   UsersFilter,
@@ -8,7 +10,9 @@ import type {
 } from "./components/Users.types";
 
 export interface UsersPageProps {
-  readonly users: readonly UserPresentation[];
+  readonly tab: UsersTab;
+  readonly customers: readonly CustomerPresentation[];
+  readonly employees: readonly EmployeePresentation[];
   readonly query: string;
   readonly filter: UsersFilter;
   readonly loading: boolean;
@@ -21,15 +25,16 @@ export interface UsersPageProps {
 }
 
 export interface UsersPageEmits {
+  "update:tab": [value: UsersTab];
   "update:query": [value: string];
   "update:filter": [value: UsersFilter];
   create: [input: CreateUserInput];
   openCreate: [];
-  openRole: [user: UserPresentation];
-  openAccess: [user: UserPresentation];
+  openRole: [user: EmployeePresentation];
+  openAccess: [user: EmployeePresentation];
   closeDialog: [];
   assignRole: [id: string, role: UserRole];
-  setBlocked: [id: string, blocked: boolean];
+  setWorkAccess: [id: string, enabled: boolean];
   retry: [];
   updateDraft: [input: CreateUserInput];
   selectRole: [role: UserRole];

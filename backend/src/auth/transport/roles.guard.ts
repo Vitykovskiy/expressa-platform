@@ -32,7 +32,7 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    if (isAllowed(request.auth.role, policy)) {
+    if (this.isAllowed(request.auth, policy)) {
       return true;
     }
 
@@ -40,6 +40,32 @@ export class RolesGuard implements CanActivate {
       { code: "ACCESS_DENIED", details: null, message: "Access denied" },
       HttpStatus.FORBIDDEN,
     );
+  }
+
+  private isAllowed(auth: CurrentAuth, policy: RolePolicy): boolean {
+    if (policy === "CustomerContext") {
+      return auth.context === "customer";
+    }
+    if (policy === "Customer") {
+      return auth.context === "customer" && auth.customer !== null;
+    }
+    const staff =
+      auth.context === "staff" &&
+      auth.employee !== null &&
+      auth.employee.accessEnabled;
+    if (policy === "CustomerOrBarista") {
+      return (
+        auth.context === "customer" ||
+        (staff && auth.employee?.role === "barista")
+      );
+    }
+    if (policy === "Staff") {
+      return staff;
+    }
+    if (policy === "Administrator") {
+      return staff && auth.employee?.role === "administrator";
+    }
+    return false;
   }
 }
 
@@ -51,14 +77,4 @@ function isAuthenticatedRequest(value: unknown): value is AuthenticatedRequest {
     typeof value.headers === "object" &&
     value.headers !== null
   );
-}
-
-function isAllowed(role: CurrentAuth["role"], policy: RolePolicy): boolean {
-  if (policy === "Customer") return role === "customer";
-  if (policy === "CustomerOrBarista")
-    return role === "customer" || role === "barista";
-  if (policy === "Staff") return role === "barista" || role === "administrator";
-  if (policy === "Administrator") return role === "administrator";
-
-  return false;
 }

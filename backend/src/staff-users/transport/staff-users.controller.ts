@@ -1,9 +1,8 @@
+import { toAccountDto, executeIdentityCommand } from "./membership.projection";
 import {
   Body,
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
   Param,
   Patch,
   Post,
@@ -30,7 +29,6 @@ import {
   ApiValidationErrorDto,
 } from "../../platform/observability/http-error.dto";
 import { ManageStaffUsersUseCase } from "../application/manage-staff-users.use-case";
-import { StaffUserError } from "../domain/staff-user.policy";
 import type { StaffUser } from "../domain/staff-user.types";
 import {
   ChangeStaffUserBlockDto,
@@ -62,7 +60,11 @@ export class StaffUsersController {
   constructor(private readonly users: ManageStaffUsersUseCase) {}
 
   @Get()
-  @ApiOperation({ summary: "Список пользователей" })
+  @ApiOperation({
+    summary: "Список аккаунтов",
+    description:
+      "Published account projection: enabled employee role, otherwise customer; blocked is GLOBAL account block. Customer and employee memberships are independent required fields. New UI uses explicit employees/customers resources.",
+  })
   @ApiQuery({
     name: "search",
     type: String,
@@ -95,6 +97,7 @@ export class StaffUsersController {
       this.users.create({
         ...details,
         actorId: auth.userId,
+        sessionId: auth.sessionId,
         requestId: this.parseRequestId(request),
       }),
     );
@@ -102,7 +105,11 @@ export class StaffUsersController {
 
   @Patch(":userId/role")
   @ApiParam({ name: "userId", format: "uuid" })
-  @ApiOperation({ summary: "Изменить роль пользователя" })
+  @ApiOperation({
+    summary: "Изменить участие аккаунта",
+    description:
+      "Staff role attaches/changes employee without re-enabling disabled access or deleting customer membership. customer disables work access and enrolls customer only with an existing canonical name. No-op uses resulting stored memberships. Work changes revoke staff sessions/push only.",
+  })
   @ApiResponse({ status: 200, type: StaffUserDto })
   @ApiResponse({
     status: 404,
@@ -126,6 +133,7 @@ export class StaffUsersController {
         userId: parseUserId(userId),
         role,
         actorId: auth.userId,
+        sessionId: auth.sessionId,
         requestId: this.parseRequestId(request),
       }),
     );
@@ -133,7 +141,11 @@ export class StaffUsersController {
 
   @Patch(":userId/block")
   @ApiParam({ name: "userId", format: "uuid" })
-  @ApiOperation({ summary: "Заблокировать или разблокировать пользователя" })
+  @ApiOperation({
+    summary: "Глобальная блокировка аккаунта",
+    description:
+      "Block revokes ALL session and push contexts. Unblock restores eligibility only. Employee work-access actions use /employees/{userId}/access.",
+  })
   @ApiResponse({ status: 200, type: StaffUserDto })
   @ApiResponse({
     status: 404,
@@ -160,10 +172,12 @@ export class StaffUsersController {
         userId: parseUserId(userId),
         blocked,
         actorId: auth.userId,
+        sessionId: auth.sessionId,
         requestId: this.parseRequestId(request),
       }),
     );
   }
+
   private parseRequestId(request: StaffUsersRequestContext): string {
     if (
       typeof request.requestId !== "string" ||
@@ -175,33 +189,12 @@ export class StaffUsersController {
   }
 
   private toStaffUserDto(user: StaffUser): StaffUserDto {
-    return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
+    return toAccountDto(user);
   }
 
   private async executeUserCommand(
     command: () => Promise<StaffUser>,
   ): Promise<StaffUserDto> {
-    try {
-      return this.toStaffUserDto(await command());
-    } catch (error) {
-      if (!(error instanceof StaffUserError)) {
-        throw error;
-      }
-      let status = HttpStatus.CONFLICT;
-      if (error.code === "USER_NOT_FOUND") {
-        status = HttpStatus.NOT_FOUND;
-      }
-      if (error.code === "USER_ACCESS_DENIED") {
-        status = HttpStatus.FORBIDDEN;
-      }
-      throw new HttpException(
-        { code: error.code, message: error.message, details: null },
-        status,
-      );
-    }
+    return executeIdentityCommand(async () => toAccountDto(await command()));
   }
 }

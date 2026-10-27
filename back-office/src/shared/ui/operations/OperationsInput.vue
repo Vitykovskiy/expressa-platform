@@ -13,7 +13,7 @@
       <select
         v-if="isSelectField"
         v-bind="{ ...$attrs, ...nativeFieldAttributes }"
-        class="operations-field__input"
+        class="operations-field__input operations-field__input--select"
         @change="emitNativeValue"
       >
         <option
@@ -136,6 +136,11 @@ function emitNativeValue(event: globalThis.Event) {
 .operations-field__input::placeholder {
   color: var(--color-foreground-muted);
   opacity: 1;
+}
+
+/* Reset Vuetify скрывает нативную стрелку; select должен оставаться видимым выбором. */
+.operations-field__input--select {
+  appearance: auto;
 }
 
 .operations-field__input[type="time"] {

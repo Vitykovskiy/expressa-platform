@@ -27,6 +27,11 @@ back-office/
 Сначала выберите бизнес-область в `modules`, затем файл по обязанности:
 Page/Route, store, API, mapper или дочерний компонент. Глобальных FSD-слоёв
 и пустых каталогов нет; соседние типы/константы остаются у своего владельца.
+Vue Router 5.4.0 выбирает пять страниц: /orders, /availability, /catalog,
+/users, /settings. `/` переводит на orders; неизвестный application path —
+на чистый orders. Бизнес-query заказов проверяет orders-navigation;
+bootstrap ожидает router readiness перед mount persistent App. Решение —
+[ADR-016](../docs/20-architecture/ADR/ADR-016-back-office-vue-router.md).
 Точное направление импортов и исключения session — в
 [размещении кода](docs/80-conventions/code-layout.md).
 

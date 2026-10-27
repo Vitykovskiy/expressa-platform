@@ -31,6 +31,7 @@
       <AuthForm
         v-if="presentation.content === 'form'"
         :state="state"
+        :name-readonly="props.nameReadonly"
         :is-loading="props.isLoading"
         :otp="otp"
         :resend-remaining-seconds="resendRemainingSeconds"

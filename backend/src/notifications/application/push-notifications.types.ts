@@ -1,3 +1,4 @@
+import type { AuthContext } from "../../auth/domain/auth.types";
 export type PushSubscription = {
   id: string;
   userId: string;
@@ -5,11 +6,11 @@ export type PushSubscription = {
   p256dh: string;
   auth: string;
   associationVersion: string;
-  ownerRole?: "customer" | "barista" | "administrator";
+  context: AuthContext;
 };
 export type PushSubscriptionCommand = Omit<
   PushSubscription,
-  "id" | "associationVersion" | "ownerRole"
+  "id" | "associationVersion" | "context"
 >;
 export type PushAssociation = {
   association: "none" | "current" | "other";

@@ -1,8 +1,18 @@
+import {
+  CustomerMembershipDto,
+  EmployeeMembershipDto,
+} from "../../auth/transport/auth.dto";
 import { ApiProperty } from "@nestjs/swagger";
 import type { UserRole } from "../../auth/domain/auth.types";
 import { userRoles } from "../../auth/domain/auth.constants";
 
 export class StaffUserDto {
+  @ApiProperty({ type: () => CustomerMembershipDto, nullable: true })
+  customer!: CustomerMembershipDto | null;
+
+  @ApiProperty({ type: () => EmployeeMembershipDto, nullable: true })
+  employee!: EmployeeMembershipDto | null;
+
   @ApiProperty({ format: "uuid" })
   id!: string;
 
@@ -12,7 +22,11 @@ export class StaffUserDto {
   @ApiProperty({ pattern: "^\\+7[0-9]{10}$" })
   phoneE164!: string;
 
-  @ApiProperty({ enum: userRoles })
+  @ApiProperty({
+    enum: userRoles,
+    description:
+      "Compatibility account projection: enabled employee role, otherwise customer; not authorization evidence.",
+  })
   role!: UserRole;
 
   @ApiProperty()

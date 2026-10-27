@@ -1,10 +1,16 @@
-import type { UserPresentation } from "./Users.types";
+import type { EmployeePresentation } from "./Users.types";
 
 export interface UserRowProps {
-  readonly user: UserPresentation;
+  readonly user: EmployeePresentation;
 }
 
 export interface UserRowEmits {
-  role: [user: UserPresentation];
-  access: [user: UserPresentation];
+  role: [
+    user: EmployeePresentation,
+    trigger: globalThis.HTMLButtonElement | null,
+  ];
+  access: [
+    user: EmployeePresentation,
+    trigger: globalThis.HTMLButtonElement | null,
+  ];
 }

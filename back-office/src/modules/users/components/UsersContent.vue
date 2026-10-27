@@ -1,11 +1,28 @@
 <template>
-  <section class="users-content">
+  <section
+    ref="directory"
+    class="users-content"
+    tabindex="-1"
+    aria-label="Пользователи"
+  >
     <header class="users-content__header">
       <h1 class="users-content__title">Пользователи</h1>
-      <button class="users-content__add" type="button" @click="emit('create')">
+      <button
+        v-if="employeesSelected"
+        class="users-content__add"
+        type="button"
+        @click="requestCreate"
+      >
         <img :src="USER_ASSETS.plus" alt="" />Добавить
       </button>
     </header>
+    <OperationsTabs
+      class="users-content__identity-tabs"
+      label="Сотрудники и клиенты"
+      :options="USERS_TABS"
+      :model-value="props.tab"
+      @update:model-value="selectTab"
+    />
     <div class="users-content__search">
       <OperationsInput
         type="search"
@@ -17,8 +34,9 @@
       />
     </div>
     <OperationsTabs
+      v-if="employeesSelected"
       class="users-content__filters"
-      label="Роль и доступ пользователя"
+      label="Роль и рабочий доступ сотрудника"
       :options="USERS_FILTERS"
       :model-value="props.filter"
       @update:model-value="selectFilter"
@@ -35,13 +53,28 @@
           @click="emit('retry')"
         />
       </div>
-      <ul v-if="hasUsers" class="users-content__list" aria-label="Пользователи">
+      <ul
+        v-if="hasEmployees"
+        class="users-content__list"
+        aria-label="Сотрудники"
+      >
         <UserRow
-          v-for="user in props.users"
+          v-for="user in props.employees"
           :key="user.id"
           :user="user"
-          @role="emit('role', $event)"
-          @access="emit('access', $event)"
+          @role="(user, trigger) => emit('role', user, trigger)"
+          @access="(user, trigger) => emit('access', user, trigger)"
+        />
+      </ul>
+      <ul
+        v-else-if="hasCustomers"
+        class="users-content__list"
+        aria-label="Клиенты"
+      >
+        <CustomerRow
+          v-for="customer in props.customers"
+          :key="customer.id"
+          :customer="customer"
         />
       </ul>
       <div v-else-if="canShowEmpty" class="users-content__empty" role="status">
@@ -53,10 +86,11 @@
       </div>
     </div>
     <button
+      v-if="employeesSelected"
       class="users-content__floating"
       type="button"
       aria-label="Добавить пользователя"
-      @click="emit('create')"
+      @click="requestCreate"
     >
       <img :src="USER_ASSETS.plusMobile" alt="" />
     </button>
@@ -64,12 +98,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useTemplateRef } from "vue";
 import OperationsInput from "../../../shared/ui/operations/OperationsInput.vue";
 import OperationsTabs from "../../../shared/ui/operations/OperationsTabs.vue";
 import OperationsButton from "../../../shared/ui/operations/OperationsButton.vue";
-import { USER_ASSETS, USERS_FILTERS } from "./Users.constants";
+import { USER_ASSETS, USERS_FILTERS, USERS_TABS } from "./Users.constants";
 import UserRow from "./UserRow.vue";
+import CustomerRow from "./CustomerRow.vue";
 import type {
   UsersContentProps,
   UsersContentEmits,
@@ -77,8 +112,18 @@ import type {
 
 const props = defineProps<UsersContentProps>();
 const emit = defineEmits<UsersContentEmits>();
+const directory = useTemplateRef<globalThis.HTMLElement>("directory");
 
-const hasUsers = computed(() => props.users.length > 0);
+defineExpose({ focusDirectory });
+
+const employeesSelected = computed(() => props.tab === "employees");
+const hasEmployees = computed(
+  () => employeesSelected.value && props.employees.length > 0,
+);
+const hasCustomers = computed(
+  () => !employeesSelected.value && props.customers.length > 0,
+);
+const hasUsers = computed(() => hasEmployees.value || hasCustomers.value);
 
 // Полученный список остаётся видимым при обновлении и ошибке чтения.
 const canShowEmpty = computed(() => !props.loading && props.error === null);
@@ -86,7 +131,9 @@ const canShowEmpty = computed(() => !props.loading && props.error === null);
 const loadingMessage = computed(() =>
   hasUsers.value
     ? "Обновляем список. Ниже — ранее полученные данные."
-    : "Загрузка пользователей…",
+    : employeesSelected.value
+      ? "Загрузка сотрудников…"
+      : "Загрузка клиентов…",
 );
 
 const emptyMessage = computed(() => {
@@ -98,10 +145,32 @@ const emptyMessage = computed(() => {
   }
 
   return {
-    title: "Пользователей нет",
-    description: "Они появятся после добавления",
+    title: employeesSelected.value ? "Сотрудников нет" : "Клиентов нет",
+    description: employeesSelected.value
+      ? "Они появятся после добавления"
+      : "Они появятся после регистрации",
   };
 });
+
+function focusDirectory() {
+  directory.value?.focus();
+}
+
+function requestCreate(event: globalThis.MouseEvent) {
+  const trigger = event.currentTarget;
+
+  if (trigger instanceof globalThis.HTMLButtonElement) {
+    emit("create", trigger);
+  }
+}
+
+function selectTab(value: string) {
+  const option = USERS_TABS.find((tab) => tab.id === value);
+
+  if (option) {
+    emit("update:tab", option.id);
+  }
+}
 
 function selectFilter(value: string) {
   const option = USERS_FILTERS.find((filter) => filter.id === value);
@@ -224,8 +293,12 @@ function selectFilter(value: string) {
   .users-content__search {
     padding: 16px 16px 12px;
   }
+  .users-content__identity-tabs,
   .users-content__filters {
     padding-inline: 16px;
+  }
+  .users-content__filters {
+    flex-wrap: wrap;
   }
   .users-content__results {
     padding: 16px 16px 0;

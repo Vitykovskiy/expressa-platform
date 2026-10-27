@@ -5,22 +5,26 @@
       v-if="props.needsInspection"
       type="button"
       class="users-page-notice__action"
-      @click="emit('resumeCommand')"
+      @click="resumeCommand"
     >
       Открыть изменение
     </button>
   </div>
   <UsersContent
-    :users="props.users"
+    ref="content"
+    :tab="props.tab"
+    :customers="props.customers"
+    :employees="props.employees"
     :query="props.query"
     :filter="props.filter"
     :loading="props.loading"
     :error="props.error"
+    @update:tab="emit('update:tab', $event)"
     @update:query="emit('update:query', $event)"
     @update:filter="emit('update:filter', $event)"
-    @create="emit('openCreate')"
-    @role="emit('openRole', $event)"
-    @access="emit('openAccess', $event)"
+    @create="openCreate"
+    @role="openRole"
+    @access="openAccess"
     @retry="emit('retry')"
   />
   <AddUserDialog
@@ -43,23 +47,27 @@
     :error="props.commandError"
     @close="emit('closeDialog')"
     @assign-role="assignRole"
-    @set-blocked="setBlocked"
+    @set-work-access="setWorkAccess"
     @select-role="emit('selectRole', $event)"
     @inspect="emit('inspect')"
   />
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useTemplateRef, watch } from "vue";
 import UsersContent from "./components/UsersContent.vue";
 import AddUserDialog from "./components/AddUserDialog.vue";
 import UserAccessDialog from "./components/UserAccessDialog.vue";
-import type { UserRole } from "./components/Users.types";
+import type { EmployeePresentation, UserRole } from "./components/Users.types";
 import type { UsersPageProps, UsersPageEmits } from "./UsersPage.types";
 import "../../shared/ui/operations/operations.tokens.css";
 
 const props = defineProps<UsersPageProps>();
 const emit = defineEmits<UsersPageEmits>();
+const content = useTemplateRef<InstanceType<typeof UsersContent>>("content");
+let dialogTrigger: globalThis.HTMLButtonElement | null = null;
+
+watch(() => props.dialog !== null, restoreDialogFocus, { flush: "post" });
 
 const createDraft = computed(() => {
   const dialog = props.dialog;
@@ -87,12 +95,65 @@ const dialogKey = computed(() => {
   return `${dialog.kind}:${dialog.user.id}`;
 });
 
+function openCreate(trigger: globalThis.HTMLButtonElement) {
+  dialogTrigger = trigger;
+  emit("openCreate");
+}
+
+function openRole(
+  user: EmployeePresentation,
+  trigger: globalThis.HTMLButtonElement | null,
+) {
+  dialogTrigger = trigger;
+  emit("openRole", user);
+}
+
+function openAccess(
+  user: EmployeePresentation,
+  trigger: globalThis.HTMLButtonElement | null,
+) {
+  dialogTrigger = trigger;
+  emit("openAccess", user);
+}
+
+function resumeCommand(event: globalThis.MouseEvent) {
+  const trigger = event.currentTarget;
+
+  if (trigger instanceof globalThis.HTMLButtonElement) {
+    dialogTrigger = trigger;
+  }
+
+  emit("resumeCommand");
+}
+
+function restoreDialogFocus(open: boolean) {
+  if (open) {
+    return;
+  }
+
+  const trigger = dialogTrigger;
+
+  dialogTrigger = null;
+
+  // Меню уже снято с DOM; возвращаемся к его настоящей кнопке в строке.
+  if (trigger?.isConnected) {
+    trigger.focus();
+
+    if (trigger.ownerDocument.activeElement === trigger) {
+      return;
+    }
+  }
+
+  // После команды строка может исчезнуть из текущего фильтра.
+  content.value?.focusDirectory();
+}
+
 function assignRole(id: string, role: UserRole) {
   emit("assignRole", id, role);
 }
 
-function setBlocked(id: string, blocked: boolean) {
-  emit("setBlocked", id, blocked);
+function setWorkAccess(id: string, enabled: boolean) {
+  emit("setWorkAccess", id, enabled);
 }
 </script>
 

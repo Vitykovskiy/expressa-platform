@@ -83,7 +83,7 @@
           type="submit"
           class="user-access-dialog__action"
           :class="submitClass"
-          :disabled="cannotSubmit"
+          :disabled="submitting"
         >
           {{ submitLabel }}
         </button>
@@ -151,19 +151,12 @@ const submitting = computed(
 
 const locked = computed(() => props.phase !== "editing");
 
-const cannotSubmit = computed(() => {
-  if (locked.value) {
-    // Проверка неизвестного исхода доступна и без редактирования роли.
-    return submitting.value;
-  }
-
-  return isRole.value && props.selectedRole === null;
-});
-
 const description = computed(() =>
   isBlock.value
-    ? "Пользователь потеряет доступ к системе. Его данные сохранятся."
-    : "Пользователь снова получит доступ к системе.",
+    ? "Сотрудник потеряет рабочий доступ. Клиентский аккаунт и заказы сохранятся."
+    : props.user.accountBlocked
+      ? "Аккаунт заблокирован глобально. Рабочий доступ нельзя восстановить до снятия этой блокировки."
+      : "Сотрудник снова получит рабочий доступ после нового входа.",
 );
 
 const submitLabel = computed(() => {
@@ -223,7 +216,7 @@ function requestClose(open: boolean) {
 }
 
 function submit() {
-  if (cannotSubmit.value) {
+  if (submitting.value) {
     return;
   }
 
@@ -239,13 +232,13 @@ function submit() {
     return;
   }
 
-  if (isRole.value && props.selectedRole !== null) {
+  if (isRole.value) {
     emit("assignRole", props.user.id, props.selectedRole);
 
     return;
   }
 
-  emit("setBlocked", props.user.id, isBlock.value);
+  emit("setWorkAccess", props.user.id, !isBlock.value);
 }
 </script>
 

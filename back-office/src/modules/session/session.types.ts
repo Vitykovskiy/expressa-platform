@@ -9,16 +9,31 @@ export interface CurrentUserDto {
   readonly id: string;
   readonly phoneE164: string;
   readonly role: "customer" | "barista" | "administrator";
+  readonly context: "customer" | "staff";
+  readonly customer: { readonly registeredAt: string } | null;
+  readonly employee: EmployeeMembership | null;
+}
+
+export interface EmployeeMembership {
+  readonly role: "barista" | "administrator";
+  readonly accessEnabled: boolean;
 }
 
 export interface SessionIdentity {
   readonly id: string;
   readonly phone: string;
-  readonly role: "customer" | "barista" | "administrator";
+  readonly context: "customer" | "staff";
+  readonly customer: { readonly registeredAt: string } | null;
+  readonly employee: EmployeeMembership | null;
+}
+
+export interface StaffIdentity extends SessionIdentity {
+  readonly context: "staff";
+  readonly employee: EmployeeMembership & { readonly accessEnabled: true };
 }
 
 export interface StaffSession {
-  readonly identity: SessionIdentity;
+  readonly identity: StaffIdentity;
   readonly accessToken: string;
   readonly expiresAt: number;
 }

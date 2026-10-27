@@ -25,11 +25,19 @@ export type AccessSession = {
 export type CurrentUser = {
   id: string;
   phoneE164: string;
-  role: "customer" | "barista" | "administrator";
+  name: string | null;
+  context: "customer" | "staff";
+  customer: { registeredAt: string } | null;
+  employee: {
+    role: "barista" | "administrator";
+    accessEnabled: boolean;
+  } | null;
 };
 
-export type CurrentUserProfile = CurrentUser & {
-  name: string | null;
+export type CurrentUserProfile = CurrentUser;
+
+export type CurrentUserProfileDto = CurrentUserProfile & {
+  role: "customer" | "barista" | "administrator";
 };
 
 export type AuthProfileApi = Omit<AuthApi, "getCurrentUser"> & {

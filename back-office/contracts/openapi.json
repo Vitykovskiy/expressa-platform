@@ -289,6 +289,7 @@
     },
     "/api/v2/me/registration": {
       "post": {
+        "description": "Customer context only; no prior customer membership required. First enrollment preserves a canonical staff name or returns USER_NAME_CONFLICT. Completed repeats return the stored profile without overwriting name; no cookie replacement or staff privilege change.",
         "operationId": "MeController_completeRegistration",
         "parameters": [],
         "requestBody": {
@@ -344,6 +345,16 @@
           },
           "403": {
             "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "USER_NAME_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -3877,7 +3888,7 @@
     },
     "/api/v2/push/subscriptions/inspect": {
       "post": {
-        "description": "Доступно Customer и Barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
+        "description": "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Проверка точных endpoint и ключей не раскрывает владельца чужой привязки.",
         "operationId": "PushSubscriptionsController_inspect",
         "parameters": [],
         "requestBody": {
@@ -3945,7 +3956,7 @@
     },
     "/api/v2/push/subscriptions/association": {
       "put": {
-        "description": "Доступно Customer и Barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer переносит только привязку текущего customer с proof и expectedVersion. Текущие роль, блокировка и действующая сессия проверяются атомарно с решением и записью; блокировка или отзыв, завершённые первыми, запрещают повторное создание связи.",
+        "description": "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Barista не переносит чужую привязку; точная собственная привязка сохраняет текущую версию. Customer переносит только customer-контекстную привязку с proof и expectedVersion. Контекст, актуальное employee-участие, блокировка и действующая сессия проверяются атомарно с решением и записью; блокировка или отзыв, завершённые первыми, запрещают повторное создание связи.",
         "operationId": "PushSubscriptionsController_associate",
         "parameters": [],
         "requestBody": {
@@ -4021,7 +4032,7 @@
         ]
       },
       "delete": {
-        "description": "Доступно Customer и Barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
+        "description": "Доступно действующему customer-контексту, включая customer=null до регистрации, и staff-контексту включённого barista. Удаляется только собственная привязка с точными endpoint, ключами и expectedVersion; отсутствие привязки возвращает 204.",
         "operationId": "PushSubscriptionsController_deleteAssociation",
         "parameters": [],
         "requestBody": {
@@ -4092,6 +4103,7 @@
     },
     "/api/v3/backoffice/users": {
       "get": {
+        "description": "Published account projection: enabled employee role, otherwise customer; blocked is GLOBAL account block. Customer and employee memberships are independent required fields. New UI uses explicit employees/customers resources.",
         "operationId": "StaffUsersController_list",
         "parameters": [
           {
@@ -4182,7 +4194,7 @@
             "bearer": []
           }
         ],
-        "summary": "Список пользователей",
+        "summary": "Список аккаунтов",
         "tags": [
           "backoffice-users"
         ]
@@ -4275,6 +4287,7 @@
     },
     "/api/v3/backoffice/users/{userId}/role": {
       "patch": {
+        "description": "Staff role attaches/changes employee without re-enabling disabled access or deleting customer membership. customer disables work access and enrolls customer only with an existing canonical name. No-op uses resulting stored memberships. Work changes revoke staff sessions/push only.",
         "operationId": "StaffUsersController_changeRole",
         "parameters": [
           {
@@ -4374,7 +4387,7 @@
             "bearer": []
           }
         ],
-        "summary": "Изменить роль пользователя",
+        "summary": "Изменить участие аккаунта",
         "tags": [
           "backoffice-users"
         ]
@@ -4382,6 +4395,7 @@
     },
     "/api/v3/backoffice/users/{userId}/block": {
       "patch": {
+        "description": "Block revokes ALL session and push contexts. Unblock restores eligibility only. Employee work-access actions use /employees/{userId}/access.",
         "operationId": "StaffUsersController_changeBlocked",
         "parameters": [
           {
@@ -4481,9 +4495,486 @@
             "bearer": []
           }
         ],
-        "summary": "Заблокировать или разблокировать пользователя",
+        "summary": "Глобальная блокировка аккаунта",
         "tags": [
           "backoffice-users"
+        ]
+      }
+    },
+    "/api/v3/backoffice/employees": {
+      "get": {
+        "description": "Administrator; literal name/phone search. Strict single-value query. Ordered by name NULLS LAST, phoneE164, id.",
+        "operationId": "EmployeesController_list",
+        "parameters": [
+          {
+            "name": "blocked",
+            "required": false,
+            "in": "query",
+            "description": "Effective unavailable access: work disabled OR account globally blocked.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "barista",
+                "administrator"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeesResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Список сотрудников",
+        "tags": [
+          "backoffice-employees"
+        ]
+      },
+      "post": {
+        "description": "Reuse same phone/account/customer history; canonical-name conflicts are explicit. Existing employee membership is a phone conflict, including disabled staff. Revokes prior denied staff sessions.",
+        "operationId": "EmployeesController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollEmployeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "USER_PHONE_CONFLICT | USER_NAME_CONFLICT | USER_ACCESS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Добавить сотрудника",
+        "tags": [
+          "backoffice-employees"
+        ]
+      }
+    },
+    "/api/v3/backoffice/employees/{userId}/role": {
+      "patch": {
+        "description": "Preserves membership access/customer data; real change atomically revokes staff sessions/push only. Self/last-admin protections apply; equal role is no-op.",
+        "operationId": "EmployeesController_changeRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmployeeRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "USER_ACCESS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Изменить рабочую роль",
+        "tags": [
+          "backoffice-employees"
+        ]
+      }
+    },
+    "/api/v3/backoffice/employees/{userId}/access": {
+      "patch": {
+        "description": "Employment end retains employee role/customer history. Both transitions revoke staff sessions/push; re-enable never revives tokens. Global block prevents enable; this command does not globally block/unblock an account. Equal state is no-op.",
+        "operationId": "EmployeesController_changeAccess",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmployeeAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "USER_ACCESS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Изменить рабочий доступ",
+        "tags": [
+          "backoffice-employees"
+        ]
+      }
+    },
+    "/api/v3/backoffice/customers": {
+      "get": {
+        "description": "Administrator; literal name/phone search, strict single search query. Ordered by name NULLS LAST, phoneE164, id. No staff role/access/action fields.",
+        "operationId": "CustomersController_list",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomersResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Список зарегистрированных клиентов",
+        "tags": [
+          "backoffice-customers"
         ]
       }
     },
@@ -4739,6 +5230,14 @@
       "VerifyOtpDto": {
         "type": "object",
         "properties": {
+          "context": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "staff"
+            ],
+            "description": "Explicit app context. Omission infers enabled staff once under account lock, otherwise customer. Invalid supplied values are rejected."
+          },
           "phone": {
             "type": "string",
             "example": "+79991234567"
@@ -4776,9 +5275,65 @@
           "expiresInSeconds"
         ]
       },
+      "CustomerMembershipDto": {
+        "type": "object",
+        "properties": {
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "registeredAt"
+        ]
+      },
+      "EmployeeMembershipDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "barista",
+              "administrator"
+            ]
+          },
+          "accessEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "accessEnabled"
+        ]
+      },
       "CurrentUserDto": {
         "type": "object",
         "properties": {
+          "context": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "staff"
+            ]
+          },
+          "customer": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerMembershipDto"
+              }
+            ]
+          },
+          "employee": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeeMembershipDto"
+              }
+            ]
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -4795,10 +5350,14 @@
               "customer",
               "barista",
               "administrator"
-            ]
+            ],
+            "description": "Compatibility projection only; never a stored role, membership or authorization grant. Customer context and denied staff project customer."
           }
         },
         "required": [
+          "context",
+          "customer",
+          "employee",
           "name",
           "id",
           "phoneE164",
@@ -7034,6 +7593,24 @@
       "StaffUserDto": {
         "type": "object",
         "properties": {
+          "customer": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerMembershipDto"
+              }
+            ]
+          },
+          "employee": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeeMembershipDto"
+              }
+            ]
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -7052,7 +7629,8 @@
               "customer",
               "barista",
               "administrator"
-            ]
+            ],
+            "description": "Compatibility account projection: enabled employee role, otherwise customer; not authorization evidence."
           },
           "blocked": {
             "type": "boolean"
@@ -7067,6 +7645,8 @@
           }
         },
         "required": [
+          "customer",
+          "employee",
           "id",
           "name",
           "phoneE164",
@@ -7141,6 +7721,161 @@
         },
         "required": [
           "blocked"
+        ]
+      },
+      "EmployeeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneE164": {
+            "type": "string",
+            "pattern": "^\\+7[0-9]{10}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "barista",
+              "administrator"
+            ]
+          },
+          "accessEnabled": {
+            "type": "boolean",
+            "description": "Membership access; effective access also requires !accountBlocked."
+          },
+          "accountBlocked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneE164",
+          "role",
+          "accessEnabled",
+          "accountBlocked",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "EmployeesResponseDto": {
+        "type": "object",
+        "properties": {
+          "employees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmployeeDto"
+            }
+          }
+        },
+        "required": [
+          "employees"
+        ]
+      },
+      "EnrollEmployeeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phoneE164": {
+            "type": "string",
+            "pattern": "^\\+7[0-9]{10}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "barista",
+              "administrator"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "phoneE164",
+          "role"
+        ]
+      },
+      "ChangeEmployeeRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "barista",
+              "administrator"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "ChangeEmployeeAccessDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "CustomerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phoneE164": {
+            "type": "string",
+            "pattern": "^\\+7[0-9]{10}$"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneE164",
+          "registeredAt"
+        ]
+      },
+      "CustomersResponseDto": {
+        "type": "object",
+        "properties": {
+          "customers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerDto"
+            }
+          }
+        },
+        "required": [
+          "customers"
         ]
       },
       "OperatingSettingsResponseDto": {

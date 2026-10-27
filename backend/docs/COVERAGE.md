@@ -119,6 +119,10 @@ scope: backend
 | `PATCH /api/v3/backoffice/menu/products/{productId}` | active | [Catalog](30-domains/Catalog.md) | [OpenAPI](../openapi/openapi.json) | — | current contract; independent review separate |
 | `src/catalog/domain/modifier-option-defaults.ts` | current; independent review pending | [Catalog](30-domains/Catalog.md) | [Source](../src/catalog/domain/modifier-option-defaults.ts) | not run | Deterministic first-option default normalization. |
 | `src/catalog/application/save-modifier-options.ts` | current; independent review pending | [Catalog](30-domains/Catalog.md) | [Source](../src/catalog/application/save-modifier-options.ts) | not run | Atomic option set/default/count validation and persistence. |
+| `GET /api/v3/backoffice/employees`; `POST /api/v3/backoffice/employees` | active; integrated review pending | [Auth](30-domains/Auth.md) | [employees controller](../src/staff-users/transport/employees.controller.ts), [OpenAPI](../openapi/openapi.json) | — | Separate employee projection and enrollment; mandatory staff role. |
+| `PATCH /api/v3/backoffice/employees/{userId}/role` | active; integrated review pending | [Auth](30-domains/Auth.md) | [employees controller](../src/staff-users/transport/employees.controller.ts), [OpenAPI](../openapi/openapi.json) | — | Staff membership role command; customer participation retained. |
+| `PATCH /api/v3/backoffice/employees/{userId}/access` | active; integrated review pending | [Auth](30-domains/Auth.md) | [employees controller](../src/staff-users/transport/employees.controller.ts), [OpenAPI](../openapi/openapi.json) | — | Work access command, separate from global account block. |
+| `GET /api/v3/backoffice/customers` | active; integrated review pending | [Auth](30-domains/Auth.md) | [customers controller](../src/staff-users/transport/customers.controller.ts), [OpenAPI](../openapi/openapi.json) | — | Registered customers; role-free read-only projection. |
 
 Removed v2 catalog/order reads, direct push subscription routes and variant
 schema are not current coverage entries. Local/test/development databases are

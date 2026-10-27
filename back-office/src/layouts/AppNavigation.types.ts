@@ -1,24 +1,28 @@
+import type { RouteLocationRaw } from "vue-router";
+
 export type AppSection =
   "orders" | "availability" | "catalog" | "users" | "settings";
 
 export interface AppNavigationProps {
   readonly administrator: boolean;
   readonly section: AppSection | null;
-  readonly links: Readonly<Record<AppSection, string>>;
+  readonly navigation: readonly AppNavigationItem[];
 }
 
-export interface AppNavigationItem {
+export interface AppNavigationIcon {
   readonly section: AppSection;
-  readonly administratorOnly: boolean;
-  readonly label: string;
   readonly icon: string;
   readonly mobileIcon: string;
   readonly activeIcon: string;
   readonly activeMobileIcon: string;
 }
 
+export interface AppNavigationItem extends AppNavigationIcon {
+  readonly label: string;
+  readonly to: RouteLocationRaw;
+}
+
 export interface AppNavigationEmits {
-  navigate: [event: globalThis.MouseEvent, href: string];
   logout: [];
 }
 
