@@ -49,3 +49,10 @@ export class OrderCapacityUnavailableError extends OrderDomainError {
     super("На сегодня нет свободного времени получения заказа.");
   }
 }
+
+export class PickupSlotUnavailableError extends OrderDomainError {
+  readonly code = "PICKUP_SLOT_UNAVAILABLE";
+  constructor() {
+    super("Выбранное время больше недоступно. Выберите другое.");
+  }
+}

@@ -100,6 +100,7 @@ const emit = defineEmits<OrdersHistoryScreenEmits>();
   flex: 1;
   flex-direction: column;
   width: 100%;
+  max-width: 55rem; /* Accepted 880px task width; no existing token. */
   min-height: 100%;
   color: var(--customer-text);
 }
@@ -238,7 +239,7 @@ const emit = defineEmits<OrdersHistoryScreenEmits>();
     padding-left: 0;
   }
   .orders-history__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     padding-bottom: var(--customer-space-17);
   }
   .orders-history__state {

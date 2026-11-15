@@ -18,7 +18,6 @@
     <CustomerShell
       v-else
       :active-destination="activeDestination"
-      :account-label="accountLabel"
       :cart-count="cartStore.itemCount"
       :categories="menuStore.menu?.categories ?? []"
       :is-authenticated="sessionStore.status === 'authenticated'"

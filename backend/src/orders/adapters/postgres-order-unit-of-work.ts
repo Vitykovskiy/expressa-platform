@@ -1,6 +1,8 @@
-import { readOperatingSettings } from "../../service-settings/adapters/operating-settings-row";
-import { operatingSettingsProjection } from "../../service-settings/adapters/postgres-operating-settings.repository.constants";
-import { pickupSlotMilliseconds } from "../domain/order-metadata.constants";
+import { readPickupCandidates } from "./postgres-pickup-slots";
+import type {
+  CustomerPickupSlots,
+  PickupSlotsReader,
+} from "../application/pickup-slots.types";
 import { readOrderMetadata } from "./order-metadata";
 import type { OrderStage } from "../domain/order-lifecycle.types";
 import type { PickupSlot } from "../domain/order-metadata.types";
@@ -14,6 +16,7 @@ import { revalidateOrder } from "../domain/order-revalidation";
 import {
   OrderCapacityUnavailableError,
   IdempotencyKeyReusedError,
+  PickupSlotUnavailableError,
 } from "../domain/order.errors";
 import type {
   OrderCatalog,
@@ -38,7 +41,9 @@ import type {
 } from "./postgres-order-unit-of-work.types";
 import { idempotencyLockSql } from "./postgres-order-unit-of-work.constants";
 
-export class PostgresOrderUnitOfWork implements OrderUnitOfWork {
+export class PostgresOrderUnitOfWork
+  implements OrderUnitOfWork, PickupSlotsReader
+{
   constructor(
     private readonly dependencies: PostgresOrderUnitOfWorkDependencies,
   ) {}
@@ -73,7 +78,10 @@ export class PostgresOrderUnitOfWork implements OrderUnitOfWork {
         command.request.items.map((item) => item.productId),
       );
       const snapshot = revalidateOrder(command.request, catalog);
-      const pickupSlot = await this.allocatePickupSlot(client);
+      const pickupSlot = await this.allocatePickupSlot(
+        client,
+        command.request.pickupSlotStart,
+      );
       const insertedOrder = await insertOrder(
         client,
         command,
@@ -103,56 +111,43 @@ export class PostgresOrderUnitOfWork implements OrderUnitOfWork {
     }
   }
 
+  async readPickupSlots(): Promise<CustomerPickupSlots> {
+    const client = await this.dependencies.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      const result = await readPickupCandidates(client, {
+        lockSettings: false,
+      });
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   private async allocatePickupSlot(
     client: TransactionClient,
+    requestedStart?: string,
   ): Promise<PickupSlot> {
-    const settings = await client.query<DatabaseRow>(
-      `SELECT ${operatingSettingsProjection} FROM service_operating_settings WHERE id = 1 FOR UPDATE`,
-    );
-    const operating = readOperatingSettings(settings.rows);
-
-    // Чтение времени и вместимости после ожидания блокировки использует свежий snapshot.
-    const clock = await client.query<DatabaseRow>(
-      "SELECT clock_timestamp() AS now",
-    );
-    const now = clock.rows[0]?.now;
-    if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
-      throw new Error("Invalid PostgreSQL allocation clock");
-    }
-    const day = now.toISOString().slice(0, 10);
-    const opensAt = new Date(day + "T" + operating.opensAt + ":00Z");
-    const closesAt = new Date(day + "T" + operating.closesAt + ":00Z");
-    if (
-      Number.isNaN(opensAt.getTime()) ||
-      Number.isNaN(closesAt.getTime()) ||
-      opensAt >= closesAt
-    ) {
-      throw new Error("Invalid persisted operating hours");
-    }
-    const earliest = new Date(
-      Math.max(
-        opensAt.getTime(),
-        Math.ceil(now.getTime() / pickupSlotMilliseconds) *
-          pickupSlotMilliseconds,
-      ),
-    );
-    const available = await client.query<DatabaseRow>(
-      `SELECT candidate AS starts_at FROM generate_series($1::timestamptz, $2::timestamptz - interval '10 minutes', interval '10 minutes') AS candidate
-     WHERE (SELECT count(*) FROM orders WHERE rejected_at IS NULL AND stage <> 'ISSUED' AND pickup_slot_start = candidate) < $3
-     ORDER BY candidate LIMIT 1`,
-      [earliest, closesAt, operating.slotCapacity],
-    );
-    const startsAt = available.rows[0]?.starts_at;
-    if (startsAt === undefined) {
+    // Общая блокировка settings сериализует автоматический и явный выбор.
+    const candidates = await readPickupCandidates(client, {
+      lockSettings: true,
+    });
+    const selected =
+      requestedStart === undefined
+        ? candidates.slots.find((slot) => slot.available)
+        : candidates.slots.find(
+            (slot) =>
+              slot.startsAt.toISOString() === requestedStart && slot.available,
+          );
+    if (selected === undefined) {
+      if (requestedStart !== undefined) throw new PickupSlotUnavailableError();
       throw new OrderCapacityUnavailableError();
     }
-    if (!(startsAt instanceof Date) || Number.isNaN(startsAt.getTime())) {
-      throw new Error("Invalid PostgreSQL pickup slot");
-    }
-    return {
-      startsAt,
-      endsAt: new Date(startsAt.getTime() + pickupSlotMilliseconds),
-    };
+    return { startsAt: selected.startsAt, endsAt: selected.endsAt };
   }
 }
 

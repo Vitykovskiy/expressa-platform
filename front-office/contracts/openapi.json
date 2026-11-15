@@ -3296,11 +3296,37 @@
             }
           },
           "409": {
-            "description": "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+            "description": "IDEMPOTENCY_KEY_REUSED, PICKUP_SLOT_UNAVAILABLE or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiHttpErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "orders-v3"
+        ]
+      }
+    },
+    "/api/v3/orders/pickup-slots": {
+      "get": {
+        "operationId": "OrdersV3Controller_pickupSlots",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerPickupSlotsDto"
                 }
               }
             }
@@ -3385,7 +3411,7 @@
             }
           },
           "409": {
-            "description": "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+            "description": "IDEMPOTENCY_KEY_REUSED, PICKUP_SLOT_UNAVAILABLE or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7258,6 +7284,64 @@
           "nextCursor"
         ]
       },
+      "CustomerPickupSlotDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "available"
+        ]
+      },
+      "CustomerPickupSlotsDto": {
+        "type": "object",
+        "properties": {
+          "serviceDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "UTC"
+            ]
+          },
+          "slotMinutes": {
+            "type": "number",
+            "enum": [
+              10
+            ]
+          },
+          "acceptsNewOrders": {
+            "type": "boolean"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerPickupSlotDto"
+            }
+          }
+        },
+        "required": [
+          "serviceDay",
+          "timeZone",
+          "slotMinutes",
+          "acceptsNewOrders",
+          "slots"
+        ]
+      },
       "CreateOrderV3ItemDto": {
         "type": "object",
         "properties": {
@@ -7291,6 +7375,11 @@
       "CreateOrderV3Dto": {
         "type": "object",
         "properties": {
+          "pickupSlotStart": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Exact canonical UTC pickup start; omission selects nearest available."
+          },
           "expectedTotal": {
             "type": "integer",
             "minimum": 0

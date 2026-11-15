@@ -20,11 +20,21 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
   actions: {
     confirm(submission: CheckoutSubmission): Promise<unknown> {
       if (this.submitPromise !== null) return this.submitPromise;
+      if (
+        this.attempt !== null &&
+        this.errorCode === checkoutErrorCodes.network
+      ) {
+        return this.retry(submission.accessToken);
+      }
       if (this.status === checkoutStatuses.reconfirmationRequired) {
         return Promise.resolve(null);
       }
 
-      const request = createCheckoutRequest(submission.cartItems);
+      const request = createCheckoutRequest(
+        submission.cartItems,
+        undefined,
+        submission.pickupSlotStart,
+      );
       if (request === null) {
         this.setError(
           checkoutErrorCodes.invalidCart,
@@ -38,6 +48,12 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
     },
     reconfirm(submission: CheckoutSubmission): Promise<unknown> {
       if (this.submitPromise !== null) return this.submitPromise;
+      if (
+        this.attempt !== null &&
+        this.errorCode === checkoutErrorCodes.network
+      ) {
+        return this.retry(submission.accessToken);
+      }
       if (this.status !== checkoutStatuses.reconfirmationRequired) {
         return Promise.resolve(null);
       }
@@ -45,6 +61,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       const request = createCheckoutRequest(
         submission.cartItems,
         this.reconfirmedTotal,
+        submission.pickupSlotStart,
       );
       if (request === null) {
         this.setError(
@@ -70,6 +87,8 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       return this.send(accessToken);
     },
     reset(): void {
+      if (this.attempt !== null) return;
+
       Object.assign(this, initialCheckoutState);
     },
     setError(code: CheckoutErrorCode, message: string): void {
@@ -119,12 +138,16 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       },
     ): void {
       if (!(error instanceof ApiError)) {
-        this.setError(checkoutErrorCodes.unknown, checkoutMessages.orderFailed);
-        this.attempt = null;
+        this.setError(checkoutErrorCodes.network, checkoutMessages.retryFailed);
         return;
       }
 
-      if (error.code === checkoutErrorCodes.network) {
+      const outcomeUnknown =
+        error.code === checkoutErrorCodes.network ||
+        error.status === null ||
+        error.status >= 500 ||
+        (error.status >= 200 && error.status < 300);
+      if (outcomeUnknown) {
         this.setError(checkoutErrorCodes.network, checkoutMessages.retryFailed);
         return;
       }
@@ -164,6 +187,15 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         return;
       }
 
+      if (error.code === checkoutErrorCodes.pickupUnavailable) {
+        this.rejectedPickupSlotStart = attempt.request.pickupSlotStart ?? null;
+        this.setError(
+          checkoutErrorCodes.pickupUnavailable,
+          checkoutMessages.pickupUnavailable,
+        );
+        return;
+      }
+
       if (error.code === checkoutErrorCodes.capacityUnavailable) {
         this.setError(
           checkoutErrorCodes.capacityUnavailable,
@@ -180,6 +212,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
 function createCheckoutRequest(
   cartItems: CheckoutSubmission["cartItems"],
   expectedTotal?: number | null,
+  pickupSlotStart?: string,
 ): CheckoutRequest | null {
   const items: CheckoutRequest["items"] = [];
 
@@ -192,7 +225,11 @@ function createCheckoutRequest(
   const total = expectedTotal ?? getCartTotal(cartItems);
   if (!isNonNegativeInteger(total) || items.length === 0) return null;
 
-  return { expectedTotal: total, items };
+  return {
+    expectedTotal: total,
+    items,
+    ...(pickupSlotStart === undefined ? {} : { pickupSlotStart }),
+  };
 }
 
 function createAttempt(

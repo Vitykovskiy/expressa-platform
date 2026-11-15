@@ -18,6 +18,14 @@ export class CreateOrderV3ItemDto implements CreateOrderV3Item {
 }
 
 export class CreateOrderV3Dto implements CreateOrderV3Body {
+  @ApiProperty({
+    type: "string",
+    format: "date-time",
+    required: false,
+    description:
+      "Exact canonical UTC pickup start; omission selects nearest available.",
+  })
+  pickupSlotStart?: string;
   @ApiProperty({ minimum: 0, type: "integer" }) expectedTotal!: number;
   @ApiProperty({ type: () => CreateOrderV3ItemDto, isArray: true, minItems: 1 })
   items!: CreateOrderV3ItemDto[];

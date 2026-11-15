@@ -16,6 +16,7 @@ export type CustomerOrdersApi = OrdersApi & {
 export type OrdersApiClient = Pick<ApiClient, "request">;
 
 export type CreateOrderRequest = {
+  pickupSlotStart?: string;
   expectedTotal: number;
   items: CreateOrderItem[];
 };

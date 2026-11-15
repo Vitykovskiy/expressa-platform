@@ -1,226 +1,224 @@
 <template>
-  <section
-    class="slot-picker"
-    aria-labelledby="slot-picker-title"
-    :aria-busy="loading"
-  >
+  <section class="slot-picker" aria-labelledby="pickup-title">
     <header class="slot-picker__header">
-      <p class="slot-picker__eyebrow">Pickup</p>
-      <h1 id="slot-picker-title" class="slot-picker__title">Выбор времени</h1>
-      <p class="slot-picker__description">
-        Выберите удобный слот для выдачи заказа.
-      </p>
-    </header>
-
-    <p
-      v-if="errorMessage"
-      class="slot-picker__message slot-picker__message--error"
-      role="alert"
-    >
-      <AlertCircle :size="16" aria-hidden="true" />
-      {{ errorMessage }}
-    </p>
-    <p
-      v-if="loading"
-      class="slot-picker__message"
-      role="status"
-      aria-live="polite"
-    >
-      <LoaderCircle
-        class="slot-picker__spinner"
-        :size="18"
-        :stroke-width="3"
-        aria-hidden="true"
-      />
-      Создаём заказ...
-    </p>
-
-    <ul class="slot-picker__slots" aria-label="Временные слоты">
-      <li v-for="slot in slots" :key="slot.id">
-        <SlotOption
-          :time-slot="slot"
-          :selected="selectedSlotId === slot.id"
-          :disabled="loading"
-          @select="selectSlot"
-        />
-      </li>
-    </ul>
-
-    <footer class="slot-picker__footer">
-      <ui-btn
-        type="button"
-        class="slot-picker__confirm"
-        :disabled="loading"
-        @click="confirm"
+      <UiBtn
+        class="slot-picker__back"
+        :disabled="props.busy"
+        @click="emit('back')"
       >
-        {{ loading ? "Подтверждаем..." : "Подтвердить заказ" }}
-      </ui-btn>
-    </footer>
+        <img :src="backIcon" width="20" height="20" alt="" />В корзину
+      </UiBtn>
+      <h1 id="pickup-title">Выберите время</h1>
+    </header>
+    <div class="slot-picker__surface">
+      <div class="slot-picker__times">
+        <p class="slot-picker__day">Сегодня <span>· UTC</span></p>
+        <div class="slot-picker__list" :aria-busy="props.loading">
+          <p v-if="props.loading" role="status">Загружаем время получения…</p>
+          <div
+            v-else-if="props.message"
+            class="slot-picker__state"
+            role="status"
+          >
+            <p>{{ props.message }}</p>
+            <UiBtn
+              class="slot-picker__refresh"
+              :disabled="props.locked"
+              @click="emit('refresh')"
+              >Обновить</UiBtn
+            >
+          </div>
+          <div
+            v-else
+            class="slot-picker__options"
+            role="group"
+            aria-label="Время получения, UTC"
+          >
+            <SlotOption
+              value="automatic"
+              label="Как можно скорее"
+              :selected="props.selection === 'automatic'"
+              :available="true"
+              :disabled="props.locked"
+              @select="emit('select', $event)"
+            />
+            <SlotOption
+              v-for="choice in props.choices"
+              :key="choice.startsAt"
+              :value="choice.startsAt"
+              :label="choice.label"
+              :available="choice.available"
+              :selected="props.selection === choice.startsAt"
+              :disabled="props.locked"
+              @select="emit('select', $event)"
+            />
+          </div>
+        </div>
+      </div>
+      <footer class="slot-picker__footer">
+        <UiBtn
+          color="primary"
+          class="slot-picker__confirm"
+          :disabled="!props.canSubmit"
+          :loading="props.busy"
+          @click="emit('confirm')"
+          >{{ props.busy ? "Оформляем…" : "Оформить заказ" }}
+          <template #loader>Оформляем…</template>
+        </UiBtn>
+      </footer>
+    </div>
+    <UiNotification
+      :message="props.notification"
+      role="alert"
+      @close="emit('dismissNotification')"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { AlertCircle, LoaderCircle } from "lucide-vue-next";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import UiNotification from "@/shared/ui/customer/notification/UiNotification.vue";
+import backIcon from "./assets/back.svg";
 import SlotOption from "./SlotOption.vue";
 import type {
   SlotPickerScreenEmits,
   SlotPickerScreenProps,
 } from "./SlotPickerScreen.types";
 
-const props = withDefaults(defineProps<SlotPickerScreenProps>(), {
-  loading: false,
-  errorMessage: "",
-});
+const props = defineProps<SlotPickerScreenProps>();
 const emit = defineEmits<SlotPickerScreenEmits>();
-
-const localError = ref("");
-const selectedSlot = computed(
-  () => props.slots.find((slot) => slot.id === props.selectedSlotId) ?? null,
-);
-const errorMessage = computed(() => props.errorMessage || localError.value);
-
-watch(
-  () => props.selectedSlotId,
-  () => {
-    localError.value = "";
-  },
-);
-
-function selectSlot(slotId: string): void {
-  if (props.loading) return;
-  emit("selectSlot", slotId);
-}
-
-function confirm(): void {
-  if (props.loading) return;
-  if (!selectedSlot.value) {
-    localError.value = "Пожалуйста, выберите временной слот.";
-    return;
-  }
-  localError.value = "";
-  emit("confirm", selectedSlot.value.id);
-}
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .slot-picker {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  width: 100%;
-  min-height: 100%;
-  color: var(--customer-text);
-  background: var(--customer-background);
-}
-
-.slot-picker__header {
-  padding: var(--customer-space-13) var(--customer-space-9)
-    var(--customer-space-15);
-}
-
-.slot-picker__eyebrow {
-  margin: 0 0 var(--customer-space-4);
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-xs);
-  font-weight: var(--customer-font-weight-bold);
-  letter-spacing: var(--customer-letter-spacing-overline);
-  text-transform: uppercase;
-}
-
-.slot-picker__title {
-  margin: 0 0 var(--customer-space-5);
-  font-size: var(--customer-font-size-display);
-  font-weight: var(--customer-font-weight-black);
-  letter-spacing: var(--customer-letter-spacing-tight);
-  line-height: var(--customer-line-height-tight);
-}
-
-.slot-picker__description {
-  margin: 0;
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-body);
-  font-weight: var(--customer-font-weight-semibold);
-}
-
-.slot-picker__message {
-  display: flex;
-  align-items: center;
   gap: var(--customer-space-7);
-  margin: var(--customer-space-11) var(--customer-space-9) 0;
-  padding: var(--customer-space-8) var(--customer-space-9);
-  background: var(--customer-color-surface-subtle);
-  border: 1px solid var(--customer-border);
-  border-radius: var(--customer-radius);
+  width: 100%;
+  max-width: 55rem; /* Поверхность 880px принятого макета; отдельного token нет. */
+  height: calc(100dvh - var(--customer-size-shell-header));
+  min-height: 0;
+  padding: var(--customer-space-9);
+  color: var(--customer-text);
+}
+.slot-picker__header {
+  flex: 0 0 auto;
+}
+.slot-picker__back {
+  display: flex;
+  gap: var(--customer-space-5);
   font-size: var(--customer-font-size-sm);
   font-weight: var(--customer-font-weight-bold);
 }
-
-.slot-picker__message--error {
-  color: var(--customer-danger-pale);
-  background: var(--customer-danger-10);
-  border-color: var(--customer-error);
+.slot-picker h1 {
+  margin: var(--customer-space-5) 0 0;
+  font-size: var(--customer-font-size-page-heading);
+  font-weight: var(--customer-font-weight-page-heading);
+  line-height: var(--customer-line-height-page-heading);
 }
-
-.slot-picker__spinner {
-  animation: slot-picker-spin var(--customer-duration-base) linear infinite;
-}
-
-.slot-picker__slots {
+.slot-picker__surface {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--customer-space-5);
-  margin: 0;
-  padding: var(--customer-space-11) var(--customer-space-9)
-    var(--customer-space-9);
-  list-style: none;
-}
-
-.slot-picker__footer {
-  position: sticky;
-  bottom: 0;
+  gap: var(--customer-space-9);
+  min-height: 0;
   padding: var(--customer-space-9);
-  background: var(--customer-background);
-  border-top: 1px solid var(--customer-border);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-xl);
 }
-
+.slot-picker__times {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--customer-space-9);
+  min-height: 0;
+}
+.slot-picker__day {
+  margin: 0;
+  font-weight: var(--customer-font-weight-extrabold);
+}
+.slot-picker__day span {
+  font-weight: var(--customer-font-weight-semibold);
+  color: var(--customer-color-text-secondary-on-surface);
+}
+.slot-picker__list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
+}
+.slot-picker__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--customer-space-7);
+}
+.slot-picker__state p {
+  margin: 0 0 var(--customer-space-7);
+}
+.slot-picker__refresh {
+  min-width: 44px;
+  padding: 0 var(--customer-space-9);
+  background: var(--customer-color-blue-500-10);
+}
+.slot-picker__footer {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  padding-top: var(--customer-space-9);
+  border-top: 1px solid var(--customer-border-subtle-on-surface);
+}
 .slot-picker__confirm {
   width: 100%;
   min-height: var(--customer-size-control-xl);
-  color: var(--customer-text);
-  background: var(--customer-primary);
-  border-radius: var(--customer-radius);
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-black);
+  padding: var(--customer-space-7);
+  font-weight: var(--customer-font-weight-extrabold);
 }
-
-@keyframes slot-picker-spin {
-  to {
-    transform: rotate(360deg);
+@media (min-width: 768px) {
+  .slot-picker {
+    padding: var(--customer-space-13) var(--customer-space-9)
+      var(--customer-space-9);
+  }
+  .slot-picker__surface {
+    padding: var(--customer-space-11);
+  }
+  .slot-picker__confirm {
+    width: 18.25rem; /* Ширина CTA принятого макета; отдельного token нет. */
   }
 }
-
 @media (min-width: 1024px) {
-  .slot-picker__header {
-    padding: var(--customer-space-13) var(--customer-space-16)
-      var(--customer-space-15);
+  .slot-picker {
+    height: calc(100dvh - var(--customer-space-9));
+    padding: var(--customer-space-17) 0 var(--customer-space-13);
   }
-
-  .slot-picker__message {
-    margin-right: var(--customer-space-16);
-    margin-left: var(--customer-space-16);
+}
+@media (min-width: 1024px) {
+  .slot-picker__surface {
+    flex: 0 1 auto;
   }
-
-  .slot-picker__slots {
-    max-width: var(--customer-size-content-detail);
-    padding-right: var(--customer-space-16);
-    padding-left: var(--customer-space-16);
+  .slot-picker__list {
+    max-height: 520px; /* Принятый desktop viewport списка; отдельного token нет. */
   }
-
+}
+@media (max-width: 1023px) {
+  .slot-picker__surface {
+    padding: 0;
+    background: transparent;
+  }
+  .slot-picker__times {
+    padding: var(--customer-space-9);
+    background: var(--customer-surface);
+    border-radius: var(--customer-radius-xl);
+  }
   .slot-picker__footer {
-    padding: var(--customer-space-9) var(--customer-space-16);
+    padding: var(--customer-space-9);
+    border: 0;
+    background: var(--customer-surface);
+    border-radius: var(--customer-radius-xl);
+  }
+  .slot-picker {
+    padding-bottom: max(var(--customer-space-9), env(safe-area-inset-bottom));
   }
 }
 </style>

@@ -25,10 +25,7 @@ scope: system
 Просмотр меню остаётся доступным. Корзина и безопасный `returnTo` сохраняются.
 Это изменение контрактов; runtime-подтверждение выполняется после интеграции.
 
-Гость из корзины идёт на OTP с внутренним `returnTo`; customer отправляет
-checkout. Успех очищает корзину и открывает `/orders/:id`; страница загружает собственный заказ с backend. [Источники: CartPage](../../front-office/src/pages/CartPage.vue), [OrderPage](../../front-office/src/pages/OrderPage.vue).
+Гость из корзины идёт на OTP с внутренним `returnTo`; customer
+переходит на `/checkout/pickup`, читает доступность и явно отправляет окончательный заказ. Нормальный выбор по умолчанию — «Как можно скорее»; доступно точное десятиминутное UTC-окно текущего дня по [ADR-018](../20-architecture/ADR/ADR-018-customer-pickup-selection.md). Выбор не резервирует место. Успех очищает корзину и открывает `/orders/:id`; страница загружает собственный заказ с backend. [Источники: CartPage](../../front-office/src/pages/CartPage.vue), [OrderPage](../../front-office/src/pages/OrderPage.vue).
 
-Network повторяет тот же ключ; изменение total требует reconfirm, unavailable
-выделяет позиции. Submit отключает только `acceptsNewOrders=false`; ответ
-`ORDER_INTAKE_CLOSED` показывает ошибку checkout, но не делает retry permanently
-disabled. [Источники: CartPage](../../front-office/src/pages/CartPage.vue), [CartScreen](../../front-office/src/features/checkout/CartScreen.vue), [checkout store](../../front-office/src/features/checkout/checkout.store.ts).
+Network повторяет точный запрос с прежним ключом независимо от изменения доступности. Изменение total возвращает к reconfirm в корзине, unavailable выделяет позиции, закрытый intake предлагает обновление. Конфликт времени очищает выбор, обновляет список и ждёт явного выбора; новая отправка без вместимости, при ошибке чтения или закрытом приёме недоступна. [Источники: PickupSlotPage](../../front-office/src/pages/PickupSlotPage.vue), [checkout store](../../front-office/src/features/checkout/checkout.store.ts), [контракт API](../../backend/docs/50-api/Customer-pickup-slots.md).

@@ -1,3 +1,5 @@
+import { GetPickupSlotsUseCase } from "./application/get-pickup-slots.use-case";
+import type { PickupSlotsReader } from "./application/pickup-slots.types";
 import { SourceOrderActionsUseCase } from "./application/source-order-actions.use-case";
 import type { SourceOrderUnitOfWork } from "./application/source-order-actions.types";
 import { Module } from "@nestjs/common";
@@ -41,6 +43,12 @@ import { BackofficeOrdersV3Controller } from "./transport/backoffice-orders-v3.c
     BackofficeOrdersV3Controller,
   ],
   providers: [
+    {
+      provide: GetPickupSlotsUseCase,
+      inject: [orderUnitOfWorkPort],
+      useFactory: (reader: PickupSlotsReader) =>
+        new GetPickupSlotsUseCase(reader),
+    },
     {
       provide: SourceOrderActionsUseCase,
       inject: [

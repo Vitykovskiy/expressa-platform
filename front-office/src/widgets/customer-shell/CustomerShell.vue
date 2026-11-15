@@ -2,7 +2,6 @@
   <main class="customer-shell">
     <ShellNavigation
       :active-destination="props.activeDestination"
-      :account-label="props.accountLabel"
       :cart-count="props.cartCount"
       :categories="props.categories"
       :is-authenticated="props.isAuthenticated"

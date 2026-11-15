@@ -12,6 +12,7 @@ export const checkoutStatuses = {
 
 export const checkoutErrorCodes = {
   capacityUnavailable: "ORDER_CAPACITY_UNAVAILABLE",
+  pickupUnavailable: "PICKUP_SLOT_UNAVAILABLE",
   intakeClosed: "ORDER_INTAKE_CLOSED",
   invalidCart: "INVALID_CART",
   itemUnavailable: "MENU_ITEM_UNAVAILABLE",
@@ -21,6 +22,7 @@ export const checkoutErrorCodes = {
 } as const;
 
 export const checkoutMessages = {
+  pickupUnavailable: "Это время уже недоступно. Выберите другое.",
   capacityUnavailable:
     "На сегодня нет свободного времени для получения заказа. Заказ не создан, корзина сохранена. Вернитесь к оформлению в другой рабочий день.",
   dependenciesNotConfigured: "Зависимости оформления не настроены.",
@@ -33,6 +35,7 @@ export const checkoutMessages = {
 } as const;
 
 export const initialCheckoutState: CheckoutState = {
+  rejectedPickupSlotStart: null,
   attempt: null,
   errorCode: null,
   errorMessage: null,

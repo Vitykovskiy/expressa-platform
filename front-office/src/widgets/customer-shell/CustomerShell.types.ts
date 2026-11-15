@@ -5,7 +5,6 @@ import type {
 
 export interface CustomerShellProps {
   activeDestination: ShellNavigationDestination;
-  accountLabel: string;
   cartCount: number;
   categories: ShellNavigationCategory[];
   isAuthenticated: boolean;

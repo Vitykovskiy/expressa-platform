@@ -1,13 +1,20 @@
-import type { TimeSlot } from "@/entities/customer/model/customer.types";
+import type { PickupChoice } from "@/shared/api/pickup-slots.api.types";
 
-export interface SlotPickerScreenProps {
-  slots: TimeSlot[];
-  selectedSlotId: string | null;
-  loading?: boolean;
-  errorMessage?: string;
-}
+export type SlotPickerScreenProps = {
+  choices: PickupChoice[];
+  selection: string | null;
+  loading: boolean;
+  busy: boolean;
+  locked: boolean;
+  canSubmit: boolean;
+  message: string | null;
+  notification: string | null;
+};
 
 export type SlotPickerScreenEmits = {
-  selectSlot: [slotId: string];
-  confirm: [slotId: string];
+  select: [value: string];
+  confirm: [];
+  refresh: [];
+  back: [];
+  dismissNotification: [];
 };

@@ -46,3 +46,5 @@ CustomerOrBarista сохраняются; порядок блокировок и
 в [Notifications](../30-domains/Notifications.md#атомарная-авторизация-association).
 Эта реализация и описание OpenAPI не являются доказательством всех конкурентных
 порядков или нативной доставки в браузер.
+
+Доступность и явный выбор customer-окна: [контракт](Customer-pickup-slots.md).

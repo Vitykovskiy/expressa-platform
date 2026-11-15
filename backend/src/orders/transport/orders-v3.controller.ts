@@ -1,3 +1,5 @@
+import { GetPickupSlotsUseCase } from "../application/get-pickup-slots.use-case";
+import { CustomerPickupSlotsDto } from "./pickup-slots.dto";
 import { ApiHttpErrorDto } from "../../platform/observability/http-error.dto";
 import { toOrderMetadataDto } from "./order-metadata.mapper";
 import type { CustomerOrder } from "../application/order-lifecycle.types";
@@ -6,6 +8,7 @@ import {
   Controller,
   Get,
   Headers,
+  Header,
   HttpException,
   HttpStatus,
   Inject,
@@ -32,6 +35,7 @@ import type { StoredOrder } from "../application/order-unit-of-work.types";
 import {
   IdempotencyKeyReusedError,
   OrderCapacityUnavailableError,
+  PickupSlotUnavailableError,
   MenuItemUnavailableError,
   OrderDomainError,
   OrderIntakeClosedError,
@@ -61,6 +65,7 @@ export class OrdersV3Controller {
   constructor(
     private readonly createOrder: CreateOrderUseCase,
     private readonly getOrders: GetOrdersUseCase,
+    private readonly getPickupSlots: GetPickupSlotsUseCase,
     @Inject(clockPort) private readonly clock: Clock,
   ) {}
 
@@ -71,6 +76,21 @@ export class OrdersV3Controller {
   ): Promise<CustomerOrdersV3PageDto> {
     const page = await this.getOrders.listForCustomer(auth.userId, null);
     return { orders: page.orders.map(toCustomerDto), nextCursor: null };
+  }
+
+  @Get("pickup-slots")
+  @Header("Cache-Control", "no-store")
+  @ApiResponse({ status: 200, type: CustomerPickupSlotsDto })
+  async pickupSlots(): Promise<CustomerPickupSlotsDto> {
+    const result = await this.getPickupSlots.execute();
+    return {
+      ...result,
+      slots: result.slots.map((slot) => ({
+        startsAt: slot.startsAt.toISOString(),
+        endsAt: slot.endsAt.toISOString(),
+        available: slot.available,
+      })),
+    };
   }
 
   @Get(":orderId")
@@ -106,7 +126,7 @@ export class OrdersV3Controller {
     status: 409,
     type: ApiHttpErrorDto,
     description:
-      "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+      "IDEMPOTENCY_KEY_REUSED, PICKUP_SLOT_UNAVAILABLE or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
   })
   create(
     @Body() body: CreateOrderV3Dto,
@@ -131,7 +151,7 @@ export class OrdersV3Controller {
     status: 409,
     type: ApiHttpErrorDto,
     description:
-      "IDEMPOTENCY_KEY_REUSED or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
+      "IDEMPOTENCY_KEY_REUSED, PICKUP_SLOT_UNAVAILABLE or ORDER_CAPACITY_UNAVAILABLE: current UTC service day has no free pickup slot.",
   })
   async repeat(
     @Param("orderId") orderId: string,
@@ -183,6 +203,9 @@ export class OrdersV3Controller {
             now: this.clock.now(),
             request: {
               total: body.expectedTotal,
+              ...(body.pickupSlotStart === undefined
+                ? {}
+                : { pickupSlotStart: body.pickupSlotStart }),
               items: body.items.map((item) => ({
                 productId: item.productId,
                 priceChoiceId: item.priceChoiceId ?? null,
@@ -228,6 +251,12 @@ function assertBody(body: unknown): asserts body is CreateOrderV3Body {
   if (!isRecord(body)) {
     invalid();
   }
+  if (
+    "pickupSlotStart" in body &&
+    !isCanonicalTimestamp(body.pickupSlotStart)
+  ) {
+    invalid();
+  }
   const expectedTotal = body.expectedTotal;
   const items = body.items;
   if (
@@ -241,6 +270,16 @@ function assertBody(body: unknown): asserts body is CreateOrderV3Body {
     invalid();
   }
 }
+function isCanonicalTimestamp(value: unknown): value is string {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+  )
+    return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
+}
+
 function isItem(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -307,15 +346,19 @@ function throwOrderError(error: unknown): never {
       HttpStatus.BAD_REQUEST,
     );
   }
-  if (
-    error instanceof OrderIntakeClosedError ||
-    error instanceof OrderValidationError
-  ) {
+  if (error instanceof OrderIntakeClosedError) {
+    throw new HttpException(
+      { code: error.code, message: error.message, details: null },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+  if (error instanceof OrderValidationError) {
     invalid();
   }
   if (
     error instanceof IdempotencyKeyReusedError ||
-    error instanceof OrderCapacityUnavailableError
+    error instanceof OrderCapacityUnavailableError ||
+    error instanceof PickupSlotUnavailableError
   ) {
     throw new HttpException(
       { code: error.code, message: error.message, details: null },

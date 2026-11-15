@@ -111,10 +111,9 @@ root фиксирует исправленный маршрут в состоя�
 зелёный тест не отменяют требование; тест должен проверять expected и
 действительно достигать нужную ветку.
 
-Применяйте только skills, нужные текущей задаче: `codex-product-quality` для
-выбора сценария, `codex-ui-analysis-pact` для неясного UI, `codex-debugging`
-для подтверждённого дефекта, `codex-development-pact` и
-`codex-web-implementation` для кода, `vue-best-practices` при Vue-изменении,
+Применяйте только skills, нужные текущей задаче: `codex-debugging`
+для подтверждённого дефекта, `codex-development-pact`
+для кода, `vue-best-practices` при Vue-изменении,
 `codex-web-verification` для browser observation и `codex-documentation-pact`
 для долгоживущих норм. Сначала прочтите актуальный `SKILL.md`. Контурный DoD,
 product preferences, UI-контракты и token owners остаются обязательными.

@@ -13,6 +13,9 @@ export function createOrderFingerprint(request: OrderRequest): string {
       .toSorted((left, right) =>
         compareCodeUnits(JSON.stringify(left), JSON.stringify(right)),
       ),
+    ...(request.pickupSlotStart === undefined
+      ? {}
+      : { pickupSlotStart: request.pickupSlotStart }),
   });
 }
 

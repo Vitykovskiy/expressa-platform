@@ -182,9 +182,8 @@ expected, реализацию, целевые проверки и незави�
 
 Выбирайте global skills по содержанию назначения и перед первым применением
 читайте актуальный `SKILL.md`: `codex-orchestration-pact` вместе с
-`codex-long-orchestration` — для кампании или resume; `codex-product-quality`
-— для следующей партии и карты; `codex-ui-analysis-pact` — для неясного UI;
-`codex-debugging` — для подтверждённого дефекта; `codex-development-pact` и
-`codex-web-implementation` — для кода; `vue-best-practices` — при изменении
+`codex-long-orchestration` — для кампании или resume;
+`codex-debugging` — для подтверждённого дефекта; `codex-development-pact`
+— для кода; `vue-best-practices` — при изменении
 Vue с приоритетом проектного Vue-style; `codex-web-verification` — для живого
 браузерного наблюдения; `codex-documentation-pact` — для нормативных нот.

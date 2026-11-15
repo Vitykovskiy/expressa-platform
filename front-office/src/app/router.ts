@@ -1,8 +1,10 @@
+import { useCheckoutStore } from "@/features/checkout/checkout.store";
 import { createRouter, createWebHistory } from "vue-router";
 
 import AuthCodePage from "../pages/AuthCodePage.vue";
 import AuthPhonePage from "../pages/AuthPhonePage.vue";
 import AuthNamePage from "../pages/AuthNamePage.vue";
+import PickupSlotPage from "../pages/PickupSlotPage.vue";
 import CartPage from "../pages/CartPage.vue";
 import MenuPage from "../pages/MenuPage.vue";
 import OrderPage from "../pages/OrderPage.vue";
@@ -18,6 +20,11 @@ export const router = createRouter({
   routes: [
     { path: "/", component: MenuPage, meta: { title: "Меню" } },
     { path: "/cart", component: CartPage, meta: { title: "Корзина" } },
+    {
+      path: "/checkout/pickup",
+      component: PickupSlotPage,
+      meta: { requiresCustomer: true, title: "Время получения" },
+    },
     {
       path: "/auth/phone",
       component: AuthPhonePage,
@@ -49,6 +56,16 @@ export const router = createRouter({
 export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
   const sessionStore = useSessionStore();
   const destinationPath = to.matched.at(-1)?.path ?? to.path;
+  // Неизвестный результат нельзя превратить в другую корзину до повтора того же заказа.
+  const checkout = useCheckoutStore();
+  if (
+    checkout.attempt !== null &&
+    to.path !== "/checkout/pickup" &&
+    to.path !== "/cart" &&
+    !to.path.startsWith("/auth/")
+  ) {
+    return "/checkout/pickup";
+  }
   const isAuthDestination =
     destinationPath === routePaths.authPhone ||
     destinationPath === routePaths.authCode ||

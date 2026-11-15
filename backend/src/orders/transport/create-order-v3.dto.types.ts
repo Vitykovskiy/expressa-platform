@@ -6,6 +6,7 @@ export type CreateOrderV3Item = {
 };
 
 export type CreateOrderV3Body = {
+  pickupSlotStart?: string;
   expectedTotal: number;
   items: CreateOrderV3Item[];
 };

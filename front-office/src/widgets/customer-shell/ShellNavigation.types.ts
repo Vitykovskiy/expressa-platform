@@ -11,7 +11,6 @@ export interface ShellNavigationProps {
   cartCount: number;
   isAuthenticated: boolean;
   isLogoutPending: boolean;
-  accountLabel: string;
   selectedCategoryId?: string;
 }
 

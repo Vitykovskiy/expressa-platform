@@ -4,6 +4,7 @@ import type { orderErrorCodes } from "./order.constants";
 export type OrderErrorCode = (typeof orderErrorCodes)[number];
 
 export type OrderRequest = {
+  pickupSlotStart?: string;
   total: number;
   items: readonly OrderRequestItem[];
 };

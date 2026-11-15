@@ -113,22 +113,11 @@
       <ui-btn
         type="button"
         class="shell-navigation__account"
-        :class="{
-          'shell-navigation__account--authenticated':
-            accountControl.isAuthenticated,
-        }"
         @click="accountControl.action()"
       >
-        <component :is="accountControl.sidebarIcon" aria-hidden="true" />
+        <UserRound aria-hidden="true" />
         {{ accountControl.label }}
-        <span
-          v-if="accountControl.actionLabel"
-          class="shell-navigation__account-action"
-        >
-          {{ accountControl.actionLabel }}
-        </span>
       </ui-btn>
-      <p class="shell-navigation__copyright">© Экспресса</p>
     </aside>
   </div>
 </template>
@@ -136,14 +125,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Component } from "vue";
-import {
-  History,
-  House,
-  LogIn,
-  Phone,
-  ShoppingCart,
-  UserRound,
-} from "lucide-vue-next";
+import { History, House, ShoppingCart, UserRound } from "lucide-vue-next";
 import UiBadge from "@/shared/ui/customer/badge/UiBadge.vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
@@ -164,25 +146,10 @@ const navigationItems = [
   { destination: "cart", label: "Корзина", icon: ShoppingCart },
 ] satisfies (ShellNavigationItem & { icon: Component })[];
 
-const accountControl = computed(() => {
-  if (props.isAuthenticated) {
-    return {
-      sidebarIcon: Phone,
-      isAuthenticated: true,
-      label: props.accountLabel,
-      actionLabel: "Аккаунт",
-      action: () => emit("openAccount"),
-    };
-  }
-
-  return {
-    sidebarIcon: LogIn,
-    isAuthenticated: false,
-    label: "Аккаунт",
-    actionLabel: "",
-    action: () => emit("openAccount"),
-  };
-});
+const accountControl = computed(() => ({
+  label: props.isAuthenticated ? "Профиль" : "Войти",
+  action: () => emit("openAccount"),
+}));
 </script>
 
 <style scoped lang="scss">
@@ -432,12 +399,12 @@ const accountControl = computed(() => {
     width: 100%;
     margin-bottom: var(--customer-space-7);
     padding: var(--customer-space-7);
-    color: var(--customer-text-tertiary-on-brand);
+    color: var(--customer-text);
     text-align: left;
     background: var(--customer-surface-note);
     border: calc(var(--customer-space-1) / 2) solid
       var(--customer-surface-control);
-    border-radius: var(--customer-radius-xs);
+    border-radius: var(--customer-radius-sm);
     font-size: var(--customer-font-size-xs);
     font-weight: var(--customer-font-weight-extrabold);
   }
@@ -445,28 +412,6 @@ const accountControl = computed(() => {
   .shell-navigation__account > svg {
     width: var(--customer-font-size-body);
     height: var(--customer-font-size-body);
-  }
-
-  .shell-navigation__account--authenticated {
-    color: var(--customer-success);
-    background: var(--customer-color-success-18);
-    border-color: var(--customer-color-success-35);
-  }
-
-  .shell-navigation__account--authenticated .shell-navigation__account-action {
-    color: var(--customer-color-success-70);
-  }
-
-  .shell-navigation__account-action {
-    margin-left: auto;
-    font-size: var(--customer-font-size-2xs);
-  }
-
-  .shell-navigation__copyright {
-    margin: 0 var(--customer-space-7);
-    color: var(--customer-color-white-35);
-    font-size: var(--customer-font-size-2xs);
-    font-weight: var(--customer-font-weight-bold);
   }
 }
 </style>

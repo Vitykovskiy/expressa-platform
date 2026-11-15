@@ -11,7 +11,9 @@
       <span class="order-card__topline">
         <span class="order-card__title-row">
           <span class="order-card__title">Заказ №{{ displayedNumber }}</span>
-          <span class="order-card__stage">{{ displayedStageLabel }}</span>
+          <span v-if="!rejected" class="order-card__stage">{{
+            displayedStageLabel
+          }}</span>
         </span>
         <span class="order-card__summary">
           <strong>{{ formatRubles(props.order.total) }}</strong>
@@ -23,8 +25,11 @@
         {{ formattedCreatedAt }}
       </span>
     </button>
+    <p v-if="rejected" class="order-card__rejected-status">
+      {{ displayedStageLabel }}
+    </p>
     <p v-if="rejectionReason !== null" class="order-card__rejection">
-      Причина: {{ rejectionReason }}
+      {{ rejectionReason }}
     </p>
     <p v-if="!rejected" class="order-card__pickup-cue">{{ pickupLabel }}</p>
     <p v-if="readyForPickup" class="order-card__pickup-cue">
@@ -137,8 +142,7 @@ function itemKey(item: OrderItem): string {
   overflow: hidden;
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);
-  border-radius: var(--customer-radius-lg);
-  box-shadow: var(--customer-shadow-card);
+  border-radius: var(--customer-radius-xl);
 }
 .order-card--issued {
   color: var(--customer-text);
@@ -193,10 +197,6 @@ function itemKey(item: OrderItem): string {
 .order-card--created .order-card__stage {
   color: var(--customer-color-warning);
   background: var(--customer-color-warning-surface);
-}
-.order-card--rejected .order-card__stage {
-  color: var(--customer-color-danger);
-  background: var(--customer-danger-10);
 }
 .order-card--accepted .order-card__stage,
 .order-card--preparing .order-card__stage {
@@ -262,8 +262,8 @@ function itemKey(item: OrderItem): string {
 .order-card__rejection {
   margin: 0;
   padding: 0 var(--customer-space-10) var(--customer-space-9);
-  color: var(--customer-color-danger);
-  font-size: var(--customer-font-size-sm);
+  color: var(--customer-text-on-surface);
+  font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-semibold);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -339,5 +339,42 @@ function itemKey(item: OrderItem): string {
 .order-card__repeat {
   color: var(--customer-color-text-on-brand);
   background: var(--customer-color-action-primary);
+}
+.order-card--rejected .order-card__header {
+  padding: var(--customer-space-13);
+  padding-bottom: var(--customer-space-9);
+}
+.order-card__rejected-status {
+  margin: 0;
+  padding-inline: var(--customer-space-13);
+  color: var(--customer-danger);
+  font-size: var(--customer-font-size-body);
+  font-weight: var(--customer-font-weight-bold);
+}
+.order-card--rejected .order-card__summary strong {
+  color: var(--customer-text-on-surface);
+}
+.order-card--rejected .order-card__rejection {
+  padding: var(--customer-space-3) var(--customer-space-13)
+    var(--customer-space-9);
+}
+.order-card--rejected .order-card__details {
+  margin: 0 var(--customer-space-13);
+  padding: var(--customer-space-9) 0 var(--customer-space-13);
+  background: transparent;
+}
+@media (max-width: 479px) {
+  .order-card--rejected .order-card__header {
+    padding-inline: var(--customer-space-9);
+  }
+  .order-card__rejected-status {
+    padding-inline: var(--customer-space-9);
+  }
+  .order-card--rejected .order-card__rejection {
+    padding-inline: var(--customer-space-9);
+  }
+  .order-card--rejected .order-card__details {
+    margin-inline: var(--customer-space-9);
+  }
 }
 </style>

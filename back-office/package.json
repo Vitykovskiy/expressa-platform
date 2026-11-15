@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host localhost --port 5174 --strictPort",
     "format:check": "prettier --config ../.prettierrc.json --check package.json index.html *.ts *.json *.mjs src",
-    "lint": "eslint src vite.config.ts vite.config.constants.ts eslint.config.mjs eslint.config.constants.mjs",
+    "lint": "eslint src vite.config.ts vite.config.constants.ts eslint.config.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "build": "vite build"
   },

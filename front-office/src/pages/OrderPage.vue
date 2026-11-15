@@ -252,7 +252,7 @@ const stageHint = computed(() => {
   }
 
   if (order.value.rejection != null) {
-    return `Причина: ${order.value.rejection.reason}`;
+    return order.value.rejection.reason;
   }
 
   return orderCardStageHints[order.value.stage];

@@ -2,164 +2,99 @@
   <section class="cart-screen" aria-labelledby="cart-title">
     <header class="cart-screen__header">
       <h1 id="cart-title" class="cart-screen__title">Корзина</h1>
-      <p class="cart-screen__eyebrow">
-        {{ totalQuantity }} {{ cartItemLabel }}
-      </p>
     </header>
-
     <div v-if="items.length === 0" class="cart-screen__empty" role="status">
-      <div class="cart-screen__empty-icon" aria-hidden="true">
-        <ShoppingCart class="cart-screen__empty-icon-glyph" />
-      </div>
+      <ShoppingCart class="cart-screen__empty-icon" aria-hidden="true" />
       <p class="cart-screen__empty-message">Пока ничего не добавлено</p>
-      <ui-btn
-        class="cart-screen__empty-action"
-        color="surface"
-        size="large"
-        @click="emit('continueShopping')"
+      <UiBtn class="cart-screen__empty-action" @click="emit('continueShopping')"
+        >Перейти в меню</UiBtn
       >
-        Перейти в меню
-      </ui-btn>
     </div>
-
     <div v-else class="cart-screen__content">
-      <ul class="cart-screen__items" aria-label="Позиции в корзине">
+      <ul
+        ref="itemList"
+        class="cart-screen__items"
+        aria-label="Позиции в корзине"
+      >
         <CartItem
           v-for="item in items"
           :key="item.id"
-          :disabled="isSubmitting"
+          :disabled="isEditingLocked"
           :item="item"
           :price-outdated="needsReconfirmation"
           :unavailable="unavailableItemIdSet.has(item.id)"
-          @edit-item="emit('editItem', $event)"
+          @edit-item="editItem"
           @remove-item="emit('removeItem', $event)"
           @update-quantity="
-            (itemId, nextQuantity) =>
-              emit('updateQuantity', itemId, nextQuantity)
+            (itemId, quantity) => emit('updateQuantity', itemId, quantity)
           "
         />
       </ul>
-
-      <div
-        v-if="hasCheckoutMessage"
-        class="cart-screen__notice"
-        :class="noticeClass"
-        :role="needsReconfirmation ? 'status' : 'alert'"
+      <footer
+        class="cart-screen__checkout-footer"
+        aria-label="Оформление заказа"
       >
-        <strong>{{ noticeTitle }}</strong>
-        <span>{{ noticeMessage }}</span>
-        <ui-btn
-          v-if="isIntakeClosed"
-          type="button"
-          class="cart-screen__recheck"
-          color="surface"
-          @click="emit('recheckAvailability')"
-        >
-          Проверить доступность
-        </ui-btn>
-      </div>
-
-      <div
-        v-if="needsReconfirmation"
-        class="cart-screen__mobile-total cart-screen__mobile-total--changed"
-        aria-label="Изменение итога заказа"
-      >
-        <span role="group" aria-label="Предыдущий итог">
-          <span>Предыдущий итог</span>
-          <s>{{ formatRubAmount(totalRub) }}</s>
-        </span>
-        <span role="group" aria-label="Новый итог">
-          <span>Новый итог</span>
-          <strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
-        </span>
-      </div>
-      <div v-else class="cart-screen__mobile-total" aria-label="Итого заказа">
-        <span>Итого</span>
-        <strong>{{ formatRubAmount(totalRub) }}</strong>
-      </div>
-
-      <aside class="cart-screen__summary" aria-label="Сводка заказа">
-        <p class="cart-screen__summary-label">Сводка заказа</p>
-        <p class="cart-screen__summary-row">
-          <span>{{ cartItemLabel }}</span
-          ><strong>{{ totalQuantity }}</strong>
-        </p>
-        <template v-if="needsReconfirmation">
-          <p
-            class="cart-screen__total cart-screen__total--previous"
-            role="group"
-            aria-label="Предыдущий итог"
-          >
-            <span>Предыдущий итог</span><s>{{ formatRubAmount(totalRub) }}</s>
+        <div class="cart-screen__summary">
+          <p class="cart-screen__total">
+            <span>Итого</span
+            ><strong>{{ formatRubles(checkoutTotalRub) }}</strong>
           </p>
-          <p
-            class="cart-screen__total cart-screen__total--changed"
-            role="group"
-            aria-label="Новый итог"
+          <p class="cart-screen__payment">Оплата на кассе при получении</p>
+        </div>
+        <div class="cart-screen__actions">
+          <div
+            v-if="isIntakeUnavailable"
+            class="cart-screen__closed"
+            role="status"
           >
-            <span>Новый итог</span
-            ><strong>{{ formatRubAmount(checkoutTotalRub) }}</strong>
-          </p>
-        </template>
-        <p v-else class="cart-screen__total">
-          <span>Итого</span><strong>{{ formatRubAmount(totalRub) }}</strong>
-        </p>
-        <p class="cart-screen__payment">Оплата на кассе при получении</p>
-        <ui-btn
-          block
-          class="cart-screen__checkout"
-          size="x-large"
-          :disabled="isCheckoutDisabled"
-          :loading="isSubmitting"
-          @click="emitCheckout"
-        >
-          {{ checkoutLabel }}
-        </ui-btn>
-      </aside>
+            <span class="cart-screen__intake-copy">
+              <span>{{ intakeMessage }}</span>
+              <small v-if="intakeRecoveryMessage">{{
+                intakeRecoveryMessage
+              }}</small>
+            </span>
+            <UiIconBtn
+              class="cart-screen__refresh"
+              aria-label="Обновить"
+              :aria-busy="isIntakeChecking || undefined"
+              :disabled="isRefreshDisabled"
+              @click="emit('recheckAvailability')"
+              ><RefreshCw :size="20" aria-hidden="true"
+            /></UiIconBtn>
+          </div>
+          <UiBtn
+            block
+            class="cart-screen__checkout"
+            :disabled="isCheckoutDisabled"
+            :loading="isSubmitting"
+            @click="emitCheckout"
+            >{{ checkoutLabel }}</UiBtn
+          >
+        </div>
+      </footer>
     </div>
-
-    <footer v-if="items.length" class="cart-screen__mobile-checkout">
-      <p class="cart-screen__mobile-payment">Оплата на кассе при получении</p>
-      <ui-btn
-        block
-        class="cart-screen__checkout"
-        size="x-large"
-        :disabled="isCheckoutDisabled"
-        :loading="isSubmitting"
-        @click="emitCheckout"
-      >
-        {{ mobileCheckoutLabel }}
-      </ui-btn>
-    </footer>
+    <UiNotification
+      :message="notificationMessage"
+      :role="needsReconfirmation ? 'status' : 'alert'"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { ShoppingCart } from "lucide-vue-next";
+import { computed, onMounted, useTemplateRef } from "vue";
+import { RefreshCw, ShoppingCart } from "lucide-vue-next";
 import { formatRubles } from "@/entities/customer/model/money";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
+import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
+import UiNotification from "@/shared/ui/customer/notification/UiNotification.vue";
 import CartItem from "./CartItem.vue";
-import { checkoutMessages, checkoutStatuses } from "./checkout.store.constants";
+import { checkoutMessages } from "./checkout.store.constants";
 import type { CartScreenEmits, CartScreenProps } from "./CartScreen.types";
 
-const { acceptsNewOrders = true, ...props } = defineProps<CartScreenProps>();
-
+const props = defineProps<CartScreenProps>();
 const emit = defineEmits<CartScreenEmits>();
+const itemList = useTemplateRef<HTMLUListElement>("itemList");
 
-const totalQuantity = computed(() =>
-  props.items.reduce((sum, item) => sum + item.quantity, 0),
-);
-const cartItemLabel = computed(() => {
-  const lastTwoDigits = totalQuantity.value % 100;
-  const lastDigit = totalQuantity.value % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "товаров";
-  if (lastDigit === 1) return "товар";
-  if (lastDigit >= 2 && lastDigit <= 4) return "товара";
-
-  return "товаров";
-});
 const totalRub = computed(() =>
   props.items.reduce((sum, item) => sum + item.lineTotalRub, 0),
 );
@@ -172,74 +107,73 @@ const unavailableItemIdSet = computed(
   () => new Set(props.unavailableItemIds ?? []),
 );
 const isSubmitting = computed(() => props.checkoutState === "submitting");
-const isIntakeClosed = computed(() => !acceptsNewOrders);
+const isEditingLocked = computed(
+  () => isSubmitting.value || props.itemsLocked === true,
+);
+const isIntakeUnavailable = computed(() => props.acceptsNewOrders === false);
+const isIntakeChecking = computed(
+  () => props.intakeRecovery?.status === "pending",
+);
+const isRefreshDisabled = computed(
+  () => isEditingLocked.value || isIntakeChecking.value,
+);
+const intakeMessage = computed(() => {
+  if (props.intakeRecovery?.confirmedClosed !== false)
+    return "Сейчас не принимаем заказы";
+  return "Приём заказов не подтверждён";
+});
+const intakeRecoveryMessage = computed(() => {
+  if (isIntakeChecking.value) return "Обновляем…";
+  if (props.intakeRecovery?.status === "failed")
+    return "Не удалось обновить. Попробуйте ещё раз";
+  return null;
+});
 const needsReconfirmation = computed(
   () => props.checkoutState === "reconfirmation-required",
 );
 const isCheckoutDisabled = computed(
   () =>
-    isIntakeClosed.value ||
+    isIntakeUnavailable.value ||
     isSubmitting.value ||
     unavailableItemIdSet.value.size > 0,
 );
-const hasCheckoutMessage = computed(
-  () =>
-    isIntakeClosed.value ||
-    needsReconfirmation.value ||
-    props.checkoutState === "error" ||
-    unavailableItemIdSet.value.size > 0,
-);
-const noticeTitle = computed(() => {
-  if (isIntakeClosed.value) return "Приём заказов закрыт";
-  if (unavailableItemIdSet.value.size > 0) return "Проверьте корзину";
-  if (needsReconfirmation.value) return "Итог изменился";
-  return "Не удалось оформить заказ";
-});
-const noticeMessage = computed(() => {
-  if (isIntakeClosed.value)
-    return props.errorMessage ?? "Приём новых заказов сейчас закрыт.";
+const notificationMessage = computed(() => {
+  if (isIntakeUnavailable.value) return null;
   if (unavailableItemIdSet.value.size > 0)
-    return "Удалите недоступные позиции, чтобы продолжить.";
-  if (props.checkoutState === "reconfirmation-required")
-    return "Проверьте предыдущий и новый итог, затем подтвердите заказ ещё раз.";
-  return props.errorMessage ?? "Попробуйте ещё раз.";
+    return "Удалите недоступные позиции, чтобы оформить заказ";
+  if (needsReconfirmation.value) return "Сумма заказа изменилась";
+  if (props.checkoutState === "error") {
+    if (
+      props.errorMessage === checkoutMessages.orderFailed ||
+      props.errorMessage === checkoutMessages.retryFailed
+    )
+      return "Не удалось оформить заказ. Попробуйте ещё раз";
+
+    return (
+      props.errorMessage ?? "Не удалось оформить заказ. Попробуйте ещё раз"
+    );
+  }
+
+  return null;
 });
-const noticeClass = computed(() => ({
-  "cart-screen__notice--warning":
-    acceptsNewOrders &&
-    needsReconfirmation.value &&
-    unavailableItemIdSet.value.size === 0,
-  "cart-screen__notice--error":
-    isIntakeClosed.value ||
-    !needsReconfirmation.value ||
-    unavailableItemIdSet.value.size > 0,
-  "cart-screen__notice--lost-response":
-    props.checkoutState === checkoutStatuses.error &&
-    props.errorMessage === checkoutMessages.retryFailed,
-  "cart-screen__notice--generic-error":
-    props.checkoutState === checkoutStatuses.error &&
-    props.errorMessage === checkoutMessages.orderFailed,
-  "cart-screen__notice--disabled-explanation":
-    (isIntakeClosed.value &&
-      noticeMessage.value === checkoutMessages.intakeClosed) ||
-    (unavailableItemIdSet.value.size > 0 &&
-      noticeMessage.value === "Удалите недоступные позиции, чтобы продолжить."),
-  "cart-screen__notice--reconfirmation": needsReconfirmation.value,
-}));
 const checkoutLabel = computed(() => {
   if (isSubmitting.value) return "Оформляем заказ";
-  if (needsReconfirmation.value) return "Подтвердить новый итог";
   if (props.requiresPhoneConfirmation) return "Подтвердить телефон";
+
   return "Оформить заказ";
 });
-const mobileCheckoutLabel = computed(() =>
-  props.requiresPhoneConfirmation
-    ? checkoutLabel.value
-    : `${checkoutLabel.value} · ${formatRubAmount(checkoutTotalRub.value)}`,
-);
 
-function formatRubAmount(value: number): string {
-  return formatRubles(value);
+onMounted(() => {
+  if (itemList.value !== null) {
+    // Браузер ограничивает восстановленное значение при укороченном списке.
+    itemList.value.scrollTop = props.listScrollTop ?? 0;
+  }
+});
+
+function editItem(itemId: string): void {
+  if (isEditingLocked.value || itemList.value === null) return;
+
+  emit("editItem", itemId, itemList.value.scrollTop);
 }
 
 function emitCheckout(): void {
@@ -254,296 +188,168 @@ function emitCheckout(): void {
 }
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .cart-screen {
   display: flex;
-  flex: 1;
   flex-direction: column;
+  gap: var(--customer-space-9);
   width: 100%;
-  min-height: 100%;
+  max-width: 55rem; /* Accepted 880px task surface; no existing token. */
+  height: calc(100dvh - var(--customer-size-shell-header));
+  min-height: 0;
+  padding: var(--customer-space-13) var(--customer-space-9)
+    max(var(--customer-space-9), env(safe-area-inset-bottom));
   color: var(--customer-text);
-  background: var(--customer-background);
 }
 .cart-screen__header {
-  padding: var(--customer-space-13) var(--customer-space-9)
-    var(--customer-space-15);
-}
-.cart-screen__eyebrow,
-.cart-screen__summary-label {
-  color: var(--customer-color-text-muted-on-brand);
-  font-size: var(--customer-font-size-xs);
-  font-weight: var(--customer-font-weight-bold);
-  letter-spacing: var(--customer-letter-spacing-overline);
-  text-transform: uppercase;
-}
-.cart-screen__eyebrow {
-  margin: var(--customer-space-4) 0 0;
-}
-.cart-screen__summary-label {
-  margin: 0 0 var(--customer-space-4);
+  flex: 0 0 auto;
 }
 .cart-screen__title {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin: 0;
   font-size: var(--customer-font-size-page-heading);
   font-weight: var(--customer-font-weight-page-heading);
-  letter-spacing: var(--customer-letter-spacing-tight);
   line-height: var(--customer-line-height-page-heading);
-}
-.cart-screen__empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--customer-space-11);
-  padding: var(--customer-space-18) var(--customer-space-9);
-  text-align: center;
-}
-.cart-screen__empty-icon {
-  display: grid;
-  width: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
-  height: calc(var(--customer-font-size-7xl) + var(--customer-space-11) * 2);
-  padding: var(--customer-space-11);
-  place-items: center;
-  border-radius: var(--customer-radius-round);
-  background: var(--customer-color-surface-subtle);
-}
-.cart-screen__empty-icon-glyph {
-  width: var(--customer-font-size-7xl);
-  height: var(--customer-font-size-7xl);
-  color: var(--customer-color-text-on-brand);
-}
-.cart-screen__empty-message {
-  margin-top: 0;
-  margin-bottom: 0;
-  color: var(--customer-color-text-muted-on-brand);
-  font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__empty-action {
-  padding: var(--customer-space-7) var(--customer-space-15);
-  border-radius: var(--customer-radius-md);
-  font-size: var(--customer-font-size-md);
-  font-weight: var(--customer-font-weight-extrabold);
-  line-height: 1.5;
 }
 .cart-screen__content {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--customer-space-9);
-  width: 100%;
-  min-width: 0;
-  padding: 0 var(--customer-space-9)
-    calc(var(--customer-space-13) + var(--customer-size-control-xl));
+  min-height: 0;
 }
 .cart-screen__items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--customer-space-5);
-  width: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--customer-space-9);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-xl);
 }
-.cart-screen__mobile-total {
+.cart-screen__checkout-footer {
   display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--customer-space-7);
+  margin-top: auto;
+  padding: var(--customer-space-9);
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+  border-radius: var(--customer-radius-xl);
+}
+.cart-screen__intake-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--customer-space-2);
+  min-width: 0;
+}
+.cart-screen__intake-copy small {
+  font-size: var(--customer-font-size-xs);
+  font-weight: var(--customer-font-weight-semibold);
+}
+.cart-screen__total {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--customer-space-9) var(--customer-space-11);
-  background: var(--customer-color-surface-subtle);
-  border-radius: 1rem;
-  font-size: var(--customer-font-size-md);
-  font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__mobile-total--changed {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--customer-space-4) var(--customer-space-7);
-}
-.cart-screen__mobile-total--changed > [role="group"] {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--customer-space-7);
-}
-.cart-screen__mobile-total:not(.cart-screen__mobile-total--changed) > span {
-  color: rgb(255 255 255 / 75%);
-}
-.cart-screen__mobile-total s {
-  color: var(--customer-color-text-muted-on-brand);
-  font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__mobile-total--changed [role="group"] > span,
-.cart-screen__mobile-total--changed s,
-.cart-screen__mobile-total--changed strong {
-  color: var(--customer-text);
-}
-.cart-screen__notice {
-  display: grid;
-  gap: var(--customer-space-3);
-  padding: var(--customer-space-8) var(--customer-space-9);
-  color: var(--customer-text-on-surface);
-  background: var(--customer-surface);
-  border-left: var(--customer-space-2) solid var(--customer-danger);
-  border-radius: var(--customer-radius-sm);
-}
-.cart-screen__notice--warning {
-  border-left-color: var(--customer-primary);
-}
-.cart-screen__notice span {
-  color: var(--customer-color-text-muted-on-surface);
-}
-.cart-screen__recheck {
-  justify-self: start;
-  padding: 0 var(--customer-space-7);
-  font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__notice--lost-response span {
-  color: var(--customer-text-on-surface);
+  gap: var(--customer-space-7);
+  margin: 0;
   font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-regular);
-}
-.cart-screen__notice--generic-error span {
-  color: var(--customer-text-on-surface);
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-regular);
-}
-.cart-screen__notice--disabled-explanation span {
-  color: var(--customer-text-on-surface);
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-regular);
-}
-.cart-screen__notice--reconfirmation span {
-  color: var(--customer-text-on-surface);
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-regular);
-}
-.cart-screen__mobile-total strong {
-  font-size: var(--customer-font-size-4xl);
-  font-weight: var(--customer-font-weight-black);
-}
-.cart-screen__summary {
-  display: none;
-  padding: var(--customer-space-12);
-  background: var(--customer-surface);
-  border-radius: var(--customer-radius);
-  box-shadow: var(--customer-shadow-surface);
-}
-.cart-screen__summary-label {
-  color: var(--customer-color-text-muted-on-surface);
-}
-.cart-screen__summary-row,
-.cart-screen__total {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0;
-  margin-bottom: 0;
-  color: var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-body);
   font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__total--previous {
-  color: var(--customer-color-text-muted-on-surface);
-}
-.cart-screen__total--previous s {
-  font-weight: var(--customer-font-weight-bold);
-}
-.cart-screen__total--previous,
-.cart-screen__total--previous s,
-.cart-screen__total--changed span {
-  color: var(--customer-text-on-surface);
-}
-.cart-screen__total--changed {
-  margin-top: var(--customer-space-5);
-  padding-top: 0;
-  border-top: 0;
-}
-.cart-screen__summary-row strong {
-  color: var(--customer-text-on-surface);
-}
-.cart-screen__total {
-  margin-top: var(--customer-space-8);
-  padding-top: var(--customer-space-8);
-  border-top: 1px solid var(--customer-color-text-muted-on-surface);
-  font-size: var(--customer-font-size-lg);
-  font-weight: var(--customer-font-weight-extrabold);
 }
 .cart-screen__total strong {
-  color: var(--customer-background);
   font-size: var(--customer-font-size-5xl);
-  font-weight: var(--customer-font-weight-black);
+  font-weight: var(--customer-font-weight-extrabold);
 }
 .cart-screen__payment {
-  margin: var(--customer-space-6) 0 0;
-  color: var(--customer-color-text-muted-on-surface);
+  margin: var(--customer-space-3) 0 0;
+  color: var(--customer-color-text-secondary-on-surface);
+  font-size: var(--customer-font-size-xs);
+}
+.cart-screen__actions {
+  display: grid;
+  gap: var(--customer-space-5);
+}
+.cart-screen__closed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--customer-space-3);
   font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
+}
+.cart-screen__refresh {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  color: var(--customer-text-on-surface);
+  background: transparent;
+  border: 0;
+}
+.cart-screen__refresh:hover:not(:disabled) {
+  background: var(--customer-surface-info);
 }
 .cart-screen__checkout {
-  margin-top: var(--customer-space-9);
-  font-weight: var(--customer-font-weight-black);
-}
-.cart-screen__checkout {
+  min-height: var(--customer-size-control-xl);
   color: var(--customer-text);
   background: var(--customer-primary);
+  border-radius: var(--customer-radius-sm);
+  font-weight: var(--customer-font-weight-extrabold);
 }
-.cart-screen__mobile-checkout {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  align-items: stretch;
-  flex-direction: column;
-  gap: var(--customer-space-5);
-  padding: var(--customer-space-6) var(--customer-space-9)
-    calc(var(--customer-space-6) + env(safe-area-inset-bottom));
-  background: var(--customer-background);
-  border-top: 1px solid var(--customer-border);
-}
-.cart-screen__mobile-payment {
-  margin: 0;
-  color: var(--customer-text-strong-on-brand);
-  font-size: var(--customer-font-size-sm);
-  font-weight: var(--customer-font-weight-semibold);
+.cart-screen__empty {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  justify-items: center;
+  gap: var(--customer-space-9);
   text-align: center;
 }
+.cart-screen__empty-icon {
+  width: var(--customer-size-state-icon);
+  height: var(--customer-size-state-icon);
+}
+.cart-screen__empty-message {
+  margin: 0;
+}
+.cart-screen__empty-action {
+  color: var(--customer-text-on-surface);
+  background: var(--customer-surface);
+}
 @media (min-width: 1024px) {
-  .cart-screen__header {
-    padding: var(--customer-space-13) 0 var(--customer-space-15);
-  }
-  .cart-screen__repeat-warnings {
-    margin-right: 0;
-    margin-left: 0;
+  .cart-screen {
+    height: calc(100dvh - var(--customer-space-9));
+    padding: var(--customer-space-17) 0 var(--customer-space-13);
   }
   .cart-screen__content {
-    display: grid;
-    grid-template-areas:
-      "items summary"
-      "notice summary";
-    grid-template-columns: minmax(0, 1fr) var(--customer-size-summary);
-    align-items: start;
-    align-content: start;
-    gap: var(--customer-space-16);
-    padding: 0 0 var(--customer-space-16);
+    flex: 0 1 auto;
+    gap: 0;
+    background: var(--customer-surface);
+    border-radius: var(--customer-radius-xl);
+    overflow: hidden;
   }
   .cart-screen__items {
-    grid-area: items;
+    padding-inline: var(--customer-space-13);
+    border-radius: 0;
   }
-  .cart-screen__notice {
-    grid-area: notice;
-  }
-  .cart-screen__mobile-total {
-    display: none;
+  .cart-screen__checkout-footer {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--customer-space-13);
+    margin: 0 var(--customer-space-13);
+    padding: var(--customer-space-13) 0;
+    border-top: 1px solid var(--customer-border-subtle-on-surface);
+    border-radius: 0;
   }
   .cart-screen__summary {
-    display: block;
-    position: sticky;
-    grid-area: summary;
-    top: var(--customer-space-11);
+    flex: 1;
+    min-width: 0;
   }
-  .cart-screen__mobile-checkout {
-    display: none;
+  .cart-screen__actions {
+    flex: 0 0 18.25rem; /* Accepted 292px action; no existing token. */
+  }
+  .cart-screen__total strong {
+    font-size: var(--customer-font-size-3xl);
   }
 }
 </style>

@@ -1,11 +1,9 @@
-import type { TimeSlot } from "@/entities/customer/model/customer.types";
-
-export interface SlotOptionProps {
-  timeSlot: TimeSlot;
+export type SlotOptionProps = {
+  value: string;
+  label: string;
   selected: boolean;
-  disabled?: boolean;
-}
+  available: boolean;
+  disabled: boolean;
+};
 
-export interface SlotOptionEmits {
-  select: [slotId: string];
-}
+export type SlotOptionEmits = { select: [value: string] };

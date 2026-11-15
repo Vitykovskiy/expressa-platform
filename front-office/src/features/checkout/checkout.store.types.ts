@@ -11,6 +11,7 @@ export type CheckoutErrorCode =
   | "MENU_ITEM_UNAVAILABLE"
   | "ORDER_INTAKE_CLOSED"
   | "ORDER_CAPACITY_UNAVAILABLE"
+  | "PICKUP_SLOT_UNAVAILABLE"
   | "UNKNOWN_ERROR";
 
 export type CheckoutAttempt = {
@@ -20,6 +21,7 @@ export type CheckoutAttempt = {
 };
 
 export type CheckoutRequest = {
+  pickupSlotStart?: string;
   expectedTotal: number;
   items: CheckoutRequestItem[];
 };
@@ -32,6 +34,7 @@ export type CheckoutRequestItem = {
 };
 
 export type CheckoutState = {
+  rejectedPickupSlotStart: string | null;
   attempt: CheckoutAttempt | null;
   errorCode: CheckoutErrorCode | null;
   errorMessage: string | null;
@@ -48,6 +51,7 @@ export type CheckoutStoreDependencies = {
 };
 
 export type CheckoutSubmission = {
+  pickupSlotStart?: string;
   accessToken: string;
   cartItems: readonly CartItem[];
 };

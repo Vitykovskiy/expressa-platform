@@ -28,4 +28,6 @@ scope: system
 | ADR-014: композиция back-office и текущий вход        | [ADR-014](ADR-014-back-office-composition-and-current-entry.md)                                         | Размещение заменяется ADR-015; текущий вход/API/native сохраняются          |
 | ADR-015: предметная структура back-office             | [ADR-015](ADR-015-back-office-domain-structure.md)                                                      | Целевые app/layouts/modules/shared; независимое review до переноса          |
 | ADR-016: Vue Router для back-office                   | [ADR-016](ADR-016-back-office-vue-router.md)                                                            | Пять named routes, RouterView, home redirect и readiness                    |
-| ADR-017: аккаунт, участия и контекст сессии | [ADR-017](ADR-017-account-memberships-and-session-context.md) | Принятый identity target; частично заменяет ADR-012, реализация отдельно |
+| ADR-017: аккаунт, участия и контекст сессии           | [ADR-017](ADR-017-account-memberships-and-session-context.md)                                           | Принятый identity target; частично заменяет ADR-012, реализация отдельно    |
+
+- [ADR-018: customer pickup selection](ADR-018-customer-pickup-selection.md) — proposed, реализация и независимая приёмка учитываются отдельно.

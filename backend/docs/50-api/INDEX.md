@@ -10,6 +10,7 @@ scope: backend
 
 Вернуться к [карте backend](../INDEX.md).
 
+- [Время получения customer-заказа](Customer-pickup-slots.md) — чтение доступности, выбор и replay.
 - [OpenAPI](../../openapi/openapi.json) — машиночитаемый HTTP-контракт.
 - [Карта API](./_MOC-api.md) — маршруты, владельцы и правила ошибок.
 - [HTTP-конфигурация](../../src/platform/http/http-configuration.ts) и
