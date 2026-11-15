@@ -104,6 +104,7 @@ export class EmployeesController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<EmployeeDto> {
     const details = parseEnrollEmployee(body);
+
     return executeIdentityCommand(async () =>
       toEmployeeDto(
         await this.users.enrollEmployee({
@@ -140,6 +141,7 @@ export class EmployeesController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<EmployeeDto> {
     const role = parseStaffRole(parseUserBody(body, ["role"]).role);
+
     return executeIdentityCommand(async () =>
       toEmployeeDto(
         await this.users.changeEmployeeRole({
@@ -177,9 +179,11 @@ export class EmployeesController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<EmployeeDto> {
     const { enabled } = parseUserBody(body, ["enabled"]);
+
     if (typeof enabled !== "boolean") {
       throw invalidUserField("enabled");
     }
+
     return executeIdentityCommand(async () =>
       toEmployeeDto(
         await this.users.changeEmployeeAccess({

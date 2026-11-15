@@ -130,7 +130,7 @@ const actionable = computed(
   font-display: swap;
 }
 
-/* Локальная плотность карточки и её тень не имеют product tokens; цвета и радиус берём из темы. */
+/* Локальная плотность карточки и её тень не имеют токенов продукта; цвета и радиус берём из темы. */
 .order-card {
   min-width: 0;
   padding: 16px;
@@ -213,7 +213,7 @@ const actionable = computed(
   line-height: 16px;
 }
 
-/* Подробности сохраняют собственные отступы, списки и текстовые уровни без новых theme tokens. */
+/* Подробности сохраняют собственные отступы, списки и текстовые уровни без новых токенов темы. */
 .order-card__details {
   display: flex;
   flex-direction: column;

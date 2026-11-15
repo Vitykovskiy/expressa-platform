@@ -39,7 +39,9 @@ const emit = defineEmits<UiNotificationEmits>();
 const visible = shallowRef(false);
 
 function close(): void {
-  if (!visible.value) return;
+  if (!visible.value) {
+    return;
+  }
 
   visible.value = false;
   emit("close");
@@ -49,9 +51,12 @@ watch(
   () => props.message,
   (message, _previous, onCleanup) => {
     visible.value = message !== null;
-    if (message === null) return;
+    if (message === null) {
+      return;
+    }
 
     const timeout = window.setTimeout(close, UI_NOTIFICATION_DURATION_MS);
+
     onCleanup(() => window.clearTimeout(timeout));
   },
   { immediate: true },
@@ -67,7 +72,7 @@ watch(
   display: flex;
   align-items: center;
   gap: var(--customer-space-5);
-  /* Accepted toast width has no existing layout token. */
+  /* Для ширины уведомления принятого макета нет отдельного токена компоновки. */
   width: min(26.25rem, calc(100% - var(--customer-space-16)));
   padding: var(--customer-space-7);
   color: var(--customer-text-on-surface);
@@ -98,7 +103,7 @@ watch(
   .ui-notification {
     top: var(--customer-space-13);
     right: var(--customer-space-13);
-    width: 22.5rem; /* Accepted 360px desktop toast; no existing token. */
+    width: 22.5rem; /* Ширина уведомления 360px для настольного экрана; отдельного токена нет. */
   }
 }
 </style>

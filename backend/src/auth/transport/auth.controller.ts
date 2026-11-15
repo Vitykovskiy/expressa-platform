@@ -129,6 +129,7 @@ export class AuthController {
   ): Promise<AccessTokenResponse> {
     assertVerifyOtpBody(body);
     let result;
+
     try {
       result = await this.verifyOtp.execute(
         body.phone,
@@ -138,6 +139,7 @@ export class AuthController {
     } catch (error) {
       throwSafeAuthError(error);
     }
+
     writeRefreshCookie(
       response,
       result.refreshToken,
@@ -159,17 +161,20 @@ export class AuthController {
     @Res({ passthrough: true }) response: AuthCookieResponse,
   ): Promise<AccessTokenResponse> {
     const refreshToken = readRefreshCookie(cookie);
+
     if (refreshToken === null) {
       throw new UnauthorizedException();
     }
 
     try {
       const result = await this.refreshSession.execute(refreshToken);
+
       writeRefreshCookie(
         response,
         result.refreshToken,
         this.getCookieMaxAge(result.sessionExpiresAt),
       );
+
       return createAccessTokenResponse(result.accessToken);
     } catch (error) {
       if (error instanceof AccessDeniedError) {
@@ -269,6 +274,7 @@ export class AuthController {
     request: AuthRequest | undefined,
   ): AuthErrorResponse {
     response.status?.(HttpStatus.SERVICE_UNAVAILABLE);
+
     return {
       ...authErrorResponses.serviceUnavailable,
       requestId: request?.requestId ?? "unknown",
@@ -278,15 +284,17 @@ export class AuthController {
 
 function getOtpRequestSource(request: Request | undefined): string {
   const peer = request?.socket.remoteAddress;
+
   if (peer === undefined) {
     return "unknown";
   }
 
-  // Only the private edge network may supply the forwarded client address.
-  // A directly connected public peer cannot choose a throttle key via XFF.
+  // Переданный адрес клиента принимается только от прокси в частной сети.
+  // Прямое подключение из публичной сети не позволяет выбрать ключ ограничения запросов через XFF.
   if (isPrivateProxyPeer(peer) && request?.ip !== undefined) {
     return request.ip;
   }
+
   return peer;
 }
 
@@ -320,13 +328,20 @@ function assertVerifyOtpBody(body: VerifyOtpDto): void {
 }
 
 function parseLogoutRequest(body: unknown): LogoutPushSubscription | null {
-  if (!isExactObject(body, ["pushSubscription"])) validationError();
+  if (!isExactObject(body, ["pushSubscription"])) {
+    validationError();
+  }
 
   const subscription = body.pushSubscription;
+
   if (subscription === null) {
     return null;
   }
-  if (!isExactObject(subscription, ["endpoint", "keys"])) validationError();
+
+  if (!isExactObject(subscription, ["endpoint", "keys"])) {
+    validationError();
+  }
+
   if (
     typeof subscription.endpoint !== "string" ||
     subscription.endpoint.trim() === "" ||
@@ -361,6 +376,7 @@ function isExactObject(
   }
 
   const keys = Object.keys(value);
+
   return (
     keys.length === expectedKeys.length &&
     keys.every((key) => expectedKeys.includes(key))

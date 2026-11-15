@@ -140,14 +140,18 @@ function saveItem(draft: ConfiguredCartItemDraft): void {
 }
 
 function removeItem(itemId: string): void {
-  if (checkoutStore.attempt !== null) return;
+  if (checkoutStore.attempt !== null) {
+    return;
+  }
 
   checkoutStore.reset();
   cartStore.replace(cartStore.items.filter((item) => item.id !== itemId));
 }
 
 function updateQuantity(itemId: string, quantity: number): void {
-  if (checkoutStore.attempt !== null) return;
+  if (checkoutStore.attempt !== null) {
+    return;
+  }
 
   checkoutStore.reset();
   cartStore.replace(
@@ -162,7 +166,9 @@ function continueShopping(): void {
 }
 
 async function checkout(): Promise<void> {
-  if (!canCreateNewOrder.value && checkoutStore.attempt === null) return;
+  if (!canCreateNewOrder.value && checkoutStore.attempt === null) {
+    return;
+  }
 
   if (
     sessionStore.status !== "authenticated" ||
@@ -172,6 +178,7 @@ async function checkout(): Promise<void> {
       path: cartPageRoute.authPhone,
       query: { returnTo: "/checkout/pickup" },
     });
+
     return;
   }
 
@@ -183,7 +190,9 @@ async function reconfirm(): Promise<void> {
 }
 
 async function recheckAvailability(): Promise<void> {
-  if (checkoutStore.attempt !== null || intakeRecheckPending.value) return;
+  if (checkoutStore.attempt !== null || intakeRecheckPending.value) {
+    return;
+  }
 
   confirmedIntakeRefusal.value = intakeRecovery.value.confirmedClosed;
   intakeRecheckPending.value = true;
@@ -200,12 +209,14 @@ async function recheckAvailability(): Promise<void> {
       checkoutStore.reset();
     }
   }
+
   intakeRecheckPending.value = false;
 }
 
 onMounted(() => {
-  if (menuStore.menu === null && menuStore.status !== "loading")
+  if (menuStore.menu === null && menuStore.status !== "loading") {
     void recheckAvailability();
+  }
 });
 
 function getReconfirmedTotalRub(): number {

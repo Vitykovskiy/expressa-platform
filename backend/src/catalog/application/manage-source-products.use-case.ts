@@ -21,25 +21,31 @@ export class ManageSourceProductsUseCase {
       .runV3(
         async (repository) => {
           let before: V3AdminProduct | null = null;
+
           if (productId !== null) {
             before = await repository.findV3ById(productId);
           }
+
           if (productId !== null && before === null) {
             throw new ProductAdminError("PRODUCT_NOT_FOUND");
           }
+
           if (before?.archivedAt != null) {
             throw new ProductAdminError("PRODUCT_ARCHIVED");
           }
+
           if (!(await repository.categoryExists(input.categoryId))) {
             throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
           }
 
           let categoryProducts: V3AdminProduct[] = [];
+
           if (before?.categoryId !== input.categoryId) {
             categoryProducts = await repository.findCurrentV3ByCategory(
               input.categoryId,
             );
           }
+
           const sortOrder =
             before?.categoryId === input.categoryId
               ? before.sortOrder
@@ -48,13 +54,16 @@ export class ManageSourceProductsUseCase {
                   0,
                 );
           const details = this.toProductDetails(input, before, sortOrder);
+
           assertV3ProductDetails(details);
           let after: V3AdminProduct;
+
           if (before === null) {
             after = await repository.createV3(details);
           } else {
             after = await repository.updateV3(before.id, details);
           }
+
           return { before, after };
         },
         (repository, { before, after }) =>
@@ -79,6 +88,7 @@ export class ManageSourceProductsUseCase {
         choice.id === undefined
           ? undefined
           : before?.priceChoices.find((item) => item.id === choice.id);
+
       if (
         choice.id !== undefined &&
         (current === undefined || usedIds.has(choice.id))
@@ -90,15 +100,18 @@ export class ManageSourceProductsUseCase {
           },
         ]);
       }
+
       if (choice.id !== undefined) {
         usedIds.add(choice.id);
       }
+
       return {
         ...choice,
         sortOrder: index,
         isAvailable: current?.isAvailable ?? true,
       };
     });
+
     return {
       categoryId: input.categoryId,
       name: input.name,

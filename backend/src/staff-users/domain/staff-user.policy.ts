@@ -22,6 +22,7 @@ export function requireStaffUser(user: StaffUser | null): StaffUser {
   if (user === null) {
     throw new StaffUserError("USER_NOT_FOUND");
   }
+
   return user;
 }
 
@@ -33,9 +34,11 @@ export function assertAccessChange(
   activeAdministratorCount: number,
 ): void {
   const removesAdministrator = nextBlocked || nextRole !== "administrator";
+
   if (user.id === actorId && removesAdministrator) {
     throw new StaffUserError("USER_ACCESS_CONFLICT");
   }
+
   if (
     user.employee?.role === "administrator" &&
     user.employee.accessEnabled &&
@@ -47,7 +50,7 @@ export function assertAccessChange(
   }
 }
 
-/** Опубликованная account-команда — no-op только при уже достигнутом состоянии участий. */
+/** Опубликованная команда учётной записи ничего не меняет только при уже достигнутом состоянии участий. */
 export function isAccountRoleNoop(user: StaffUser, role: UserRole): boolean {
   if (role === "customer") {
     return (
@@ -55,5 +58,6 @@ export function isAccountRoleNoop(user: StaffUser, role: UserRole): boolean {
       (user.name === null || user.customer !== null)
     );
   }
+
   return user.employee?.role === role;
 }

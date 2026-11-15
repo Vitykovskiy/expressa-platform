@@ -113,8 +113,8 @@ function requestClose(open: boolean) {
 </script>
 
 <style scoped>
-/* Внутренние отступы и шрифт принадлежат исходной оболочке диалога; tokens
-   для них нет. Ширину overlay выбирает dialogGeometry, цвета и радиус — тема. */
+/* Внутренние отступы и шрифт принадлежат исходной оболочке диалога; токенов
+   для них нет. Ширину диалога выбирает `dialogGeometry`, цвета и радиус — тема. */
 .operations-modal {
   width: 100%;
   padding: 24px;
@@ -125,7 +125,7 @@ function requestClose(open: boolean) {
   font-family: Inter, sans-serif;
 }
 /* Заголовок отделён от содержимого собственными интервалами оболочки;
-   они не задают отступы форм, переданных через slots. */
+   они не задают отступы форм, переданных через слоты. */
 .operations-modal__header {
   display: flex;
   flex-direction: column;
@@ -137,7 +137,7 @@ function requestClose(open: boolean) {
   padding-bottom: 16px;
 }
 /* Пара заголовок/описание сохраняет исходную иерархию диалога;
-   общей типографической шкалы в текущих tokens нет. */
+   общей типографической шкалы в текущих токенах нет. */
 .operations-modal__title {
   margin: 0;
   font-size: 18px;
@@ -151,8 +151,8 @@ function requestClose(open: boolean) {
   font-weight: 400;
   line-height: 20px;
 }
-/* Интервалы body и actions относятся к раскладке slots, а не к полям внутри них;
-   отдельных tokens для этих расстояний нет. */
+/* Интервалы содержимого и действий относятся к раскладке слотов, а не к полям внутри них;
+   отдельных токенов для этих расстояний нет. */
 .operations-modal__body {
   display: flex;
   flex-direction: column;
@@ -171,7 +171,7 @@ function requestClose(open: boolean) {
   padding-bottom: 16px;
 }
 
-/* Внутренняя прокручиваемая поверхность ограничена той же высотой viewport,
+/* Внутренняя прокручиваемая поверхность ограничена той же высотой области просмотра,
    что и внешний MODAL_SHEET_STYLE; фиксированная высота экрана здесь не нужна. */
 .operations-modal--sheet {
   max-height: 100dvh;

@@ -27,9 +27,11 @@ import { ApiError } from "@/shared/api/client";
 const route = useRoute();
 const router = useRouter();
 const registrationContext = inject(customerRegistrationKey);
+
 if (registrationContext === undefined) {
   throw new Error(customerRegistrationMessages.notConfigured);
 }
+
 const registration = registrationContext;
 const name = shallowRef("");
 const errorMessage = shallowRef("");
@@ -75,13 +77,16 @@ async function submitName(): Promise<void> {
   }
 
   const isCurrentOperation = registration.captureOperation();
+
   errorMessage.value = "";
 
   try {
     const saved = await registration.complete(submittedName.value.trim());
+
     if (!mounted || !saved || !isCurrentOperation()) {
       return;
     }
+
     await router.replace(
       getSafeAuthReturnTo(route.query.returnTo) ?? routePaths.home,
     );

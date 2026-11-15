@@ -16,6 +16,7 @@ export class SendOrderPushUseCase {
         ? await this.repository.findForStaff()
         : await this.repository.findForUser(order.customerId);
     const notification = toNotification(order);
+
     await Promise.all(
       subscriptions.map(async (subscription) => {
         try {
@@ -42,6 +43,7 @@ function toNotification(order: OrderPush): {
       orderId: order.orderId,
     };
   }
+
   if (order.stage === "REJECTED") {
     if (
       typeof order.rejectionReason !== "string" ||
@@ -49,18 +51,21 @@ function toNotification(order: OrderPush): {
     ) {
       throw new Error("Missing rejection notification reason");
     }
+
     return {
       title: `Заказ ${order.number}`,
       body: `Заказ отклонён: ${order.rejectionReason}`,
       orderId: order.orderId,
     };
   }
+
   const body =
     order.stage === "ACCEPTED"
       ? "Заказ принят"
       : order.stage === "READY"
         ? "Заказ готов"
         : "Заказ выдан";
+
   return { title: `Заказ ${order.number}`, body, orderId: order.orderId };
 }
 

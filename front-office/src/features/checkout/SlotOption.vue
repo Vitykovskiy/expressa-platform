@@ -42,7 +42,7 @@ const emit = defineEmits<SlotOptionEmits>();
   display: flex;
   align-items: center;
   gap: var(--customer-space-7);
-  min-height: 64px; /* Высота строки принятого макета; отдельного token нет. */
+  min-height: 64px; /* Высота строки принятого макета; отдельного токена нет. */
   padding: var(--customer-space-9);
   color: var(--customer-text-on-surface);
   background: var(--customer-surface);

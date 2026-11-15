@@ -17,6 +17,7 @@ import type { UiBadgeProps } from "./UiBadge.types";
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<UiBadgeProps>(), UI_BADGE_DEFAULTS);
+
 defineSlots<{
   default(): unknown;
 }>();

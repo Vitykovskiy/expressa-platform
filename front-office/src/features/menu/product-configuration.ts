@@ -34,6 +34,7 @@ export function createProductConfiguration(
       null,
   };
 }
+
 export function selectProductConfigurationPriceChoice(
   configuration: ProductConfiguration,
   priceChoiceId: string,
@@ -41,10 +42,12 @@ export function selectProductConfigurationPriceChoice(
   const choice = (configuration.product.priceChoices ?? []).find(
     (candidate) => candidate.id === priceChoiceId,
   );
+
   return choice?.isAvailable
     ? { ...configuration, selectedPriceChoiceId: choice.id }
     : configuration;
 }
+
 export function toggleProductConfigurationOption(
   configuration: ProductConfiguration,
   groupId: string,
@@ -53,13 +56,16 @@ export function toggleProductConfigurationOption(
   const group = configuration.product.modifierGroups.find(
     (candidate) => candidate.id === groupId,
   );
+
   if (
     !group ||
     !group.options.some(
       (option) => option.id === optionId && option.isAvailable,
     )
-  )
+  ) {
     return configuration;
+  }
+
   const current =
     configuration.selectedModifierGroups.find(
       (item) => item.groupId === groupId,
@@ -79,6 +85,7 @@ export function toggleProductConfigurationOption(
         : current.length < group.maxSelect
           ? [...current, optionId]
           : current;
+
   return {
     ...configuration,
     selectedModifierGroups: configuration.selectedModifierGroups.map((item) =>
@@ -86,6 +93,7 @@ export function toggleProductConfigurationOption(
     ),
   };
 }
+
 export function setProductConfigurationQuantity(
   configuration: ProductConfiguration,
   quantity: number,
@@ -95,6 +103,7 @@ export function setProductConfigurationQuantity(
     ? { ...configuration, quantity }
     : configuration;
 }
+
 export function isProductConfigurationValid(
   configuration: ProductConfiguration,
 ): boolean {
@@ -106,11 +115,13 @@ export function isProductConfigurationValid(
     getSelectedModifierOptions(configuration).valid
   );
 }
+
 export function getProductConfigurationTotals(
   configuration: ProductConfiguration,
 ): ProductConfigurationTotals | null {
   const price = getSelectedPrice(configuration);
   const options = getSelectedModifierOptions(configuration);
+
   return price === null || !options.valid
     ? null
     : {
@@ -126,26 +137,35 @@ export function getProductConfigurationTotals(
           configuration.quantity,
       };
 }
+
 export function getSelectedModifierOptions(
   configuration: ProductConfiguration,
 ): ProductConfigurationSelectedOptions {
   const options: CartSelectedModifierOption[] = [];
+
   for (const group of configuration.product.modifierGroups) {
     const ids =
       configuration.selectedModifierGroups.find(
         (item) => item.groupId === group.id,
       )?.optionIds ?? [];
+
     if (
       ids.length < group.minSelect ||
       ids.length > group.maxSelect ||
       new Set(ids).size !== ids.length
-    )
+    ) {
       return { options: [], valid: false };
+    }
+
     for (const id of ids) {
       const option = group.options.find(
         (candidate) => candidate.id === id && candidate.isAvailable,
       );
-      if (!option) return { options: [], valid: false };
+
+      if (!option) {
+        return { options: [], valid: false };
+      }
+
       options.push({
         groupId: group.id,
         id: option.id,
@@ -154,19 +174,25 @@ export function getSelectedModifierOptions(
       });
     }
   }
+
   return {
     options: options.sort((a, b) => a.id.localeCompare(b.id)),
     valid: true,
   };
 }
+
 export function toCartItemDraft(
   configuration: ProductConfiguration,
 ): ConfiguredCartItemDraft | null {
   const totals = getProductConfigurationTotals(configuration);
-  if (!isProductConfigurationValid(configuration) || totals === null)
+
+  if (!isProductConfigurationValid(configuration) || totals === null) {
     return null;
+  }
+
   const choice = getSelectedChoice(configuration);
   const selectedOptions = getSelectedModifierOptions(configuration).options;
+
   return {
     productId: configuration.product.id,
     productName: configuration.product.name,
@@ -196,6 +222,7 @@ export function toCartItemDraft(
     price: totals.unitTotal,
   } as ConfiguredCartItemDraft;
 }
+
 function getSelectedChoice(
   configuration: ProductConfiguration,
 ): PublicMenuPriceChoice | null {
@@ -206,8 +233,11 @@ function getSelectedChoice(
     ) ?? null
   );
 }
+
 function getSelectedPrice(configuration: ProductConfiguration): number | null {
-  if ((configuration.product.priceChoices ?? []).length === 0)
+  if ((configuration.product.priceChoices ?? []).length === 0) {
     return configuration.product.price;
+  }
+
   return getSelectedChoice(configuration)?.price ?? null;
 }

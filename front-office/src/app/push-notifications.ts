@@ -18,7 +18,10 @@ if (isServiceWorker()) {
   precacheAndRoute(self.__WB_MANIFEST);
   self.addEventListener("push", (event) => {
     const notification = toOrderNotification(event.data?.json());
-    if (notification === null) return;
+
+    if (notification === null) {
+      return;
+    }
 
     event.waitUntil(
       self.registration.showNotification(notification.title, {
@@ -29,15 +32,20 @@ if (isServiceWorker()) {
   });
   self.addEventListener("notificationclick", (event) => {
     const orderUrl = toOrderUrl(event.notification.data);
+
     event.notification.close();
-    if (orderUrl === null) return;
+    if (orderUrl === null) {
+      return;
+    }
 
     event.waitUntil(self.clients.openWindow(orderUrl));
   });
 }
 
 export function toOrderUrl(value: unknown): string | null {
-  if (!isRecord(value) || !isUuid(value.orderId)) return null;
+  if (!isRecord(value) || !isUuid(value.orderId)) {
+    return null;
+  }
 
   return `/orders/${value.orderId}`;
 }

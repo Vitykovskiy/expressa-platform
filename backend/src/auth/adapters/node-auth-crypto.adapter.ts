@@ -82,6 +82,7 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
 
     const parts = token.split(".");
     const [encodedHeader, encodedPayload, signature] = parts;
+
     if (
       parts.length !== 3 ||
       encodedHeader === undefined ||
@@ -95,17 +96,20 @@ export class NodeAuthCryptoAdapter implements AuthCrypto {
     }
 
     const signedContent = `${encodedHeader}.${encodedPayload}`;
+
     if (!this.matchesJwtSignature(signedContent, signature)) {
       return null;
     }
 
     const header = parseJson(encodedHeader);
     const claims = parseJson(encodedPayload);
+
     if (!isJwtHeader(header) || !isAccessTokenClaims(claims)) {
       return null;
     }
 
     const now = Math.floor(input.now.getTime() / 1000);
+
     if (
       claims.iss !== input.issuer ||
       claims.aud !== input.audience ||
@@ -198,6 +202,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isRefreshToken(value: string): boolean {
   const [sessionId, secret] = value.split(".");
+
   if (
     sessionId === undefined ||
     secret === undefined ||

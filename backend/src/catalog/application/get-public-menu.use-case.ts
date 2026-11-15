@@ -20,6 +20,7 @@ export class GetPublicMenuUseCase {
   async executeV3(): Promise<PublicMenuV3> {
     const candidates = await this.repository.findV3Candidates();
     const publishableGroups = createPublishableModifierGroups(candidates);
+
     return {
       acceptsNewOrders: candidates.acceptsNewOrders,
       categories: candidates.categories
@@ -78,6 +79,7 @@ function createV3Product(
       price,
       isAvailable,
     }));
+
   if (
     priceChoices.length > 0 &&
     product.price === null &&
@@ -98,7 +100,11 @@ function createV3Product(
       },
     ];
   }
-  if (priceChoices.length !== 0 || product.price === null) return [];
+
+  if (priceChoices.length !== 0 || product.price === null) {
+    return [];
+  }
+
   return [
     {
       id: product.id,
@@ -170,6 +176,7 @@ function getCategoryModifierGroups(
     }
 
     const group = groups.get(assignment.groupId);
+
     if (group === undefined) {
       hasInvalidGroup = true;
       continue;

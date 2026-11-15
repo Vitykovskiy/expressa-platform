@@ -74,7 +74,7 @@ export type PublicMenuModifierOption = {
   isAvailable: boolean;
 };
 
-/** The v3 pricing projection intentionally has no physical-unit semantics. */
+/** Проекция цен v3 намеренно не описывает физические единицы измерения. */
 export type PublicMenuV3PriceChoice = {
   id: string;
   portionLabel: string;

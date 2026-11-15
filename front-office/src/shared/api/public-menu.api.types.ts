@@ -13,7 +13,7 @@ export type PublicMenuCategory = {
   products: PublicMenuProduct[];
 };
 
-/** Plain labels are display text, never a measurement to parse. */
+/** Подписи предназначены для отображения, а не для извлечения числовых величин. */
 export type PublicMenuProduct = {
   id: string;
   name: string;

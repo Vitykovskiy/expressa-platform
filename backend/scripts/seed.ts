@@ -75,6 +75,7 @@ async function seedCatalog(
     const options = normalizeModifierDefaults(
       seed.modifierOptions.filter((option) => option.groupId === group.id),
     );
+
     for (const modifierOption of options) {
       await pool.query(modifierOptionUpsertSql, [
         modifierOption.id,
@@ -99,6 +100,7 @@ async function seedCatalog(
 
 async function seedDevelopmentCustomerMenu(pool: Pool): Promise<void> {
   const client = await pool.connect();
+
   try {
     await client.query("BEGIN");
     await client.query("SELECT pg_advisory_xact_lock($1)", [7_249_001]);
@@ -131,12 +133,14 @@ async function seedDevelopmentCustomerMenu(pool: Pool): Promise<void> {
     );
     const categoryOffset = await readSortOffset(client, "categories", []);
     const productOffsets = new Map<string, number>();
+
     for (const category of customerMenuCatalogSeed.categories) {
       productOffsets.set(
         category.id,
         await readSortOffset(client, "products", [category.id]),
       );
     }
+
     await seedCatalog(client, {
       ...customerMenuCatalogSeed,
       categories: customerMenuCatalogSeed.categories.map((category) => ({
@@ -170,12 +174,15 @@ async function readSortOffset(
     [...categoryIds],
   );
   const max = result.rows[0]?.max;
+
   if (max === null || max === undefined) {
     return 0;
   }
+
   if (!Number.isSafeInteger(max) || max >= 2_147_483_640) {
     throw new Error("Catalog sort order space is exhausted.");
   }
+
   return max + 1;
 }
 
@@ -214,14 +221,17 @@ async function main(): Promise<void> {
       operatingSettingsSeed.slotCapacity,
     ]);
     const phone = process.env.BOOTSTRAP_ADMIN_PHONE;
+
     if (phone !== undefined && phone !== "") {
       const users = new PostgresStaffUsersRepository(() => pool);
+
       await users.run(async (repository) => {
         const creation = await repository.findOrCreateForOperations(
           phone,
           "administrator",
         );
         const before = creation.user;
+
         if (creation.created) {
           await repository.writeAudit({
             actorId: before.id,
@@ -243,6 +253,7 @@ async function main(): Promise<void> {
             "administrator",
             before.id,
           );
+
           await repository.revokeAccess(before.id, "staff");
           await repository.writeAudit({
             actorId: before.id,

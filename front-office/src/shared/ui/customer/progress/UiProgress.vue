@@ -21,6 +21,7 @@
 import { computed } from "vue";
 import { UI_PROGRESS_DEFAULTS } from "./UiProgress.constants";
 import type { UiProgressProps } from "./UiProgress.types";
+
 defineOptions({ inheritAttrs: false });
 const props = withDefaults(
   defineProps<UiProgressProps>(),

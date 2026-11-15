@@ -125,7 +125,10 @@ const optionSummary = computed(() => {
 
     return addon.quantity > 1 ? `${name} ×${addon.quantity}` : name;
   });
-  if (portionLabel.value) labels.unshift(portionLabel.value);
+
+  if (portionLabel.value) {
+    labels.unshift(portionLabel.value);
+  }
 
   return labels.join(" · ");
 });

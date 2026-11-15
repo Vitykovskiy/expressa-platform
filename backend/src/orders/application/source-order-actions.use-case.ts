@@ -15,9 +15,11 @@ export class SourceOrderActionsUseCase {
 
   async execute(command: SourceOrderCommand): Promise<OrderDetails> {
     const order = await this.unitOfWork.applySourceAction(command);
+
     if (command.action === "ready") {
       this.metrics.recordOrderTransition("READY");
     }
+
     void this.push
       .execute({
         recipient: "customer",
@@ -30,6 +32,7 @@ export class SourceOrderActionsUseCase {
           : {}),
       })
       .catch(() => undefined);
+
     return order;
   }
 }

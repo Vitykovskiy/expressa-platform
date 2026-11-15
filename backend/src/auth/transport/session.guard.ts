@@ -32,6 +32,7 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<unknown>();
+
     if (!isAuthenticatedRequest(request)) {
       throw new UnauthorizedException();
     }
@@ -48,6 +49,7 @@ export class SessionGuard implements CanActivate {
       issuer: this.configuration.accessTokenIssuer,
       now,
     });
+
     if (claims === null) {
       throw new UnauthorizedException();
     }
@@ -56,6 +58,7 @@ export class SessionGuard implements CanActivate {
       claims.sid,
       now,
     );
+
     if (!isCurrentSession(sessionWithUser, claims.sid, claims.sub, now)) {
       throw new UnauthorizedException();
     }

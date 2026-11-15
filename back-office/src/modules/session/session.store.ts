@@ -65,7 +65,7 @@ export const useSessionStore = defineStore("session", () => {
     try {
       proof = (await supplyProof?.(controller.signal)) ?? null;
     } catch {
-      // Staff logout допускает session-only запрос, если proof получить не удалось.
+      // Выход сотрудника допускает запрос только с сеансом, если `proof` получить не удалось.
       proof = null;
     }
 

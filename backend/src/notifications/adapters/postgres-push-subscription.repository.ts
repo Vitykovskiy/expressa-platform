@@ -37,9 +37,10 @@ export class PostgresPushSubscriptionRepository
   ): Promise<Result> {
     this.requireActor(actor, actor.userId);
     const client = await this.dependencies.pool.connect();
+
     try {
       await client.query("BEGIN");
-      // Общая membership-блокировка предшествует users, как у изменения роли/блокировки.
+      // Общая блокировка участий предшествует блокировке учётных записей, как при смене роли или блокировке пользователя.
       await client.query(
         "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
         [staffUsersMembershipLock],
@@ -61,12 +62,15 @@ export class PostgresPushSubscriptionRepository
         [userIds],
       );
       const account = accounts.rows.find((row) => row.id === actor.userId);
+
       if (account === undefined || account.blocked === true) {
         throw new PushAssociationUnauthorizedError();
       }
+
       if (account.blocked !== false) {
         throw new Error("Invalid push account block metadata");
       }
+
       const memberships = await client.query<DatabaseRow>(
         "SELECT user_id, role, access_disabled_at FROM employees WHERE user_id = ANY($1::uuid[]) ORDER BY user_id FOR UPDATE",
         [userIds],
@@ -74,6 +78,7 @@ export class PostgresPushSubscriptionRepository
       const employee = memberships.rows.find(
         (row) => row.user_id === actor.userId,
       );
+
       await this.lockAndAuthorizeSession(client, actor);
       if (
         actor.context === "staff" &&
@@ -83,6 +88,7 @@ export class PostgresPushSubscriptionRepository
       ) {
         throw new PushAssociationAccessDeniedError();
       }
+
       const locked = await client.query<DatabaseRow>(
         "SELECT user_id FROM push_subscriptions WHERE endpoint = $1 FOR UPDATE",
         [endpoint],
@@ -91,13 +97,17 @@ export class PostgresPushSubscriptionRepository
         locked.rows[0] === undefined
           ? null
           : required(locked.rows[0], "user_id");
+
       if (lockedOwnerId !== null && lockedOwnerId !== ownerId) {
         throw new PushAssociationConflictError();
       }
+
       const result = await operation(
         new PostgresPushAssociationTransaction(client, actor),
       );
+
       await client.query("COMMIT");
+
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -112,6 +122,7 @@ export class PostgresPushSubscriptionRepository
       `SELECT ${pushSubscriptionProjection} FROM push_subscriptions JOIN users ON users.id = push_subscriptions.user_id WHERE endpoint = $1`,
       [endpoint],
     );
+
     return result.rows[0] === undefined ? null : toSubscription(result.rows[0]);
   }
 
@@ -136,6 +147,7 @@ export class PostgresPushSubscriptionRepository
       subscription.endpoint,
       async (repository) => {
         const current = await repository.findByEndpoint(subscription.endpoint);
+
         if (
           current === null ||
           current.context !== "customer" ||
@@ -144,6 +156,7 @@ export class PostgresPushSubscriptionRepository
         ) {
           return null;
         }
+
         return repository.transferAssociation(
           subscription,
           userId,
@@ -189,6 +202,7 @@ export class PostgresPushSubscriptionRepository
       `SELECT ${pushSubscriptionProjection} FROM push_subscriptions JOIN users ON users.id = push_subscriptions.user_id ${clause}`,
       values,
     );
+
     return result.rows.map(toSubscription);
   }
 
@@ -203,6 +217,7 @@ export class PostgresPushSubscriptionRepository
     ) {
       throw new PushAssociationUnauthorizedError();
     }
+
     if (
       actor.context !== "customer" &&
       (actor.context !== "staff" ||
@@ -211,6 +226,7 @@ export class PostgresPushSubscriptionRepository
     ) {
       throw new PushAssociationAccessDeniedError();
     }
+
     return actor;
   }
 
@@ -223,6 +239,7 @@ export class PostgresPushSubscriptionRepository
       [actor.sessionId],
     );
     const session = sessions.rows[0];
+
     if (
       session === undefined ||
       session.user_id !== actor.userId ||
@@ -231,10 +248,12 @@ export class PostgresPushSubscriptionRepository
     ) {
       throw new PushAssociationUnauthorizedError();
     }
+
     const clock = await client.query<DatabaseRow>(
       "SELECT clock_timestamp() AS now",
     );
     const now = clock.rows[0]?.now;
+
     if (
       !(now instanceof Date) ||
       Number.isNaN(now.getTime()) ||
@@ -243,6 +262,7 @@ export class PostgresPushSubscriptionRepository
     ) {
       throw new Error("Invalid push authorization timestamps");
     }
+
     if (session.expires_at <= now) {
       throw new PushAssociationUnauthorizedError();
     }
@@ -259,6 +279,7 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
       `SELECT ${pushSubscriptionProjection} FROM push_subscriptions JOIN users ON users.id = push_subscriptions.user_id WHERE endpoint = $1`,
       [endpoint],
     );
+
     return result.rows[0] === undefined ? null : toSubscription(result.rows[0]);
   }
 
@@ -268,6 +289,7 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
     if (command.userId !== this.actor.userId) {
       throw new PushAssociationUnauthorizedError();
     }
+
     const result = await this.client.query<DatabaseRow>(
       `INSERT INTO push_subscriptions(user_id, endpoint, p256dh, auth, context) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (endpoint) DO NOTHING RETURNING association_version`,
       [
@@ -278,6 +300,7 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
         this.actor.context,
       ],
     );
+
     return result.rows[0] === undefined
       ? null
       : required(result.rows[0], "association_version");
@@ -291,12 +314,14 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
     if (userId !== this.actor.userId) {
       throw new PushAssociationUnauthorizedError();
     }
+
     if (
       subscription.context !== this.actor.context ||
       this.actor.context !== "customer"
     ) {
       throw new PushAssociationConflictError();
     }
+
     const result = await this.client.query<DatabaseRow>(
       `UPDATE push_subscriptions SET user_id = $1, association_version = gen_random_uuid(), updated_at = CURRENT_TIMESTAMP
        WHERE id = $2 AND user_id = $3 AND association_version = $4
@@ -304,6 +329,7 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
        RETURNING association_version`,
       [userId, subscription.id, subscription.userId, expectedVersion],
     );
+
     return result.rows[0] === undefined
       ? null
       : required(result.rows[0], "association_version");
@@ -315,6 +341,7 @@ class PostgresPushAssociationTransaction implements PushAssociationTransaction {
     ) {
       throw new PushAssociationConflictError();
     }
+
     return deleteSnapshot(this.client, subscription);
   }
 }
@@ -332,6 +359,7 @@ async function deleteSnapshot(
       subscription.context,
     ],
   );
+
   return result.rowCount === 1;
 }
 
@@ -349,8 +377,10 @@ function toSubscription(row: DatabaseRow): PushSubscription {
 
 function required(row: DatabaseRow, field: string): string {
   const value = row[field];
+
   if (typeof value !== "string" || value === "") {
     throw new Error(`Invalid PostgreSQL push subscription field: ${field}`);
   }
+
   return value;
 }

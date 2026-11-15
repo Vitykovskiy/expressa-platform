@@ -15,6 +15,7 @@ export function sourceCategoryResponse(
   value: SourceCategoryResult,
 ): SourceCategoryResponseDto {
   const { id, name, description, sortOrder, isActive } = value.category;
+
   return {
     category: { id, name, description, sortOrder, isActive },
     modifierGroupIds: value.modifierGroupIds,
@@ -50,6 +51,7 @@ export function sourceGroupResponse(
   value: AdminModifierGroup,
 ): ModifierGroupResponseDto {
   const { id, name, selectionType, minSelect, maxSelect, isActive } = value;
+
   return {
     id,
     name,
@@ -66,5 +68,6 @@ export function sourceOptionResponse(
 ): ModifierOptionResponseDto {
   const { id, groupId, name, priceDelta, sortOrder, isDefault, isAvailable } =
     value;
+
   return { id, groupId, name, priceDelta, sortOrder, isDefault, isAvailable };
 }

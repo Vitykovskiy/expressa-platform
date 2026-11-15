@@ -16,6 +16,7 @@
 import { computed } from "vue";
 import { UI_FIELD_MESSAGE_COLORS } from "./UiFieldMessage.constants";
 import type { UiFieldMessageProps } from "./UiFieldMessage.types";
+
 defineOptions({ inheritAttrs: false });
 const props = withDefaults(defineProps<UiFieldMessageProps>(), {
   message: "",

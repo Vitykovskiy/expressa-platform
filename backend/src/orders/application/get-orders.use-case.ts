@@ -20,7 +20,11 @@ export class GetOrdersUseCase {
 
   async details(orderId: string): Promise<OrderDetails> {
     const order = await this.repository.findDetails(orderId);
-    if (order === null) throw new OrderNotFoundError();
+
+    if (order === null) {
+      throw new OrderNotFoundError();
+    }
+
     return order;
   }
 
@@ -39,7 +43,11 @@ export class GetOrdersUseCase {
       customerId,
       orderId,
     );
-    if (order === null) throw new OrderNotFoundError();
+
+    if (order === null) {
+      throw new OrderNotFoundError();
+    }
+
     return order;
   }
 }

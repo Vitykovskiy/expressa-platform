@@ -11,7 +11,9 @@ export function configureOrderNotificationsDependencies(
 }
 
 export function getOrderNotificationsDependencies(): OrderNotificationsDependencies {
-  if (dependencies === undefined)
+  if (dependencies === undefined) {
     throw new Error("Notification dependencies are not configured.");
+  }
+
   return dependencies;
 }

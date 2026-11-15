@@ -17,12 +17,12 @@ import type { LogoutProofSupplier } from "../session/session.types";
 export const useNotificationsStore = defineStore("notifications", () => {
   const open = shallowRef(false);
   const busy = shallowRef(false);
-  // Готовность worker/key не подтверждает permission, association или доставку.
+  // Готовность сервис-воркера и ключа не подтверждает разрешение, связь подписки или доставку.
   const ready = shallowRef(false);
   const verified = shallowRef(false);
   const message = shallowRef("");
   const inspection = shallowRef<PushInspection | null>(null);
-  // Pending и unknown удерживают одну исходную команду до подтверждения или явной сверки.
+  // Состояния `pending` и `unknown` удерживают исходную команду до подтверждения или явной сверки.
   const command = shallowRef<PushCommand | null>(null);
   const inspectedUnknown = shallowRef(false);
   const sessionExpired = shallowRef(false);
@@ -144,7 +144,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
         return;
       }
 
-      // Сверяем исходный proof неизвестной команды, даже если native-подписка изменилась.
+      // Сверяем исходный proof неизвестной команды, даже если нативная подписка изменилась.
       let inspectedProof = command.value?.proof ?? null;
 
       if (inspectedProof === null && subscription !== null) {
@@ -219,7 +219,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
     busy.value = true;
 
     try {
-      // Permission остаётся первым async-действием нового явного клика после подготовки.
+      // Запрос разрешения остаётся первым асинхронным действием нового явного клика после подготовки.
       const permission = await globalThis.Notification.requestPermission();
 
       if (activeContext !== requestContext) {

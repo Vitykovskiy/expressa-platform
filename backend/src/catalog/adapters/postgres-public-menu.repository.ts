@@ -53,6 +53,7 @@ export class PostgresPublicMenuRepository implements PublicMenuRepository {
         "SELECT category_id, group_id, sort_order FROM category_modifier_groups ORDER BY sort_order",
       ),
     ]);
+
     return {
       acceptsNewOrders: readAcceptsNewOrders(settings.rows),
       categories: categories.rows.map(parseCategory),
@@ -225,6 +226,7 @@ function readNullableString(
   key: string,
 ): string | null | undefined {
   const value = row[key];
+
   return value === undefined || value === null ? value : readString(row, key);
 }
 

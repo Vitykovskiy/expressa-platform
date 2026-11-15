@@ -37,11 +37,18 @@ const resendTimer = setInterval(
 );
 const resendRemainingSeconds = computed(() => {
   const cooldownUntil = sessionStore.otpCooldownUntil;
-  if (cooldownUntil !== null)
+
+  if (cooldownUntil !== null) {
     return Math.max(0, Math.ceil((cooldownUntil - now.value) / 1000));
+  }
+
   const metadata = sessionStore.otpRequestMetadata;
   const requestedAt = sessionStore.otpRequestedAt;
-  if (metadata === null || requestedAt === null) return 0;
+
+  if (metadata === null || requestedAt === null) {
+    return 0;
+  }
+
   return Math.max(
     0,
     Math.ceil(
@@ -49,6 +56,7 @@ const resendRemainingSeconds = computed(() => {
     ),
   );
 });
+
 onBeforeUnmount(() => {
   pageActive = false;
   clearInterval(resendTimer);
@@ -73,7 +81,9 @@ const authState = computed<AuthCodePageState>(() => ({
 }));
 
 async function verifyOtp(code: string = otp.value): Promise<void> {
-  if (isLoading.value || sessionStore.pendingPhone === null) return;
+  if (isLoading.value || sessionStore.pendingPhone === null) {
+    return;
+  }
 
   isLoading.value = true;
   errorMessage.value = "";
@@ -84,6 +94,7 @@ async function verifyOtp(code: string = otp.value): Promise<void> {
     if (!pageActive || sessionStore.generation !== generation) {
       return;
     }
+
     if (sessionStore.status !== "authenticated") {
       return;
     }
@@ -93,8 +104,10 @@ async function verifyOtp(code: string = otp.value): Promise<void> {
         path: routePaths.authName,
         query: returnToQuery(),
       });
+
       return;
     }
+
     await router.replace(returnTo());
   } catch {
     if (pageActive && sessionStore.generation === generation) {
@@ -110,8 +123,9 @@ async function resendOtp(): Promise<void> {
     isLoading.value ||
     sessionStore.pendingPhone === null ||
     resendRemainingSeconds.value > 0
-  )
+  ) {
     return;
+  }
 
   isLoading.value = true;
   errorMessage.value = "";
@@ -122,6 +136,7 @@ async function resendOtp(): Promise<void> {
     if (!pageActive || sessionStore.generation !== generation) {
       return;
     }
+
     otp.value = "";
     now.value = getSessionDependencies().now();
   } catch {
@@ -147,6 +162,7 @@ function returnToQuery(): { returnTo?: string } {
   const returnTo = route.query.returnTo;
 
   const safeReturnTo = getSafeAuthReturnTo(returnTo);
+
   return safeReturnTo === undefined ? {} : { returnTo: safeReturnTo };
 }
 

@@ -92,6 +92,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceCategoryResponse(await this.categories.save(input, actor, null)),
     );
@@ -116,6 +117,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceCategoryResponse(await this.categories.save(input, actor, id)),
     );
@@ -137,6 +139,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceGroupResponse(await this.modifiers.saveGroup(input, actor, null)),
     );
@@ -161,6 +164,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceGroupResponse(await this.modifiers.saveGroup(input, actor, id)),
     );
@@ -183,6 +187,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceOptionResponse(
         await this.modifiers.saveOption(input, actor, { groupId: id }),
@@ -209,6 +214,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceOptionResponse(
         await this.modifiers.saveOption(input, actor, { optionId: id }),
@@ -230,6 +236,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceProductResponse(await this.products.save(input, actor, null)),
     );
@@ -254,6 +261,7 @@ export class SourceMenuController {
       actorId: auth.userId,
       requestId: parseSourceRequestId(request.requestId),
     };
+
     return executeSourceCommand(async () =>
       sourceProductResponse(await this.products.save(input, actor, id)),
     );

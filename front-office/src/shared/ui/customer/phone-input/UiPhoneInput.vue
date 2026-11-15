@@ -22,12 +22,14 @@ import type {
   UiPhoneInputEmits,
   UiPhoneInputProps,
 } from "./UiPhoneInput.types";
+
 defineOptions({ inheritAttrs: false });
 const props = withDefaults(
   defineProps<UiPhoneInputProps>(),
   UI_PHONE_INPUT_DEFAULTS,
 );
 const emit = defineEmits<UiPhoneInputEmits>();
+
 defineSlots<{
   loader?: (props: { isActive: boolean; color?: string }) => unknown;
 }>();

@@ -74,6 +74,7 @@ export class BackofficeAvailabilityController {
   @ApiResponse({ status: 200, type: AvailabilityResponseDto })
   async getAvailability(): Promise<AvailabilityResponseDto> {
     const catalog = await this.getAdminCatalog.executeAvailability();
+
     return toAvailabilityDto(catalog);
   }
 
@@ -117,6 +118,7 @@ export class BackofficeAvailabilityController {
     @Req() request: AvailabilityRequestContext,
   ): Promise<ServiceIntakeResponseDto> {
     assertBoolean(body?.acceptsNewOrders, "acceptsNewOrders");
+
     return this.manageServiceIntake.execute({
       acceptsNewOrders: body.acceptsNewOrders,
       actorId: auth.userId,
@@ -195,30 +197,39 @@ function toAvailabilityDto(
 function assertAvailabilityType(
   value: string,
 ): asserts value is AvailabilityEntityType {
-  if (value !== "product" && value !== "modifier")
+  if (value !== "product" && value !== "modifier") {
     throw validationError([
       { path: "type", reason: "Must be product or modifier" },
     ]);
+  }
 }
+
 function assertBoolean(value: unknown, path: string): asserts value is boolean {
-  if (typeof value !== "boolean")
+  if (typeof value !== "boolean") {
     throw validationError([{ path, reason: "Must be a boolean" }]);
+  }
 }
+
 function assertUuid(value: string, path: string): void {
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value,
     )
-  )
+  ) {
     throw validationError([{ path, reason: "Must be a UUID" }]);
+  }
 }
+
 function requestId(request: AvailabilityRequestContext): string {
-  if (typeof request.requestId !== "string" || request.requestId === "")
+  if (typeof request.requestId !== "string" || request.requestId === "") {
     throw validationError([{ path: "requestId", reason: "Must be present" }]);
+  }
+
   return request.requestId;
 }
+
 function throwAvailabilityError(error: unknown): never {
-  if (error instanceof AvailabilityNotFoundError)
+  if (error instanceof AvailabilityNotFoundError) {
     throw new HttpException(
       {
         code: "AVAILABILITY_ITEM_NOT_FOUND",
@@ -227,5 +238,7 @@ function throwAvailabilityError(error: unknown): never {
       },
       HttpStatus.NOT_FOUND,
     );
+  }
+
   throw error;
 }

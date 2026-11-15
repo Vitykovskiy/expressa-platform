@@ -1,4 +1,5 @@
 import type { CatalogModifierSelectionType } from "../domain/catalog.types";
+
 export type ModifierGroupDto = {
   id: string;
   name: string;

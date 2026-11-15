@@ -4,6 +4,7 @@ export function normalizeModifierDefaults<Option extends ModifierOptionInput>(
   options: readonly Option[],
 ): Option[] {
   let first: Option | undefined;
+
   for (const option of options) {
     if (
       first === undefined ||
@@ -14,5 +15,6 @@ export function normalizeModifierDefaults<Option extends ModifierOptionInput>(
       first = option;
     }
   }
+
   return options.map((option) => ({ ...option, isDefault: option === first }));
 }

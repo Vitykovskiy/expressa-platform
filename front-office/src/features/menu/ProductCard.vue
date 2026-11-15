@@ -57,6 +57,7 @@ import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import { formatRubles } from "@/entities/customer/model/money";
 import { PRODUCT_CARD_UNAVAILABLE_DESCRIPTION } from "./ProductCard.constants";
 import type { ProductCardEmits, ProductCardProps } from "./ProductCard.types";
+
 const props = defineProps<ProductCardProps>();
 const emit = defineEmits<ProductCardEmits>();
 const description = computed(() =>

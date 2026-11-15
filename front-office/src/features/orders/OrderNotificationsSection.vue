@@ -88,8 +88,9 @@ onBeforeUnmount(() => {
   observer?.disconnect();
 });
 watch(visible, (isVisible) => {
-  if (isVisible) void observeExposure();
-  else {
+  if (isVisible) {
+    void observeExposure();
+  } else {
     observationGeneration += 1;
     observer?.disconnect();
   }
@@ -109,16 +110,23 @@ watch(
 async function observeExposure(): Promise<void> {
   const accountId = props.accountId;
   const generation = observationGeneration;
+
   await nextTick();
   if (
     observationDisposed ||
     generation !== observationGeneration ||
     accountId !== props.accountId
-  )
+  ) {
     return;
+  }
+
   observer?.disconnect();
   const target = section.value;
-  if (target === null || accountId === null) return;
+
+  if (target === null || accountId === null) {
+    return;
+  }
+
   observer = new IntersectionObserver((entries) => {
     if (
       observationDisposed ||
@@ -126,19 +134,28 @@ async function observeExposure(): Promise<void> {
       accountId !== props.accountId ||
       target !== section.value ||
       !visible.value
-    )
+    ) {
       return;
+    }
+
     if (
       document.hidden ||
       !entries.some((entry) => entry.target === target && entry.isIntersecting)
-    )
+    ) {
       return;
-    if (exposureRecordedThisVisit.value) return;
+    }
+
+    if (exposureRecordedThisVisit.value) {
+      return;
+    }
+
     if (!rememberNotificationInvitationChoice(accountId)) {
       storageUnavailable.value = true;
       observer?.disconnect();
+
       return;
     }
+
     exposureRecordedThisVisit.value = true;
     observer?.disconnect();
   });
@@ -153,14 +170,18 @@ async function enable(): Promise<void> {
 
 function dismiss(): void {
   const wasFocused = section.value?.contains(document.activeElement) ?? false;
+
   rememberChoice();
   dismissed.value = true;
-  if (wasFocused) props.returnFocusTo?.focus();
+  if (wasFocused) {
+    props.returnFocusTo?.focus();
+  }
 }
 
 function rememberChoice(): void {
-  if (props.accountId !== null)
+  if (props.accountId !== null) {
     rememberNotificationInvitationChoice(props.accountId);
+  }
 }
 </script>
 

@@ -5,7 +5,7 @@ import type {
   RegisteredAuthUser,
 } from "./customer-registration.repository.types";
 import type { CompleteCustomerRegistrationInput } from "./complete-customer-registration.use-case.types";
-import { GetCurrentUserUseCase } from "./get-current-user.use-case";
+import type { GetCurrentUserUseCase } from "./get-current-user.use-case";
 
 export class CompleteCustomerRegistrationUseCase {
   constructor(
@@ -25,6 +25,7 @@ export class CompleteCustomerRegistrationUseCase {
       sessionId,
       this.clock.now(),
     );
+
     if (user === null || user.id !== identity.id) {
       throw new AccessDeniedError();
     }

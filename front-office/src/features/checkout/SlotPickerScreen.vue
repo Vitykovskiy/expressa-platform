@@ -95,7 +95,7 @@ const emit = defineEmits<SlotPickerScreenEmits>();
   flex-direction: column;
   gap: var(--customer-space-7);
   width: 100%;
-  max-width: 55rem; /* Поверхность 880px принятого макета; отдельного token нет. */
+  max-width: 55rem; /* Ширина области 880px принятого макета; отдельного токена нет. */
   height: calc(100dvh - var(--customer-size-shell-header));
   min-height: 0;
   padding: var(--customer-space-9);
@@ -184,7 +184,7 @@ const emit = defineEmits<SlotPickerScreenEmits>();
     padding: var(--customer-space-11);
   }
   .slot-picker__confirm {
-    width: 18.25rem; /* Ширина CTA принятого макета; отдельного token нет. */
+    width: 18.25rem; /* Ширина кнопки подтверждения принятого макета; отдельного токена нет. */
   }
 }
 @media (min-width: 1024px) {
@@ -198,7 +198,7 @@ const emit = defineEmits<SlotPickerScreenEmits>();
     flex: 0 1 auto;
   }
   .slot-picker__list {
-    max-height: 520px; /* Принятый desktop viewport списка; отдельного token нет. */
+    max-height: 520px; /* Высота видимой области списка на настольном экране из принятого макета; отдельного токена нет. */
   }
 }
 @media (max-width: 1023px) {

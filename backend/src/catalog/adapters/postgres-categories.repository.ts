@@ -8,7 +8,7 @@ import type {
   AdminCategory,
   CategoryDetails,
 } from "../domain/category-admin.policy.types";
-import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import type { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
 import type { DatabaseRow } from "./postgres-categories.repository.types";
 
 export class PostgresCategoriesRepository implements CategoriesUnitOfWork {
@@ -36,6 +36,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
        FROM categories WHERE id = $1`,
       [id],
     );
+
     return result.rows[0] === undefined ? null : parseCategory(result.rows[0]);
   }
 
@@ -45,6 +46,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
       `SELECT id, name, description, sort_order, is_active, archived_at
        FROM categories WHERE archived_at IS NULL ORDER BY sort_order, id`,
     );
+
     return result.rows.map(parseCategory);
   }
 
@@ -56,6 +58,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
        RETURNING id, name, description, sort_order, is_active, archived_at`,
       [details.name, details.description, details.sortOrder, details.isActive],
     );
+
     return parseRequiredCategory(result.rows[0]);
   }
 
@@ -74,6 +77,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
         details.isActive,
       ],
     );
+
     return parseRequiredCategory(result.rows[0]);
   }
 
@@ -85,6 +89,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
     const activeCategoryIds = categories
       .filter((category) => category.isActive)
       .map((category) => category.id);
+
     await client.query(
       `UPDATE categories SET is_active = false
        WHERE id = ANY($1::uuid[]) AND archived_at IS NULL`,
@@ -114,6 +119,7 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
        FROM categories WHERE id = ANY($1::uuid[]) ORDER BY sort_order, id`,
       [categoryIds],
     );
+
     return result.rows.map(parseCategory);
   }
 
@@ -125,11 +131,13 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
        RETURNING id, name, description, sort_order, is_active, archived_at`,
       [id],
     );
+
     return parseRequiredCategory(result.rows[0]);
   }
 
   async writeAudit(event: CategoryAuditEvent): Promise<void> {
     const client = this.client;
+
     await client.query(
       `INSERT INTO audit_events (actor_id, entity_type, entity_id, action, before_state, after_state, request_id)
        VALUES ($1, 'category', $2, $3, $4::jsonb, $5::jsonb, $6)`,
@@ -146,7 +154,10 @@ export class PostgresCategoriesTransactionRepository implements CategoriesReposi
 }
 
 function parseRequiredCategory(row: DatabaseRow | undefined): AdminCategory {
-  if (row === undefined) throw new Error("Category command returned no row");
+  if (row === undefined) {
+    throw new Error("Category command returned no row");
+  }
+
   return parseCategory(row);
 }
 
@@ -163,31 +174,44 @@ function parseCategory(row: DatabaseRow): AdminCategory {
 
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
-  if (typeof value !== "string")
+
+  if (typeof value !== "string") {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
+
   return value;
 }
 
 function readBoolean(row: DatabaseRow, key: string): boolean {
   const value = row[key];
-  if (typeof value !== "boolean")
+
+  if (typeof value !== "boolean") {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
+
   return value;
 }
 
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
+
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
 function readNullableDate(row: DatabaseRow, key: string): Date | null {
   const value = row[key];
-  if (value === null) return null;
+
+  if (value === null) {
+    return null;
+  }
+
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }

@@ -42,9 +42,14 @@ export function assertCategoryDetails(value: CategoryDetails): void {
 export function assertCurrentCategory(
   category: AdminCategory | null,
 ): AdminCategory {
-  if (category === null) throw new CategoryAdminError("CATEGORY_NOT_FOUND");
-  if (category.archivedAt !== null)
+  if (category === null) {
+    throw new CategoryAdminError("CATEGORY_NOT_FOUND");
+  }
+
+  if (category.archivedAt !== null) {
     throw new CategoryAdminError("CATEGORY_ARCHIVED");
+  }
+
   return category;
 }
 
@@ -53,7 +58,9 @@ export function assertAvailableActivePosition(
   categoryId: string | null,
   details: CategoryDetails,
 ): void {
-  if (!details.isActive) return;
+  if (!details.isActive) {
+    return;
+  }
 
   if (
     categories.some(
@@ -75,6 +82,7 @@ export function assertFullCategoryReorder(
   const currentIds = categories
     .filter((category) => category.archivedAt === null)
     .map((category) => category.id);
+
   if (
     categoryIds.length !== currentIds.length ||
     new Set(categoryIds).size !== categoryIds.length
@@ -83,11 +91,13 @@ export function assertFullCategoryReorder(
   }
 
   const currentIdSet = new Set(currentIds);
+
   if (categoryIds.some((id) => !currentIdSet.has(id))) {
     throw new CategoryAdminError("CATEGORY_REORDER_INVALID");
   }
 
   const activeCount = categories.filter((category) => category.isActive).length;
+
   if (activeCount + categoryIds.length - 1 > maximumCategorySortOrder) {
     throw new CategoryAdminError("CATEGORY_INVALID", [
       { path: "categoryIds", reason: "Too many categories" },

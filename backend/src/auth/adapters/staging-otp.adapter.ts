@@ -29,6 +29,7 @@ export class StagingOtpAdapter implements OtpCodeGenerator, SmsSender {
     }
 
     const phones = allowlist.split(",");
+
     if (
       phones.some((phone) => !/^\+7\d{10}$/.test(phone)) ||
       new Set(phones).size !== phones.length

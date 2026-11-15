@@ -23,39 +23,60 @@ export class ProductAdminError extends Error {
 }
 
 export function assertV3ProductDetails(value: V3ProductDetails): void {
-  if (value.name.trim() === "") invalidV3("name", "Must be a non-empty string");
-  if (!isSortOrder(value.sortOrder))
+  if (value.name.trim() === "") {
+    invalidV3("name", "Must be a non-empty string");
+  }
+
+  if (!isSortOrder(value.sortOrder)) {
     invalidV3("sortOrder", "Must be a non-negative int32");
+  }
+
   if (value.priceChoices.length === 0) {
-    if (!isPrice(value.price)) invalidV3("price", "A single price is required");
+    if (!isPrice(value.price)) {
+      invalidV3("price", "A single price is required");
+    }
+
     if (
       value.portionLabel !== null &&
       normalizeLabel(value.portionLabel) === ""
-    )
+    ) {
       invalidV3("portionLabel", "Must not be blank");
+    }
+
     return;
   }
-  if (value.price !== null || value.portionLabel !== null)
+
+  if (value.price !== null || value.portionLabel !== null) {
     invalidV3(
       "priceChoices",
       "Choices must not have a direct price or portion label",
     );
+  }
+
   const labels = new Set<string>();
   const orders = new Set<number>();
+
   value.priceChoices.forEach((choice, index) => {
     const label = normalizeLabel(choice.portionLabel);
-    if (label === "" || labels.has(label.toLocaleLowerCase("ru-RU")))
+
+    if (label === "" || labels.has(label.toLocaleLowerCase("ru-RU"))) {
       invalidV3(
         `priceChoices.${index}.portionLabel`,
         "Must be distinct and non-empty",
       );
-    if (!isPrice(choice.price))
+    }
+
+    if (!isPrice(choice.price)) {
       invalidV3(`priceChoices.${index}.price`, "Must be a non-negative int32");
-    if (!isSortOrder(choice.sortOrder) || orders.has(choice.sortOrder))
+    }
+
+    if (!isSortOrder(choice.sortOrder) || orders.has(choice.sortOrder)) {
       invalidV3(
         `priceChoices.${index}.sortOrder`,
         "Must be unique and non-negative",
       );
+    }
+
     labels.add(label.toLocaleLowerCase("ru-RU"));
     orders.add(choice.sortOrder);
   });
@@ -77,6 +98,7 @@ function isPrice(value: unknown): value is number {
     value <= maximumProductSortOrder
   );
 }
+
 function isSortOrder(value: unknown): value is number {
   return (
     typeof value === "number" &&

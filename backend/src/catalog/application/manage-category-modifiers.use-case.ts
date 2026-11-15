@@ -30,9 +30,11 @@ export class ManageCategoryModifiersUseCase {
           if (!(await repository.categoryExists(command.categoryId))) {
             throw new CategoryAdminError("CATEGORY_NOT_FOUND");
           }
+
           const currentGroupIds = await repository.findCurrentModifierGroupIds(
             command.groupIds,
           );
+
           if (currentGroupIds.length !== command.groupIds.length) {
             throw new CategoryModifierGroupsError(
               "CATEGORY_MODIFIER_GROUPS_INVALID",
@@ -44,11 +46,13 @@ export class ManageCategoryModifiersUseCase {
               ],
             );
           }
+
           const before = await repository.findByCategoryId(command.categoryId);
           const after = await repository.replace(
             command.categoryId,
             command.groupIds,
           );
+
           return { before, after };
         },
         (repository, result) =>

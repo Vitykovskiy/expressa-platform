@@ -36,6 +36,7 @@ export const useSessionStore = defineStore("session", {
       if (state.status !== sessionStatuses.authenticated) {
         return null;
       }
+
       if (!isCurrentUserProfile(state.currentUser)) {
         throw new Error(sessionMessages.operationFailed);
       }
@@ -54,6 +55,7 @@ export const useSessionStore = defineStore("session", {
 
       const user = this.currentProfile;
       const accessToken = this.accessToken;
+
       if (
         this.status !== sessionStatuses.authenticated ||
         user === null ||
@@ -68,15 +70,18 @@ export const useSessionStore = defineStore("session", {
       }
 
       const generation = this.generation;
+
       this.registrationPending = true;
       try {
         const registered = await complete(accessToken, name);
+
         if (
           !this.ownsProtectedRead(generation, user.id) ||
           this.accessToken !== accessToken
         ) {
           return false;
         }
+
         if (
           !isCurrentUserProfile(registered) ||
           registered.id !== user.id ||
@@ -88,6 +93,7 @@ export const useSessionStore = defineStore("session", {
         ) {
           throw new Error(sessionMessages.completeRegistration);
         }
+
         this.currentUser = registered;
 
         return true;
@@ -98,12 +104,14 @@ export const useSessionStore = defineStore("session", {
         ) {
           return false;
         }
+
         if (
           error instanceof ApiError &&
           (error.status === 401 || error.status === 403)
         ) {
           this.clear();
         }
+
         throw error;
       } finally {
         if (this.ownsProtectedRead(generation, user.id)) {
@@ -121,6 +129,7 @@ export const useSessionStore = defineStore("session", {
       }
 
       const restorePromise = this.restore();
+
       this.restorePromise = restorePromise;
 
       try {
@@ -138,11 +147,13 @@ export const useSessionStore = defineStore("session", {
 
       const generation = this.generation;
       const requestId = ++this.otpRequestId;
+
       this.errorMessage = null;
 
       try {
         const metadata =
           await getSessionDependencies().authApi.requestOtp(phone);
+
         if (this.generation !== generation || this.otpRequestId !== requestId) {
           return metadata;
         }
@@ -167,9 +178,11 @@ export const useSessionStore = defineStore("session", {
           error.retryAfterSeconds !== null
         ) {
           const requestedAt = getSessionDependencies().now();
+
           this.pendingPhone = phone;
           this.otpCooldownUntil = requestedAt + error.retryAfterSeconds * 1000;
         }
+
         this.errorMessage = getErrorMessage("requestOtp", error);
         throw error;
       }
@@ -181,6 +194,7 @@ export const useSessionStore = defineStore("session", {
 
       this.errorMessage = null;
       const generation = ++this.generation;
+
       this.registrationPending = false;
       this.accessToken = null;
       this.currentUser = null;
@@ -191,26 +205,31 @@ export const useSessionStore = defineStore("session", {
         const accessSession = await this.requestAccessSession(() =>
           getSessionDependencies().authApi.verifyOtp(phone, code),
         );
+
         await this.authenticate(accessSession.accessToken, generation);
         if (this.generation !== generation) {
           return;
         }
+
         this.clearOtpRequest();
       } catch (error) {
         if (this.generation === generation) {
           this.errorMessage = getErrorMessage("verifyOtp", error);
         }
+
         throw error;
       }
     },
     async logout(): Promise<void> {
       const activeLogout = logoutPromises.get(this);
+
       if (activeLogout) {
         return activeLogout;
       }
 
       this.errorMessage = null;
       const logout = this.completeLogout();
+
       logoutPromises.set(this, logout);
 
       try {
@@ -221,13 +240,16 @@ export const useSessionStore = defineStore("session", {
     },
     async completeLogout(): Promise<void> {
       const generation = ++this.generation;
+
       this.registrationPending = false;
       try {
-        // Дождаться уже отправленного cookie-response до отзыва сессии.
+        // Дождаться ответа с cookie от уже отправленного запроса до отзыва сессии.
         const authentication = authenticationRequests.get(this);
+
         if (authentication !== undefined) {
           await authentication.catch(() => {});
         }
+
         const pushSubscription =
           await useOrderNotificationsStore().readLogoutPushSubscription();
 
@@ -249,6 +271,7 @@ export const useSessionStore = defineStore("session", {
     },
     clear(): void {
       const generation = this.generation + 1;
+
       Object.assign(this, anonymousSessionState, { generation });
     },
     async restore(): Promise<void> {
@@ -257,6 +280,7 @@ export const useSessionStore = defineStore("session", {
       }
 
       const generation = ++this.generation;
+
       this.registrationPending = false;
       this.status = sessionStatuses.unknown;
       this.errorMessage = null;
@@ -265,6 +289,7 @@ export const useSessionStore = defineStore("session", {
         const accessSession = await this.requestAccessSession(() =>
           getSessionDependencies().authApi.refresh(),
         );
+
         await this.authenticate(accessSession.accessToken, generation);
       } catch (error) {
         if (this.generation !== generation) {
@@ -273,6 +298,7 @@ export const useSessionStore = defineStore("session", {
 
         if (isUnauthorized(error)) {
           this.clear();
+
           return;
         }
 
@@ -288,6 +314,7 @@ export const useSessionStore = defineStore("session", {
       }
 
       const expectedGeneration = generation ?? ++this.generation;
+
       if (generation === undefined) {
         this.registrationPending = false;
         this.currentUser = null;
@@ -305,6 +332,7 @@ export const useSessionStore = defineStore("session", {
       if (!isCurrentUserProfile(currentUser)) {
         throw new Error(sessionMessages.operationFailed);
       }
+
       if (currentUser.context !== "customer") {
         this.clear();
         throw new Error(sessionMessages.contextRejected);
@@ -323,6 +351,7 @@ export const useSessionStore = defineStore("session", {
       }
 
       const authentication = request();
+
       authenticationRequests.set(this, authentication);
 
       try {
@@ -341,12 +370,14 @@ export const useSessionStore = defineStore("session", {
       const accessToken = this.accessToken;
       const accountId = this.currentUser?.id ?? null;
       const generation = this.generation;
+
       if (accessToken === null) {
         throw new Error(sessionMessages.operationFailed);
       }
 
       try {
         const result = await read(accessToken);
+
         if (!isLive() || !this.ownsProtectedRead(generation, accountId)) {
           throw new Error(sessionMessages.restore);
         }
@@ -362,6 +393,7 @@ export const useSessionStore = defineStore("session", {
         this.restorePromise !== null &&
         this.accessToken === accessToken &&
         (this.currentUser?.id ?? null) === accountId;
+
       if (
         !isLive() ||
         (!this.ownsProtectedRead(generation, accountId) &&
@@ -373,6 +405,7 @@ export const useSessionStore = defineStore("session", {
       onRecoveryStart();
       await this.bootstrap();
       const refreshedAccessToken = this.accessToken;
+
       if (
         this.status !== sessionStatuses.authenticated ||
         refreshedAccessToken === null ||
@@ -381,6 +414,7 @@ export const useSessionStore = defineStore("session", {
       ) {
         throw new Error(sessionMessages.restore);
       }
+
       const refreshedGeneration = this.generation;
 
       try {
@@ -389,6 +423,7 @@ export const useSessionStore = defineStore("session", {
         }
 
         const result = await read(refreshedAccessToken);
+
         if (
           !isLive() ||
           !this.ownsProtectedRead(refreshedGeneration, accountId)

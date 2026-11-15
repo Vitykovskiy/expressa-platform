@@ -19,6 +19,8 @@ export async function saveModifierOptions(
         ? normalized.length
         : group.maxSelect,
   };
+
   assertPublishableModifierGroup(details, normalized);
+
   return repository.updateGroup(group.id, details, normalized);
 }

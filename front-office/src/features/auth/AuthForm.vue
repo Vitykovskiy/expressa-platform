@@ -185,7 +185,9 @@ const canSubmitName = computed(() => props.state.name.trim() !== "");
 const isLoading = computed(() => props.isLoading ?? false);
 
 function updatePhone(phone: string) {
-  if (!isLoading.value) emit("updatePhone", formatPhone(phone));
+  if (!isLoading.value) {
+    emit("updatePhone", formatPhone(phone));
+  }
 }
 
 function updateOtp(value: string) {
@@ -199,10 +201,18 @@ function formatPhone(value: string): string {
     ? localDigits.slice(1)
     : localDigits;
 
-  if (number.length === 0) return "";
-  if (number.length <= 3) return `+7 (${number}`;
-  if (number.length <= 6)
+  if (number.length === 0) {
+    return "";
+  }
+
+  if (number.length <= 3) {
+    return `+7 (${number}`;
+  }
+
+  if (number.length <= 6) {
     return `+7 (${number.slice(0, 3)}) ${number.slice(3)}`;
+  }
+
   if (number.length <= 8) {
     return `+7 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
   }
@@ -217,20 +227,29 @@ function updateName(name: string) {
 }
 
 function sendCode() {
-  if (canSendCode.value && !isLoading.value) emit("sendCode");
+  if (canSendCode.value && !isLoading.value) {
+    emit("sendCode");
+  }
 }
 
 function resendCode() {
-  if (isLoading.value || props.resendRemainingSeconds > 0) return;
+  if (isLoading.value || props.resendRemainingSeconds > 0) {
+    return;
+  }
+
   emit("sendCode");
 }
 
 function verifyOtp() {
-  if (canVerifyOtp.value && !isLoading.value) emit("verifyOtp", props.otp);
+  if (canVerifyOtp.value && !isLoading.value) {
+    emit("verifyOtp", props.otp);
+  }
 }
 
 function submitName() {
-  if (canSubmitName.value && !isLoading.value) emit("submitName");
+  if (canSubmitName.value && !isLoading.value) {
+    emit("submitName");
+  }
 }
 </script>
 
@@ -264,7 +283,7 @@ function submitName() {
 }
 
 .auth-form__ghost-button.auth-form__ghost-button {
-  /* Overrides the shared text-variant compact height for the touch target. */
+  /* Увеличиваем общую компактную высоту текстовой кнопки для удобного нажатия. */
   min-height: 2.75rem;
 }
 
@@ -275,7 +294,7 @@ function submitName() {
 }
 
 .auth-form :deep(.auth-form__error-message.v-alert) {
-  /* Vuetify's tonal error color is unreadable over the auth background. */
+  /* Тональный цвет ошибки Vuetify не обеспечивает читаемость на фоне формы входа. */
   background: var(--customer-color-blue-700) !important;
   border: 1px solid var(--customer-danger-pale);
   color: var(--customer-color-white) !important;

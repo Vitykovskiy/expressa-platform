@@ -24,7 +24,9 @@ export class LogoutUseCase {
     refreshToken: string,
     subscription: LogoutPushSubscription | null,
   ): Promise<void> {
-    if (subscription === null) return this.logoutSession(refreshToken);
+    if (subscription === null) {
+      return this.logoutSession(refreshToken);
+    }
 
     const parsedCredential = tryParseRefreshToken(refreshToken);
     const refreshHash = this.crypto.hashRefreshToken(refreshToken);
@@ -45,7 +47,9 @@ export class LogoutUseCase {
     const parsedCredential = parseRefreshToken(refreshToken);
     const refreshHash = this.crypto.hashRefreshToken(refreshToken);
 
-    if (refreshHash === null) throw new AccessDeniedError();
+    if (refreshHash === null) {
+      throw new AccessDeniedError();
+    }
 
     try {
       await this.repository.logoutSession(
@@ -63,7 +67,10 @@ function tryParseRefreshToken(value: string): RefreshTokenParts | null {
   try {
     return parseRefreshToken(value);
   } catch (error) {
-    if (error instanceof AccessDeniedError) return null;
+    if (error instanceof AccessDeniedError) {
+      return null;
+    }
+
     throw error;
   }
 }

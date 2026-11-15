@@ -42,10 +42,14 @@ export class SmsRuSmsSender implements SmsSender {
         throw new SmsDeliveryError("rejected");
       }
     } catch (error) {
-      if (error instanceof SmsDeliveryError) throw error;
+      if (error instanceof SmsDeliveryError) {
+        throw error;
+      }
+
       if (error instanceof Error && error.name === "AbortError") {
         throw new SmsDeliveryError("timeout");
       }
+
       throw new SmsDeliveryError("transport");
     } finally {
       clearTimeout(timeout);

@@ -19,13 +19,17 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
   state: () => ({ ...initialCheckoutState }),
   actions: {
     confirm(submission: CheckoutSubmission): Promise<unknown> {
-      if (this.submitPromise !== null) return this.submitPromise;
+      if (this.submitPromise !== null) {
+        return this.submitPromise;
+      }
+
       if (
         this.attempt !== null &&
         this.errorCode === checkoutErrorCodes.network
       ) {
         return this.retry(submission.accessToken);
       }
+
       if (this.status === checkoutStatuses.reconfirmationRequired) {
         return Promise.resolve(null);
       }
@@ -35,25 +39,32 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         undefined,
         submission.pickupSlotStart,
       );
+
       if (request === null) {
         this.setError(
           checkoutErrorCodes.invalidCart,
           checkoutMessages.invalidCart,
         );
+
         return Promise.resolve(null);
       }
 
       this.attempt = createAttempt(request, submission.cartItems);
+
       return this.send(submission.accessToken);
     },
     reconfirm(submission: CheckoutSubmission): Promise<unknown> {
-      if (this.submitPromise !== null) return this.submitPromise;
+      if (this.submitPromise !== null) {
+        return this.submitPromise;
+      }
+
       if (
         this.attempt !== null &&
         this.errorCode === checkoutErrorCodes.network
       ) {
         return this.retry(submission.accessToken);
       }
+
       if (this.status !== checkoutStatuses.reconfirmationRequired) {
         return Promise.resolve(null);
       }
@@ -63,20 +74,26 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         this.reconfirmedTotal,
         submission.pickupSlotStart,
       );
+
       if (request === null) {
         this.setError(
           checkoutErrorCodes.invalidCart,
           checkoutMessages.invalidCart,
         );
+
         return Promise.resolve(null);
       }
 
       this.attempt = createAttempt(request, submission.cartItems);
       this.reconfirmedTotal = null;
+
       return this.send(submission.accessToken);
     },
     retry(accessToken: string): Promise<unknown> {
-      if (this.submitPromise !== null) return this.submitPromise;
+      if (this.submitPromise !== null) {
+        return this.submitPromise;
+      }
+
       if (
         this.attempt === null ||
         this.errorCode !== checkoutErrorCodes.network
@@ -87,7 +104,9 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
       return this.send(accessToken);
     },
     reset(): void {
-      if (this.attempt !== null) return;
+      if (this.attempt !== null) {
+        return;
+      }
 
       Object.assign(this, initialCheckoutState);
     },
@@ -100,7 +119,10 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
     },
     send(accessToken: string): Promise<unknown> {
       const attempt = this.attempt;
-      if (attempt === null) return Promise.resolve(null);
+
+      if (attempt === null) {
+        return Promise.resolve(null);
+      }
 
       this.status = checkoutStatuses.submitting;
       this.errorCode = null;
@@ -117,10 +139,12 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           this.order = order;
           this.status = checkoutStatuses.succeeded;
           this.attempt = null;
+
           return order;
         })
         .catch((error: unknown) => {
           this.handleError(error, attempt);
+
           return null;
         })
         .finally(() => {
@@ -128,6 +152,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         });
 
       this.submitPromise = submitPromise;
+
       return submitPromise;
     },
     handleError(
@@ -139,6 +164,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
     ): void {
       if (!(error instanceof ApiError)) {
         this.setError(checkoutErrorCodes.network, checkoutMessages.retryFailed);
+
         return;
       }
 
@@ -147,8 +173,10 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
         error.status === null ||
         error.status >= 500 ||
         (error.status >= 200 && error.status < 300);
+
       if (outcomeUnknown) {
         this.setError(checkoutErrorCodes.network, checkoutMessages.retryFailed);
+
         return;
       }
 
@@ -156,6 +184,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
 
       if (error.code === checkoutErrorCodes.totalChanged) {
         const total = getTotal(error.details);
+
         if (total !== null) {
           this.errorCode = checkoutErrorCodes.totalChanged;
           this.errorMessage = checkoutMessages.totalChanged;
@@ -163,6 +192,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           this.reconfirmedTotal = total;
           this.status = checkoutStatuses.reconfirmationRequired;
           this.unavailableCartItemIds = [];
+
           return;
         }
       }
@@ -176,6 +206,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           error.details,
           attempt.cartItemIdsByAddressableId,
         );
+
         return;
       }
 
@@ -184,6 +215,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           checkoutErrorCodes.intakeClosed,
           checkoutMessages.intakeClosed,
         );
+
         return;
       }
 
@@ -193,6 +225,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           checkoutErrorCodes.pickupUnavailable,
           checkoutMessages.pickupUnavailable,
         );
+
         return;
       }
 
@@ -201,6 +234,7 @@ export const useCheckoutStore = defineStore(checkoutStoreId, {
           checkoutErrorCodes.capacityUnavailable,
           checkoutMessages.capacityUnavailable,
         );
+
         return;
       }
 
@@ -218,12 +252,19 @@ function createCheckoutRequest(
 
   for (const cartItem of cartItems) {
     const item = toCheckoutRequestItem(cartItem);
-    if (item === null) return null;
+
+    if (item === null) {
+      return null;
+    }
+
     items.push(item);
   }
 
   const total = expectedTotal ?? getCartTotal(cartItems);
-  if (!isNonNegativeInteger(total) || items.length === 0) return null;
+
+  if (!isNonNegativeInteger(total) || items.length === 0) {
+    return null;
+  }
 
   return {
     expectedTotal: total,
@@ -241,9 +282,11 @@ function createAttempt(
       (result, item) => {
         for (const id of getAddressableIds(item)) {
           const cartItemIds = result[id] ?? [];
+
           cartItemIds.push(item.id);
           result[id] = cartItemIds;
         }
+
         return result;
       },
       {},
@@ -256,7 +299,9 @@ function createAttempt(
 function getAddressableIds(
   item: CheckoutSubmission["cartItems"][number],
 ): string[] {
-  if (!isPersistedCartItem(item)) return [];
+  if (!isPersistedCartItem(item)) {
+    return [];
+  }
 
   return [
     item.productId,
@@ -270,7 +315,9 @@ function getAddressableIds(
 function toCheckoutRequestItem(
   cartItem: CheckoutSubmission["cartItems"][number],
 ): CheckoutRequest["items"][number] | null {
-  if (!isPersistedCartItem(cartItem)) return null;
+  if (!isPersistedCartItem(cartItem)) {
+    return null;
+  }
 
   return {
     modifierOptionIds: cartItem.selectedModifierOptions.map(
@@ -290,7 +337,10 @@ function isPersistedCartItem(
   CheckoutSubmission["cartItems"][number],
   { type: "PRICED" | "OTHER" }
 > {
-  if (value.type !== "PRICED" && value.type !== "OTHER") return false;
+  if (value.type !== "PRICED" && value.type !== "OTHER") {
+    return false;
+  }
+
   if (
     !isNonEmptyString(value.productId) ||
     !isPositiveInteger(value.quantity) ||
@@ -325,7 +375,10 @@ function getCartTotal(
 }
 
 function getTotal(details: unknown): number | null {
-  if (!isRecord(details) || !isNonNegativeInteger(details.total)) return null;
+  if (!isRecord(details) || !isNonNegativeInteger(details.total)) {
+    return null;
+  }
+
   return details.total;
 }
 
@@ -333,7 +386,10 @@ function getUnavailableCartItemIds(
   details: unknown,
   cartItemIdsByAddressableId: Record<string, string[]>,
 ): string[] {
-  if (!isRecord(details) || !isNonEmptyString(details.itemId)) return [];
+  if (!isRecord(details) || !isNonEmptyString(details.itemId)) {
+    return [];
+  }
+
   return cartItemIdsByAddressableId[details.itemId] ?? [];
 }
 

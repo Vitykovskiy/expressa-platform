@@ -118,14 +118,21 @@ const isRefreshDisabled = computed(
   () => isEditingLocked.value || isIntakeChecking.value,
 );
 const intakeMessage = computed(() => {
-  if (props.intakeRecovery?.confirmedClosed !== false)
+  if (props.intakeRecovery?.confirmedClosed !== false) {
     return "Сейчас не принимаем заказы";
+  }
+
   return "Приём заказов не подтверждён";
 });
 const intakeRecoveryMessage = computed(() => {
-  if (isIntakeChecking.value) return "Обновляем…";
-  if (props.intakeRecovery?.status === "failed")
+  if (isIntakeChecking.value) {
+    return "Обновляем…";
+  }
+
+  if (props.intakeRecovery?.status === "failed") {
     return "Не удалось обновить. Попробуйте ещё раз";
+  }
+
   return null;
 });
 const needsReconfirmation = computed(
@@ -138,16 +145,25 @@ const isCheckoutDisabled = computed(
     unavailableItemIdSet.value.size > 0,
 );
 const notificationMessage = computed(() => {
-  if (isIntakeUnavailable.value) return null;
-  if (unavailableItemIdSet.value.size > 0)
+  if (isIntakeUnavailable.value) {
+    return null;
+  }
+
+  if (unavailableItemIdSet.value.size > 0) {
     return "Удалите недоступные позиции, чтобы оформить заказ";
-  if (needsReconfirmation.value) return "Сумма заказа изменилась";
+  }
+
+  if (needsReconfirmation.value) {
+    return "Сумма заказа изменилась";
+  }
+
   if (props.checkoutState === "error") {
     if (
       props.errorMessage === checkoutMessages.orderFailed ||
       props.errorMessage === checkoutMessages.retryFailed
-    )
+    ) {
       return "Не удалось оформить заказ. Попробуйте ещё раз";
+    }
 
     return (
       props.errorMessage ?? "Не удалось оформить заказ. Попробуйте ещё раз"
@@ -157,8 +173,13 @@ const notificationMessage = computed(() => {
   return null;
 });
 const checkoutLabel = computed(() => {
-  if (isSubmitting.value) return "Оформляем заказ";
-  if (props.requiresPhoneConfirmation) return "Подтвердить телефон";
+  if (isSubmitting.value) {
+    return "Оформляем заказ";
+  }
+
+  if (props.requiresPhoneConfirmation) {
+    return "Подтвердить телефон";
+  }
 
   return "Оформить заказ";
 });
@@ -171,16 +192,21 @@ onMounted(() => {
 });
 
 function editItem(itemId: string): void {
-  if (isEditingLocked.value || itemList.value === null) return;
+  if (isEditingLocked.value || itemList.value === null) {
+    return;
+  }
 
   emit("editItem", itemId, itemList.value.scrollTop);
 }
 
 function emitCheckout(): void {
-  if (isCheckoutDisabled.value) return;
+  if (isCheckoutDisabled.value) {
+    return;
+  }
 
   if (needsReconfirmation.value) {
     emit("reconfirm");
+
     return;
   }
 
@@ -194,7 +220,7 @@ function emitCheckout(): void {
   flex-direction: column;
   gap: var(--customer-space-9);
   width: 100%;
-  max-width: 55rem; /* Accepted 880px task surface; no existing token. */
+  max-width: 55rem; /* Ширина области 880px из принятого макета; отдельного токена нет. */
   height: calc(100dvh - var(--customer-size-shell-header));
   min-height: 0;
   padding: var(--customer-space-13) var(--customer-space-9)
@@ -346,7 +372,7 @@ function emitCheckout(): void {
     min-width: 0;
   }
   .cart-screen__actions {
-    flex: 0 0 18.25rem; /* Accepted 292px action; no existing token. */
+    flex: 0 0 18.25rem; /* Ширина блока действий 292px из принятого макета; отдельного токена нет. */
   }
   .cart-screen__total strong {
     font-size: var(--customer-font-size-3xl);

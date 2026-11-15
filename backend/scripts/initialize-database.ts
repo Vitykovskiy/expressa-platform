@@ -36,16 +36,20 @@ async function hasUserSchemaObjects(client: PoolClient): Promise<boolean> {
       SELECT 1 FROM pg_extension WHERE extnamespace = 'public'::regnamespace
     ) AS exists;
   `);
+
   return result.rows[0]?.exists ?? false;
 }
 
 export async function initializeDatabase(pool: Pool): Promise<void> {
   const client = await pool.connect();
+
   try {
     if (await hasUserSchemaObjects(client)) {
       throw new Error("Database initialization requires an empty target.");
     }
+
     const schema = await readFile(resolve(process.cwd(), "schema.sql"), "utf8");
+
     await client.query("BEGIN");
     try {
       await client.query("SET LOCAL search_path TO public");
@@ -66,6 +70,7 @@ export async function initializeDatabase(pool: Pool): Promise<void> {
 async function main(): Promise<void> {
   validateEnvironment(process.env);
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
   try {
     await initializeDatabase(pool);
   } finally {

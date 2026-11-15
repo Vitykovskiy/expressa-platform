@@ -14,10 +14,13 @@ export class ManageV3ProductsUseCase {
   constructor(private readonly unitOfWork: V3ProductsUnitOfWork) {}
   async create(command: V3ProductCommand): Promise<V3AdminProduct> {
     assertV3ProductDetails(command);
+
     return this.unitOfWork.runV3(
       async (repository) => {
-        if (!(await repository.categoryExists(command.categoryId)))
+        if (!(await repository.categoryExists(command.categoryId))) {
           throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
+        }
+
         return repository.createV3(command);
       },
       (repository, after) =>
@@ -35,14 +38,18 @@ export class ManageV3ProductsUseCase {
     command: V3ProductCommand & { productId: string },
   ): Promise<V3AdminProduct> {
     assertV3ProductDetails(command);
+
     return this.unitOfWork
       .runV3(
         async (repository) => {
           const before = assertCurrentV3Product(
             await repository.findV3ById(command.productId),
           );
-          if (!(await repository.categoryExists(command.categoryId)))
+
+          if (!(await repository.categoryExists(command.categoryId))) {
             throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
+          }
+
           return {
             before,
             after: await repository.updateV3(command.productId, command),
@@ -64,19 +71,23 @@ export class ManageV3ProductsUseCase {
     return this.unitOfWork
       .runV3(
         async (repository) => {
-          if (!(await repository.categoryExists(command.categoryId)))
+          if (!(await repository.categoryExists(command.categoryId))) {
             throw new ProductAdminError("PRODUCT_CATEGORY_NOT_FOUND");
+          }
+
           const before = await repository.findCurrentV3ByCategory(
             command.categoryId,
           );
+
           assertFullV3ProductReorder(before, command.productIds);
+
           return {
             before,
             after: await repository.reorderV3(before, command.productIds),
           };
         },
         async (repository, result) => {
-          for (const after of result.after)
+          for (const after of result.after) {
             await repository.writeV3Audit({
               actorId: command.actorId,
               requestId: command.requestId,
@@ -87,6 +98,7 @@ export class ManageV3ProductsUseCase {
                 null,
               after,
             });
+          }
         },
       )
       .then((result) => result.after);
@@ -115,9 +127,14 @@ export class ManageV3ProductsUseCase {
 function assertCurrentV3Product(
   product: V3AdminProduct | null,
 ): V3AdminProduct {
-  if (product === null) throw new ProductAdminError("PRODUCT_NOT_FOUND");
-  if (product.archivedAt !== null)
+  if (product === null) {
+    throw new ProductAdminError("PRODUCT_NOT_FOUND");
+  }
+
+  if (product.archivedAt !== null) {
     throw new ProductAdminError("PRODUCT_ARCHIVED");
+  }
+
   return product;
 }
 
@@ -129,11 +146,12 @@ function assertFullV3ProductReorder(
     products.length !== productIds.length ||
     new Set(productIds).size !== productIds.length ||
     products.some((product) => !productIds.includes(product.id))
-  )
+  ) {
     throw new ProductAdminError("PRODUCT_INVALID", [
       {
         path: "productIds",
         reason: "Must contain every current category product exactly once",
       },
     ]);
+  }
 }

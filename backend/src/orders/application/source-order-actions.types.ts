@@ -1,4 +1,5 @@
 import type { OrderDetails } from "../domain/order-lifecycle.types";
+
 export type SourceOrderCommand = {
   orderId: string;
   actorId: string;

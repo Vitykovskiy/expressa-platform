@@ -40,9 +40,14 @@ const resendTimer = setInterval(
 const contextDescription = computed(() => getContextDescription());
 const resendRemainingSeconds = computed(() => {
   const cooldownUntil = sessionStore.otpCooldownUntil;
-  if (cooldownUntil === null) return 0;
+
+  if (cooldownUntil === null) {
+    return 0;
+  }
+
   return Math.max(0, Math.ceil((cooldownUntil - now.value) / 1000));
 });
+
 onBeforeUnmount(() => {
   pageActive = false;
   clearInterval(resendTimer);
@@ -62,7 +67,9 @@ function updatePhone(value: string): void {
 }
 
 async function requestOtp(): Promise<void> {
-  if (isLoading.value || resendRemainingSeconds.value > 0) return;
+  if (isLoading.value || resendRemainingSeconds.value > 0) {
+    return;
+  }
 
   isLoading.value = true;
   errorMessage.value = "";
@@ -73,6 +80,7 @@ async function requestOtp(): Promise<void> {
     if (!pageActive || sessionStore.generation !== generation) {
       return;
     }
+
     await router.push({ path: authPhoneRoute.code, query: returnToQuery() });
   } catch {
     if (pageActive && sessionStore.generation === generation) {
@@ -87,18 +95,24 @@ function returnToQuery(): { returnTo?: string } {
   const returnTo = route.query.returnTo;
 
   const safeReturnTo = getSafeAuthReturnTo(returnTo);
+
   return safeReturnTo === undefined ? {} : { returnTo: safeReturnTo };
 }
 
 function getContextDescription(): string | undefined {
   const returnTo = route.query.returnTo;
   const safeReturnTo = getSafeAuthReturnTo(returnTo);
-  if (safeReturnTo === undefined) return undefined;
+
+  if (safeReturnTo === undefined) {
+    return undefined;
+  }
 
   const path = new URL(safeReturnTo, window.location.origin).pathname;
+
   if (path === "/orders" || path.startsWith("/orders/")) {
     return "Подтвердите номер, чтобы посмотреть историю заказов.";
   }
+
   if (path === "/cart") {
     return "Подтвердите номер, чтобы оформить заказ.";
   }

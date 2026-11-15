@@ -15,9 +15,11 @@ export class CreateOrderUseCase {
 
   async execute(command: CreateOrderCommand): Promise<CreateOrderResult> {
     const result = await this.unitOfWork.createOrder(command);
+
     if (!result.replayed) {
       this.metrics.recordOrderCreated();
     }
+
     if (!result.replayed) {
       void this.push
         .execute({
@@ -29,6 +31,7 @@ export class CreateOrderUseCase {
         })
         .catch(() => undefined);
     }
+
     return result;
   }
 }

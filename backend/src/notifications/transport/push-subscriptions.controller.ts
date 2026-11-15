@@ -88,6 +88,7 @@ export class PushSubscriptionsController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<PushSubscriptionInspection> {
     const subscription = parseSubscription(body);
+
     try {
       return await this.subscriptions.inspect(
         auth.userId,
@@ -116,6 +117,7 @@ export class PushSubscriptionsController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<PushAssociationResponse> {
     const request = parseAssociationRequest(body);
+
     try {
       if (auth.context === "staff") {
         return await this.subscriptions.associateForBarista(
@@ -156,6 +158,7 @@ export class PushSubscriptionsController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<void> {
     const request = parseDeleteAssociationRequest(body);
+
     try {
       await this.subscriptions.deleteAssociation(
         auth.userId,
@@ -188,6 +191,7 @@ function parseSubscription(value: unknown): PushSubscriptionRequest {
   ) {
     validationError();
   }
+
   return {
     endpoint: value.endpoint,
     keys: { p256dh: value.keys.p256dh, auth: value.keys.auth },
@@ -217,6 +221,7 @@ function parseAssociationRequest(value: unknown): PushAssociationRequest {
   ) {
     validationError();
   }
+
   return {
     subscription: parseSubscription(value.subscription),
     action: value.action,
@@ -237,6 +242,7 @@ function parseDeleteAssociationRequest(
   ) {
     validationError();
   }
+
   return {
     subscription: parseSubscription(value.subscription),
     expectedVersion: value.expectedVersion,
@@ -253,15 +259,18 @@ function rethrowAssociationConflict(error: unknown): never {
   if (error instanceof PushAssociationUnauthorizedError) {
     throw new UnauthorizedException();
   }
+
   if (error instanceof PushAssociationAccessDeniedError) {
     throw new HttpException(
       { code: "ACCESS_DENIED", details: null, message: "Access denied" },
       HttpStatus.FORBIDDEN,
     );
   }
+
   if (!(error instanceof PushAssociationConflictError)) {
     throw error;
   }
+
   throw new HttpException(
     {
       code: error.code,

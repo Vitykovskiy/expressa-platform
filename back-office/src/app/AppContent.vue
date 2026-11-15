@@ -109,7 +109,7 @@ const navigation = computed(() =>
   }),
 );
 
-// Only adapt page data here; the matched router record selects the component.
+// Здесь только подготавливаются данные страницы; компонент выбирает совпавшая запись маршрута.
 const pageProps = computed(() => {
   const byName = {
     orders: { context: context.value, query: route.query },
@@ -138,7 +138,7 @@ async function activateSection() {
 }
 
 function activateSectionOwners() {
-  // Deactivate прекращает обычные чтения; исход отправленной команды остаётся у store.
+  // Деактивация прекращает обычные чтения; исход отправленной команды остаётся у хранилища.
   settings.deactivate();
   catalog.deactivate();
 

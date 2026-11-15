@@ -10,9 +10,11 @@ export async function createApplication(): Promise<INestApplication> {
   validateEnvironment(process.env);
 
   const app = await NestFactory.create(AppModule);
+
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
   configureHttp(app, process.env.NODE_ENV);
   configureObservability(app);
+
   return app;
 }
 
@@ -22,6 +24,7 @@ export async function startServer(app: INestApplication): Promise<void> {
   app.use((_request: Request, response: Response, next: NextFunction) => {
     if (isShuttingDown) {
       response.status(503).end();
+
       return;
     }
 
@@ -51,6 +54,7 @@ export async function startServer(app: INestApplication): Promise<void> {
 
 export async function bootstrap(): Promise<void> {
   const app = await createApplication();
+
   await startServer(app);
 }
 

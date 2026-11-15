@@ -138,7 +138,7 @@ function emitNativeValue(event: globalThis.Event) {
   opacity: 1;
 }
 
-/* Reset Vuetify скрывает нативную стрелку; select должен оставаться видимым выбором. */
+/* Сброс стилей Vuetify скрывает нативную стрелку; `select` должен оставаться видимым выбором. */
 .operations-field__input--select {
   appearance: auto;
 }

@@ -48,12 +48,14 @@ export class ManageStaffUsersUseCase {
         phoneE164: command.phoneE164,
       });
       const after = await repository.create(command);
+
       await repository.writeAudit({
         ...command,
         action: "USER_CREATED",
         before: null,
         after,
       });
+
       return after;
     });
   }
@@ -65,6 +67,7 @@ export class ManageStaffUsersUseCase {
         createAccount: true,
       });
       const { before, after } = await repository.enrollEmployee(command);
+
       await repository.revokeAccess(after.id, "staff");
       await repository.writeAudit({
         ...command,
@@ -72,6 +75,7 @@ export class ManageStaffUsersUseCase {
         before,
         after,
       });
+
       return this.requireEmployee(await repository.findEmployee(after.id));
     });
   }
@@ -79,9 +83,11 @@ export class ManageStaffUsersUseCase {
   changeRole(command: ChangeStaffUserRoleCommand): Promise<StaffUser> {
     return this.unitOfWork.run(async (repository) => {
       const before = await this.lockTarget(repository, command);
+
       if (isAccountRoleNoop(before, command.role)) {
         return before;
       }
+
       assertAccessChange(
         before,
         command.actorId,
@@ -94,19 +100,22 @@ export class ManageStaffUsersUseCase {
         command.role,
         command.actorId,
       );
-      // Только customer-регистрация не отзывает независимые denied staff-сессии.
+      // Регистрация только покупателем не отзывает независимые сессии сотрудников с отказом в доступе.
       const employeeChanged =
         before.employee?.role !== after.employee?.role ||
         before.employee?.accessEnabled !== after.employee?.accessEnabled;
+
       if (employeeChanged) {
         await repository.revokeAccess(before.id, "staff");
       }
+
       await repository.writeAudit({
         ...command,
         action: "USER_ROLE_CHANGED",
         before,
         after,
       });
+
       return after;
     });
   }
@@ -117,9 +126,11 @@ export class ManageStaffUsersUseCase {
       const employee = this.requireEmployee(
         await repository.findEmployee(before.id),
       );
+
       if (employee.role === command.role) {
         return employee;
       }
+
       assertAccessChange(
         before,
         command.actorId,
@@ -132,6 +143,7 @@ export class ManageStaffUsersUseCase {
         command.role,
         command.actorId,
       );
+
       await repository.revokeAccess(before.id, "staff");
       await repository.writeAudit({
         ...command,
@@ -139,6 +151,7 @@ export class ManageStaffUsersUseCase {
         before,
         after,
       });
+
       return this.requireEmployee(await repository.findEmployee(before.id));
     });
   }
@@ -151,12 +164,15 @@ export class ManageStaffUsersUseCase {
       const employee = this.requireEmployee(
         await repository.findEmployee(before.id),
       );
+
       if (command.enabled && before.blocked) {
         throw new StaffUserError("USER_ACCESS_CONFLICT");
       }
+
       if (employee.accessEnabled === command.enabled) {
         return employee;
       }
+
       assertAccessChange(
         before,
         command.actorId,
@@ -169,6 +185,7 @@ export class ManageStaffUsersUseCase {
         command.enabled,
         command.actorId,
       );
+
       await repository.revokeAccess(before.id, "staff");
       await repository.writeAudit({
         ...command,
@@ -178,6 +195,7 @@ export class ManageStaffUsersUseCase {
         before,
         after,
       });
+
       return this.requireEmployee(await repository.findEmployee(before.id));
     });
   }
@@ -185,9 +203,11 @@ export class ManageStaffUsersUseCase {
   changeBlocked(command: ChangeStaffUserBlockCommand): Promise<StaffUser> {
     return this.unitOfWork.run(async (repository) => {
       const before = await this.lockTarget(repository, command);
+
       if (before.blocked === command.blocked) {
         return before;
       }
+
       assertAccessChange(
         before,
         command.actorId,
@@ -200,15 +220,18 @@ export class ManageStaffUsersUseCase {
         command.blocked,
         command.actorId,
       );
+
       if (command.blocked) {
         await repository.revokeAccess(before.id);
       }
+
       await repository.writeAudit({
         ...command,
         action: command.blocked ? "USER_BLOCKED" : "USER_UNBLOCKED",
         before,
         after,
       });
+
       return after;
     });
   }
@@ -218,6 +241,7 @@ export class ManageStaffUsersUseCase {
     command: UserCommandContext & { userId: string },
   ): Promise<StaffUser> {
     await repository.authorizeCommand(command, { userId: command.userId });
+
     return requireStaffUser(await repository.findById(command.userId));
   }
 
@@ -225,6 +249,7 @@ export class ManageStaffUsersUseCase {
     if (employee === null) {
       throw new StaffUserError("USER_NOT_FOUND");
     }
+
     return employee;
   }
 }

@@ -38,12 +38,14 @@ export class ManageSourceCategoriesUseCase {
                   isActive: true,
                 }
               : { ...before, name: input.name };
+
           assertCategoryDetails(details);
 
           if (input.optionGroupIds !== undefined) {
             const existing = await associations.findCurrentModifierGroupIds([
               ...input.optionGroupIds,
             ]);
+
             if (
               new Set(input.optionGroupIds).size !==
                 input.optionGroupIds.length ||
@@ -61,12 +63,14 @@ export class ManageSourceCategoriesUseCase {
             category.id,
           );
           let links = previousLinks;
+
           if (input.optionGroupIds !== undefined) {
             links = await associations.replace(
               category.id,
               input.optionGroupIds,
             );
           }
+
           return { before, category, previousLinks, links };
         },
         async (
@@ -81,6 +85,7 @@ export class ManageSourceCategoriesUseCase {
               after: links,
             });
           }
+
           await categories.writeAudit({
             ...actor,
             categoryId: category.id,

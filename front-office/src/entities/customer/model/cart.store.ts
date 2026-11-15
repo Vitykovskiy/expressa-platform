@@ -49,7 +49,9 @@ export const useCartStore = defineStore(cartStoreId, {
           item,
           createAvailableCartItemId(configurationId, this.items),
         );
+
         this.replace([...this.items, nextItem], storage);
+
         return;
       }
 
@@ -110,13 +112,16 @@ export const useCartStore = defineStore(cartStoreId, {
       storage.removeItem(legacyCartStorageKey);
       const value = storage.getItem(cartStorageKey);
 
-      if (value === null) return;
+      if (value === null) {
+        return;
+      }
 
       try {
         const parsed: unknown = JSON.parse(value);
 
         if (!isCartItems(parsed)) {
           storage.removeItem(cartStorageKey);
+
           return;
         }
 
@@ -145,6 +150,7 @@ export const useCartStore = defineStore(cartStoreId, {
       const targetStorage = isCartStorage(resultOrStorage)
         ? resultOrStorage
         : storage;
+
       this.repeatWarnings = warnings.map((warning) => ({ ...warning }));
       this.repeatResult = result === null ? null : { ...result };
 
@@ -202,6 +208,7 @@ function isConfiguredCartItemShape(
       value.price === value.unitTotal
     );
   }
+
   return (
     value.type === configuredCartProductTypes[1] &&
     value.selectedPriceChoice === undefined

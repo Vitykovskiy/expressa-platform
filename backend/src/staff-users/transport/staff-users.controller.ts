@@ -76,6 +76,7 @@ export class StaffUsersController {
   @ApiResponse({ status: 200, type: StaffUsersResponseDto })
   async list(@Query() query: unknown): Promise<StaffUsersResponseDto> {
     const users = await this.users.list(parseUsersQuery(query));
+
     return { users: users.map((user) => this.toStaffUserDto(user)) };
   }
 
@@ -93,6 +94,7 @@ export class StaffUsersController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<StaffUserDto> {
     const details = parseCreateUser(body);
+
     return this.executeUserCommand(() =>
       this.users.create({
         ...details,
@@ -128,6 +130,7 @@ export class StaffUsersController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<StaffUserDto> {
     const role = parseUserRole(parseUserBody(body, ["role"]).role);
+
     return this.executeUserCommand(() =>
       this.users.changeRole({
         userId: parseUserId(userId),
@@ -164,9 +167,11 @@ export class StaffUsersController {
     @Req() request: StaffUsersRequestContext,
   ): Promise<StaffUserDto> {
     const { blocked } = parseUserBody(body, ["blocked"]);
+
     if (typeof blocked !== "boolean") {
       throw invalidUserField("blocked");
     }
+
     return this.executeUserCommand(() =>
       this.users.changeBlocked({
         userId: parseUserId(userId),
@@ -185,6 +190,7 @@ export class StaffUsersController {
     ) {
       throw new Error("Missing request identifier");
     }
+
     return request.requestId;
   }
 

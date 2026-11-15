@@ -22,6 +22,7 @@ function isStaffRole(value: string): value is StaffRole {
 
 function parseCommandArguments(): StaffCommand {
   const arguments_ = process.argv.slice(2);
+
   if (arguments_[0] !== "upsert" || arguments_.length !== 5) {
     return exitWithUsage();
   }
@@ -32,6 +33,7 @@ function parseCommandArguments(): StaffCommand {
   for (let index = 1; index < arguments_.length; index += 2) {
     const name = arguments_[index];
     const value = arguments_[index + 1];
+
     if (name === undefined || value === undefined || value.startsWith("--")) {
       return exitWithUsage();
     }
@@ -40,6 +42,7 @@ function parseCommandArguments(): StaffCommand {
       phone = value;
       continue;
     }
+
     if (name === "--role" && role === undefined && isStaffRole(value)) {
       role = value;
       continue;
@@ -59,14 +62,18 @@ async function main(): Promise<void> {
   validateEnvironment(process.env);
   const { phone, role } = parseCommandArguments();
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
   try {
     const users = new PostgresStaffUsersRepository(() => pool);
+
     await users.run(async (repository) => {
       const requestId = "operations:" + randomUUID();
       const creation = await repository.findOrCreateForOperations(phone, role);
       const before = creation.user;
+
       if (creation.created) {
         const after = creation.user;
+
         await repository.writeAudit({
           actorId: after.id,
           requestId,
@@ -74,11 +81,14 @@ async function main(): Promise<void> {
           before: null,
           after,
         });
+
         return;
       }
+
       if (isAccountRoleNoop(before, role)) {
         return;
       }
+
       assertAccessChange(
         before,
         "operations",
@@ -87,6 +97,7 @@ async function main(): Promise<void> {
         await repository.countActiveAdministrators(),
       );
       const after = await repository.changeRole(before.id, role, before.id);
+
       await repository.revokeAccess(before.id, "staff");
       await repository.writeAudit({
         actorId: before.id,

@@ -104,7 +104,7 @@ async function loadProduct(): Promise<void> {
   align-content: start;
   gap: var(--customer-space-9);
   width: 100%;
-  max-width: 55rem; /* Accepted 880px task width; no existing token. */
+  max-width: 55rem; /* Ширина 880px из принятого макета; отдельного токена нет. */
   padding: var(--customer-space-9);
 }
 .cart-editor-error__back {

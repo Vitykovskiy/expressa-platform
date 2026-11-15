@@ -58,6 +58,7 @@ defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<UiBtnProps>(), UI_BTN_DEFAULTS);
 const emit = defineEmits<UiBtnEmits>();
+
 defineSlots<{
   default(): unknown;
   loader?(): unknown;

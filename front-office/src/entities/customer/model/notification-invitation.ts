@@ -18,6 +18,7 @@ export function rememberNotificationInvitationChoice(
 ): boolean {
   try {
     storage.setItem(key(accountId), "seen");
+
     return true;
   } catch {
     return false;

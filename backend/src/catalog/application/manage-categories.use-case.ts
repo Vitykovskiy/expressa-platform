@@ -18,10 +18,13 @@ export class ManageCategoriesUseCase {
 
   async create(command: CreateCategoryCommand): Promise<AdminCategory> {
     assertCategoryDetails(command);
+
     return this.unitOfWork.run(
       async (repository) => {
         const categories = await repository.findCurrent();
+
         assertAvailableActivePosition(categories, null, command);
+
         return repository.create(command);
       },
       (repository, category) =>
@@ -38,6 +41,7 @@ export class ManageCategoriesUseCase {
 
   async update(command: UpdateCategoryCommand): Promise<AdminCategory> {
     assertCategoryDetails(command);
+
     return this.unitOfWork
       .run(
         async (repository) => {
@@ -45,7 +49,9 @@ export class ManageCategoriesUseCase {
             await repository.findById(command.categoryId),
           );
           const categories = await repository.findCurrent();
+
           assertAvailableActivePosition(categories, category.id, command);
+
           return {
             before: category,
             after: await repository.update(category.id, command),
@@ -69,7 +75,9 @@ export class ManageCategoriesUseCase {
       .run(
         async (repository) => {
           const categories = await repository.findCurrent();
+
           assertFullCategoryReorder(categories, command.categoryIds);
+
           return {
             before: categories,
             after: await repository.reorder(categories, command.categoryIds),
@@ -79,6 +87,7 @@ export class ManageCategoriesUseCase {
           for (const category of result.after) {
             const before =
               result.before.find((value) => value.id === category.id) ?? null;
+
             await repository.writeAudit({
               actorId: command.actorId,
               requestId: command.requestId,
@@ -99,6 +108,7 @@ export class ManageCategoriesUseCase {
         const category = assertCurrentCategory(
           await repository.findById(command.categoryId),
         );
+
         return {
           before: category,
           after: await repository.archive(category.id),

@@ -148,7 +148,7 @@ defineExpose({ captureScroll, restoreScroll, focusHeading });
 </script>
 
 <style scoped>
-/* Страница владеет геометрией и типографикой; общей шкалы в tokens нет. */
+/* Страница владеет геометрией и типографикой; общей шкалы в токенах нет. */
 .orders-page {
   display: flex;
   flex: 1;

@@ -79,21 +79,30 @@ export class CatalogCategoryModifiersController {
     @CurrentAuth() auth: CurrentAuthData,
     @Req() request: CategoryModifierGroupsRequestContext,
   ): Promise<CategoryModifierGroupResponseDto[]> {
-    if (!isUuid(categoryId))
+    if (!isUuid(categoryId)) {
       throw validationError([{ path: "categoryId", reason: "Must be a UUID" }]);
-    if (!Array.isArray(body?.groupIds))
+    }
+
+    if (!Array.isArray(body?.groupIds)) {
       throw validationError([
         { path: "groupIds", reason: "Must be an array of UUIDs" },
       ]);
-    if (body.groupIds.some((groupId) => !isUuid(groupId)))
+    }
+
+    if (body.groupIds.some((groupId) => !isUuid(groupId))) {
       throw validationError([
         { path: "groupIds", reason: "Must contain UUIDs" },
       ]);
-    if (new Set(body.groupIds).size !== body.groupIds.length)
+    }
+
+    if (new Set(body.groupIds).size !== body.groupIds.length) {
       throw validationError([
         { path: "groupIds", reason: "Must not contain duplicates" },
       ]);
+    }
+
     const requestId = request.requestId;
+
     if (typeof requestId !== "string" || requestId === "") {
       throw validationError([{ path: "requestId", reason: "Must be present" }]);
     }
@@ -105,6 +114,7 @@ export class CatalogCategoryModifiersController {
         actorId: auth.userId,
         requestId,
       });
+
       return groups.map(toCategoryModifierGroupDto);
     } catch (error) {
       if (
@@ -116,8 +126,11 @@ export class CatalogCategoryModifiersController {
           HttpStatus.NOT_FOUND,
         );
       }
-      if (error instanceof CategoryModifierGroupsError)
+
+      if (error instanceof CategoryModifierGroupsError) {
         throw validationError(error.fields);
+      }
+
       throw error;
     }
   }

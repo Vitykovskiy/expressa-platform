@@ -58,6 +58,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
   const destinationPath = to.matched.at(-1)?.path ?? to.path;
   // Неизвестный результат нельзя превратить в другую корзину до повтора того же заказа.
   const checkout = useCheckoutStore();
+
   if (
     checkout.attempt !== null &&
     to.path !== "/checkout/pickup" &&
@@ -66,6 +67,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
   ) {
     return "/checkout/pickup";
   }
+
   const isAuthDestination =
     destinationPath === routePaths.authPhone ||
     destinationPath === routePaths.authCode ||
@@ -74,6 +76,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
     isAuthDestination ||
     destinationPath === "/cart" ||
     to.meta.requiresCustomer;
+
   if (needsRegistration && sessionStore.status === "unknown") {
     await sessionStore.bootstrap();
   }
@@ -87,6 +90,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
         const returnTo = isAuthDestination
           ? getSafeAuthReturnTo(to.query.returnTo)
           : to.fullPath;
+
         return {
           path: routePaths.authName,
           query: returnTo === undefined ? {} : { returnTo },
@@ -102,6 +106,7 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
     sessionStore.status === "anonymous"
   ) {
     const returnTo = getSafeAuthReturnTo(to.query.returnTo);
+
     return {
       path: routePaths.authPhone,
       query: returnTo === undefined ? {} : { returnTo },
@@ -121,12 +126,15 @@ export const customerNavigationGuard: CustomerNavigationGuard = async (to) => {
       query: returnTo === undefined ? {} : { returnTo },
     };
   }
+
   if (!to.meta.requiresCustomer) {
     return true;
   }
+
   if (sessionStore.status === "authenticated") {
     return true;
   }
+
   if (sessionStore.status === "unknown") {
     return true;
   }

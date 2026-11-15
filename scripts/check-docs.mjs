@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Offline Docs-as-Code checks. Documentation uses relative Markdown links.
- * Links in fenced code blocks, external URLs, anchors and mail links are
- * deliberately ignored.
+ * Проверки Docs-as-Code без сети.
+ * Документация использует относительные Markdown-ссылки.
+ * При извлечении ссылок пропускаются простые блоки с тройными обратными кавычками
+ * и однострочный код в одинарных обратных кавычках. Внешние URL, якоря
+ * и почтовые ссылки намеренно пропускаются. Полный Markdown/YAML не разбирается.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -117,7 +119,10 @@ function readmeStructureViolation(text) {
     return '"## Структура каталога" must be the first level-two heading';
 
   let treeStart = structures[0].index + 1;
-  while (!lines[treeStart]?.trim()) treeStart += 1;
+  while (treeStart < lines.length && !lines[treeStart].trim()) {
+    treeStart += 1;
+  }
+
   if (lines[treeStart]?.trim() !== "```text")
     return '"## Структура каталога" must be followed by a fenced text tree';
 
@@ -138,13 +143,6 @@ function checkReadmeStructures(files, scope = "root") {
     const violation = readmeStructureViolation(readFileSync(file, "utf8"));
     if (violation) fail(scope, file, violation);
   }
-}
-
-function readmesIn(directory) {
-  return walk(
-    directory,
-    (file) => relative(directory, file).split(sep).at(-1) === "README.md",
-  );
 }
 
 function trackedNestedReadmes() {
@@ -266,7 +264,7 @@ function resolveTarget(from, raw, docsDirectory) {
     candidates.push(resolve(dirname(from), `${target}.md`));
     candidates.push(resolve(dirname(from), target, "README.md"));
   }
-  // Wikilinks such as [[Auth]] resolve relative to current note first, then docs root.
+  // Вики-ссылки вида [[Auth]] ищутся сначала относительно текущей ноты, затем корня документации.
   if (!target.includes("/") && !extname(target))
     candidates.push(resolve(docsDirectory, `${target}.md`));
   const safeCandidates = candidates.filter(withinWorkspace);
@@ -573,16 +571,21 @@ function checkSources(scope, files, sampleSize) {
   return { total: unique.length, inspected: inspected.length };
 }
 
-function sourcePathFromCoverage(cell, file) {
+function sourcePathsFromCoverage(cell, file) {
   const docsDirectory = dirname(file);
   const targets = links(cell);
   const quoted = [...cell.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  const sources = new Set();
+
   for (const target of [...targets, ...quoted]) {
     const resolved = resolveTarget(file, target, docsDirectory);
-    if (resolved && CODE_EXTENSIONS.has(extname(resolved)))
-      return normalize(resolved);
+
+    if (resolved && CODE_EXTENSIONS.has(extname(resolved))) {
+      sources.add(normalize(resolved));
+    }
   }
-  return null;
+
+  return [...sources];
 }
 
 function coverageRows(coverageFile) {
@@ -624,6 +627,64 @@ function routeReferences(text) {
   );
 }
 
+function readOpenapiPaths(scope) {
+  if (scope.name === "root") {
+    return [];
+  }
+
+  const appRoot = applicationRoot(scope);
+  const openapi = resolve(
+    appRoot,
+    scope.name === "backend"
+      ? "openapi/openapi.json"
+      : "contracts/openapi.json",
+  );
+  let text;
+
+  try {
+    text = readFileSync(openapi, "utf8");
+  } catch (error) {
+    const message =
+      error.code === "ENOENT"
+        ? "missing expected OpenAPI file"
+        : `cannot read expected OpenAPI file${error.code ? ` (${error.code})` : ""}`;
+
+    fail(scope.name, openapi, message);
+
+    return null;
+  }
+
+  let document;
+
+  try {
+    document = JSON.parse(text);
+  } catch {
+    fail(scope.name, openapi, "expected OpenAPI file contains invalid JSON");
+
+    return null;
+  }
+
+  if (
+    document === null ||
+    typeof document !== "object" ||
+    Array.isArray(document)
+  ) {
+    fail(scope.name, openapi, "OpenAPI document must be an object");
+
+    return null;
+  }
+
+  const paths = document.paths;
+
+  if (paths === null || typeof paths !== "object" || Array.isArray(paths)) {
+    fail(scope.name, openapi, "OpenAPI paths must be an object");
+
+    return null;
+  }
+
+  return Object.keys(paths);
+}
+
 function registry(scope) {
   const appRoot = scope.name === "root" ? root : resolve(root, scope.name);
   const sourceRoot = resolve(appRoot, "src");
@@ -634,20 +695,7 @@ function registry(scope) {
       ...readFileSync(file, "utf8").matchAll(/\bpath\s*:\s*['"]([^'"]+)['"]/g),
     ].map((match) => match[1]),
   );
-  const openapi =
-    scope.name === "backend"
-      ? resolve(root, "backend/openapi/openapi.json")
-      : resolve(appRoot, "contracts/openapi.json");
-  let openapiPaths = [];
-  if (existsSync(openapi)) {
-    try {
-      openapiPaths = Object.keys(
-        JSON.parse(readFileSync(openapi, "utf8")).paths ?? {},
-      );
-    } catch {
-      openapiPaths = [];
-    }
-  }
+  const openapiPaths = readOpenapiPaths(scope);
   const sourceObjects = files.filter(
     (file) =>
       !/\.(spec|test|types|constants|dependencies)\.(ts|vue)$/.test(file) &&
@@ -711,8 +759,9 @@ function checkCoverage(scope) {
         `invalid authoritative note: ${note || "(empty)"}`,
       );
     for (const field of fields) {
-      const source = sourcePathFromCoverage(row[field], coverageFile);
-      if (source) coveredFiles.add(source);
+      for (const source of sourcePathsFromCoverage(row[field], coverageFile)) {
+        coveredFiles.add(source);
+      }
     }
     for (const path of routeReferences(joined)) coveredRoutes.add(path);
     for (const value of joined.matchAll(
@@ -731,7 +780,7 @@ function checkCoverage(scope) {
   for (const path of actual.routeValues)
     if (!coveredRoutes.has(path))
       fail(scope.name, coverageFile, `unregistered route: ${path}`);
-  for (const path of actual.openapiPaths)
+  for (const path of actual.openapiPaths ?? [])
     if (!coveredRoutes.has(path) && !coveredOpenapi.has(path))
       fail(scope.name, coverageFile, `unregistered OpenAPI path: ${path}`);
 }

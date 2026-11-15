@@ -29,6 +29,6 @@ export const authErrorResponses = {
   },
 } as const;
 
-// Compatibility export for existing consumers; runtime 429 uses the repository's
-// exact remainder instead of this policy maximum.
+// Экспорт сохранён для существующих потребителей; ответ 429 использует точное
+// оставшееся время из репозитория вместо максимума, заданного политикой.
 export const otpRetryAfterSeconds = "60";

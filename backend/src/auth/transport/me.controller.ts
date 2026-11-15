@@ -58,6 +58,7 @@ export class MeController {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<CurrentUserDto> {
     const accessToken = readBearerToken(authorization);
+
     if (accessToken === null) {
       throw new UnauthorizedException();
     }
@@ -70,6 +71,7 @@ export class MeController {
       if (error instanceof AccessDeniedError) {
         throw new UnauthorizedException();
       }
+
       throw error;
     }
   }
@@ -109,6 +111,7 @@ export class MeController {
     @Req() request: AuthRequest,
   ): Promise<CurrentUserDto | AuthErrorResponse> {
     const name = parseRegistrationName(body);
+
     try {
       return toCurrentUserDto(
         await this.registration.complete({
@@ -121,9 +124,11 @@ export class MeController {
       if (error instanceof AccessDeniedError) {
         throw new UnauthorizedException();
       }
+
       if (error instanceof CustomerRegistrationForbiddenError) {
         throw new ForbiddenException();
       }
+
       if (error instanceof CustomerRegistrationNameConflictError) {
         throw new HttpException(
           {
@@ -134,13 +139,16 @@ export class MeController {
           HttpStatus.CONFLICT,
         );
       }
+
       if (error instanceof CustomerRegistrationUnavailableError) {
         response.status(HttpStatus.SERVICE_UNAVAILABLE);
+
         return {
           ...authErrorResponses.serviceUnavailable,
           requestId: request.requestId ?? "unknown",
         };
       }
+
       throw error;
     }
   }

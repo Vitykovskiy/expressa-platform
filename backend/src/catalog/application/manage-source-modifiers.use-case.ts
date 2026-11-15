@@ -28,11 +28,13 @@ export class ManageSourceModifiersUseCase {
       .run(
         async (repository) => {
           let before: AdminModifierGroup | null = null;
+
           if (groupId !== null) {
             before = assertCurrentModifierGroup(
               await repository.findGroupById(groupId),
             );
           }
+
           const options = normalizeModifierDefaults(before?.options ?? []);
           const details = {
             name: input.name,
@@ -43,13 +45,16 @@ export class ManageSourceModifiersUseCase {
             maxSelect: input.singleSelection ? 1 : options.length,
             isActive: before?.isActive ?? true,
           };
+
           assertPublishableModifierGroup(details, options);
           let after: AdminModifierGroup;
+
           if (before === null) {
             after = await repository.createGroup(details, options);
           } else {
             after = await repository.updateGroup(before.id, details, options);
           }
+
           return { before, after };
         },
         (repository, { before, after }) =>
@@ -77,16 +82,20 @@ export class ManageSourceModifiersUseCase {
       .run(
         async (repository) => {
           let before: AdminModifierOption | null = null;
+
           if ("optionId" in target) {
             before = assertCurrentModifierOption(
               await repository.findOptionById(target.optionId),
             );
           }
+
           const groupId =
             "groupId" in target ? target.groupId : before?.groupId;
+
           if (groupId === undefined) {
             throw new Error("Option group identity was not resolved");
           }
+
           const group = assertCurrentModifierGroup(
             await repository.findGroupById(groupId),
           );
@@ -116,9 +125,11 @@ export class ManageSourceModifiersUseCase {
           const after = afterGroup.options.find(
             (option) => option.sortOrder === details.sortOrder,
           );
+
           if (after === undefined) {
             throw new Error("Saved modifier option was not returned");
           }
+
           return { before, after, beforeGroup: group, afterGroup };
         },
         (repository, result) =>

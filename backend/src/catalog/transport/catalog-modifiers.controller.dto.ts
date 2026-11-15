@@ -4,6 +4,7 @@ import type {
   ModifierGroupDto,
   ModifierOptionDto,
 } from "./catalog-modifiers.controller.dto.types";
+
 export class ModifierOptionAggregateDto {
   @ApiProperty({ format: "uuid", required: false }) id?: string;
   @ApiProperty() name!: string;

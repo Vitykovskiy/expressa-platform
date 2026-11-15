@@ -34,8 +34,10 @@ export async function executeIdentityCommand<Result>(
     if (!(error instanceof StaffUserError)) {
       throw error;
     }
+
     let status = HttpStatus.CONFLICT;
     let code: string = error.code;
+
     switch (error.code) {
       case "USER_NOT_FOUND":
         status = HttpStatus.NOT_FOUND;
@@ -49,6 +51,7 @@ export async function executeIdentityCommand<Result>(
         code = "UNAUTHORIZED";
         break;
     }
+
     throw new HttpException(
       {
         code,
@@ -69,5 +72,6 @@ export function parseCommandRequestId(request: {
   ) {
     throw new Error("Missing request identifier.");
   }
+
   return request.requestId;
 }

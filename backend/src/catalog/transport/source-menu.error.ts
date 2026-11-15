@@ -17,6 +17,7 @@ export async function executeSourceCommand<Result>(
     )) {
       throw error;
     }
+
     if (
       error.code === "CATEGORY_INVALID" ||
       error.code === "PRODUCT_INVALID" ||
@@ -24,6 +25,7 @@ export async function executeSourceCommand<Result>(
     ) {
       throw validationError(error.fields);
     }
+
     throw new HttpException(
       { code: error.code, message: "Catalog command refused" },
       error.code.endsWith("_NOT_FOUND") ? 404 : 409,

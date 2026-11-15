@@ -63,12 +63,14 @@ export class PostgresOrderUnitOfWork
         command.customerId,
         command.idempotencyKey,
       );
+
       if (existingOrder !== null) {
         if (existingOrder.fingerprint !== fingerprint) {
           throw new IdempotencyKeyReusedError();
         }
 
         await client.query("COMMIT");
+
         return { order: existingOrder.order, replayed: true };
       }
 
@@ -94,6 +96,7 @@ export class PostgresOrderUnitOfWork
         command.customerId,
         command.idempotencyKey,
       );
+
       if (
         persistedOrder === null ||
         persistedOrder.order.id !== insertedOrder.id
@@ -102,6 +105,7 @@ export class PostgresOrderUnitOfWork
       }
 
       await client.query("COMMIT");
+
       return { order: persistedOrder.order, replayed: false };
     } catch (error) {
       await client.query("ROLLBACK");
@@ -113,12 +117,15 @@ export class PostgresOrderUnitOfWork
 
   async readPickupSlots(): Promise<CustomerPickupSlots> {
     const client = await this.dependencies.pool.connect();
+
     try {
       await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
       const result = await readPickupCandidates(client, {
         lockSettings: false,
       });
+
       await client.query("COMMIT");
+
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -143,10 +150,15 @@ export class PostgresOrderUnitOfWork
             (slot) =>
               slot.startsAt.toISOString() === requestedStart && slot.available,
           );
+
     if (selected === undefined) {
-      if (requestedStart !== undefined) throw new PickupSlotUnavailableError();
+      if (requestedStart !== undefined) {
+        throw new PickupSlotUnavailableError();
+      }
+
       throw new OrderCapacityUnavailableError();
     }
+
     return { startsAt: selected.startsAt, endsAt: selected.endsAt };
   }
 }
@@ -163,9 +175,11 @@ async function findOrderByIdempotencyKey(
     [customerId, idempotencyKey],
   );
   const row = result.rows[0];
+
   if (row === undefined) {
     return null;
   }
+
   if (result.rows.length !== 1) {
     throw new Error("Invalid PostgreSQL idempotency result");
   }
@@ -173,6 +187,7 @@ async function findOrderByIdempotencyKey(
   const id = readString(row, "id");
   const fingerprint = readString(row, "request_fingerprint");
   const items = await readSnapshotItems(client, id);
+
   return {
     fingerprint,
     order: {
@@ -205,9 +220,11 @@ async function readSnapshotItems(
     [orderId],
   );
   const modifiersByItemId = new Map<string, OrderSnapshotModifier[]>();
+
   for (const row of modifiers.rows) {
     const itemId = readString(row, "order_item_id");
     const itemModifiers = modifiersByItemId.get(itemId) ?? [];
+
     itemModifiers.push({
       modifierOptionId: readString(row, "modifier_option_id"),
       modifierName: readString(row, "modifier_name"),
@@ -218,6 +235,7 @@ async function readSnapshotItems(
 
   return items.rows.map((row) => {
     const itemId = readString(row, "id");
+
     return {
       productId: readString(row, "product_id"),
       priceChoiceId: readNullableString(row, "price_choice_id"),
@@ -298,9 +316,11 @@ function buildCatalogProducts(
   optionRows: DatabaseRow[],
 ): readonly OrderCatalogProduct[] {
   const choicesByProductId = new Map<string, OrderCatalogPriceChoice[]>();
+
   for (const row of choiceRows) {
     const productId = readString(row, "product_id");
     const choices = choicesByProductId.get(productId) ?? [];
+
     choices.push({
       id: readString(row, "id"),
       portionLabel: readString(row, "portion_label"),
@@ -311,9 +331,11 @@ function buildCatalogProducts(
   }
 
   const optionsByGroupId = new Map<string, OrderCatalogModifierOption[]>();
+
   for (const row of optionRows) {
     const groupId = readString(row, "group_id");
     const options = optionsByGroupId.get(groupId) ?? [];
+
     options.push({
       id: readString(row, "id"),
       name: readString(row, "name"),
@@ -325,10 +347,12 @@ function buildCatalogProducts(
   }
 
   const groupsByCategoryId = new Map<string, OrderCatalogModifierGroup[]>();
+
   for (const row of groupRows) {
     const categoryId = readString(row, "category_id");
     const groupId = readString(row, "id");
     const groups = groupsByCategoryId.get(categoryId) ?? [];
+
     groups.push({
       id: groupId,
       selectionType: readSelectionType(row),
@@ -343,6 +367,7 @@ function buildCatalogProducts(
     const productId = readString(row, "id");
     const categoryGroups =
       groupsByCategoryId.get(readString(row, "category_id")) ?? [];
+
     return {
       id: productId,
       name: readString(row, "name"),
@@ -410,6 +435,7 @@ async function insertOrder(
       requireSingleRow(insertedItem.rows, "order item insert"),
       "id",
     );
+
     for (const [modifierSortOrder, modifier] of item.modifiers.entries()) {
       await client.query(
         `INSERT INTO order_item_modifiers (
@@ -450,6 +476,7 @@ async function allocateDailyNumber(
      RETURNING last_number`,
     [orderDay],
   );
+
   return readPositiveInteger(
     requireSingleRow(result.rows, "daily order number"),
     "last_number",
@@ -460,6 +487,7 @@ function toUtcOrderDay(now: Date): string {
   if (Number.isNaN(now.getTime())) {
     throw new Error("Order creation time is invalid");
   }
+
   return now.toISOString().slice(0, 10);
 }
 
@@ -472,6 +500,7 @@ function readAcceptsNewOrders(rows: DatabaseRow[]): boolean {
 
 function readOrderStage(row: DatabaseRow): OrderStage {
   const stage = readString(row, "stage");
+
   if (
     stage === "CREATED" ||
     stage === "ACCEPTED" ||
@@ -481,22 +510,27 @@ function readOrderStage(row: DatabaseRow): OrderStage {
   ) {
     return stage;
   }
+
   throw new Error("Invalid PostgreSQL row field: stage");
 }
 
 function readSelectionType(row: DatabaseRow): "single" | "multiple" {
   const selectionType = readString(row, "selection_type");
+
   if (selectionType !== "single" && selectionType !== "multiple") {
     throw new Error("Invalid PostgreSQL row field: selection_type");
   }
+
   return selectionType;
 }
 
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
+
   if (typeof value !== "string") {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
@@ -506,33 +540,41 @@ function readNullableString(row: DatabaseRow, key: string): string | null {
 
 function readBoolean(row: DatabaseRow, key: string): boolean {
   const value = row[key];
+
   if (typeof value !== "boolean") {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
 function readInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
+
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
 function readPositiveInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
+
   if (value < 1) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
+
   if (value < 0) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
 
@@ -544,5 +586,6 @@ function requireSingleRow(rows: DatabaseRow[], context: string): DatabaseRow {
   if (rows.length !== 1 || rows[0] === undefined) {
     throw new Error("PostgreSQL returned invalid " + context + " row count");
   }
+
   return rows[0];
 }

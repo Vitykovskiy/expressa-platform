@@ -11,7 +11,7 @@ import type {
   ModifierOptionDetails,
   ModifierOptionInput,
 } from "../domain/modifier-admin.policy.types";
-import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import type { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
 import type { DatabaseRow } from "./postgres-modifiers.repository.types";
 
 export class PostgresModifiersRepository implements ModifiersUnitOfWork {
@@ -57,7 +57,9 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       ],
     );
     const id = requiredId(result.rows[0]);
+
     await this.syncOptions(id, options);
+
     return requiredGroup(await this.findGroupById(id));
   }
   async updateGroup(
@@ -77,6 +79,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       ],
     );
     await this.syncOptions(id, options);
+
     return requiredGroup(await this.findGroupById(id));
   }
   async archiveGroup(id: string): Promise<AdminModifierGroup> {
@@ -84,6 +87,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       "UPDATE modifier_groups SET archived_at = CURRENT_TIMESTAMP WHERE id = $1 AND archived_at IS NULL RETURNING id",
       [id],
     );
+
     return requiredGroup(await this.findGroupById(requiredId(result.rows[0])));
   }
   async createOption(
@@ -101,6 +105,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
         details.isAvailable,
       ],
     );
+
     return requiredOption(
       await this.findOptionById(requiredId(result.rows[0])),
     );
@@ -120,6 +125,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
         details.isAvailable,
       ],
     );
+
     return requiredOption(await this.findOptionById(id));
   }
   async reorderOptions(
@@ -138,6 +144,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       "UPDATE modifier_options SET archived_at = NULL WHERE id = ANY($1::uuid[])",
       [options.map((option) => option.id)],
     );
+
     return this.findOptions("WHERE id = ANY($1::uuid[])", [optionIds]);
   }
   async archiveOption(id: string): Promise<AdminModifierOption> {
@@ -145,6 +152,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       "UPDATE modifier_options SET archived_at = CURRENT_TIMESTAMP WHERE id = $1 AND archived_at IS NULL RETURNING id",
       [id],
     );
+
     return requiredOption(
       await this.findOptionById(requiredId(result.rows[0])),
     );
@@ -172,11 +180,16 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       values,
     );
     const groups = result.rows.map(parseGroup);
-    if (groups.length === 0) return [];
+
+    if (groups.length === 0) {
+      return [];
+    }
+
     const options = await this.findOptions(
       "WHERE group_id = ANY($1::uuid[]) AND archived_at IS NULL",
       [groups.map((group) => group.id)],
     );
+
     return groups.map((group) => ({
       ...group,
       options: options.filter((option) => option.groupId === group.id),
@@ -190,6 +203,7 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       `SELECT id, group_id, name, price_delta, sort_order, is_default, is_available, archived_at FROM modifier_options ${where} ORDER BY sort_order, id`,
       values,
     );
+
     return result.rows.map(parseOption);
   }
   private async syncOptions(
@@ -201,8 +215,9 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
       [groupId],
     );
     for (const option of options) {
-      if (option.id === undefined) await this.createOption(groupId, option);
-      else
+      if (option.id === undefined) {
+        await this.createOption(groupId, option);
+      } else {
         await this.client.query(
           "UPDATE modifier_options SET name = $3, price_delta = $4, sort_order = $5, is_default = $6, is_available = $7, archived_at = NULL WHERE id = $1 AND group_id = $2",
           [
@@ -215,31 +230,53 @@ class PostgresModifiersTransactionRepository implements ModifiersRepository {
             option.isAvailable,
           ],
         );
+      }
     }
   }
 }
+
 function requiredId(row: DatabaseRow | undefined): string {
-  if (row === undefined) throw new Error("Modifier command returned no row");
+  if (row === undefined) {
+    throw new Error("Modifier command returned no row");
+  }
+
   return readUuid(row, "id");
 }
+
 function requiredGroup(value: AdminModifierGroup | null): AdminModifierGroup {
-  if (value === null) throw new Error("Modifier command returned no row");
+  if (value === null) {
+    throw new Error("Modifier command returned no row");
+  }
+
   return value;
 }
+
 function requiredOption(
   value: AdminModifierOption | null,
 ): AdminModifierOption {
-  if (value === null) throw new Error("Modifier command returned no row");
+  if (value === null) {
+    throw new Error("Modifier command returned no row");
+  }
+
   return value;
 }
+
 function parseGroup(row: DatabaseRow): AdminModifierGroup {
   const selectionType = readString(row, "selection_type");
   const minSelect = readNonNegativeInteger(row, "min_select");
   const maxSelect = readNonNegativeInteger(row, "max_select");
-  if (selectionType !== "single" && selectionType !== "multiple")
+
+  if (selectionType !== "single" && selectionType !== "multiple") {
     throw invalidRow("selection_type");
-  if (maxSelect < minSelect || (selectionType === "single" && maxSelect !== 1))
+  }
+
+  if (
+    maxSelect < minSelect ||
+    (selectionType === "single" && maxSelect !== 1)
+  ) {
     throw invalidRow("modifier group invariant");
+  }
+
   return {
     id: readUuid(row, "id"),
     name: readNonBlankString(row, "name"),
@@ -251,6 +288,7 @@ function parseGroup(row: DatabaseRow): AdminModifierGroup {
     options: [],
   };
 }
+
 function parseOption(row: DatabaseRow): AdminModifierOption {
   return {
     id: readUuid(row, "id"),
@@ -263,55 +301,90 @@ function parseOption(row: DatabaseRow): AdminModifierOption {
     archivedAt: readNullableDate(row, "archived_at"),
   };
 }
+
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
-  if (typeof value !== "string") throw invalidRow(key);
+
+  if (typeof value !== "string") {
+    throw invalidRow(key);
+  }
+
   return value;
 }
+
 function readNonBlankString(row: DatabaseRow, key: string): string {
   const value = readString(row, key);
-  if (value.trim() === "") throw invalidRow(key);
+
+  if (value.trim() === "") {
+    throw invalidRow(key);
+  }
+
   return value;
 }
+
 function readUuid(row: DatabaseRow, key: string): string {
   const value = readString(row, key);
+
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value,
     )
-  )
+  ) {
     throw invalidRow(key);
+  }
+
   return value;
 }
+
 function readBoolean(row: DatabaseRow, key: string): boolean {
   const value = row[key];
-  if (typeof value !== "boolean")
+
+  if (typeof value !== "boolean") {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
+
   return value;
 }
+
 function readInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
+
   if (
     typeof value !== "number" ||
     !Number.isInteger(value) ||
     value < -2_147_483_647 ||
     value > 2_147_483_647
-  )
+  ) {
     throw invalidRow(key);
+  }
+
   return value;
 }
+
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
-  if (value < 0) throw invalidRow(key);
+
+  if (value < 0) {
+    throw invalidRow(key);
+  }
+
   return value;
 }
+
 function readNullableDate(row: DatabaseRow, key: string): Date | null {
   const value = row[key];
-  if (value === null) return null;
-  if (!(value instanceof Date) || Number.isNaN(value.getTime()))
+
+  if (value === null) {
+    return null;
+  }
+
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw invalidRow(key);
+  }
+
   return value;
 }
+
 function invalidRow(key: string): Error {
   return new Error("Invalid PostgreSQL row field: " + key);
 }

@@ -13,7 +13,7 @@ const badgeClass = computed(() => `operations-badge--${props.tone}`);
 
 <style scoped>
 /* Отступы и типографика сохраняют компактную метку стадии в карточке заказа;
-   для них нет tokens. Семантические цвета и pill-радиус используют общую тему. */
+   для них нет токенов. Семантические цвета и капсульный радиус используют общую тему. */
 .operations-badge {
   display: inline-flex;
   align-items: center;

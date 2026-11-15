@@ -78,6 +78,7 @@ export class CatalogModifiersController {
     @Req() request: ModifierRequestContext,
   ): Promise<ModifierGroupResponseDto> {
     assertGroup(body);
+
     return executeGroup(() =>
       this.manageModifiers.createGroup({
         ...body,
@@ -101,6 +102,7 @@ export class CatalogModifiersController {
   ): Promise<ModifierGroupResponseDto> {
     assertUuid(groupId, "groupId");
     assertGroup(body);
+
     return executeGroup(() =>
       this.manageModifiers.updateGroup({
         ...body,
@@ -147,6 +149,7 @@ export class CatalogModifiersController {
   ): Promise<ModifierOptionResponseDto> {
     assertUuid(groupId, "groupId");
     assertOption(body);
+
     return executeOption(() =>
       this.manageModifiers.createOption({
         ...body,
@@ -171,6 +174,7 @@ export class CatalogModifiersController {
   ): Promise<ModifierOptionResponseDto> {
     assertUuid(optionId, "optionId");
     assertOption(body);
+
     return executeOption(() =>
       this.manageModifiers.updateOption({
         ...body,
@@ -198,10 +202,12 @@ export class CatalogModifiersController {
     if (
       !Array.isArray(body?.optionIds) ||
       body.optionIds.some((id) => !isUuid(id))
-    )
+    ) {
       throw validationError([
         { path: "optionIds", reason: "Must be an array of UUIDs" },
       ]);
+    }
+
     return executeOptions(() =>
       this.manageModifiers.reorderOptions({
         groupId,
@@ -234,35 +240,49 @@ export class CatalogModifiersController {
     );
   }
 }
+
 function assertGroup(value: CreateModifierGroupDto): void {
-  if (typeof value?.name !== "string" || value.name.trim() === "")
+  if (typeof value?.name !== "string" || value.name.trim() === "") {
     throw validationError([
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (value.selectionType !== "single" && value.selectionType !== "multiple")
+  }
+
+  if (value.selectionType !== "single" && value.selectionType !== "multiple") {
     throw validationError([
       { path: "selectionType", reason: "Must be single or multiple" },
     ]);
-  if (!nonNegativeInt32(value.minSelect))
+  }
+
+  if (!nonNegativeInt32(value.minSelect)) {
     throw validationError([
       { path: "minSelect", reason: "Must be a non-negative int32" },
     ]);
+  }
+
   if (
     !nonNegativeInt32(value.maxSelect) ||
     value.maxSelect < value.minSelect ||
     (value.selectionType === "single" && value.maxSelect !== 1)
-  )
+  ) {
     throw validationError([
       { path: "maxSelect", reason: "Must match selection type and minimum" },
     ]);
-  if (typeof value.isActive !== "boolean")
+  }
+
+  if (typeof value.isActive !== "boolean") {
     throw validationError([{ path: "isActive", reason: "Must be a boolean" }]);
-  if (!Array.isArray(value.options))
+  }
+
+  if (!Array.isArray(value.options)) {
     throw validationError([{ path: "options", reason: "Must be an array" }]);
+  }
+
   value.options.forEach((option, index) =>
     assertAggregateOption(option, index),
   );
 }
+
 function assertAggregateOption(
   value: { id?: unknown } & CreateModifierOptionDto,
   index: number,
@@ -275,6 +295,7 @@ function assertAggregateOption(
         details?: { fields?: { path: string; reason: string }[] };
       };
       const field = response.details?.fields?.[0];
+
       throw validationError([
         {
           path: `options.${index}.${field?.path ?? "value"}`,
@@ -282,33 +303,47 @@ function assertAggregateOption(
         },
       ]);
     }
+
     throw error;
   }
-  if (value.id !== undefined && !isUuid(value.id))
+
+  if (value.id !== undefined && !isUuid(value.id)) {
     throw validationError([
       { path: `options.${index}.id`, reason: "Must be a UUID" },
     ]);
+  }
 }
+
 function assertOption(value: CreateModifierOptionDto): void {
-  if (typeof value?.name !== "string" || value.name.trim() === "")
+  if (typeof value?.name !== "string" || value.name.trim() === "") {
     throw validationError([
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (!nonNegativeInt32(value.priceDelta))
+  }
+
+  if (!nonNegativeInt32(value.priceDelta)) {
     throw validationError([
       { path: "priceDelta", reason: "Must be a non-negative int32" },
     ]);
-  if (!nonNegativeInt32(value.sortOrder))
+  }
+
+  if (!nonNegativeInt32(value.sortOrder)) {
     throw validationError([
       { path: "sortOrder", reason: "Must be a non-negative int32" },
     ]);
-  if (typeof value.isDefault !== "boolean")
+  }
+
+  if (typeof value.isDefault !== "boolean") {
     throw validationError([{ path: "isDefault", reason: "Must be a boolean" }]);
-  if (typeof value.isAvailable !== "boolean")
+  }
+
+  if (typeof value.isAvailable !== "boolean") {
     throw validationError([
       { path: "isAvailable", reason: "Must be a boolean" },
     ]);
+  }
 }
+
 function int32(value: unknown): value is number {
   return (
     typeof value === "number" &&
@@ -317,13 +352,17 @@ function int32(value: unknown): value is number {
     value <= maximumModifierInteger
   );
 }
+
 function nonNegativeInt32(value: unknown): value is number {
   return int32(value) && value >= 0;
 }
+
 function assertUuid(value: unknown, path: string): asserts value is string {
-  if (!isUuid(value))
+  if (!isUuid(value)) {
     throw validationError([{ path, reason: "Must be a UUID" }]);
+  }
 }
+
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -332,11 +371,15 @@ function isUuid(value: unknown): value is string {
     )
   );
 }
+
 function requestId(request: ModifierRequestContext): string {
-  if (typeof request.requestId !== "string" || request.requestId === "")
+  if (typeof request.requestId !== "string" || request.requestId === "") {
     throw validationError([{ path: "requestId", reason: "Must be present" }]);
+  }
+
   return request.requestId;
 }
+
 async function executeGroup(
   command: () => Promise<AdminModifierGroup>,
 ): Promise<ModifierGroupDto> {
@@ -346,6 +389,7 @@ async function executeGroup(
     throwModifierError(error);
   }
 }
+
 async function executeOption(
   command: () => Promise<AdminModifierOption>,
 ): Promise<ModifierOptionDto> {
@@ -355,6 +399,7 @@ async function executeOption(
     throwModifierError(error);
   }
 }
+
 async function executeOptions(
   command: () => Promise<AdminModifierOption[]>,
 ): Promise<ModifierOptionDto[]> {
@@ -364,6 +409,7 @@ async function executeOptions(
     throwModifierError(error);
   }
 }
+
 async function executeVoid(command: () => Promise<void>): Promise<void> {
   try {
     await command();
@@ -371,6 +417,7 @@ async function executeVoid(command: () => Promise<void>): Promise<void> {
     throwModifierError(error);
   }
 }
+
 function toGroupDto(group: AdminModifierGroup): ModifierGroupDto {
   return {
     id: group.id,
@@ -382,6 +429,7 @@ function toGroupDto(group: AdminModifierGroup): ModifierGroupDto {
     options: group.options.map(toOptionDto),
   };
 }
+
 function toOptionDto(option: AdminModifierOption): ModifierOptionDto {
   return {
     id: option.id,
@@ -393,9 +441,16 @@ function toOptionDto(option: AdminModifierOption): ModifierOptionDto {
     isAvailable: option.isAvailable,
   };
 }
+
 function throwModifierError(error: unknown): never {
-  if (!(error instanceof ModifierAdminError)) throw error;
-  if (error.code === "MODIFIER_INVALID") throw validationError(error.fields);
+  if (!(error instanceof ModifierAdminError)) {
+    throw error;
+  }
+
+  if (error.code === "MODIFIER_INVALID") {
+    throw validationError(error.fields);
+  }
+
   const response =
     error.code === "MODIFIER_GROUP_NOT_FOUND"
       ? modifierErrorResponses.groupNotFound
@@ -409,5 +464,6 @@ function throwModifierError(error: unknown): never {
   const status = error.code.endsWith("_NOT_FOUND")
     ? HttpStatus.NOT_FOUND
     : HttpStatus.CONFLICT;
+
   throw new HttpException(response, status);
 }

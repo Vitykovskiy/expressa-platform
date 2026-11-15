@@ -21,6 +21,7 @@ export function createPickupSlotsApi(client: ApiClient) {
           headers: { authorization: `Bearer ${accessToken}` },
         },
       );
+
       return {
         serviceDay: response.serviceDay,
         acceptsNewOrders: response.acceptsNewOrders,
@@ -43,10 +44,12 @@ function isPickupSlotsResponse(value: unknown): value is PickupSlotsResponse {
     value.slotMinutes !== 10 ||
     typeof value.acceptsNewOrders !== "boolean" ||
     !Array.isArray(value.slots)
-  )
+  ) {
     return false;
+  }
 
   let previousStart = "";
+
   for (const slot of value.slots) {
     if (
       !isRecord(slot) ||
@@ -58,8 +61,9 @@ function isPickupSlotsResponse(value: unknown): value is PickupSlotsResponse {
       Date.parse(slot.endsAt) - Date.parse(slot.startsAt) !==
         pickupSlotDurationMs ||
       slot.startsAt <= previousStart
-    )
+    ) {
       return false;
+    }
 
     previousStart = slot.startsAt;
   }
@@ -68,10 +72,12 @@ function isPickupSlotsResponse(value: unknown): value is PickupSlotsResponse {
 }
 
 function isCanonicalTimestamp(value: unknown): value is string {
-  if (typeof value !== "string" || !canonicalUtcPattern.test(value))
+  if (typeof value !== "string" || !canonicalUtcPattern.test(value)) {
     return false;
+  }
 
   const timestamp = Date.parse(value);
+
   return (
     Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value
   );

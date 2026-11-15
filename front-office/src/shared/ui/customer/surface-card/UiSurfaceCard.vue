@@ -17,10 +17,12 @@
 <script setup lang="ts">
 import { UI_SURFACE_CARD_DEFAULTS } from "./UiSurfaceCard.constants";
 import type { UiSurfaceCardProps } from "./UiSurfaceCard.types";
+
 const props = withDefaults(
   defineProps<UiSurfaceCardProps>(),
   UI_SURFACE_CARD_DEFAULTS,
 );
+
 defineSlots<{ default?: () => unknown }>();
 </script>
 <style scoped>

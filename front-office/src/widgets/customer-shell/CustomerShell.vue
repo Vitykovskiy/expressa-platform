@@ -28,6 +28,7 @@ import type {
 
 const props = defineProps<CustomerShellProps>();
 const emit = defineEmits<CustomerShellEmits>();
+
 defineSlots<{
   default(): unknown;
 }>();
@@ -35,10 +36,21 @@ defineSlots<{
 function handleNavigate(destination: ShellNavigationDestination): void {
   emit("navigate", destination);
 
-  if (destination === "menu") emit("goMenu");
-  if (destination === "auth") emit("openAuth");
-  if (destination === "cart") emit("openCart");
-  if (destination === "orders") emit("openOrders");
+  if (destination === "menu") {
+    emit("goMenu");
+  }
+
+  if (destination === "auth") {
+    emit("openAuth");
+  }
+
+  if (destination === "cart") {
+    emit("openCart");
+  }
+
+  if (destination === "orders") {
+    emit("openOrders");
+  }
 }
 </script>
 

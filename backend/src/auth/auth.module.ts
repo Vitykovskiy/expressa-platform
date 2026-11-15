@@ -79,6 +79,7 @@ import { SessionGuard } from "./transport/session.guard";
       inject: [ConfigService],
       useFactory: (configuration: ConfigService) => {
         const auth = getAuthConfiguration(configuration);
+
         return new NodeAuthCryptoAdapter({
           jwtSecret: auth.jwtSecret,
           otpPepper: auth.otpPepper,
@@ -229,6 +230,7 @@ function getAuthConfiguration(
     configuration.get<string>("NODE_ENV"),
     "NODE_ENV",
   );
+
   if (!isDeliveryEnvironment(environment)) {
     throw new Error("Invalid environment variable: NODE_ENV");
   }
@@ -283,6 +285,7 @@ function createPoolProxy(database: DatabaseService): Pool {
   return new Proxy({} as Pool, {
     get: (_target, property) => {
       const value = database.connectionPool[property as keyof Pool];
+
       return typeof value === "function"
         ? value.bind(database.connectionPool)
         : value;

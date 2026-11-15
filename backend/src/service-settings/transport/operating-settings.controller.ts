@@ -60,12 +60,14 @@ export class OperatingSettingsController {
     @Req() request: OperatingSettingsRequest,
   ): Promise<OperatingSettingsResponse> {
     const settings = parseInput(body);
+
     if (
       typeof request.requestId !== "string" ||
       request.requestId.trim() === ""
     ) {
       throw new Error("Missing request identity");
     }
+
     try {
       return toResponse(
         await this.settings.save({
@@ -79,10 +81,12 @@ export class OperatingSettingsController {
       if (error instanceof InvalidOperatingSettingsError) {
         invalid(error.message);
       }
+
       throw error;
     }
   }
 }
+
 function parseInput(value: unknown): OperatingSettingsInput {
   if (
     typeof value !== "object" ||
@@ -100,18 +104,21 @@ function parseInput(value: unknown): OperatingSettingsInput {
   ) {
     invalid("Параметры настроек недопустимы.");
   }
+
   return {
     opensAt: value.opensAt,
     closesAt: value.closesAt,
     slotCapacity: value.slotCapacity,
   };
 }
+
 function invalid(message: string): never {
   throw new HttpException(
     { code: "VALIDATION_ERROR", message, details: null },
     HttpStatus.BAD_REQUEST,
   );
 }
+
 function toResponse(value: OperatingSettings): OperatingSettingsResponse {
   return { ...value, updatedAt: value.updatedAt?.toISOString() ?? null };
 }

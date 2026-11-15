@@ -1,4 +1,5 @@
 import type { AuthContext } from "../../auth/domain/auth.types";
+
 export type PushSubscription = {
   id: string;
   userId: string;

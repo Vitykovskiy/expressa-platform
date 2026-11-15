@@ -26,7 +26,7 @@ const emit = defineEmits<OperationsTabsEmits>();
 
 <style scoped>
 /* Интервалы этой полосы общие для фильтров заказов и пользователей;
-   tokens для их плотности нет. Узкая полоса прокручивается без сжатия кнопок. */
+   токенов для их плотности нет. Узкая полоса прокручивается без сжатия кнопок. */
 .operations-tabs {
   display: flex;
   gap: 8px;
@@ -35,7 +35,7 @@ const emit = defineEmits<OperationsTabsEmits>();
   background: var(--color-surface);
 }
 /* Отступы и типографика сохраняют размер исходной кнопки фильтра.
-   Тема задаёт цвета и pill-радиус, но не эти локальные размеры. */
+   Тема задаёт цвета и капсульный радиус, но не эти локальные размеры. */
 .operations-tabs__item {
   flex-shrink: 0;
   padding: 8px 16px;

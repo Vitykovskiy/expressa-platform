@@ -1,7 +1,7 @@
 import { createVuetify } from "vuetify";
 
-// CSS custom properties are not valid Vuetify theme values. This adapter mirrors
-// customer-tokens.css with static, parseable values for Vuetify's JavaScript API.
+// Тема Vuetify не принимает пользовательские свойства CSS в качестве значений.
+// Адаптер повторяет customer-tokens.css статическими значениями для JavaScript API Vuetify.
 const customerVuetifyColorAdapter = {
   background: "#1847E8",
   surface: "#FFFFFF",

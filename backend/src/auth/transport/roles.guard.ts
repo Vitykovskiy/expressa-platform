@@ -23,11 +23,13 @@ export class RolesGuard implements CanActivate {
       rolesMetadataKey,
       [context.getHandler(), context.getClass()],
     );
+
     if (policy === undefined) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest<unknown>();
+
     if (!isAuthenticatedRequest(request) || request.auth === undefined) {
       throw new UnauthorizedException();
     }
@@ -46,25 +48,31 @@ export class RolesGuard implements CanActivate {
     if (policy === "CustomerContext") {
       return auth.context === "customer";
     }
+
     if (policy === "Customer") {
       return auth.context === "customer" && auth.customer !== null;
     }
+
     const staff =
       auth.context === "staff" &&
       auth.employee !== null &&
       auth.employee.accessEnabled;
+
     if (policy === "CustomerOrBarista") {
       return (
         auth.context === "customer" ||
         (staff && auth.employee?.role === "barista")
       );
     }
+
     if (policy === "Staff") {
       return staff;
     }
+
     if (policy === "Administrator") {
       return staff && auth.employee?.role === "administrator";
     }
+
     return false;
   }
 }

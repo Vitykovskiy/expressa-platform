@@ -90,6 +90,7 @@ export class BackofficeOrdersV3Controller {
       number: query.number,
       view: query.view,
     });
+
     return Promise.all(orders.map((order) => this.details(order.id)));
   }
 
@@ -101,6 +102,7 @@ export class BackofficeOrdersV3Controller {
     assertUuid(orderId);
     try {
       const order = await this.getOrders.details(orderId);
+
       return toStaffDto(order);
     } catch (error) {
       if (error instanceof OrderNotFoundError) {
@@ -109,6 +111,7 @@ export class BackofficeOrdersV3Controller {
           HttpStatus.NOT_FOUND,
         );
       }
+
       throw error;
     }
   }
@@ -125,6 +128,7 @@ export class BackofficeOrdersV3Controller {
     if (!isRecord(body) || Object.keys(body).length !== 0) {
       invalid();
     }
+
     return this.applyAction({
       action: "ready",
       orderId,
@@ -152,6 +156,7 @@ export class BackofficeOrdersV3Controller {
     ) {
       invalid();
     }
+
     return this.applyAction({
       action: "reject",
       reason: body.reason,
@@ -180,10 +185,12 @@ export class BackofficeOrdersV3Controller {
             : HttpStatus.CONFLICT,
         );
       }
+
       throw error;
     }
   }
 }
+
 function assertQuery(query: BackofficeOrdersV3QueryDto): void {
   if (
     !isRecord(query) ||
@@ -191,6 +198,7 @@ function assertQuery(query: BackofficeOrdersV3QueryDto): void {
   ) {
     invalid();
   }
+
   if (
     query.stage !== undefined &&
     (typeof query.stage !== "string" ||
@@ -200,6 +208,7 @@ function assertQuery(query: BackofficeOrdersV3QueryDto): void {
   ) {
     invalid();
   }
+
   if (
     query.number !== undefined &&
     (typeof query.number !== "string" ||
@@ -208,6 +217,7 @@ function assertQuery(query: BackofficeOrdersV3QueryDto): void {
   ) {
     invalid();
   }
+
   if (
     query.view !== undefined &&
     (typeof query.view !== "string" ||
@@ -215,13 +225,16 @@ function assertQuery(query: BackofficeOrdersV3QueryDto): void {
   ) {
     invalid();
   }
+
   if (query.stage !== undefined && query.view !== undefined) {
     invalid();
   }
 }
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function assertUuid(value: string): void {
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -231,6 +244,7 @@ function assertUuid(value: string): void {
     invalid();
   }
 }
+
 function getRequestId(request: SourceOrderRequest): string {
   if (
     typeof request.requestId !== "string" ||
@@ -238,8 +252,10 @@ function getRequestId(request: SourceOrderRequest): string {
   ) {
     throw new Error("Missing request identity");
   }
+
   return request.requestId;
 }
+
 function toStaffDto(order: OrderDetails): BackofficeOrderV3Dto {
   return {
     id: order.id,
@@ -270,6 +286,7 @@ function invalid(): never {
     HttpStatus.BAD_REQUEST,
   );
 }
+
 function toItem(
   item: OrderSnapshotItem,
 ): import("./order-v3.dto.types").OrderV3ItemDto {

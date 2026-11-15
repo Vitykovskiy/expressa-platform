@@ -14,7 +14,7 @@ import type {
   OrderHistoryEvent,
 } from "./orders.types";
 
-// null означает непригодный ответ; nullable-поля проверяются внутри DTO.
+// `null` означает непригодный ответ; допускающие `null` поля проверяются внутри DTO.
 export function parseOrder(value: unknown): OrderDto | null {
   try {
     const source = requireObject(value);

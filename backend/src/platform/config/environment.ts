@@ -72,6 +72,7 @@ export function validateEnvironment(
   getCorsOrigins(environment);
   validateEnvironmentSpecificVariables(environment, nodeEnvironment);
   const bootstrapPhone = environment.BOOTSTRAP_ADMIN_PHONE;
+
   if (bootstrapPhone !== undefined && bootstrapPhone.trim() !== "") {
     validatePhone(bootstrapPhone, "BOOTSTRAP_ADMIN_PHONE");
   }
@@ -81,6 +82,7 @@ export function validateEnvironment(
 
 function validateVapidConfiguration(environment: NodeJS.ProcessEnv): void {
   const subject = requireEnvironmentVariable(environment, "VAPID_SUBJECT");
+
   if (!subject.startsWith("mailto:") && !isExactOrigin(subject)) {
     throw new Error("Invalid environment variable: VAPID_SUBJECT");
   }
@@ -90,6 +92,7 @@ function validateVapidConfiguration(environment: NodeJS.ProcessEnv): void {
     ["VAPID_PRIVATE_KEY", 32],
   ] as const) {
     const value = requireEnvironmentVariable(environment, name);
+
     if (
       !/^[A-Za-z0-9_-]+$/.test(value) ||
       Buffer.from(value, "base64url").length !== length
@@ -130,14 +133,17 @@ function validateEnvironmentSpecificVariables(
 ): void {
   if (developmentEnvironments.some((value) => value === nodeEnvironment)) {
     const otp = requireEnvironmentVariable(environment, "AUTH_DEVELOPMENT_OTP");
+
     if (!/^\d{6}$/.test(otp)) {
       throw new Error("Invalid environment variable: AUTH_DEVELOPMENT_OTP");
     }
+
     return;
   }
 
   if (nodeEnvironment === "staging") {
     const otpMode = requireEnvironmentVariable(environment, "AUTH_OTP_MODE");
+
     if (otpMode !== "staging_test") {
       throw new Error("Invalid environment variable: AUTH_OTP_MODE");
     }
@@ -146,6 +152,7 @@ function validateEnvironmentSpecificVariables(
       environment,
       "STAGING_TEST_OTP_CODE",
     );
+
     if (!/^\d{6}$/.test(otp)) {
       throw new Error("Invalid environment variable: STAGING_TEST_OTP_CODE");
     }
@@ -155,6 +162,7 @@ function validateEnvironmentSpecificVariables(
       "STAGING_TEST_PHONE_ALLOWLIST",
     );
     const phones = allowlist.split(",");
+
     if (
       phones.some((phone) => !/^\+7\d{10}$/.test(phone)) ||
       new Set(phones).size !== phones.length
@@ -174,6 +182,7 @@ function validateEnvironmentSpecificVariables(
 function isExactOrigin(value: string): boolean {
   try {
     const origin = new URL(value);
+
     return (
       (origin.protocol === "http:" || origin.protocol === "https:") &&
       origin.origin === value

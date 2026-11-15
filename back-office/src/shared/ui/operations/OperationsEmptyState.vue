@@ -15,7 +15,7 @@ const props = defineProps<OperationsEmptyStateProps>();
 
 <style scoped>
 /* Свободное место вокруг сообщения и короткий интервал между строками
-   сохраняют композицию пустого состояния; соответствующих tokens нет. */
+   сохраняют композицию пустого состояния; соответствующих токенов нет. */
 .operations-empty {
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@ const props = defineProps<OperationsEmptyStateProps>();
   display: block;
 }
 /* Заголовок и описание имеют собственную иерархию пустого состояния;
-   типографических tokens нет, цвета продолжают задаваться темой. */
+   типографических токенов нет, цвета продолжают задаваться темой. */
 .operations-empty__title {
   margin: 0;
   color: var(--color-foreground);

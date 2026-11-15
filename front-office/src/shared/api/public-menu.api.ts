@@ -35,6 +35,7 @@ export function createPublicMenuApi(
         isPublicMenuResponse,
         { expectedStatus: publicMenuStatuses.success, method: "GET" },
       );
+
       return {
         acceptsNewOrders: response.acceptsNewOrders,
         categories: response.categories.map(toCategory),
@@ -42,6 +43,7 @@ export function createPublicMenuApi(
     },
   };
 }
+
 function isPublicMenuResponse(value: unknown): value is PublicMenuResponse {
   return (
     isRecord(value) &&
@@ -49,6 +51,7 @@ function isPublicMenuResponse(value: unknown): value is PublicMenuResponse {
     arrayOf(value.categories, isCategory)
   );
 }
+
 function isCategory(value: unknown): value is PublicMenuCategoryResponse {
   return (
     isRecord(value) &&
@@ -58,6 +61,7 @@ function isCategory(value: unknown): value is PublicMenuCategoryResponse {
     arrayOf(value.products, isProduct)
   );
 }
+
 function isProduct(value: unknown): value is PublicMenuProductResponse {
   return (
     isRecord(value) &&
@@ -69,12 +73,18 @@ function isProduct(value: unknown): value is PublicMenuProductResponse {
     validPricing(value)
   );
 }
+
 function validModifierGroups(value: unknown): boolean {
-  if (!Array.isArray(value)) return false;
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
   const groupIds = new Set<string>();
   const optionIds = new Set<string>();
+
   return value.every((group) => validModifierGroup(group, groupIds, optionIds));
 }
+
 function validModifierGroup(
   value: unknown,
   groupIds: Set<string>,
@@ -95,14 +105,16 @@ function validModifierGroup(
     (value.selectionType === "single" && value.maxSelect !== 1) ||
     !Array.isArray(value.options) ||
     !value.options.every(isModifierOption)
-  )
+  ) {
     return false;
+  }
 
   const availableOptions = value.options.filter((option) => option.isAvailable);
   const defaultOptions = availableOptions.filter((option) => option.isDefault);
   const freeDefaultOptions = defaultOptions.filter(
     (option) => option.priceDelta === 0,
   );
+
   if (
     availableOptions.length < value.minSelect ||
     (value.minSelect > 0 &&
@@ -113,12 +125,15 @@ function validModifierGroup(
     value.options.some(
       (option) => optionIds.has(option.id) || !optionIds.add(option.id),
     )
-  )
+  ) {
     return false;
+  }
 
   groupIds.add(value.id);
+
   return true;
 }
+
 function isModifierOption(value: unknown): value is {
   id: string;
   name: string;
@@ -135,6 +150,7 @@ function isModifierOption(value: unknown): value is {
     typeof value.isAvailable === "boolean"
   );
 }
+
 function isChoice(value: unknown): value is PublicMenuPriceChoice {
   return (
     isRecord(value) &&
@@ -144,22 +160,27 @@ function isChoice(value: unknown): value is PublicMenuPriceChoice {
     typeof value.isAvailable === "boolean"
   );
 }
+
 function validPricing(value: Record<string, unknown>): boolean {
   if (
     !nullablePrice(value.price) ||
     !nullableString(value.portionLabel) ||
     !arrayOf(value.priceChoices, isChoice)
-  )
+  ) {
     return false;
+  }
 
   const choices = value.priceChoices;
+
   return choices.length === 0
     ? value.price !== null
     : value.price === null && value.portionLabel === null && choices.length > 0;
 }
+
 function toCategory(category: PublicMenuCategoryResponse): PublicMenuCategory {
   return { ...category, products: category.products.map(toProduct) };
 }
+
 function toProduct(product: PublicMenuProductResponse): PublicMenuProduct {
   return {
     ...product,
@@ -170,15 +191,18 @@ function toProduct(product: PublicMenuProductResponse): PublicMenuProduct {
     })),
   };
 }
+
 function arrayOf<T>(
   value: unknown,
   predicate: (item: unknown) => item is T,
 ): value is T[] {
   return Array.isArray(value) && value.every(predicate);
 }
+
 function uuid(value: unknown): value is string {
   return typeof value === "string" && publicMenuUuidPattern.test(value);
 }
+
 function nonNegative(value: unknown): value is number {
   return (
     typeof value === "number" &&
@@ -187,12 +211,15 @@ function nonNegative(value: unknown): value is number {
     value <= 2_147_483_647
   );
 }
+
 function nullablePrice(value: unknown): value is number | null {
   return value === null || nonNegative(value);
 }
+
 function nullableString(value: unknown): value is string | null {
   return value === null || typeof value === "string";
 }
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

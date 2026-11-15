@@ -283,6 +283,7 @@ watch(
 async function loadInitialOrder(): Promise<void> {
   stopPolling();
   const owner = beginDetailRequest();
+
   loading.value = true;
   order.value = null;
   errorMessage.value = null;
@@ -290,14 +291,17 @@ async function loadInitialOrder(): Promise<void> {
   refreshErrorMessage.value = null;
   refreshFeedback.value = null;
   const orderId = route.params.id;
+
   if (
     typeof orderId !== "string" ||
     apiClient === undefined ||
     sessionStore.accessToken === null
   ) {
     finishInitialRequest(owner);
+
     return;
   }
+
   try {
     const nextOrder = await sessionStore.readProtected(
       (accessToken) =>
@@ -305,15 +309,24 @@ async function loadInitialOrder(): Promise<void> {
       () => ownsDetailRequest(owner),
       clearOrderForSessionBoundary,
     );
-    if (!ownsDetailRequest(owner)) return;
+
+    if (!ownsDetailRequest(owner)) {
+      return;
+    }
+
     order.value = nextOrder;
     await startRequestedRepeat(nextOrder);
   } catch (error) {
-    if (!ownsDetailRequest(owner)) return;
-    if (sessionStore.status !== "authenticated") {
-      clearOrderForSessionBoundary();
+    if (!ownsDetailRequest(owner)) {
       return;
     }
+
+    if (sessionStore.status !== "authenticated") {
+      clearOrderForSessionBoundary();
+
+      return;
+    }
+
     order.value = null;
     errorMessage.value =
       error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
@@ -325,8 +338,12 @@ async function loadInitialOrder(): Promise<void> {
     finishInitialRequest(owner);
   }
 }
+
 async function startRequestedRepeat(nextOrder: OrderPageOrder): Promise<void> {
-  if (route.query.repeat !== "1" || nextOrder.stage !== "ISSUED") return;
+  if (route.query.repeat !== "1" || nextOrder.stage !== "ISSUED") {
+    return;
+  }
+
   await router.replace({ path: route.path, query: {} });
   await prepareRepeat();
 }
@@ -338,18 +355,26 @@ function syncPolling(): void {
     refreshFeedback.value === "stale" ||
     order.value === null ||
     terminal.value
-  )
+  ) {
     return stopPolling();
-  if (pollingTimer === null)
+  }
+
+  if (pollingTimer === null) {
     pollingTimer = setInterval(
       () => void refreshOrder(),
       orderPollingIntervalMs,
     );
+  }
 }
+
 function stopPolling(): void {
-  if (pollingTimer !== null) clearInterval(pollingTimer);
+  if (pollingTimer !== null) {
+    clearInterval(pollingTimer);
+  }
+
   pollingTimer = null;
 }
+
 function clearOrderForSessionBoundary(): void {
   stopPolling();
   order.value = null;
@@ -358,16 +383,24 @@ function clearOrderForSessionBoundary(): void {
   errorMessage.value = orderPageMessages.loadFailed;
   initialRecoveryAvailable.value = true;
 }
+
 async function refreshOrder(): Promise<void> {
-  if (detailRequestPending.value) return;
+  if (detailRequestPending.value) {
+    return;
+  }
+
   const orderId = route.params.id;
+
   if (
     typeof orderId !== "string" ||
     apiClient === undefined ||
     sessionStore.accessToken === null
-  )
+  ) {
     return;
+  }
+
   const owner = beginDetailRequest();
+
   refreshFeedback.value = "pending";
   refreshErrorMessage.value = null;
   try {
@@ -377,15 +410,24 @@ async function refreshOrder(): Promise<void> {
       () => ownsDetailRequest(owner),
       clearOrderForSessionBoundary,
     );
-    if (!ownsDetailRequest(owner)) return;
+
+    if (!ownsDetailRequest(owner)) {
+      return;
+    }
+
     order.value = nextOrder;
     refreshFeedback.value = null;
   } catch (error) {
-    if (!ownsDetailRequest(owner)) return;
-    if (sessionStore.status !== "authenticated") {
-      clearOrderForSessionBoundary();
+    if (!ownsDetailRequest(owner)) {
       return;
     }
+
+    if (sessionStore.status !== "authenticated") {
+      clearOrderForSessionBoundary();
+
+      return;
+    }
+
     refreshErrorMessage.value =
       error instanceof ApiError && error.code === "ORDER_NOT_FOUND"
         ? orderPageMessages.unavailable
@@ -396,40 +438,64 @@ async function refreshOrder(): Promise<void> {
     finishRefreshRequest(owner);
   }
 }
+
 async function recoverOrder(): Promise<void> {
-  if (detailRequestPending.value) return;
-  if (!hasAuthenticatedSession()) {
-    await sessionStore.bootstrap();
-    if (!hasAuthenticatedSession()) return;
-  }
-  if (initialRecoveryAvailable.value) {
-    await loadInitialOrder();
+  if (detailRequestPending.value) {
     return;
   }
-  if (refreshFeedback.value === "stale") await refreshOrder();
+
+  if (!hasAuthenticatedSession()) {
+    await sessionStore.bootstrap();
+    if (!hasAuthenticatedSession()) {
+      return;
+    }
+  }
+
+  if (initialRecoveryAvailable.value) {
+    await loadInitialOrder();
+
+    return;
+  }
+
+  if (refreshFeedback.value === "stale") {
+    await refreshOrder();
+  }
 }
+
 function hasAuthenticatedSession(): boolean {
   return sessionStore.status === "authenticated";
 }
+
 function beginDetailRequest(): number {
   detailRequestOwner += 1;
   detailRequestPending.value = true;
+
   return detailRequestOwner;
 }
+
 function ownsDetailRequest(owner: number): boolean {
   return isMounted && detailRequestOwner === owner;
 }
+
 function finishInitialRequest(owner: number): void {
-  if (!ownsDetailRequest(owner)) return;
+  if (!ownsDetailRequest(owner)) {
+    return;
+  }
+
   detailRequestPending.value = false;
   loading.value = false;
   syncPolling();
 }
+
 function finishRefreshRequest(owner: number): void {
-  if (!ownsDetailRequest(owner)) return;
+  if (!ownsDetailRequest(owner)) {
+    return;
+  }
+
   detailRequestPending.value = false;
   syncPolling();
 }
+
 async function prepareRepeat(): Promise<void> {
   if (repeatPreparationPending.value) {
     return;
@@ -441,11 +507,13 @@ async function prepareRepeat(): Promise<void> {
   }
 
   const owner = ++repeatOperationOwner;
+
   repeatPreparationPending.value = true;
   repeatPreparationFailed.value = false;
 
   try {
     const menu = await createPublicMenuApi(apiClient).getMenu();
+
     if (!ownsRepeatOperation(owner)) {
       return;
     }
@@ -454,6 +522,7 @@ async function prepareRepeat(): Promise<void> {
       order.value,
       menu.categories.flatMap((category) => category.products),
     );
+
     repeatPreparation = preparation;
 
     if (cartStore.items.length === 0) {

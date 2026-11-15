@@ -125,7 +125,9 @@ function isVapidPublicKey(value: string): boolean {
 }
 
 function toVapidPublicKeyBytes(value: string): Uint8Array<ArrayBuffer> | null {
-  if (!/^[A-Za-z0-9_-]+$/u.test(value)) return null;
+  if (!/^[A-Za-z0-9_-]+$/u.test(value)) {
+    return null;
+  }
 
   try {
     const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -144,7 +146,10 @@ function toVapidPublicKeyBytes(value: string): Uint8Array<ArrayBuffer> | null {
 
 async function isP256PublicKey(value: string): Promise<boolean> {
   const key = toVapidPublicKeyBytes(value);
-  if (key === null) return false;
+
+  if (key === null) {
+    return false;
+  }
 
   try {
     await crypto.subtle.importKey(

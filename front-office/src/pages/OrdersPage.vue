@@ -51,47 +51,63 @@ onUnmounted(() => {
   document.removeEventListener("visibilitychange", syncPolling);
   stopPolling();
 });
+
 async function reload(): Promise<void> {
   orders.value = [];
   nextCursor.value = null;
   await loadPage();
 }
+
 async function retry(): Promise<void> {
   if (!hasAuthenticatedSession()) {
     await sessionStore.bootstrap();
-    if (!hasAuthenticatedSession()) return;
+    if (!hasAuthenticatedSession()) {
+      return;
+    }
   }
+
   if (staleMessage.value !== null) {
     await refreshActiveOrders();
+
     return;
   }
+
   await reload();
 }
+
 function continueShopping(): void {
   void router.push("/");
 }
+
 function hasAuthenticatedSession(): boolean {
   return sessionStore.status === "authenticated";
 }
+
 async function loadMore(): Promise<void> {
   await loadPage(nextCursor.value ?? undefined);
 }
+
 async function repeatOrder(orderId: string): Promise<void> {
   await router.push({ path: `/orders/${orderId}`, query: { repeat: "1" } });
 }
+
 async function logout(): Promise<void> {
   await sessionStore.logout();
   await router.replace("/");
 }
+
 async function loadPage(cursor?: string): Promise<void> {
   if (
     loading.value ||
     apiClient === undefined ||
     sessionStore.accessToken === null
-  )
+  ) {
     return;
+  }
+
   loading.value = true;
   const owner = ++protectedReadOwner;
+
   errorMessage.value = null;
   try {
     const page = await sessionStore.readProtected(
@@ -100,8 +116,13 @@ async function loadPage(cursor?: string): Promise<void> {
       () => ownsProtectedRead(owner),
       clearOrdersForSessionBoundary,
     );
-    if (!ownsProtectedRead(owner)) return;
+
+    if (!ownsProtectedRead(owner)) {
+      return;
+    }
+
     const knownIds = new Set(orders.value.map((order) => order.id));
+
     orders.value = [
       ...orders.value,
       ...page.orders.filter((order) => !knownIds.has(order.id)),
@@ -109,35 +130,50 @@ async function loadPage(cursor?: string): Promise<void> {
     nextCursor.value = page.nextCursor;
     staleMessage.value = null;
   } catch {
-    if (sessionStore.status !== "authenticated")
+    if (sessionStore.status !== "authenticated") {
       clearOrdersForSessionBoundary();
+    }
+
     errorMessage.value = "Не удалось загрузить историю заказов.";
   } finally {
     loading.value = false;
     syncPolling();
   }
 }
+
 function hasActiveOrders(): boolean {
   return orders.value.some((order) => !isOrderTerminal(order));
 }
+
 function syncPolling(): void {
-  if (document.hidden || !hasActiveOrders()) return stopPolling();
-  if (pollingTimer === null)
+  if (document.hidden || !hasActiveOrders()) {
+    return stopPolling();
+  }
+
+  if (pollingTimer === null) {
     pollingTimer = setInterval(() => void refreshActiveOrders(), 10_000);
+  }
 }
+
 function stopPolling(): void {
-  if (pollingTimer !== null) clearInterval(pollingTimer);
+  if (pollingTimer !== null) {
+    clearInterval(pollingTimer);
+  }
+
   pollingTimer = null;
 }
+
 function clearOrdersForSessionBoundary(): void {
   stopPolling();
   orders.value = [];
   nextCursor.value = null;
   staleMessage.value = null;
 }
+
 function ownsProtectedRead(owner: number): boolean {
   return isMounted && protectedReadOwner === owner;
 }
+
 async function refreshActiveOrders(): Promise<void> {
   if (
     activeRefreshPending.value ||
@@ -145,11 +181,14 @@ async function refreshActiveOrders(): Promise<void> {
     sessionStore.accessToken === null ||
     document.hidden ||
     !hasActiveOrders()
-  )
+  ) {
     return;
+  }
+
   activeRefreshPending.value = true;
   const owner = ++protectedReadOwner;
   let refreshFailed = false;
+
   try {
     const api = createOrdersApi(apiClient);
     const activeOrders = orders.value.filter(
@@ -164,22 +203,31 @@ async function refreshActiveOrders(): Promise<void> {
         ),
       ),
     );
-    if (!ownsProtectedRead(owner)) return;
+
+    if (!ownsProtectedRead(owner)) {
+      return;
+    }
+
     const byId = new Map(refreshed.map((order) => [order.id, order]));
+
     orders.value = orders.value.map((order) => byId.get(order.id) ?? order);
     staleMessage.value = null;
   } catch {
     if (sessionStore.status !== "authenticated") {
       clearOrdersForSessionBoundary();
+
       return;
     }
+
     refreshFailed = true;
     staleMessage.value =
       "Не удалось обновить статус заказа. Показаны последние доступные данные.";
     stopPolling();
   } finally {
     activeRefreshPending.value = false;
-    if (!refreshFailed) syncPolling();
+    if (!refreshFailed) {
+      syncPolling();
+    }
   }
 }
 </script>

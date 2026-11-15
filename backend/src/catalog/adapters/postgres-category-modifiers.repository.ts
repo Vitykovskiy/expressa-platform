@@ -5,7 +5,7 @@ import type {
   CategoryModifiersRepository,
   CategoryModifiersUnitOfWork,
 } from "../application/category-modifiers.repository.types";
-import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import type { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
 import type { DatabaseRow } from "./postgres-category-modifiers.repository.types";
 
 export class PostgresCategoryModifiersRepository implements CategoryModifiersUnitOfWork {
@@ -38,18 +38,23 @@ export class PostgresCategoryModifiersTransactionRepository implements CategoryM
       "SELECT id FROM categories WHERE id = $1 AND archived_at IS NULL",
       [categoryId],
     );
+
     return result.rows.length === 1;
   }
 
   async findCurrentModifierGroupIds(
     groupIds: readonly string[],
   ): Promise<readonly string[]> {
-    if (groupIds.length === 0) return [];
+    if (groupIds.length === 0) {
+      return [];
+    }
+
     const result = await this.client.query<DatabaseRow>(
       `SELECT id FROM modifier_groups
        WHERE id = ANY($1::uuid[]) AND archived_at IS NULL`,
       [groupIds],
     );
+
     return result.rows.map((row) => readString(row, "id"));
   }
 
@@ -61,6 +66,7 @@ export class PostgresCategoryModifiersTransactionRepository implements CategoryM
        WHERE category_id = $1 ORDER BY sort_order, group_id`,
       [categoryId],
     );
+
     return result.rows.map(parseAssignment);
   }
 
@@ -72,7 +78,10 @@ export class PostgresCategoryModifiersTransactionRepository implements CategoryM
       "DELETE FROM category_modifier_groups WHERE category_id = $1",
       [categoryId],
     );
-    if (groupIds.length === 0) return [];
+    if (groupIds.length === 0) {
+      return [];
+    }
+
     const result = await this.client.query<DatabaseRow>(
       `INSERT INTO category_modifier_groups (category_id, group_id, sort_order)
        SELECT $1, group_id, sort_order - 1
@@ -80,6 +89,7 @@ export class PostgresCategoryModifiersTransactionRepository implements CategoryM
        RETURNING category_id, group_id, sort_order`,
       [categoryId, groupIds],
     );
+
     return result.rows
       .map(parseAssignment)
       .toSorted((left, right) => left.sortOrder - right.sortOrder);
@@ -110,15 +120,20 @@ function parseAssignment(row: DatabaseRow): CategoryModifierGroup {
 
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
-  if (typeof value !== "string")
+
+  if (typeof value !== "string") {
     throw new Error("Invalid PostgreSQL row field: " + key);
+  }
+
   return value;
 }
 
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
+
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }

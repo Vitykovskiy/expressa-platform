@@ -85,7 +85,7 @@ const sessionKey = computed(() => {
     return "";
   }
 
-  // Тот же ключ отзывает native lifetime и уничтожает сохранённые страницы workspace.
+  // Тот же ключ завершает работу нативных обработчиков и уничтожает сохранённые рабочие страницы.
   return `${current.identity.id}:${current.identity.employee.role}:${current.accessToken}`;
 });
 
@@ -258,7 +258,7 @@ async function inspectNotificationIntent(
     return;
   }
 
-  // Более новый клик или смена staff/worker отзывают ожидающий inspect.
+  // Более новый клик или смена сотрудника либо сервис-воркера отменяют ожидающий `inspect`.
   if (epoch !== receptionEpoch || !isCurrentIntentBinding(binding)) {
     return;
   }

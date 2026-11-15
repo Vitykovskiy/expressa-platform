@@ -33,7 +33,11 @@ import { createPickupSlotsApi } from "@/shared/api/pickup-slots.api";
 import { usePickupSelection } from "@/features/checkout/usePickupSelection";
 
 const client = inject(apiClientKey);
-if (client === undefined) throw new Error("Pickup API is not configured");
+
+if (client === undefined) {
+  throw new Error("Pickup API is not configured");
+}
+
 const pickupApi = createPickupSlotsApi(client);
 const router = useRouter();
 const session = useSessionStore();
@@ -51,8 +55,10 @@ const locked = computed(() => busy.value || pendingRetry.value);
 const pickup = usePickupSelection({
   locked,
   loadAvailability: () => {
-    if (session.accessToken === null)
+    if (session.accessToken === null) {
       throw new Error("Customer session is required");
+    }
+
     return session.readProtected(
       (token) => pickupApi.load(token),
       () => mounted,
@@ -80,16 +86,23 @@ const canSubmit = computed(
 onMounted(async () => {
   if (cart.items.length === 0) {
     await router.replace("/cart");
+
     return;
   }
-  if (pendingRetry.value) return;
+
+  if (pendingRetry.value) {
+    return;
+  }
+
   if (
     checkout.errorCode === checkoutErrorCodes.pickupUnavailable ||
     checkout.errorCode === checkoutErrorCodes.capacityUnavailable
   ) {
     await pickup.recoverConflict(checkout.rejectedPickupSlotStart);
+
     return;
   }
+
   await load();
 });
 
@@ -98,8 +111,12 @@ onUnmounted(() => {
 });
 
 async function submit(): Promise<void> {
-  if (!canSubmit.value || session.accessToken === null) return;
+  if (!canSubmit.value || session.accessToken === null) {
+    return;
+  }
+
   const requestedStart = selection.value;
+
   if (pendingRetry.value) {
     await checkout.retry(session.accessToken);
   } else {
@@ -110,21 +127,26 @@ async function submit(): Promise<void> {
         ? {}
         : { pickupSlotStart: requestedStart }),
     };
+
     if (checkout.status === checkoutStatuses.reconfirmationRequired) {
       await checkout.reconfirm(submission);
     } else {
       await checkout.confirm(submission);
     }
   }
+
   if (
     checkout.status === checkoutStatuses.succeeded &&
     checkout.order !== null
   ) {
     const orderId = checkout.order.id;
+
     cart.clear();
     await router.push(`/orders/${orderId}`);
+
     return;
   }
+
   if (
     checkout.errorCode === checkoutErrorCodes.pickupUnavailable ||
     checkout.errorCode === checkoutErrorCodes.capacityUnavailable
@@ -132,20 +154,26 @@ async function submit(): Promise<void> {
     notification.value = null;
     await pickup.recoverConflict(requestedStart);
     notification.value = checkout.errorMessage;
+
     return;
   }
+
   if (
     checkout.errorCode === checkoutErrorCodes.totalChanged ||
     checkout.errorCode === checkoutErrorCodes.itemUnavailable ||
     checkout.errorCode === checkoutErrorCodes.intakeClosed
   ) {
     await router.push("/cart");
+
     return;
   }
+
   notification.value = checkout.errorMessage;
 }
 
 function back(): void {
-  if (!busy.value) void router.push("/cart");
+  if (!busy.value) {
+    void router.push("/cart");
+  }
 }
 </script>

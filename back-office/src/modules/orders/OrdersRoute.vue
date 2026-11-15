@@ -322,7 +322,7 @@ onScopeDispose(rememberAndDeactivate);
 </script>
 
 <style scoped>
-/* Локальное размещение toast над страницей: tokens не задают слой и отступы. */
+/* Локальное размещение уведомления над страницей: токены не задают слой и отступы. */
 .orders-rejection-toast {
   position: fixed;
   z-index: 2500;
@@ -338,7 +338,7 @@ onScopeDispose(rememberAndDeactivate);
   }
 }
 
-/* Локальная геометрия блока обратной связи: общих tokens отступов нет. */
+/* Локальная геометрия блока обратной связи: общих токенов отступов нет. */
 .orders-feedback {
   display: flex;
   flex-direction: column;
@@ -350,7 +350,7 @@ onScopeDispose(rememberAndDeactivate);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
 }
-/* Типографика обратной связи не имеет общей шкалы в tokens приложения. */
+/* Типографика обратной связи не имеет общей шкалы в токенах приложения. */
 .orders-feedback__copy {
   margin: 0;
   color: var(--color-foreground-muted);

@@ -408,6 +408,7 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
       : null;
     const singlePriceChoice =
       priceChoices?.length === 1 ? priceChoices[0] : undefined;
+
     return {
       id: customerProductId(suffix),
       categoryId: customerCategoryIds[categoryIndex as number]!,
@@ -427,7 +428,11 @@ const customerProducts: ProductSeed[] = customerProductRows.map(
 const customerProductPriceChoices: ProductPriceChoiceSeed[] =
   customerProductRows.flatMap((row) => {
     const [suffix, , , , pricing] = row;
-    if (!Array.isArray(pricing) || pricing.length < 2) return [];
+
+    if (!Array.isArray(pricing) || pricing.length < 2) {
+      return [];
+    }
+
     return (pricing as readonly (readonly [string, number])[]).map(
       ([portionLabel, price], sortOrder) => ({
         id: customerPriceChoiceId(suffix, sortOrder + 1),

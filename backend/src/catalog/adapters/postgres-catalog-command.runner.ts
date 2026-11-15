@@ -24,9 +24,11 @@ export class PostgresCatalogCommandRunner {
       ]);
 
       const result = await command(client);
+
       await audit(client, result);
 
       await client.query("COMMIT");
+
       return result;
     } catch (error) {
       await client.query("ROLLBACK");

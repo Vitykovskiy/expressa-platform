@@ -49,6 +49,7 @@ export class CatalogProductsV3Controller {
     @Req() request: { requestId?: string },
   ): Promise<V3ProductResponseDto> {
     assertProductBody(body);
+
     return execute(() =>
       this.products.create({
         ...body,
@@ -70,6 +71,7 @@ export class CatalogProductsV3Controller {
   ): Promise<V3ProductResponseDto> {
     assertUuid(productId, "productId");
     assertProductBody(body);
+
     return execute(() =>
       this.products.update({
         ...body,
@@ -93,10 +95,12 @@ export class CatalogProductsV3Controller {
     if (
       !Array.isArray(body.productIds) ||
       body.productIds.some((id) => !isUuid(id))
-    )
+    ) {
       throw validationError([
         { path: "productIds", reason: "Must be an array of UUIDs" },
       ]);
+    }
+
     return execute(() =>
       this.products.reorder({
         ...body,
@@ -117,6 +121,7 @@ export class CatalogProductsV3Controller {
     @Req() request: { requestId?: string },
   ): Promise<void> {
     assertUuid(productId, "productId");
+
     return execute(() =>
       this.products.archive({
         productId,
@@ -128,66 +133,90 @@ export class CatalogProductsV3Controller {
 }
 
 function assertProductBody(body: V3ProductDto): void {
-  if (!isUuid(body?.categoryId))
+  if (!isUuid(body?.categoryId)) {
     throw validationError([{ path: "categoryId", reason: "Must be a UUID" }]);
-  if (typeof body.name !== "string" || body.name.trim() === "")
+  }
+
+  if (typeof body.name !== "string" || body.name.trim() === "") {
     throw validationError([
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (typeof body.description !== "string")
+  }
+
+  if (typeof body.description !== "string") {
     throw validationError([
       { path: "description", reason: "Must be a string" },
     ]);
+  }
+
   if (
     typeof body.isActive !== "boolean" ||
     typeof body.isAvailable !== "boolean"
-  )
+  ) {
     throw validationError([{ path: "body", reason: "Invalid product" }]);
-  if (!isInt32(body.sortOrder))
+  }
+
+  if (!isInt32(body.sortOrder)) {
     throw validationError([
       { path: "sortOrder", reason: "Must be a non-negative int32" },
     ]);
-  if (!(body.price === null || isInt32(body.price)))
+  }
+
+  if (!(body.price === null || isInt32(body.price))) {
     throw validationError([
       { path: "price", reason: "Must be a non-negative int32 or null" },
     ]);
-  if (!(body.portionLabel === null || typeof body.portionLabel === "string"))
+  }
+
+  if (!(body.portionLabel === null || typeof body.portionLabel === "string")) {
     throw validationError([
       { path: "portionLabel", reason: "Must be a string or null" },
     ]);
-  if (!Array.isArray(body.priceChoices))
+  }
+
+  if (!Array.isArray(body.priceChoices)) {
     throw validationError([
       { path: "priceChoices", reason: "Must be an array" },
     ]);
+  }
+
   body.priceChoices.forEach((choice, index) => {
     if (
       typeof choice?.portionLabel !== "string" ||
       choice.portionLabel.trim() === ""
-    )
+    ) {
       throw validationError([
         {
           path: `priceChoices.${index}.portionLabel`,
           reason: "Must be a non-empty string",
         },
       ]);
+    }
+
     if (
       !isInt32(choice.price) ||
       !isInt32(choice.sortOrder) ||
       typeof choice.isAvailable !== "boolean"
-    )
+    ) {
       throw validationError([
         { path: `priceChoices.${index}`, reason: "Invalid price choice" },
       ]);
-    if (choice.id !== undefined && !isUuid(choice.id))
+    }
+
+    if (choice.id !== undefined && !isUuid(choice.id)) {
       throw validationError([
         { path: `priceChoices.${index}.id`, reason: "Must be a UUID" },
       ]);
+    }
   });
 }
+
 function assertUuid(value: unknown, path: string): asserts value is string {
-  if (!isUuid(value))
+  if (!isUuid(value)) {
     throw validationError([{ path, reason: "Must be a UUID" }]);
+  }
 }
+
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -196,6 +225,7 @@ function isUuid(value: unknown): value is string {
     )
   );
 }
+
 function isInt32(value: unknown): value is number {
   return (
     Number.isInteger(value) &&
@@ -203,12 +233,16 @@ function isInt32(value: unknown): value is number {
     (value as number) <= 2_147_483_647
   );
 }
+
 async function execute<Result>(action: () => Promise<Result>): Promise<Result> {
   try {
     return await action();
   } catch (error) {
     if (error instanceof ProductAdminError) {
-      if (error.code === "PRODUCT_INVALID") throw validationError(error.fields);
+      if (error.code === "PRODUCT_INVALID") {
+        throw validationError(error.fields);
+      }
+
       throw new HttpException(
         { code: error.code, message: "Invalid catalog command" },
         error.code === "PRODUCT_NOT_FOUND" ||
@@ -217,6 +251,7 @@ async function execute<Result>(action: () => Promise<Result>): Promise<Result> {
           : 409,
       );
     }
+
     throw error;
   }
 }

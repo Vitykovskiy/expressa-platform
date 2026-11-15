@@ -71,7 +71,7 @@ function emitSelection(value: unknown) {
 <style scoped>
 /* VSelect 3.13.7 не предоставляет props для отдельных внутренних отступов
    и min-height ввода. Исходные 44px/6px и радиус 12px сохраняются только
-   в этом адаптере вместе со шрифтом Inter 14px; подходящих tokens для них нет. */
+   в этом адаптере вместе со шрифтом Inter 14px; подходящих токенов для них нет. */
 .catalog-option-group-select :deep(.v-field) {
   border-radius: 12px;
   color: var(--color-foreground);
@@ -82,7 +82,7 @@ function emitSelection(value: unknown) {
   min-height: 44px;
   padding-block: 6px;
 }
-/* Размер и интервал исходной отметки меню не имеют product tokens. */
+/* Размер и интервал исходной отметки меню не имеют токенов продукта. */
 .catalog-option-group-select__check {
   width: 24px;
   height: 24px;

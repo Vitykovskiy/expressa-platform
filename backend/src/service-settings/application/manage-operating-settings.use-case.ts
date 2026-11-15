@@ -12,6 +12,7 @@ export class ManageOperatingSettingsUseCase {
   }
   save(command: SaveOperatingSettingsCommand): Promise<OperatingSettings> {
     validateOperatingSettings(command.settings);
+
     return this.repository.save(command);
   }
 }

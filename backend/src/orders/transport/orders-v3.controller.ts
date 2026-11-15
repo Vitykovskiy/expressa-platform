@@ -75,6 +75,7 @@ export class OrdersV3Controller {
     @CurrentAuth() auth: CurrentAuthData,
   ): Promise<CustomerOrdersV3PageDto> {
     const page = await this.getOrders.listForCustomer(auth.userId, null);
+
     return { orders: page.orders.map(toCustomerDto), nextCursor: null };
   }
 
@@ -83,6 +84,7 @@ export class OrdersV3Controller {
   @ApiResponse({ status: 200, type: CustomerPickupSlotsDto })
   async pickupSlots(): Promise<CustomerPickupSlotsDto> {
     const result = await this.getPickupSlots.execute();
+
     return {
       ...result,
       slots: result.slots.map((slot) => ({
@@ -111,6 +113,7 @@ export class OrdersV3Controller {
           HttpStatus.NOT_FOUND,
         );
       }
+
       throw error;
     }
   }
@@ -137,6 +140,7 @@ export class OrdersV3Controller {
     if (!isUuid(idempotencyKey)) {
       invalid();
     }
+
     return this.execute(body, idempotencyKey, auth.userId);
   }
 
@@ -162,6 +166,7 @@ export class OrdersV3Controller {
     if (!isUuid(idempotencyKey)) {
       invalid();
     }
+
     const source = await this.getOrders
       .detailsForCustomer(auth.userId, orderId)
       .catch((error: unknown) => {
@@ -171,6 +176,7 @@ export class OrdersV3Controller {
             HttpStatus.NOT_FOUND,
           );
         }
+
         throw error;
       });
     const body: CreateOrderV3Body = {
@@ -186,6 +192,7 @@ export class OrdersV3Controller {
         quantity: item.quantity,
       })),
     };
+
     return this.execute(body, idempotencyKey, auth.userId);
   }
 
@@ -241,24 +248,29 @@ function toOrderDto(order: StoredOrder): OrderV3Dto {
     })),
   };
 }
+
 function toCustomerDto(order: CustomerOrder): CustomerOrderV3Dto {
   return {
     ...toOrderDto({ ...order, items: order.snapshot }),
     createdAt: order.createdAt.toISOString(),
   };
 }
+
 function assertBody(body: unknown): asserts body is CreateOrderV3Body {
   if (!isRecord(body)) {
     invalid();
   }
+
   if (
     "pickupSlotStart" in body &&
     !isCanonicalTimestamp(body.pickupSlotStart)
   ) {
     invalid();
   }
+
   const expectedTotal = body.expectedTotal;
   const items = body.items;
+
   if (
     typeof expectedTotal !== "number" ||
     !Number.isInteger(expectedTotal) ||
@@ -270,13 +282,17 @@ function assertBody(body: unknown): asserts body is CreateOrderV3Body {
     invalid();
   }
 }
+
 function isCanonicalTimestamp(value: unknown): value is string {
   if (
     typeof value !== "string" ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
-  )
+  ) {
     return false;
+  }
+
   const parsed = Date.parse(value);
+
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
 }
 
@@ -284,7 +300,9 @@ function isItem(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
   }
+
   const quantity = value.quantity;
+
   return (
     isUuid(value.productId) &&
     (value.priceChoiceId === undefined || isUuid(value.priceChoiceId)) &&
@@ -296,9 +314,11 @@ function isItem(value: unknown): boolean {
     quantity >= 1
   );
 }
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -307,11 +327,13 @@ function isUuid(value: unknown): value is string {
     )
   );
 }
+
 function assertUuid(value: unknown): asserts value is string {
   if (!isUuid(value)) {
     invalid();
   }
 }
+
 function invalid(): never {
   throw new HttpException(
     {
@@ -322,10 +344,12 @@ function invalid(): never {
     HttpStatus.BAD_REQUEST,
   );
 }
+
 function throwOrderError(error: unknown): never {
   if (!(error instanceof OrderDomainError)) {
     throw error;
   }
+
   if (error instanceof OrderTotalChangedError) {
     throw new HttpException(
       {
@@ -336,6 +360,7 @@ function throwOrderError(error: unknown): never {
       HttpStatus.BAD_REQUEST,
     );
   }
+
   if (error instanceof MenuItemUnavailableError) {
     throw new HttpException(
       {
@@ -346,15 +371,18 @@ function throwOrderError(error: unknown): never {
       HttpStatus.BAD_REQUEST,
     );
   }
+
   if (error instanceof OrderIntakeClosedError) {
     throw new HttpException(
       { code: error.code, message: error.message, details: null },
       HttpStatus.BAD_REQUEST,
     );
   }
+
   if (error instanceof OrderValidationError) {
     invalid();
   }
+
   if (
     error instanceof IdempotencyKeyReusedError ||
     error instanceof OrderCapacityUnavailableError ||
@@ -365,5 +393,6 @@ function throwOrderError(error: unknown): never {
       HttpStatus.CONFLICT,
     );
   }
+
   throw error;
 }

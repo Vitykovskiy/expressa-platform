@@ -101,8 +101,10 @@ const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
 const notificationStore = useOrderNotificationsStore();
 const apiClient = inject(apiClientKey);
+
 if (apiClient !== undefined) {
   const completeRegistration = createCustomerRegistrationApi(apiClient);
+
   provide(customerRegistrationKey, {
     accountId: computed(() => sessionStore.currentUser?.id ?? null),
     generation: computed(() => sessionStore.generation),
@@ -115,12 +117,14 @@ if (apiClient !== undefined) {
       const generation = sessionStore.generation;
       const accountId = sessionStore.currentUser?.id ?? null;
       const accessToken = sessionStore.accessToken;
+
       return () =>
         sessionStore.ownsProtectedRead(generation, accountId) &&
         sessionStore.accessToken === accessToken;
     },
   });
 }
+
 const route = useRoute();
 const router = useRouter();
 const bootstrapState = reactive<AppBootstrapState>({ ready: false });
@@ -133,34 +137,54 @@ const accountSettingsTrigger = ref<HTMLElement | null>(null);
 const logoutError = ref<string | null>(null);
 let nextMenuShellCommandId = 0;
 const activeDestination = computed<ShellNavigationDestination>(() => {
-  if (route.path === "/cart") return "cart";
+  if (route.path === "/cart") {
+    return "cart";
+  }
+
   if (
     route.path === routePaths.authPhone ||
     route.path === routePaths.authCode ||
     route.path === routePaths.authName
   ) {
     const path = getInternalAuthReturnPath(route.query.returnTo);
+
     if (path !== undefined) {
-      if (path === "/cart") return "cart";
-      if (path === "/orders" || path.startsWith("/orders/")) return "orders";
+      if (path === "/cart") {
+        return "cart";
+      }
+
+      if (path === "/orders" || path.startsWith("/orders/")) {
+        return "orders";
+      }
     }
+
     return "auth";
   }
-  if (route.path === "/orders" || route.path.startsWith("/orders/"))
+
+  if (route.path === "/orders" || route.path.startsWith("/orders/")) {
     return "orders";
+  }
+
   return "menu";
 });
 const accountLabel = computed(
   () => sessionStore.currentUser?.phoneE164 ?? sessionStore.phone ?? "",
 );
 const selectedCategoryId = computed(() => {
-  if (route.path !== appRoute.home || observedMenuScreen.value.id === "root")
+  if (route.path !== appRoute.home || observedMenuScreen.value.id === "root") {
     return undefined;
+  }
+
   return observedMenuScreen.value.categoryId;
 });
 const sessionBoundaryState = computed<SessionBoundaryState>(() => {
-  if (!bootstrapState.ready || sessionRetrying.value) return "loading";
-  if (sessionStore.status !== "unknown") return "ready";
+  if (!bootstrapState.ready || sessionRetrying.value) {
+    return "loading";
+  }
+
+  if (sessionStore.status !== "unknown") {
+    return "ready";
+  }
 
   return sessionStore.errorMessage === null ? "ready" : "error";
 });
@@ -195,15 +219,18 @@ watch(
 );
 
 onMounted(async () => {
-  if (apiClient !== undefined)
+  if (apiClient !== undefined) {
     configureOrderNotificationsDependencies(apiClient, (read) =>
       sessionStore.readProtected(read),
     );
+  }
+
   cartStore.restore();
   if (sessionStore.status === "unknown" && sessionStore.errorMessage === null) {
     await sessionStore.bootstrap();
   }
-  // Restore может завершиться после начального перехода маршрутизатора.
+
+  // Восстановление сессии может завершиться после начального перехода маршрутизатора.
   await resumeRegistration();
   notificationStore.setSession(
     sessionStore.currentProfile?.id ?? null,
@@ -223,7 +250,9 @@ watch(
 );
 
 async function logout(): Promise<void> {
-  if (logoutPending.value) return;
+  if (logoutPending.value) {
+    return;
+  }
 
   logoutPending.value = true;
   logoutError.value = null;
@@ -243,7 +272,9 @@ function signIn(): void {
 }
 
 function openAccount(): void {
-  if (accountSettingsOpen.value) return;
+  if (accountSettingsOpen.value) {
+    return;
+  }
 
   accountSettingsTrigger.value =
     document.activeElement instanceof HTMLElement
@@ -275,23 +306,29 @@ async function navigate(
   if (destination === "menu") {
     if (route.path === appRoute.home) {
       issueMenuShellCommand({ id: "root" });
+
       return;
     }
+
     await router.push(appRoute.home);
+
     return;
   }
 
   if (destination === "cart") {
     await router.push("/cart");
+
     return;
   }
 
   if (destination === "orders") {
     await router.push("/orders");
+
     return;
   }
 
   const returnTo = getAuthReturnTo();
+
   await router.push({
     path: routePaths.authPhone,
     query: returnTo === undefined ? {} : { returnTo },
@@ -301,6 +338,7 @@ async function navigate(
 function selectCategory(categoryId: string): void {
   if (route.path === appRoute.home) {
     issueMenuShellCommand({ id: "category", categoryId });
+
     return;
   }
 
@@ -320,7 +358,9 @@ function issueMenuShellCommand(target: MenuShellTarget): void {
 }
 
 function handleMenuScreenChange(screen: MenuFlowScreen): void {
-  if (route.path === appRoute.home) observedMenuScreen.value = screen;
+  if (route.path === appRoute.home) {
+    observedMenuScreen.value = screen;
+  }
 }
 
 function handleMenuShellCommandAck(requestId: number): void {
@@ -355,11 +395,14 @@ async function resumeRegistration(): Promise<void> {
   ) {
     return;
   }
+
   if (route.path === routePaths.home || route.path === routePaths.authName) {
     return;
   }
+
   const isAuthDestination =
     route.path === routePaths.authPhone || route.path === routePaths.authCode;
+
   if (
     !isAuthDestination &&
     route.path !== "/cart" &&
@@ -367,9 +410,11 @@ async function resumeRegistration(): Promise<void> {
   ) {
     return;
   }
+
   const returnTo = isAuthDestination
     ? getSafeAuthReturnTo(route.query.returnTo)
     : route.fullPath;
+
   await router.replace({
     path: routePaths.authName,
     query: returnTo === undefined ? {} : { returnTo },

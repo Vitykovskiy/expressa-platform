@@ -137,6 +137,7 @@ export class BackofficeOrdersController {
     actorId: string,
   ): Promise<BackofficeOrderDetailsDto> {
     assertUuid(orderId);
+
     return execute(() =>
       this.transitionOrder.execute({
         orderId,
@@ -153,9 +154,11 @@ function assertUuid(value: string): void {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value,
     )
-  )
+  ) {
     throwValidationError();
+  }
 }
+
 function throwValidationError(): never {
   throw new HttpException(
     {
@@ -166,24 +169,33 @@ function throwValidationError(): never {
     HttpStatus.BAD_REQUEST,
   );
 }
+
 async function execute<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    if (error instanceof OrderNotFoundError)
+    if (error instanceof OrderNotFoundError) {
       throw new HttpException(
         backofficeOrderErrorResponses.notFound,
         backofficeOrderErrorStatus.notFound,
       );
-    if (error instanceof OrderStageConflictError)
+    }
+
+    if (error instanceof OrderStageConflictError) {
       throw new HttpException(
         backofficeOrderErrorResponses.conflict,
         backofficeOrderErrorStatus.conflict,
       );
-    if (error instanceof OrderLifecycleError) throw error;
+    }
+
+    if (error instanceof OrderLifecycleError) {
+      throw error;
+    }
+
     throw error;
   }
 }
+
 function toDetailsDto(order: OrderDetails): BackofficeOrderDetailsDto {
   return {
     id: order.id,

@@ -18,6 +18,7 @@ export class HealthController {
   async getReadiness(): Promise<{ status: "ok" }> {
     try {
       await this.database.connectionPool.query("SELECT 1");
+
       return { status: "ok" };
     } catch {
       this.metrics.recordReadinessFailure();

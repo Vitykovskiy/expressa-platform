@@ -17,7 +17,7 @@ if [[ "${DEPLOY_LOCK_HELD:-}" != 1 ]]; then
   exec flock --exclusive --nonblock --conflict-exit-code 75 "$lock_file" env DEPLOY_LOCK_HELD=1 bash -- "$0" "$@"
 fi
 set -a
-# runtime.env is provisioned on the VPS and contains only deployment secrets.
+# runtime.env подготавливается на VPS и содержит только секреты развёртывания.
 # shellcheck disable=SC1090
 source "$runtime_file"
 set +a

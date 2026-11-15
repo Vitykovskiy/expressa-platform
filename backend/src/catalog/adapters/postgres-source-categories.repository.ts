@@ -2,7 +2,7 @@ import type {
   SourceCategoriesUnitOfWork,
   SourceCategoryRepositories,
 } from "../application/source-menu.types";
-import { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
+import type { PostgresCatalogCommandRunner } from "./postgres-catalog-command.runner";
 import { PostgresCategoriesTransactionRepository } from "./postgres-categories.repository";
 import { PostgresCategoryModifiersTransactionRepository } from "./postgres-category-modifiers.repository";
 

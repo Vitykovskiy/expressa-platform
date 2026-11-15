@@ -25,7 +25,7 @@ const emit = defineEmits<OrdersQueueEmits>();
 </script>
 
 <style scoped>
-/* Очередь владеет сеткой: tokens не задают её интервал или порог двух колонок. */
+/* Очередь владеет сеткой: токены не задают её интервал или порог двух колонок. */
 .orders-queue {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

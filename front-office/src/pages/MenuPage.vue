@@ -71,9 +71,11 @@ const isLoading = computed(
 onMounted(() => {
   void menuStore.load();
 });
+
 function retry(): void {
   void menuStore.load();
 }
+
 function addConfigured(
   item: Parameters<typeof cartStore.addConfigured>[0],
 ): void {

@@ -13,20 +13,25 @@ export function sourceOrderTransitions(
   if (rejected) {
     throw new OrderStageConflictError();
   }
+
   if (action === "reject") {
     if (stage !== "CREATED") {
       throw new OrderStageConflictError();
     }
+
     return [];
   }
+
   if (stage === "ACCEPTED") {
     return [
       { from: "ACCEPTED", to: "PREPARING" },
       { from: "PREPARING", to: "READY" },
     ];
   }
+
   if (stage === "PREPARING") {
     return [{ from: "PREPARING", to: "READY" }];
   }
+
   throw new OrderStageConflictError();
 }

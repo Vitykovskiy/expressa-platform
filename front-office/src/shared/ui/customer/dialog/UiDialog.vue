@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<UiDialogProps>(), {
 const emit = defineEmits<UiDialogEmits>();
 const dismissalLocked = shallowRef(false);
 let openGuardTimer: ReturnType<typeof setTimeout> | null = null;
+
 defineSlots<{
   default?: (props: { isActive: Ref<boolean> }) => unknown;
 }>();
@@ -39,10 +40,15 @@ defineSlots<{
 watch(
   () => props.modelValue,
   (open, wasOpen) => {
-    if (open && !wasOpen) startOpenGuard();
+    if (open && !wasOpen) {
+      startOpenGuard();
+    }
+
     if (!open) {
       stopOpenGuard();
-      if (wasOpen) focusReturnTarget();
+      if (wasOpen) {
+        focusReturnTarget();
+      }
     }
   },
 );
@@ -66,7 +72,10 @@ function startOpenGuard(): void {
 }
 
 function stopOpenGuard(): void {
-  if (openGuardTimer !== null) clearTimeout(openGuardTimer);
+  if (openGuardTimer !== null) {
+    clearTimeout(openGuardTimer);
+  }
+
   openGuardTimer = null;
   dismissalLocked.value = false;
 }

@@ -7,6 +7,7 @@ import type {
 import type { OrderSnapshotItem } from "../domain/order.types";
 
 import type { OrderQueueView } from "../domain/order-metadata.types";
+
 export type ListOrdersQuery = {
   stage?: OrderStage;
   number?: string;

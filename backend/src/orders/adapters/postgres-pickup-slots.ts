@@ -8,7 +8,7 @@ import type {
   TransactionClient,
 } from "./postgres-order-unit-of-work.types";
 
-/** Вызывающий владеет транзакцией; booking блокирует settings перед свежим чтением. */
+/** Вызывающий владеет транзакцией; при бронировании настройки блокируются перед чтением текущего времени. */
 export async function readPickupCandidates(
   client: TransactionClient,
   options: { lockSettings: boolean },
@@ -21,6 +21,7 @@ export async function readPickupCandidates(
     "SELECT clock_timestamp() AS now",
   );
   const now = clock.rows[0]?.now;
+
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new Error("Invalid PostgreSQL pickup clock");
   }
@@ -39,9 +40,11 @@ export async function readPickupCandidates(
     "SELECT value FROM service_settings WHERE key = $1",
     [acceptsNewOrdersSettingKey],
   );
+
   if (intake.rows.length !== 1 || typeof intake.rows[0]?.value !== "boolean") {
     throw new Error("Invalid PostgreSQL intake setting");
   }
+
   const candidates = await client.query<DatabaseRow>(
     `SELECT candidate AS starts_at,
        (SELECT count(*) FROM orders WHERE rejected_at IS NULL AND stage <> 'ISSUED' AND pickup_slot_start = candidate) < $3 AS available
@@ -57,6 +60,7 @@ export async function readPickupCandidates(
     acceptsNewOrders: intake.rows[0].value,
     slots: candidates.rows.map((row) => {
       const startsAt = row.starts_at;
+
       if (
         !(startsAt instanceof Date) ||
         Number.isNaN(startsAt.getTime()) ||
@@ -64,6 +68,7 @@ export async function readPickupCandidates(
       ) {
         throw new Error("Invalid PostgreSQL pickup candidate");
       }
+
       return {
         startsAt,
         endsAt: new Date(startsAt.getTime() + pickupSlotMilliseconds),

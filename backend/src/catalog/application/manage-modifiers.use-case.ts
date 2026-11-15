@@ -29,7 +29,9 @@ export class ManageModifiersUseCase {
     command: CreateModifierGroupCommand,
   ): Promise<AdminModifierGroup> {
     const options = normalizeModifierDefaults(command.options);
+
     assertModifierGroupAggregate(command, options);
+
     return this.unitOfWork.run(
       (repository) => repository.createGroup(command, options),
       (repository, after) =>
@@ -48,14 +50,18 @@ export class ManageModifiersUseCase {
     command: UpdateModifierGroupCommand,
   ): Promise<AdminModifierGroup> {
     const options = normalizeModifierDefaults(command.options);
+
     assertModifierGroupAggregate(command, options);
+
     return this.unitOfWork
       .run(
         async (repository) => {
           const before = assertCurrentModifierGroup(
             await repository.findGroupById(command.groupId),
           );
+
           assertSubmittedOptionIds(before.options, command.options);
+
           return {
             before,
             after: await repository.updateGroup(before.id, command, options),
@@ -80,6 +86,7 @@ export class ManageModifiersUseCase {
         const before = assertCurrentModifierGroup(
           await repository.findGroupById(command.groupId),
         );
+
         return { before, after: await repository.archiveGroup(before.id) };
       },
       (repository, result) =>
@@ -98,6 +105,7 @@ export class ManageModifiersUseCase {
     command: CreateModifierOptionCommand,
   ): Promise<AdminModifierOption> {
     assertModifierOptionDetails(command);
+
     return this.unitOfWork
       .run(
         async (repository) => {
@@ -111,9 +119,11 @@ export class ManageModifiersUseCase {
           const after = afterGroup.options.find(
             (option) => option.sortOrder === command.sortOrder,
           );
+
           if (after === undefined) {
             throw new Error("Saved modifier option was not returned");
           }
+
           return { before, afterGroup, after };
         },
         (repository, result) =>
@@ -134,6 +144,7 @@ export class ManageModifiersUseCase {
     command: UpdateModifierOptionCommand,
   ): Promise<AdminModifierOption> {
     assertModifierOptionDetails(command);
+
     return this.unitOfWork
       .run(
         async (repository) => {
@@ -154,9 +165,11 @@ export class ManageModifiersUseCase {
           const after = afterGroup.options.find(
             (current) => current.id === option.id,
           );
+
           if (after === undefined) {
             throw new Error("Saved modifier option was not returned");
           }
+
           return { before, afterGroup, after };
         },
         (repository, result) =>
@@ -182,6 +195,7 @@ export class ManageModifiersUseCase {
           const before = assertCurrentModifierGroup(
             await repository.findGroupById(command.groupId),
           );
+
           assertFullModifierOptionReorder(
             before.options,
             command.groupId,
@@ -192,6 +206,7 @@ export class ManageModifiersUseCase {
             command.optionIds,
           );
           const after = await saveModifierOptions(repository, before, ordered);
+
           return { before, after };
         },
         (repository, result) =>
@@ -222,6 +237,7 @@ export class ManageModifiersUseCase {
           before,
           before.options.filter((current) => current.id !== option.id),
         );
+
         return { before, after, option };
       },
       (repository, result) =>
@@ -237,6 +253,7 @@ export class ManageModifiersUseCase {
     );
   }
 }
+
 function assertSubmittedOptionIds(
   current: AdminModifierOption[],
   submitted: readonly { id?: string }[],

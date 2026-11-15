@@ -1,5 +1,5 @@
 :root {
-  /* Color */
+  /* Цвета */
   --customer-color-blue-700: #0f2880;
   --customer-color-blue-600: #1340d0;
   --customer-color-blue-500: #1847e8;
@@ -102,7 +102,7 @@
   --customer-focus-ring: var(--customer-color-orange-500-65);
   --customer-state-disabled-opacity: 0.35;
 
-  /* Typography */
+  /* Типографика */
   --customer-font-family: Nunito, Inter, sans-serif;
   --customer-font-size-2xs: 0.6875rem;
   --customer-font-size-caption: 0.625rem;
@@ -140,7 +140,7 @@
   --customer-letter-spacing-overline: 0.12em;
   --customer-letter-spacing-otp: 0.22em;
 
-  /* Spacing */
+  /* Отступы */
   --customer-spacing-xs: 0.25rem;
   --customer-spacing-sm: 0.5rem;
   --customer-spacing-md: 0.75rem;
@@ -185,7 +185,7 @@
   --customer-size-shell-sidebar: 17.5rem;
   --customer-size-shell-content: 68.75rem;
 
-  /* Radius and elevation */
+  /* Скругления и тени */
   --customer-radius-xs: var(--customer-radius-sm);
   --customer-radius-sm: 0.75rem;
   --customer-radius-md: 0.875rem;
@@ -207,7 +207,7 @@
   --customer-elevation-medium: var(--customer-shadow-card-raised);
   --customer-elevation-frame: var(--customer-shadow-shell);
 
-  /* Motion */
+  /* Анимация */
   --customer-duration-fast: 150ms;
   --customer-duration-base: 200ms;
   --customer-easing-standard: ease;
@@ -218,7 +218,7 @@
     transform var(--customer-duration-fast) var(--customer-easing-standard),
     background var(--customer-duration-fast) var(--customer-easing-standard);
 
-  /* Layout */
+  /* Компоновка */
   --customer-content-width: 68.75rem;
   --customer-breakpoint-sm: 480px;
   --customer-breakpoint-md: 768px;

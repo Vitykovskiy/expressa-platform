@@ -168,12 +168,14 @@ function selectPriceChoice(priceChoiceId: string): void {
     priceChoiceId,
   );
 }
+
 function setQuantity(quantity: number): void {
   configuration.value = setProductConfigurationQuantity(
     configuration.value,
     quantity,
   );
 }
+
 function toggleOption(groupId: string, optionId: string): void {
   configuration.value = toggleProductConfigurationOption(
     configuration.value,
@@ -181,6 +183,7 @@ function toggleOption(groupId: string, optionId: string): void {
     optionId,
   );
 }
+
 function isOptionSelected(groupId: string, optionId: string): boolean {
   return (
     configuration.value.selectedModifierGroups
@@ -188,12 +191,16 @@ function isOptionSelected(groupId: string, optionId: string): boolean {
       ?.optionIds.includes(optionId) ?? false
   );
 }
+
 function isOptionDisabled(
   groupId: string,
   optionId: string,
   isAvailable: boolean,
 ): boolean {
-  if (!isAvailable) return true;
+  if (!isAvailable) {
+    return true;
+  }
+
   const group = configuration.value.product.modifierGroups.find(
     (candidate) => candidate.id === groupId,
   );
@@ -201,7 +208,11 @@ function isOptionDisabled(
     configuration.value.selectedModifierGroups.find(
       (candidate) => candidate.groupId === groupId,
     )?.optionIds ?? [];
-  if (group === undefined) return true;
+
+  if (group === undefined) {
+    return true;
+  }
+
   return (
     !selected.includes(optionId) &&
     group.selectionType === "multiple" &&
@@ -211,12 +222,20 @@ function isOptionDisabled(
 
 function submit(): void {
   const item = toCartItemDraft(configuration.value);
-  if (item !== null) emit("submit", item, props.cartItem?.id);
+
+  if (item !== null) {
+    emit("submit", item, props.cartItem?.id);
+  }
 }
+
 function createInitialConfiguration(product = props.product) {
   const initial = createProductConfiguration(product);
   const cartItem = props.cartItem;
-  if (!cartItem || cartItem.productId !== product.id) return initial;
+
+  if (!cartItem || cartItem.productId !== product.id) {
+    return initial;
+  }
+
   return {
     ...initial,
     quantity: cartItem.quantity,

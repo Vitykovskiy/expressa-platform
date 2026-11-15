@@ -45,6 +45,7 @@ export class PostgresStaffUsersRepository
        ORDER BY users.name NULLS LAST, users.phone_e164, users.id`,
       [filter.search ?? null, filter.role ?? null, filter.blocked ?? null],
     );
+
     return result.rows.map(parseStaffUser);
   }
 
@@ -57,6 +58,7 @@ export class PostgresStaffUsersRepository
        ORDER BY users.name NULLS LAST, users.phone_e164, users.id`,
       [filter.search ?? null, filter.role ?? null, filter.blocked ?? null],
     );
+
     return result.rows.map(parseEmployee);
   }
 
@@ -67,6 +69,7 @@ export class PostgresStaffUsersRepository
        ORDER BY users.name NULLS LAST, users.phone_e164, users.id`,
       [search ?? null],
     );
+
     return result.rows.map((row) => ({
       id: readString(row, "id"),
       name: readString(row, "name"),
@@ -79,6 +82,7 @@ export class PostgresStaffUsersRepository
     operation: (repository: StaffUsersTransaction) => Promise<Result>,
   ): Promise<Result> {
     const client = await this.getPool().connect();
+
     try {
       await client.query("BEGIN");
       await client.query(
@@ -86,7 +90,9 @@ export class PostgresStaffUsersRepository
         [staffUsersMembershipLock],
       );
       const result = await operation(new PostgresStaffUsersTransaction(client));
+
       await client.query("COMMIT");
+
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -100,6 +106,7 @@ export class PostgresStaffUsersRepository
       ) {
         throw new StaffUserError("USER_PHONE_CONFLICT");
       }
+
       throw error;
     } finally {
       client.release();
@@ -121,11 +128,13 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
         [target.phoneE164],
       );
     }
+
     const accounts = await this.client.query<DatabaseRow>(
       `SELECT id FROM users WHERE id = $1 OR id = $2 OR phone_e164 = $3 ORDER BY id FOR UPDATE`,
       [context.actorId, target.userId ?? null, target.phoneE164 ?? null],
     );
     const ids = accounts.rows.map((row) => readString(row, "id"));
+
     await this.client.query(
       "SELECT user_id FROM customers WHERE user_id = ANY($1::uuid[]) ORDER BY user_id FOR UPDATE",
       [ids],
@@ -138,9 +147,11 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 AND context = 'staff' AND revoked_at IS NULL AND expires_at > clock_timestamp() FOR UPDATE`,
       [context.sessionId, context.actorId],
     );
+
     if (session.rows[0] === undefined) {
       throw new StaffUserError("USER_SESSION_INVALID");
     }
+
     assertActiveAdministrator(await this.findById(context.actorId));
   }
 
@@ -149,6 +160,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       `SELECT ${staffUserColumns} FROM users ${staffMembershipJoins} WHERE users.id = $1`,
       [id],
     );
+
     return result.rows[0] === undefined ? null : parseStaffUser(result.rows[0]);
   }
 
@@ -157,6 +169,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       `SELECT ${employeeColumns} FROM users JOIN employees ON employees.user_id = users.id WHERE users.id = $1`,
       [userId],
     );
+
     return result.rows[0] === undefined ? null : parseEmployee(result.rows[0]);
   }
 
@@ -165,6 +178,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       `SELECT count(*)::integer AS count FROM employees JOIN users ON users.id = employees.user_id WHERE employees.role = 'administrator' AND employees.access_disabled_at IS NULL AND users.blocked_at IS NULL`,
     );
     const count = result.rows[0]?.count;
+
     if (
       typeof count !== "number" ||
       !Number.isSafeInteger(count) ||
@@ -172,6 +186,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
     ) {
       throw new Error("Invalid administrator count.");
     }
+
     return count;
   }
 
@@ -188,6 +203,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       [phoneE164],
     );
     const id = readString(requiredRow(account.rows[0]), "id");
+
     await this.client.query(
       "SELECT user_id FROM customers WHERE user_id = $1 FOR UPDATE",
       [id],
@@ -199,6 +215,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
     if (inserted.rows[0] !== undefined) {
       await this.changeRole(id, role, id);
     }
+
     return {
       created: inserted.rows[0] !== undefined,
       user: await this.requireUser(id),
@@ -211,6 +228,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       [details.name, details.phoneE164],
     );
     const id = readString(requiredRow(result.rows[0]), "id");
+
     return this.changeRole(id, details.role, id);
   }
 
@@ -223,22 +241,28 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
     );
     const id = readString(requiredRow(result.rows[0]), "id");
     const before = await this.requireUser(id);
+
     if (before.blocked) {
       throw new StaffUserError("USER_ACCESS_CONFLICT");
     }
+
     if (before.employee !== null) {
       throw new StaffUserError("USER_PHONE_CONFLICT");
     }
+
     if (before.name !== null && before.name !== details.name) {
       throw new StaffUserError("USER_NAME_CONFLICT");
     }
+
     if (before.name === null) {
       await this.client.query(
         "UPDATE users SET name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
         [id, details.name],
       );
     }
+
     const after = await this.changeRole(id, details.role, id);
+
     return { before, after };
   }
 
@@ -248,10 +272,12 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
     actorId: string,
   ): Promise<StaffUser> {
     const before = await this.requireUser(userId);
+
     if (role === "customer") {
       if (before.employee?.accessEnabled) {
         await this.changeEmployeeAccess(userId, false, actorId);
       }
+
       if (before.name !== null && before.customer === null) {
         await this.client.query("INSERT INTO customers(user_id) VALUES ($1)", [
           userId,
@@ -264,10 +290,12 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
         [userId, role],
       );
     }
+
     await this.client.query(
       "UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
       [userId],
     );
+
     return this.requireUser(userId);
   }
 
@@ -277,17 +305,21 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
     actorId: string,
   ): Promise<StaffUser> {
     const before = await this.requireUser(userId);
+
     if (before.employee === null) {
       throw new StaffUserError("USER_NOT_FOUND");
     }
+
     if (enabled && before.blocked) {
       throw new StaffUserError("USER_ACCESS_CONFLICT");
     }
+
     await this.client.query(
       `UPDATE employees SET access_disabled_at = CASE WHEN $2 THEN NULL ELSE CURRENT_TIMESTAMP END,
       access_disabled_by = CASE WHEN $2 THEN NULL ELSE $3::uuid END, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
       [userId, enabled, actorId],
     );
+
     return this.requireUser(userId);
   }
 
@@ -301,6 +333,7 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
       blocked_by = CASE WHEN $2 THEN $3::uuid ELSE NULL END, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [userId, blocked, actorId],
     );
+
     return this.requireUser(userId);
   }
 
@@ -331,9 +364,11 @@ class PostgresStaffUsersTransaction implements StaffUsersTransaction {
 
   private async requireUser(id: string): Promise<StaffUser> {
     const user = await this.findById(id);
+
     if (user === null) {
       throw new Error("Missing account in transaction.");
     }
+
     return user;
   }
 }
@@ -342,22 +377,27 @@ function requiredRow(row: DatabaseRow | undefined): DatabaseRow {
   if (row === undefined) {
     throw new Error("Missing PostgreSQL account row.");
   }
+
   return row;
 }
 
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
+
   if (typeof value !== "string" || value.trim() === "") {
     throw new Error("Invalid PostgreSQL account field: " + key);
   }
+
   return value;
 }
 
 function readDate(row: DatabaseRow, key: string): Date {
   const value = row[key];
+
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error("Invalid PostgreSQL account field: " + key);
   }
+
   return value;
 }
 
@@ -371,7 +411,9 @@ function parseStaffUser(row: DatabaseRow): StaffUser {
   ) {
     throw new Error("Invalid account metadata.");
   }
+
   const membership = readAccountMemberships(row, "customer");
+
   return {
     id: readString(row, "id"),
     name: row.name,
@@ -396,6 +438,7 @@ function parseEmployee(row: DatabaseRow): Employee {
   ) {
     throw new Error("Invalid employee metadata.");
   }
+
   return {
     id: readString(row, "id"),
     name: row.name,

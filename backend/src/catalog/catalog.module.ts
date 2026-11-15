@@ -187,6 +187,7 @@ function createPoolProxy(database: DatabaseService): Pool {
   return new Proxy({} as Pool, {
     get: (_target, property) => {
       const value = database.connectionPool[property as keyof Pool];
+
       return typeof value === "function"
         ? value.bind(database.connectionPool)
         : value;

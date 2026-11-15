@@ -15,7 +15,7 @@ const props = defineProps<CustomerRowProps>();
 </script>
 
 <style scoped>
-/* Геометрия и нейтральный avatar взяты из Customers 40:1301/40:2419;
+/* Геометрия и нейтральный аватар взяты из Customers 40:1301/40:2419;
    шкал этих размеров и цвета разделителя в теме нет. */
 .customer-row {
   display: flex;

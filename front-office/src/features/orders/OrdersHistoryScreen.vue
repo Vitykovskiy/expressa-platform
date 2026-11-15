@@ -100,7 +100,7 @@ const emit = defineEmits<OrdersHistoryScreenEmits>();
   flex: 1;
   flex-direction: column;
   width: 100%;
-  max-width: 55rem; /* Accepted 880px task width; no existing token. */
+  max-width: 55rem; /* Ширина 880px из принятого макета; отдельного токена нет. */
   min-height: 100%;
   color: var(--customer-text);
 }

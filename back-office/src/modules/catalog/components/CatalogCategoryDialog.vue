@@ -177,7 +177,7 @@ function requestClose() {
 </script>
 
 <style scoped>
-/* Интервалы исходной формы и подписи локальны; tokens для них нет. */
+/* Интервалы исходной формы и подписи локальны; токенов для них нет. */
 .catalog-category-form {
   display: flex;
   flex-direction: column;
@@ -199,7 +199,7 @@ function requestClose() {
   flex-direction: column;
   gap: 6px;
 }
-/* Размер и межстрочный интервал исходной ошибки не заданы tokens темы. */
+/* Размер и межстрочный интервал исходной ошибки не заданы токенами темы. */
 .catalog-category-form__error {
   margin: 0;
   color: var(--color-danger);

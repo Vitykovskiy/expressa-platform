@@ -61,12 +61,16 @@ async function reserveOtpSecurityThrottle(
       [scope, key, now, otpSecurityWindowMs],
     );
     const row = result.rows[0];
+
     if (row === undefined) {
       throw new Error("Missing throttle result.");
     }
+
     const attempts = Number(row.attempts);
+
     if (attempts > limit) {
       const windowStartedAt = readDate(row, "window_started_at");
+
       throw new OtpSecurityThrottleExceededError(
         Math.max(
           1,
@@ -171,6 +175,7 @@ export class PostgresAuthRepository implements AuthRepository {
           retryAfterSeconds: error.retryAfterSeconds,
         };
       }
+
       throw error;
     }
   }
@@ -280,20 +285,25 @@ export class PostgresAuthRepository implements AuthRepository {
           [phoneE164],
         );
         const userRow = userResult.rows[0];
+
         if (userRow === undefined) {
           throw new Error("Missing OTP account.");
         }
+
         if (readNullableDate(userRow, "blocked_at") !== null) {
           return { status: "unavailable", challenge: null };
         }
+
         const memberships = await client.query<DatabaseRow>(
           `SELECT ${accountMembershipColumns} FROM users ${accountMembershipJoins} WHERE users.id = $1`,
           [readString(userRow, "id")],
         );
         const membership = memberships.rows[0];
+
         if (membership === undefined) {
           throw new Error("Missing account memberships.");
         }
+
         const sessionContext =
           context ??
           (membership.employee_role !== null &&
@@ -318,6 +328,7 @@ export class PostgresAuthRepository implements AuthRepository {
             sessionContext,
           ],
         );
+
         if (sessionResult.rows[0] === undefined) {
           throw new SessionIdConflictError();
         }
@@ -377,19 +388,21 @@ export class PostgresAuthRepository implements AuthRepository {
     now: Date,
   ): Promise<SessionRotation> {
     return this.withTransaction(async (client) => {
-      // Порядок user → session общий с блокировкой и сменой роли.
+      // Учётная запись блокируется перед сессией, как при блокировке пользователя и смене роли.
       const account = await client.query<DatabaseRow>(
         `SELECT users.id, users.blocked_at
          FROM users JOIN sessions ON sessions.user_id = users.id
          WHERE sessions.id = $1 FOR UPDATE OF users`,
         [sessionId],
       );
+
       if (
         account.rows[0] === undefined ||
         readNullableDate(account.rows[0], "blocked_at") !== null
       ) {
         return { status: "unavailable" };
       }
+
       const selected = await client.query<DatabaseRow>(
         `SELECT sessions.id, sessions.user_id, sessions.context, sessions.refresh_token_hash, sessions.expires_at,
                 sessions.revoked_at, sessions.created_at, sessions.rotated_at,
@@ -529,6 +542,7 @@ export class PostgresAuthRepository implements AuthRepository {
           [sessionId],
         );
         const accountId = accounts.rows[0]?.id;
+
         if (accountId !== undefined) {
           await client.query(
             "SELECT user_id FROM customers WHERE user_id = $1 FOR UPDATE",
@@ -540,6 +554,7 @@ export class PostgresAuthRepository implements AuthRepository {
           );
         }
       }
+
       const session =
         sessionId === null
           ? null
@@ -557,6 +572,7 @@ export class PostgresAuthRepository implements AuthRepository {
           session.context,
           subscription,
         );
+
         return { status: "unavailable" };
       }
 
@@ -592,6 +608,7 @@ export class PostgresAuthRepository implements AuthRepository {
          WHERE endpoint = $1 AND p256dh = $2 AND auth = $3`,
         [subscription.endpoint, subscription.p256dh, subscription.auth],
       );
+
       return { status: "unavailable" };
     });
   }
@@ -621,7 +638,9 @@ export class PostgresAuthRepository implements AuthRepository {
     try {
       await client.query("BEGIN");
       const result = await operation(client);
+
       await client.query("COMMIT");
+
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -642,6 +661,7 @@ export class PostgresAuthRepository implements AuthRepository {
        FOR UPDATE`,
       [sessionId],
     );
+
     return parseOptionalRow(selected.rows[0], parseSession);
   }
 

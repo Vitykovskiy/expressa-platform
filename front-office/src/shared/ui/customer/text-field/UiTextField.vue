@@ -40,6 +40,7 @@ const props = withDefaults(
   UI_TEXT_FIELD_DEFAULTS,
 );
 const emit = defineEmits<UiTextFieldEmits>();
+
 defineSlots<{
   "prepend-inner"?: (props: UiTextFieldInputSlotProps) => unknown;
   loader?: (props: UiTextFieldLoaderSlotProps) => unknown;

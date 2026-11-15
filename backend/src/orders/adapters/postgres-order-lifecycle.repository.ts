@@ -58,6 +58,7 @@ export class PostgresOrderLifecycleRepository
        ORDER BY created_at ASC, id ASC`,
       [query.stage ?? null, query.number ?? null, query.view ?? null],
     );
+
     return result.rows.map(toQueueItem);
   }
 
@@ -80,6 +81,7 @@ export class PostgresOrderLifecycleRepository
     const rows = result.rows.slice(0, 20);
     const orders = await readCustomerOrders(this.dependencies.pool, rows);
     const last = rows.at(-1);
+
     return {
       orders,
       nextCursor:
@@ -101,17 +103,21 @@ export class PostgresOrderLifecycleRepository
       [orderId, customerId],
     );
     const row = result.rows[0];
+
     if (row === undefined) {
       return null;
     }
+
     if (result.rows.length !== 1) {
       throw new Error("Invalid PostgreSQL customer order details row count");
     }
+
     return readCustomerOrder(this.dependencies.pool, row);
   }
 
   async applySourceAction(command: SourceOrderCommand): Promise<OrderDetails> {
     const client = await this.dependencies.pool.connect();
+
     try {
       await client.query("BEGIN");
       const locked = await client.query<DatabaseRow>(
@@ -119,15 +125,18 @@ export class PostgresOrderLifecycleRepository
         [command.orderId],
       );
       const row = locked.rows[0];
+
       if (row === undefined) {
         throw new OrderNotFoundError();
       }
+
       const from = readStage(row, "stage");
       const transitions = sourceOrderTransitions(
         command.action,
         from,
         row.rejected_at !== null,
       );
+
       if (command.action === "reject") {
         await client.query(
           "UPDATE orders SET rejected_at = $2, rejected_by = $3, rejection_reason = $4 WHERE id = $1",
@@ -151,14 +160,18 @@ export class PostgresOrderLifecycleRepository
             ],
           );
         }
+
         await client.query("UPDATE orders SET stage = 'READY' WHERE id = $1", [
           command.orderId,
         ]);
       }
+
       const details = await readDetails(client, command.orderId);
+
       if (details === null) {
         throw new Error("PostgreSQL did not persist source order action");
       }
+
       await client.query(
         `INSERT INTO audit_events(actor_id, entity_type, entity_id, action, before_state, after_state, request_id, created_at)
          VALUES ($1, 'order', $2, $3, $4::jsonb, $5::jsonb, $6, $7)`,
@@ -176,6 +189,7 @@ export class PostgresOrderLifecycleRepository
         ],
       );
       await client.query("COMMIT");
+
       return details;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -188,21 +202,25 @@ export class PostgresOrderLifecycleRepository
   async transition(command: TransitionOrderCommand): Promise<OrderDetails> {
     const client = await this.dependencies.pool.connect();
     const transition = orderTransitions[command.action];
+
     try {
       await client.query("BEGIN");
       const updated = await client.query<DatabaseRow>(
         `UPDATE orders SET stage = $3 WHERE id = $1 AND stage = $2 AND rejected_at IS NULL RETURNING id`,
         [command.orderId, transition.from, transition.to],
       );
+
       if (updated.rows.length === 0) {
         const exists = await client.query<DatabaseRow>(
           "SELECT id FROM orders WHERE id = $1",
           [command.orderId],
         );
+
         throw exists.rows.length === 0
           ? new OrderNotFoundError()
           : new OrderStageConflictError();
       }
+
       await client.query(
         `INSERT INTO order_events (order_id, actor_id, occurred_at, from_stage, to_stage)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -215,10 +233,13 @@ export class PostgresOrderLifecycleRepository
         ],
       );
       const details = await readDetails(client, command.orderId);
+
       if (details === null) {
         throw new Error("PostgreSQL did not persist transitioned order");
       }
+
       await client.query("COMMIT");
+
       return details;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -241,16 +262,20 @@ async function readDetails(
     [orderId],
   );
   const row = order.rows[0];
+
   if (row === undefined) {
     return null;
   }
+
   if (order.rows.length !== 1) {
     throw new Error("Invalid PostgreSQL order details row count");
   }
+
   const [snapshot, events] = await Promise.all([
     readSnapshot(client, orderId),
     readEvents(client, orderId),
   ]);
+
   return {
     ...toQueueItem(row),
     customer: {
@@ -268,10 +293,11 @@ async function readCustomerOrder(
   row: DatabaseRow,
 ): Promise<CustomerOrder> {
   const id = readString(row, "id");
+
   return { ...toQueueItem(row), snapshot: await readSnapshot(client, id) };
 }
 
-/** Customer history keeps page order while loading every immutable snapshot in two bounded queries. */
+/** История покупателя сохраняет порядок страницы; два запроса загружают неизменяемые снимки только её заказов. */
 async function readCustomerOrders(
   client: Queryable,
   rows: readonly DatabaseRow[],
@@ -295,8 +321,10 @@ async function readCustomerOrders(
     ),
   ]);
   const snapshots = snapshotsByOrder(items.rows, modifiers.rows);
+
   return rows.map((row) => {
     const id = readString(row, "id");
+
     return { ...toQueueItem(row), snapshot: snapshots.get(id) ?? [] };
   });
 }
@@ -315,6 +343,7 @@ async function readSnapshot(
       [orderId],
     ),
   ]);
+
   return snapshotItems(items.rows, modifiers.rows);
 }
 
@@ -323,12 +352,15 @@ function snapshotsByOrder(
   modifiers: readonly DatabaseRow[],
 ): ReadonlyMap<string, readonly OrderSnapshotItem[]> {
   const byOrder = new Map<string, DatabaseRow[]>();
+
   for (const item of items) {
     const orderId = readString(item, "order_id");
     const values = byOrder.get(orderId) ?? [];
+
     values.push(item);
     byOrder.set(orderId, values);
   }
+
   return new Map(
     [...byOrder].map(([orderId, orderItems]) => [
       orderId,
@@ -342,9 +374,11 @@ function snapshotItems(
   modifiers: readonly DatabaseRow[],
 ): readonly OrderSnapshotItem[] {
   const byItem = new Map<string, OrderSnapshotModifier[]>();
+
   for (const row of modifiers) {
     const id = readString(row, "order_item_id");
     const values = byItem.get(id) ?? [];
+
     values.push({
       modifierOptionId: readString(row, "modifier_option_id"),
       modifierName: readString(row, "modifier_name"),
@@ -352,6 +386,7 @@ function snapshotItems(
     });
     byItem.set(id, values);
   }
+
   return items.map((row) => ({
     productId: readString(row, "product_id"),
     priceChoiceId: readNullableString(row, "price_choice_id"),
@@ -376,6 +411,7 @@ async function readEvents(
     ORDER BY e.occurred_at ASC, CASE e.from_stage WHEN 'CREATED' THEN 0 WHEN 'ACCEPTED' THEN 1 WHEN 'PREPARING' THEN 2 WHEN 'READY' THEN 3 ELSE 4 END ASC, e.id ASC`,
     [orderId],
   );
+
   return result.rows.map((row) => ({
     actorId: readString(row, "actor_id"),
     actorLabel: readString(row, "actor_label"),
@@ -395,46 +431,64 @@ function toQueueItem(row: DatabaseRow): OrderQueueItem {
     stage: readStage(row, "stage"),
   };
 }
+
 function readString(row: DatabaseRow, key: string): string {
   const value = row[key];
+
   if (typeof value !== "string") {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
+
 function readNullableString(row: DatabaseRow, key: string): string | null {
   return row[key] === null ? null : readString(row, key);
 }
+
 function readDate(row: DatabaseRow, key: string): Date {
   const value = row[key];
+
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
+
 function readInteger(row: DatabaseRow, key: string): number {
   const value = row[key];
+
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
+
 function readPositiveInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
+
   if (value < 1) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
+
 function readNonNegativeInteger(row: DatabaseRow, key: string): number {
   const value = readInteger(row, key);
+
   if (value < 0) {
     throw new Error("Invalid PostgreSQL row field: " + key);
   }
+
   return value;
 }
+
 function readStage(row: DatabaseRow, key: string): OrderStage {
   const value = readString(row, key);
+
   if (
     value === "CREATED" ||
     value === "ACCEPTED" ||
@@ -444,5 +498,6 @@ function readStage(row: DatabaseRow, key: string): OrderStage {
   ) {
     return value;
   }
+
   throw new Error("Invalid PostgreSQL row field: " + key);
 }

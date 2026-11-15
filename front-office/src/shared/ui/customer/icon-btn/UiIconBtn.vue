@@ -20,6 +20,7 @@ defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<UiIconBtnProps>(), UI_ICON_BTN_DEFAULTS);
 const emit = defineEmits<UiIconBtnEmits>();
+
 defineSlots<{
   default(): unknown;
   loader?(): unknown;

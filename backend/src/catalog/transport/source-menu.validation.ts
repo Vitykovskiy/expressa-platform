@@ -16,15 +16,19 @@ export function parseSourceCategory(
 ): SourceCategoryWrite {
   const body = object(value, "body");
   const name = string(body.name, "name");
+
   if (body.optionGroupId !== undefined) {
     invalid("optionGroupId", "Use optionGroupIds for category assignments");
   }
+
   if (body.optionGroupIds === undefined) {
     if (creating) {
       invalid("optionGroupIds", "Must be an array of distinct UUIDs");
     }
+
     return { name };
   }
+
   return {
     name,
     optionGroupIds: parseSourceGroupIds(body.optionGroupIds),
@@ -33,9 +37,11 @@ export function parseSourceCategory(
 
 export function parseSourceGroup(value: unknown): SourceGroupWrite {
   const body = object(value, "body");
+
   if (typeof body.singleSelection !== "boolean") {
     invalid("singleSelection", "Must be a boolean");
   }
+
   return {
     name: string(body.name, "name"),
     singleSelection: body.singleSelection,
@@ -44,6 +50,7 @@ export function parseSourceGroup(value: unknown): SourceGroupWrite {
 
 export function parseSourceOption(value: unknown): SourceOptionWrite {
   const body = object(value, "body");
+
   return {
     name: string(body.name, "name"),
     priceDelta: integer(body.priceDelta, "priceDelta"),
@@ -52,12 +59,15 @@ export function parseSourceOption(value: unknown): SourceOptionWrite {
 
 export function parseSourceProduct(value: unknown): SourceProductWrite {
   const body = object(value, "body");
+
   if (body.modifierGroupIds !== undefined) {
     invalid("modifierGroupIds", "Assign modifier groups to the category");
   }
+
   if (!Array.isArray(body.priceChoices)) {
     invalid("priceChoices", "Must be an array");
   }
+
   return {
     name: string(body.name, "name"),
     categoryId: parseSourceUuid(body.categoryId, "categoryId"),
@@ -71,6 +81,7 @@ export function parseSourceProduct(value: unknown): SourceProductWrite {
         ),
         price: integer(choice.price, `priceChoices.${index}.price`),
       };
+
       return choice.id === undefined
         ? fields
         : {
@@ -85,12 +96,15 @@ function parseSourceGroupIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
     invalid("optionGroupIds", "Must be an array of UUIDs");
   }
+
   const ids = value.map((id: unknown, index: number) =>
     parseSourceUuid(id, `optionGroupIds.${index}`),
   );
+
   if (new Set(ids).size !== ids.length) {
     invalid("optionGroupIds", "Must contain distinct UUIDs");
   }
+
   return ids;
 }
 
@@ -98,6 +112,7 @@ export function parseSourceUuid(value: unknown, path: string): string {
   if (typeof value !== "string" || !sourceMenuUuidPattern.test(value)) {
     invalid(path, "Must be a UUID");
   }
+
   return value;
 }
 
@@ -109,6 +124,7 @@ function object(value: unknown, path: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     invalid(path, "Must be an object");
   }
+
   return Object.fromEntries(Object.entries(value));
 }
 
@@ -116,6 +132,7 @@ function string(value: unknown, path: string): string {
   if (typeof value !== "string" || value.trim() === "") {
     invalid(path, "Must be a non-empty string");
   }
+
   return value;
 }
 
@@ -128,6 +145,7 @@ function integer(value: unknown, path: string): number {
   ) {
     invalid(path, "Must be a non-negative int32");
   }
+
   return value;
 }
 

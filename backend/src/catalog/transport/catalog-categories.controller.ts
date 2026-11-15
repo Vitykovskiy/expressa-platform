@@ -73,6 +73,7 @@ export class CatalogCategoriesController {
     @Req() request: CategoryRequestContext,
   ): Promise<CategoryResponseDto> {
     assertCategoryBody(body);
+
     return executeCategoryCommand(() =>
       this.manageCategories.create({
         ...body,
@@ -97,6 +98,7 @@ export class CatalogCategoriesController {
   ): Promise<CategoryResponseDto> {
     assertCategoryId(categoryId);
     assertCategoryBody(body);
+
     return executeCategoryCommand(() =>
       this.manageCategories.update({
         ...body,
@@ -118,14 +120,18 @@ export class CatalogCategoriesController {
     @CurrentAuth() auth: CurrentAuthData,
     @Req() request: CategoryRequestContext,
   ): Promise<CategoryResponseDto[]> {
-    if (!Array.isArray(body?.categoryIds))
+    if (!Array.isArray(body?.categoryIds)) {
       throw validationError([
         { path: "categoryIds", reason: "Must be an array of UUIDs" },
       ]);
-    if (body.categoryIds.some((id) => !isUuid(id)))
+    }
+
+    if (body.categoryIds.some((id) => !isUuid(id))) {
       throw validationError([
         { path: "categoryIds", reason: "Must contain UUIDs" },
       ]);
+    }
+
     return executeCategoryCommand(() =>
       this.manageCategories.reorder({
         ...body,
@@ -160,29 +166,37 @@ export class CatalogCategoriesController {
 }
 
 function assertCategoryBody(body: CreateCategoryDto): void {
-  if (typeof body?.name !== "string" || body.name.trim() === "")
+  if (typeof body?.name !== "string" || body.name.trim() === "") {
     throw validationError([
       { path: "name", reason: "Must be a non-empty string" },
     ]);
-  if (typeof body.description !== "string")
+  }
+
+  if (typeof body.description !== "string") {
     throw validationError([
       { path: "description", reason: "Must be a string" },
     ]);
+  }
+
   if (
     !Number.isInteger(body.sortOrder) ||
     body.sortOrder < 0 ||
     body.sortOrder > maximumCategorySortOrder
-  )
+  ) {
     throw validationError([
       { path: "sortOrder", reason: "Must be a non-negative int32" },
     ]);
-  if (typeof body.isActive !== "boolean")
+  }
+
+  if (typeof body.isActive !== "boolean") {
     throw validationError([{ path: "isActive", reason: "Must be a boolean" }]);
+  }
 }
 
 function assertCategoryId(categoryId: string): void {
-  if (!isUuid(categoryId))
+  if (!isUuid(categoryId)) {
     throw validationError([{ path: "categoryId", reason: "Must be a UUID" }]);
+  }
 }
 
 function isUuid(value: unknown): value is string {
@@ -198,6 +212,7 @@ function getRequestId(request: CategoryRequestContext): string {
   if (typeof request.requestId !== "string" || request.requestId === "") {
     throw validationError([{ path: "requestId", reason: "Must be present" }]);
   }
+
   return request.requestId;
 }
 
@@ -207,11 +222,13 @@ async function executeCategoryCommand(
 async function executeCategoryCommand(
   command: () => Promise<AdminCategory[]>,
 ): Promise<CategoryResponseDto[]>;
+
 async function executeCategoryCommand(
   command: () => Promise<AdminCategory | AdminCategory[]>,
 ): Promise<CategoryResponseDto | CategoryResponseDto[]> {
   try {
     const result = await command();
+
     return Array.isArray(result)
       ? result.map(toCategoryDto)
       : toCategoryDto(result);
@@ -241,26 +258,37 @@ function toCategoryDto(category: AdminCategory): CategoryDto {
 }
 
 function throwCategoryError(error: unknown): never {
-  if (!(error instanceof CategoryAdminError)) throw error;
-  if (error.code === "CATEGORY_NOT_FOUND")
+  if (!(error instanceof CategoryAdminError)) {
+    throw error;
+  }
+
+  if (error.code === "CATEGORY_NOT_FOUND") {
     throw new HttpException(
       categoryErrorResponses.notFound,
       HttpStatus.NOT_FOUND,
     );
-  if (error.code === "CATEGORY_ARCHIVED")
+  }
+
+  if (error.code === "CATEGORY_ARCHIVED") {
     throw new HttpException(
       categoryErrorResponses.archived,
       HttpStatus.CONFLICT,
     );
-  if (error.code === "CATEGORY_POSITION_CONFLICT")
+  }
+
+  if (error.code === "CATEGORY_POSITION_CONFLICT") {
     throw new HttpException(
       categoryErrorResponses.positionConflict,
       HttpStatus.CONFLICT,
     );
-  if (error.code === "CATEGORY_REORDER_INVALID")
+  }
+
+  if (error.code === "CATEGORY_REORDER_INVALID") {
     throw new HttpException(
       categoryErrorResponses.reorderInvalid,
       HttpStatus.CONFLICT,
     );
+  }
+
   throw validationError(error.fields);
 }

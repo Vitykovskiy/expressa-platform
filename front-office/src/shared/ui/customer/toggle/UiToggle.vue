@@ -28,6 +28,7 @@ defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<UiToggleProps>(), UI_TOGGLE_DEFAULTS);
 const emit = defineEmits<UiToggleEmits>();
+
 defineSlots<{
   label?: (props: UiToggleLabelSlotProps) => unknown;
 }>();

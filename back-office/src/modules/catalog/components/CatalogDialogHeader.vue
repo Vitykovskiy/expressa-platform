@@ -29,7 +29,7 @@ const emit = defineEmits<CatalogDialogHeaderEmits>();
 </script>
 
 <style scoped>
-/* Локальная геометрия и типографика исходного заголовка не заданы tokens. */
+/* Локальная геометрия и типографика исходного заголовка не заданы токенами. */
 .catalog-dialog-header {
   display: flex;
   flex-direction: column;

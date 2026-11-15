@@ -2,6 +2,7 @@ import type {
   OperatingSettings,
   OperatingSettingsInput,
 } from "../domain/operating-settings.types";
+
 export type SaveOperatingSettingsCommand = {
   settings: OperatingSettingsInput;
   actorId: string;

@@ -7,6 +7,7 @@ import { CurrentAuth } from "../../auth/transport/current-auth.decorator";
 import type { CurrentAuth as Auth } from "../../auth/transport/current-auth.decorator.types";
 import { ManageAvailabilityUseCase } from "../application/manage-availability.use-case";
 import { V3AvailabilityDto } from "./backoffice-availability-v3.dto";
+
 @ApiTags("availability-v3")
 @Controller("api/v3/backoffice/availability")
 @UseGuards(SessionGuard, RolesGuard)

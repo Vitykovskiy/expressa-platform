@@ -2,7 +2,7 @@ import { computed, onUnmounted, readonly, shallowRef } from "vue";
 import type { PickupAvailability } from "@/shared/api/pickup-slots.api.types";
 import type { PickupSelectionDependencies } from "./usePickupSelection.types";
 
-/** Выбор живёт отдельно от неизменяемой попытки отправки checkout. */
+/** Выбор живёт отдельно от неизменяемой попытки отправки заказа. */
 export function usePickupSelection(dependencies: PickupSelectionDependencies) {
   const availability = shallowRef<PickupAvailability | null>(null);
   const loading = shallowRef(false);
@@ -22,12 +22,18 @@ export function usePickupSelection(dependencies: PickupSelectionDependencies) {
     choices.value.some((choice) => choice.available),
   );
   const message = computed(() => {
-    if (readFailed.value)
+    if (readFailed.value) {
       return "Не удалось загрузить время получения. Попробуйте ещё раз.";
-    if (availability.value?.acceptsNewOrders === false)
+    }
+
+    if (availability.value?.acceptsNewOrders === false) {
       return "Сейчас не принимаем заказы.";
-    if (!loading.value && !hasCapacity.value)
+    }
+
+    if (!loading.value && !hasCapacity.value) {
       return "На сегодня свободного времени нет. Попробуйте в другой рабочий день.";
+    }
+
     return null;
   });
   const canSubmit = computed(() => {
@@ -36,8 +42,10 @@ export function usePickupSelection(dependencies: PickupSelectionDependencies) {
       loading.value ||
       message.value !== null ||
       selection.value === null
-    )
+    ) {
       return false;
+    }
+
     return (
       selection.value === "automatic" ||
       choices.value.some(
@@ -51,15 +59,21 @@ export function usePickupSelection(dependencies: PickupSelectionDependencies) {
   });
 
   async function load(): Promise<void> {
-    if (dependencies.locked.value) return;
+    if (dependencies.locked.value) {
+      return;
+    }
 
     const version = ++loadVersion;
+
     loading.value = true;
     readFailed.value = false;
     selection.value = null;
     try {
       const result = await dependencies.loadAvailability();
-      if (version !== loadVersion) return;
+
+      if (version !== loadVersion) {
+        return;
+      }
 
       availability.value = result;
       const bookable =
@@ -68,27 +82,37 @@ export function usePickupSelection(dependencies: PickupSelectionDependencies) {
           (choice) =>
             choice.available && choice.startsAt !== rejectedStart.value,
         );
-      if (bookable && !recoveringConflict.value) selection.value = "automatic";
+
+      if (bookable && !recoveringConflict.value) {
+        selection.value = "automatic";
+      }
     } catch {
-      if (version !== loadVersion) return;
+      if (version !== loadVersion) {
+        return;
+      }
 
       availability.value = null;
       readFailed.value = true;
     } finally {
-      if (version === loadVersion) loading.value = false;
+      if (version === loadVersion) {
+        loading.value = false;
+      }
     }
   }
 
   function select(value: string): void {
-    if (dependencies.locked.value || loading.value || message.value !== null)
+    if (dependencies.locked.value || loading.value || message.value !== null) {
       return;
+    }
+
     if (
       value !== "automatic" &&
       !choices.value.some(
         (choice) => choice.startsAt === value && choice.available,
       )
-    )
+    ) {
       return;
+    }
 
     selection.value = value;
   }

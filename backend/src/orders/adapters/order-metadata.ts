@@ -6,9 +6,11 @@ export function readOrderMetadata(row: DatabaseRow): Required<OrderMetadata> {
   const startsAt = nullableDate(row, "pickup_slot_start");
   const endsAt = nullableDate(row, "pickup_slot_end");
   const at = nullableDate(row, "rejected_at");
+
   if ((startsAt === null) !== (endsAt === null)) {
     throw new Error("Invalid stored pickup slot");
   }
+
   if (
     startsAt !== null &&
     endsAt !== null &&
@@ -16,16 +18,19 @@ export function readOrderMetadata(row: DatabaseRow): Required<OrderMetadata> {
   ) {
     throw new Error("Invalid stored pickup duration");
   }
+
   if (at === null) {
     if (row.rejection_reason !== null || row.rejected_by !== null) {
       throw new Error("Invalid stored rejection");
     }
+
     return {
       pickupSlot:
         startsAt !== null && endsAt !== null ? { startsAt, endsAt } : null,
       rejection: null,
     };
   }
+
   if (
     typeof row.rejection_reason !== "string" ||
     row.rejection_reason.trim() === "" ||
@@ -33,6 +38,7 @@ export function readOrderMetadata(row: DatabaseRow): Required<OrderMetadata> {
   ) {
     throw new Error("Invalid stored rejection");
   }
+
   return {
     pickupSlot:
       startsAt !== null && endsAt !== null ? { startsAt, endsAt } : null,
@@ -42,11 +48,14 @@ export function readOrderMetadata(row: DatabaseRow): Required<OrderMetadata> {
 
 function nullableDate(row: DatabaseRow, key: string): Date | null {
   const value = row[key];
+
   if (value === null) {
     return null;
   }
+
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error("Invalid stored order field: " + key);
   }
+
   return value;
 }

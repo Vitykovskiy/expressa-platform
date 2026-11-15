@@ -14,6 +14,7 @@ export class TransitionOrderUseCase {
   ) {}
   async execute(command: TransitionOrderCommand): Promise<OrderDetails> {
     const order = await this.unitOfWork.transition(command);
+
     this.metrics.recordOrderTransition(order.stage);
     if (
       order.stage === "ACCEPTED" ||
@@ -30,6 +31,7 @@ export class TransitionOrderUseCase {
         })
         .catch(() => undefined);
     }
+
     return order;
   }
 }

@@ -17,6 +17,7 @@ import type {
   ApiRequestOptions,
   ResponseValidator,
 } from "./client.types";
+
 export type {
   ApiClientOptions,
   ApiErrorData,
@@ -166,6 +167,7 @@ export class ApiClient {
       response.headers.get("retry-after"),
     );
     const requestId = response.headers.get("x-request-id");
+
     if (isApiErrorData(payload)) {
       return new ApiError({ ...payload, retryAfterSeconds, status });
     }
@@ -181,8 +183,12 @@ export class ApiClient {
 }
 
 function parseRetryAfter(value: string | null): number | null {
-  if (value === null || !/^\d+$/.test(value)) return null;
+  if (value === null || !/^\d+$/.test(value)) {
+    return null;
+  }
+
   const seconds = Number(value);
+
   return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : null;
 }
 
@@ -207,7 +213,10 @@ function matchesExpectedStatus(
   status: number,
   expected: ApiRequestOptions["expectedStatus"],
 ): boolean {
-  if (expected === undefined) return true;
+  if (expected === undefined) {
+    return true;
+  }
+
   return typeof expected === "number"
     ? status === expected
     : expected.includes(status);

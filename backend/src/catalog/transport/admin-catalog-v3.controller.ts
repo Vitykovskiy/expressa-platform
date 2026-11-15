@@ -18,6 +18,7 @@ export class AdminCatalogV3Controller {
   @ApiResponse({ status: 200, type: AdminCatalogV3Dto })
   async get(): Promise<AdminCatalogV3Dto> {
     const value = await this.catalog.executeV3();
+
     return {
       categories: value.categories.map(
         ({ id, name, description, sortOrder, isActive }) => ({

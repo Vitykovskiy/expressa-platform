@@ -262,7 +262,7 @@ function requestClose() {
 </script>
 
 <style scoped>
-/* Геометрия исходной формы и строк цен локальна; подходящих tokens нет. */
+/* Геометрия исходной формы и строк цен локальна; подходящих токенов нет. */
 .catalog-product-form {
   display: flex;
   flex-direction: column;
@@ -276,7 +276,7 @@ function requestClose() {
   min-height: 44px;
   min-width: 44px;
 }
-/* Исходные размеры, интервалы и типографика ценовых строк не имеют tokens. */
+/* Исходные размеры, интервалы и типографика ценовых строк не имеют токенов. */
 .catalog-product-form__sizes {
   display: flex;
   flex-direction: column;

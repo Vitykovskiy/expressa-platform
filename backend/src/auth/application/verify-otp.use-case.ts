@@ -40,10 +40,12 @@ export class VerifyOtpUseCase {
     context?: AuthContext,
   ): Promise<VerifyOtpResult> {
     const phoneE164 = normalizeRussianPhone(phone);
+
     assertValidOtpCode(code);
 
     const now = this.clock.now();
     const challenge = await this.repository.findOpenOtpChallenge(phoneE164);
+
     if (challenge === null) {
       throw new InvalidOtpCodeError();
     }

@@ -72,7 +72,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Override component transitions whose selectors otherwise win cascade. */
+  /* Переопределяем переходы компонентов, чьи селекторы иначе имеют приоритет в каскаде. */
   *,
   *::before,
   *::after {

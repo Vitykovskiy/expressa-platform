@@ -53,6 +53,7 @@ export class RequestOtpUseCase {
     } catch (error) {
       const deliveryKind =
         error instanceof SmsDeliveryError ? error.kind : "transport";
+
       Logger.warn(
         `OTP delivery failed: ${deliveryKind}`,
         RequestOtpUseCase.name,
@@ -67,7 +68,7 @@ export class RequestOtpUseCase {
           `OTP delivery compensation failed: ${deliveryKind}`,
           RequestOtpUseCase.name,
         );
-        // The public result must remain safe when compensating persistence fails.
+        // При сбое отмены OTP в хранилище внешний ответ всё равно не раскрывает внутренние детали.
       }
 
       throw new OtpDeliveryUnavailableError();

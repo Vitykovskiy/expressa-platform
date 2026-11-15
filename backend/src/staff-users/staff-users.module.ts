@@ -19,6 +19,7 @@ import { StaffUsersController } from "./transport/staff-users.controller";
         const repository = new PostgresStaffUsersRepository(
           () => database.connectionPool,
         );
+
         return new ManageStaffUsersUseCase(repository, repository);
       },
     },

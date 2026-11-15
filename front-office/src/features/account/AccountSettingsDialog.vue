@@ -131,12 +131,18 @@ const description = computed(
     })[notifications.state],
 );
 const notificationFeedback = computed(() => {
-  if (notifications.state === "failed_check")
+  if (notifications.state === "failed_check") {
     return "Не удалось проверить уведомления. Попробуйте ещё раз.";
-  if (notifications.state === "failed_enable")
+  }
+
+  if (notifications.state === "failed_enable") {
     return "Не удалось включить уведомления. Попробуйте ещё раз.";
-  if (notifications.state === "failed_disable")
+  }
+
+  if (notifications.state === "failed_disable") {
     return "Не удалось выключить уведомления. Попробуйте ещё раз.";
+  }
+
   return null;
 });
 const notificationControl = computed(() => {
@@ -177,22 +183,28 @@ const notificationControl = computed(() => {
     case "unsupported":
       return null;
   }
+
   return null;
 });
+
 watch(
   () => props.modelValue,
   (open) => {
-    if (open && props.authenticated) void notifications.inspect();
+    if (open && props.authenticated) {
+      void notifications.inspect();
+    }
   },
 );
 
 function enable(): Promise<void> {
   rememberChoice();
+
   return notifications.enable(notifications.state === "other_account");
 }
 
 function disable(): Promise<void> {
   rememberChoice();
+
   return notifications.disable();
 }
 
@@ -210,8 +222,9 @@ function runNotificationAction(
 }
 
 function rememberChoice(): void {
-  if (props.accountId !== null)
+  if (props.accountId !== null) {
     rememberNotificationInvitationChoice(props.accountId);
+  }
 }
 </script>
 

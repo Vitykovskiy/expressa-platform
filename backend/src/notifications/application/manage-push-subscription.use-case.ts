@@ -37,13 +37,16 @@ export class ManagePushSubscriptionUseCase {
         if (!isValidPushSubscriptionProof(subscription)) {
           return { association: "none", version: null };
         }
+
         const stored = await repository.findByEndpoint(subscription.endpoint);
+
         if (
           stored === null ||
           !hasPushSubscriptionProof(stored, subscription)
         ) {
           return { association: "none", version: null };
         }
+
         return {
           association:
             stored.userId === userId && stored.context === actor?.context
@@ -67,6 +70,7 @@ export class ManagePushSubscriptionUseCase {
         ? new PushAssociationUnauthorizedError()
         : new PushAssociationAccessDeniedError();
     }
+
     return this.withAuthorization(
       userId,
       subscription.endpoint,
@@ -100,6 +104,7 @@ export class ManagePushSubscriptionUseCase {
         ? new PushAssociationUnauthorizedError()
         : new PushAssociationAccessDeniedError();
     }
+
     return this.withAuthorization(
       userId,
       subscription.endpoint,
@@ -129,18 +134,23 @@ export class ManagePushSubscriptionUseCase {
     if (!isValidPushSubscriptionProof(subscription)) {
       throw new PushAssociationConflictError();
     }
+
     if (action === "enable") {
       if (expectedVersion !== null) {
         throw new PushAssociationConflictError();
       }
+
       const inserted = await repository.createAssociation({
         ...subscription,
         userId,
       });
+
       if (inserted !== null) {
         return { association: "current", version: inserted };
       }
+
       const stored = await repository.findByEndpoint(subscription.endpoint);
+
       if (
         stored?.userId === userId &&
         stored.context === context &&
@@ -148,13 +158,16 @@ export class ManagePushSubscriptionUseCase {
       ) {
         return { association: "current", version: stored.associationVersion };
       }
+
       throw new PushAssociationConflictError();
     }
 
     if (expectedVersion === null) {
       throw new PushAssociationConflictError();
     }
+
     const stored = await repository.findByEndpoint(subscription.endpoint);
+
     if (
       !stored ||
       !hasPushSubscriptionProof(stored, subscription) ||
@@ -162,23 +175,29 @@ export class ManagePushSubscriptionUseCase {
     ) {
       throw new PushAssociationConflictError();
     }
+
     if (stored.context !== context) {
       throw new PushAssociationConflictError();
     }
+
     if (stored.userId === userId) {
       return { association: "current", version: stored.associationVersion };
     }
+
     if (!allowForeignTransfer || stored.context !== "customer") {
       throw new PushAssociationConflictError();
     }
+
     const version = await repository.transferAssociation(
       stored,
       userId,
       expectedVersion,
     );
+
     if (version === null) {
       throw new PushAssociationConflictError();
     }
+
     return { association: "current", version };
   }
 
@@ -196,10 +215,13 @@ export class ManagePushSubscriptionUseCase {
         if (!isValidPushSubscriptionProof(subscription)) {
           throw new PushAssociationConflictError();
         }
+
         const stored = await repository.findByEndpoint(subscription.endpoint);
+
         if (stored === null) {
           return;
         }
+
         if (
           stored.userId !== userId ||
           stored.context !== actor?.context ||
@@ -208,6 +230,7 @@ export class ManagePushSubscriptionUseCase {
         ) {
           throw new PushAssociationConflictError();
         }
+
         if (!(await repository.deleteAssociation(stored))) {
           throw new PushAssociationConflictError();
         }
@@ -228,6 +251,7 @@ export class ManagePushSubscriptionUseCase {
     ) {
       throw new PushAssociationUnauthorizedError();
     }
+
     if (
       actor.context !== "customer" &&
       (actor.context !== "staff" ||
@@ -236,9 +260,11 @@ export class ManagePushSubscriptionUseCase {
     ) {
       throw new PushAssociationAccessDeniedError();
     }
+
     if (this.repository.run === undefined) {
       throw new Error("Push association transaction is unavailable");
     }
+
     return this.repository.run(actor, endpoint, operation);
   }
 }

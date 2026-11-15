@@ -19,15 +19,18 @@
 <script setup lang="ts">
 import { UI_OTP_INPUT_DEFAULTS } from "./UiOtpInput.constants";
 import type { UiOtpInputEmits, UiOtpInputProps } from "./UiOtpInput.types";
+
 defineOptions({ inheritAttrs: false });
 const props = withDefaults(
   defineProps<UiOtpInputProps>(),
   UI_OTP_INPUT_DEFAULTS,
 );
 const emit = defineEmits<UiOtpInputEmits>();
+
 defineSlots<{
   loader?: (props: { isActive: boolean; color?: string }) => unknown;
 }>();
+
 function updateModelValue(value: string) {
   emit("update:modelValue", value.replace(/\D/g, "").slice(0, 6));
 }
