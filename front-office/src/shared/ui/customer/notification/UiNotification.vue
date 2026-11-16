@@ -66,7 +66,7 @@ watch(
 <style scoped>
 .ui-notification {
   position: fixed;
-  z-index: 5;
+  z-index: var(--customer-layer-notification);
   top: calc(var(--customer-size-shell-header) + var(--customer-space-9));
   right: max(var(--customer-space-9), env(safe-area-inset-right));
   display: flex;

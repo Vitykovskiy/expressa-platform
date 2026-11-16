@@ -71,6 +71,9 @@
   --customer-color-border-on-brand: var(--customer-color-white-15);
   --customer-color-focus: var(--customer-color-orange-500);
 
+  --customer-surface-account: var(--customer-color-blue-700);
+  /* Выше базового слоя Vuetify dialog (2400): ошибка аккаунта видна поверх окна. */
+  --customer-layer-notification: 2500;
   --customer-surface-control: var(--customer-color-white-18);
   --customer-surface-muted: var(--customer-color-white-12);
   --customer-surface-muted-on-brand: var(--customer-color-black-10);

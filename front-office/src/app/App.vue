@@ -17,6 +17,7 @@
     </main>
     <CustomerShell
       v-else
+      ref="customerShell"
       :active-destination="activeDestination"
       :cart-count="cartStore.itemCount"
       :categories="menuStore.menu?.categories ?? []"
@@ -51,9 +52,16 @@
       :authenticated="sessionStore.status === 'authenticated'"
       :logout-error="logoutError"
       :logout-pending="logoutPending"
-      :return-focus-to="accountSettingsTrigger"
+      :return-focus-to="resolveAccountSettingsTrigger"
+      @feedback="showAccountFeedback"
       @sign-in="signIn"
       @sign-out="logout"
+    />
+    <UiNotification
+      :key="accountFeedbackEvent"
+      :message="accountFeedback"
+      role="alert"
+      @close="accountFeedback = null"
     />
   </VApp>
 </template>
@@ -65,12 +73,15 @@ import {
   onMounted,
   provide,
   reactive,
+  shallowRef,
   ref,
+  useTemplateRef,
   watch,
 } from "vue";
 import { VApp } from "vuetify/components";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
+import UiNotification from "@/shared/ui/customer/notification/UiNotification.vue";
 import ErrorNotice from "../shared/ui/ErrorNotice.vue";
 import AccountSettingsDialog from "@/features/account/AccountSettingsDialog.vue";
 import { configureOrderNotificationsDependencies } from "@/entities/customer/model/order-notifications.store.dependencies";
@@ -80,7 +91,10 @@ import { apiClientKey } from "@/shared/api/client";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import CustomerShell from "@/widgets/customer-shell/CustomerShell.vue";
-import type { ShellNavigationDestination } from "@/widgets/customer-shell/ShellNavigation.types";
+import type {
+  AccountNavigationHandle,
+  ShellNavigationDestination,
+} from "@/widgets/customer-shell/ShellNavigation.types";
 import type {
   MenuFlowScreen,
   MenuShellCommand,
@@ -133,8 +147,10 @@ const observedMenuScreen = ref<MenuFlowScreen>({ id: "root" });
 const logoutPending = ref(false);
 const sessionRetrying = ref(false);
 const accountSettingsOpen = ref(false);
-const accountSettingsTrigger = ref<HTMLElement | null>(null);
+const customerShell = useTemplateRef<AccountNavigationHandle>("customerShell");
 const logoutError = ref<string | null>(null);
+const accountFeedback = shallowRef<string | null>(null);
+const accountFeedbackEvent = shallowRef(0);
 let nextMenuShellCommandId = 0;
 const activeDestination = computed<ShellNavigationDestination>(() => {
   if (route.path === "/cart") {
@@ -256,6 +272,7 @@ async function logout(): Promise<void> {
 
   logoutPending.value = true;
   logoutError.value = null;
+  accountFeedback.value = null;
   try {
     await sessionStore.logout();
     await router.replace(appRoute.home);
@@ -266,9 +283,14 @@ async function logout(): Promise<void> {
   }
 }
 
+function showAccountFeedback(message: string): void {
+  accountFeedback.value = message;
+  accountFeedbackEvent.value += 1;
+}
+
 function signIn(): void {
   accountSettingsOpen.value = false;
-  navigate("auth");
+  void navigate("auth");
 }
 
 function openAccount(): void {
@@ -276,11 +298,11 @@ function openAccount(): void {
     return;
   }
 
-  accountSettingsTrigger.value =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
   accountSettingsOpen.value = true;
+}
+
+function resolveAccountSettingsTrigger(): HTMLElement | null {
+  return customerShell.value?.getAccountTrigger() ?? null;
 }
 
 async function retrySession(): Promise<void> {

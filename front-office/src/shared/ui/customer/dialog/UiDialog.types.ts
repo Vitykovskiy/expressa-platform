@@ -5,7 +5,8 @@ export interface UiDialogFocusTarget {
 export interface UiDialogProps {
   label?: string;
   modelValue?: boolean;
-  returnFocusTo?: HTMLElement | UiDialogFocusTarget | null;
+  returnFocusTo?:
+    HTMLElement | UiDialogFocusTarget | (() => HTMLElement | null) | null;
 }
 
 export interface UiDialogEmits {

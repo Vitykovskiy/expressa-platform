@@ -87,10 +87,18 @@ function focusReturnTarget(): void {
 function getFocusElement(
   target: UiDialogProps["returnFocusTo"],
 ): HTMLElement | null {
-  return target instanceof HTMLElement
-    ? target
-    : target?.$el instanceof HTMLElement
-      ? target.$el
-      : null;
+  if (typeof target === "function") {
+    return target();
+  }
+
+  if (target instanceof HTMLElement) {
+    return target;
+  }
+
+  if (target?.$el instanceof HTMLElement) {
+    return target.$el;
+  }
+
+  return null;
 }
 </script>

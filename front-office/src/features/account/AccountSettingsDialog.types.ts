@@ -1,3 +1,5 @@
+import type { UiDialogProps } from "@/shared/ui/customer/dialog/UiDialog.types";
+
 export type AccountSettingsDialogProps = {
   accountId: string | null;
   accountLabel: string;
@@ -5,11 +7,12 @@ export type AccountSettingsDialogProps = {
   logoutError: string | null;
   logoutPending: boolean;
   modelValue: boolean;
-  returnFocusTo: HTMLElement | null;
+  returnFocusTo: UiDialogProps["returnFocusTo"];
 };
 
 export type AccountSettingsDialogEmits = {
   "update:modelValue": [open: boolean];
+  feedback: [message: string];
   signIn: [];
   signOut: [];
 };

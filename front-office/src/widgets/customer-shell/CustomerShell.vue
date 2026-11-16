@@ -1,6 +1,7 @@
 <template>
   <main class="customer-shell">
     <ShellNavigation
+      ref="navigation"
       :active-destination="props.activeDestination"
       :cart-count="props.cartCount"
       :categories="props.categories"
@@ -19,8 +20,12 @@
 </template>
 
 <script setup lang="ts">
+import { useTemplateRef } from "vue";
 import ShellNavigation from "./ShellNavigation.vue";
-import type { ShellNavigationDestination } from "./ShellNavigation.types";
+import type {
+  AccountNavigationHandle,
+  ShellNavigationDestination,
+} from "./ShellNavigation.types";
 import type {
   CustomerShellEmits,
   CustomerShellProps,
@@ -28,6 +33,9 @@ import type {
 
 const props = defineProps<CustomerShellProps>();
 const emit = defineEmits<CustomerShellEmits>();
+const navigation = useTemplateRef<AccountNavigationHandle>("navigation");
+
+defineExpose<AccountNavigationHandle>({ getAccountTrigger });
 
 defineSlots<{
   default(): unknown;
@@ -51,6 +59,10 @@ function handleNavigate(destination: ShellNavigationDestination): void {
   if (destination === "orders") {
     emit("openOrders");
   }
+}
+
+function getAccountTrigger(): HTMLElement | null {
+  return navigation.value?.getAccountTrigger() ?? null;
 }
 </script>
 

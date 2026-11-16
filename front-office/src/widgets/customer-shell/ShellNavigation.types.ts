@@ -1,5 +1,9 @@
 export type ShellNavigationDestination = "auth" | "cart" | "menu" | "orders";
 
+export interface AccountNavigationHandle {
+  getAccountTrigger(): HTMLElement | null;
+}
+
 export interface ShellNavigationCategory {
   id: string;
   name: string;

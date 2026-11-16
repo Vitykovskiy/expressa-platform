@@ -16,6 +16,7 @@
         class="shell-navigation__header-actions shell-navigation__header-actions--end"
       >
         <ui-icon-btn
+          ref="mobileAccount"
           type="button"
           aria-label="Аккаунт"
           aria-haspopup="dialog"
@@ -111,6 +112,7 @@
       </nav>
       <div class="shell-navigation__spacer" />
       <ui-btn
+        ref="desktopAccount"
         type="button"
         class="shell-navigation__account"
         @click="accountControl.action()"
@@ -123,13 +125,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useTemplateRef } from "vue";
 import type { Component } from "vue";
 import { History, House, ShoppingCart, UserRound } from "lucide-vue-next";
 import UiBadge from "@/shared/ui/customer/badge/UiBadge.vue";
 import UiBtn from "@/shared/ui/customer/btn/UiBtn.vue";
 import UiIconBtn from "@/shared/ui/customer/icon-btn/UiIconBtn.vue";
 import type {
+  AccountNavigationHandle,
   ShellNavigationEmits,
   ShellNavigationItem,
   ShellNavigationProps,
@@ -139,6 +142,10 @@ defineOptions({ inheritAttrs: false });
 
 const props = defineProps<ShellNavigationProps>();
 const emit = defineEmits<ShellNavigationEmits>();
+const mobileAccount = useTemplateRef("mobileAccount");
+const desktopAccount = useTemplateRef("desktopAccount");
+
+defineExpose<AccountNavigationHandle>({ getAccountTrigger });
 
 const navigationItems = [
   { destination: "menu", label: "Меню", icon: House },
@@ -150,6 +157,17 @@ const accountControl = computed(() => ({
   label: props.isAuthenticated ? "Профиль" : "Войти",
   action: () => emit("openAccount"),
 }));
+
+function getAccountTrigger(): HTMLElement | null {
+  // Оба варианта остаются в DOM; CSS скрывает неактивную оболочку.
+  for (const target of [mobileAccount.value?.$el, desktopAccount.value?.$el]) {
+    if (target instanceof HTMLElement && target.getClientRects().length > 0) {
+      return target;
+    }
+  }
+
+  return null;
+}
 </script>
 
 <style scoped lang="scss">
