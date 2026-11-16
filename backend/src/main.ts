@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import type { NextFunction, Request, Response } from "express";
+import type { Express, NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { validateEnvironment } from "./platform/config/environment";
 import { configureHttp } from "./platform/http/http-configuration";
@@ -11,7 +11,9 @@ export async function createApplication(): Promise<INestApplication> {
 
   const app = await NestFactory.create(AppModule);
 
-  app.getHttpAdapter().getInstance().set("trust proxy", 1);
+  const express = app.getHttpAdapter().getInstance() as Express;
+
+  express.set("trust proxy", 1);
   configureHttp(app, process.env.NODE_ENV);
   configureObservability(app);
 

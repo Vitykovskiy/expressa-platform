@@ -1,5 +1,5 @@
-import { createAuthApi } from "../shared/api/auth.api";
-import type { ApiClient } from "../shared/api/client";
+import { createAuthApi } from "@/shared/api/auth.api";
+import type { ApiClient } from "@/shared/api/client";
 import { sessionMessages } from "./session.store.constants";
 import type { SessionDependencies } from "./session.store.types";
 

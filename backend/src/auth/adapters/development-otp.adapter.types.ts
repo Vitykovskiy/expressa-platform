@@ -1,2 +1,3 @@
-export type DevelopmentEnvironment =
-  (typeof import("./development-otp.adapter.constants").developmentEnvironments)[number];
+import type { developmentEnvironments } from "./development-otp.adapter.constants";
+
+export type DevelopmentEnvironment = (typeof developmentEnvironments)[number];

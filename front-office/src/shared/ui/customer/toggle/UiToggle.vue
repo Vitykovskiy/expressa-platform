@@ -17,12 +17,11 @@
 
 <script setup lang="ts">
 import { UI_TOGGLE_DEFAULTS } from "./UiToggle.constants";
-import type { UiToggleEmits, UiToggleProps } from "./UiToggle.types";
-
-type UiToggleLabelSlotProps = {
-  label: string | undefined;
-  props: Record<string, unknown>;
-};
+import type {
+  UiToggleEmits,
+  UiToggleProps,
+  UiToggleLabelSlotProps,
+} from "./UiToggle.types";
 
 defineOptions({ inheritAttrs: false });
 

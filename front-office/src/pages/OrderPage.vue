@@ -163,7 +163,7 @@ import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { ArrowLeft, X } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 
-import { useSessionStore } from "@/app/session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import type { ConfiguredCartItemDraft } from "@/entities/customer/model/customer.types";
 import { formatRubles } from "@/entities/customer/model/money";
@@ -213,7 +213,7 @@ const initialRecoveryAvailable = ref(false);
 const repeatConfirmationOpen = ref(false);
 const repeatPreparationPending = ref(false);
 const repeatPreparationFailed = ref(false);
-const repeatTrigger = ref<InstanceType<typeof UiBtn> | null>(null);
+const repeatTrigger = ref<{ $el: unknown } | null>(null);
 const orderHeading = ref<HTMLElement | null>(null);
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 let repeatPreparation: OrderRepeatPreparation | null = null;

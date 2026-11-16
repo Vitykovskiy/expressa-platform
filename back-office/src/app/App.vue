@@ -398,14 +398,24 @@ const removeNavigationComplete = router.afterEach((_to, _from, failure) => {
   }
 });
 
+function handleNotificationMessage(
+  event: globalThis.MessageEvent<unknown>,
+): void {
+  void receiveNotification(event);
+}
+
+function handleControllerChange(): void {
+  void bindNativeIntent();
+}
+
 if ("serviceWorker" in globalThis.navigator) {
   globalThis.navigator.serviceWorker.addEventListener(
     "message",
-    receiveNotification,
+    handleNotificationMessage,
   );
   globalThis.navigator.serviceWorker.addEventListener(
     "controllerchange",
-    bindNativeIntent,
+    handleControllerChange,
   );
 }
 
@@ -420,11 +430,11 @@ onScopeDispose(() => {
   if ("serviceWorker" in globalThis.navigator) {
     globalThis.navigator.serviceWorker.removeEventListener(
       "controllerchange",
-      bindNativeIntent,
+      handleControllerChange,
     );
     globalThis.navigator.serviceWorker.removeEventListener(
       "message",
-      receiveNotification,
+      handleNotificationMessage,
     );
   }
 

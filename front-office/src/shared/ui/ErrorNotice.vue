@@ -24,7 +24,7 @@
 import { useAttrs } from "vue";
 import { VAlert, VBtn } from "vuetify/components";
 
-import type { ScreenError } from "./screen-error";
+import type { ScreenError } from "./screen-error.types";
 
 defineOptions({ inheritAttrs: false });
 

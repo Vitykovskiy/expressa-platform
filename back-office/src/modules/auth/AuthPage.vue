@@ -88,7 +88,7 @@ async function focusActiveEntry() {
 
 onActivated(() => {
   isPageActive = true;
-  focusActiveEntry();
+  void focusActiveEntry();
 });
 
 onDeactivated(() => {

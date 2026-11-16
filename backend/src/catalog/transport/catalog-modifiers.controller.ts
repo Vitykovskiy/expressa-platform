@@ -451,16 +451,19 @@ function throwModifierError(error: unknown): never {
     throw validationError(error.fields);
   }
 
-  const response =
-    error.code === "MODIFIER_GROUP_NOT_FOUND"
-      ? modifierErrorResponses.groupNotFound
-      : error.code === "MODIFIER_GROUP_ARCHIVED"
-        ? modifierErrorResponses.groupArchived
-        : error.code === "MODIFIER_OPTION_NOT_FOUND"
-          ? modifierErrorResponses.optionNotFound
-          : error.code === "MODIFIER_OPTION_ARCHIVED"
-            ? modifierErrorResponses.optionArchived
-            : modifierErrorResponses.reorderInvalid;
+  let response: (typeof modifierErrorResponses)[keyof typeof modifierErrorResponses] =
+    modifierErrorResponses.reorderInvalid;
+
+  if (error.code === "MODIFIER_GROUP_NOT_FOUND") {
+    response = modifierErrorResponses.groupNotFound;
+  } else if (error.code === "MODIFIER_GROUP_ARCHIVED") {
+    response = modifierErrorResponses.groupArchived;
+  } else if (error.code === "MODIFIER_OPTION_NOT_FOUND") {
+    response = modifierErrorResponses.optionNotFound;
+  } else if (error.code === "MODIFIER_OPTION_ARCHIVED") {
+    response = modifierErrorResponses.optionArchived;
+  }
+
   const status = error.code.endsWith("_NOT_FOUND")
     ? HttpStatus.NOT_FOUND
     : HttpStatus.CONFLICT;

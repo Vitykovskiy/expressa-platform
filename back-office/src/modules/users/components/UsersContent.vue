@@ -128,13 +128,15 @@ const hasUsers = computed(() => hasEmployees.value || hasCustomers.value);
 // Полученный список остаётся видимым при обновлении и ошибке чтения.
 const canShowEmpty = computed(() => !props.loading && props.error === null);
 
-const loadingMessage = computed(() =>
-  hasUsers.value
-    ? "Обновляем список. Ниже — ранее полученные данные."
-    : employeesSelected.value
-      ? "Загрузка сотрудников…"
-      : "Загрузка клиентов…",
-);
+const loadingMessage = computed(() => {
+  if (hasUsers.value) {
+    return "Обновляем список. Ниже — ранее полученные данные.";
+  }
+
+  return employeesSelected.value
+    ? "Загрузка сотрудников…"
+    : "Загрузка клиентов…";
+});
 
 const emptyMessage = computed(() => {
   if (props.query.trim().length > 0) {

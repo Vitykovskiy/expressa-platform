@@ -1,4 +1,8 @@
 import {
+  controllerPath,
+  apiTag,
+} from "./backoffice-availability.controller.constants";
+import {
   Body,
   Controller,
   Get,
@@ -47,9 +51,6 @@ import type {
   AvailabilityRequestContext,
   AvailabilityRouteType,
 } from "./backoffice-availability.dto.types";
-
-const controllerPath = "backoffice";
-const apiTag = "backoffice";
 
 @ApiTags(apiTag)
 @Controller(controllerPath)

@@ -10,10 +10,10 @@ export class OperatingSettingsInputDto implements OperatingSettingsInput {
   @ApiProperty({ type: "integer", minimum: 1, maximum: 2147483647 })
   slotCapacity!: number;
 }
+// prettier-ignore
 export class OperatingSettingsResponseDto
   extends OperatingSettingsInputDto
-  implements OperatingSettingsResponse
-{
+  implements OperatingSettingsResponse {
   @ApiProperty({ enum: [10], type: "integer" }) slotMinutes!: 10;
   @ApiProperty({ enum: ["UTC"] }) timeZone!: "UTC";
   @ApiProperty({ type: String, format: "date-time", nullable: true })

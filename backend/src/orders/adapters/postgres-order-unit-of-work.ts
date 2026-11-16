@@ -1,8 +1,6 @@
+import type { OrderPorts } from "./postgres-order-unit-of-work.types";
 import { readPickupCandidates } from "./postgres-pickup-slots";
-import type {
-  CustomerPickupSlots,
-  PickupSlotsReader,
-} from "../application/pickup-slots.types";
+import type { CustomerPickupSlots } from "../application/pickup-slots.types";
 import { readOrderMetadata } from "./order-metadata";
 import type { OrderStage } from "../domain/order-lifecycle.types";
 import type { PickupSlot } from "../domain/order-metadata.types";
@@ -31,7 +29,6 @@ import type {
 import type {
   CreateOrderCommand,
   CreateOrderResult,
-  OrderUnitOfWork,
   StoredOrder,
 } from "../application/order-unit-of-work.types";
 import type {
@@ -41,9 +38,7 @@ import type {
 } from "./postgres-order-unit-of-work.types";
 import { idempotencyLockSql } from "./postgres-order-unit-of-work.constants";
 
-export class PostgresOrderUnitOfWork
-  implements OrderUnitOfWork, PickupSlotsReader
-{
+export class PostgresOrderUnitOfWork implements OrderPorts {
   constructor(
     private readonly dependencies: PostgresOrderUnitOfWorkDependencies,
   ) {}

@@ -59,12 +59,13 @@ function toNotification(order: OrderPush): {
     };
   }
 
-  const body =
-    order.stage === "ACCEPTED"
-      ? "Заказ принят"
-      : order.stage === "READY"
-        ? "Заказ готов"
-        : "Заказ выдан";
+  let body = "Заказ выдан";
+
+  if (order.stage === "ACCEPTED") {
+    body = "Заказ принят";
+  } else if (order.stage === "READY") {
+    body = "Заказ готов";
+  }
 
   return { title: `Заказ ${order.number}`, body, orderId: order.orderId };
 }

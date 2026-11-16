@@ -151,13 +151,17 @@ const submitting = computed(
 
 const locked = computed(() => props.phase !== "editing");
 
-const description = computed(() =>
-  isBlock.value
-    ? "Сотрудник потеряет рабочий доступ. Клиентский аккаунт и заказы сохранятся."
-    : props.user.accountBlocked
-      ? "Аккаунт заблокирован глобально. Рабочий доступ нельзя восстановить до снятия этой блокировки."
-      : "Сотрудник снова получит рабочий доступ после нового входа.",
-);
+const description = computed(() => {
+  if (isBlock.value) {
+    return "Сотрудник потеряет рабочий доступ. Клиентский аккаунт и заказы сохранятся.";
+  }
+
+  if (props.user.accountBlocked) {
+    return "Аккаунт заблокирован глобально. Рабочий доступ нельзя восстановить до снятия этой блокировки.";
+  }
+
+  return "Сотрудник снова получит рабочий доступ после нового входа.";
+});
 
 const submitLabel = computed(() => {
   if (props.phase !== "editing") {

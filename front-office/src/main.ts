@@ -5,7 +5,7 @@ import App from "./app/App.vue";
 import { installPlugins } from "./app/plugins";
 import { registerPwa } from "./app/pwa";
 import { router } from "./app/router";
-import { configureSessionDependencies } from "./app/session.store.dependencies";
+import { configureSessionDependencies } from "@/entities/customer/model/session.store.dependencies";
 import { configureMenuStoreDependencies } from "./entities/customer/model/menu.store.dependencies";
 import { configureCheckoutStoreDependencies } from "./features/checkout/checkout.store.dependencies";
 import { apiClientKey, createApiClient } from "./shared/api/client";

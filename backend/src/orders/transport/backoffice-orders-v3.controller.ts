@@ -1,3 +1,4 @@
+import type { OrderV3ItemDto } from "./order-v3.dto.types";
 import { SourceOrderActionsUseCase } from "../application/source-order-actions.use-case";
 import type { SourceOrderCommand } from "../application/source-order-actions.types";
 import { toOrderMetadataDto } from "./order-metadata.mapper";
@@ -287,9 +288,7 @@ function invalid(): never {
   );
 }
 
-function toItem(
-  item: OrderSnapshotItem,
-): import("./order-v3.dto.types").OrderV3ItemDto {
+function toItem(item: OrderSnapshotItem): OrderV3ItemDto {
   return {
     productId: item.productId,
     priceChoiceId: item.priceChoiceId,

@@ -10,8 +10,8 @@ import MenuPage from "../pages/MenuPage.vue";
 import OrderPage from "../pages/OrderPage.vue";
 import OrdersPage from "../pages/OrdersPage.vue";
 import { routePaths } from "@/shared/config/customer-routes.constants";
-import { getSessionDependencies } from "./session.store.dependencies";
-import { useSessionStore } from "./session.store";
+import { getSessionDependencies } from "@/entities/customer/model/session.store.dependencies";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import { getSafeAuthReturnTo } from "../shared/lib/auth-return";
 import type { CustomerNavigationGuard } from "./router.types";
 

@@ -1,15 +1,10 @@
+import type { RequestWithId } from "./request-observability.middleware.types";
 import { Injectable, type NestMiddleware } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { ServerResponse } from "node:http";
 import { ObservabilityLogger } from "./observability-logger.service";
 import { ObservabilityMetrics } from "./observability-metrics.service";
 import { getRequestPath } from "./request-path";
-
-type RequestWithId = IncomingMessage & {
-  baseUrl?: string;
-  requestId?: string;
-  route?: { path?: string };
-};
 
 function isValidRequestId(value: string | undefined): value is string {
   return value !== undefined && /^[A-Za-z0-9._-]{1,128}$/.test(value);

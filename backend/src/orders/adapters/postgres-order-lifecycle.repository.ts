@@ -1,15 +1,11 @@
+import type { OrderPorts } from "./postgres-order-lifecycle.types";
 import { sourceOrderTransitions } from "../domain/source-order-policy";
-import type {
-  SourceOrderCommand,
-  SourceOrderUnitOfWork,
-} from "../application/source-order-actions.types";
+import type { SourceOrderCommand } from "../application/source-order-actions.types";
 import { readOrderMetadata } from "./order-metadata";
 import type {
   CustomerOrder,
   CustomerOrdersCursor,
   CustomerOrdersPage,
-  OrderReadRepository,
-  OrderTransitionUnitOfWork,
   ListOrdersQuery,
   TransitionOrderCommand,
 } from "../application/order-lifecycle.types";
@@ -34,12 +30,7 @@ import type {
   Queryable,
 } from "./postgres-order-lifecycle.types";
 
-export class PostgresOrderLifecycleRepository
-  implements
-    OrderReadRepository,
-    OrderTransitionUnitOfWork,
-    SourceOrderUnitOfWork
-{
+export class PostgresOrderLifecycleRepository implements OrderPorts {
   constructor(
     private readonly dependencies: PostgresOrderLifecycleDependencies,
   ) {}

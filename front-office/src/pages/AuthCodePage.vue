@@ -15,9 +15,9 @@
 import { computed, onBeforeUnmount, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { useSessionStore } from "../app/session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import { routePaths } from "@/shared/config/customer-routes.constants";
-import { getSessionDependencies } from "../app/session.store.dependencies";
+import { getSessionDependencies } from "@/entities/customer/model/session.store.dependencies";
 import AuthScreen from "@/features/auth/AuthScreen.vue";
 import { getSafeAuthReturnTo } from "@/shared/lib/auth-return";
 import { authCodeRoute } from "./AuthCodePage.constants";

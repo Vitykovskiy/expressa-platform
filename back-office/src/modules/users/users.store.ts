@@ -287,15 +287,18 @@ export const useUsersStore = defineStore("staff-users", () => {
 
     const previous = customerDirectory.value;
 
+    let error: string | null = null;
+
+    if (outcome.kind !== "cancelled") {
+      error = previous.hasSnapshot
+        ? USERS_MESSAGES.readFailed
+        : USERS_MESSAGES.initialFailed;
+    }
+
     customerDirectory.value = {
       ...previous,
       phase: previous.hasSnapshot ? "ready" : "error",
-      error:
-        outcome.kind === "cancelled"
-          ? null
-          : previous.hasSnapshot
-            ? USERS_MESSAGES.readFailed
-            : USERS_MESSAGES.initialFailed,
+      error,
     };
 
     return false;

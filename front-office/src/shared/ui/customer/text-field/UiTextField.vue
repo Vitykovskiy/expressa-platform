@@ -15,23 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import type { ComputedRef, Ref } from "vue";
 import { UI_TEXT_FIELD_DEFAULTS } from "./UiTextField.constants";
-import type { UiTextFieldEmits, UiTextFieldProps } from "./UiTextField.types";
-
-type UiTextFieldInputSlotProps = {
-  isActive: Ref<boolean>;
-  isFocused: Ref<boolean>;
-  iconColor: ComputedRef<string | undefined>;
-  controlRef: Ref<InstanceType<typeof globalThis.HTMLElement> | undefined>;
-  focus: () => void;
-  blur: () => void;
-};
-
-type UiTextFieldLoaderSlotProps = {
-  color: string | undefined;
-  isActive: boolean;
-};
+import type {
+  UiTextFieldEmits,
+  UiTextFieldProps,
+  UiTextFieldInputSlotProps,
+  UiTextFieldLoaderSlotProps,
+} from "./UiTextField.types";
 
 defineOptions({ inheritAttrs: false });
 

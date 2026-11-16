@@ -103,12 +103,13 @@ export const useOrderNotificationsStore = defineStore("order-notifications", {
           }
 
           this.version = inspection.version;
-          this.state =
-            inspection.association === "current"
-              ? "on_current"
-              : inspection.association === "other"
-                ? "other_account"
-                : "off_current";
+          if (inspection.association === "current") {
+            this.state = "on_current";
+          } else if (inspection.association === "other") {
+            this.state = "other_account";
+          } else {
+            this.state = "off_current";
+          }
         } catch {
           if (this.owns(snapshot)) {
             this.state = "failed_check";

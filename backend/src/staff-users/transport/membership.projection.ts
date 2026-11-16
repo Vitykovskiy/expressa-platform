@@ -39,6 +39,10 @@ export async function executeIdentityCommand<Result>(
     let code: string = error.code;
 
     switch (error.code) {
+      case "USER_NAME_CONFLICT":
+      case "USER_PHONE_CONFLICT":
+      case "USER_ACCESS_CONFLICT":
+        break;
       case "USER_NOT_FOUND":
         status = HttpStatus.NOT_FOUND;
         break;

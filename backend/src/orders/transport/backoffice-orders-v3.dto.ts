@@ -1,3 +1,4 @@
+import type { OrderV3ItemDto } from "./order-v3.dto.types";
 import {
   PickupSlotResponseDto,
   OrderRejectionResponseDto,
@@ -48,7 +49,7 @@ export class BackofficeOrderV3ResponseDto implements BackofficeOrderV3Dto {
   @ApiProperty({ type: () => BackofficeOrderV3CustomerResponseDto })
   customer!: BackofficeOrderV3CustomerResponseDto;
   @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })
-  snapshot!: import("./order-v3.dto.types").OrderV3ItemDto[];
+  snapshot!: OrderV3ItemDto[];
   @ApiProperty({ isArray: true, type: () => BackofficeOrderEventResponseDto })
   events!: BackofficeOrderEventResponseDto[];
 }

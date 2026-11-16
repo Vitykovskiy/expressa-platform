@@ -1,10 +1,9 @@
+import type { StaffPorts } from "./postgres-staff-users.repository.types";
 import type { Pool, PoolClient } from "pg";
 import type { UserRole } from "../../auth/domain/auth.types";
 import { readAccountMemberships } from "../../auth/adapters/account-membership";
 import type {
-  StaffUsersReader,
   StaffUsersTransaction,
-  StaffUsersUnitOfWork,
   StaffUserAudit,
   OperationsUserCreation,
   UserCommandContext,
@@ -31,9 +30,7 @@ import {
 } from "./postgres-staff-users.repository.constants";
 import type { DatabaseRow } from "./postgres-staff-users.repository.types";
 
-export class PostgresStaffUsersRepository
-  implements StaffUsersReader, StaffUsersUnitOfWork
-{
+export class PostgresStaffUsersRepository implements StaffPorts {
   constructor(private readonly getPool: () => Pool) {}
 
   async list(filter: StaffUserFilter): Promise<StaffUser[]> {

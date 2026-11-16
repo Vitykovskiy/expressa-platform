@@ -1,13 +1,12 @@
+import type { PushPorts } from "./postgres-push-subscription.repository.types";
 import { readAuthContext } from "../../auth/adapters/account-membership";
 import type {
   PushSubscription,
   PushSubscriptionCommand,
-  PushSubscriptionRepository,
 } from "../application/push-notifications.types";
 import type {
   PushAssociationActor,
   PushAssociationTransaction,
-  PushAssociationUnitOfWork,
 } from "../application/push-association.types";
 import {
   PushAssociationUnauthorizedError,
@@ -23,9 +22,7 @@ import type { PoolClient } from "pg";
 import { pushSubscriptionProjection } from "./postgres-push-subscription.repository.constants";
 import { staffUsersMembershipLock } from "../../staff-users/adapters/staff-users-lock.constants";
 
-export class PostgresPushSubscriptionRepository
-  implements PushSubscriptionRepository, PushAssociationUnitOfWork
-{
+export class PostgresPushSubscriptionRepository implements PushPorts {
   constructor(
     private readonly dependencies: PostgresPushSubscriptionRepositoryDependencies,
   ) {}

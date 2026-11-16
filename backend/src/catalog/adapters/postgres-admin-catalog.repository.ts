@@ -3,10 +3,8 @@ import { AvailabilityNotFoundError } from "../application/manage-availability.us
 import type {
   AdminCatalogCandidates,
   AdminCatalogV3Candidates,
-  AdminCatalogRepository,
   AvailabilityPriceChoiceCandidate,
   AvailabilityCommand,
-  AvailabilityRepository,
   AvailabilityTarget,
   ServiceIntake,
   ServiceIntakeCommand,
@@ -24,11 +22,12 @@ import {
   catalogAdvisoryLockKey,
   publicMenuAdvisoryLockSql,
 } from "./catalog-advisory-lock.constants";
-import type { DatabaseRow } from "./postgres-admin-catalog.repository.types";
+import type {
+  AdminCatalogPorts,
+  DatabaseRow,
+} from "./postgres-admin-catalog.repository.types";
 
-export class PostgresAdminCatalogRepository
-  implements AdminCatalogRepository, AvailabilityRepository
-{
+export class PostgresAdminCatalogRepository implements AdminCatalogPorts {
   constructor(private readonly pool: Pool) {}
 
   async findCandidates(): Promise<AdminCatalogCandidates> {
@@ -176,12 +175,14 @@ export class PostgresAdminCatalogRepository
     command: AvailabilityCommand,
   ): Promise<AvailabilityTarget> {
     const client = await this.pool.connect();
-    const table =
-      command.type === "product"
-        ? "products"
-        : command.type === "price_choice"
-          ? "product_price_choices"
-          : "modifier_options";
+    let table = "modifier_options";
+
+    if (command.type === "product") {
+      table = "products";
+    } else if (command.type === "price_choice") {
+      table = "product_price_choices";
+    }
+
     const entityType =
       command.type === "modifier" ? "modifier_option" : command.type;
 

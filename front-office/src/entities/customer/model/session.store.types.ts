@@ -2,12 +2,12 @@ import type {
   AuthApi,
   CurrentUser,
   OtpRequestMetadata,
-} from "../shared/api/auth.api.types";
+} from "@/shared/api/auth.api.types";
 
 export type {
   CurrentUser,
   OtpRequestMetadata,
-} from "../shared/api/auth.api.types";
+} from "@/shared/api/auth.api.types";
 
 export type SessionStatus = "unknown" | "anonymous" | "authenticated";
 

@@ -131,7 +131,9 @@ export function parseCustomers(value: unknown): readonly CustomerDto[] | null {
   const customers: CustomerDto[] = [];
   const ids = new Set<string>();
 
-  for (const row of value.customers) {
+  const customerRows: readonly unknown[] = value.customers;
+
+  for (const row of customerRows) {
     if (
       typeof row !== "object" ||
       row === null ||

@@ -1,5 +1,7 @@
+import type { AvailabilityCommand } from "./manage-availability.use-case.types";
+
+export type { AvailabilityCommand } from "./manage-availability.use-case.types";
 import type {
-  AvailabilityEntityType,
   AvailabilityRepository,
   AvailabilityTarget,
 } from "./admin-catalog.repository.types";
@@ -11,13 +13,5 @@ export class ManageAvailabilityUseCase {
     return this.repository.updateAvailability(command);
   }
 }
-
-export type AvailabilityCommand = {
-  type: AvailabilityEntityType;
-  id: string;
-  isAvailable: boolean;
-  actorId: string;
-  requestId: string;
-};
 
 export class AvailabilityNotFoundError extends Error {}

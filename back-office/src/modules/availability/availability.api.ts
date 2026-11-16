@@ -95,7 +95,8 @@ function availabilityChangeEndpoint(target: AvailabilityTarget): string {
       return INTAKE_ENDPOINT;
     case "price-choice":
       return `${PRICE_CHOICE_AVAILABILITY_ENDPOINT}/${encodeURIComponent(target.id)}`;
-    default:
+    case "modifier":
+    case "product":
       return `${AVAILABILITY_ENDPOINT}/${target.type}/${encodeURIComponent(target.id)}`;
   }
 }

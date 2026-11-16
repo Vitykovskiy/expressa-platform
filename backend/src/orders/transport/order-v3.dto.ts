@@ -47,10 +47,10 @@ export class OrderV3ResponseDto implements OrderV3Dto {
   @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })
   items!: OrderV3ItemDto[];
 }
+// prettier-ignore
 export class CustomerOrderV3ResponseDto
   extends OrderV3ResponseDto
-  implements CustomerOrderV3Dto
-{
+  implements CustomerOrderV3Dto {
   @ApiProperty() createdAt!: string;
 }
 export class CustomerOrdersV3PageResponseDto implements CustomerOrdersV3PageDto {

@@ -1,3 +1,6 @@
+import type { ServiceIntakeCommand } from "./manage-service-intake.use-case.types";
+
+export type { ServiceIntakeCommand } from "./manage-service-intake.use-case.types";
 import type {
   AvailabilityRepository,
   ServiceIntake,
@@ -10,9 +13,3 @@ export class ManageServiceIntakeUseCase {
     return this.repository.updateServiceIntake(command);
   }
 }
-
-export type ServiceIntakeCommand = {
-  acceptsNewOrders: boolean;
-  actorId: string;
-  requestId: string;
-};

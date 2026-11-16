@@ -8,7 +8,14 @@ declare let self: ServiceWorkerGlobalScope;
 
 if (isServiceWorker()) {
   self.addEventListener("message", (event) => {
-    if (event.data?.type === "SKIP_WAITING") {
+    const data: unknown = event.data;
+
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "type" in data &&
+      data.type === "SKIP_WAITING"
+    ) {
       void self.skipWaiting();
     }
   });

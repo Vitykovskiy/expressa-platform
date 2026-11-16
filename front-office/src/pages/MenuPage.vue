@@ -46,7 +46,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import MenuFlow from "@/features/menu/MenuFlow.vue";
-import type { MenuShellCommand } from "@/features/menu/MenuFlow.types";
+import type {
+  MenuFlowScreen,
+  MenuShellCommand,
+} from "@/features/menu/MenuFlow.types";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useMenuStore } from "@/entities/customer/model/menu.store";
 import UiProgress from "@/shared/ui/customer/progress/UiProgress.vue";
@@ -56,12 +59,10 @@ const menuStore = useMenuStore();
 const cartStore = useCartStore();
 const props = defineProps<{
   menuShellCommand?: MenuShellCommand | null;
-  menuScreen?: import("@/features/menu/MenuFlow.types").MenuFlowScreen;
+  menuScreen?: MenuFlowScreen;
 }>();
 const emit = defineEmits<{
-  menuScreenChange: [
-    screen: import("@/features/menu/MenuFlow.types").MenuFlowScreen,
-  ];
+  menuScreenChange: [screen: MenuFlowScreen];
   menuShellCommandAck: [requestId: number];
 }>();
 const isLoading = computed(

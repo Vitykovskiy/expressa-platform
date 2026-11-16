@@ -2,13 +2,13 @@ import { defineStore } from "pinia";
 
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useOrderNotificationsStore } from "@/entities/customer/model/order-notifications.store";
-import { ApiError } from "../shared/api/client";
+import { ApiError } from "@/shared/api/client";
 import { isCurrentUserProfile } from "@/shared/api/auth.api";
 import type {
   AccessSession,
   CurrentUserProfile,
 } from "@/shared/api/auth.api.types";
-import type { CompleteCustomerRegistration } from "../shared/api/customer-registration.api.types";
+import type { CompleteCustomerRegistration } from "@/shared/api/customer-registration.api.types";
 import {
   anonymousSessionState,
   authenticationRequests,
@@ -247,7 +247,9 @@ export const useSessionStore = defineStore("session", {
         const authentication = authenticationRequests.get(this);
 
         if (authentication !== undefined) {
-          await authentication.catch(() => {});
+          await authentication.catch(() => {
+            // Ошибка входа уже принадлежит своему сценарию; logout продолжает отзыв cookie.
+          });
         }
 
         const pushSubscription =
@@ -365,7 +367,9 @@ export const useSessionStore = defineStore("session", {
     async readProtected<T>(
       read: (accessToken: string) => Promise<T>,
       isLive: ProtectedReadLiveness = () => true,
-      onRecoveryStart: ProtectedReadRecoveryStart = () => {},
+      onRecoveryStart: ProtectedReadRecoveryStart = () => {
+        // Consumer без отдельного loading-состояния не требует побочного действия.
+      },
     ): Promise<T> {
       const accessToken = this.accessToken;
       const accountId = this.currentUser?.id ?? null;

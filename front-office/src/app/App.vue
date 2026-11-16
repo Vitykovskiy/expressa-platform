@@ -107,7 +107,7 @@ import { routePaths } from "@/shared/config/customer-routes.constants";
 import { customerRegistrationKey } from "@/features/auth/customer-registration.context.constants";
 import { createCustomerRegistrationApi } from "@/shared/api/customer-registration.api";
 import type { AppBootstrapState, SessionBoundaryState } from "./App.types";
-import { useSessionStore } from "./session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 
 const appStore = useAppStore();
 const cartStore = useCartStore();

@@ -58,21 +58,28 @@ export class UnifiedExceptionFilter implements ExceptionFilter {
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
     const isServerError = statusCode >= HttpStatus.INTERNAL_SERVER_ERROR;
-    const errorResponse = isStructuredErrorResponse(exceptionResponse)
-      ? isServerError
-        ? {
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Internal server error",
-            details: null,
-          }
-        : exceptionResponse
-      : {
-          code: getErrorCode(statusCode),
-          message: clientMessages[statusCode] ?? "Internal server error",
-          details: null,
-        };
+    let errorResponse: StructuredErrorResponse;
+
+    if (!isStructuredErrorResponse(exceptionResponse)) {
+      errorResponse = {
+        code: getErrorCode(statusCode),
+        message: clientMessages[statusCode] ?? "Internal server error",
+        details: null,
+      };
+    } else if (isServerError) {
+      errorResponse = {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+        details: null,
+      };
+    } else {
+      errorResponse = exceptionResponse;
+    }
+
     const requestId = request.requestId ?? "unknown";
-    const requestPath = getRequestPath(httpAdapter.getRequestUrl(request));
+    // ExpressAdapter возвращает originalUrl; базовый Nest adapter типизирует результат как any.
+    const requestUrl = httpAdapter.getRequestUrl(request) as string | undefined;
+    const requestPath = getRequestPath(requestUrl);
 
     this.metrics.recordApiError();
     if (isOtpFailurePath(requestPath)) {

@@ -1,21 +1,11 @@
-type ApplicationEnvironment =
-  "local" | "development" | "staging" | "production";
+import type {
+  ApplicationEnvironment,
+  EnvironmentSource,
+  EnvironmentConfig,
+} from "./environment.types";
 
-type EnvironmentSource = Pick<
-  ImportMetaEnv,
-  "VITE_APP_ENV" | "VITE_API_BASE_URL"
->;
-
-export interface EnvironmentConfig {
-  apiBaseUrl: string;
-}
-
-const applicationEnvironments: readonly ApplicationEnvironment[] = [
-  "local",
-  "development",
-  "staging",
-  "production",
-];
+export type { EnvironmentConfig } from "./environment.types";
+import { applicationEnvironments } from "./environment.constants";
 
 function requireEnvironmentValue(
   value: string | undefined,

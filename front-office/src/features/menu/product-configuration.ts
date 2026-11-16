@@ -71,20 +71,21 @@ export function toggleProductConfigurationOption(
       (item) => item.groupId === groupId,
     )?.optionIds ?? [];
   const selected = current.includes(optionId);
-  const next =
-    group.selectionType === "single"
-      ? selected
-        ? group.minSelect === 0
-          ? []
-          : current
-        : [optionId]
-      : selected
-        ? current.length > group.minSelect
-          ? current.filter((id) => id !== optionId)
-          : current
-        : current.length < group.maxSelect
-          ? [...current, optionId]
-          : current;
+  let next = current;
+
+  if (group.selectionType === "single") {
+    if (!selected) {
+      next = [optionId];
+    } else if (group.minSelect === 0) {
+      next = [];
+    }
+  } else if (selected) {
+    if (current.length > group.minSelect) {
+      next = current.filter((id) => id !== optionId);
+    }
+  } else if (current.length < group.maxSelect) {
+    next = [...current, optionId];
+  }
 
   return {
     ...configuration,

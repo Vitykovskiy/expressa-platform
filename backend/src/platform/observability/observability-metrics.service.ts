@@ -1,12 +1,8 @@
+import type { ObservabilityMetricsSnapshot } from "./observability-metrics.service.types";
+
+export type { ObservabilityMetricsSnapshot } from "./observability-metrics.service.types";
 import { Injectable } from "@nestjs/common";
 import { Counter, Gauge, Registry } from "prom-client";
-
-export type ObservabilityMetricsSnapshot = {
-  apiErrorsTotal: number;
-  httpRequestsTotal: number;
-  readinessFailuresTotal: number;
-  responsesByStatusClass: Record<string, number>;
-};
 
 @Injectable()
 export class ObservabilityMetrics {

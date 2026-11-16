@@ -1,3 +1,7 @@
+import type { AuthRepository } from "./application/auth-repository.types";
+import type { OtpCodeGenerator } from "./application/otp-code-generator.types";
+import type { AuthCrypto } from "./application/auth-crypto.types";
+import type { SmsSender } from "./application/sms-sender.types";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Pool } from "pg";
@@ -108,7 +112,13 @@ import { SessionGuard } from "./transport/session.guard";
         smsSenderPort,
         clockPort,
       ],
-      useFactory: (repository, codeGenerator, crypto, smsSender, clock) =>
+      useFactory: (
+        repository: AuthRepository,
+        codeGenerator: OtpCodeGenerator,
+        crypto: AuthCrypto,
+        smsSender: SmsSender,
+        clock: Clock,
+      ) =>
         new RequestOtpUseCase(
           repository,
           codeGenerator,
@@ -120,13 +130,20 @@ import { SessionGuard } from "./transport/session.guard";
     {
       provide: VerifyOtpUseCase,
       inject: [authRepositoryPort, authCryptoPort, clockPort],
-      useFactory: (repository, crypto, clock) =>
-        new VerifyOtpUseCase(repository, crypto, clock),
+      useFactory: (
+        repository: AuthRepository,
+        crypto: AuthCrypto,
+        clock: Clock,
+      ) => new VerifyOtpUseCase(repository, crypto, clock),
     },
     {
       provide: RefreshSessionUseCase,
       inject: [authRepositoryPort, authCryptoPort, clockPort],
-      useFactory: (repository, crypto, clock) =>
+      useFactory: (
+        repository: AuthRepository,
+        crypto: AuthCrypto,
+        clock: Clock,
+      ) =>
         new RefreshSessionUseCase(repository, crypto, clock, {
           accessTokenAudience,
           accessTokenIssuer,
@@ -136,13 +153,20 @@ import { SessionGuard } from "./transport/session.guard";
     {
       provide: LogoutUseCase,
       inject: [authRepositoryPort, authCryptoPort, clockPort],
-      useFactory: (repository, crypto, clock) =>
-        new LogoutUseCase(repository, crypto, clock),
+      useFactory: (
+        repository: AuthRepository,
+        crypto: AuthCrypto,
+        clock: Clock,
+      ) => new LogoutUseCase(repository, crypto, clock),
     },
     {
       provide: GetCurrentUserUseCase,
       inject: [authRepositoryPort, authCryptoPort, clockPort],
-      useFactory: (repository, crypto, clock) =>
+      useFactory: (
+        repository: AuthRepository,
+        crypto: AuthCrypto,
+        clock: Clock,
+      ) =>
         new GetCurrentUserUseCase(repository, crypto, clock, {
           accessTokenAudience,
           accessTokenIssuer,

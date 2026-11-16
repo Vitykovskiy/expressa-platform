@@ -20,7 +20,7 @@
 import { computed, inject, onMounted, onUnmounted, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 
-import { useSessionStore } from "../app/session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import { useCartStore } from "@/entities/customer/model/cart.store";
 import { useCheckoutStore } from "@/features/checkout/checkout.store";
 import {

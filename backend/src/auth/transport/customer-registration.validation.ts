@@ -5,7 +5,7 @@ export function parseRegistrationName(body: unknown): string {
     const entries = Object.entries(body);
 
     if (entries.length === 1 && entries[0]?.[0] === "name") {
-      const name = entries[0][1];
+      const name: unknown = entries[0][1];
 
       if (typeof name === "string" && name.trim() !== "") {
         return name.trim();

@@ -13,7 +13,7 @@
 import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { useSessionStore } from "@/app/session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import OrdersHistoryScreen from "@/features/orders/OrdersHistoryScreen.vue";
 import type { OrdersHistoryScreenProps } from "@/features/orders/OrdersHistoryScreen.types";
 import { isOrderTerminal } from "@/features/orders/order-status";

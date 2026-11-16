@@ -265,12 +265,13 @@ function focusHeadingAfterRemovedControl(
     }
 
     const currentScreen = screen.value;
-    const headingId =
-      currentScreen.id === "root"
-        ? "menu-root-title"
-        : currentScreen.id === "category"
-          ? `menu-group-${currentScreen.categoryId}`
-          : undefined;
+    let headingId: string | undefined;
+
+    if (currentScreen.id === "root") {
+      headingId = "menu-root-title";
+    } else if (currentScreen.id === "category") {
+      headingId = `menu-group-${currentScreen.categoryId}`;
+    }
 
     if (headingId) {
       document.getElementById(headingId)?.focus();
@@ -344,17 +345,21 @@ function getValidHistoryScreen(value: unknown): MenuFlowScreen | undefined {
       (item) => item.id === candidate.categoryId,
     );
 
-    return category?.products.some(
-      (product) => product.id === candidate.productId,
-    )
-      ? {
-          id: "product",
-          categoryId: candidate.categoryId,
-          productId: candidate.productId,
-        }
-      : category
-        ? { id: "category", categoryId: candidate.categoryId }
-        : undefined;
+    if (
+      category?.products.some((product) => product.id === candidate.productId)
+    ) {
+      return {
+        id: "product",
+        categoryId: candidate.categoryId,
+        productId: candidate.productId,
+      };
+    }
+
+    if (category) {
+      return { id: "category", categoryId: candidate.categoryId };
+    }
+
+    return undefined;
   }
 
   return undefined;

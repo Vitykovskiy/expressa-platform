@@ -37,10 +37,10 @@ export class BackofficeOrderListItemResponseDto implements BackofficeOrderListIt
   stage!: "CREATED" | "ACCEPTED" | "PREPARING" | "READY" | "ISSUED";
 }
 
+// prettier-ignore
 export class BackofficeOrderDetailsResponseDto
   extends BackofficeOrderListItemResponseDto
-  implements BackofficeOrderDetailsDto
-{
+  implements BackofficeOrderDetailsDto {
   @ApiProperty({ type: () => BackofficeOrderCustomerResponseDto })
   customer!: BackofficeOrderCustomerResponseDto;
   @ApiProperty({ isArray: true, type: () => OrderV3ItemResponseDto })

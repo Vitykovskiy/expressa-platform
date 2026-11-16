@@ -23,7 +23,7 @@
 import { computed, onMounted, onUnmounted, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 
-import { useSessionStore } from "../app/session.store";
+import { useSessionStore } from "@/entities/customer/model/session.store";
 import CartScreen from "@/features/checkout/CartScreen.vue";
 import CartScreenEditor from "@/features/checkout/CartScreenEditor.vue";
 import type {
@@ -50,18 +50,23 @@ const cartListScrollTop = shallowRef(0);
 const confirmedIntakeRefusal = shallowRef(false);
 const intakeRecheckPending = shallowRef(false);
 const intakeRecheckFailed = shallowRef(false);
-const intakeRecovery = computed<CartIntakeRecovery>(() => ({
-  status:
-    intakeRecheckPending.value || menuStore.status === "loading"
-      ? "pending"
-      : intakeRecheckFailed.value || menuStore.status === "error"
-        ? "failed"
-        : "idle",
-  confirmedClosed:
-    confirmedIntakeRefusal.value ||
-    menuStore.menu?.acceptsNewOrders === false ||
-    checkoutStore.errorCode === checkoutErrorCodes.intakeClosed,
-}));
+const intakeRecovery = computed<CartIntakeRecovery>(() => {
+  let status: CartIntakeRecovery["status"] = "idle";
+
+  if (intakeRecheckPending.value || menuStore.status === "loading") {
+    status = "pending";
+  } else if (intakeRecheckFailed.value || menuStore.status === "error") {
+    status = "failed";
+  }
+
+  return {
+    status,
+    confirmedClosed:
+      confirmedIntakeRefusal.value ||
+      menuStore.menu?.acceptsNewOrders === false ||
+      checkoutStore.errorCode === checkoutErrorCodes.intakeClosed,
+  };
+});
 const canCreateNewOrder = computed(
   () =>
     menuStore.menu?.acceptsNewOrders === true &&
